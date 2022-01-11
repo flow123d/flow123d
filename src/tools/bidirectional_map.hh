@@ -78,13 +78,13 @@ inline BidirectionalMap<T>::BidirectionalMap()
 
 template<typename T>
 inline unsigned int BidirectionalMap<T>::size() const {
-	ASSERT_EQ_DBG(vals_map_.size(), vals_vec_.size());
+	ASSERT_EQ(vals_map_.size(), vals_vec_.size());
     return vals_map_.size();
 }
 
 template<typename T>
 inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
-	ASSERT_LT_DBG( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
+	ASSERT_LT( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
 	
 	auto it = vals_map_.find(vals_vec_[pos]);
 	// possibly erase vals_map[vals_vec_[pos]] if it exists
@@ -93,7 +93,7 @@ inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 		// check that the user does not want to duplicate values
 		auto it_dupl = vals_map_.find(val);
 		if(it_dupl != vals_map_.end()){
-			ASSERT_DBG(vals_map_[val] == pos)(pos).error("'val' already used in different 'pos'.");
+			ASSERT(vals_map_[val] == pos)(pos).error("'val' already used in different 'pos'.");
 		}
 		vals_map_.erase(it);
 	}
@@ -104,7 +104,7 @@ inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
 
 template<typename T>
 inline unsigned int BidirectionalMap<T>::add_item(T val) {
-	ASSERT( vals_map_.find(val) == vals_map_.end() )(val).error("Can not add item since it already exists.");
+	ASSERT_PERMANENT( vals_map_.find(val) == vals_map_.end() )(val).error("Can not add item since it already exists.");
 	vals_map_[val] = vals_vec_.size();
 	vals_vec_.push_back(val);
 	return vals_map_[val];
@@ -127,12 +127,12 @@ inline void BidirectionalMap<T>::clear() {
 template<typename T>
 inline void BidirectionalMap<T>::resize(unsigned int new_size)
 {
-	ASSERT_LT_DBG(new_size, vals_vec_.size());
+	ASSERT_LT(new_size, vals_vec_.size());
 	for(uint pos = new_size; pos < vals_vec_.size(); pos++){
 		vals_map_.erase(vals_vec_[pos]);
 	}
 	vals_vec_.resize(new_size);
-	ASSERT_DBG(vals_vec_.size() == vals_map_.size())(vals_vec_.size())(vals_map_.size());
+	ASSERT(vals_vec_.size() == vals_map_.size())(vals_vec_.size())(vals_map_.size());
 }
 
 template<typename T>
@@ -143,7 +143,7 @@ inline void BidirectionalMap<T>::reserve(unsigned int init_size) {
 
 template<typename T>
 inline T BidirectionalMap<T>::operator[](unsigned int pos) const {
-	ASSERT( pos < vals_vec_.size() )(pos)(vals_vec_.size());
+	ASSERT_PERMANENT( pos < vals_vec_.size() )(pos)(vals_vec_.size());
 	return vals_vec_[pos];
 }
 

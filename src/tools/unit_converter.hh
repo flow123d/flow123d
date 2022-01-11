@@ -25,7 +25,7 @@
 
 #include "tools/unit_si.hh"         // for UnitSI
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
-#include "system/asserts.hh"         // for Assert, ASSERT
+#include "system/asserts.hh"         // for Assert, ASSERT_PERMANENT
 #include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
 namespace Input {
@@ -113,7 +113,7 @@ public:
 
 	/// Return @p unit_si_
 	inline UnitSI unit_si() const {
-		ASSERT_DBG(unit_si_.is_def()).error("UnitSI is not defined, first call convert method.");
+		ASSERT(unit_si_.is_def()).error("UnitSI is not defined, first call convert method.");
 		return unit_si_;
 	}
 

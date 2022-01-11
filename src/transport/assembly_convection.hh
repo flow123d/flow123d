@@ -60,11 +60,11 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         // we have currently zero order P_Disc FE
-        ASSERT_DBG(cell.get_loc_dof_indices().size() == 1);
+        ASSERT(cell.get_loc_dof_indices().size() == 1);
         IntIdx local_p0_dof = cell.get_loc_dof_indices()[0];
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -145,7 +145,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
 		LongIdx index = cell.local_idx();
 		auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -216,7 +216,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!eq_data_->sources_changed_) return;
 
         // read for all substances
@@ -224,7 +224,7 @@ public:
         double source, diag;
 		ElementAccessor<3> elm = cell.elm();
 		// we have currently zero order P_Disc FE
-		ASSERT_DBG(cell.get_loc_dof_indices().size() == 1);
+		ASSERT(cell.get_loc_dof_indices().size() == 1);
 		IntIdx local_p0_dof = cell.get_loc_dof_indices()[0];
 
 		auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -252,11 +252,11 @@ public:
     /// Assembles the fluxes on the boundary.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
 		// we have currently zero order P_Disc FE
-		ASSERT_DBG(cell_side.cell().get_loc_dof_indices().size() == 1);
+		ASSERT(cell_side.cell().get_loc_dof_indices().size() == 1);
 		IntIdx local_p0_dof = cell_side.cell().get_loc_dof_indices()[0];
         LongIdx glob_p0_dof = eq_data_->dh_->get_local_to_global_map()[local_p0_dof];
 
@@ -396,7 +396,7 @@ public:
 
     /// Assembles the fluxes between sides of elements of the same dimension.
     inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
-        ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int sid=0, s1, s2, i_col;
         edg_flux = 0.0;
@@ -436,7 +436,7 @@ public:
     /// Assembles the fluxes between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         auto p_high = *( this->coupling_points(neighb_side).begin() );
         fe_values_side_.reinit(neighb_side.side());

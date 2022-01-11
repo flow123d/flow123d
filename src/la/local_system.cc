@@ -81,7 +81,7 @@ void LocalSystem::reset(const LocDofVec &rdofs, const LocDofVec &cdofs)
 void LocalSystem::set_solution(uint loc_dof, double solution, double diag)
 {
     // check that dofs are same
-    //ASSERT_DBG( arma::all(row_dofs == col_dofs) );
+    //ASSERT( arma::all(row_dofs == col_dofs) );
     set_solution_row(loc_dof, solution, diag);
     set_solution_col(loc_dof, solution);
 }
@@ -128,7 +128,7 @@ void LocalSystem::eliminate_solution()
             for(ic=0; ic < n_elim_cols; ic++) {
                 col = elim_cols[ic];
                 if (row_dofs[row] == col_dofs[col]) {
-                    ASSERT_DBG(fabs(solution_rows[ir] - solution_cols[ic]) <1e-12 );
+                    ASSERT(fabs(solution_rows[ir] - solution_cols[ic]) <1e-12 );
                     // if preferred value is not set, then try using matrix value
                     double new_diagonal = matrix(row, col);
 
@@ -157,8 +157,8 @@ void LocalSystem::eliminate_solution()
     }
     
     // filling almost_zero according to sparsity pattern
-    ASSERT_EQ_DBG(matrix.n_rows, sparsity.n_rows);
-    ASSERT_EQ_DBG(matrix.n_cols, sparsity.n_cols);
+    ASSERT_EQ(matrix.n_rows, sparsity.n_rows);
+    ASSERT_EQ(matrix.n_cols, sparsity.n_cols);
     matrix = matrix + sparsity;
     
     //DebugOut() << matrix;
@@ -168,9 +168,9 @@ void LocalSystem::eliminate_solution()
 
 void LocalSystem::add_value(uint row, uint col, double mat_val, double rhs_val)
 {
-    ASSERT_DBG(row < matrix.n_rows);
-    ASSERT_DBG(col < matrix.n_cols);
-    ASSERT_DBG(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
+    ASSERT(row < matrix.n_rows);
+    ASSERT(col < matrix.n_cols);
+    ASSERT(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
     
     matrix(row, col) += mat_val;
     rhs(row) += rhs_val;
@@ -178,36 +178,36 @@ void LocalSystem::add_value(uint row, uint col, double mat_val, double rhs_val)
 
 void LocalSystem::add_value(uint row, uint col, double mat_val)
 {
-    ASSERT_DBG(row < matrix.n_rows);
-    ASSERT_DBG(col < matrix.n_cols);
-    ASSERT_DBG(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
+    ASSERT(row < matrix.n_rows);
+    ASSERT(col < matrix.n_cols);
+    ASSERT(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
     
     matrix(row, col) += mat_val;
 }
 
 void LocalSystem::add_value(uint row, double rhs_val)
 {
-    ASSERT_DBG(row < matrix.n_rows);
+    ASSERT(row < matrix.n_rows);
     
     rhs(row) += rhs_val;
 }
 
 
 void LocalSystem::set_matrix(arma::mat m) {
-    ASSERT_EQ_DBG(matrix.n_rows, m.n_rows);
-    ASSERT_EQ_DBG(matrix.n_cols, m.n_cols);
+    ASSERT_EQ(matrix.n_rows, m.n_rows);
+    ASSERT_EQ(matrix.n_cols, m.n_cols);
     matrix = m;
 }
 
 void LocalSystem::set_rhs(arma::vec r) {
-    ASSERT_EQ_DBG(matrix.n_rows, r.n_rows);
+    ASSERT_EQ(matrix.n_rows, r.n_rows);
     rhs = r;
 }
 
 void LocalSystem::set_sparsity(const arma::umat & sp)
 {
-    ASSERT_EQ_DBG(sparsity.n_rows, sp.n_rows);
-    ASSERT_EQ_DBG(sparsity.n_cols, sp.n_cols);
+    ASSERT_EQ(sparsity.n_rows, sp.n_rows);
+    ASSERT_EQ(sparsity.n_cols, sp.n_cols);
     
     sparsity.zeros();
     for(uint i=0; i < sp.n_rows; i++)
@@ -220,9 +220,9 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
 void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative) const
 {
     // only for square matrix
-    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    ASSERT_EQ(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
     arma::uword n = matrix.n_rows - 1;
-    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
+    ASSERT_LT(offset, n)("Schur complement (offset) dimension mismatch.");
 
     // B * invA
     arma::mat BinvA = matrix.submat(offset, 0, n, offset-1) * matrix.submat(0, 0, offset-1, offset-1).i();
@@ -241,9 +241,9 @@ void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool
 void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution) const
 {
     // only for square matrix
-    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    ASSERT_EQ(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
     arma::uword n = matrix.n_rows - 1;
-    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
+    ASSERT_LT(offset, n)("Schur complement (offset) dimension mismatch.");
 
     reconstructed_solution.set_size(offset);
     // invA

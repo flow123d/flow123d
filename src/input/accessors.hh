@@ -36,7 +36,7 @@
 #include "input/type_record.hh"                        // for Record, Record...
 #include "input/type_selection.hh"                     // for Selection
 #include "input/type_tuple.hh"                         // for Tuple
-#include "system/asserts.hh"                           // for Assert, ASSERT...
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT...
 #include "system/exc_common.hh"                        // for EI_Message
 #include "system/file_path.hh"                         // for FilePath
 //namespace boost { template <typename T> struct is_enum; }
@@ -222,7 +222,7 @@ public:
      * Getter. Returns actual storage node.
      */
     inline const StorageBase * storage_head() const {
-    	ASSERT_PTR_DBG(data_->actual_storage_).error();
+    	ASSERT_PTR(data_->actual_storage_).error();
 
     	return data_->actual_storage_;
     }

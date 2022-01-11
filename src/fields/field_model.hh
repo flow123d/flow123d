@@ -97,7 +97,7 @@ namespace detail
             if (n_comp == 0) {
                 n_comp = n_comp_new;
             } else {
-                ASSERT_DBG(n_comp == n_comp_new);
+                ASSERT(n_comp == n_comp_new);
             }
             return n_components<FIELD_TUPLE, INDEX - 1>::eval(std::forward<decltype(fields)>(fields), n_comp);
         };
@@ -131,7 +131,7 @@ namespace detail
     template<int spacedim, class Value>
     auto field_component(const MultiField<spacedim, Value> &f, uint i_comp) -> decltype(auto)
     {
-        ASSERT(f.is_multifield());
+        ASSERT_PERMANENT(f.is_multifield());
         return f[i_comp];
     }
 
@@ -141,7 +141,7 @@ namespace detail
     template<int spacedim, class Value>
     auto field_component(const Field<spacedim, Value> &f, FMT_UNUSED uint i_comp) -> decltype(auto)
     {
-        ASSERT(!f.is_multifield());
+        ASSERT_PERMANENT(!f.is_multifield());
         return f;
     }
 
@@ -322,7 +322,7 @@ public:
     /// Implementation of virtual method
     void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
     	        std::vector<typename Value::return_type> &value_list) override {
-        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
 
         for (uint i=0; i<point_list.size(); ++i)
             value_list[i] = this->value(point_list.template mat<Value::NRows_, Value::NCols_>(i), elm);
@@ -369,7 +369,7 @@ public:
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);
         constexpr uint n_inputs = sizeof...(InputFields);
         uint n_comp = detail::n_components< FieldTuple, n_inputs>::eval(field_tuple, 0);
-        ASSERT_DBG(n_comp > 0);
+        ASSERT(n_comp > 0);
         std::vector<FieldBasePtr> result_components;
         for(uint i=0; i<n_comp; i++) {
             const auto & component_of_inputs = detail::get_components< FieldTuple, n_inputs>::eval(field_tuple, i);

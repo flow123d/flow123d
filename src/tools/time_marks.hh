@@ -62,7 +62,7 @@ public:
 		Type(unsigned long int bitmap, unsigned char equation_index) : bitmap_(bitmap), equation_index_(equation_index) {}
 
 		/*Type operator&(const Type& other) const {
-			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+			//ASSERT_PERMANENT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
 			return Type( (bitmap_ & other.bitmap_), equation_index_);
 		}*/
 
@@ -71,7 +71,7 @@ public:
 			if (equation_index_ == 0) {
 				return Type( (bitmap_ | other.bitmap_), other.equation_index_);
 			} else {
-				ASSERT( (equation_index_ == other.equation_index_) || (other.equation_index_ == 0) )
+				ASSERT_PERMANENT( (equation_index_ == other.equation_index_) || (other.equation_index_ == 0) )
 						((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
 				return Type( (bitmap_ | other.bitmap_), equation_index_);
 			}
@@ -128,7 +128,7 @@ public:
     /// Add more bits that a mark satisfies.
     /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
-        ASSERT( (this->mark_type_.equation_index_ == type.equation_index_) || (type.equation_index_ == 0) )
+        ASSERT_PERMANENT( (this->mark_type_.equation_index_ == type.equation_index_) || (type.equation_index_ == 0) )
                 ((unsigned int)this->mark_type_.equation_index_)((unsigned int)type.equation_index_).error();
         mark_type_.bitmap_ |= type.bitmap_;
     }
@@ -359,7 +359,7 @@ public:
     : marks_(marks), it_(it), mask_(mask) {}
 
     TimeMarksIterator &operator=(const TimeMarksIterator &it)
-    {ASSERT(&marks_ == &it.marks_).error("Can not assign TimeMarks::iterator of different container.\n");
+    {ASSERT_PERMANENT(&marks_ == &it.marks_).error("Can not assign TimeMarks::iterator of different container.\n");
      it_=it.it_;
      mask_=it.mask_;
      return *this;
@@ -388,14 +388,14 @@ public:
     ///  * dereference operator
     inline const TimeMark & operator *() const
     {
-    	ASSERT(it_!= marks_.end()).error("Out of marks vector.\n");
+    	ASSERT_PERMANENT(it_!= marks_.end()).error("Out of marks vector.\n");
     	return *it_;
     }
 
     /// -> dereference operator
     inline const TimeMark * operator ->() const
     {
-    	ASSERT(it_!= marks_.end()).error("Out of marks vector.\n");
+    	ASSERT_PERMANENT(it_!= marks_.end()).error("Out of marks vector.\n");
     	return &(*(it_));
     }
 

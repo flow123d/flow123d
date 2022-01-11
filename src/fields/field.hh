@@ -45,10 +45,10 @@
 #include "io/output_time.hh"                           // for OutputTime
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
-#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/asserts.hh"                           // for ASSERT
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;
@@ -449,9 +449,9 @@ template<int spacedim, class Value>
 inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
 {
 
-    ASSERT_DBG(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	ASSERT_LT_DBG(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
-	ASSERT_DBG( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
     		.error("Null field ptr on region\n");
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
@@ -462,11 +462,11 @@ template<int spacedim, class Value>
 inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list) const
 {
-    ASSERT_DBG(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	ASSERT_LT_DBG(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
-	ASSERT_DBG( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
     		.error("Null field ptr on region\n");
-    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+    ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }

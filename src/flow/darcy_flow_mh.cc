@@ -349,7 +349,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
             if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
             { 
                 MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
-                ASSERT(false);
+                ASSERT_PERMANENT(false);
             }
             time_ = tm;
         }
@@ -415,7 +415,7 @@ void DarcyMH::init_eq_data()
         //THROW(ExcAssertMsg());
         //THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
         MessageOut() << "Missing the key 'time', obligatory for the transient problems." << endl;
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
     }
 
     data_->mark_input_times(*time_);
@@ -667,7 +667,7 @@ void DarcyMH::solve_nonlinear()
     VecDuplicate(schur0->get_solution(), &save_solution);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
-    	ASSERT_EQ_DBG( convergence_history.size(), nonlinear_iteration_ );
+    	ASSERT_EQ( convergence_history.size(), nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
         // stagnation test
@@ -702,7 +702,7 @@ void DarcyMH::solve_nonlinear()
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
-        //ASSERT_GE( si.converged_reason, 0).error("Linear solver failed to converge. \n");
+        //ASSERT_PERMANENT_GE( si.converged_reason, 0).error("Linear solver failed to converge. \n");
         assembly_linear_system();
 
         residual_norm = schur0->compute_residual();
@@ -1015,7 +1015,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 
                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                 //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                //ASSERT(err == 0).error("Error in ISCreateStride.");
+                //ASSERT_PERMANENT(err == 0).error("Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
 
@@ -1040,7 +1040,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 
                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                     //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-                    //ASSERT(err == 0).error("Error in ISCreateStride.");
+                    //ASSERT_PERMANENT(err == 0).error("Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
@@ -1125,7 +1125,7 @@ void DarcyMH::assembly_linear_system() {
 			modify_system();
 		} else {
 		    //Should be replaced with exception if error will be switched on.
-		    //ASSERT(false).error("Planned computation time for steady solver, but data are not changed.\n");
+		    //ASSERT_PERMANENT(false).error("Planned computation time for steady solver, but data are not changed.\n");
 		}
 		END_TIMER("modiffy system");
 	}
@@ -1288,7 +1288,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         // Maybe divide by cs
         coef = conduct*coef / 3;
 
-        ASSERT_GT_DBG( coef, 0. ).error("Zero coefficient of hydrodynamic resistance. \n");
+        ASSERT_GT( coef, 0. ).error("Zero coefficient of hydrodynamic resistance. \n");
         element_permeability.push_back( 1. / coef );
     }
 //    uint i_inet = 0;
@@ -1309,7 +1309,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    //ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
+    //ASSERT_PERMANENT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1351,7 +1351,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
             int indGlob = inet[indInet];
             // map it to local node
             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-            ASSERT_DBG( pos != global2LocalNodeMap.end() )(indGlob).error("Cannot remap node global index to local indices.\n");
+            ASSERT( pos != global2LocalNodeMap.end() )(indGlob).error("Cannot remap node global index to local indices.\n");
             int indLoc = static_cast<int> ( pos -> second );
 
             // store the node
@@ -1537,7 +1537,7 @@ void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsig
 
 
 std::vector<int> DarcyMH::get_component_indices_vec(unsigned int component) const {
-	ASSERT_LT_DBG(component, 3).error("Invalid component!");
+	ASSERT_LT(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
     std::vector<int> dof_vec;
     std::vector<LongIdx> dof_indices(data_->dh_->max_elem_dofs());

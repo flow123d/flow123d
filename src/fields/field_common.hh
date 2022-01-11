@@ -38,7 +38,7 @@
 #include "io/output_time.hh"                           // for OutputTime
 #include "io/output_time_set.hh"                       // for OutputTimeSet
 #include "mesh/region.hh"                              // for Region (ptr only)
-#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
 #include "system/exc_common.hh"                        // for EI_Message
 #include "system/exceptions.hh"                        // for operator<<
 #include "system/flag_array.hh"                        // for FlagArray<>::Mask
@@ -157,7 +157,7 @@ public:
      */
     FieldCommon & set_limits(double min, double max = std::numeric_limits<double>::max())
     {
-    	ASSERT_LT(min, max).error("Invalid field limits!");
+    	ASSERT_PERMANENT_LT(min, max).error("Invalid field limits!");
     	shared_->limits_ = std::make_pair(min, max);
     	return *this;
     }
@@ -253,7 +253,7 @@ public:
 
     const UnitSI &units() const
     {
-        ASSERT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
+        ASSERT_PERMANENT(shared_->units_.is_def())(name()).error("Getting undefined unit.\n");
         return shared_->units_;
     }
 
@@ -278,7 +278,7 @@ public:
      */
     inline std::string full_comp_name(unsigned int i_comp) const
     {
-        ASSERT_LT_DBG(i_comp, shared_->comp_names_.size());
+        ASSERT_LT(i_comp, shared_->comp_names_.size());
         return shared_->comp_names_[i_comp].empty() ? this->name()
                 : shared_->comp_names_[i_comp] + "_" + this->name();
     }
@@ -362,7 +362,7 @@ public:
      */
     bool changed() const
     {
-    	ASSERT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
+    	ASSERT_PERMANENT( set_time_result_ != TimeStatus::unknown ).error("Invalid time status.");
         return ( (set_time_result_ == TimeStatus::changed) );
     }
 
@@ -501,13 +501,13 @@ public:
     /// Create and set shared_ptr to ElementDataCache. Used only in descendant Field<>.
     virtual void set_output_data_cache(FMT_UNUSED OutputTime::DiscreteSpace space_type, FMT_UNUSED std::shared_ptr<OutputTime> stream)
     {
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
     }
 
     /// Fill data to ElementDataCache on given patch.
     virtual void fill_data_value(FMT_UNUSED const std::vector<int> &offsets)
     {
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
     }
 
 

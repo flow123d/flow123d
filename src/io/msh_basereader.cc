@@ -72,7 +72,7 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 }
 
 void BaseMeshReader::read_raw_mesh(Mesh * mesh) {
-	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
+	ASSERT_PERMANENT_PTR(mesh).error("Argument mesh is NULL.\n");
     tok_.set_position( Tokenizer::Position() );
     read_nodes(mesh);
     read_elements(mesh);
@@ -88,9 +88,9 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( unsigned int n_entities, unsigned int n_components,
 		bool boundary_domain, unsigned int component_idx) {
-	ASSERT(has_compatible_mesh_)
+	ASSERT_PERMANENT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
-	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
+	ASSERT_PERMANENT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
 
     std::string field_name = actual_header_.field_name;
 
@@ -142,10 +142,10 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coef, double default_val, double lower_bound,
         double upper_bound) {
     ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
-    ASSERT(it != element_data_values_->end())(field_name);
+    ASSERT_PERMANENT(it != element_data_values_->end())(field_name);
 
     std::shared_ptr< ElementDataCache<double> > current_cache = dynamic_pointer_cast<ElementDataCache<double> >(it->second);
-    ASSERT(current_cache)(field_name).error("scale_and_check_limits can be call only for scalable fields!\n");
+    ASSERT_PERMANENT(current_cache)(field_name).error("scale_and_check_limits can be call only for scalable fields!\n");
 
     CheckResult check_val = current_cache->check_values(default_val, lower_bound, upper_bound);
     current_cache->scale_data(coef);

@@ -51,7 +51,7 @@ IntersectionLocal<dimA,dimB>::~IntersectionLocal()
 template<unsigned int dimA, unsigned int dimB>
 double IntersectionLocal<dimA,dimB>::compute_measure() const
 {
-    ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
+    ASSERT_LT(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
     double length = 0;
 
     if(i_points_.size() > 1) // zero measure for point intersections
@@ -106,7 +106,7 @@ IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA  >&
 template<unsigned int dimA, unsigned int dimB>
 arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementAccessor<3> comp_ele) const
 {
-    ASSERT_DBG(dimA == comp_ele.dim());
+    ASSERT(dimA == comp_ele.dim());
     
     arma::vec3 c;
     c.zeros();

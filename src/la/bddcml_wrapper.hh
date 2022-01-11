@@ -50,7 +50,7 @@ namespace la{
             unsigned globalIndex = np -> giveId( );
 
             typename MAPTYPE::iterator pos = map.find( globalIndex );
-            ASSERT( pos != map.end() )(globalIndex)
+            ASSERT_PERMANENT( pos != map.end() )(globalIndex)
                                     .error("Cannot remap node 'globalIndex' to local indices. \n");
             int localIndexInt = pos -> second;
 
@@ -313,7 +313,7 @@ void la::BddcmlWrapper::giveSolution( const VEC1 & dofIndices,
 
         // map it to local dof
         Global2LocalMap_::const_iterator pos = global2LocalDofMap_.find( *dofIter );
-        ASSERT( pos != global2LocalDofMap_.end() )
+        ASSERT_PERMANENT( pos != global2LocalDofMap_.end() )
                                  .error("Cannot remap index dofIter to local indices in solution distribution. \n ");
         unsigned indLoc = pos -> second;
 

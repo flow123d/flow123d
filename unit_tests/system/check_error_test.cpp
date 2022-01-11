@@ -38,8 +38,8 @@ TEST(CheckError, assert_message) {
 }
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-TEST(ASSERTS, assert_ptr) {
+TEST(ASSERT_PERMANENTS, assert_ptr) {
     void * test_ptr = nullptr;
-    EXPECT_THROW_WHAT( {ASSERT_PTR(test_ptr).error();}, feal::Exc_assert, "test_ptr");
+    EXPECT_THROW_WHAT( {ASSERT_PERMANENT_PTR(test_ptr).error();}, feal::Exc_assert, "test_ptr");
 }
 #endif

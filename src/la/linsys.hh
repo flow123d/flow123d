@@ -82,7 +82,7 @@
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/system.hh"                            // for chkerr
-#include "system/asserts.hh"                           // for ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT, msg
 
 namespace Input { namespace Type { class Abstract; } }
 
@@ -153,7 +153,7 @@ public:
       globalSolution_(other.globalSolution_), in_rec_(other.in_rec_)
 
     {
-    	ASSERT( false ).error("Using copy constructor of LinSys is not allowed!");
+    	ASSERT_PERMANENT( false ).error("Using copy constructor of LinSys is not allowed!");
     	set_solution(other.v_solution_);
     };
 
@@ -186,7 +186,7 @@ public:
      */
     virtual const Mat *get_matrix()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function get_matrix is not implemented for linsys type\n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function get_matrix is not implemented for linsys type\n.");
         return NULL;
     }
 
@@ -202,7 +202,7 @@ public:
      */
     virtual const Vec *get_rhs()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function get_rhs is not implemented for linsys type\n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function get_rhs is not implemented for linsys type\n.");
         return NULL;
     }
     
@@ -245,7 +245,7 @@ public:
      */
     virtual PetscErrorCode set_matrix(Mat&, MatStructure)
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function set_matrix is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function set_matrix is not implemented for linsys type \n.");
         return 0;
     }
 
@@ -254,7 +254,7 @@ public:
      */
     virtual PetscErrorCode set_rhs(Vec&)
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function set_rhs is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function set_rhs is not implemented for linsys type \n.");
         return 0;
     }
 
@@ -263,7 +263,7 @@ public:
      */
     virtual PetscErrorCode mat_zero_entries()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function mat_zero_entries is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function mat_zero_entries is not implemented for linsys type \n.");
     	return 0;
     }
 
@@ -272,7 +272,7 @@ public:
      */
     virtual PetscErrorCode rhs_zero_entries()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function vec_zero_entries is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function vec_zero_entries is not implemented for linsys type \n.");
     	return 0;
     }
 
@@ -332,7 +332,7 @@ public:
      */
     virtual void start_allocation()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function start_allocation is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function start_allocation is not implemented for linsys type \n.");
     }
 
     /**
@@ -340,7 +340,7 @@ public:
      */
     virtual void start_add_assembly()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function start_add_assembly is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function start_add_assembly is not implemented for linsys type \n.");
     }
 
     /**
@@ -348,7 +348,7 @@ public:
      */
     virtual void start_insert_assembly()
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function start_insert_assembly is not implemented for linsys type \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function start_insert_assembly is not implemented for linsys type \n.");
     }
 
     /**
@@ -632,7 +632,7 @@ public:
      */
     virtual void view(string)
     {
-    	ASSERT( false )(typeid(*this).name()).error("Function view is not implemented for linsys type %s \n.");
+    	ASSERT_PERMANENT( false )(typeid(*this).name()).error("Function view is not implemented for linsys type %s \n.");
     }
 
     /**

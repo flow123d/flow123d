@@ -1,0 +1,49 @@
+- -             [ Msg , null, "00:00:00.076", "/unit_tests/system/logger_test.cpp", 28, "logger_messages" ]
+  - |
+    Start of simulation at time 0.5, mesh has 150 elements.
+    ... next line
+    ... next line
+- -             [ MsgE,    0, "00:00:00.076", "/unit_tests/system/logger_test.cpp", 30, "logger_messages" ]
+  - Output of process: 0
+- -             [ Wrn , null, "00:00:00.077", "/unit_tests/system/logger_test.cpp", 32, "logger_messages" ]
+  - |
+    Start of simulation at time 0.5, mesh has 150 elements.
+    ... next line
+- -             [ WrnE,    0, "00:00:00.077", "/unit_tests/system/logger_test.cpp", 34, "logger_messages" ]
+  - Output of process: 0
+- -             [ Log , null, "00:00:00.077", "/unit_tests/system/logger_test.cpp", 36, "logger_messages" ]
+  - Start of simulation at time 0.5, mesh has 150 elements.
+- -             [ LogE,    0, "00:00:00.078", "/unit_tests/system/logger_test.cpp", 37, "logger_messages" ]
+  - Output of process: 0
+- -             [ Dbg , null, "00:00:00.078", "/unit_tests/system/logger_test.cpp", 39, "logger_messages" ]
+  - Start of simulation at time 0.5, mesh has 150 elements.
+- -             [ DbgE,    0, "00:00:00.079", "/unit_tests/system/logger_test.cpp", 40, "logger_messages" ]
+  - Output of process: 0
+- -             [ Err , null, "00:00:00.082", "/unit_tests/system/logger_test.cpp", 46, "logger_messages" ]
+  - |
+    --------------------------------------------------------
+    Program Error: The field has set non-unique names of components.
+    Please set unique names.
+    
+    ** Diagnosting info **
+    /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/system/logger_test.cpp(44): Throw in function void logger_messages()
+    Dynamic exception type: boost::wrapexcept<ExcLoggerTest>
+    [EI_Text_TAG*] = The field has set non-unique names of components.
+    Please set unique names.
+    
+    ** Stacktrace **
+      0  _Z15logger_messagesv
+      1  _ZN29Logger_log_file_with_mpi_Test8TestBodyEv
+      2  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      3  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      4  _ZN7testing4Test3RunEv
+      5  _ZN7testing8TestInfo3RunEv
+      6  _ZN7testing9TestSuite3RunEv
+      7  _ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+      8  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+      9  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+     10  _ZN7testing8UnitTest3RunEv
+     11  _Z13RUN_ALL_TESTSv
+     12  main
+    
+    --------------------------------------------------------

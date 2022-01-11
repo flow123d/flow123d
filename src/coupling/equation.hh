@@ -27,7 +27,7 @@
 #include "input/accessors.hh"                          // for Record
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/asserts.hh"                           // for ASSERT, ...
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT, ...
 #include "system/logger.hh"                            // for Logger, DebugOut
 #include "tools/time_governor.hh"                      // for TimeGovernor
 #include "tools/time_marks.hh"                         // for TimeMark, Time...
@@ -148,7 +148,7 @@ public:
      */
     inline TimeGovernor &time()
     {
-    	ASSERT_PTR_DBG( time_ ).error("Time governor was not created.\n");
+    	ASSERT_PTR( time_ ).error("Time governor was not created.\n");
         return *time_;
     }
 
@@ -201,7 +201,7 @@ public:
      */
     FieldSet &eq_fieldset()
     {
-    	ASSERT_PTR_DBG(eq_fieldset_)(input_record_.address_string()).error("The equation did not set eq_fieldset_ pointer.\n");
+    	ASSERT_PTR(eq_fieldset_)(input_record_.address_string()).error("The equation did not set eq_fieldset_ pointer.\n");
     	return *eq_fieldset_;
     }
 

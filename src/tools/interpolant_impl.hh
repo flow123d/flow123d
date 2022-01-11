@@ -156,7 +156,7 @@ inline double Interpolant::val_test(double x)
 
 inline DiffValue Interpolant::diff(double x)
 {
-  ASSERT(interpolate_derivative).error("Derivative is not interpolated. Flag must be switched true in constructor (or set_functor).");
+  ASSERT_PERMANENT(interpolate_derivative).error("Derivative is not interpolated. Flag must be switched true in constructor (or set_functor).");
   //increase calls
   stats.total_calls++;
   
@@ -402,7 +402,7 @@ InterpolantImplicit::InterpolantImplicit(Func<Type>* func, bool interpolate_deri
     
     Type operator()(Type u)
     {
-      ASSERT_DBG(fix_ != IFixVariable::no_fix);
+      ASSERT(fix_ != IFixVariable::no_fix);
       Type ret = 0;
       if(fix_ == IFixVariable::fix_x)
         ret = func_impl->operator()(fix_val,u);

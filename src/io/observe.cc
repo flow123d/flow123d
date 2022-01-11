@@ -189,7 +189,7 @@ void ObservePoint::snap(Mesh &mesh)
         	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
             break;
         }
-        default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
+        default: ASSERT_PERMANENT(false).error("Clipping supported only for dim=1,2,3.");
     }
 }
 
@@ -248,7 +248,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // test if candidate is in region and update projection
         if (elm.region().is_in_region_set(region_set)) {
-            ASSERT_LE_DBG(candidate_data.distance_, observe_data_.distance_).error();
+            ASSERT_LE(candidate_data.distance_, observe_data_.distance_).error();
 
 			observe_data_.distance_ = candidate_data.distance_;
 			observe_data_.element_idx_ = candidate_data.element_idx_;
@@ -321,7 +321,7 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
 		break;
 	}
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 
 	return ObservePointData(); // Should not happen.
@@ -403,7 +403,7 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
     if ( std::isnan(observe_values_time_[observe_time_idx_]) )
         observe_values_time_[observe_time_idx_] = field_time / time_unit_seconds;
     else
-        ASSERT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
+        ASSERT_PERMANENT(fabs(field_time / time_unit_seconds - observe_values_time_[observe_time_idx_]) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_[observe_time_idx_]);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
@@ -474,13 +474,13 @@ void Observe::output_time_frame(bool flush) {
         // check that observe fields are set
         if (std::isnan(observe_values_time_[observe_time_idx_])) {
             // first call and no fields
-            ASSERT_DBG(observe_field_values_.size() == 0);
+            ASSERT(observe_field_values_.size() == 0);
             WarningOut() << "No observe fields for the observation stream: " << observe_name_ << endl;
         }
     }
     
     if (std::isnan(observe_values_time_[observe_time_idx_])) {
-        ASSERT_DBG(observe_field_values_.size() == 0);
+        ASSERT(observe_field_values_.size() == 0);
         return;        
     }
     

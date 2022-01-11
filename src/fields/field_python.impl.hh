@@ -169,11 +169,11 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_EQ_DBG( point_list.size(), value_list.size() );
-    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
+	ASSERT_EQ( point_list.size(), value_list.size() );
+    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
-        ASSERT_EQ_DBG( envelope.n_rows(), this->value_.n_rows() )(i)
+        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)
                 .error("value_list[i] has wrong number of rows\n");
         set_value(point_list.vec<spacedim>(i), elm, envelope );
         envelope.scale(this->unit_conversion_coefficient_);

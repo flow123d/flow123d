@@ -90,7 +90,7 @@ public:
     template<unsigned int point_dim>
     inline Armor::ArmaVec<double, point_dim> point(unsigned int i) const
     {
-        ASSERT_EQ_DBG(point_dim, dim_);
+        ASSERT_EQ(point_dim, dim_);
         return quadrature_points.vec<point_dim>(i);
     }
 

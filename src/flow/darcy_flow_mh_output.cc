@@ -199,7 +199,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     {
         diff_data.data_ = d->data_.get();
     }
-    ASSERT_PTR(diff_data.data_);
+    ASSERT_PERMANENT_PTR(diff_data.data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
@@ -300,7 +300,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     {
         data = d->data_.get();
     }
-    ASSERT_PTR(data);
+    ASSERT_PERMANENT_PTR(data);
     
     arma::vec3 flux_in_center;
     
@@ -373,7 +373,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                    FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
-    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    ASSERT( fe_values.dim() == fv_rt.dim());
     unsigned int dim = fe_values.dim();
 
     ElementAccessor<3> ele = dh_cell.elm();
@@ -427,7 +427,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                 case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
                 case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
                 case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
-                default: ASSERT(false)(dim).error("Unsupported FE dimension."); break;
+                default: ASSERT_PERMANENT(false)(dim).error("Unsupported FE dimension."); break;
             }
 
             diff += fluxes[ i_shape ] *

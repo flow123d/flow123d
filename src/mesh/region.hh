@@ -16,7 +16,7 @@
  * @todo
  *  - komentar k RegionIdx
  *  - presun enum RegionType do public Region - komentar + pouzit v kodu
- *  - zkontrolovat chybove hlasky a ASSERTY, co z toho by melo byt pres exception?
+ *  - zkontrolovat chybove hlasky a ASSERT_PERMANENTY, co z toho by melo byt pres exception?
  *
  *  - Seems that GMSH allows repeating ID and Label on regions of different dimension, therefore
  *    label and ID are not unique without dimension.
@@ -46,7 +46,7 @@
 #include "input/input_exception.hh"                    // for DECLARE_INPUT_...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for operator<<
-#include "system/asserts.hh"                           // for ASSERT, ...
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT, ...
 
 namespace BMI=::boost::multi_index;
 
@@ -84,12 +84,12 @@ public:
 
     /// Returns index of the region in the boundary set.
     inline unsigned int boundary_idx() const {
-    	ASSERT_DBG( is_boundary() )(idx_)("Try to get boundary index of a bulk region with internal idx\n");
+    	ASSERT( is_boundary() )(idx_)("Try to get boundary index of a bulk region with internal idx\n");
         return idx_ >> 1; }
 
     /// Returns index of the region in the bulk set.
     inline unsigned int bulk_idx() const {
-    	ASSERT_DBG( ! is_boundary() )(idx_).error("Try to get bulk index of boundary region with internal idx\n");
+    	ASSERT( ! is_boundary() )(idx_).error("Try to get bulk index of boundary region with internal idx\n");
         return idx_ >> 1; }
 
     /// Equality comparison operators for regions.

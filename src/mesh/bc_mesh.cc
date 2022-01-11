@@ -102,7 +102,7 @@ std::shared_ptr<EquivalentMeshMap> BCMesh::check_compatible_mesh( Mesh & input_m
 
 Boundary BCMesh::boundary(unsigned int) const
 {
-	ASSERT( false );
+	ASSERT_PERMANENT( false );
 	return Boundary();
 }
 
@@ -185,9 +185,9 @@ void BCMesh::make_neighbours_and_edges()
                             vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                         } else {
                             // connect the side to the edge, and side to the edge
-                            ASSERT_PTR_DBG(edg);
+                            ASSERT_PTR(edg);
                             edg->side_[ edg->n_sides++ ] = si;
-                            ASSERT_DBG(last_edge_idx != Mesh::undef_idx);
+                            ASSERT(last_edge_idx != Mesh::undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
@@ -196,7 +196,7 @@ void BCMesh::make_neighbours_and_edges()
             } // connected elements
 
             if (! is_neighbour)
-				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
+				ASSERT_PERMANENT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
 		} // for element sides
 	}   // for elements
 

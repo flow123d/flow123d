@@ -39,7 +39,7 @@
 #include "input/type_generic.hh"                       // for ExcGenericWith...
 #include "input/type_record.hh"                        // for Record, Default
 #include "input/type_selection.hh"                     // for Selection
-#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
 #include "system/exceptions.hh"                        // for ExcGenericWith...
 
 
@@ -95,7 +95,7 @@ TypeBase::TypeHash Abstract::content_hash() const
 
 
 Abstract & Abstract::allow_auto_conversion(const string &type_default) {
-	ASSERT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
+	ASSERT_PERMANENT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
     child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }
@@ -104,7 +104,7 @@ Abstract & Abstract::allow_auto_conversion(const string &type_default) {
 
 const Record  & Abstract::get_descendant(const string& name) const
 {
-	ASSERT_DBG(child_data_->selection_of_childs->is_finished()).error();
+	ASSERT(child_data_->selection_of_childs->is_finished()).error();
     return child_data_->list_of_childs[ child_data_->selection_of_childs->name_to_int(name) ];
 }
 
@@ -133,7 +133,7 @@ unsigned int Abstract::child_size() const {
 
 int Abstract::add_child(Record &subrec)
 {
-	ASSERT_DBG(child_data_->closed_).error();
+	ASSERT(child_data_->closed_).error();
 
     if (std::find(child_data_->list_of_childs.begin(), child_data_->list_of_childs.end(), subrec) == child_data_->list_of_childs.end()) {
         child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
@@ -147,13 +147,13 @@ int Abstract::add_child(Record &subrec)
 
 
 FinishStatus Abstract::finish(FinishStatus finish_type) {
-	ASSERT_DBG(finish_type != FinishStatus::none_).error();
-	ASSERT_DBG(finish_type != FinishStatus::in_perform_).error();
-	ASSERT_DBG(child_data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Abstract.");
+	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(child_data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Abstract.");
 
 	if (this->is_finished()) return child_data_->finish_status_;
 
-	ASSERT_DBG(child_data_->closed_)(this->type_name()).error();
+	ASSERT(child_data_->closed_)(this->type_name()).error();
 
 	child_data_->selection_of_childs->close();
 	child_data_->selection_of_childs->finish();
@@ -164,7 +164,7 @@ FinishStatus Abstract::finish(FinishStatus finish_type) {
 		if ((finish_type != FinishStatus::generic_) && child.is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
 		child.finish(finish_type);
-		ASSERT_DBG(child.is_finished()).error();
+		ASSERT(child.is_finished()).error();
 	}
 
     // check validity of possible default value of TYPE key

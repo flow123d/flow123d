@@ -61,7 +61,7 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
 : LinSys_PETSC(ds), IsA(ia), IsB(ib), state(created)
 {
         // check index set
-        ASSERT_PTR(IsA).error("Index set IsA is not defined.\n");
+        ASSERT_PERMANENT_PTR(IsA).error("Index set IsA is not defined.\n");
 
         // initialize variables
         Compl   = NULL;
@@ -139,7 +139,7 @@ void SchurComplement::set_from_input(const Input::Record in_rec)
 {
     LinSys_PETSC::set_from_input( in_rec );
 
-    ASSERT_PTR(Compl).error();
+    ASSERT_PERMANENT_PTR(Compl).error();
     Compl->set_from_input( in_rec );
 }
 
@@ -244,7 +244,7 @@ void SchurComplement::form_schur()
 		}
 		Compl->set_matrix_changed();
 
-		ASSERT( ierr == 0 ).error("PETSC Error during calculation of Schur complement.\n");
+		ASSERT_PERMANENT( ierr == 0 ).error("PETSC Error during calculation of Schur complement.\n");
 
     }
 
@@ -286,7 +286,7 @@ void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int m
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-	ASSERT_PTR(ls).error();
+	ASSERT_PERMANENT_PTR(ls).error();
     Compl = ls;
 }
 
@@ -340,7 +340,7 @@ void SchurComplement::create_inversion_matrix()
             }
         }
         size_submat = max - min + 1;
-        ASSERT(ncols-b_vals == size_submat).error("Submatrix cannot contains empty values.\n");
+        ASSERT_PERMANENT(ncols-b_vals == size_submat).error("Submatrix cannot contains empty values.\n");
 
         MatRestoreRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);

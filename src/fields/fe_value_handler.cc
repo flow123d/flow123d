@@ -40,7 +40,7 @@ public:
 
 	inline static typename Value::return_type fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		ASSERT(false).error("Unsupported format of FieldFE!\n");
+		ASSERT_PERMANENT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
 		Value val(ret);
 		val.zeros();
@@ -121,7 +121,7 @@ template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
-    ASSERT_EQ_DBG( point_list.size(), value_list.size() ).error();
+    ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
 	LocDofVec loc_dofs;
@@ -184,7 +184,7 @@ template <int spacedim, class Value>
 void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type> &value_list)
 {
-	ASSERT_EQ_DBG( point_list.size(), value_list.size() ).error();
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
 	LocDofVec loc_dofs;

@@ -116,7 +116,7 @@ void LinSys_BDDC::load_mesh( BDDCMatrixType matrix_type,
     // simply pass the data to BDDCML solver
     isngn_.resize(isngn.size());
     std::copy( isngn.begin(), isngn.end(), isngn_.begin() );
-    ASSERT_EQ( numDofs, static_cast<int>(size_) ).error( "Global problem size mismatch!" );
+    ASSERT_PERMANENT_EQ( numDofs, static_cast<int>(size_) ).error( "Global problem size mismatch!" );
 
     bddcml_ -> loadRawMesh( nDim, numNodes, inet, nnet, nndf, isegn, isngn, isvgvn, xyz, element_permeability, meshDim );
 

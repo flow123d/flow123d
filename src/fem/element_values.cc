@@ -96,8 +96,8 @@ void ElementData<spacedim>::print()
 template<unsigned int spacedim>
 RefElementData *ElementValues<spacedim>::init_ref_data(const Quadrature &q)
 {
-    ASSERT_DBG( q.dim() == dim_ );
-    ASSERT_DBG( q.size() == n_points_ );
+    ASSERT( q.dim() == dim_ );
+    ASSERT( q.size() == n_points_ );
     RefElementData *ref_data = new RefElementData(q.size());
 
     for (unsigned int i=0; i<q.size(); i++)
@@ -114,7 +114,7 @@ RefElementData *ElementValues<spacedim>::init_ref_data(const Quadrature &q)
                 ref_data->bar_coords[i] = RefElement<3>::local_to_bary(q.point<3>(i));
                 break;
         default:
-            ASSERT(false)(q.dim()).error("Unsupported dimension.\n");
+            ASSERT_PERMANENT(false)(q.dim()).error("Unsupported dimension.\n");
             break;
         }
         ref_data->weights[i] = q.weight(i);
@@ -143,7 +143,7 @@ UpdateFlags ElementValues<spacedim>::update_each(UpdateFlags flags)
             flags = MappingP1<3,spacedim>::update_each(flags);
             break;
         default:
-            ASSERT(false)(dim_).error("Unsupported dimension.\n");
+            ASSERT_PERMANENT(false)(dim_).error("Unsupported dimension.\n");
             break;
     }
     return flags;
@@ -188,7 +188,7 @@ ElementValues<spacedim>::ElementValues(
                         side_quad = _quadrature.make_from_side<3>(sid);
                         break;
                     default:
-                        ASSERT(false)(dim).error("Unsupported dimension.\n");
+                        ASSERT_PERMANENT(false)(dim).error("Unsupported dimension.\n");
                         break;
                 }
                 side_ref_data[sid] = init_ref_data(side_quad);
@@ -210,7 +210,7 @@ ElementValues<spacedim>::~ElementValues()
 template<unsigned int spacedim>
 void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 {
-	ASSERT_EQ_DBG( dim_, cell.dim() );
+	ASSERT_EQ( dim_, cell.dim() );
     data.cell = cell;
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian
@@ -226,7 +226,7 @@ void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
             fill_data<3>();
             break;
         default:
-            ASSERT(false)(dim_).error("Unsupported dimension.\n");
+            ASSERT_PERMANENT(false)(dim_).error("Unsupported dimension.\n");
             break;
     }
 }
@@ -235,7 +235,7 @@ void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 template<unsigned int spacedim>
 void ElementValues<spacedim>::reinit(const Side & cell_side)
 {
-    ASSERT_EQ_DBG( dim_, cell_side.dim() );
+    ASSERT_EQ( dim_, cell_side.dim() );
     data.side = cell_side;
     
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
@@ -254,7 +254,7 @@ void ElementValues<spacedim>::reinit(const Side & cell_side)
             fill_side_data<3>();
             break;
         default:
-            ASSERT(false)(dim_).error("Unsupported dimension.\n");
+            ASSERT_PERMANENT(false)(dim_).error("Unsupported dimension.\n");
             break;
     }
 }

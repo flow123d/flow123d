@@ -85,7 +85,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
 {
     chkerr(MPI_Comm_rank(communicator, &(my_proc)));
     chkerr(MPI_Comm_size(communicator, &(num_of_procs)));
-    ASSERT_GT( num_of_procs, 0).error("MPI size is not positive, possibly broken MPI communicator.\n");
+    ASSERT_PERMANENT_GT( num_of_procs, 0).error("MPI size is not positive, possibly broken MPI communicator.\n");
 
     if (type.type_ == Block) {
         unsigned int reminder, per_proc;
@@ -104,7 +104,7 @@ Distribution::Distribution(const DistributionType &type, unsigned int global_siz
         for(unsigned int i=1; i<=np(); i++) starts[i]=global_size;
     }
     else {
-    	ASSERT(0).error("Cyclic distribution is not yet implemented.\n");
+    	ASSERT_PERMANENT(0).error("Cyclic distribution is not yet implemented.\n");
     }
  }
 /**
@@ -129,13 +129,13 @@ Distribution::Distribution(const Distribution &distr)
  */
 unsigned int Distribution::get_proc(unsigned  int idx) const
 {
-	ASSERT_PTR( starts ).error("Distribution is not initialized.\n");
-	ASSERT_LT(idx, size()).error("Index is greater than distribution size.\n");
+	ASSERT_PERMANENT_PTR( starts ).error("Distribution is not initialized.\n");
+	ASSERT_PERMANENT_LT(idx, size()).error("Index is greater than distribution size.\n");
 
     for(unsigned int i=0; i<np(); i++) {
         if (is_on_proc(idx,i)) return (i);
     }
-    ASSERT(0)(idx).error("Can not find owner of given index.\n");
+    ASSERT_PERMANENT(0)(idx).error("Can not find owner of given index.\n");
     return (-1);
 }
 

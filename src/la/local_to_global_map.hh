@@ -107,7 +107,7 @@ public:
     */
    inline unsigned int operator[] (const unsigned int local_idx) const
        {
-           ASSERT_LT_DBG( local_idx, global_indices_.size() );
+           ASSERT_LT( local_idx, global_indices_.size() );
            return global_indices_[local_idx];
        }
 

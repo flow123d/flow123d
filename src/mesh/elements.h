@@ -27,7 +27,7 @@
 #include <armadillo>
 #include "system/index_types.hh"
 #include "mesh/region.hh"                      // for RegionIdx, Region
-#include "system/asserts.hh"                   // for Assert, ASSERT
+#include "system/asserts.hh"                   // for Assert, ASSERT_PERMANENT
 
 class Mesh;
 class Neighbour;
@@ -68,8 +68,8 @@ public:
 
     /// Return index (in Mesh::node_vec) of ni-th node.
     inline unsigned int node_idx(unsigned int ni) const {
-    	ASSERT_DBG(ni < n_nodes()).error("Node index is out of bound!");
-    	ASSERT_DBG(nodes_[ni] != undef_idx);
+    	ASSERT(ni < n_nodes()).error("Node index is out of bound!");
+    	ASSERT(nodes_[ni] != undef_idx);
     	return nodes_[ni];
     }
 
@@ -133,7 +133,7 @@ inline unsigned int Element::n_sides() const {
 }
 
 inline unsigned int Element::edge_idx(unsigned int edg_idx) const {
-	ASSERT_DBG(edg_idx<edge_idx_.size())(edg_idx)(edge_idx_.size()).error("Index of Edge is out of bound!");
+	ASSERT(edg_idx<edge_idx_.size())(edg_idx)(edge_idx_.size()).error("Index of Edge is out of bound!");
 	return edge_idx_[edg_idx];
 }
 

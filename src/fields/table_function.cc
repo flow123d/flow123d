@@ -62,7 +62,7 @@ TableFunction<Value>::TableFunction()
 template <class Value>
 void TableFunction<Value>::init_from_input(const Input::Record &rec, const TimeStep &time)
 {
-	ASSERT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
+	ASSERT_PERMANENT( !this->initialized() ).error("TableFunction can't be initialized more than once.");
 
 	Input::Array data_array = rec.val<Input::Array>("values");
 	double last_t = -1.0;
@@ -91,7 +91,7 @@ bool TableFunction<Value>::initialized()
 template <class Value>
 typename TableFunction<Value>::return_type const &TableFunction<Value>::value(double t)
 {
-	ASSERT_DBG( this->initialized() ).error("Compute value of uninitialized TableFunction.");
+	ASSERT( this->initialized() ).error("Compute value of uninitialized TableFunction.");
 
 	if (t != last_t_) {
 		unsigned int last_idx = table_values_.size() - 1;
@@ -120,8 +120,8 @@ typename TableFunction<Value>::return_type const &TableFunction<Value>::value(do
 template <class Value>
 void TableFunction<Value>::interpolated(double coef, unsigned int idx)
 {
-	ASSERT_DBG(coef >= 0 && coef <= 1)(coef).error();
-	ASSERT_DBG(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
+	ASSERT(coef >= 0 && coef <= 1)(coef).error();
+	ASSERT(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
 
 	Value val_0(table_values_[idx].r_value_);
 	Value val_1(table_values_[idx+1].r_value_);

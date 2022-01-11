@@ -46,7 +46,7 @@ PvdMeshReader::~PvdMeshReader()
 
 void PvdMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
-	// ASSERT(0).error("Not implemented!");
+	// ASSERT_PERMANENT(0).error("Not implemented!");
 }
 
 
@@ -64,7 +64,7 @@ void PvdMeshReader::read_elements(Mesh * mesh) {
 void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
 		bool boundary_domain) {
 
-	ASSERT(!boundary_domain).error("Reading PVD data of boundary elements is not supported yet!\n");
+	ASSERT_PERMANENT(!boundary_domain).error("Reading PVD data of boundary elements is not supported yet!\n");
 	list_it_->reader->read_element_data(data_cache, actual_header, n_components, boundary_domain);
 }
 

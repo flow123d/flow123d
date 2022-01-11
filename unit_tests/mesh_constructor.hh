@@ -78,7 +78,7 @@ public:
                 for(unsigned int i=0; i<=dim; ++i) {
                     nodes[i] = ele.node(permutation[i]).idx();
                     //DebugOut() << "i: " << i << " node: " << nodes[i] ;
-                    ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+                    ASSERT_PERMANENT(nodes[i] < n_nodes())(i)(nodes[i]);
                 }
                 this->add_element(ele.input_id(), dim, ele.region_idx().idx(), 0, nodes);
             }
@@ -92,7 +92,7 @@ public:
         for(unsigned int i=0; i<=ele.dim(); ++i) {
             nodes[i] = ele.node(permutation[i]).idx();
             //DebugOut() << "i: " << i << " node: " << nodes[i] ;
-            ASSERT(nodes[i] < n_nodes())(i)(nodes[i]);
+            ASSERT_PERMANENT(nodes[i] < n_nodes())(i)(nodes[i]);
         }
         this->add_element(ele.input_id(), ele.dim(), ele.region_idx().idx(), 0, nodes);
     }

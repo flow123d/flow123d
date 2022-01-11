@@ -152,7 +152,7 @@ TEST(intersections_12d, all) {
         bool degenerate = test_case.first.at(3) == 'd';
 
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
-        ASSERT(mesh_file.exists())(dir_name+file_name);
+        ASSERT_PERMANENT(mesh_file.exists())(dir_name+file_name);
         
         string in_mesh_string = "{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }";
         

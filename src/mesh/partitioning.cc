@@ -76,14 +76,14 @@ Partitioning::~Partitioning() {
 }
 
 const Distribution * Partitioning::get_init_distr() const {
-	ASSERT_PTR_DBG(init_el_ds_).error("NULL initial distribution.");
+	ASSERT_PTR(init_el_ds_).error("NULL initial distribution.");
     return init_el_ds_;
 }
 
 
 
 const LongIdx * Partitioning::get_loc_part() const {
-	ASSERT_PTR_DBG(loc_part_).error("NULL local partitioning.");
+	ASSERT_PTR(loc_part_).error("NULL local partitioning.");
     return loc_part_;
 }
 
@@ -110,7 +110,7 @@ void Partitioning::make_element_connection_graph() {
             Edge edg = ele.side(si)->edge();
 
             for (unsigned int li=0; li<edg.n_sides(); li++) {
-            	ASSERT_DBG(edg.side(li)->is_valid()).error("NULL side of edge.");
+            	ASSERT(edg.side(li)->is_valid()).error("NULL side of edge.");
                 e_idx = edg.side(li)->element().idx();
 
                 // for elements of connected elements, excluding element itself
@@ -236,7 +236,7 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,  Distribution * &new_ds
 
 
 shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
-    ASSERT(loc_part_).error("Partition is not yet computed.\n");
+    ASSERT_PERMANENT(loc_part_).error("Partition is not yet computed.\n");
     if (!seq_part_) {
     	unsigned int seq_size=mesh_->get_el_ds()->lsize();
     	seq_part_ = make_shared< vector<int> >(seq_size, mesh_->get_el_ds()->myp());

@@ -16,7 +16,7 @@
  */
 
 
-#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
 #include "system/file_path.hh"                         // for FilePath, File...
 #include "system/logger.hh"                            // for operator<<
 
@@ -37,7 +37,7 @@ ReaderInternalBase::ReaderInternalBase()
 
 StorageBase * ReaderInternalBase::make_storage(PathBase &p, const Type::TypeBase *type)
 {
-	ASSERT_PTR(type).error("Can not dispatch, NULL pointer to TypeBase.");
+	ASSERT_PERMANENT_PTR(type).error("Can not dispatch, NULL pointer to TypeBase.");
 
     // find reference node, if doesn't exist return NULL
     PathBase * ref_path = p.find_ref_node();
@@ -103,7 +103,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 			<< EI_Specification("can be used only with arrays.") << EI_Address(p.as_string()) );
 	} else {
 		if ( record_name_from_tag != "" ) {
-			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
+			ASSERT_PERMANENT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
 		}
 		std::set<string> keys_to_process;
 		bool effectively_null = p.is_effectively_null();
@@ -115,7 +115,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	            PathBase *type_path = p->clone();
 	            if ( type_path.down( "TYPE" ) ) {
 	                try {
-	                	ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
+	                	ASSERT_PERMANENT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
 	                		.error("Invalid value of TYPE key of record");
 	                    make_storage(type_path, key_it->type_.get() )->get_int();
 	                } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
@@ -272,7 +272,7 @@ StorageBase * ReaderInternalBase::record_automatic_conversion(PathBase &p, const
 					storage_array->new_item(it->key_index,
 							make_storage_from_default( it->default_.value(), it->type_ ) );
 				 } else { // defalut - optional or default at read time
-					 ASSERT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
+					 ASSERT_PERMANENT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
 					 // set null
 					 storage_array->new_item(it->key_index, new StorageNull() );
 				 }
@@ -302,7 +302,7 @@ StorageBase * ReaderInternalBase::abstract_automatic_conversion(PathBase &p, con
 
 StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Array *array, int arr_size)
 {
-	ASSERT(p.is_array_type()).error();
+	ASSERT_PERMANENT(p.is_array_type()).error();
 
     if ( array->match_size( arr_size ) ) {
       // copy the array and check type of values

@@ -142,7 +142,7 @@ void TypeRepository<T>::reset_deleted_types() {
 	std::vector< Type::TypeBase::TypeHash > deleted_hashes;
 	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
 		if (it->second->finish_status() == Type::FinishStatus::delete_) {
-			ASSERT(it->second.use_count() == 1)(it->second.use_count()).error();
+			ASSERT_PERMANENT(it->second.use_count() == 1)(it->second.use_count()).error();
 			it->second.reset();
 			deleted_hashes.push_back(it->first);
 		}

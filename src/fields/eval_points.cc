@@ -32,7 +32,7 @@ EvalPoints::EvalPoints()
 template <unsigned int dim>
 std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
 {
-    ASSERT_EQ_DBG(dim, quad.dim());
+    ASSERT_EQ(dim, quad.dim());
 
     dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
     uint i_subset = dim_eval_points_[dim].add_subset();
@@ -44,7 +44,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
 template <>
 std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
 {
-    ASSERT_EQ_DBG(0, quad.dim());
+    ASSERT_EQ(0, quad.dim());
     uint i_subset = dim_eval_points_[0].add_subset();
     std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0, i_subset);
     this->set_max_size();
@@ -54,7 +54,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
 template <unsigned int dim>
 std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 {
-    ASSERT_EQ_DBG(dim, quad.dim()+1);
+    ASSERT_EQ(dim, quad.dim()+1);
 
     for (unsigned int i=0; i<dim+1; ++i) {  // sides
         Quadrature high_dim_q = quad.make_from_side<dim>(i);
@@ -69,7 +69,7 @@ std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
 
 template <unsigned int dim>
 std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &quad) {
-    ASSERT_EQ_DBG(dim, quad.dim()+1);
+    ASSERT_EQ(dim, quad.dim()+1);
 
     std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
     DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
@@ -80,7 +80,7 @@ std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &qua
 
 template <unsigned int dim>
 std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
-    ASSERT_EQ_DBG(dim, quad.dim()+1);
+    ASSERT_EQ(dim, quad.dim()+1);
 
     std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
     DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
@@ -99,7 +99,7 @@ EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 
 template <unsigned int dim>
 void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & quad_points) {
-    ASSERT_GT_DBG(dim, 0).error("Dimension 0 not supported!\n");
+    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
     unsigned int local_points_old_size = local_points_.size();
     local_points_.resize(quad_points.size() + local_points_old_size);
     for (unsigned int i=0; i<quad_points.size(); ++i) {
@@ -111,7 +111,7 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 
 
 uint EvalPoints::DimEvalPoints::add_subset() {
-    ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
+    ASSERT_LT(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
 
     n_subsets_++;
     subset_starts_[n_subsets_] = this->size();

@@ -98,7 +98,7 @@ Balance::Balance(const std::string &file_prefix, const Mesh *mesh)
 
 {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
-    ASSERT_PTR(mesh_);
+    ASSERT_PERMANENT_PTR(mesh_);
 }
 
 
@@ -133,7 +133,7 @@ void Balance::init_from_input(
         const Input::Record &in_rec,
         TimeGovernor &tg)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_PERMANENT(! allocation_done_);
 
     time_ = &tg;
     
@@ -156,7 +156,7 @@ void Balance::init_from_input(
 
 void Balance::units(const UnitSI &unit)
 {
-    ASSERT_DBG(! allocation_done_);
+    ASSERT(! allocation_done_);
 
     units_ = unit;
     units_.undef(false);
@@ -164,7 +164,7 @@ void Balance::units(const UnitSI &unit)
 
 unsigned int Balance::add_quantity(const string &name)
 {
-    ASSERT_DBG(! allocation_done_);
+    ASSERT(! allocation_done_);
 
 	Quantity q(quantities_.size(), name);
 	quantities_.push_back(q);
@@ -185,7 +185,7 @@ std::vector<unsigned int> Balance::add_quantities(const std::vector<string> &nam
 void Balance::allocate(unsigned int n_loc_dofs,
 		unsigned int max_dofs_per_boundary)
 {
-    ASSERT_DBG(! allocation_done_);
+    ASSERT(! allocation_done_);
     n_loc_dofs_seq_ = n_loc_dofs;
 	n_loc_dofs_par_ = n_loc_dofs;
     max_dofs_per_boundary_ = max_dofs_per_boundary;
@@ -194,7 +194,7 @@ void Balance::allocate(unsigned int n_loc_dofs,
 void Balance::allocate(const std::shared_ptr<DOFHandlerMultiDim>& dh,
 		unsigned int max_dofs_per_boundary)
 {
-    ASSERT_DBG(! allocation_done_);
+    ASSERT(! allocation_done_);
 	// for sequential matrices, we need to include ghost values
     n_loc_dofs_seq_ = dh->get_local_to_global_map().size();
 	// for parallel matrices, we use the local size from dof distribution
@@ -413,7 +413,7 @@ void Balance::start_source_assembly(unsigned int quantity_idx)
 
 void Balance::finish_mass_assembly(unsigned int quantity_idx)
 {
-	ASSERT_DBG(allocation_done_);
+	ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	chkerr(MatAssemblyBegin(region_mass_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -424,7 +424,7 @@ void Balance::finish_mass_assembly(unsigned int quantity_idx)
 
 void Balance::finish_flux_assembly(unsigned int quantity_idx)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
     chkerr(MatAssemblyBegin(be_flux_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -435,7 +435,7 @@ void Balance::finish_flux_assembly(unsigned int quantity_idx)
 
 void Balance::finish_source_assembly(unsigned int quantity_idx)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
     chkerr(MatAssemblyBegin(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
@@ -451,7 +451,7 @@ void Balance::add_mass_values(unsigned int quantity_idx,
 		const std::vector<double> &mat_values,
 		double vec_value)
 {
-	ASSERT_DBG(allocation_done_);
+	ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	// map local dof indices to global
@@ -482,7 +482,7 @@ void Balance::add_flux_values(unsigned int quantity_idx,
 		const std::vector<double> &mat_values,
 		double vec_value)
 {
-	ASSERT_DBG(allocation_done_);
+	ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	// filling row elements corresponding to a boundary edge
@@ -516,7 +516,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 		const vector<double> &mult_mat_values,
         const vector<double> &add_mat_values)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	PetscInt reg_array[1] = { (int)region_idx };
@@ -541,7 +541,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 
 void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (!cumulative_) return;
 
     if (rank_ == 0)
@@ -552,7 +552,7 @@ void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 void Balance::calculate_cumulative(unsigned int quantity_idx,
 		const Vec &solution)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
 	if (!cumulative_) return;
     if (time_->tlevel() <= 0) return;
 
@@ -574,7 +574,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
         chkerr(MatGetRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat));
         chkerr(MatGetRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs));
         
-        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        ASSERT(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
             temp_source += vals_mat[j]*sol_array[i] + vals_rhs[j];
@@ -612,7 +612,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 		const Vec &solution,
 		vector<double> &output_array)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
     Vec bulk_vec;
@@ -663,7 +663,7 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
         chkerr(MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat));
         chkerr(MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, NULL, &vals_rhs));
         
-        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        ASSERT(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
         {
@@ -712,7 +712,7 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 
 void Balance::output()
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
     if (! is_current() ) return;
     

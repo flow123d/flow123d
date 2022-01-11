@@ -438,7 +438,7 @@ Myslenky ohledne exceptions, chybovych hlasek a logovani (co dnes zajistuje xpri
 2) Logovani  ted neresim.
 
 3) Jakakoliv chyba by mela radeji vyvolavat vyjimku (lze odchytit, lze pridavat inforamace behem stack unfolding. )
-   A to vcetne ASSERT.
+   A to vcetne ASSERT_PERMANENT.
 
 4) Neprijemne je, ze exception musim definovat jako zvlastni tridy, zejmena pokud chci mit nejake specialni formaty chybovych hlasek.
    ale navrhl jsem makro a navazujici implementacni sablony, ktere by to mely zjednodusit. (inspirovano deal.ii)

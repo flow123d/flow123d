@@ -53,7 +53,7 @@ void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
 
 
 void BIHTree::construct() {
-    ASSERT_GT(elements_.size(), 0);
+    ASSERT_PERMANENT_GT(elements_.size(), 0);
 
     max_n_levels = 2*log2(elements_.size());
     nodes_.reserve(2*elements_.size() / leaf_size_limit);
@@ -71,14 +71,14 @@ void BIHTree::construct() {
 
 const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
 {
-    ASSERT_DBG(ele_idx < elements_.size());
+    ASSERT(ele_idx < elements_.size());
     return elements_[ele_idx];
 }
 
 
 void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	BIHNode &node = nodes_[node_idx];
-	ASSERT_DBG( node.is_leaf() ).error("Not leaf node.");
+	ASSERT( node.is_leaf() ).error("Not leaf node.");
 	unsigned int axis = node_box.longest_axis();
 	double median = estimate_median(axis, node);
 
@@ -234,7 +234,7 @@ const BoundingBox &BIHTree::tree_box() const {
 void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list, bool full_list) const
 {
 
-	ASSERT_EQ(result_list.size() , 0);
+	ASSERT_PERMANENT_EQ(result_list.size() , 0);
 
     unsigned int counter = 0;
     node_stack_.clear();
@@ -279,7 +279,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 //	std::vector<unsigned int> cpy(result_list);
 //	sort(cpy.begin(), cpy.end());
 //	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
-//	ASSERT_EQ(cpy.size() , it - cpy.begin());
+//	ASSERT_PERMANENT_EQ(cpy.size() , it - cpy.begin());
 //#endif
 }
 

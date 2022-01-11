@@ -138,13 +138,13 @@ void RichardsLMH::initialize_specific() {
     else if (model_type == SoilModelBase::irmay)
         data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
     else
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
 
     // create edge vectors
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
 
-    ASSERT_PTR(mesh_);
+    ASSERT_PERMANENT_PTR(mesh_);
     data_->mesh = mesh_;
     data_->set_mesh(*mesh_);
 

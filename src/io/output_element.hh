@@ -140,7 +140,7 @@ inline unsigned int OutputElement::dim() const
 inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
-    ASSERT_DBG(loc_idx < n);
+    ASSERT(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     return (* output_mesh_->connectivity_)[con_off - n + loc_idx];
 }
@@ -149,7 +149,7 @@ inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
-    ASSERT_DBG(loc_idx < n);
+    ASSERT(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_+1];
     unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + loc_idx];
     auto &d = *( output_mesh_->nodes_->get_component_data(0).get() );

@@ -50,7 +50,7 @@ PathYAML::~PathYAML()
 
 
 bool PathYAML::down(unsigned int index) {
-	ASSERT(head().IsSequence()).error("Head node must be of type Array.");
+	ASSERT_PERMANENT(head().IsSequence()).error("Head node must be of type Array.");
 
     if ( index >= head().size() ) return false;
     path_.push_back( make_pair( index, string("") ) );
@@ -61,7 +61,7 @@ bool PathYAML::down(unsigned int index) {
 
 
 bool PathYAML::down(const string& key, int index) {
-	ASSERT(head().IsMap()).error("Head node must be of type Record.");
+	ASSERT_PERMANENT(head().IsMap()).error("Head node must be of type Record.");
 
 	// This does the check of uniqueness of keys.
 	std::set<std::string> key_list;

@@ -25,7 +25,7 @@
 
 #include "system/exceptions.hh"
 #include "type_base.hh"
-#include "system/asserts.hh"         // for Assert, ASSERT, ASSERT_EQ, _FEAL...
+#include "system/asserts.hh"         // for Assert, ASSERT_PERMANENT, ASSERT_PERMANENT_EQ, _FEAL...
 
 namespace Input {
 namespace Type {
@@ -275,7 +275,7 @@ inline bool Selection::has_value(const int &val) const {
 
 inline unsigned int Selection::size() const {
     finished_check();
-    ASSERT_EQ_DBG(data_->keys_.size(), data_->key_to_index_.size()).error();
+    ASSERT_EQ(data_->keys_.size(), data_->key_to_index_.size()).error();
     return data_->keys_.size();
 }
 
@@ -283,7 +283,7 @@ inline unsigned int Selection::size() const {
 
 
 inline void Selection::finished_check() const {
-	ASSERT_DBG(data_->closed_)(this->type_name()).error();
+	ASSERT(data_->closed_)(this->type_name()).error();
 }
 
 

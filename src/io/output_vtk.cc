@@ -138,7 +138,7 @@ string pvd_dataset_line(double step, int rank, string file) {
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(this->nodes_).error();
+    ASSERT_PERMANENT_PTR(this->nodes_).error();
 
     /* Output of serial format is implemented only in the first process */
     if ( (this->rank_ != 0) && (!parallel_) ) {
@@ -154,7 +154,7 @@ int OutputVTK::write_data(void)
 
     /* Write DataSets to the PVD file only in the first process */
     if (this->rank_ == 0) {
-        ASSERT(this->_base_file.is_open())(this->_base_filename).error();
+        ASSERT_PERMANENT(this->_base_file.is_open())(this->_base_filename).error();
 
         /* Set floating point precision to max */
         //this->_base_file.precision(std::numeric_limits<double>::digits10);
@@ -207,7 +207,7 @@ int OutputVTK::write_data(void)
 
 void OutputVTK::make_subdirectory()
 {
-	ASSERT_EQ(this->_base_filename.extension(), ".pvd").error();
+	ASSERT_PERMANENT_EQ(this->_base_filename.extension(), ".pvd").error();
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
@@ -351,7 +351,7 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 		deflateInit(&strm, Z_BEST_COMPRESSION);
 		while (strm.avail_in != 0) {
 			int res = deflate(&strm, Z_NO_FLUSH);
-			ASSERT_EQ_DBG(res, Z_OK).error();
+			ASSERT_EQ(res, Z_OK).error();
 			if (strm.avail_out == 0) {
 				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
 				strm.next_out = temp_buffer;
@@ -367,7 +367,7 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 			}
 			deflate_res = deflate(&strm, Z_FINISH);
 		}
-		ASSERT_EQ_DBG(deflate_res, Z_STREAM_END).error();
+		ASSERT_EQ(deflate_res, Z_STREAM_END).error();
 		buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE - strm.avail_out);
 		deflateEnd(&strm);
 

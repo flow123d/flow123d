@@ -130,7 +130,7 @@ public:
      * Used by measure and in intersections.
      */
     inline double jacobian_S3() const {
-        ASSERT_EQ_DBG(dim(), 3).error("Dimension mismatch.");
+        ASSERT_EQ(dim(), 3).error("Dimension mismatch.");
         return arma::dot( arma::cross(*( node(1) ) - *( node(0) ),
                                         *( node(2) ) - *( node(0) )),
                         *( node(3) ) - *( node(0) )
@@ -141,7 +141,7 @@ public:
      * Returns Jacobian of 2D element.
      */
     inline double jacobian_S2() const {
-        ASSERT_EQ_DBG(dim(), 2).error("Dimension mismatch.");
+        ASSERT_EQ(dim(), 2).error("Dimension mismatch.");
         return arma::norm(
             arma::cross(*( node(1) ) - *( node(0) ), *( node(2) ) - *( node(0) )),
             2
@@ -152,7 +152,7 @@ public:
      * Returns Jacobian of 1D element.
      */
     inline double jacobian_S1() const {
-        ASSERT_EQ_DBG(dim(), 1).error("Dimension mismatch.");
+        ASSERT_EQ(dim(), 1).error("Dimension mismatch.");
         return arma::norm(*( node(1) ) - *( node(0) ) , 2);
     }
 
@@ -189,7 +189,7 @@ public:
     }
 
     inline unsigned int dim() const {
-        ASSERT_DBG(! is_regional());
+        ASSERT(! is_regional());
         return element()->dim();
     }
 
@@ -225,7 +225,7 @@ public:
     }
     
     unsigned int proc() const {
-        ASSERT_DBG(is_elemental());
+        ASSERT(is_elemental());
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
@@ -316,13 +316,13 @@ public:
 
     /// Returns edge global index.
     unsigned int idx() const {
-        ASSERT_DBG(is_valid());
+        ASSERT(is_valid());
         return edge_idx_;
     }
 
     /// Incremental function of the Edge iterator.
     void inc() {
-        ASSERT_DBG(is_valid()).error("Do not call inc() for invalid accessor!");
+        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
         edge_idx_++;
     }
 
@@ -368,17 +368,17 @@ public:
     }
     
     Mesh* mesh() {
-        ASSERT_DBG(is_valid());
+        ASSERT(is_valid());
         return boundary_data_->mesh_;
     }
 
     uint edge_idx() {
-        ASSERT_DBG(is_valid());
+        ASSERT(is_valid());
         return boundary_data_->edge_idx_;
     }
 
     uint bc_ele_idx() {
-        ASSERT_DBG(is_valid());
+        ASSERT(is_valid());
         return boundary_data_->bc_ele_idx_;
     }
 
@@ -460,7 +460,7 @@ public:
 
     /// Iterate over local sides of the element.
     void inc() {
-        ASSERT_DBG(is_valid()).error("Do not call inc() for invalid accessor!");
+        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
         side_idx_++;
     }
 

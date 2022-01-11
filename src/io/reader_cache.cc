@@ -79,7 +79,7 @@ void ReaderCache::get_element_ids(const FilePath &file_path, const Mesh &mesh) {
 std::shared_ptr<EquivalentMeshMap> ReaderCache::get_target_mesh_element_map(const FilePath &file_path,
                                                                             Mesh *computational_mesh) {
     auto it = ReaderCache::get_reader_data(file_path);
-    ASSERT_PTR( (*it).second.mesh_ ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
+    ASSERT_PERMANENT_PTR( (*it).second.mesh_ ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
     if ( (*it).second.target_mesh_element_map_ == nullptr ) {
         (*it).second.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
     }

@@ -163,7 +163,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
 
 
 void GmshMeshReader::read_physical_names(Mesh * mesh) {
-	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
+	ASSERT_PERMANENT_PTR(mesh).error("Argument mesh is NULL.\n");
 
     using namespace boost;
 

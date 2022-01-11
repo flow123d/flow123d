@@ -179,7 +179,7 @@ double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, doub
 			return ( time * coef_ );
         }
 	} else {
-		ASSERT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
+		ASSERT_PERMANENT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
 		return default_time;
 	}
 }
@@ -666,7 +666,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
-    ASSERT_LE(0.0, t());
+    ASSERT_PERMANENT_LE(0.0, t());
     if (is_end()) return;
     
 

@@ -45,8 +45,8 @@ public:
      * Set non-leaf node.
      */
     void set_non_leaf(unsigned int left, unsigned int right, unsigned int axis) {
-    	ASSERT_LT_DBG(axis, dimension);
-    	ASSERT_DBG( is_leaf() ).error("Not leaf node."); // first must be leaf node (must set bound_)
+    	ASSERT_LT(axis, dimension);
+    	ASSERT( is_leaf() ).error("Not leaf node."); // first must be leaf node (must set bound_)
     	axis_=axis;
     	child_[0]=left;
     	child_[1]=right;
@@ -60,19 +60,19 @@ public:
 
     inline unsigned char depth() const
     {
-    	ASSERT_DBG( is_leaf() ).error("Not leaf node.");
+    	ASSERT( is_leaf() ).error("Not leaf node.");
     	return axis_ - dimension;
     }
 
     unsigned int leaf_begin() const
     {
-    	ASSERT_DBG( is_leaf() ).error("Not leaf node.");
+    	ASSERT( is_leaf() ).error("Not leaf node.");
     	return child_[0];
     }
 
     unsigned int leaf_end() const
     {
-    	ASSERT_DBG( is_leaf() ).error("Not leaf node.");
+    	ASSERT( is_leaf() ).error("Not leaf node.");
     	return child_[1];
     }
 
@@ -83,14 +83,14 @@ public:
 	 */
     unsigned int leaf_size() const
     {
-    	ASSERT_DBG( is_leaf() ).error("Not leaf node.");
+    	ASSERT( is_leaf() ).error("Not leaf node.");
     	return child_[1] - child_[0];
     }
 
     /// return axes (coordination of splitting) of inner node
     unsigned int axis() const
     {
-    	ASSERT_DBG( !is_leaf() ).error("Not in branch node.");
+    	ASSERT( !is_leaf() ).error("Not in branch node.");
     	return axis_;
     }
 
@@ -102,8 +102,8 @@ public:
     /// Return index of child node.
     unsigned int child(unsigned int i_child)  const
     {
-    	ASSERT_DBG(!is_leaf()).error("Not in branch node.\n");
-    	ASSERT_LT_DBG( i_child, child_count );
+    	ASSERT(!is_leaf()).error("Not in branch node.\n");
+    	ASSERT_LT( i_child, child_count );
     	return child_[i_child];
 
     }

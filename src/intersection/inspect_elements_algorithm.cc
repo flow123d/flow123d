@@ -33,7 +33,7 @@ IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
 // template<unsigned int simplex_dim>
 // void IntersectionAlgorithmBase<dimA,dimB>::update_simplex(const ElementAccessor<3>& element, Simplex< simplex_dim >& simplex)
 // {
-//     ASSERT(simplex_dim == element.dim());
+//     ASSERT_PERMANENT(simplex_dim == element.dim());
 //     arma::vec3 *field_of_points[simplex_dim+1];
 //     for(unsigned int i=0; i < simplex_dim+1; i++)
 //         field_of_points[i]= &(element.node(i)->point());
@@ -472,7 +472,7 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
                     break;
                 }
             
-                ASSERT_DBG(ele_dim == 3);
+                ASSERT(ele_dim == 3);
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_line; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<2,1>(ip_obj_idx))[j];
                     edges.push_back(mesh->edge(ele->edge_idx(local_edge)));
@@ -481,11 +481,11 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
                 break;
                 
         // IP is on a side of tetrahedron; only possible edge is from the given side (1)
-        case 2: ASSERT_DBG(ele_dim == 3);
+        case 2: ASSERT(ele_dim == 3);
                 edges.push_back(mesh->edge(ele->edge_idx(ip_obj_idx)));
                 //DebugOut() << "prolong (side)\n";
                 break;
-        default: ASSERT_DBG(0);
+        default: ASSERT(0);
     }
     
     // get indices of neighboring bulk elements
@@ -644,7 +644,7 @@ void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele
         if(intersection_list_[comp_ele_idx][i].bulk_ele_idx() == bulk_ele_idx)
         {
             //DebugOut().fmt("intersection comp-bulk: {} {}\n", comp_ele_idx, bulk_ele_idx);
-            ASSERT_DBG(0).add_value(bulk_ele_idx,"bulk_ele_idx").error("Want to add the same intersection!");
+            ASSERT(0).add_value(bulk_ele_idx,"bulk_ele_idx").error("Want to add the same intersection!");
         }
     }
 }
@@ -709,7 +709,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
                                                        std::vector<IntersectionLocal<2,2>> &storage)
 {
 //     DebugOut() << "Intersections 2d-2d\n";
-    ASSERT(storage.size() == 0);
+    ASSERT_PERMANENT(storage.size() == 0);
     create_component_numbering();
     
     unsigned int ele_idx, eleA_idx, eleB_idx,
@@ -805,9 +805,9 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementAccess
                                                              const ElementAccessor<3>& eleB,
                                                              std::vector<IntersectionLocal<2,2>> &storage)
 {
-    ASSERT_DBG(eleA.dim() == 2);
-    ASSERT_DBG(eleB.dim() == 2);
-    ASSERT_DBG(eleA.idx() != eleB.idx());
+    ASSERT(eleA.dim() == 2);
+    ASSERT(eleB.dim() == 2);
+    ASSERT(eleA.idx() != eleB.idx());
     
     IntersectionAux<2,2> is(eleA.idx(), eleB.idx());
     
@@ -881,7 +881,7 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
 {
     //DebugOut() << "Intersections 1d-2d\n";
     intersectionaux_storage12_.clear();
-    ASSERT(storage.size() == 0);
+    ASSERT_PERMANENT(storage.size() == 0);
     
     for (auto ele : mesh->elements_range()) {
     if (ele->dim() == 3)
@@ -965,8 +965,8 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
 // void InspectElementsAlgorithm12::compute_single_intersection(const ElementAccessor<3>& eleA,
 //                                                              const ElementAccessor<3>& eleB)
 // {
-//     ASSERT_DBG(eleA.dim() == 1);
-//     ASSERT_DBG(eleB.dim() == 2);
+//     ASSERT(eleA.dim() == 1);
+//     ASSERT(eleB.dim() == 2);
 //     
 //     this->update_simplex(eleA, simplexA);
 //     this->update_simplex(eleB, simplexB);

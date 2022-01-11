@@ -56,7 +56,7 @@ string Tuple::class_name() const {
 
 Tuple & Tuple::allow_auto_conversion(const string &)
 {
-	ASSERT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");
+	ASSERT_PERMANENT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");
 	return *this;
 }
 
@@ -68,7 +68,7 @@ bool Tuple::operator==(const TypeBase &other) const
 
 
 const Tuple &Tuple::close() const {
-	ASSERT_GT_DBG(data_->keys.size(), 0)(this->type_name()).error("Empty Tuple!\n");
+	ASSERT_GT(data_->keys.size(), 0)(this->type_name()).error("Empty Tuple!\n");
     data_->closed_=true;
 
     bool allow_auto_conversion = true; // if no key or only first key is obligatory, tuple is auto convertible
@@ -89,13 +89,13 @@ const Tuple &Tuple::close() const {
 
 FinishStatus Tuple::finish(FinishStatus finish_type)
 {
-	ASSERT_DBG(finish_type != FinishStatus::none_).error();
-	ASSERT_DBG(finish_type != FinishStatus::in_perform_).error();
-	ASSERT_DBG(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Tuple.");
+	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Tuple.");
 
 	if (this->is_finished()) return data_->finish_status_;
 
-	ASSERT_DBG(data_->closed_)(this->type_name()).error();
+	ASSERT(data_->closed_)(this->type_name()).error();
 
 	data_->finish_status_ = FinishStatus::in_perform_;
 
@@ -120,7 +120,7 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 		if ((finish_type != FinishStatus::generic_) && it->type_->is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(it->type_->type_name()) );
 		it->type_->finish(finish_type);
-		ASSERT_DBG(it->type_->is_finished()).error();
+		ASSERT(it->type_->is_finished()).error();
 		if (finish_type == FinishStatus::delete_) it->type_.reset();
     }
 
@@ -131,7 +131,7 @@ FinishStatus Tuple::finish(FinishStatus finish_type)
 
 Tuple &Tuple::derive_from(Abstract &)
 {
-	ASSERT(false)(this->type_name()).error("Call of derive_from method is forbidden for type Tuple");
+	ASSERT_PERMANENT(false)(this->type_name()).error("Call of derive_from method is forbidden for type Tuple");
 	return *this;
 }
 

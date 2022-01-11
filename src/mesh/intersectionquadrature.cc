@@ -68,11 +68,11 @@ unsigned int Intersection::slave_dim()
 void Intersection::intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2)
 {
 	const vector<double> &coord_el1 = point->el1_coord();
-	ASSERT_EQ_DBG(coord_el1.size() , vec1.n_elem);
+	ASSERT_EQ(coord_el1.size() , vec1.n_elem);
 	vec1=arma::vec(coord_el1);
 
 	const vector<double> &coord_el2 = point->el2_coord();
-	ASSERT_EQ_DBG(coord_el2.size() , vec2.n_elem);
+	ASSERT_EQ(coord_el2.size() , vec2.n_elem);
 	vec2=arma::vec(coord_el2);
 }
 
@@ -80,7 +80,7 @@ void Intersection::intersection_point_to_vectors(const IntersectionPoint *point,
 arma::vec Intersection::map_to_master(const arma::vec &point) const
 {
 	//dim = dimenze intersec elementu
-	ASSERT_EQ_DBG(point.n_elem, dim).error("Map to master: point.n_elem != dim \n");
+	ASSERT_EQ(point.n_elem, dim).error("Map to master: point.n_elem != dim \n");
     int result_dim = master->dim();
     arma::vec result(result_dim+1);
 	result(0)=1.0;
@@ -90,7 +90,7 @@ arma::vec Intersection::map_to_master(const arma::vec &point) const
 
 arma::vec Intersection::map_to_slave(const arma::vec &point) const
 {
-	ASSERT_EQ_DBG(point.n_elem, dim).error("Map to slave: point.n_elem != dim \n");
+	ASSERT_EQ(point.n_elem, dim).error("Map to slave: point.n_elem != dim \n");
 	int result_dim = slave->dim();
 	arma::vec result(result_dim+1);
 	result(0)=1.0;

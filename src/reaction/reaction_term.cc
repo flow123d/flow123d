@@ -62,5 +62,5 @@ ReactionTerm::~ReactionTerm()
 
 void ReactionTerm::choose_next_time(void)
 {
-  ASSERT_DBG(0).error("ReactionTerm does not change TimeGovernor.\n");
+  ASSERT(0).error("ReactionTerm does not change TimeGovernor.\n");
 }

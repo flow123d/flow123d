@@ -1,0 +1,41 @@
+- -             [ Wrn , null, "00:00:00.092", "/src/system/asserts.cc", 102, "warning" ]
+  - |
+    Strings must be empty.
+    > In file: /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/system/logger_test.cpp(122): Throw in function TestBody
+    > Expression: 's1.empty() && s2.empty()'
+    > Values:
+      s1 : 'feal'
+      s2 : 'assert'
+    
+    ** Stacktrace **
+      0  _ZN23FealAssert_warning_Test8TestBodyEv
+      1  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      2  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      3  _ZN7testing4Test3RunEv
+      4  _ZN7testing8TestInfo3RunEv
+      5  _ZN7testing9TestSuite3RunEv
+      6  _ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+      7  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+      8  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+      9  _ZN7testing8UnitTest3RunEv
+     10  _Z13RUN_ALL_TESTSv
+     11  main
+- -             [ Wrn , null, "00:00:00.094", "/src/system/asserts.cc", 102, "warning" ]
+  - |
+    Zero value.
+    > In file: /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/system/logger_test.cpp(125): Throw in function TestBody
+    > Expression: '0'
+    
+    ** Stacktrace **
+      0  _ZN23FealAssert_warning_Test8TestBodyEv
+      1  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      2  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
+      3  _ZN7testing4Test3RunEv
+      4  _ZN7testing8TestInfo3RunEv
+      5  _ZN7testing9TestSuite3RunEv
+      6  _ZN7testing8internal12UnitTestImpl11RunAllTestsEv
+      7  _ZN7testing8internal38HandleSehExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+      8  _ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS0_12UnitTestImplEbEET0_PT_MS4_FS3_vEPKc
+      9  _ZN7testing8UnitTest3RunEv
+     10  _Z13RUN_ALL_TESTSv
+     11  main

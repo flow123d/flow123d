@@ -95,7 +95,7 @@ public:
 	BoundingBox(const Point &min, const Point &max)
 	: min_vertex_(min), max_vertex_(max)
 	{
-		ASSERT_DBG( arma::min( min <= max ) ).error("Wrong coordinates in constructor.");
+		ASSERT( arma::min( min <= max ) ).error("Wrong coordinates in constructor.");
 	};
 
 	/**
@@ -109,8 +109,8 @@ public:
 	 * Set maximum in given axis.
 	 */
 	void set_max(unsigned int axis, double max) {
-		ASSERT_LT_DBG( axis , dimension);
-		ASSERT_LE_DBG( min(axis) , max);
+		ASSERT_LT( axis , dimension);
+		ASSERT_LE( min(axis) , max);
 		max_vertex_[axis] = max;
 	}
 
@@ -118,8 +118,8 @@ public:
 	 * Set minimum on given axis.
 	 */
 	void set_min(unsigned int axis, double min) {
-		ASSERT_LT_DBG(axis, dimension);
-		ASSERT_LE_DBG(min , max(axis));
+		ASSERT_LT(axis, dimension);
+		ASSERT_LE(min , max(axis));
 		min_vertex_[axis] = min;
 	}
 
@@ -172,7 +172,7 @@ public:
      * Axis coding is: 0 - axis x, 1 - axis y, 2 - axis z.
      */
     double projection_center(unsigned int axis) const {
-    	ASSERT_LT_DBG(axis, dimension);
+    	ASSERT_LT(axis, dimension);
     	return (max_vertex_[axis] + min_vertex_[axis])/2;
     }
 
@@ -234,7 +234,7 @@ public:
     void split(unsigned int axis, double splitting_point,
     		BoundingBox &left, BoundingBox &right ) const
     {
-    	ASSERT_LT_DBG(axis , dimension);
+    	ASSERT_LT(axis , dimension);
     	if (min_vertex_[axis] <= splitting_point && splitting_point <= max_vertex_[axis] ) {
     	   	left = *this;
     	   	right = *this;

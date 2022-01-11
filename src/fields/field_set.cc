@@ -31,7 +31,7 @@ FieldSet::FieldSet()
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {
-    	ASSERT(&add_field==found_field)(add_field.name()).error("Another field of the same name exists when adding field\n");
+    	ASSERT_PERMANENT(&add_field==found_field)(add_field.name()).error("Another field of the same name exists when adding field\n");
     } else {
         field_list.push_back(&add_field);
     }
@@ -89,7 +89,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             } else {
                 field_type_ptr = std::make_shared<Input::Type::Instance>(field->get_input_type());
             }
-            ASSERT( field->units().is_def() )(field->input_name()).error("units not def.");
+            ASSERT_PERMANENT( field->units().is_def() )(field->input_name()).error("units not def.");
             Input::Type::TypeBase::attribute_map key_attributes = Input::Type::TypeBase::attribute_map(
                     { {FlowAttribute::field_unit(), field->units().json() },
                       {FlowAttribute::field_value_shape(), field->get_value_attribute()} }
@@ -191,7 +191,7 @@ bool FieldSet::is_jump_time() const {
 
 
 void FieldSet::cache_update(ElementCacheMap &cache_map) {
-    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    ASSERT_GT(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     for (unsigned int i_reg_patch=0; i_reg_patch<cache_map.n_regions(); ++i_reg_patch) {
         for (const FieldCommon *field : region_field_update_order_[cache_map.region_idx_from_chunk_position(i_reg_patch)])
             field->cache_update(cache_map, i_reg_patch);
@@ -253,7 +253,7 @@ Range<FieldListAccessor> FieldSet::fields_range() const {
 
 
 std::string FieldSet::print_dependency() const {
-    ASSERT_GT_DBG(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
+    ASSERT_GT(region_field_update_order_.size(), 0).error("Variable 'region_dependency_list' is empty. Did you call 'set_dependency' method?\n");
     std::stringstream s;
     for (auto reg_it : region_field_update_order_) {
         s << "\nregion_idx " << reg_it.first << ": ";

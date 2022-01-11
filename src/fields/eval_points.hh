@@ -62,7 +62,7 @@ public:
     /// Return local coordinates of given local point and appropriate dim.
     template<unsigned int dim>
     inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
-    	ASSERT_GT_DBG(dim, 0).error("Dimension 0 not supported!\n");
+    	ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
         return dim_eval_points_[dim].local_point<dim>(local_point_idx);
     }
 
@@ -126,25 +126,25 @@ private:
         /// Return local coordinates of given local point.
         template<unsigned int dim>
         inline arma::vec::fixed<dim> local_point(unsigned int local_point_idx) const {
-            ASSERT_LT_DBG(local_point_idx, this->size());
+            ASSERT_LT(local_point_idx, this->size());
             return local_points_.vec<dim>(local_point_idx);
         }
 
         /// Return begin index of appropriate subset data.
         inline int subset_begin(unsigned int idx) const {
-            ASSERT_LT_DBG(idx, n_subsets());
+            ASSERT_LT(idx, n_subsets());
         	return subset_starts_[idx];
         }
 
         /// Return end index of appropriate subset data.
         inline int subset_end(unsigned int idx) const {
-            ASSERT_LT_DBG(idx, n_subsets());
+            ASSERT_LT(idx, n_subsets());
         	return subset_starts_[idx+1];
         }
 
         /// Return number of local points corresponding to subset.
         inline int subset_size(unsigned int idx) const {
-            ASSERT_LT_DBG(idx, n_subsets());
+            ASSERT_LT(idx, n_subsets());
         	return subset_starts_[idx+1] - subset_starts_[idx];
         }
 

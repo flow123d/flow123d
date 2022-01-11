@@ -139,7 +139,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
-    ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
+    ASSERT_PERMANENT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
     
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");

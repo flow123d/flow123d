@@ -75,7 +75,7 @@ void SparseGraph::set_edge(const int a, const int b,int weight)
 
 void SparseGraph::set_vtx_position(const int vtx, const float xyz[3],int weight)
 {
-	ASSERT(vtx_distr.is_local(vtx))(vtx).error("Can not set vertex position for nonlocal vertex.\n");
+	ASSERT_PERMANENT(vtx_distr.is_local(vtx))(vtx).error("Can not set vertex position for nonlocal vertex.\n");
     int loc_index=vtx-vtx_distr.begin();
     memcpy(vtx_XYZ+3*loc_index, xyz, 3*sizeof(float));
     vtx_weights[loc_index]=weight;
@@ -97,7 +97,7 @@ bool operator <(const SparseGraph::Edge &a,const SparseGraph::Edge  &b)
 // check trivial case : Localized distribution
 void SparseGraph::finalize()
 {
-   ASSERT( adj==NULL ).error("Graph is already finalized\n");
+   ASSERT_PERMANENT( adj==NULL ).error("Graph is already finalized\n");
 
    unsigned int proc;
    int total_size;
@@ -124,7 +124,7 @@ void SparseGraph::finalize()
    int buf_pos=0;
    for(proc=0, s = adj_of_proc.begin(); s!=adj_of_proc.end(); ++s, ++proc)
    {
-	   ASSERT_EQ(sdispls[proc], buf_pos).error(
+	   ASSERT_PERMANENT_EQ(sdispls[proc], buf_pos).error(
                "Mismatch between displacement and buffer position.\n");
        while ( ! (s)->empty() ) {
            edge=(s)->top();
@@ -188,11 +188,11 @@ void SparseGraph::finalize()
        if (! (*last_edge < edges[i]) ) continue; // skip equivalent edges
        last_edge=edges+i;
 
-       ASSERT(vtx_distr.is_local(edges[i].from))(edges[i].from)(edges[i].to)(i).error(
+       ASSERT_PERMANENT(vtx_distr.is_local(edges[i].from))(edges[i].from)(edges[i].to)(i).error(
                "Received non-local edge at position 'i'\n");
 
        loc_from=edges[i].from-vtx_distr.begin();
-       ASSERT( row <= loc_from )(i).error("Decrease in sorted edges at 'i'\n");
+       ASSERT_PERMANENT( row <= loc_from )(i).error("Decrease in sorted edges at 'i'\n");
 
        while ( row < loc_from ) rows[++row]=i;
        adj[i_adj]=edges[i].to;
@@ -212,7 +212,7 @@ void SparseGraph::finalize()
  */
 bool SparseGraph::check_subgraph_connectivity(int *part)
 {
-	ASSERT_EQ( vtx_distr.lsize(0), vtx_distr.size() ).error("Check of graph continuity not yet implemented for paralel case.\n");
+	ASSERT_PERMANENT_EQ( vtx_distr.lsize(0), vtx_distr.size() ).error("Check of graph continuity not yet implemented for paralel case.\n");
     if (vtx_distr.myp()!=0) return(true);
 
     part_to_check=part;
@@ -244,7 +244,7 @@ bool SparseGraph::check_subgraph_connectivity(int *part)
  */
 void SparseGraph::DFS(int vtx)
 {
-	ASSERT( vtx>=0 && vtx< (int) vtx_distr.size() )(vtx).error("Invalid entry vertex in DFS.\n");
+	ASSERT_PERMANENT( vtx>=0 && vtx< (int) vtx_distr.size() )(vtx).error("Invalid entry vertex in DFS.\n");
     int neighbour;
     for(int i_neigh=rows[vtx]; i_neigh< rows[vtx+1];i_neigh++) {
         neighbour = adj[i_neigh];
@@ -260,7 +260,7 @@ void SparseGraph::DFS(int vtx)
 
 void SparseGraph::view()
 {
-	ASSERT( adj ).error("Can not view non finalized graph.\n");
+	ASSERT_PERMANENT( adj ).error("Can not view non finalized graph.\n");
     int row,col;
     MessageOut() << "SparseGraph\n";
     for(row=0; row < (int) vtx_distr.lsize(); row++) {
@@ -274,7 +274,7 @@ void SparseGraph::view()
 
 bool SparseGraph::is_symmetric()
 {
-	ASSERT( rows && adj ).error("Graph is not yet finalized.");
+	ASSERT_PERMANENT( rows && adj ).error("Graph is not yet finalized.");
 
     int loc_row, row, row_pos;
     int col_pos,col,loc_col;
@@ -313,7 +313,7 @@ SparseGraph::~SparseGraph()
 ostream & operator <<(ostream & out, const SparseGraph &)
 {
     // TODO
-    ASSERT(0).error("Not implemented!");
+    ASSERT_PERMANENT(0).error("Not implemented!");
     return out;
 }
 
@@ -332,7 +332,7 @@ void SparseGraphPETSC::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphPETSC::partition(int *loc_part)
 {
-	ASSERT( adj && rows ).error("Can not make partition of non finalized graph.\n");
+	ASSERT_PERMANENT( adj && rows ).error("Can not make partition of non finalized graph.\n");
 
     MatCreateMPIAdj(vtx_distr.get_comm(), vtx_distr.lsize(),vtx_distr.size(),
             rows, adj,adj_weights, &petsc_adj_mat);
@@ -378,7 +378,7 @@ void SparseGraphMETIS::allocate_sparse_graph(int lsize_vtxs, int lsize_adj)
 
 void SparseGraphMETIS::partition(int *part)
 {
-	ASSERT_EQ( vtx_distr.lsize(0), vtx_distr.size() )
+	ASSERT_PERMANENT_EQ( vtx_distr.lsize(0), vtx_distr.size() )
             .error("METIS could be used only with localized distribution.\n");
     if (vtx_distr.np()==1) {
         for(unsigned int i=0;i<vtx_distr.size();i++) part[i]=0;

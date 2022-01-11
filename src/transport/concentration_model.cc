@@ -115,7 +115,7 @@ struct fn_conc_diff_coef {
 
             //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
             //double diff = arma::min( arma::min(abs_diff_mat) );
-            //ASSERT(  diff < 1e-12 )(diff)(K)(kk);
+            //ASSERT_PERMANENT(  diff < 1e-12 )(diff)(K)(kk);
         } else
             K.zeros();
 

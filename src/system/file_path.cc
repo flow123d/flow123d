@@ -28,7 +28,7 @@
  * Helper method, create path string from vector of strings
  */
 string create_path_from_vec(vector<string> sub_paths) {
-	ASSERT_GT(sub_paths.size(), 0).error();
+	ASSERT_PERMANENT_GT(sub_paths.size(), 0).error();
 
 	if (sub_paths.size() == 1) {
 		return sub_paths[0];
@@ -94,7 +94,7 @@ FilePath::FilePath()
 
 
 void FilePath::set_io_dirs(const string working_dir, const string root, const string input, const string output) {
-	ASSERT_EQ(working_dir, ".").error();
+	ASSERT_PERMANENT_EQ(working_dir, ".").error();
     FilePath::set_dirs(root, input, output);
 }
 
@@ -161,7 +161,7 @@ void FilePath::substitute_value(string &path) {
     for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
         size_t i = path.find(it->first,0);
         if (i != std::string::npos) {
-            ASSERT(it->second != "")(it->first).warning("Substituting placeholder with empty value.");
+            ASSERT_PERMANENT(it->second != "")(it->first).warning("Substituting placeholder with empty value.");
             path.replace(i, it->first.size(), it->second);
         }
     }
@@ -210,8 +210,8 @@ string FilePath::cut_extension() const {
 template <class Stream>
 void FilePath::open_stream(Stream &stream) const
 {
-    if ( std::is_same<Stream, ifstream>::value ) ASSERT(file_type_ == FileType::input_file);
-    if ( std::is_same<Stream, ofstream>::value ) ASSERT(file_type_ == FileType::output_file);
+    if ( std::is_same<Stream, ifstream>::value ) ASSERT_PERMANENT(file_type_ == FileType::input_file);
+    if ( std::is_same<Stream, ofstream>::value ) ASSERT_PERMANENT(file_type_ == FileType::output_file);
 
     if (file_type_ == FileType::input_file)
         stream.open(abs_file_path_->string().c_str(), ios_base::in);
@@ -237,7 +237,7 @@ template void FilePath::open_stream(ofstream &stream) const;
 template void FilePath::open_stream( fstream &stream) const;
 
 string FilePath::convert_for_check_absolute(const string path) {
-	ASSERT(path.length()).error("Empty path.");
+	ASSERT_PERMANENT(path.length()).error("Empty path.");
 
 	if (path[0] == '/') {
 		return "/" + path;

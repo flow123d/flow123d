@@ -31,7 +31,7 @@
 /**
  * Actually there are following debugging switches
  * FLOW123D_DEBUG_MESSAGES  - use various debugging messages introduced by DBGCOUT
- * FLOW123D_DEBUG_ASSERTS - use assertion checks introduced by ASSERT
+ * FLOW123D_DEBUG_ASSERTS - use assertion checks introduced by ASSERT_PERMANENT
  * FLOW123D_DEBUG_PROFILER - use profiling introduced by START_TIMER, END_TIMER
  *
  * You can turn all off defining: FLOW123D_NODEBUG

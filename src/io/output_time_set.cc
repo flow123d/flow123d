@@ -87,9 +87,9 @@ void OutputTimeSet::add(double time, TimeMark::Type mark_type)
 void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type mark_type)
 {
     //DebugOut().fmt("set add: {} {} {} {}\n", begin, step, end, mark_type);
-    ASSERT_GE_DBG( step, 2*numeric_limits<double>::epsilon());
-    ASSERT_LE_DBG( begin, end);
-    ASSERT_LE_DBG( end, TimeGovernor::inf_time );
+    ASSERT_GE( step, 2*numeric_limits<double>::epsilon());
+    ASSERT_LE( begin, end);
+    ASSERT_LE( end, TimeGovernor::inf_time );
     TimeMark::Type output_mark_type = mark_type | TimeGovernor::marks().type_output();
 
     double n_steps_dbl=((end - begin) / step + TimeGovernor::time_step_precision);

@@ -58,7 +58,7 @@ public:
         loc_ele_dof = fe_system->fe_dofs(1)[0];
         loc_edge_dofs = fe_system->fe_dofs(2);
 
-        FEAL_ASSERT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
+        FEAL_ASSERT_PERMANENT(ad_->mortar_method_ == DarcyFlowInterface::NoMortar)
             .error("Mortar methods are not supported in Lumped Mixed-Hybrid Method.");
         // if (ad_->mortar_method_ == DarcyFlowInterface::MortarP0) {
         //     mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
@@ -84,7 +84,7 @@ public:
 
     void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        ASSERT_EQ(dh_cell.dim(), dim);
     
         assemble_local_system(dh_cell, false);   //do not switch dirichlet in seepage when reconstructing
         
@@ -107,7 +107,7 @@ public:
     
     void assemble(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        ASSERT_EQ(dh_cell.dim(), dim);
         save_local_system_ = false;
         bc_fluxes_reconstruted = false;
 
@@ -503,7 +503,7 @@ protected:
         // no Neighbours => nothing to asssemble here
         if(ele->n_neighs_vb() == 0) return;
         
-        ASSERT_LT_DBG(ele->dim(), 3);
+        ASSERT_LT(ele->dim(), 3);
         arma::vec3 nv;
 
         unsigned int i = 0;

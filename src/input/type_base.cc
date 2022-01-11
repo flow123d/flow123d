@@ -132,7 +132,7 @@ void TypeBase::delete_unfinished_types() {
 
 
 void TypeBase::add_attribute_(std::string name, json_string val) {
-	ASSERT_DBG(validate_json(val))(name)(val).error("Invalid JSON format of attribute");
+	ASSERT(validate_json(val))(name)(val).error("Invalid JSON format of attribute");
 	(*attributes_)[name] = val;
 }
 
@@ -214,7 +214,7 @@ string TypeBase::class_name() const {
 
 
 FinishStatus TypeBase::finish(FinishStatus finish_type) {
-	ASSERT_DBG((finish_type != FinishStatus::none_) && (finish_type != FinishStatus::in_perform_)).error();
+	ASSERT((finish_type != FinishStatus::none_) && (finish_type != FinishStatus::in_perform_)).error();
 	return finish_type;
 }
 
@@ -270,9 +270,9 @@ Array::ArrayData::ArrayData(unsigned int min_size, unsigned int max_size)
 
 FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 {
-	ASSERT_DBG(finish_type != FinishStatus::none_).error();
-	ASSERT_DBG(finish_type != FinishStatus::in_perform_).error();
-	ASSERT_DBG(finish_status != FinishStatus::in_perform_).error("Recursion in the IST element: array_of_" + type_of_values_->type_name());
+	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(finish_status != FinishStatus::in_perform_).error("Recursion in the IST element: array_of_" + type_of_values_->type_name());
 
 	if (finish_status != FinishStatus::none_) return finish_status;
 
@@ -287,7 +287,7 @@ FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 		THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
 
 	type_of_values_->finish(finish_type);
-	ASSERT_DBG(type_of_values_->is_finished()).error();
+	ASSERT(type_of_values_->is_finished()).error();
 	if (finish_type == FinishStatus::delete_) type_of_values_.reset();
 	finish_status = finish_type;
 	return (finish_status);
@@ -326,7 +326,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 
 	// Set parameters as attribute
 	json_string val = this->print_parameter_map_to_json(parameter_map);
-	ASSERT_DBG(this->validate_json(val))(val).error("Invalid JSON format of attribute 'parameters'.");
+	ASSERT(this->validate_json(val))(val).error("Invalid JSON format of attribute 'parameters'.");
 	arr.parameter_map_ = parameter_map;
 	arr.generic_type_hash_ = this->content_hash();
 
@@ -345,8 +345,8 @@ Array Array::deep_copy() const {
 Array::Array(std::shared_ptr<TypeBase> type, unsigned int min_size, unsigned int max_size)
 : data_(std::make_shared<ArrayData>(min_size, max_size))
 {
-	ASSERT_LE(min_size, max_size).error("Wrong limits for size of Input::Type::Array");
-	ASSERT_DBG(type->is_closed()).error();
+	ASSERT_PERMANENT_LE(min_size, max_size).error("Wrong limits for size of Input::Type::Array");
+	ASSERT(type->is_closed()).error();
 
 	data_->type_of_values_ = type;
 }

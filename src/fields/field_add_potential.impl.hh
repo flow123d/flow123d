@@ -69,8 +69,8 @@ template <int spacedim, class Value>
 void FieldAddPotential<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
+	ASSERT_PERMANENT_EQ( point_list.size(), value_list.size() ).error();
+    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
     inner_field_->value_list(point_list, elm, value_list);
     for(unsigned int i=0; i< point_list.size(); i++) {
         double potential= arma::dot(grad_ , point_list.vec<spacedim>(i)) + zero_level_;
@@ -85,7 +85,7 @@ void FieldAddPotential<spacedim, Value>::value_list (const Armor::array &point_l
 template <int spacedim, class Value>
 bool FieldAddPotential<spacedim,Value>::set_time (const TimeStep &time)
 {
-	ASSERT_PTR(inner_field_).error("Null data pointer.\n");
+	ASSERT_PERMANENT_PTR(inner_field_).error("Null data pointer.\n");
     return inner_field_->set_time(time);
 }
 
@@ -93,7 +93,7 @@ bool FieldAddPotential<spacedim,Value>::set_time (const TimeStep &time)
 template <int spacedim, class Value>
 void FieldAddPotential<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain)
 {
-	ASSERT_PTR(inner_field_).error("Null data pointer.\n");
+	ASSERT_PERMANENT_PTR(inner_field_).error("Null data pointer.\n");
     return inner_field_->set_mesh(mesh, boundary_domain);
 }
 

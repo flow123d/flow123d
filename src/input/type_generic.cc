@@ -18,7 +18,7 @@
 #include <input/type_generic.hh>
 #include <input/type_repository.hh>
 #include <input/attribute_lib.hh>
-#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/asserts.hh"                           // for Assert, ASSERT_PERMANENT
 
 #include <boost/functional/hash.hpp>
 
@@ -77,7 +77,7 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 
 
 FinishStatus Parameter::finish(FinishStatus finish_type) {
-	ASSERT_DBG(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::none_).error();
 
 	if (finish_type == FinishStatus::regular_) THROW( ExcParamaterInIst() << EI_Object(this->name_));
 	return finish_type;
@@ -145,7 +145,7 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
         ParameterMap aux_map;
         for(auto &item : vec) aux_map[item.first]=0;
 
-		ASSERT_DBG(map_it != created_instance_.second.end())(vec_it->first)(generic_type_.type_name())
+		ASSERT(map_it != created_instance_.second.end())(vec_it->first)(generic_type_.type_name())
 				.error("Unused parameter in input type instance");
 	}
 #endif

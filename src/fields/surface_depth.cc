@@ -77,7 +77,7 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     arma::vec3 project_node("0 0 0");
     for( auto ele : mesh->bc_mesh()->elements_range() ) {
         if (ele.region().is_in_region_set(region_set)) {
-        	ASSERT_EQ_DBG(ele->n_nodes(), 3);
+        	ASSERT_EQ(ele->n_nodes(), 3);
 
         	arma::vec projection = m_ * (*ele.node(0));
         	project_node(0) = projection(0); project_node(1) = projection(1);
