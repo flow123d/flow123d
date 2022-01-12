@@ -101,6 +101,12 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
 template <int spacedim, class Value>
 bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
+	if (!time.use_fparser_) {
+	    this->time_=time;
+		this->is_constant_in_space_ = false;
+	    return true;
+	}
+
 	/* OLD FPARSER CODE */
     bool any_parser_changed = false;
     std::string value_input_address = in_rec_.address_string();
@@ -158,7 +164,6 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     if (has_depth_var_)
         vars += string(",d");
-    vars += string(",cross_section,const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
 
 	// update parsers
 	for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -360,7 +365,11 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         else {
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-            else THROW( ExcUnknownField() << EI_Field(var) );
+            else {
+                field_ptr = field_set.user_field(var, this->time_);
+                if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
+                else THROW( ExcUnknownField() << EI_Field(var) );
+            }
             // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
             // TODO: Test the exception, report input line of the formula.
