@@ -102,3 +102,22 @@ container> cd /flow123d
 container> make all # produce "build_tree/bin/flow123d"
 container> bin/flow123d  # lunch the simulator
 ```
+
+### Docker images
+Hosted on `dockerhub` under organisation [`flow123d`](https://hub.docker.com/orgs/flow123d/repositories).
+
+**production images** 
+
+tagged by the release version (e.g. 3.1.0)
+
+- [`flow123-gnu`](https://hub.docker.com/repository/docker/flow123d/flow123d-gnu) 
+  : based on gnu libraries and tools
+- `flow123-intel` : based on intel libraries (intelmpi, mkl, intel compilers)
+
+**alfa images**
+
+built by CI, tagged by `{branch}-{commit}`
+
+- [`ci-gnu`](https://hub.docker.com/repository/docker/flow123d/ci-gnu)
+- `ci-intel`
+
