@@ -1,0 +1,72 @@
+#################
+# Test goal: Test output of advection 1D-2D transport, no balance output.
+# Author: Jan Stebel, edit Pavel Exner
+# Source for reference: qualitative
+
+# features:
+#   - convection (FV)
+#   - conc sources
+#   - default value of output_stream of flow equation.
+#   - no balance output
+#
+# similar to tests: 21-03
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: 'Tutorial problem: Transport 1D-2D (convection, sources). Without balance output.'
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+    regions:
+      - !Union
+        name: 1d_domain
+        regions:
+          - 1d_upper
+          - 1d_lower
+          - 1d_left_branch
+
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: 1d_domain
+        conductivity: 1.0e-06
+        cross_section: 0.04
+        sigma: 0.9
+      - region: 2d
+        conductivity: 1.0e-07
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    balance: {add_output_times: false}
+
+  solute_equation: !Coupling_OperatorSplitting
+    substances:
+      - name: age # water age
+        molar_mass: 0.018
+      - name: U235 # uranium 235
+        molar_mass: 0.235
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: ALL
+          init_conc: 0
+          porosity: 0.25
+          sources_density:
+            - 0.25
+            - 0
+        # source is in the whole volume (l+s) -> times porosity
+        - region: .BOUNDARY
+          bc_conc:
+            - 0.0
+            - 1.0
+    time:
+      end_time: 1e6
+    balance: {add_output_times: false}
+    output_stream:
+      file: transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 5e5

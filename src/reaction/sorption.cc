@@ -183,8 +183,8 @@ void SorptionMob::init_field_models()
 
 // Functors for computing models
 struct fn_immob_scale_aqua {
-    inline double operator() (double por_m) {
-        return por_m;
+    inline double operator() (double por_imm) {
+        return por_imm;
     }
 };
 
@@ -226,7 +226,7 @@ SorptionImmob::~SorptionImmob(void)
 
 void SorptionImmob::init_field_models()
 {
-    eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_immob_scale_aqua(), eq_fields_->porosity), 0.0);
+    eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_immob_scale_aqua(), eq_fields_dual_->immob_porosity_), 0.0);
     eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
             fn_immob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->no_sorbing_surface_cond,
 	        eq_fields_->rock_density), 0.0);
