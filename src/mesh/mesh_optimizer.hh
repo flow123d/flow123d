@@ -47,13 +47,15 @@ public:
 
         node_sizes_.resize(mesh_->n_nodes(), INFINITY);
         element_sizes_.reserve(mesh_->n_elements());
+        START_TIMER("MESH OPTIMIZER - BOXES");
         for (const ElementAccessor<3>& elm : mesh_->elements_range()) {
-            double elm_norm_size = elm.bounding_box().longest_size() / mesh_longest_size;
+            double elm_norm_size = elm.bounding_box3().longest_size() / mesh_longest_size;
             element_sizes_.push_back(elm_norm_size);
             for (uint i = 0; i < elm.dim() + 1; ++i) {
                 node_sizes_[elm->node_idx(i)] = std::min({ node_sizes_[elm->node_idx(i)], elm_norm_size });
             }
         }
+        END_TIMER("MESH OPTIMIZER - BOXES");
     }
 
     inline void calculate_node_curve_values_as_hilbert() {
