@@ -95,9 +95,6 @@ public:
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
 
-        // This is necessary in the assembly
-        // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
-        double time_step_;
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 

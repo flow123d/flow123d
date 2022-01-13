@@ -226,6 +226,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     diff_data.div_diff_ptr = create_field_fe<3, FieldValue<3>::Scalar>(diff_data.dh_);
     output_specific_fields.div_diff.set(diff_data.div_diff_ptr, 0);
 
+    darcy_flow->time().step().use_fparser_ = true;
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
@@ -256,6 +257,7 @@ void DarcyFlowMHOutput::output()
 
     {
         START_TIMER("evaluate output fields");
+        darcy_flow->time().step().use_fparser_ = true;
         output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_fields.output(darcy_flow->time().step());
     }
@@ -269,6 +271,7 @@ void DarcyFlowMHOutput::output()
     if(is_output_specific_fields)
     {
         START_TIMER("evaluate output fields");
+        darcy_flow->time().step().use_fparser_ = true;
         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         output_specific_fields.output(darcy_flow->time().step());
     }

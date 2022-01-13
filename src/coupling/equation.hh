@@ -166,10 +166,12 @@ public:
         { return time_->estimate_time(); }
 
     /**
-     * Time of actual solution returned by get_solution_vector().
+     * Time until which the actual solution is valid.
+     * By default, it returns the actual time of the time governor.
+     * However, it can be overriden by a specific equation.
+     * E.g. it differs in Darcy flow in the steady case.
      */
-    inline double solved_time()
-        { return time_->t(); }
+    virtual double solved_time();
 
     /**
      * This getter method provides the computational mesh currently used by the model.

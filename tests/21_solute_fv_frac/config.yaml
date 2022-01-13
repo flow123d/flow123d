@@ -10,7 +10,6 @@ common_config:
 
 test_cases:
 - files:
-  - 01_fv_dp_sorp_gmsh.yaml
   - 02_fv_dp_sorp_vtk.yaml
   #- 03_fv_dp_sorp_small.yaml
   - 04_y_branch.yaml

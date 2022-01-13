@@ -62,6 +62,7 @@ public:
         p_indices_ = cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices();
         ASSERT_DBG(p_indices_.n_elem == 1);
         l_indices_ = cell.cell_with_other_dh(eq_data_->dh_cr_.get()).get_loc_dof_indices();
+        ASSERT_DBG(l_indices_.n_elem == cell.elm().element()->n_sides());
 
 		// set initial condition
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -71,8 +72,8 @@ public:
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
              init_value_on_edge_ = init_value_ / cell.elm().side(i)->edge().n_sides();
-             l_idx_ = eq_data_->dh_cr_->parent_indices()[l_indices_[i]];
-             eq_data_->full_solution.add(l_idx_, init_value_on_edge_);
+             // l_idx_ = eq_data_->dh_cr_->parent_indices()[l_indices_[i]];
+             // eq_data_->full_solution.add(l_idx_, init_value_on_edge_);
 
              eq_data_->p_edge_solution.add(l_indices_[i], init_value_on_edge_);
         }
@@ -83,12 +84,14 @@ public:
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        eq_data_->full_solution.ghost_to_local_begin();
-        eq_data_->full_solution.ghost_to_local_end();
+        //eq_data_->full_solution.ghost_to_local_begin();
+        //eq_data_->full_solution.ghost_to_local_end();
 
         eq_data_->p_edge_solution.ghost_to_local_begin();
         eq_data_->p_edge_solution.ghost_to_local_end();
-        eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
+        //eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
+        eq_data_->p_edge_solution.local_to_ghost_begin();
+        eq_data_->p_edge_solution.local_to_ghost_end();
     }
 
 

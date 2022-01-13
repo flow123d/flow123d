@@ -263,6 +263,8 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
+
     inline EqFields &eq_fields() { return *eq_fields_; }
     inline EqData &eq_data() { return *eq_data_; }
     
@@ -307,6 +309,8 @@ protected:
      * restart simulation or use results of one simulation as initial condition for other one.
      */
     virtual void read_initial_condition();
+
+    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
 
     /**
      * Part of per element assembly that is specific for MH and LMH respectively.
