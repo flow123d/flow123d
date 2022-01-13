@@ -146,6 +146,38 @@ const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) con
 }
 
 
+template <int spacedim> inline
+BoundingBox ElementAccessor<spacedim>::bounding_box2() const {
+    arma::vec3 min_vertex, max_vertex, node_vertex;
+    min_vertex = max_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(0) );
+
+    for(unsigned int i=1; i<element()->n_nodes(); i++) {
+        node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(i) );
+   		for(unsigned int j=0; j<spacedim; j++) {
+   			// parameters of min and max functions must be in correct order, vertices can be set to NaN (see default constructor)
+   			min_vertex(j) = std::min( node_vertex[j], min_vertex[j] );
+   			max_vertex(j) = std::max( node_vertex[j], max_vertex[j] );
+   	    }
+    }
+
+    return BoundingBox(min_vertex, max_vertex);
+}
+
+
+    template <int spacedim> inline
+    BoundingBox ElementAccessor<spacedim>::bounding_box3() const {
+        arma::vec3 node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(0) );
+        BoundingBox bb(node_vertex);
+
+        for(unsigned int i=1; i<element()->n_nodes(); i++) {
+            node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(i) );
+            bb.expand(node_vertex);
+        }
+
+        return bb;
+    }
+
+
 
 /*******************************************************************************
  * Edge IMPLEMENTATION

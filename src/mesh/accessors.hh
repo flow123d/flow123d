@@ -243,6 +243,14 @@ public:
     }
 
 
+    /**
+    * Return bounding box of the element.
+    * Optimizations of previous method.
+    */
+    BoundingBox bounding_box2() const;
+    BoundingBox bounding_box3() const;
+
+
     inline auto &orig_nodes_order() const {
     	return mesh_->element_nodes_original_[element()->permutation_];
     }
