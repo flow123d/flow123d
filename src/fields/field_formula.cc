@@ -334,6 +334,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             boost::replace_all(expr, "E", "e"); // Math.e
             boost::replace_all(expr, "!", "not");
             boost::replace_all(expr, "=", "==");
+            boost::replace_all(expr, "<==", "<=");
+            boost::replace_all(expr, ">==", ">=");
             boost::replace_all(expr, ":=", "=");
             boost::replace_all(expr, "&", " and ");
             boost::replace_all(expr, "|", " or ");
