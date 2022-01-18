@@ -111,9 +111,6 @@ public:
     /// Incremental function of the Element iterator.
     void inc();
 
-    /// Return list of element vertices.
-    vector<arma::vec3> vertex_list() const;
-
     /// Computes the measure of the element.
     double measure() const;
 
@@ -235,20 +232,9 @@ public:
     }
 
     /**
-    * Return bounding box of the element.
-    * Simpler code, but need to check performance penelty.
-    */
-    BoundingBox bounding_box() const {
-        return BoundingBox(this->vertex_list());
-    }
-
-
-    /**
-    * Return bounding box of the element.
-    * Optimizations of previous method.
-    */
-    BoundingBox bounding_box2() const;
-    BoundingBox bounding_box3() const;
+     * Return bounding box of the element.
+     */
+    BoundingBox bounding_box() const;
 
 
     inline auto &orig_nodes_order() const {
