@@ -193,16 +193,26 @@ TEST(VtkReaderTest, read_binary_vtu) {
 
     bool boundary_domain = false; // bulk data
     BaseMeshReader::HeaderQuery vector_header_params("vector_field", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
-
     auto header = ReaderCache::get_reader(mesh_file)->find_header(vector_header_params);
-    typename ElementDataCache<double>::CacheData multifield_data =
-            ReaderCache::get_reader(mesh_file)->template get_element_data<double>(header, 6, 3, boundary_domain);
-    std::vector<double> &vec = *( multifield_data.get() );
-    EXPECT_EQ(18, vec.size());
-    for (j=0; j<vec.size(); j++) {
-        // DebugOut() << i << ": " << vec[j] << "\n";
-        EXPECT_DOUBLE_EQ( 0.5*(j%3+1), vec[j] );
-    }
+	{
+        // test exception on wrong number of components
+        uint wrong_number_of_components = 7;
+        EXPECT_EQ( 3, header.n_components );
+		EXPECT_THROW_WHAT( { ReaderCache::get_reader(mesh_file)->template get_element_data<double>(
+            header, 6, wrong_number_of_components, boundary_domain); }, BaseMeshReader::ExcWrongComponentsCount,
+            "Wrong number of components of field 'vector_field' at time 0 in the input file: ");
+	}
+	{
+        // test reading vector field
+        typename ElementDataCache<double>::CacheData multifield_data =
+                ReaderCache::get_reader(mesh_file)->template get_element_data<double>(header, 6, 3, boundary_domain);
+        std::vector<double> &vec = *( multifield_data.get() );
+        EXPECT_EQ(18, vec.size());
+        for (j=0; j<vec.size(); j++) {
+            // DebugOut() << i << ": " << vec[j] << "\n";
+            EXPECT_DOUBLE_EQ( 0.5*(j%3+1), vec[j] );
+        }
+	}
 
     // read data to one vector for Field
     BaseMeshReader::HeaderQuery tensor_header_params("tensor_field", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);

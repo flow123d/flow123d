@@ -77,6 +77,10 @@ public:
 			<< "in the input file: " << EI_MeshFile::qval);
 	DECLARE_EXCEPTION(ExcWrongExtension,
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
+  DECLARE_EXCEPTION(ExcWrongComponentsCount,
+			<< "Wrong number of components of field " << EI_FieldName::qval
+      << " at time " << EI_Time::val
+      << " in the input file: " << EI_MeshFile::qval);
 
 
     /***********************************

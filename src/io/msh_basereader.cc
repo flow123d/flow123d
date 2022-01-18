@@ -105,13 +105,12 @@ typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
 	    if (header.n_entities != expected_n_entities) {
 	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nDifferent number of entities: {}, computation needs {}.\n",
 	                tok_.f_name(), data_section_name_, field_name, header.time, header.n_entities, expected_n_entities);
-	        // header.n_entities = expected_n_entities;
 	    }
         // check that the header is valid, try to correct n_components
         if (header.n_components != expected_n_components) {
-            WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
+            WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, expected: {} .\n",
                     tok_.f_name(), data_section_name_, field_name, header.time, header.n_components, expected_n_components);
-            header.n_components = expected_n_components;
+            THROW(ExcWrongComponentsCount() << EI_FieldName(field_name) << EI_Time(header.time) << EI_MeshFile(tok_.f_name()) );
         }
 
     	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >(
