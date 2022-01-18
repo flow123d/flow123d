@@ -245,7 +245,7 @@ void RichardsLMH::initialize_asm() {
 
 
 void RichardsLMH::read_init_cond_asm() {
-    this->read_init_cond_assembly_richards_->assemble(eq_data_->dh_);
+    this->read_init_cond_assembly_richards_->assemble(eq_data_->dh_cr_);
 }
 
 

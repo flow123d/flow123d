@@ -1391,7 +1391,7 @@ void DarcyLMH::initialize_asm() {
 
 
 void DarcyLMH::read_init_cond_asm() {
-    this->read_init_cond_assembly_->assemble(eq_data_->dh_);
+    this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
 }
 
 
