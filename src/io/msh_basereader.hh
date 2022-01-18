@@ -183,9 +183,9 @@ public:
      *  use simple array of IDs instead of map and just check that they come in correct order.
      *
      *  @param header header of the section to be read
-     *  @param boundary_domain flag determines that data is read for boundary or bulk elements
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
+     *  @param boundary_domain flag determines that data is read for boundary or bulk elements
 	 */
     template<typename T>
     typename ElementDataCache<T>::CacheData get_element_data(
