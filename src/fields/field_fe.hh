@@ -246,7 +246,7 @@ private:
     template<unsigned int dim>
     void fill_fe_system_data(unsigned int block_index) {
         auto fe_system_ptr = std::dynamic_pointer_cast<FESystem<dim>>( dh_->ds()->fe()[Dim<dim>{}] );
-        ASSERT_DBG(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
+        ASSERT(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
         this->fe_item_[dim].comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
         this->fe_item_[dim].range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
         this->fe_item_[dim].range_end_ = this->fe_item_[dim].range_begin_ + fe_system_ptr->fe()[block_index]->n_dofs();

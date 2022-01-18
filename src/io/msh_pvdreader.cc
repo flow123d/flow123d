@@ -46,7 +46,7 @@ PvdMeshReader::~PvdMeshReader()
 
 void PvdMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
-	// ASSERT(0).error("Not implemented!");
+	// ASSERT_PERMANENT(0).error("Not implemented!");
 }
 
 

@@ -22,7 +22,7 @@
 
 Quadrature& Quadrature::operator=(const Quadrature &q)
 {
-    ASSERT_DBG( dim_ == q.dim_ );
+    ASSERT( dim_ == q.dim_ );
     quadrature_points = q.quadrature_points;
     weights = q.weights;
     return *this;
@@ -46,8 +46,8 @@ Quadrature::Quadrature(const Quadrature &q) :
 template<unsigned int bulk_dim>
 Quadrature Quadrature::make_from_side(unsigned int sid) const
 {
-    ASSERT_DBG( bulk_dim == dim_ + 1 );
-    ASSERT_DBG( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
+    ASSERT( bulk_dim == dim_ + 1 );
+    ASSERT( RefElement<bulk_dim>::n_nodes_per_side == bulk_dim );
     
     Quadrature q(dim_+1, size());
     Armor::ArmaVec<double, bulk_dim+1> el_bar_coords, final_bar;
@@ -70,7 +70,7 @@ Quadrature Quadrature::make_from_side(unsigned int sid) const
 // Specialized subquadrature consructor for dim=1.
 template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid) const
 {
-    ASSERT_EQ_DBG(size(), 1);
+    ASSERT_EQ(size(), 1);
     Quadrature q(1, 1);
     q.quadrature_points.set(0) = Armor::ArmaVec<double, 1>({ (double)sid });
     q.weight(0) = 1;

@@ -78,7 +78,7 @@ template <int spacedim, class Value>
 const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_type_instance(Input::Type::Selection value_selection) {
 	std::vector<it::TypeBase::ParameterPair> param_vec;
 	if (is_enum_valued) {
-		ASSERT( !(value_selection==Input::Type::Selection()) ).error("Not defined 'value_selection' for enum element type.\n");
+		ASSERT_PERMANENT( !(value_selection==Input::Type::Selection()) ).error("Not defined 'value_selection' for enum element type.\n");
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<it::Selection>(value_selection)) );
 	} else {
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
@@ -141,7 +141,7 @@ void FieldAlgorithmBase<spacedim, Value>::cache_update(
 			FMT_UNUSED ElementCacheMap &cache_map,
 			FMT_UNUSED unsigned int region_patch_idx)
 {
-    ASSERT_DBG(false).error("Must be implemented in descendants!\n");
+    ASSERT_PERMANENT(false).error("Must be implemented in descendants!\n");
 }
 
 
@@ -157,7 +157,7 @@ void FieldAlgorithmBase<spacedim, Value>::value_list(
         std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+    ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
     	ASSERT( Value(value_list[i]).n_rows()==this->value_.n_rows() )(i)(Value(value_list[i]).n_rows())(this->value_.n_rows())
                 .error("value_list has wrong number of rows");

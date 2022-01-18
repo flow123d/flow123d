@@ -52,7 +52,7 @@ uint64_t read_header_type(DataType data_header_type, std::istream &data_stream)
 	else if (data_header_type == DataType::uint32)
 		return (uint64_t)read_binary_value<unsigned int>(data_stream);
 	else {
-		ASSERT(false).error("Unsupported header_type!\n"); //should not happen
+		ASSERT_PERMANENT(false).error("Unsupported header_type!\n"); //should not happen
 		return 0;
 	}
 }
@@ -355,7 +355,7 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 			break;
 		}
 		default: {
-			ASSERT(false).error(); // should not happen
+			ASSERT_PERMANENT(false).error(); // should not happen
 			break;
 		}
 	}
@@ -454,7 +454,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
 void VtkMeshReader::read_physical_names(Mesh*) {
 	// will be implemented later
-	// ASSERT(0).error("Not implemented!");
+	// ASSERT_PERMANENT(0).error("Not implemented!");
 }
 
 

@@ -95,7 +95,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
             size = output_mesh_->offsets_->n_values()-1;
             break;
         default:
-            ASSERT(false).error("Should not happen.");
+            ASSERT_PERMANENT(false).error("Should not happen.");
             break;
     }
 

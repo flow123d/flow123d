@@ -233,7 +233,7 @@ protected:
     	} else if ( std::is_same<T, int>::value ) {
     		vtk_type_ = VTK_INT32;
     	} else {
-    		ASSERT(false).error("Unsupported VTK type");
+    		ASSERT_PERMANENT(false).error("Unsupported VTK type");
     	}
     }
 
@@ -313,7 +313,7 @@ public:
 
     void print_binary_all(ostream &, bool, unsigned int) override
     {
-        ASSERT(false).error("Not implemented.");
+        ASSERT_PERMANENT(false).error("Not implemented.");
     }
 
     void print_yaml_subarray(ostream &, unsigned int, unsigned int , unsigned int) override

@@ -61,17 +61,17 @@ public:
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
-				ASSERT_PTR(data_stream_).error();
+				ASSERT_PERMANENT_PTR(data_stream_).error();
 				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position);
 				break;
 			}
 			case DataFormat::binary_zlib: {
-				ASSERT_PTR(data_stream_).error();
+				ASSERT_PERMANENT_PTR(data_stream_).error();
 				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position);
 				break;
 			}
 			default: {
-				ASSERT(false).error(); // should not happen
+				ASSERT_PERMANENT(false).error(); // should not happen
 				break;
 			}
 		}

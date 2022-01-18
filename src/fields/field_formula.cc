@@ -133,7 +133,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
                 int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-                ASSERT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
+                ASSERT_PERMANENT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
             }
 #pragma GCC diagnostic pop
 
@@ -229,7 +229,7 @@ void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, 
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
         ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())

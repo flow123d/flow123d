@@ -18,7 +18,7 @@
 #ifndef BC_MESH_H
 #define BC_MESH_H
 
-#define NOT_IMPLEMENTED { ASSERT(false); return 0; }
+#define NOT_IMPLEMENTED { ASSERT_PERMANENT(false); return 0; }
 
 
 #include "mesh/mesh.h"

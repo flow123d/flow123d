@@ -111,7 +111,7 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 
 
 uint EvalPoints::DimEvalPoints::add_subset() {
-    ASSERT_LT_DBG(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
+    ASSERT_LT(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
 
     n_subsets_++;
     subset_starts_[n_subsets_] = this->size();

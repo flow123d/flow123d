@@ -70,7 +70,7 @@ void FieldAddPotential<spacedim, Value>::value_list (const Armor::array &point_l
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
+    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
     inner_field_->value_list(point_list, elm, value_list);
     for(unsigned int i=0; i< point_list.size(); i++) {
         double potential= arma::dot(grad_ , point_list.vec<spacedim>(i)) + zero_level_;

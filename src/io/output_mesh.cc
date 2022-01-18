@@ -80,15 +80,15 @@ OutputMeshBase::~OutputMeshBase()
 
 OutputElementIterator OutputMeshBase::begin()
 {
-    ASSERT_PTR_DBG(offsets_);
-//     ASSERT_DBG(offsets_->n_values() > 0);
+    ASSERT_PTR(offsets_);
+//     ASSERT(offsets_->n_values() > 0);
     return OutputElementIterator(OutputElement(0, shared_from_this()));
 }
 
 OutputElementIterator OutputMeshBase::end()
 {
-    ASSERT_PTR_DBG(offsets_);
-//     ASSERT_DBG(offsets_->n_values() > 0);
+    ASSERT_PTR(offsets_);
+//     ASSERT(offsets_->n_values() > 0);
     return OutputElementIterator(OutputElement(offsets_->n_values()-1, shared_from_this()));
 }
 
@@ -194,7 +194,7 @@ void OutputMeshBase::create_sub_mesh()
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc_[loc_el] );
         for (unsigned int li=0; li<elm->n_nodes(); li++) {
-        	ASSERT_DBG(local_nodes_map[ elm.node(li).idx() ] != undef_idx)(elm.node(li).idx()).error("Undefined global to local node index!");
+        	ASSERT(local_nodes_map[ elm.node(li).idx() ] != undef_idx)(elm.node(li).idx()).error("Undefined global to local node index!");
         	connectivity_vec[conn_id++] = local_nodes_map[ elm.node(li).idx() ];
         }
     }
@@ -293,12 +293,12 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_refined_sub_mesh()
 {
-    ASSERT(0).error("Not implemented yet.");
+    ASSERT_PERMANENT(0).error("Not implemented yet.");
 }
 
 bool OutputMesh::refinement_criterion()
 {
-    ASSERT(0).error("Not implemented yet.");
+    ASSERT_PERMANENT(0).error("Not implemented yet.");
     return false;
 }
 
@@ -447,7 +447,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
     };
 //     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
  
-    ASSERT_DBG(dim == aux_element.nodes.size()-1);
+    ASSERT_EQ(dim, aux_element.nodes.size()-1);
     
     // if not refining any further, push into final vector
     if( ! refinement_criterion(aux_element, ele_acc) ) {
@@ -544,7 +544,7 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
                                             const ElementAccessor<spacedim> &ele_acc
                                            )
 {
-    ASSERT_DBG(error_control_field_func_).error("Error control field not set!");
+    ASSERT(error_control_field_func_).error("Error control field not set!");
 
     // evaluate at nodes and center in a single call
     std::vector<double> val_list(ele.nodes.size()+1);
@@ -669,7 +669,7 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
             case 1: this->refine_aux_element<1>(aux_ele, refinement, ele); break;
             case 2: this->refine_aux_element<2>(aux_ele, refinement, ele); break;
             case 3: this->refine_aux_element<3>(aux_ele, refinement, ele); break;
-            default: ASSERT(0 < dim && dim < 4);
+            default: ASSERT_PERMANENT(0).error("Should not happen.\n");
         }
 
         //skip unrefined element

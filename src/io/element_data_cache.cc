@@ -86,7 +86,7 @@ void ElementDataCache<T>::read_ascii_data(Tokenizer &tok, unsigned int n_compone
 	unsigned int idx = i_row * n_components;
     std::vector<T> &vec = *( data_.get() );
     for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-        ASSERT_DBG(idx < vec.size());
+        ASSERT_LT(idx, vec.size());
         vec[idx] = boost::lexical_cast<T>(*tok);
         ++tok;
     }
@@ -208,7 +208,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
  */
 template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values_)(this->field_name_);
+    ASSERT_LT(idx, this->n_values_)(this->field_name_);
     std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
@@ -221,7 +221,7 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::add(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values_);
+    ASSERT_LT(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
@@ -234,7 +234,7 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::zero(unsigned int idx) {
-    ASSERT_LT_DBG(idx, this->n_values_);
+    ASSERT_LT(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
@@ -247,7 +247,7 @@ void ElementDataCache<T>::zero(unsigned int idx) {
  */
 template <typename T>
 void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
-    ASSERT_LT_DBG(idx, this->n_values_);
+    ASSERT_LT(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
@@ -278,7 +278,7 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
 template <typename T>
 void ElementDataCache<T>::scale_data(double coef) {
     if (check_scale_data_ == CheckScaleData::scale) return; // method is executed only once
-    ASSERT_DBG(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
+    ASSERT(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
 
     std::vector<T> &vec = *( this->data_.get() );
     for(unsigned int i=0; i<vec.size(); ++i) {
@@ -437,8 +437,8 @@ MPI_Datatype ElementDataCache<unsigned int>::mpi_data_type() {
 template <class T>
 T& ElementDataCache<T>::operator[](unsigned int i)
 {
-	std::vector<T> &vec = *( this->data_.get() );
-    ASSERT_DBG(i < vec.size());
+    std::vector<T> &vec = *( this->data_.get() );
+    ASSERT_LT(i, vec.size());
     return vec[i];
 }
 

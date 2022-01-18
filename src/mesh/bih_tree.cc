@@ -71,14 +71,14 @@ void BIHTree::construct() {
 
 const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
 {
-    ASSERT_DBG(ele_idx < elements_.size());
+    ASSERT(ele_idx < elements_.size());
     return elements_[ele_idx];
 }
 
 
 void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	BIHNode &node = nodes_[node_idx];
-	OLD_ASSERT(node.is_leaf(), " ");
+	ASSERT( node.is_leaf() ).error("Not leaf node.");
 	unsigned int axis = node_box.longest_axis();
 	double median = estimate_median(axis, node);
 
@@ -279,7 +279,7 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 //	std::vector<unsigned int> cpy(result_list);
 //	sort(cpy.begin(), cpy.end());
 //	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
-//	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
+//	ASSERT_PERMANENT_EQ(cpy.size() , it - cpy.begin());
 //#endif
 }
 

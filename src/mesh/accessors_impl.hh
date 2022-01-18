@@ -169,8 +169,8 @@ inline Edge::Edge(const MeshBase *mesh, unsigned int edge_idx)
 
 inline const EdgeData* Edge::edge_data() const
 {
-    ASSERT_DBG(is_valid());
-    ASSERT_LT_DBG(edge_idx_, mesh_->edges.size());
+    ASSERT(is_valid());
+    ASSERT_LT(edge_idx_, mesh_->edges.size());
     return &mesh_->edges[edge_idx_];
 }
 
@@ -252,13 +252,13 @@ inline Boundary::Boundary(BoundaryData* boundary_data)
 
 inline Edge Boundary::edge()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return boundary_data_->mesh_->edge(boundary_data_->edge_idx_);
 }
 
 inline ElementAccessor<3> Boundary::element_accessor()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return boundary_data_->mesh_->bc_mesh()->element_accessor(boundary_data_->bc_ele_idx_);
 }
 
@@ -269,6 +269,6 @@ inline Region Boundary::region()
 
 inline const Element * Boundary::element()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return &( boundary_data_->mesh_->bc_mesh()->element(boundary_data_->bc_ele_idx_) );
 }

@@ -246,7 +246,7 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 	case 3:
 		return value_handler3_.value(p, elm);
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 
     return this->r_value_;
@@ -262,7 +262,7 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
                    std::vector<typename Value::return_type> &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-	ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+	ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
 	switch (elm.dim()) {
 	case 0:
@@ -278,7 +278,7 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 		value_handler3_.value_list(point_list, elm, value_list);
 		break;
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 }
 
@@ -450,7 +450,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 			break;
 		}
 		default:
-			ASSERT(false).error("Should not happen!\n");
+			ASSERT_PERMANENT(false).error("Should not happen!\n");
 	}
 
 	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<MeshBase &>(*mesh) );
@@ -617,7 +617,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Cache
 					contains = MappingP1<3,3>::contains_point(q_points[i], elm);
 					break;
 				default:
-					ASSERT(false).error("Invalid element dimension!");
+					ASSERT_PERMANENT(false).error("Invalid element dimension!");
 				}
 				if ( contains ) {
 					// projection point in element
@@ -639,9 +639,9 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Cache
 		LocDofVec loc_dofs;
 		loc_dofs = cell.get_loc_dof_indices();
 
-		ASSERT_LE_DBG(loc_dofs.n_elem, elem_value.size());
+		ASSERT_LE(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
-			ASSERT_LT_DBG( loc_dofs[i], (int)data_vec_.size());
+			ASSERT_LT( loc_dofs[i], (int)data_vec_.size());
 			data_vec_.set( loc_dofs[i], elem_value[i] * this->unit_conversion_coefficient_ );
 		}
 	}
@@ -737,7 +737,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
-			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
+			ASSERT_LE(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
 				data_vec_.set(loc_dofs[i], value[i] / total_measure);
 			}
@@ -765,7 +765,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
 		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
-		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
+		ASSERT_EQ(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
 		    ++count_vector[ loc_dofs[i] ];
@@ -792,7 +792,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
 		data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
 		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-			ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+			ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 			data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 			++count_vector[ loc_dofs[i] ];
 		}
@@ -821,14 +821,14 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 			if ( std::isnan(default_value_) )
 				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
 				++count_vector[ loc_dofs[i] ];
 			}
 		} else {
 			data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 				++count_vector[ loc_dofs[i] ];
 			}

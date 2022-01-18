@@ -32,7 +32,7 @@ MixedMeshIntersections::~MixedMeshIntersections()
 
 unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
 {
-    ASSERT_EQ_DBG(dim, 2).error("Not implemented for given dim.\n");
+    ASSERT_EQ(dim, 2).error("Not implemented for given dim.\n");
 //     if(dim == 1) return algorithm13_.component_counter_;
     return algorithm22_.component_counter_; // if(dim == 2) return ...
 }
@@ -133,8 +133,8 @@ void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_
 
         unsigned int ele_a_idx = isec.component_ele_idx();
         unsigned int ele_b_idx = isec.bulk_ele_idx();
-        ASSERT_EQ_DBG(mesh->element_accessor(ele_a_idx)->dim(), dim_A)(ele_a_idx);
-        ASSERT_EQ_DBG(mesh->element_accessor(ele_b_idx)->dim(), dim_B)(ele_b_idx);
+        ASSERT_EQ(mesh->element_accessor(ele_a_idx)->dim(), dim_A)(ele_a_idx);
+        ASSERT_EQ(mesh->element_accessor(ele_b_idx)->dim(), dim_B)(ele_b_idx);
         element_intersections_[ele_a_idx].push_back(
                     std::make_pair(ele_b_idx, &(isec)) );
 
@@ -163,7 +163,7 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
         case Mesh::BIHsearch: iea.compute_intersections(mesh->get_bih_tree()); break;
         case Mesh::BIHonly:   iea.compute_intersections_BIHtree(mesh->get_bih_tree()); break;
         case Mesh::BBsearch:  iea.compute_intersections_BB(); break;
-        default: ASSERT(0).error("Unsupported search algorithm.");
+        default: ASSERT_PERMANENT(0).error("Unsupported search algorithm.");
     }
     
     END_TIMER("Intersection algorithm");
@@ -379,9 +379,9 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         END_TIMER("Intersections 1D-2D (2)");
     }
 
-    //ASSERT_EQ(intersection_storage13_.size(), 0);
-    //ASSERT_EQ(intersection_storage23_.size(), 0);
-    //ASSERT_EQ(intersection_storage22_.size(), 0);
+    //ASSERT_PERMANENT_EQ(intersection_storage13_.size(), 0);
+    //ASSERT_PERMANENT_EQ(intersection_storage23_.size(), 0);
+    //ASSERT_PERMANENT_EQ(intersection_storage22_.size(), 0);
     // compose master
     append_to_index(intersection_storage12_);
 

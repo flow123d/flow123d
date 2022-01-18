@@ -30,8 +30,8 @@ ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
                                               ElementAccessor<3> triangle, FMT_UNUSED Mesh *mesh)
 : computed_(false)
 {
-    ASSERT_DBG(abscissa->dim() == 1);
-    ASSERT_DBG(triangle->dim() == 2);
+    ASSERT(abscissa->dim() == 1);
+    ASSERT(triangle->dim() == 2);
     // in this constructor, we suppose this is the final object -> we create all data members
     plucker_coordinates_abscissa_ = new Plucker(*abscissa.node(0),
                                                 *abscissa.node(1), true);
@@ -90,7 +90,7 @@ void ComputeIntersection<1,2>::compute_plucker_products(){
         plucker_coordinates_triangle_[side]->compute();
 		scale_triangle_ = std::min( scale_triangle_, plucker_coordinates_triangle_[side]->scale());
 		
-        ASSERT_DBG(plucker_products_[side]).error("Undefined plucker product.");
+        ASSERT(plucker_products_[side]).error("Undefined plucker product.");
         if(*plucker_products_[side] == plucker_empty){
            *plucker_products_[side] = (*plucker_coordinates_abscissa_)*(*plucker_coordinates_triangle_[side]);
         }
@@ -138,7 +138,7 @@ bool ComputeIntersection<1,2>::compute_plucker(IPAux12& IP, const arma::vec3& lo
 //     DBGMSG("Plucker product sum = %e %e %e\n",w_sum, 1-rounding_epsilon, 1+rounding_epsilon);
     
     //assert inaccurate barycentric coordinates
-    ASSERT_DBG(fabs(1.0 - local[0] - local[1] - local[2]) < geometry_epsilon)(local[0]+local[1]+local[2])
+    ASSERT(fabs(1.0 - local[0] - local[1] - local[2]) < geometry_epsilon)(local[0]+local[1]+local[2])
             (local[0])(local[1])(local[2]);
 
 
@@ -263,7 +263,7 @@ IntersectionResult ComputeIntersection<1,2>::compute(IPAux12 &IP)
         return result;
 
     } else {
-        ASSERT_DBG(IP.topology_equal(IPAux12()));   // check empty IP (none)
+        ASSERT(IP.topology_equal(IPAux12()));   // check empty IP (none)
         IP.set_result(IntersectionResult::degenerate);  // set deg. result
         return IntersectionResult::degenerate;
     }
@@ -288,7 +288,7 @@ unsigned int ComputeIntersection<1,2>::compute_final(vector<IPAux12>& IP12s)
         return IP12s.size();
     }
     else{
-        ASSERT_DBG(result == IntersectionResult::degenerate);
+        ASSERT(result == IntersectionResult::degenerate);
 //         DBGCOUT(<< "12d degenerate case, all products are zero\n");
         return compute_final_in_plane(IP12s);
     }
@@ -436,7 +436,7 @@ unsigned int ComputeIntersection<1,2>::compute_final_in_plane(vector<IPAux12>& I
     }
     
     // 2 IPs CASE:
-    ASSERT_EQ_DBG(2, IP12s.size());
+    ASSERT_EQ(2, IP12s.size());
     
 //     DBGVAR(sign[0]);
 //     DebugOut() << IP12s[0];
@@ -543,8 +543,8 @@ ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
                                               ElementAccessor<3> triaB,
                                               FMT_UNUSED Mesh *mesh)
 {
-    ASSERT_DBG(triaA->dim() == 2);
-    ASSERT_DBG(triaB->dim() == 2);
+    ASSERT(triaA->dim() == 2);
+    ASSERT(triaB->dim() == 2);
     plucker_coordinates_.resize(2*RefElement<2>::n_sides);
     plucker_products_.resize(3*RefElement<2>::n_sides);
     
@@ -764,9 +764,9 @@ ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
                                               ElementAccessor<3> tetrahedron,
                                               FMT_UNUSED Mesh *mesh)
 {
-    ASSERT_DBG(abscissa->dim() == 1);
-    ASSERT_DBG(tetrahedron->dim() == 3);
-    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.input_id(),"element index").error(
+    ASSERT(abscissa->dim() == 1);
+    ASSERT(tetrahedron->dim() == 3);
+    ASSERT(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0).add_value(tetrahedron.input_id(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
     
@@ -834,7 +834,7 @@ unsigned int ComputeIntersection<1,3>::compute(IntersectionAux< 1, 3 >& intersec
 }
 
 unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
-	ASSERT_EQ_DBG(0, IP13s.size());
+	ASSERT_EQ(0, IP13s.size());
 
 	// Topological position of abscissa -2, -1, 0, 1, 2; see 'check_abscissa_topology' method
     std::vector<int> position_on_abscissa;
@@ -880,7 +880,7 @@ unsigned int ComputeIntersection<1,3>::compute(std::vector<IPAux> &IP13s){
 	}
     
     // 2 IPs CASE:
-    ASSERT_EQ_DBG(2, IP13s.size());
+    ASSERT_EQ(2, IP13s.size());
     
     // intersection outside of abscissa => NO intersection
     if (position_on_abscissa[0] == position_on_abscissa[1] && std::abs(position_on_abscissa[0]) > 1) {
@@ -1007,7 +1007,7 @@ ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
                                               Mesh *mesh)
 : ComputeIntersection()
 {
-    ASSERT_DBG(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0)
+    ASSERT(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0)
             (tetrahedron.sign())(tetrahedron.jacobian_S3()).add_value(tetrahedron.input_id(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
@@ -1093,10 +1093,10 @@ void ComputeIntersection<2,3>::init(){
 
 
 bool ComputeIntersection<2,3>::have_backlink(uint i_obj) {
-    ASSERT_LT_DBG(i_obj, object_next.size());
+    ASSERT_LT(i_obj, object_next.size());
     unsigned int ip = object_next[i_obj];
     if (ip == no_idx) return false;
-    ASSERT_LT_DBG(ip, IP_next.size());
+    ASSERT_LT(ip, IP_next.size());
     return IP_next[ip] == i_obj;
 }
 
@@ -1111,7 +1111,7 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
     }
 
     unsigned int ip = object_next[obj_after_ip];
-    ASSERT_DBG( ! have_backlink(obj_after_ip) )
+    ASSERT( ! have_backlink(obj_after_ip) )
         (mesh_->element_accessor(intersection_->component_ele_idx()).idx())
         (mesh_->element_accessor(intersection_->bulk_ele_idx()).idx())
         (obj_before_ip)
@@ -1167,7 +1167,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 	    unsigned int i_side = cycle_sides[_i_side];
 	    IP13s.clear();
         CI13[ i_side ].compute(IP13s);
-        ASSERT_DBG(IP13s.size() < 3);
+        ASSERT(IP13s.size() < 3);
         if (IP13s.size() == 0) continue;
         for(unsigned int _ip=0; _ip < IP13s.size(); _ip++) {
             //int ip_topo_position = _ip*2-1; // -1 (incoming ip), +1 (outcoming ip), 0 both
@@ -1215,7 +1215,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
                     // touch in edge
 
                     //continue;
-                    ASSERT_EQ_DBG(IP23.dim_B(), 1);
+                    ASSERT_EQ(IP23.dim_B(), 1);
                     edge_touch[IP23.idx_B()]=true;
                     std::swap(object_before_ip, object_after_ip);
                 }
@@ -1224,7 +1224,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             unsigned int ip_idx = add_ip(IP23);
 
 //            DebugOut().fmt("before: {} after: {} ip: {}\n", object_before_ip, object_after_ip, ip_idx);
-            ASSERT_EQ_DBG(IP23_list.size(),  IP_next.size()+1);
+            ASSERT_EQ(IP23_list.size(),  IP_next.size()+1);
             set_links(object_before_ip, ip_idx, object_after_ip);
         }
 
@@ -1269,7 +1269,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
             
             const uint edge_dim = IP23.dim_B();
             const uint i_edge = IP23.idx_B();
-	        ASSERT_LT_DBG(edge_dim, 2);
+	        ASSERT_LT(edge_dim, 2);
 
 	        unsigned int ip_idx = add_ip(IP23);
 //	        DebugOut() << print_var(edge_dim);
@@ -1313,7 +1313,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 
 
     // Return IPs in correct order and remove duplicates
-	ASSERT_EQ(0, intersection.size());
+	ASSERT_PERMANENT_EQ(0, intersection.size());
 
     if (IP23_list.size() == 0) return; // empty intersection
 
@@ -1322,7 +1322,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
     // Possibly we do this only if we detect such case through previous phases.
     vector<char> have_predecessor(IP23_list.size(), 0);
     for(auto obj : IP_next) {
-        ASSERT_LT_DBG(obj, object_next.size());
+        ASSERT_LT(obj, object_next.size());
         unsigned int ip = object_next[obj];
         if (ip < IP_next.size()) have_predecessor[ip]=1;
     }
@@ -1335,7 +1335,7 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
     
     // regular case, merge duplicit IPs
     unsigned int ip=ip_init;
-    ASSERT_EQ_DBG(IP_next.size(), IP23_list.size());
+    ASSERT_EQ(IP_next.size(), IP23_list.size());
     intersection.points().push_back(IP23_list[ip]);
     //DebugOut() << print_var(ip) << IP23_list[ip];
     while (1)  {
@@ -1343,11 +1343,11 @@ void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 
         unsigned int object = IP_next[ip];
         //IP_next[ip]=no_idx;
-        ASSERT_LT_DBG(object, object_next.size());
+        ASSERT_LT(object, object_next.size());
         ip = object_next[object];
         object_next[object]=no_idx;
         if ((ip == no_idx)) break;
-        ASSERT_LT_DBG(ip, IP_next.size());
+        ASSERT_LT(ip, IP_next.size());
 
         if ( ! IP23_list[ip].topology_equal(intersection.points().back()) ) {
             IPAux23 &IP = IP23_list[ip];
@@ -1378,7 +1378,7 @@ auto ComputeIntersection<2,3>::edge_faces(uint i_edge)-> FacePair
 {
     auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge), S3_inverted);
     unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].result());
-    ASSERT_DBG(ip_ori < 2); // no degenerate case
+    ASSERT(ip_ori < 2); // no degenerate case
     //ip_ori ^= (int)(mesh_->element_accessor(intersection_->bulk_ele_idx).inverted());
 
     // RefElement returns edge faces in clockwise order (edge pointing to us)
@@ -1399,7 +1399,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
         if (RefElement<3>::interact(Interaction<0,1>(vtx_edges[ie]))[0] != i_vertex
             && edge_ip_ori!= int(IntersectionResult::degenerate) )
             edge_ip_ori = (edge_ip_ori +1)%2;
-        //ASSERT_LT_DBG(edge_ip_ori, 3)(ie);
+        //ASSERT_LT(edge_ip_ori, 3)(ie);
         if (edge_ip_ori == 3) edge_ip_ori=2; // none as degenerate
         n_ori[edge_ip_ori]++;
         sum_idx[edge_ip_ori]+=ie;
@@ -1425,7 +1425,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
     } else if (n_degen == 1) {
         // One edge in S2 plane.
         unsigned int i_edge = sum_degen;
-        ASSERT_DBG( n_positive + n_negative == 2);
+        ASSERT( n_positive + n_negative == 2);
         if ( n_positive == 1) {
             // opposite signs, S2 plane cuts S3
 
@@ -1442,14 +1442,14 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
             // same signs; S2 plane touch S3 vertex and a single edge
             //DebugOut() << "Touch in edge.";
             // same signs S2 plane touchs S3
-            ASSERT_DBG(n_positive == 0 || n_positive== 2);
+            ASSERT(n_positive == 0 || n_positive== 2);
             return { s3_dim_starts[0]+i_vertex, s3_dim_starts[1] + vtx_edges[i_edge]};
         }
 
 
     } else {
-        ASSERT_DBG(n_degen == 0);
-        ASSERT_DBG( n_positive + n_negative == 3);
+        ASSERT(n_degen == 0);
+        ASSERT( n_positive + n_negative == 3);
 
         if (n_positive == 1) {
             unsigned int i_edge = sum_idx[ int(IntersectionResult::positive) ];
@@ -1459,7 +1459,7 @@ auto ComputeIntersection<2,3>::vertex_faces(uint i_vertex)-> FacePair
             return edge_faces(vtx_edges[i_edge]);
         } else {
             // S2 touch vertex of S3 in
-            ASSERT_DBG( n_positive == 0 ||  n_positive == 3);
+            ASSERT( n_positive == 0 ||  n_positive == 3);
             return { s3_dim_starts[0]+i_vertex, s3_dim_starts[0]+i_vertex};
         }
     }

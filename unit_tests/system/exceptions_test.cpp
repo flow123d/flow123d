@@ -223,20 +223,20 @@ TEST(Exceptions, stack_trace) {
 
 }
 
-#include "system/global_defs.h"
+#include "system/asserts.hh"
 //------------------------------------------------------------------------
-// Test ASSERT using exceptions.
+// Test ASSERT_PERMANENT using exceptions.
 TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {OLD_ASSERT(zero==0, "Zero is %d not zero.\n", zero);} , ExcAssertMsg, "Violated Assert! Zero is 1 not zero." );
+    EXPECT_THROW_WHAT( { ASSERT_PERMANENT_EQ(zero, 0) "Zero is not zero.\n");} , feal::Exc_assert, "Violated Assert! Zero is not zero." );
 #endif
 
 }
 
 
-// Empty class. used for ASSERT_PTR test
+// Empty class. used for ASSERT_PERMANENT_PTR test
 class EmptyObj {};
 
 
@@ -248,16 +248,16 @@ TEST(FealAssert, assert) {
     std::string s2 = "assert";
 
     try {
-        FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
+        FEAL_ASSERT_PERMANENT(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::Exc_assert &e) {
         std::cout << e.what();
     }
 
-    EXPECT_DEATH( {FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2);}, ".*");
+    EXPECT_DEATH( {FEAL_ASSERT_PERMANENT(s1.empty() && s2.empty())(s1)(s2);}, ".*");
 
     // only in debug mode
     try {
-        FEAL_ASSERT_DBG(s1.empty() && s2.empty())(s1)(s2).error();
+        FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).error();
     } catch (feal::Exc_assert &e) {
         std::cout << e.what();
     }
@@ -267,12 +267,12 @@ TEST(FealAssert, assert) {
     	int i=5, j=4;
     	EmptyObj *empty = nullptr;
 
-    	EXPECT_THROW_WHAT( { ASSERT_LT(i, j).error(); }, feal::Exc_assert, "Expression: 'i < j'" );
-    	EXPECT_THROW_WHAT( { ASSERT_LE(i, j).error(); }, feal::Exc_assert, "Expression: 'i <= j'" );
-    	EXPECT_THROW_WHAT( { ASSERT_GT(j, i).error(); }, feal::Exc_assert, "Expression: 'j > i'" );
-    	EXPECT_THROW_WHAT( { ASSERT_GE(j, i).error(); }, feal::Exc_assert, "Expression: 'j >= i'" );
-    	EXPECT_THROW_WHAT( { ASSERT_EQ(i, j).error(); }, feal::Exc_assert, "Expression: 'i == j'" );
-    	EXPECT_THROW( { ASSERT_PTR(empty).error(); }, feal::Exc_assert );
+    	EXPECT_THROW_WHAT( { ASSERT_PERMANENT_LT(i, j).error(); }, feal::Exc_assert, "Expression: 'i < j'" );
+    	EXPECT_THROW_WHAT( { ASSERT_PERMANENT_LE(i, j).error(); }, feal::Exc_assert, "Expression: 'i <= j'" );
+    	EXPECT_THROW_WHAT( { ASSERT_PERMANENT_GT(j, i).error(); }, feal::Exc_assert, "Expression: 'j > i'" );
+    	EXPECT_THROW_WHAT( { ASSERT_PERMANENT_GE(j, i).error(); }, feal::Exc_assert, "Expression: 'j >= i'" );
+    	EXPECT_THROW_WHAT( { ASSERT_PERMANENT_EQ(i, j).error(); }, feal::Exc_assert, "Expression: 'i == j'" );
+    	EXPECT_THROW( { ASSERT_PERMANENT_PTR(empty).error(); }, feal::Exc_assert );
     }
 
 }
