@@ -521,17 +521,20 @@ void VtkMeshReader::create_node_element_caches() {
 	has_compatible_mesh_ = true;
 
 	// read Points data section
-	HeaderQuery points_query("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-	this->get_element_data<double>(points_query, false);
+	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+	auto point_header = this->find_header(header_params);
+	this->get_element_data<double>(point_header, point_header.n_entities, point_header.n_components, false);
 
 	// read offset data section
-	HeaderQuery offsets_query("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-    std::vector<unsigned int> &offsets_vec =
-        *( this->get_element_data<unsigned int>(offsets_query, false) );
+	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    auto offset_header = this->find_header(offsets_params);
+    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header, offset_header.n_entities, offset_header.n_components, false) );
 
     // read connectivity data section
-    HeaderQuery conn_query("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-    this->get_element_data<unsigned int>(conn_query, false, offsets_vec[offsets_vec.size()-1]);
+    HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    auto con_header = this->find_header(con_params);
+    con_header.n_entities = offsets_vec[offsets_vec.size()-1];
+    this->get_element_data<unsigned int>(con_header, con_header.n_entities, con_header.n_components, false);
 
     has_compatible_mesh_ = false;
 }

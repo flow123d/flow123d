@@ -171,26 +171,23 @@ public:
     virtual void read_physical_names(Mesh * mesh)=0;
 
     /**
-     *  Reads ElementData sections of opened mesh file. If the section
+     *  Reads ElementData sections of opened mesh file. Method must be call after \p set_data_header method. If such section
      *  has not been yet read, we read the data section into raw buffer @p data. The buffer must have size at least
      *  @p n_components * @p n_entities. Indexes in the map must be smaller then @p n_entities.
      *
-     *  Default values @p n_components * @p n_entities being zero means, that no expected values are known.
-     *  This happens while reading mesh data (nodes, connectivity, elements) in VTK.
-     * 
      *  Possible optimizations:
-     *  If the map ID lookup seems to be too slow, we may assume that IDs are in increasing order,
-     *  use simple array of IDs instead of map and just check that they come in correct order.
+     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
+     *  and just check that they comes in in correct order.
      *
-     *  @param header header of the section to be read
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
      *  @param boundary_domain flag determines that data is read for boundary or bulk elements
+     *  @param component_idx component index of MultiField; 0 for single component fields.
 	 */
     template<typename T>
     typename ElementDataCache<T>::CacheData get_element_data(
-            BaseMeshReader::HeaderQuery header_query, bool boundary_domain,
-            unsigned int expected_n_entities = 0, unsigned int expected_n_components = 0);
+            MeshDataHeader header, unsigned int expected_n_entities,
+            unsigned int expected_n_components, bool boundary_domain);
 
     /**
      * Returns vector of boundary or bulk element ids by parameter boundary_domain
@@ -198,7 +195,7 @@ public:
     std::vector<int> const & get_element_vector(bool boundary_domain);
 
     /**
-	 * Find data header for time and field given by @p header_query.
+	 * Find data header for time and field given by header_query.
 	 */
     virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
 
