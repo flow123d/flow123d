@@ -6,14 +6,10 @@ problem: !Coupling_Sequential
     regions:
       - !Union
         name: subset
-        regions:
-          - 2d
-          - 1d
+        regions: [1d, 2d]
       - !Union
         name: .sides
-        regions:
-          - .2d
-          - .1d
+        regions: [.1d, .2d]
   flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: 1d

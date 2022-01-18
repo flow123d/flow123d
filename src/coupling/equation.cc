@@ -63,3 +63,7 @@ void EquationBase::set_time_governor(TimeGovernor &time)
   time_ = &time;
 }
 
+double EquationBase::solved_time()
+{
+    return time_->t();
+}

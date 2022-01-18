@@ -120,11 +120,14 @@ protected:
     }
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
+        TimeGovernor tg(0.0, 1.0);
+        auto time_step = tg.step();
+        time_step.use_fparser_ = true;
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
     	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
     		auto subfield = ScalarField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
-    		subfield->set_time(0.0);
+    		subfield->set_time(time_step);
     		auto result = subfield->value( point, elm );
     		EXPECT_DOUBLE_EQ( expected, result );
     		expected += step;

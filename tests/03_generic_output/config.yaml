@@ -12,10 +12,8 @@ test_cases:
 - files:
     - 01_darcy_unsteady_nobalance.yaml
     - 03_darcy_frac_nobalance.yaml
-    - 04_fv_dp_sorp_small_nobalance.yaml
-    - 05_fv_dp_sorp_small_output_input_fields.yaml
+    - 04_fv_nobalance.yaml
     - 06_fv_dp_sorp_small_output_multi_fields.yaml
-    - 07_dg_dp_sorp_small_output_multi_fields.yaml
     - 08_fv_balance_times.yaml
     #- 09_observe_output.yaml
     - 12_file_names.yaml

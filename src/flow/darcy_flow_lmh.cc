@@ -228,7 +228,28 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     
 }
 
-
+double DarcyLMH::solved_time()
+{
+    // DebugOut() << "t = " << time_->t() << " step_end " << time_->step().end() << "\n";
+    if(eq_data_->use_steady_assembly_)
+    {
+        // In steady case, the solution is computed with the data present at time t,
+        // and the steady state solution is valid until another change in data,
+        // which should correspond to time (t+dt).
+        // "The data change appears immediatly."
+        double next_t = time_->t() + time_->estimate_dt();
+        // DebugOut() << "STEADY next_t = " << next_t << "\n";
+        return next_t * (1 - 2*std::numeric_limits<double>::epsilon());
+    }
+    else
+    {
+        // In unsteady case, the solution is computed with the data present at time t,
+        // and the solution is valid at the time t+dt.
+        // "The data change does not appear immediatly, it is integrated over time interval dt."
+        // DebugOut() << "UNSTEADY\n";
+        return time_->t();
+    }
+}
 
 void DarcyLMH::init_eq_data()
 //connecting data fields with mesh
@@ -365,6 +386,7 @@ void DarcyLMH::initialize() {
     initialize_specific();
     
     // auxiliary set_time call  since allocation assembly evaluates fields as well
+    time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
@@ -384,64 +406,29 @@ void DarcyLMH::initialize_specific()
 	eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyLMH >(eq_fields_, eq_data_);
 }
 
-// void DarcyLMH::read_initial_condition()
-// {
-// 	DebugOut().fmt("Read initial condition\n");
-    
-//     std::vector<LongIdx> l_indices(eq_data_->dh_cr_->max_elem_dofs());
-    
-// 	for ( DHCellAccessor dh_cell : eq_data_->dh_cr_->own_range() ) {
-        
-//         dh_cell.get_loc_dof_indices(l_indices);
-//         ElementAccessor<3> ele = dh_cell.elm();
-        
-// 		// set initial condition
-//         double init_value = eq_fields_->init_pressure.value(ele.centre(),ele);
-        
-//         for (unsigned int i=0; i<ele->n_sides(); i++) {
-//              uint n_sides_of_edge =  ele.side(i)->edge()->n_sides;
-//              eq_data_->p_edge_solution[l_indices[i]] += init_value/n_sides_of_edge;
-//          }
-// 	}
-    
-//     eq_data_->p_edge_solution.ghost_to_local_begin();
-//     eq_data_->p_edge_solution.ghost_to_local_end();
-//     eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
-
-//     initial_condition_postprocess();
-// }
-
 void DarcyLMH::read_initial_condition()
 {
 	DebugOut().fmt("Read initial condition\n");
     
-	for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+	for ( DHCellAccessor dh_cell : eq_data_->dh_cr_->own_range() ) {
         
-        LocDofVec p_indices = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices();
-        ASSERT_DBG(p_indices.n_elem == 1);
-        LocDofVec l_indices = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get()).get_loc_dof_indices();
+        LocDofVec l_indices = dh_cell.get_loc_dof_indices();
         ElementAccessor<3> ele = dh_cell.elm();
         
 		// set initial condition
         double init_value = eq_fields_->init_pressure.value(ele.centre(),ele);
-        unsigned int p_idx = eq_data_->dh_p_->parent_indices()[p_indices[0]];
-        eq_data_->full_solution.set(p_idx, init_value);
         
+        ASSERT_DBG(l_indices.n_elem == ele->n_sides());
         for (unsigned int i=0; i<ele->n_sides(); i++) {
              uint n_sides_of_edge =  ele.side(i)->edge().n_sides();
-             unsigned int l_idx = eq_data_->dh_cr_->parent_indices()[l_indices[i]];
-             eq_data_->full_solution.add(l_idx, init_value/n_sides_of_edge);
-
              eq_data_->p_edge_solution.add(l_indices[i], init_value/n_sides_of_edge);
          }
 	}
-    
-	eq_data_->full_solution.ghost_to_local_begin();
-	eq_data_->full_solution.ghost_to_local_end();
-    
+
 	eq_data_->p_edge_solution.ghost_to_local_begin();
     eq_data_->p_edge_solution.ghost_to_local_end();
-    eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
+    eq_data_->p_edge_solution.local_to_ghost_begin();
+    eq_data_->p_edge_solution.local_to_ghost_end();
 
     initial_condition_postprocess();
 }
@@ -458,6 +445,7 @@ void DarcyLMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
+	time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
@@ -466,28 +454,20 @@ void DarcyLMH::zero_time_step()
     eq_data_->p_edge_solution.zero_entries();
     
     if (eq_data_->use_steady_assembly_) { // steady case
+        MessageOut() << "Flow zero time step - steady case\n";
         //read_initial_condition(); // Possible solution guess for steady case.
         solve_nonlinear(); // with right limit data
     } else {
+        MessageOut() << "Flow zero time step - unsteady case\n";
+        eq_data_->time_step_ = time_->dt();
         read_initial_condition();
+        accept_time_step(); // accept zero time step, i.e. initial condition
         
         // we reconstruct the initial solution here
-
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-        // - to not changing the ref data in the tests at the moment, we need zero velocities,
-        //   so we keep only the pressure in the full solution (reason for the temp vector)
-        // Once we want to change the ref data including nonzero velocities,
-        // we can remove the temp vector and also remove the settings of full_solution vector
-        // in the read_initial_condition(). (use the commented out version read_initial_condition() above)
-        VectorMPI temp = eq_data_->dh_->create_vector();
-        temp.copy_from(eq_data_->full_solution);
         reconstruct_solution_from_schur(eq_data_->multidim_assembler);
-        eq_data_->full_solution.copy_from(temp);
-
-        // print_matlab_matrix("matrix_zero");
-        accept_time_step(); // accept zero time step, i.e. initial condition
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
@@ -512,11 +492,13 @@ void DarcyLMH::update_solution()
 
 void DarcyLMH::solve_time_step(bool output)
 {
+    time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = eq_fields_->storativity.is_jump_time();
     if (! zero_time_term_from_left) {
+        MessageOut() << "Flow time step - unsteady case\n";
         // time term not treated as zero
         // Unsteady solution up to the T.
 
@@ -541,9 +523,11 @@ void DarcyLMH::solve_time_step(bool output)
         return;
     }
 
+    time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
+        MessageOut() << "Flow time step - steady case\n";
         // this flag is necesssary for switching BC to avoid setting zero neumann on the whole boundary in the steady case
     	eq_data_->use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data

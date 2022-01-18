@@ -81,6 +81,11 @@ const Record & TransportDG<Model>::get_input_type() {
     return Model::get_input_type("DG", "Discontinuous Galerkin (DG) solver")
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Solver for the linear system.")
+        .declare_key("user_fields", Array(
+                TransportDG<Model>::EqFields()
+                    .get_user_field(equation_name)),
+                IT::Default::optional(),
+                "Input fields of the equation defined by user.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqFields()
                     .make_field_descriptor_type(equation_name)),
@@ -339,6 +344,11 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
+    }
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->set_user_fields_map(user_fields_arr);
     }
 }
 

@@ -206,6 +206,7 @@ protected:
 
         data.set_mesh(*mesh);
         data.set_input_list( inputs[input_last], tg );
+        tg.step().use_fparser_ = true;
         data.set_time(tg.step(), LimitSide::right);
     }
 

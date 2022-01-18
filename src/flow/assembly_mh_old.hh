@@ -142,8 +142,46 @@ public:
 
     }
 
-    void assemble_reconstruct(const DHCellAccessor&) override
-    {};
+    void assemble_reconstruct(const DHCellAccessor& dh_cell) override
+    {
+        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        loc_system_.reset();
+    
+        // assemble_local_system(dh_cell);   //do not switch dirichlet in seepage when reconstructing
+        set_dofs_and_bc(dh_cell, false);
+        // assemble_bc(dh_cell, use_dirichlet_switch);
+        assemble_sides(dh_cell);
+        assemble_element(dh_cell);
+        // assemble_source_term(dh_cell);
+        // assembly_dim_connections(dh_cell);
+        
+        // TODO:
+        // if (mortar_assembly)
+        //     mortar_assembly->assembly(ele_ac);
+        // if (mortar_assembly)
+        //     mortar_assembly->fix_velocity(ele_ac);
+
+        // arma::vec schur_solution = ad_->p_edge_solution.get_subvec(loc_schur_.row_dofs);
+        unsigned int nsides = dim+1;
+        unsigned int schur_offset = loc_edge_dofs[0];
+        LocDofVec loc_dofs = dh_cell.get_loc_dof_indices();
+        // get edge pressure
+        arma::vec schur_solution = ad_->full_solution.get_subvec(loc_dofs.subvec(nsides+1, size()-1));
+
+        // prepare vector for velocity and ele pressure
+        arma::vec reconstructed_solution;
+        reconstructed_solution.zeros(schur_offset);
+
+        // reconstruct the velocity and pressure
+        loc_system_.reconstruct_solution_schur(schur_offset, schur_solution, reconstructed_solution);
+
+        // postprocess the velocity
+        // postprocess_velocity(dh_cell, reconstructed_solution);
+        
+        ad_->full_solution.set_subvec(loc_dofs.head(schur_offset), reconstructed_solution);
+        // ad_->full_solution.set_subvec(loc_system_.row_dofs.tail(loc_schur_.row_dofs.n_elem), schur_solution);
+    }
+
     void update_water_content(const DHCellAccessor&) override
     {};
 
@@ -164,7 +202,7 @@ public:
         ASSERT_EQ_DBG(dh_cell.dim(), dim);
         loc_system_.reset();
     
-        set_dofs_and_bc(dh_cell);
+        set_dofs_and_bc(dh_cell, true);
         
         assemble_sides(dh_cell);
         assemble_element(dh_cell);
@@ -213,7 +251,7 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void set_dofs_and_bc(const DHCellAccessor& dh_cell){
+    void set_dofs_and_bc(const DHCellAccessor& dh_cell, bool use_dirichlet_switch){
 
         local_dofs_ = dh_cell.get_loc_dof_indices();
         global_dofs_.resize(dh_cell.n_dofs());
@@ -275,6 +313,7 @@ protected:
                     double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
+                    if (use_dirichlet_switch) {
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
@@ -307,6 +346,7 @@ protected:
                             solution_head = bc_pressure;
                             switch_dirichlet=1;
                         }
+                    }
                     }
                     
                         // ** Apply BCUpdate BC type. **
