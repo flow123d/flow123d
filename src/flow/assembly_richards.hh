@@ -31,17 +31,17 @@
 
 
 template <unsigned int dim>
-class ReadInitCondAssemblyRichards : public ReadInitCondAssemblyLMH<dim>
+class InitCondPostprocessAssembly : public AssemblyBase<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
     typedef typename RichardsLMH::EqData EqData;
 
-    static constexpr const char * name() { return "ReadInitCondAssemblyLMH"; }
+    static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
 
     /// Constructor.
-    ReadInitCondAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : ReadInitCondAssemblyLMH<dim>(eq_fields, eq_data), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -53,7 +53,7 @@ public:
     }
 
     /// Destructor.
-    ~ReadInitCondAssemblyRichards() {}
+    ~InitCondPostprocessAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -62,28 +62,13 @@ public:
         genuchten_on = false;
     }
 
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
+        if (cell.dim() != dim) return;
 
-private:
-    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
-        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
-        if (genuchten_on) {
-            SoilData soil_data;
-            soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
-            soil_data.alpha = this->eq_fields_->genuchten_p_head_scale(p);
-            soil_data.Qr    = this->eq_fields_->water_content_residual(p);
-            soil_data.Qs    = this->eq_fields_->water_content_saturated(p);
-            soil_data.Ks    = this->eq_fields_->conductivity(p);
-            //soil_data.cut_fraction = 0.99; // set by model
-
-            this->eq_data_->soil_model_->reset(soil_data);
-        }
-    }
-
-
-    void update_water_content(const DHCellAccessor& cell, BulkPoint &p) override {
-        edge_indices_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_.get()).get_loc_dof_indices();
+        edge_indices_ = cell.get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
 
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
         reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
@@ -105,6 +90,27 @@ private:
             water_content_vec.set( cr_disc_dofs_[i], water_content + storativity_ * phead);
         }
     }
+
+
+private:
+    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
+        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
+        if (genuchten_on) {
+            SoilData soil_data;
+            soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
+            soil_data.alpha = this->eq_fields_->genuchten_p_head_scale(p);
+            soil_data.Qr    = this->eq_fields_->water_content_residual(p);
+            soil_data.Qs    = this->eq_fields_->water_content_saturated(p);
+            soil_data.Ks    = this->eq_fields_->conductivity(p);
+            //soil_data.cut_fraction = 0.99; // set by model
+
+            this->eq_data_->soil_model_->reset(soil_data);
+        }
+    }
+
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;

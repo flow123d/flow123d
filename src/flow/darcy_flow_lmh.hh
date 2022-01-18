@@ -354,9 +354,9 @@ protected:
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 
-private:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+private:
     GenericAssembly< MHMatrixAssemblyLMH > * mh_matrix_assembly_;
     GenericAssembly< MHMatrixAssemblyLMH > * reconstruct_schur_assembly_;
 

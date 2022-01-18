@@ -235,9 +235,10 @@ void RichardsLMH::assembly_linear_system()
 
 
 void RichardsLMH::initialize_asm() {
-	read_init_cond_assembly_richards_ = new GenericAssembly< ReadInitCondAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
-	mh_matrix_assembly_richards_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
-	reconstruct_schur_assembly_richards_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get());
+    this->mh_matrix_assembly_richards_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+    this->reconstruct_schur_assembly_richards_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
     this->reconstruct_schur_assembly_richards_->multidim_assembly()[1_d]->set_dirichlet_switch(false);
     this->reconstruct_schur_assembly_richards_->multidim_assembly()[2_d]->set_dirichlet_switch(false);
     this->reconstruct_schur_assembly_richards_->multidim_assembly()[3_d]->set_dirichlet_switch(false);
@@ -245,7 +246,8 @@ void RichardsLMH::initialize_asm() {
 
 
 void RichardsLMH::read_init_cond_asm() {
-    this->read_init_cond_assembly_richards_->assemble(eq_data_->dh_cr_);
+    this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
+    this->init_cond_postprocess_assembly_->assemble(eq_data_->dh_cr_);
 }
 
 
@@ -260,9 +262,9 @@ void RichardsLMH::reconstruct_schur_asm() {
 
 
 RichardsLMH::~RichardsLMH() {
-    if (read_init_cond_assembly_richards_!=nullptr) {
-        delete read_init_cond_assembly_richards_;
-        read_init_cond_assembly_richards_ = nullptr;
+    if (init_cond_postprocess_assembly_!=nullptr) {
+        delete init_cond_postprocess_assembly_;
+        init_cond_postprocess_assembly_ = nullptr;
     }
     if (mh_matrix_assembly_richards_!=nullptr) {
         delete mh_matrix_assembly_richards_;

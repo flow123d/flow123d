@@ -70,8 +70,6 @@ public:
              init_value_on_edge_ = init_value_ / cell.elm().side(i)->edge().n_sides();
              eq_data_->p_edge_solution.add(l_indices_[i], init_value_on_edge_);
         }
-
-        update_water_content(cell.cell_with_other_dh(eq_data_->dh_.get()), p);
     }
 
     /// Implements @p AssemblyBase::end.
@@ -86,13 +84,10 @@ public:
 
 
 protected:
-    virtual void update_water_content(FMT_UNUSED const DHCellAccessor& dh_cell, FMT_UNUSED BulkPoint &p) {}
-
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-private:
-    /// Data objects shared with Elasticity
+    /// Data objects shared with Flow equation
     EqFields *eq_fields_;
     EqData *eq_data_;
 

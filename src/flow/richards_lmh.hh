@@ -27,7 +27,7 @@ namespace Input {
 		class Record;
 	}
 }
-template<unsigned int dim> class ReadInitCondAssemblyRichards;
+template<unsigned int dim> class InitCondPostprocessAssembly;
 template<unsigned int dim> class MHMatrixAssemblyRichards;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -120,7 +120,7 @@ protected:
     /// Create and initialize assembly objects
     void initialize_asm() override;
 
-    /// Call assemble of read_init_cond_assembly_richards_
+    /// Call assemble of read_init_cond_assembly_ and init_cond_postprocess_assembly_
     void read_init_cond_asm() override;
 
     /// Call assemble of mh_matrix_assembly_richards_
@@ -135,7 +135,7 @@ private:
     std::shared_ptr<EqData> eq_data_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< ReadInitCondAssemblyRichards > * read_init_cond_assembly_richards_;
+    GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
     GenericAssembly< MHMatrixAssemblyRichards > * mh_matrix_assembly_richards_;
     GenericAssembly< MHMatrixAssemblyRichards > * reconstruct_schur_assembly_richards_;
 
