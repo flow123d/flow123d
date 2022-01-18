@@ -302,6 +302,7 @@ public:
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->bc_displacement;
         this->used_fields_ += eq_fields_->bc_traction;
+        this->used_fields_ += eq_fields_->bc_stress;
     }
 
     /// Destructor.

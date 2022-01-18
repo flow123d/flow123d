@@ -74,8 +74,6 @@ namespace Input {
 	}
 }
 
-template<int spacedim, class Value> class FieldAddPotential;
-
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
  *
@@ -145,6 +143,12 @@ public:
     * This is the only dependence between DarcyMH and DarcyLMH classes.
     * It is also base class of RichardsLMH::EqData.
     * */
+    class EqFields : public DarcyMH::EqFields {
+    public:
+
+    	EqFields();
+    };
+
     class EqData : public DarcyMH::EqData {
     public:
         
@@ -193,16 +197,18 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
 
-    EqData &data() { return *data_; }
+    inline EqFields &eq_fields() { return *eq_fields_; }
+    inline EqData &eq_data() { return *eq_data_; }
 
     /// Sets external storarivity field (coupling with other equation).
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
-    { data_->extra_storativity = extra_stor; }
+    { eq_fields_->extra_storativity = extra_stor; }
 
     /// Sets external source field (coupling with other equation).
     void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
-    { data_->extra_source = extra_src; }
+    { eq_fields_->extra_source = extra_src; }
 
     virtual ~DarcyLMH() override;
 
@@ -281,7 +287,7 @@ protected:
 
     /// Getter for the linear system of the 2. Schur complement.
     LinSys& lin_sys_schur()
-    { return *(data_->lin_sys_schur); }
+    { return *(eq_data_->lin_sys_schur); }
 
     std::shared_ptr<Balance> balance_;
 
@@ -297,7 +303,8 @@ protected:
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
-	std::shared_ptr<EqData> data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
 
     friend class DarcyFlowMHOutput;
     //friend class P0_CouplingAssembler;

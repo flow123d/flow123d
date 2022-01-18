@@ -77,6 +77,12 @@ private:
      */
     void advection_process_step(AdvectionData &pdata);
 
+    /**
+     * Perform a single time step of flow model.
+     * Test if flow solution at @p requested_time is already available.
+     */
+    void flow_step(double requested_time);
+
     static const int registrar;
 
     ///

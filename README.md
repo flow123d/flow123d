@@ -1,4 +1,4 @@
-# Flow123d &middot; [![Jenkins release](http://ciflow.nti.tul.cz/status/release/Flow123d-ci2runner-release-multijob/4)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) [![Jenkins debug](http://ciflow.nti.tul.cz/status/debug/Flow123d-ci2runner-debug-multijob/4)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/) [![Coveralls master](https://img.shields.io/coveralls/github/flow123d/flow123d.svg?style=flat-square&label=coverage)](https://coveralls.io/github/flow123d/flow123d) [![Docker hub](https://img.shields.io/badge/docker-hub-blue.svg?colorA=2271b8&colorB=dc750d&logo=docker&style=flat-square&logoColor=FFF)](https://hub.docker.com/u/flow123d/) [![CI-HPC](https://img.shields.io/badge/ci--hpc-performace-green.svg?style=flat-square)](http://hybs.nti.tul.cz/ci-hpc/)
+# Flow123d &middot; [![Jenkins release](http://ciflow.nti.tul.cz/status/release/Flow123d-ci2runner-release-multijob/4)](http://ciflow.nti.tul.cz:8080/job/Flow123d-gnu-release-multijob/) [![Jenkins debug](http://ciflow.nti.tul.cz:8080/status/debug/Flow123d-gnu-debug-multijob/4)](http://ciflow.nti.tul.cz:8080/job/Flow123d-gnu-debug-multijob/) [![Coveralls master](https://img.shields.io/coveralls/github/flow123d/flow123d.svg?style=flat-square&label=coverage)](https://coveralls.io/github/flow123d/flow123d) [![Docker hub](https://img.shields.io/badge/docker-hub-blue.svg?colorA=2271b8&colorB=dc750d&logo=docker&style=flat-square&logoColor=FFF)](https://hub.docker.com/u/flow123d/) [![CI-HPC](https://img.shields.io/badge/ci--hpc-performace-green.svg?style=flat-square)](http://hybs.nti.tul.cz/ci-hpc/)
 
 *Processes in Fractured Media*
 
@@ -102,3 +102,22 @@ container> cd /flow123d
 container> make all # produce "build_tree/bin/flow123d"
 container> bin/flow123d  # lunch the simulator
 ```
+
+### Docker images
+Hosted on `dockerhub` under organisation [`flow123d`](https://hub.docker.com/orgs/flow123d/repositories).
+
+**production images** 
+
+tagged by the release version (e.g. 3.1.0)
+
+- [`flow123-gnu`](https://hub.docker.com/repository/docker/flow123d/flow123d-gnu) 
+  : based on gnu libraries and tools
+- `flow123-intel` : based on intel libraries (intelmpi, mkl, intel compilers)
+
+**alfa images**
+
+built by CI, tagged by `{branch}-{commit}`
+
+- [`ci-gnu`](https://hub.docker.com/repository/docker/flow123d/ci-gnu)
+- `ci-intel`
+

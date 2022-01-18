@@ -51,14 +51,6 @@ void ElementAccessor<spacedim>::inc() {
     element_idx_++;
 }
 
-template <int spacedim> inline
-vector<arma::vec3> ElementAccessor<spacedim>::vertex_list() const {
-    vector<arma::vec3> vertices(element()->n_nodes());
-    for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=*node(i);
-    return vertices;
-}
-
-
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
@@ -143,6 +135,20 @@ SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) {
 template <int spacedim> inline
 const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) const {
     return SideIter( Side(mesh_, element_idx_, loc_index) );
+}
+
+
+template <int spacedim> inline
+BoundingBox ElementAccessor<spacedim>::bounding_box() const {
+    arma::vec3 node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(0) );
+    BoundingBox bb(node_vertex);
+
+    for(unsigned int i=1; i<element()->n_nodes(); i++) {
+        node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(i) );
+        bb.expand(node_vertex);
+    }
+
+    return bb;
 }
 
 

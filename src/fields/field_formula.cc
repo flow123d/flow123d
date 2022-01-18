@@ -24,6 +24,8 @@
 #include "input/input_type.hh"
 #include "include/arena_alloc.hh"       // bparser
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/regex.hpp>
+
 
 
 /// Implementation.
@@ -101,6 +103,12 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
 template <int spacedim, class Value>
 bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
+	if (!time.use_fparser_) {
+	    this->time_=time;
+		this->is_constant_in_space_ = false;
+	    return true;
+	}
+
 	/* OLD FPARSER CODE */
     bool any_parser_changed = false;
     std::string value_input_address = in_rec_.address_string();
@@ -158,7 +166,6 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     if (has_depth_var_)
         vars += string(",d");
-    vars += string(",cross_section,const_scalar,scalar_field,unknown_scalar,integer_scalar"); // Temporary solution only for testing field dependency in BParser
 
 	// update parsers
 	for(unsigned int row=0; row < this->value_.n_rows(); row++)
@@ -325,7 +332,29 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             boost::replace_all(expr, "min(", "minimum("); // min function
             boost::replace_all(expr, "Pi", "pi"); // Math.pi
             boost::replace_all(expr, "E", "e"); // Math.e
-            {  // ternary operator
+            boost::replace_all(expr, "!", "not");
+            boost::replace_all(expr, "=", "==");
+            boost::replace_all(expr, "<==", "<=");
+            boost::replace_all(expr, ">==", ">=");
+            boost::replace_all(expr, ":=", "=");
+            boost::replace_all(expr, "&", " and ");
+            boost::replace_all(expr, "|", " or ");
+            {
+
+                // Regexp tested with perl syntax, first is matched the inner most if
+                boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
+                boost::smatch res;
+                while (1) {
+                	if (! boost::regex_match(expr, res, r)) break;
+                    std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
+                    expr = tmp;
+                }
+                DebugOut() << "After fparser translation to BParser: " << expr << "\n";
+/*
+
+
+            	// ternary operator
+            	std::regex
                 std::string pref("if(");
                 auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
                 if ( (res.first == pref.end()) && (expr.back() == ')') ) {
@@ -337,6 +366,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     std::string else_case = subexpr.substr(if_case.size()+1);
                     expr = "(" + if_case + " if " + cond + " else " + else_case +")";
                 }
+*/
             }
             try {
                 b_parser_[i_p].parse( expr );
@@ -344,7 +374,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                 if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
                 else throw;
             }
-            variables.insert(variables.end(), b_parser_[i_p].variables().begin(), b_parser_[i_p].variables().end());
+            auto list = b_parser_[i_p].free_symbols();
+            variables.insert(variables.end(), list.begin(), list.end());
         }
 
     std::sort( variables.begin(), variables.end() );
@@ -360,7 +391,11 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         else {
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-            else THROW( ExcUnknownField() << EI_Field(var) );
+            else {
+                field_ptr = field_set.user_field(var, this->time_);
+                if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
+                else THROW( ExcUnknownField() << EI_Field(var) );
+            }
             // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
             // TODO: Test the exception, report input line of the formula.

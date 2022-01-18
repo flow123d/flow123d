@@ -168,19 +168,19 @@ TEST_F(TestParallelOutput, continuous_mesh)
         std::vector<double> expected_nodes = { -3, 3, 0, 3, 3, 0, 3, -3, 0, -3, -3, 0 };
         std::vector<unsigned int> expected_connectivities = { 0, 2, 3, 0, 1, 2 };
         std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
-        auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
+        auto &node_vec = *( stream->nodes_cache()->get_data().get() );
         for (unsigned int i=0; i<node_vec.size(); ++i) {
             DebugOut() << "i node: " << i;
             EXPECT_DOUBLE_EQ(expected_nodes[i],  node_vec[i]);
         }
 
-        auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
+        auto &conn_vec = *( stream->connectivity_cache()->get_data().get() );
         for (unsigned int i=0; i<conn_vec.size(); ++i) {
             DebugOut() << "i conn: " << i;
             EXPECT_EQ(expected_connectivities[i],  conn_vec[i]);
         }
 
-        auto &offs_vec = *( stream->offsets_cache()->get_component_data(0).get() );
+        auto &offs_vec = *( stream->offsets_cache()->get_data().get() );
         for (unsigned int i=0; i<offs_vec.size(); ++i) {
             DebugOut() << "i offset: " << i;
             EXPECT_EQ(expected_offsets[i], offs_vec[i]);
@@ -193,7 +193,7 @@ TEST_F(TestParallelOutput, continuous_mesh)
         for (unsigned int i=0; i<elem_cache_map.size(); ++i) {
             std::shared_ptr< ElementDataCache<double> > current_cache = dynamic_pointer_cast<ElementDataCache<double> >(elem_cache_map[i]);
             string field_name = current_cache->field_input_name();
-            auto &current_vec = *( current_cache->get_component_data(0).get() );
+            auto &current_vec = *( current_cache->get_data().get() );
             EXPECT_EQ( expected_field_data[field_name].size(), current_vec.size() );
             for (unsigned int i=0; i<current_vec.size(); ++i) EXPECT_DOUBLE_EQ( expected_field_data[field_name][i], current_vec[i] );
         }
@@ -222,19 +222,19 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
         std::vector<unsigned int> expected_connectivities = { 0, 1, 2, 3, 4, 5 };
         std::vector<unsigned int> expected_offsets = { 0, 3, 6 };
 
-        auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
+        auto &node_vec = *( stream->nodes_cache()->get_data().get() );
         for (unsigned int i=0; i<node_vec.size(); ++i) {
             DebugOut() << "i node: " << i;
             EXPECT_DOUBLE_EQ(expected_nodes[i],  node_vec[i]);
         }
 
-        auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
+        auto &conn_vec = *( stream->connectivity_cache()->get_data().get() );
         for (unsigned int i=0; i<conn_vec.size(); ++i) {
             DebugOut() << "i conn: " << i;
             EXPECT_EQ(expected_connectivities[i],  conn_vec[i]);
         }
 
-        auto &offs_vec = *( stream->offsets_cache()->get_component_data(0).get() );
+        auto &offs_vec = *( stream->offsets_cache()->get_data().get() );
         for (unsigned int i=0; i<offs_vec.size(); ++i) {
             DebugOut() << "i offset: " << i;
             EXPECT_EQ(expected_offsets[i], offs_vec[i]);
@@ -248,7 +248,7 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
         for (unsigned int i=0; i<elem_cache_map.size(); ++i) {
             std::shared_ptr< ElementDataCache<double> > current_cache = dynamic_pointer_cast<ElementDataCache<double> >(elem_cache_map[i]);
             string field_name = current_cache->field_input_name();
-            auto &current_vec = *( current_cache->get_component_data(0).get() );
+            auto &current_vec = *( current_cache->get_data().get() );
             EXPECT_EQ( expected_field_data[field_name].size(), current_vec.size() );
             for (unsigned int i=0; i<current_vec.size(); ++i) EXPECT_DOUBLE_EQ( expected_field_data[field_name][i], current_vec[i] );
         }

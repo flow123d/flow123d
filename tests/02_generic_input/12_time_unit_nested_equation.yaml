@@ -19,27 +19,31 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     input_fields:
       - region: 1d_domain
-        conductivity: 10
+        conductivity: 4
         sigma: 0.05
       - region: 2d
-        conductivity: 1
+        conductivity: 0.2
       - region: .BOUNDARY
+        time: 0
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x+y
-    output:
-      fields:
-        - pressure_p0
-        - velocity_p0
+          value: y
+      - region: .BOUNDARY
+        time: 0.008333333333333    # 0.5s
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-  # primary equation
+    time:
+      end_time: [1000, "ms"]
+      common_time_unit: "min"
     output_stream:
-      file: flow.pvd
-      format: !vtk
-        variant: ascii
+      times:
+        - step: [0.5, "s"]
+
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -53,7 +57,7 @@ problem: !Coupling_Sequential
           time: [100, "ms"]
           bc_conc: 1.5
         - region: .BOUNDARY
-          time: 500
+          time: [0.5, "s"]
           bc_conc: 2.0
       output:
         fields:
@@ -62,94 +66,9 @@ problem: !Coupling_Sequential
     substances:
       - age
       - U235
-    reaction_term: !DualPorosity
-      input_fields:
-        - region: ALL
-          time: 0.0
-          diffusion_rate_immobile:
-            - 0.01
-            - 0.01
-          porosity_immobile: 0.25
-          init_conc_immobile:
-            - 0.0
-            - 0.0
-        - region: ALL
-          time: [0.1, "s"]
-          diffusion_rate_immobile:
-            - 0.02
-            - 0.02
-      reaction_mobile: !SorptionMobile
-        solvent_density: 1.0
-        substances:
-          - age
-          - U235
-        solubility:
-          - 1.0
-          - 1.0
-        input_fields: &anchor1
-          - region: ALL
-            time: 0.0
-            rock_density: !FieldTimeFunction
-              time_function:
-                - - 0
-                  - 1.0
-                - - 1000
-                  - 2.0
-            sorption_type:
-              - linear
-              - freundlich
-            distribution_coefficient: 0.02
-            isotherm_other:
-              - 0
-              - 0.5
-          - region: ALL
-            time: 100
-            distribution_coefficient: 0.03
-            isotherm_other:
-              - 0
-              - 1.5
-          - region: ALL
-            time: 500
-            distribution_coefficient: 0.05
-            isotherm_other:
-              - 0
-              - 2.5
-        output:
-          fields:
-            - rock_density
-            - sorption_type
-            - distribution_coefficient
-            - isotherm_other
-            - init_conc_solid
-            - conc_solid
-      reaction_immobile: !SorptionImmobile
-        solvent_density: 1.0
-        substances:
-          - age
-          - U235
-        solubility:
-          - 1.0
-          - 1.0
-        input_fields: *anchor1
-        output:
-          fields:
-            - rock_density
-            - sorption_type
-            - distribution_coefficient
-            - isotherm_other
-            - init_conc_solid
-            - conc_immobile_solid
-      output:
-        fields:
-          - diffusion_rate_immobile
-          - init_conc_immobile
-          - conc_immobile
     output_stream:
-      file: transport.pvd
-      format: !vtk
-        variant: ascii
       times:
-        - { step: [ 0.1, "s"] }
+        - { step: [ 0.125, "s"] }
     time:
       end_time: 1000
       common_time_unit: "ms"

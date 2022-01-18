@@ -19,19 +19,19 @@ builders:
       make -C docker-config/package \
               container_name=cont{environment}{build-type} \
               install_image="install-{environment}:$imagesversion" \
-              target_image=flow123d-{environment} \
+              target_image=ci-{environment} \
               destination=$destination \
               all
 
       make -C docker-config/package \
               container_name=cont{environment}{build-type} \
-              target_image=flow123d-{environment} \
+              target_image=ci-{environment} \
               destination=$destination \
               remove-unwanted
 
       make -C docker-config/package \
               container_name=cont{environment}{build-type} \
-              target_image=flow123d-{environment} \
+              target_image=ci-{environment} \
               push-to-hub
 
       ls -la $destination

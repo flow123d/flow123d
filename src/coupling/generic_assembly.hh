@@ -29,7 +29,7 @@
 
 /// Allow set mask of active integrals.
 enum ActiveIntegrals {
-    none     =      0,
+    no_intg  =      0,
     bulk     = 0x0001,
     edge     = 0x0002,
     coupling = 0x0004,

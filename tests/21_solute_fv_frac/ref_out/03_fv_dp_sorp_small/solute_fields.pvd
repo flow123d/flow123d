@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" group="" part="0" file="solute_fields/solute_fields-000000.vtu"/>
+<DataSet timestep="100000" group="" part="0" file="solute_fields/solute_fields-000001.vtu"/>
+<DataSet timestep="200000" group="" part="0" file="solute_fields/solute_fields-000002.vtu"/>
+<DataSet timestep="300000" group="" part="0" file="solute_fields/solute_fields-000003.vtu"/>
+<DataSet timestep="400000" group="" part="0" file="solute_fields/solute_fields-000004.vtu"/>
+<DataSet timestep="500000" group="" part="0" file="solute_fields/solute_fields-000005.vtu"/>
+<DataSet timestep="600000" group="" part="0" file="solute_fields/solute_fields-000006.vtu"/>
+<DataSet timestep="700000" group="" part="0" file="solute_fields/solute_fields-000007.vtu"/>
+<DataSet timestep="800000" group="" part="0" file="solute_fields/solute_fields-000008.vtu"/>
+<DataSet timestep="900000" group="" part="0" file="solute_fields/solute_fields-000009.vtu"/>
+<DataSet timestep="1e+06" group="" part="0" file="solute_fields/solute_fields-000010.vtu"/>
+</Collection>
+</VTKFile>

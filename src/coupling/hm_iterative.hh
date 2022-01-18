@@ -27,6 +27,7 @@
 #include "coupling/equation.hh"
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
+#include "system/exceptions.hh"
 
 class Mesh;
 class FieldCommon;
@@ -37,6 +38,10 @@ namespace it = Input::Type;
 
 class IterativeCoupling {
 public:
+    TYPEDEF_ERR_INFO( EI_Reason, string);
+    DECLARE_EXCEPTION(ExcSolverDiverge,
+            << "Nonlinear solver did not converge. Reason: " << EI_Reason::val
+             );
 
     static const Input::Type::Record &record_template() {
         return it::Record("Coupling_Iterative_AUX",

@@ -1,0 +1,99 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Model of tunnel surroundings relaxation after boring.
+  mesh:
+    # on mesh 50x50, with refinement to the left boundary,
+    # it did not converge even for 0.4
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+    #mesh_file: ../00_mesh/square_1x1_xy.msh
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 0.6 # not converging for 0.6
+        fluid_density: 1000
+    time:
+      end_time: 80
+      # common time unit cannot be used in field formulas
+      common_time_unit: d
+    iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
+    a_tol: 0
+    r_tol: 1e-6
+    flow_equation: !Flow_Richards_LMH
+        nonlinear_solver:
+          linear_solver: !Petsc
+            a_tol: 0
+            r_tol: 1e-12
+            options: -ksp_type cg -pc_type hypre -pc_hypre_type boomeramg
+        input_fields:
+          - region: BULK
+            conductivity: 6e-15
+            # https://en.wikipedia.org/wiki/Specific_storage
+            storativity: 2.8e-8 #3.28e-7 # S = rho * g * (beta_s + nu * beta_w)
+            # bulk compressibility beta_s=1/K = (3(1-2pr)/E)
+            # porosity nu=0.007
+            # water compressibility beta_w=0 1/Pa
+            init_pressure: 300
+
+          - region: .right_x
+            bc_type: dirichlet
+            bc_pressure: 300 # 3MPa = p = h*rho*g => h = 300 m
+
+          - region: .left_x
+            time: 0
+            bc_type: dirichlet
+            bc_pressure: !FieldFormula
+              value: 300*(-1/(18*86400)*t + 1) # 1d=86400s
+          - region: .left_x
+            time: 18
+            bc_type: dirichlet
+            bc_pressure: 0
+
+        output:
+          times: [{'begin': 0, 'step': 10, 'end': 18}, {'begin': 18, 'step': 10, 'end': 50}, {'begin': 50, 'step': 20, 'end': 80}]
+          fields: #[]
+            - piezo_head_p0
+            - pressure_p0
+            - velocity_p0
+            - region_id
+        output_stream:
+          file: flow.pvd
+          format: !vtk
+    mechanics_equation:
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+        output:
+          times: [{'begin': 0, 'step': 10, 'end': 18}, {'begin': 18, 'step': 10, 'end': 50}, {'begin': 50, 'step': 20, 'end': 80}]
+          fields:
+            - displacement
+            - stress
+            - displacement_divergence
+            - region_id
+        solver: !Petsc
+          a_tol: 0
+          r_tol: 1e-12
+          options: -ksp_type cg -pc_type hypre -pc_hypre_type boomeramg
+        input_fields:
+          - region: BULK
+            young_modulus: 60e9
+            poisson_ratio: 0.2
+
+          - region: .right_x
+            bc_type: displacement
+            bc_displacement: 0
+
+          - region: [.top_y, .bottom_y]
+            bc_type: displacement_n
+            bc_displacement: 0
+
+          # bc_type stress prepocita tenzor napeti na normalovou silu, s normalou orientovanou dovnitr
+          # bc_stress * vnitřní normála = bc_traction = síla působící na těleso
+          - region: .left_x
+            time: 0
+            bc_type: stress
+            bc_stress: !FieldFormula
+              value: [ -45e6*(1/(18*86400)*t), -11e6*(1/(18*86400)*t), 0] # 1d=86400s
+          - region: .left_x
+            time: 18
+            bc_type: stress
+            bc_stress: [ -45e6, -11e6, 0] # 1d=86400s
