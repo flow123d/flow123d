@@ -409,7 +409,7 @@ void DarcyLMH::initialize() {
     initialize_specific();
     
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    time_->step().use_fparser_ = true;
+    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
@@ -479,7 +479,7 @@ void DarcyLMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-	time_->step().use_fparser_ = true;
+	//time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
@@ -530,7 +530,7 @@ void DarcyLMH::update_solution()
 
 void DarcyLMH::solve_time_step(bool output)
 {
-    time_->step().use_fparser_ = true;
+    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
@@ -561,7 +561,7 @@ void DarcyLMH::solve_time_step(bool output)
         return;
     }
 
-    time_->step().use_fparser_ = true;
+    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
