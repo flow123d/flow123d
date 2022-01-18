@@ -144,7 +144,7 @@ public:
 
     void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        ASSERT_EQ(dh_cell.dim(), dim);
         loc_system_.reset();
     
         // assemble_local_system(dh_cell);   //do not switch dirichlet in seepage when reconstructing

@@ -58,7 +58,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -116,7 +116,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
@@ -226,7 +226,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
         auto p = *( this->bulk_points(element_patch_idx).begin() );
