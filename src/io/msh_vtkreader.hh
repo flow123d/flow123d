@@ -88,6 +88,11 @@ public:
      */
     void read_physical_names(Mesh * mesh) override;
 
+    /**
+	 * Find header of DataArray section of VTK file by field name given by header_query.
+	 */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
+
 protected:
 	/**
 	 * Map of DataArray sections in VTK file.
@@ -155,11 +160,6 @@ protected:
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain) override;
-
-    /**
-     * Find data section header of VTK file by @p header_query.
-     */
-    MeshDataHeader & find_header(HeaderQuery &header_query) override;
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;

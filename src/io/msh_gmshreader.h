@@ -70,6 +70,11 @@ public:
      */
     void read_physical_names(Mesh * mesh) override;
 
+    /**
+     * Finds GMSH data header for ElementData given by time and field_name.
+     */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
+
 protected:
 	/**
 	 * Map of ElementData sections in GMSH file.
@@ -105,10 +110,6 @@ protected:
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain) override;
-    /**
-     * Finds GMSH data section header for ElementData by @p header_query.
-     */
-    MeshDataHeader & find_header(HeaderQuery &header_query) override;
 
 
     /// Table with data of ElementData headers
