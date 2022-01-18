@@ -47,7 +47,7 @@ template <int spacedim, class Value>
 FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 : value_(r_value_),
   field_result_(result_other),
-  component_idx_(std::numeric_limits<unsigned int>::max()),
+  component_idx_(undef_idx),
   unit_conversion_coefficient_(1.0)
 {
     value_.set_n_comp(n_comp);

@@ -206,19 +206,19 @@ private:
 	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
-	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
+	void interpolate_gauss(ElementDataCache<double>::CacheData data_vec);
 
 	/// Interpolate data (use intersection library) over all elements of target mesh.
-	void interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec);
+	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
 
 	/// Calculate native data over all elements of target mesh.
-	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
-	void calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_identic_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
-	void calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.

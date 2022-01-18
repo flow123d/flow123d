@@ -53,22 +53,21 @@ TEST(ReaderCache, get_bulk_element_) {
     const unsigned int n_comp = 3;      // n components
 
     // read  by components for MultiField
-    BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
-    for (i=0; i<n_comp; ++i) {
-    	ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
-        		ReaderCache::get_reader(file_name)->get_element_data<int>(n_entities, 1, false, i);
-    	std::vector<int> &vec = *( multifield_.get() );
-    	EXPECT_EQ(n_entities, vec.size());
-    	for (j=0; j<n_entities; j++) EXPECT_EQ( i+1, vec[j] );
+    {
+        BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
+        auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
+        typename ElementDataCache<int>::CacheData multifield_ =
+                ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
+        std::vector<int> &vec = *( multifield_.get() );
+        EXPECT_EQ(n_entities*n_comp, vec.size());
+        for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( j%n_comp+1, vec[j] );
     }
-
     // read  to one vector for Field
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
-    	ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(n_entities, n_comp, false, 0);
+    	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    	typename ElementDataCache<int>::CacheData field_ =
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
     	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 2+(j%3), vec[j] );
@@ -98,21 +97,21 @@ TEST(ReaderCache, get_boundary_element_) {
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
-    for (i=0; i<n_comp; ++i) {
-    	ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
-        		ReaderCache::get_reader(file_name)->get_element_data<int>(n_entities, 1, true, i);
+    {
+    	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
+        typename ElementDataCache<int>::CacheData multifield_ =
+        		ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
     	std::vector<int> &vec = *( multifield_.get() );
-    	EXPECT_EQ(n_entities, vec.size());
-    	for (j=0; j<mesh->bc_mesh()->n_elements(); j++) EXPECT_EQ( i+4, vec[j] );
+    	EXPECT_EQ(n_entities*n_comp, vec.size());
+    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( j%n_comp+4, vec[j] );
     }
 
     // read  to one vector for Field
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
-    	ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(n_entities, n_comp, true, 0);
+    	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    	typename ElementDataCache<int>::CacheData field_ =
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
     	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 5+(j%3), vec[j] );

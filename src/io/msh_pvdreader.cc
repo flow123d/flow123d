@@ -61,11 +61,11 @@ void PvdMeshReader::read_elements(Mesh * mesh) {
 }
 
 
-void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
 		bool boundary_domain) {
 
 	ASSERT(!boundary_domain).error("Reading PVD data of boundary elements is not supported yet!\n");
-	list_it_->reader->read_element_data(data_cache, actual_header, n_components, boundary_domain);
+	list_it_->reader->read_element_data(data_cache, header, boundary_domain);
 }
 
 
@@ -114,7 +114,6 @@ BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(BaseMeshReader::Head
 		list_it_->reader->has_compatible_mesh_ = true;
 	}
 
-	actual_header_ = list_it_->reader->find_header(header_query);
-	return actual_header_;
+	return list_it_->reader->find_header(header_query);
 }
 

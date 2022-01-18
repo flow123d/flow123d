@@ -504,12 +504,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		double time_unit_coef = time.read_coef(in_rec_.find<Input::Record>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
-		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
-		ReaderCache::get_reader(reader_file_)->find_header(header_query);
-		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		bool is_native = (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			boundary = this->boundary_domain_;
@@ -522,11 +519,16 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
-			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
+            auto reader_mesh = ReaderCache::get_mesh(reader_file_);
+			n_entities = boundary ? reader_mesh->bc_mesh()->n_elements() : reader_mesh->n_elements();
 		}
-		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary, this->component_idx_);
-		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+
+        BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
+        auto reader = ReaderCache::get_reader(reader_file_);
+        auto header = reader->find_header(header_query);
+		auto input_data_cache = reader->template get_element_data<double>(
+            header, n_entities, n_components, boundary);
+		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
 
@@ -553,7 +555,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::CacheData data_vec)
 {
 	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
@@ -647,7 +649,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::CacheData data_vec)
 {
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
@@ -749,7 +751,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
@@ -778,7 +780,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;
@@ -804,7 +806,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;

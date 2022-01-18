@@ -34,7 +34,7 @@ TEST(BParser, all) {
 	Parser p(vec_size);
 	p.parse("1 * x + cs1 * y + x * z");
 
-	std::cout << "Variables: " << print_vector(p.variables()) << "\n";
+	std::cout << "Variables: " << print_vector(p.free_symbols()) << "\n";
 
 	// Set constants and variables
 	// "cs1" constant with shape {}, i.e. scalar and values {2}.
