@@ -301,13 +301,13 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
     int *rec_indices_ids = nullptr; // collective values of local to global indexes map of data
     T *rec_data = nullptr;          // collective values of data
 
+    n_global_data = distr->size();
     // collects values of data vectors and local to global indexes map on each process
     if (rank==0) {
         for (int i=0; i<n_proc; ++i) {
             rec_starts[i] = distr->begin(i);
             rec_counts[i] = distr->lsize(i);
         }
-        n_global_data = distr->size();
         rec_indices_ids = new int [ n_global_data ];
     }
     MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
