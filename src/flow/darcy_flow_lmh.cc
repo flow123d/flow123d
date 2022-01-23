@@ -48,10 +48,10 @@
 #include "la/local_to_global_map.hh"
 #include "la/vector_mpi.hh"
 
-#include "flow/assembly_lmh_old.hh"
+//#include "flow/assembly_lmh_old_.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "flow/assembly_lmh.hh"
+#include "flow/assembly_lmh_old.hh"
 #include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
@@ -429,7 +429,7 @@ void DarcyLMH::initialize() {
 
 void DarcyLMH::initialize_specific()
 {
-	eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyLMH >(eq_fields_, eq_data_);
+	//eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyLMH >(eq_fields_, eq_data_);
 }
 
 //void DarcyLMH::read_initial_condition()

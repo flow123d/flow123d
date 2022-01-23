@@ -16,9 +16,9 @@
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
 #include "flow/soil_models.hh"
-#include "flow/assembly_richards_old.hh"
+//#include "flow/assembly_richards_old_.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "flow/assembly_richards.hh"
+#include "flow/assembly_richards_old.hh"
 #include "tools/time_governor.hh"
 
 #include "petscmat.h"
@@ -162,7 +162,7 @@ void RichardsLMH::initialize_specific() {
     eq_fields_->conductivity_richards.set(eq_fields_->conductivity_ptr, 0.0);
 
 
-    eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(eq_fields_, eq_data_);
+    //eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(eq_fields_, eq_data_);
 }
 
 
