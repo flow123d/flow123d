@@ -60,7 +60,7 @@ image_version=dbg
 #     ./fterm @2.2.0 build
 #     ./fterm @3.0.0 update
 #     ./fterm @latest
-image_tag=latest
+image_tag=3.1.0
 
 # if docker_version file exists, we change docker_version
 if [[ -f "$CFG/docker/image_tag" ]]; then
@@ -297,7 +297,7 @@ uid=$(id -u)
 uname=flow
 autopull=${autopull:-1}
 theme=${theme:-light}
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
+flow123d_images="flow-dev-gnu-dbg flow-dev-gnu-rel"
 
 # source config, that way we know what to mount, etc.
 if [[ -f "$CFG/docker.cfg" ]]; then
