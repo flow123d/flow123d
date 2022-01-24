@@ -19,7 +19,7 @@
 #include "hm_iterative.hh"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
-#include "flow/richards_lmh.hh"
+#include "flow/darcy_flow_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
 
 
@@ -35,7 +35,7 @@ const it::Record & HM_Iterative::get_input_type() {
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
         .copy_keys(IterativeCoupling::record_template())
-		.declare_key("flow_equation", RichardsLMH::get_input_type(),
+		.declare_key("flow_equation", DarcyLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
@@ -144,7 +144,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec, time_);
+    flow_ = std::make_shared<DarcyLMH>(*mesh_, flow_rec, time_);
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )
