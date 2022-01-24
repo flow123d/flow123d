@@ -1,5 +1,0 @@
-- -             [ Msg , null, "00:00:00.085", "/unit_tests/system/logger_test.cpp", 93, "TestBody" ]
-  - |
-    First message to cout and file.
-    Third message only to file.
-    Fourth message to cout and file.
