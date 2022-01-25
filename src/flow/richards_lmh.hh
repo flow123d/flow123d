@@ -123,21 +123,13 @@ protected:
     /// Call assemble of read_init_cond_assembly_ and init_cond_postprocess_assembly_
     void read_init_cond_asm() override;
 
-    /// Call assemble of mh_matrix_assembly_richards_
-    void mh_matrix_asm() override;
-
-    /// Call assemble of reconstruct_schur_assembly_richards_
-    void reconstruct_schur_asm() override;
-
 private:
 
     std::shared_ptr<EqFields> eq_fields_;
     std::shared_ptr<EqData> eq_data_;
 
-    /// general assembly objects, hold assembly objects of appropriate dimension
+    /// general assembly object, hold assembly objects of appropriate dimension
     GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
-    GenericAssembly< MHMatrixAssemblyRichards > * mh_matrix_assembly_richards_;
-    GenericAssembly< MHMatrixAssemblyRichards > * reconstruct_schur_assembly_richards_;
 
 };
 

@@ -75,6 +75,7 @@ namespace Input {
 }
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
 template<unsigned int dim> class MHMatrixAssemblyLMH;
+class GenericAssemblyBase;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -327,12 +328,6 @@ protected:
     /// Call assemble of read_init_cond_assembly_
     virtual void read_init_cond_asm();
 
-    /// Call assemble of mh_matrix_assembly_
-    virtual void mh_matrix_asm();
-
-    /// Call assemble of reconstruct_schur_assembly_
-    virtual void reconstruct_schur_asm();
-
     std::shared_ptr<Balance> balance_;
 
     DarcyFlowMHOutput *output_object;
@@ -356,10 +351,9 @@ protected:
 
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+    GenericAssemblyBase * mh_matrix_assembly_;
+    GenericAssemblyBase * reconstruct_schur_assembly_;
 private:
-    GenericAssembly< MHMatrixAssemblyLMH > * mh_matrix_assembly_;
-    GenericAssembly< MHMatrixAssemblyLMH > * reconstruct_schur_assembly_;
-
     /// Registrar of class to factory
     static const int registrar;
 };
