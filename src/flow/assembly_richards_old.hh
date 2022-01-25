@@ -20,13 +20,8 @@
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
-//#include "flow/richards_lmh.hh"
 #include "flow/assembly_lmh_old.hh"
 #include "flow/soil_models.hh"
-//#include "fem/fe_p.hh"
-//#include "fem/fe_values.hh"
-#include "quadrature/quadrature_lib.hh"
-#include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
 
 

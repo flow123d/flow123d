@@ -21,18 +21,12 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "flow/darcy_flow_lmh.hh"
-//#include "fem/fe_p.hh"
-//#include "fem/fe_values.hh"
-#include "quadrature/quadrature_lib.hh"
-#include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
 
 #include "system/index_types.hh"
-#include "system/fmt/posix.h"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
@@ -41,13 +35,11 @@
 #include "quadrature/quadrature_lib.hh"
 
 #include "la/linsys_PETSC.hh"
-// #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 #include "la/local_system.hh"
 
 #include "coupling/balance.hh"
-#include "flow/assembly_mh_old.hh"
-#include "flow/mortar_assembly.hh"
+
 
 template <unsigned int dim>
 class ReadInitCondAssemblyLMH : public AssemblyBase<dim>
@@ -70,7 +62,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
     }
 
