@@ -64,11 +64,6 @@ public:
 
     void view(string text="") override;
 
-    /**
-     * Sets specific parameters of LinSys_PETSC defined by user in input file and used to calculate
-     */
-    void set_from_input(const Input::Record in_rec) override;
-
     double get_solution_precision() override;
 
     double compute_residual() override;
@@ -97,8 +92,6 @@ private:
     };
 
 protected:
-
-    std::string params_;		 //!< command-line-like options for the PETSc solver
 
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
