@@ -123,7 +123,7 @@ private:
 
 
 template <unsigned int dim>
-class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
+class MHMatrixAssemblyRichards : virtual public MHMatrixAssemblyLMH<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
@@ -313,6 +313,61 @@ protected:
     double water_content, water_content_previous_time;
     double diagonal_coef_, source_diagonal_;
     double water_content_diff_, mass_diagonal_, mass_rhs_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+};
+
+
+template <unsigned int dim>
+class ReconstructSchurAssemblyRichards : public ReconstructSchurAssemblyLMH<dim>, public MHMatrixAssemblyRichards<dim>
+{
+public:
+    typedef typename RichardsLMH::EqFields EqFields;
+    typedef typename RichardsLMH::EqData EqData;
+
+    static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
+
+    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), ReconstructSchurAssemblyLMH<dim>(eq_fields, eq_data), MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        ReconstructSchurAssemblyLMH<dim>::begin();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        ReconstructSchurAssemblyLMH<dim>::end();
+    }
+protected:
+
+    void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p) override
+    {
+        MHMatrixAssemblyRichards<dim>::assemble_source_term(cell, p);
+    }
+
+    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
+                                               double edge_scale, double edge_source_term) override
+    {
+        MHMatrixAssemblyRichards<dim>::postprocess_velocity_specific(dh_cell, p, solution, edge_scale, edge_source_term);
+    }
+
+    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
+    {
+        return MHMatrixAssemblyRichards<dim>::compute_conductivity(cell, p);
+    }
+
+    void postprocess_bulk_integral(const DHCellAccessor& cell, unsigned int element_patch_idx) override {
+        ReconstructSchurAssemblyLMH<dim>::postprocess_bulk_integral(cell, element_patch_idx);
+    }
+
+    void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
+    {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

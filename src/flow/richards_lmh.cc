@@ -238,12 +238,7 @@ void RichardsLMH::initialize_asm() {
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
     this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get());
     this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
-    GenericAssembly< MHMatrixAssemblyRichards > * reconstruct_schur_asm =
-            new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
-    reconstruct_schur_asm->multidim_assembly()[1_d]->set_dirichlet_switch(false);
-    reconstruct_schur_asm->multidim_assembly()[2_d]->set_dirichlet_switch(false);
-    reconstruct_schur_asm->multidim_assembly()[3_d]->set_dirichlet_switch(false);
-    this->reconstruct_schur_assembly_ = reconstruct_schur_asm;
+    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
 }
 
 

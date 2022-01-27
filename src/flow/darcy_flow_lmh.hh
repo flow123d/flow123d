@@ -74,7 +74,6 @@ namespace Input {
 	}
 }
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
-template<unsigned int dim> class MHMatrixAssemblyLMH;
 class GenericAssemblyBase;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 

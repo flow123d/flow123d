@@ -157,7 +157,6 @@ public:
 
         ndofs_ = fe_values_.n_dofs();
         qsize_ = fe_values_.n_points();
-        this->use_dirichlet_switch_ = true;
 
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
@@ -173,12 +172,6 @@ public:
         // length = local Schur complement offset in LocalSystem
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
         reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
-    }
-
-
-    /// Setter of use_dirichlet_switch data member
-    inline void set_dirichlet_switch(bool ds) {
-        this->use_dirichlet_switch_ = ds;
     }
 
 
@@ -258,11 +251,7 @@ public:
         this->assemble_source_term(cell, p);
 
         // Specialized part of reconstruct from Schur
-        if (!use_dirichlet_switch_) {
-            eq_data_->postprocess_solution_[bulk_local_idx_].zeros(eq_data_->schur_offset_[dim-1]);
-            // postprocess the velocity
-            postprocess_velocity(cell, element_patch_idx, eq_data_->postprocess_solution_[bulk_local_idx_]);
-        }
+        this->postprocess_bulk_integral(cell, element_patch_idx);
     }
 
 
@@ -302,38 +291,7 @@ public:
             side_flux_ = -eq_fields_->bc_flux(p_bdr) * b_ele.measure() * cross_section_;
 
             // ** Update BC type. **
-            if (use_dirichlet_switch_) {  // skip BC change if only reconstructing the solution
-                if (switch_dirichlet) {
-                    // check and possibly switch to flux BC
-                    // The switch raise error on the corresponding edge row.
-                    // Magnitude of the error is abs(solution_flux - side_flux).
-
-                    // try reconstructing local system for seepage BC
-                    load_local_system(cell_side.cell());
-
-                    if ( reconstructed_solution_[side_row_] < side_flux_) {
-                        //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
-                        switch_dirichlet = 0;
-                    }
-                } else {
-                    // check and possibly switch to  pressure BC
-                    // TODO: What is the appropriate DOF in not local?
-                    // The switch raise error on the corresponding side row.
-                    // Magnitude of the error is abs(solution_head - bc_pressure)
-                    // Since usually K is very large, this error would be much
-                    // higher then error caused by the inverse switch, this
-                    // cause that a solution  with the flux violating the
-                    // flux inequality leading may be accepted, while the error
-                    // in pressure inequality is always satisfied.
-
-                    solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
-
-                    if ( solution_head_ > bc_pressure_) {
-                        //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head_, bc_pressure, bc_flux);
-                        switch_dirichlet=1;
-                    }
-                }
-            }
+            dirichlet_switch(switch_dirichlet, cell_side);
 
             eq_data_->save_local_system_[bulk_local_idx_] = (bool) switch_dirichlet;
 
@@ -424,17 +382,11 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-    	if (use_dirichlet_switch_) {
-            // DebugOut() << "assembly_mh_matrix \n";
-            // set auxiliary flag for switchting Dirichlet like BC
-            eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
+        // DebugOut() << "assembly_mh_matrix \n";
+        // set auxiliary flag for switchting Dirichlet like BC
+        eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
 
-            eq_data_->reset();
-    	} else {
-    	    eq_data_->full_solution.zero_entries();
-    	    eq_data_->p_edge_solution.local_to_ghost_begin();
-    	    eq_data_->p_edge_solution.local_to_ghost_end();
-    	}
+        eq_data_->reset();
 
         eq_data_->balance_->start_flux_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->start_source_assembly(eq_data_->water_balance_idx);
@@ -447,14 +399,7 @@ public:
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        if (use_dirichlet_switch_) {
-            this->schur_postprocess();
-        } else {
-            this->reconstruct_schur_finish();
-
-            eq_data_->full_solution.local_to_ghost_begin();
-            eq_data_->full_solution.local_to_ghost_end();
-        }
+        this->schur_postprocess();
 
         eq_data_->balance_->finish_mass_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->finish_source_assembly(eq_data_->water_balance_idx);
@@ -539,23 +484,6 @@ protected:
         }
     }
 
-
-    inline void reconstruct_schur_finish() {
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-        	bulk_local_idx_ = dh_cell.local_idx();
-            arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(eq_data_->loc_schur_[bulk_local_idx_].row_dofs);
-            // reconstruct the velocity and pressure
-            eq_data_->loc_system_[bulk_local_idx_].reconstruct_solution_schur(eq_data_->schur_offset_[dh_cell.dim()-1],
-                                                                                  schur_solution, reconstructed_solution_);
-
-            reconstructed_solution_ += eq_data_->postprocess_solution_[bulk_local_idx_];
-
-            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[bulk_local_idx_].row_dofs.head(
-                    eq_data_->schur_offset_[dh_cell.dim()-1]), reconstructed_solution_);
-            eq_data_->full_solution.set_subvec(eq_data_->loc_system_[bulk_local_idx_].row_dofs.tail(
-                    eq_data_->loc_schur_[bulk_local_idx_].row_dofs.n_elem), schur_solution);
-        }
-    }
 
     virtual void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p)
     {
@@ -677,11 +605,46 @@ protected:
         return eq_fields_->conductivity(p);
     }
 
+    virtual void postprocess_bulk_integral(FMT_UNUSED const DHCellAccessor& cell, FMT_UNUSED unsigned intelement_patch_idx)
+    {}
+
+    virtual void dirichlet_switch(char & switch_dirichlet, DHCellSide cell_side) {
+        if (switch_dirichlet) {
+            // check and possibly switch to flux BC
+            // The switch raise error on the corresponding edge row.
+            // Magnitude of the error is abs(solution_flux - side_flux).
+
+            // try reconstructing local system for seepage BC
+            this->load_local_system(cell_side.cell());
+
+            if ( reconstructed_solution_[side_row_] < side_flux_) {
+                //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
+                switch_dirichlet = 0;
+            }
+        } else {
+            // check and possibly switch to  pressure BC
+            // TODO: What is the appropriate DOF in not local?
+            // The switch raise error on the corresponding side row.
+            // Magnitude of the error is abs(solution_head - bc_pressure)
+            // Since usually K is very large, this error would be much
+            // higher then error caused by the inverse switch, this
+            // cause that a solution  with the flux violating the
+            // flux inequality leading may be accepted, while the error
+            // in pressure inequality is always satisfied.
+
+            solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+
+            if ( solution_head_ > bc_pressure_) {
+                //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head_, bc_pressure, bc_flux);
+                switch_dirichlet=1;
+            }
+        }
+    }
+
 
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-private:
     /// Data objects shared with DarcyFlow
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -695,8 +658,6 @@ private:
 
     shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
-
-    bool use_dirichlet_switch_;                            ///< Skip BC change if only reconstructing the solution
 
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
@@ -718,6 +679,76 @@ private:
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
+
+};
+
+template <unsigned int dim>
+class ReconstructSchurAssemblyLMH : virtual public MHMatrixAssemblyLMH<dim>
+{
+public:
+    typedef typename DarcyLMH::EqFields EqFields;
+    typedef typename DarcyLMH::EqData EqData;
+
+    static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
+
+    /// Constructor.
+    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        this->eq_data_->full_solution.zero_entries();
+        this->eq_data_->p_edge_solution.local_to_ghost_begin();
+        this->eq_data_->p_edge_solution.local_to_ghost_end();
+
+        this->eq_data_->balance_->start_flux_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->start_source_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
+
+        this->set_dofs();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->reconstruct_schur_finish();
+
+        this->eq_data_->full_solution.local_to_ghost_begin();
+        this->eq_data_->full_solution.local_to_ghost_end();
+
+        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
+    }
+
+protected:
+    inline void reconstruct_schur_finish() {
+        for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
+        	this->bulk_local_idx_ = dh_cell.local_idx();
+            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs);
+            // reconstruct the velocity and pressure
+            this->eq_data_->loc_system_[this->bulk_local_idx_].reconstruct_solution_schur(this->eq_data_->schur_offset_[dh_cell.dim()-1],
+                                                                                  schur_solution, this->reconstructed_solution_);
+
+            this->reconstructed_solution_ += this->eq_data_->postprocess_solution_[this->bulk_local_idx_];
+
+            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.head(
+                    this->eq_data_->schur_offset_[dh_cell.dim()-1]), this->reconstructed_solution_);
+            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
+                    this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
+        }
+    }
+
+    void postprocess_bulk_integral(const DHCellAccessor& cell, unsigned int element_patch_idx) override {
+        this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
+        // postprocess the velocity
+        this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+    }
+
+    void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
+    {}
 
 };
 
