@@ -231,6 +231,9 @@ private:
 	/// Data for model parameters.
 	std::shared_ptr<EqData> eq_data_;
 
+    /// Indicator of contact conditions on fractures.
+    bool has_contact_;
+
     
 	// @}
 

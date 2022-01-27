@@ -746,6 +746,8 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
+        if (!cell_lower_dim.is_own()) return;
+        
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
@@ -766,8 +768,7 @@ public:
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = fe_values_side_.normal_vector(k);
 
-            if (cell_lower_dim.is_own())
-                local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
