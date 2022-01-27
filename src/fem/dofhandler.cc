@@ -139,21 +139,25 @@ void DOFHandlerMultiDim::init_status(
       }
     }
     
-    // mark local edges
-    for (auto eid : edg_4_loc)
-        edge_status[eid] = VALID_NFACE;
-    
-    // unmark dofs on ghost cells from lower procs
-	for (auto cell : this->ghost_range())
+    // edges are defined only in Mesh, so for BCMesh we skip the following part
+    if (dynamic_cast<Mesh*>(mesh_) != nullptr)
     {
-      if (cell.elm().proc() < el_ds_->myp())
-      {
-        for (unsigned int n=0; n<cell.dim()+1; n++)
+        // mark local edges
+        for (auto eid : edg_4_loc)
+            edge_status[eid] = VALID_NFACE;
+        
+        // unmark dofs on ghost cells from lower procs
+        for (auto cell : this->ghost_range())
         {
-          unsigned int eid = cell.elm().side(n)->edge_idx();
-          edge_status[eid] = INVALID_NFACE;
+            if (cell.elm().proc() < el_ds_->myp())
+            {
+                for (unsigned int n=0; n<cell.dim()+1; n++)
+                {
+                    unsigned int eid = cell.elm().side(n)->edge_idx();
+                    edge_status[eid] = INVALID_NFACE;
+                }
+            }
         }
-      }
     }
 }
 
