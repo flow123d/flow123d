@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
             - cross_section_updated
             - region_id
         solver: !Petsc
-          options: -ksp_type preonly -pc_type lu
+        contact: true
         input_fields:
           - region: rock
             young_modulus: 1e9
