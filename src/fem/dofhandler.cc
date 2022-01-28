@@ -54,6 +54,14 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(MeshBase& _mesh, bool make_elem_part)
 	  scatter_to_seq_(nullptr),
 	  el_ds_(nullptr)
 {
+    // Set up flag that ensures that edges are allocated, so that dofs can be distributed on edges.
+    // Currently this works only for Mesh objects, not for BCMesh.
+    if (dynamic_cast<Mesh*>(mesh_) != nullptr) {
+        distribute_edge_dofs = true;
+    } else {
+        distribute_edge_dofs = false;
+    }
+
 	if (make_elem_part) make_elem_partitioning();
 }
 
@@ -139,8 +147,7 @@ void DOFHandlerMultiDim::init_status(
       }
     }
     
-    // edges are defined only in Mesh, so for BCMesh we skip the following part
-    if (dynamic_cast<Mesh*>(mesh_) != nullptr)
+    if (distribute_edge_dofs)
     {
         // mark local edges
         for (auto eid : edg_4_loc)
@@ -159,6 +166,12 @@ void DOFHandlerMultiDim::init_status(
             }
         }
     }
+    else
+    {
+        for (auto eid : edg_4_loc)
+            edge_status[eid] = INVALID_NFACE;
+    }
+    
 }
 
 
@@ -362,6 +375,8 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
         }
         else if (dof_dim == cell.dim()-1)
         {   // add dofs shared by edges
+            if (!distribute_edge_dofs) break;
+            
             unsigned int eid = cell.elm().side(dof_nface_idx)->edge_idx();
             unsigned int edge_dof_idx = edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx];
             switch (edge_status[eid])
