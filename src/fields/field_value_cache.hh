@@ -304,6 +304,31 @@ public:
         ASSERT(map_it != bdr_to_bulk_.end());
         return map_it->second;
     }
+
+    /// Return permanent size of eval_point_data_ list.
+    inline std::size_t epd_permanent_size() const
+    {
+        return eval_point_data_.permanent_size();
+    }
+
+    /// Return temporary size of eval_point_data_ list.
+    inline std::size_t epd_temporary_size() const
+    {
+        return eval_point_data_.temporary_size();
+    }
+
+    /// Finalize temporary part of eval_point_data_ list.
+    inline std::size_t epd_make_permanent()
+    {
+        return eval_point_data_.make_permanent();
+    }
+
+    /// Erase temporary part of eval_point_data_ list.
+    inline std::size_t epd_revert_temporary()
+    {
+        return eval_point_data_.revert_temporary();
+    }
+
 protected:
 
     /// Special constant (@see element_eval_points_map_).
@@ -365,10 +390,6 @@ protected:
     std::unordered_map<unsigned int, unsigned int> bdr_to_bulk_;        ///< Maps holds dependencies of boundary elements on bulk elements
 
     // @}
-
-    // TODO: remove friend class
-    template < template<IntDim...> class DimAssembly>
-    friend class GenericAssembly;
 };
 
 

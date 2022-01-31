@@ -219,12 +219,12 @@ public:
             this->add_integrals_of_computing_step(*cell_it);
             //END_TIMER("add_integrals_to_patch");
 
-            if (element_cache_map_.eval_point_data_.temporary_size() > CacheMapElementNumber::get()) {
+            if (element_cache_map_.epd_temporary_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();
                 edge_integral_data_.revert_temporary();
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
-                element_cache_map_.eval_point_data_.revert_temporary();
+                element_cache_map_.epd_revert_temporary();
                 this->assemble_integrals();
                 add_into_patch = false;
             } else {
@@ -232,8 +232,8 @@ public:
                 edge_integral_data_.make_permanent();
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
-                element_cache_map_.eval_point_data_.make_permanent();
-                if (element_cache_map_.eval_point_data_.temporary_size() == CacheMapElementNumber::get()) {
+                element_cache_map_.epd_make_permanent();
+                if (element_cache_map_.epd_temporary_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     add_into_patch = false;
                 }
