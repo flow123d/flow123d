@@ -560,17 +560,17 @@ protected:
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
         	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
-            postprocess_velocity(dh_cell, pos_in_cache, reconstructed_solution_);
+        	auto p = *( this->bulk_points(pos_in_cache).begin() );
+            postprocess_velocity(dh_cell, p);
+            postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
         }
     }
 
 
-    void postprocess_velocity(const DHCellAccessor& dh_cell, unsigned int element_patch_idx, arma::vec& solution)
+    void postprocess_velocity(const DHCellAccessor& dh_cell, BulkPoint &p)
     {
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
-
         edge_scale_ = dh_cell.elm().measure()
                           * eq_fields_->cross_section(p)
                           / dh_cell.elm()->n_sides();
@@ -578,13 +578,10 @@ protected:
         edge_source_term_ = edge_scale_ *
                 ( eq_fields_->water_source_density(p)
                 + eq_fields_->extra_source(p));
-
-        postprocess_velocity_specific(dh_cell, p, solution, edge_scale_, edge_source_term_);
     }
 
 
-    virtual void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
-                                               double edge_scale, double edge_source_term)// override
+    void postprocess_velocity_darcy(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
     {
         time_term_ = 0.0;
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
@@ -593,10 +590,10 @@ protected:
             {
                 new_pressure_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
                 old_pressure_ = eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
-                time_term_ = edge_scale * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
+                time_term_ = edge_scale_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
                              / eq_data_->time_step_ * (new_pressure_ - old_pressure_);
             }
-            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term - time_term_;
+            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_;
         }
     }
 
@@ -604,9 +601,6 @@ protected:
     virtual double compute_conductivity(FMT_UNUSED const DHCellAccessor& cell, BulkPoint &p) {
         return eq_fields_->conductivity(p);
     }
-
-    virtual void postprocess_bulk_integral(FMT_UNUSED const DHCellAccessor& cell, FMT_UNUSED unsigned intelement_patch_idx)
-    {}
 
     virtual void dirichlet_switch(char & switch_dirichlet, DHCellSide cell_side) {
         if (switch_dirichlet) {
@@ -675,7 +669,7 @@ protected:
     arma::vec3 nv_;                                        ///< Normal vector
     double ngh_value_;                                     ///< Precomputed ngh value
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
-    double new_pressure_, old_pressure_;                   ///< Precomputed values in postprocess_velocity_specific
+    double new_pressure_, old_pressure_;                   ///< Precomputed values in postprocess_velocity
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -708,10 +702,10 @@ public:
         this->assemble_element();
         this->assemble_source_term_darcy(cell, p);
 
-        {
+        { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
-            // postprocess the velocity
-            this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+            this->postprocess_velocity(cell, p);
+            this->postprocess_velocity_darcy(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
         }
     }
 
@@ -760,12 +754,6 @@ protected:
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
                     this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
         }
-    }
-
-    void postprocess_bulk_integral(const DHCellAccessor& cell, unsigned int element_patch_idx) override {
-        this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
-        // postprocess the velocity
-        this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
     }
 
     void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override

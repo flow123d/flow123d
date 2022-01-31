@@ -277,8 +277,7 @@ protected:
         }
     }
 
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
-                                               double edge_scale, double edge_source_term) override
+    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
     {
         update_water_content(dh_cell, p);
 
@@ -289,7 +288,7 @@ protected:
             water_content_previous_time = eq_data_->water_content_previous_time.get( cr_disc_dofs_[i] );
 
             solution[eq_data_->loc_side_dofs[dim-1][i]]
-                += edge_source_term - edge_scale * (water_content - water_content_previous_time) / eq_data_->time_step_;
+                += this->edge_source_term_ - this->edge_scale_ * (water_content - water_content_previous_time) / eq_data_->time_step_;
         }
 
         IntIdx p_dof = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
@@ -360,10 +359,10 @@ public:
         this->assemble_element();
         this->assemble_source_term_richards(cell, p);
 
-        {
+        { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
-            // postprocess the velocity
-            this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+            this->postprocess_velocity(cell, p);
+            this->postprocess_velocity_richards(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
         }
     }
 
@@ -382,19 +381,9 @@ public:
     }
 protected:
 
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
-                                               double edge_scale, double edge_source_term) override
-    {
-        MHMatrixAssemblyRichards<dim>::postprocess_velocity_specific(dh_cell, p, solution, edge_scale, edge_source_term);
-    }
-
     double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
     {
         return MHMatrixAssemblyRichards<dim>::compute_conductivity(cell, p);
-    }
-
-    void postprocess_bulk_integral(const DHCellAccessor& cell, unsigned int element_patch_idx) override {
-        ReconstructSchurAssemblyLMH<dim>::postprocess_bulk_integral(cell, element_patch_idx);
     }
 
     void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
