@@ -165,8 +165,23 @@ public:
     }
 
 
+    /// Assemble source term (integral over element)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        if (cell.dim() != dim) return;
+
+        // evaluation point
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        this->bulk_local_idx_ = cell.local_idx();
+
+        this->assemble_sides(cell, p);
+        this->assemble_element();
+        this->assemble_source_term_richards(cell, p);
+    }
+
+
 protected:
-    void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p) override
+    inline void assemble_source_term_richards(const DHCellAccessor& cell, BulkPoint &p)
     {
         update_water_content(cell, p);
         const ElementAccessor<3> ele = cell.elm();
@@ -332,6 +347,27 @@ public:
     : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), ReconstructSchurAssemblyLMH<dim>(eq_fields, eq_data), MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
     }
 
+    /// Assemble source term (integral over element)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        if (cell.dim() != dim) return;
+
+        // evaluation point
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        this->bulk_local_idx_ = cell.local_idx();
+
+        this->assemble_sides(cell, p);
+        this->assemble_element();
+        this->assemble_source_term_richards(cell, p);
+
+        {
+            this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
+            // postprocess the velocity
+            this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+        }
+    }
+
+
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
@@ -345,11 +381,6 @@ public:
         ReconstructSchurAssemblyLMH<dim>::end();
     }
 protected:
-
-    void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p) override
-    {
-        MHMatrixAssemblyRichards<dim>::assemble_source_term(cell, p);
-    }
 
     void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
                                                double edge_scale, double edge_source_term) override

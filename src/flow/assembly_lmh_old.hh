@@ -184,74 +184,9 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
-        { // Assemble sides
-            auto ele = cell.elm();
-            conductivity_ = this->compute_conductivity(cell, p);
-            scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity_;
-
-            fe_values_.reinit(ele);
-            auto velocity = fe_values_.vector_view(0);
-
-            for (unsigned int k=0; k<qsize_; k++)
-                for (unsigned int i=0; i<ndofs_; i++){
-                    rhs_val_ = arma::dot(eq_data_->gravity_vec_, velocity.value(i,k))
-                               * fe_values_.JxW(k);
-                    eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val_);
-
-                    for (unsigned int j=0; j<ndofs_; j++){
-                        mat_val_ =
-                            arma::dot( velocity.value(i,k), //TODO: compute anisotropy before
-                                       (eq_fields_->anisotropy(p)).i() * velocity.value(j,k)
-                                     )
-                            * scale_sides_ * fe_values_.JxW(k);
-
-                        eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val_);
-                    }
-                }
-
-        // assemble matrix for weights in BDDCML
-        // approximation to diagonal of
-        // S = -C - B*inv(A)*B'
-        // as
-        // diag(S) ~ - diag(C) - 1./diag(A)
-        // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-        // to a continuous one
-        // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-        // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-//            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-//                const arma::mat& local_matrix = loc_system_.get_matrix();
-//                for(unsigned int i=0; i < ndofs; i++) {
-//                    double val_side = local_matrix(i,i);
-//                    double val_edge = -1./local_matrix(i,i);
-//
-//                    unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
-//                    unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
-//                    static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
-//                    static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
-//                }
-//            }
-        }
-
-        { // Assemble element
-            // set block B, B': element-side, side-element
-
-            for(unsigned int side = 0; side < eq_data_->loc_side_dofs[dim-1].size(); side++){
-                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], eq_data_->loc_side_dofs[dim-1][side], -1.0);
-                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_side_dofs[dim-1][side], eq_data_->loc_ele_dof[dim-1], -1.0);
-            }
-
-//            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-//                double val_ele =  1.;
-//                static_cast<LinSys_BDDC*>(ad_->lin_sys)->
-//                                diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
-//            }
-        }
-
-        // Assemble source term
-        this->assemble_source_term(cell, p);
-
-        // Specialized part of reconstruct from Schur
-        this->postprocess_bulk_integral(cell, element_patch_idx);
+        this->assemble_sides(cell, p);
+        this->assemble_element();
+        this->assemble_source_term_darcy(cell, p);
     }
 
 
@@ -407,6 +342,71 @@ public:
     }
 
 protected:
+    inline void assemble_sides(const DHCellAccessor& cell, BulkPoint &p)
+    {
+        auto ele = cell.elm();
+        conductivity_ = this->compute_conductivity(cell, p);
+        scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity_;
+
+        fe_values_.reinit(ele);
+        auto velocity = fe_values_.vector_view(0);
+
+        for (unsigned int k=0; k<qsize_; k++)
+            for (unsigned int i=0; i<ndofs_; i++){
+                rhs_val_ = arma::dot(eq_data_->gravity_vec_, velocity.value(i,k))
+                           * fe_values_.JxW(k);
+                eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val_);
+
+                for (unsigned int j=0; j<ndofs_; j++){
+                    mat_val_ =
+                        arma::dot( velocity.value(i,k), //TODO: compute anisotropy before
+                                   (eq_fields_->anisotropy(p)).i() * velocity.value(j,k)
+                                 )
+                        * scale_sides_ * fe_values_.JxW(k);
+
+                    eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val_);
+                }
+            }
+
+    // assemble matrix for weights in BDDCML
+    // approximation to diagonal of
+    // S = -C - B*inv(A)*B'
+    // as
+    // diag(S) ~ - diag(C) - 1./diag(A)
+    // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
+    // to a continuous one
+    // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
+    // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
+//            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+//                const arma::mat& local_matrix = loc_system_.get_matrix();
+//                for(unsigned int i=0; i < ndofs; i++) {
+//                    double val_side = local_matrix(i,i);
+//                    double val_edge = -1./local_matrix(i,i);
+//
+//                    unsigned int side_row = loc_system_.row_dofs[loc_side_dofs[i]];
+//                    unsigned int edge_row = loc_system_.row_dofs[loc_edge_dofs[i]];
+//                    static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( side_row, val_side );
+//                    static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( edge_row, val_edge );
+//                }
+//            }
+    }
+
+    inline void assemble_element()
+    {
+        // set block B, B': element-side, side-element
+
+        for(unsigned int side = 0; side < eq_data_->loc_side_dofs[dim-1].size(); side++){
+            eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], eq_data_->loc_side_dofs[dim-1][side], -1.0);
+            eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_side_dofs[dim-1][side], eq_data_->loc_ele_dof[dim-1], -1.0);
+        }
+
+//            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+//                double val_ele =  1.;
+//                static_cast<LinSys_BDDC*>(ad_->lin_sys)->
+//                                diagonal_weights_set_value( loc_system_.row_dofs[loc_ele_dof], val_ele );
+//            }
+    }
+
     void set_dofs() {
         unsigned int size, loc_size, loc_size_schur, elm_dim;;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
@@ -485,7 +485,7 @@ protected:
     }
 
 
-    virtual void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p)
+    inline void assemble_source_term_darcy(const DHCellAccessor& cell, BulkPoint &p)
     {
         // compute lumped source
         n_sides_ = cell.elm()->n_sides();
@@ -694,6 +694,27 @@ public:
     /// Constructor.
     ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
     : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
+
+    /// Assemble source term (integral over element)
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        if (cell.dim() != dim) return;
+
+        // evaluation point
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        this->bulk_local_idx_ = cell.local_idx();
+
+        this->assemble_sides(cell, p);
+        this->assemble_element();
+        this->assemble_source_term_darcy(cell, p);
+
+        {
+            this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
+            // postprocess the velocity
+            this->postprocess_velocity(cell, element_patch_idx, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+        }
+    }
+
 
     /// Implements @p AssemblyBase::begin.
     void begin() override
