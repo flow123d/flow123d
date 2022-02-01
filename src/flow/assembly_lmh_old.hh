@@ -175,7 +175,11 @@ public:
     }
 
 
-    /// Assemble source term (integral over element)
+    /**
+     * Integral over element.
+     *
+     * Override in descendants.
+     */
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
@@ -184,12 +188,17 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p, eq_fields_->conductivity(p));
-        this->assemble_element();
-        this->assemble_source_term_darcy(cell, p);
+        this->asm_sides(cell, p, eq_fields_->conductivity(p));
+        this->asm_element();
+        this->asm_source_term_darcy(cell, p);
     }
 
 
+    /**
+     * Assembles between boundary element and corresponding side on bulk element.
+     *
+     * Override in descendants.
+     */
     inline void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
@@ -199,7 +208,11 @@ public:
     }
 
 
-    /// Assembles the fluxes between elements of different dimensions.
+    /**
+     * Assembles the fluxes between elements of different dimensions.
+     *
+     * Common in all descendants.
+     */
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
@@ -251,6 +264,7 @@ public:
     }
 
 protected:
+    /// Common code of begin method of MH matrix assembly (Darcy and Richards)
     void begin_mh_matrix()
     {
         // DebugOut() << "assembly_mh_matrix \n";
@@ -267,9 +281,24 @@ protected:
     }
 
 
+    /// Common code of end method of MH matrix assembly (Darcy and Richards)
     void end_mh_matrix()
     {
-        this->schur_postprocess();
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+            eq_data_->loc_system_[dh_cell.local_idx()].compute_schur_complement(
+                    eq_data_->schur_offset_[dh_cell.dim()-1], eq_data_->loc_schur_[dh_cell.local_idx()], true);
+
+            // for seepage BC, save local system
+            if (eq_data_->save_local_system_[dh_cell.local_idx()])
+            	eq_data_->seepage_bc_systems[dh_cell.elm_idx()] = eq_data_->loc_system_[dh_cell.local_idx()];
+
+            eq_data_->loc_schur_[dh_cell.local_idx()].eliminate_solution();
+            eq_data_->lin_sys_schur->set_local_system(eq_data_->loc_schur_[dh_cell.local_idx()], eq_data_->dh_cr_->get_local_to_global_map());
+
+            // TODO:
+            // if (mortar_assembly)
+            //     mortar_assembly->assembly(dh_cell);
+        }
 
         eq_data_->balance_->finish_mass_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->finish_source_assembly(eq_data_->water_balance_idx);
@@ -277,7 +306,8 @@ protected:
     }
 
 
-    inline void assemble_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
+    /// Part of cell_integral method, common in all descendants
+    inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
     {
         auto ele = cell.elm();
         scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity;
@@ -325,7 +355,8 @@ protected:
 //            }
     }
 
-    inline void assemble_element()
+    /// Part of cell_integral method, common in all descendants
+    inline void asm_element()
     {
         // set block B, B': element-side, side-element
 
@@ -341,85 +372,8 @@ protected:
 //            }
     }
 
-    void set_dofs() {
-        unsigned int size, loc_size, loc_size_schur, elm_dim;;
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
-            const ElementAccessor<3> ele = dh_cell.elm();
-            const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
-
-            elm_dim = ele.dim();
-            size = (elm_dim+1) + 1 + (elm_dim+1); // = n_sides + 1 + n_sides
-            loc_size = size + ele->n_neighs_vb();
-            loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
-            LocDofVec dofs(loc_size);
-            LocDofVec dofs_schur(loc_size_schur);
-
-            // add full vec indices
-            dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
-            // add schur vec indices
-            dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
-
-            if(ele->n_neighs_vb() != 0)
-            {
-                //D, E',E block: compatible connections: element-edge
-                unsigned int i = 0;
-
-                for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
-
-                    // read neighbor dofs (dh dofhandler)
-                    // neighbor cell owning neighb_side
-                    DHCellAccessor dh_neighb_cell = neighb_side.cell();
-
-                    // read neighbor dofs (dh_cr dofhandler)
-                    // neighbor cell owning neighb_side
-                    DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
-
-                    // local index of pedge dof in local system
-                    const unsigned int p = size+i;
-                    // local index of pedge dof on neighboring cell
-                    const unsigned int t = dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + neighb_side.side().side_idx();
-                    dofs[p] = dh_neighb_cell.get_loc_dof_indices()[t];
-
-                    // local index of pedge dof in local schur system
-                    const unsigned int tt = dh_cr_cell.n_dofs()+i;
-                    dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()[neighb_side.side().side_idx()];
-                    i++;
-                }
-            }
-            eq_data_->loc_system_[dh_cell.local_idx()].reset(dofs, dofs);
-            eq_data_->loc_schur_[dh_cell.local_idx()].reset(dofs_schur, dofs_schur);
-
-            // Set side-edge (flux-lambda) terms
-            for (DHCellSide dh_side : dh_cell.side_range()) {
-                unsigned int sidx = dh_side.side_idx();
-                // side-edge (flux-lambda) terms
-                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_side_dofs[elm_dim-1][sidx], eq_data_->loc_edge_dofs[elm_dim-1][sidx], 1.0);
-                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_edge_dofs[elm_dim-1][sidx], eq_data_->loc_side_dofs[elm_dim-1][sidx], 1.0);
-            }
-        }
-    }
-
-
-    inline void schur_postprocess() {
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-            eq_data_->loc_system_[dh_cell.local_idx()].compute_schur_complement(
-                    eq_data_->schur_offset_[dh_cell.dim()-1], eq_data_->loc_schur_[dh_cell.local_idx()], true);
-
-            // for seepage BC, save local system
-            if (eq_data_->save_local_system_[dh_cell.local_idx()])
-            	eq_data_->seepage_bc_systems[dh_cell.elm_idx()] = eq_data_->loc_system_[dh_cell.local_idx()];
-
-            eq_data_->loc_schur_[dh_cell.local_idx()].eliminate_solution();
-            eq_data_->lin_sys_schur->set_local_system(eq_data_->loc_schur_[dh_cell.local_idx()], eq_data_->dh_cr_->get_local_to_global_map());
-
-            // TODO:
-            // if (mortar_assembly)
-            //     mortar_assembly->assembly(dh_cell);
-        }
-    }
-
-
-    inline void assemble_source_term_darcy(const DHCellAccessor& cell, BulkPoint &p)
+    /// Part of cell_integral method, specialized in Darcy equation
+    inline void asm_source_term_darcy(const DHCellAccessor& cell, BulkPoint &p)
     {
         // compute lumped source
         n_sides_ = cell.elm()->n_sides();
@@ -463,6 +417,11 @@ protected:
         }
     }
 
+    /**
+     * Executable code of boundary_side_integral.
+     *
+     * Flag use_dirichlet_switch allows switch off part of seepage code in descendants.
+     */
     inline void boundary_side_integral_in(DHCellSide cell_side, bool use_dirichlet_switch)
     {
         auto p_side = *( this->boundary_points(cell_side).begin() );
@@ -575,6 +534,66 @@ protected:
                                       {1}, 0);
     }
 
+    /// Precompute loc_system and loc_schur data members.
+    void set_dofs() {
+        unsigned int size, loc_size, loc_size_schur, elm_dim;;
+        for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
+            const ElementAccessor<3> ele = dh_cell.elm();
+            const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+
+            elm_dim = ele.dim();
+            size = (elm_dim+1) + 1 + (elm_dim+1); // = n_sides + 1 + n_sides
+            loc_size = size + ele->n_neighs_vb();
+            loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
+            LocDofVec dofs(loc_size);
+            LocDofVec dofs_schur(loc_size_schur);
+
+            // add full vec indices
+            dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
+            // add schur vec indices
+            dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
+
+            if(ele->n_neighs_vb() != 0)
+            {
+                //D, E',E block: compatible connections: element-edge
+                unsigned int i = 0;
+
+                for ( DHCellSide neighb_side : dh_cell.neighb_sides() ) {
+
+                    // read neighbor dofs (dh dofhandler)
+                    // neighbor cell owning neighb_side
+                    DHCellAccessor dh_neighb_cell = neighb_side.cell();
+
+                    // read neighbor dofs (dh_cr dofhandler)
+                    // neighbor cell owning neighb_side
+                    DHCellAccessor dh_neighb_cr_cell = dh_neighb_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+
+                    // local index of pedge dof in local system
+                    const unsigned int p = size+i;
+                    // local index of pedge dof on neighboring cell
+                    const unsigned int t = dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + neighb_side.side().side_idx();
+                    dofs[p] = dh_neighb_cell.get_loc_dof_indices()[t];
+
+                    // local index of pedge dof in local schur system
+                    const unsigned int tt = dh_cr_cell.n_dofs()+i;
+                    dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()[neighb_side.side().side_idx()];
+                    i++;
+                }
+            }
+            eq_data_->loc_system_[dh_cell.local_idx()].reset(dofs, dofs);
+            eq_data_->loc_schur_[dh_cell.local_idx()].reset(dofs_schur, dofs_schur);
+
+            // Set side-edge (flux-lambda) terms
+            for (DHCellSide dh_side : dh_cell.side_range()) {
+                unsigned int sidx = dh_side.side_idx();
+                // side-edge (flux-lambda) terms
+                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_side_dofs[elm_dim-1][sidx], eq_data_->loc_edge_dofs[elm_dim-1][sidx], 1.0);
+                eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_edge_dofs[elm_dim-1][sidx], eq_data_->loc_side_dofs[elm_dim-1][sidx], 1.0);
+            }
+        }
+    }
+
+
     /// Temporary method find neighbour index in higher-dim cell
     inline unsigned int ngh_idx(DHCellAccessor &dh_cell, DHCellSide &neighb_side) {
         for (uint n_i=0; n_i<dh_cell.elm()->n_neighs_vb(); ++n_i) {
@@ -607,7 +626,6 @@ protected:
 
         	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
         	auto p = *( this->bulk_points(pos_in_cache).begin() );
-            postprocess_velocity(dh_cell, p);
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
@@ -615,6 +633,11 @@ protected:
     }
 
 
+    /**
+     * Precompute edge_scale and edge_source_term.
+     *
+     * This method must be calls in methods postprocess_velocity_darcy and postprocess_velocity_richards
+     */
     void postprocess_velocity(const DHCellAccessor& dh_cell, BulkPoint &p)
     {
         edge_scale_ = dh_cell.elm().measure()
@@ -627,8 +650,11 @@ protected:
     }
 
 
+    /// Postprocess velocity during loading of local system and after calculating of cell integral.
     void postprocess_velocity_darcy(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
     {
+    	postprocess_velocity(dh_cell, p);
+
         time_term_ = 0.0;
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
 
@@ -697,7 +723,7 @@ public:
     ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
     : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
 
-    /// Assemble source term (integral over element)
+    /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
@@ -706,18 +732,18 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p, this->eq_fields_->conductivity(p));
-        this->assemble_element();
-        this->assemble_source_term_darcy(cell, p);
+        this->asm_sides(cell, p, this->eq_fields_->conductivity(p));
+        this->asm_element();
+        this->asm_source_term_darcy(cell, p);
 
         { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
-            this->postprocess_velocity(cell, p);
             this->postprocess_velocity_darcy(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
         }
     }
 
 
+    /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
@@ -741,6 +767,7 @@ public:
     }
 
 protected:
+    /// Common code of begin method of Reconstruct Schur assembly (Darcy and Richards)
     void begin_reconstruct_schur()
     {
         this->eq_data_->full_solution.zero_entries();
@@ -755,21 +782,9 @@ protected:
     }
 
 
-    /// Implements @p AssemblyBase::end.
+    /// Common code of end method of Reconstruct Schur assembly (Darcy and Richards)
     void end_reconstruct_schur()
     {
-        this->reconstruct_schur_finish();
-
-        this->eq_data_->full_solution.local_to_ghost_begin();
-        this->eq_data_->full_solution.local_to_ghost_end();
-
-        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
-    }
-
-
-    inline void reconstruct_schur_finish() {
         for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
         	this->bulk_local_idx_ = dh_cell.local_idx();
             arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs);
@@ -784,6 +799,13 @@ protected:
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
                     this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
         }
+
+        this->eq_data_->full_solution.local_to_ghost_begin();
+        this->eq_data_->full_solution.local_to_ghost_end();
+
+        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
     }
 
 };

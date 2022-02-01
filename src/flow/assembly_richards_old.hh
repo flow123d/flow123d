@@ -165,7 +165,7 @@ public:
     }
 
 
-    /// Assemble source term (integral over element)
+    /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
@@ -174,12 +174,13 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p, this->compute_conductivity(cell, p));
-        this->assemble_element();
-        this->assemble_source_term_richards(cell, p);
+        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_element();
+        this->asm_source_term_richards(cell, p);
     }
 
 
+    /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
@@ -204,7 +205,8 @@ public:
 
 
 protected:
-    inline void assemble_source_term_richards(const DHCellAccessor& cell, BulkPoint &p)
+    /// Part of cell_integral method, specialized in Richards equation
+    inline void asm_source_term_richards(const DHCellAccessor& cell, BulkPoint &p)
     {
         update_water_content(cell, p);
         const ElementAccessor<3> ele = cell.elm();
@@ -300,25 +302,7 @@ protected:
         }
     }
 
-    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
-    {
-        update_water_content(dh_cell, p);
-
-        VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
-
-        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
-            water_content = water_content_vec.get( cr_disc_dofs_[i] );
-            water_content_previous_time = eq_data_->water_content_previous_time.get( cr_disc_dofs_[i] );
-
-            solution[eq_data_->loc_side_dofs[dim-1][i]]
-                += this->edge_source_term_ - this->edge_scale_ * (water_content - water_content_previous_time) / eq_data_->time_step_;
-        }
-
-        IntIdx p_dof = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
-        eq_fields_->conductivity_ptr->vec().set( p_dof, compute_conductivity(dh_cell, p) );
-    }
-
-
+    /// Precompute conductivity on bulk point.
     double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p)
     {
         reset_soil_model(cell, p);
@@ -337,6 +321,7 @@ protected:
         }
         return conductivity;
     }
+
 
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;
@@ -369,7 +354,7 @@ public:
     : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), ReconstructSchurAssemblyLMH<dim>(eq_fields, eq_data), MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
     }
 
-    /// Assemble source term (integral over element)
+    /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
@@ -378,18 +363,18 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p, this->compute_conductivity(cell, p));
-        this->assemble_element();
-        this->assemble_source_term_richards(cell, p);
+        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_element();
+        this->asm_source_term_richards(cell, p);
 
         { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
-            this->postprocess_velocity(cell, p);
             this->postprocess_velocity_richards(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
         }
     }
 
 
+    /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
@@ -412,6 +397,27 @@ public:
         this->end_reconstruct_schur();
     }
 protected:
+    /// Postprocess velocity after calculating of cell integral.
+    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
+    {
+        this->postprocess_velocity(dh_cell, p);
+
+        this->update_water_content(dh_cell, p);
+
+        VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
+
+        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
+            this->water_content = water_content_vec.get( this->cr_disc_dofs_[i] );
+            this->water_content_previous_time = this->eq_data_->water_content_previous_time.get( this->cr_disc_dofs_[i] );
+
+            solution[this->eq_data_->loc_side_dofs[dim-1][i]]
+                += this->edge_source_term_ - this->edge_scale_ * (this->water_content - this->water_content_previous_time) / this->eq_data_->time_step_;
+        }
+
+        IntIdx p_dof = dh_cell.cell_with_other_dh(this->eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
+        this->eq_fields_->conductivity_ptr->vec().set( p_dof, this->compute_conductivity(dh_cell, p) );
+    }
+
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
