@@ -184,7 +184,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p);
+        this->assemble_sides(cell, p, eq_fields_->conductivity(p));
         this->assemble_element();
         this->assemble_source_term_darcy(cell, p);
     }
@@ -240,6 +240,19 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
+        this->begin_mh_matrix();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->end_mh_matrix();
+    }
+
+protected:
+    void begin_mh_matrix()
+    {
         // DebugOut() << "assembly_mh_matrix \n";
         // set auxiliary flag for switchting Dirichlet like BC
         eq_data_->force_no_neumann_bc = eq_data_->use_steady_assembly_ && (eq_data_->nonlinear_iteration_ == 0);
@@ -254,8 +267,7 @@ public:
     }
 
 
-    /// Implements @p AssemblyBase::end.
-    void end() override
+    void end_mh_matrix()
     {
         this->schur_postprocess();
 
@@ -264,12 +276,11 @@ public:
         eq_data_->balance_->finish_flux_assembly(eq_data_->water_balance_idx);
     }
 
-protected:
-    inline void assemble_sides(const DHCellAccessor& cell, BulkPoint &p)
+
+    inline void assemble_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
     {
         auto ele = cell.elm();
-        conductivity_ = this->compute_conductivity(cell, p);
-        scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity_;
+        scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity;
 
         fe_values_.reinit(ele);
         auto velocity = fe_values_.vector_view(0);
@@ -633,11 +644,6 @@ protected:
     }
 
 
-    virtual double compute_conductivity(FMT_UNUSED const DHCellAccessor& cell, BulkPoint &p) {
-        return eq_fields_->conductivity(p);
-    }
-
-
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
@@ -658,7 +664,7 @@ protected:
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
 
-    double conductivity_, scale_sides_;                    ///< Precomputed value (1 / cross_section / conductivity)
+    double scale_sides_;                                   ///< Precomputed value (1 / cross_section / conductivity)
     double rhs_val_, mat_val_;                             ///< Precomputed RHS and mat value
     double n_sides_, coef_, source_term_;                  ///< Variables used in compute lumped source.
     double time_term_diag_, time_term_, time_term_rhs_;    ///< Variables used in compute time term (unsteady)
@@ -700,7 +706,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p);
+        this->assemble_sides(cell, p, this->eq_fields_->conductivity(p));
         this->assemble_element();
         this->assemble_source_term_darcy(cell, p);
 
@@ -724,6 +730,19 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
+        this->begin_reconstruct_schur();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->end_reconstruct_schur();
+    }
+
+protected:
+    void begin_reconstruct_schur()
+    {
         this->eq_data_->full_solution.zero_entries();
         this->eq_data_->p_edge_solution.local_to_ghost_begin();
         this->eq_data_->p_edge_solution.local_to_ghost_end();
@@ -737,7 +756,7 @@ public:
 
 
     /// Implements @p AssemblyBase::end.
-    void end() override
+    void end_reconstruct_schur()
     {
         this->reconstruct_schur_finish();
 
@@ -749,7 +768,7 @@ public:
         this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
     }
 
-protected:
+
     inline void reconstruct_schur_finish() {
         for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
         	this->bulk_local_idx_ = dh_cell.local_idx();

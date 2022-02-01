@@ -174,7 +174,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p);
+        this->assemble_sides(cell, p, this->compute_conductivity(cell, p));
         this->assemble_element();
         this->assemble_source_term_richards(cell, p);
     }
@@ -186,6 +186,20 @@ public:
         if (!cell_side.cell().is_own()) return;
 
         this->boundary_side_integral_in(cell_side, true);
+    }
+
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        this->begin_mh_matrix();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->end_mh_matrix();
     }
 
 
@@ -305,7 +319,7 @@ protected:
     }
 
 
-    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
+    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p)
     {
         reset_soil_model(cell, p);
 
@@ -364,7 +378,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->assemble_sides(cell, p);
+        this->assemble_sides(cell, p, this->compute_conductivity(cell, p));
         this->assemble_element();
         this->assemble_source_term_richards(cell, p);
 
@@ -388,21 +402,16 @@ public:
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        ReconstructSchurAssemblyLMH<dim>::begin();
+        this->begin_reconstruct_schur();
     }
 
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        ReconstructSchurAssemblyLMH<dim>::end();
+        this->end_reconstruct_schur();
     }
 protected:
-
-    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
-    {
-        return MHMatrixAssemblyRichards<dim>::compute_conductivity(cell, p);
-    }
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
