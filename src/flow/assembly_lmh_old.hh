@@ -195,84 +195,7 @@ public:
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
-        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-        bulk_local_idx_ = cell_side.cell().local_idx();
-
-        cross_section_ = eq_fields_->cross_section(p_side);
-
-        sidx_ = cell_side.side_idx();
-        side_row_ = eq_data_->loc_side_dofs[dim-1][sidx_];    //local
-        edge_row_ = eq_data_->loc_edge_dofs[dim-1][sidx_];    //local
-
-        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
-        DarcyMH::EqFields::BC_Type type = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type(p_bdr);
-
-        if ( type == DarcyMH::EqFields::none) {
-            // homogeneous neumann
-        } else if ( type == DarcyMH::EqFields::dirichlet ) {
-            eq_data_->loc_schur_[bulk_local_idx_].set_solution( sidx_, eq_fields_->bc_pressure(p_bdr) );
-
-        } else if ( type == DarcyMH::EqFields::total_flux) {
-            // internally we work with outward flux
-            eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
-                    -b_ele.measure() * eq_fields_->bc_robin_sigma(p_bdr) * cross_section_,
-                    (-eq_fields_->bc_flux(p_bdr) - eq_fields_->bc_robin_sigma(p_bdr) * eq_fields_->bc_pressure(p_bdr)) * b_ele.measure() * cross_section_);
-        } else if (type==DarcyMH::EqFields::seepage) {
-            eq_data_->is_linear=false;
-
-            char & switch_dirichlet = eq_data_->bc_switch_dirichlet[b_ele.idx()];
-            bc_pressure_ = eq_fields_->bc_switch_pressure(p_bdr);
-            side_flux_ = -eq_fields_->bc_flux(p_bdr) * b_ele.measure() * cross_section_;
-
-            // ** Update BC type. **
-            dirichlet_switch(switch_dirichlet, cell_side);
-
-            eq_data_->save_local_system_[bulk_local_idx_] = (bool) switch_dirichlet;
-
-            // ** Apply BCUpdate BC type. **
-            // Force Dirichlet type during the first iteration of the unsteady case.
-            if (switch_dirichlet || eq_data_->force_no_neumann_bc ) {
-                //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                eq_data_->loc_schur_[bulk_local_idx_].set_solution(sidx_, bc_pressure_);
-            } else {
-                //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux_, bc_flux);
-                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, side_flux_);
-            }
-
-        } else if (type==DarcyMH::EqFields::river) {
-            eq_data_->is_linear=false;
-
-            bc_pressure_ = eq_fields_->bc_pressure(p_bdr);
-            bc_switch_pressure_ = eq_fields_->bc_switch_pressure(p_bdr);
-            bc_flux_ = -eq_fields_->bc_flux(p_bdr);
-            bc_sigma_ = eq_fields_->bc_robin_sigma(p_bdr);
-
-            solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
-
-            // Force Robin type during the first iteration of the unsteady case.
-            if (solution_head_ > bc_switch_pressure_  || eq_data_->force_no_neumann_bc) {
-                // Robin BC
-                //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
-                                        -b_ele.measure() * bc_sigma_ * cross_section_,
-                                        b_ele.measure() * cross_section_ * (bc_flux_ - bc_sigma_ * bc_pressure_)  );
-            } else {
-                // Neumann BC
-                //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
-                bc_total_flux_ = bc_flux_ + bc_sigma_*(bc_switch_pressure_ - bc_pressure_);
-
-                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, bc_total_flux_ * b_ele.measure() * cross_section_);
-            }
-        }
-        else {
-            THROW( ExcBCNotSupported() );
-        }
-
-        eq_data_->balance->add_flux_values(eq_data_->water_balance_idx, cell_side,
-                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_side_dofs[dim-1][sidx_]]},
-                                      {1}, 0);
-
+        this->boundary_side_integral_in(cell_side, true);
     }
 
 
@@ -529,6 +452,118 @@ protected:
         }
     }
 
+    inline void boundary_side_integral_in(DHCellSide cell_side, bool use_dirichlet_switch)
+    {
+        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+        bulk_local_idx_ = cell_side.cell().local_idx();
+
+        cross_section_ = eq_fields_->cross_section(p_side);
+
+        sidx_ = cell_side.side_idx();
+        side_row_ = eq_data_->loc_side_dofs[dim-1][sidx_];    //local
+        edge_row_ = eq_data_->loc_edge_dofs[dim-1][sidx_];    //local
+
+        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
+        DarcyMH::EqFields::BC_Type type = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type(p_bdr);
+
+        if ( type == DarcyMH::EqFields::none) {
+            // homogeneous neumann
+        } else if ( type == DarcyMH::EqFields::dirichlet ) {
+            eq_data_->loc_schur_[bulk_local_idx_].set_solution( sidx_, eq_fields_->bc_pressure(p_bdr) );
+
+        } else if ( type == DarcyMH::EqFields::total_flux) {
+            // internally we work with outward flux
+            eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
+                    -b_ele.measure() * eq_fields_->bc_robin_sigma(p_bdr) * cross_section_,
+                    (-eq_fields_->bc_flux(p_bdr) - eq_fields_->bc_robin_sigma(p_bdr) * eq_fields_->bc_pressure(p_bdr)) * b_ele.measure() * cross_section_);
+        } else if (type==DarcyMH::EqFields::seepage) {
+            eq_data_->is_linear=false;
+
+            char & switch_dirichlet = eq_data_->bc_switch_dirichlet[b_ele.idx()];
+            bc_pressure_ = eq_fields_->bc_switch_pressure(p_bdr);
+            side_flux_ = -eq_fields_->bc_flux(p_bdr) * b_ele.measure() * cross_section_;
+
+            // ** Update BC type. **
+            if (use_dirichlet_switch) {
+                if (switch_dirichlet) {
+                    // check and possibly switch to flux BC
+                    // The switch raise error on the corresponding edge row.
+                    // Magnitude of the error is abs(solution_flux - side_flux).
+
+                    // try reconstructing local system for seepage BC
+                    this->load_local_system(cell_side.cell());
+
+                    if ( reconstructed_solution_[side_row_] < side_flux_) {
+                        //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
+                        switch_dirichlet = 0;
+                    }
+                } else {
+                    // check and possibly switch to  pressure BC
+                    // TODO: What is the appropriate DOF in not local?
+                    // The switch raise error on the corresponding side row.
+                    // Magnitude of the error is abs(solution_head - bc_pressure)
+                    // Since usually K is very large, this error would be much
+                    // higher then error caused by the inverse switch, this
+                    // cause that a solution  with the flux violating the
+                    // flux inequality leading may be accepted, while the error
+                    // in pressure inequality is always satisfied.
+
+                    solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+
+                    if ( solution_head_ > bc_pressure_) {
+                        //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head_, bc_pressure, bc_flux);
+                        switch_dirichlet=1;
+                    }
+                }
+            }
+
+            eq_data_->save_local_system_[bulk_local_idx_] = (bool) switch_dirichlet;
+
+            // ** Apply BCUpdate BC type. **
+            // Force Dirichlet type during the first iteration of the unsteady case.
+            if (switch_dirichlet || eq_data_->force_no_neumann_bc ) {
+                //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+                eq_data_->loc_schur_[bulk_local_idx_].set_solution(sidx_, bc_pressure_);
+            } else {
+                //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux_, bc_flux);
+                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, side_flux_);
+            }
+
+        } else if (type==DarcyMH::EqFields::river) {
+            eq_data_->is_linear=false;
+
+            bc_pressure_ = eq_fields_->bc_pressure(p_bdr);
+            bc_switch_pressure_ = eq_fields_->bc_switch_pressure(p_bdr);
+            bc_flux_ = -eq_fields_->bc_flux(p_bdr);
+            bc_sigma_ = eq_fields_->bc_robin_sigma(p_bdr);
+
+            solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+
+            // Force Robin type during the first iteration of the unsteady case.
+            if (solution_head_ > bc_switch_pressure_  || eq_data_->force_no_neumann_bc) {
+                // Robin BC
+                //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
+                                        -b_ele.measure() * bc_sigma_ * cross_section_,
+                                        b_ele.measure() * cross_section_ * (bc_flux_ - bc_sigma_ * bc_pressure_)  );
+            } else {
+                // Neumann BC
+                //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
+                bc_total_flux_ = bc_flux_ + bc_sigma_*(bc_switch_pressure_ - bc_pressure_);
+
+                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, bc_total_flux_ * b_ele.measure() * cross_section_);
+            }
+        }
+        else {
+            THROW( ExcBCNotSupported() );
+        }
+
+        eq_data_->balance->add_flux_values(eq_data_->water_balance_idx, cell_side,
+                                      {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_side_dofs[dim-1][sidx_]]},
+                                      {1}, 0);
+    }
+
     /// Temporary method find neighbour index in higher-dim cell
     inline unsigned int ngh_idx(DHCellAccessor &dh_cell, DHCellSide &neighb_side) {
         for (uint n_i=0; n_i<dh_cell.elm()->n_neighs_vb(); ++n_i) {
@@ -600,39 +635,6 @@ protected:
 
     virtual double compute_conductivity(FMT_UNUSED const DHCellAccessor& cell, BulkPoint &p) {
         return eq_fields_->conductivity(p);
-    }
-
-    virtual void dirichlet_switch(char & switch_dirichlet, DHCellSide cell_side) {
-        if (switch_dirichlet) {
-            // check and possibly switch to flux BC
-            // The switch raise error on the corresponding edge row.
-            // Magnitude of the error is abs(solution_flux - side_flux).
-
-            // try reconstructing local system for seepage BC
-            this->load_local_system(cell_side.cell());
-
-            if ( reconstructed_solution_[side_row_] < side_flux_) {
-                //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
-                switch_dirichlet = 0;
-            }
-        } else {
-            // check and possibly switch to  pressure BC
-            // TODO: What is the appropriate DOF in not local?
-            // The switch raise error on the corresponding side row.
-            // Magnitude of the error is abs(solution_head - bc_pressure)
-            // Since usually K is very large, this error would be much
-            // higher then error caused by the inverse switch, this
-            // cause that a solution  with the flux violating the
-            // flux inequality leading may be accepted, while the error
-            // in pressure inequality is always satisfied.
-
-            solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
-
-            if ( solution_head_ > bc_pressure_) {
-                //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head_, bc_pressure, bc_flux);
-                switch_dirichlet=1;
-            }
-        }
     }
 
 
@@ -710,6 +712,15 @@ public:
     }
 
 
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
+
+        this->boundary_side_integral_in(cell_side, false);
+    }
+
+
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
@@ -755,9 +766,6 @@ protected:
                     this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
         }
     }
-
-    void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
-    {}
 
 };
 

@@ -180,6 +180,15 @@ public:
     }
 
 
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
+
+        this->boundary_side_integral_in(cell_side, true);
+    }
+
+
 protected:
     inline void assemble_source_term_richards(const DHCellAccessor& cell, BulkPoint &p)
     {
@@ -367,6 +376,15 @@ public:
     }
 
 
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
+
+        this->boundary_side_integral_in(cell_side, false);
+    }
+
+
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
@@ -385,9 +403,6 @@ protected:
     {
         return MHMatrixAssemblyRichards<dim>::compute_conductivity(cell, p);
     }
-
-    void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
-    {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
