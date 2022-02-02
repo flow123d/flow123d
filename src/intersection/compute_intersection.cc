@@ -4,7 +4,6 @@
 
 #include "compute_intersection.hh"
 #include "mesh/ref_element.hh"
-#include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "system/system.hh"
 
@@ -27,7 +26,7 @@ ComputeIntersection<1,2>::ComputeIntersection()
 
 
 ComputeIntersection<1,2>::ComputeIntersection(ElementAccessor<3> abscissa,
-                                              ElementAccessor<3> triangle, FMT_UNUSED Mesh *mesh)
+                                              ElementAccessor<3> triangle)
 : computed_(false)
 {
     ASSERT(abscissa->dim() == 1);
@@ -540,8 +539,7 @@ ComputeIntersection<2,2>::ComputeIntersection()
 }
 
 ComputeIntersection<2,2>::ComputeIntersection(ElementAccessor<3> triaA,
-                                              ElementAccessor<3> triaB,
-                                              FMT_UNUSED Mesh *mesh)
+                                              ElementAccessor<3> triaB)
 {
     ASSERT(triaA->dim() == 2);
     ASSERT(triaB->dim() == 2);
@@ -761,8 +759,7 @@ ComputeIntersection<1,3>::ComputeIntersection()
 }
 
 ComputeIntersection<1,3>::ComputeIntersection(ElementAccessor<3> abscissa,
-                                              ElementAccessor<3> tetrahedron,
-                                              FMT_UNUSED Mesh *mesh)
+                                              ElementAccessor<3> tetrahedron)
 {
     ASSERT(abscissa->dim() == 1);
     ASSERT(tetrahedron->dim() == 3);
@@ -1003,15 +1000,15 @@ on_faces(_on_faces())
 
 
 ComputeIntersection<2,3>::ComputeIntersection(ElementAccessor<3> triangle,
-                                              ElementAccessor<3> tetrahedron,
-                                              Mesh *mesh)
+                                              ElementAccessor<3> tetrahedron)
 : ComputeIntersection()
 {
     ASSERT(tetrahedron.sign() * tetrahedron.jacobian_S3() > 0)
             (tetrahedron.sign())(tetrahedron.jacobian_S3()).add_value(tetrahedron.input_id(),"element index").error(
            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
 
-    mesh_ = mesh;
+    S3_inverted = tetrahedron.inverted();
+    
     plucker_coordinates_triangle_.resize(3);
     plucker_coordinates_tetrahedron.resize(6);
 
@@ -1112,8 +1109,8 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
 
     unsigned int ip = object_next[obj_after_ip];
     ASSERT( ! have_backlink(obj_after_ip) )
-        (mesh_->element_accessor(intersection_->component_ele_idx()).idx())
-        (mesh_->element_accessor(intersection_->bulk_ele_idx()).idx())
+        (intersection_->component_ele_idx())
+        (intersection_->bulk_ele_idx())
         (obj_before_ip)
         (ip_idx)
         (obj_after_ip)
@@ -1132,7 +1129,6 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
 
 void ComputeIntersection<2,3>::compute(IntersectionAux< 2 , 3  >& intersection)
 {
-    S3_inverted = mesh_->element_accessor(intersection.bulk_ele_idx()).inverted();
     intersection_= &intersection;
     //DebugOut().fmt("2d ele: {} 3d ele: {}\n",
     //        intersection.component_ele_idx(),

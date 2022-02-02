@@ -700,7 +700,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                     }
                     case 1: {
                         IntersectionAux<1,3> is(elm.idx(), source_elm.idx());
-                        ComputeIntersection<1,3> CI(elm, source_elm, source_mesh.get());
+                        ComputeIntersection<1,3> CI(elm, source_elm);
                         CI.init();
                         CI.compute(is);
 
@@ -710,7 +710,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                     }
                     case 2: {
                         IntersectionAux<2,3> is(elm.idx(), source_elm.idx());
-                        ComputeIntersection<2,3> CI(elm, source_elm, source_mesh.get());
+                        ComputeIntersection<2,3> CI(elm, source_elm);
                         CI.init();
                         CI.compute(is);
 
