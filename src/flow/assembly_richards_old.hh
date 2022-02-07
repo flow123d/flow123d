@@ -123,7 +123,7 @@ private:
 
 
 template <unsigned int dim>
-class MHMatrixAssemblyRichards : virtual public MHMatrixAssemblyLMH<dim>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
@@ -323,6 +323,28 @@ protected:
     }
 
 
+    /// Postprocess velocity after calculating of cell integral.
+    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
+    {
+        this->postprocess_velocity(dh_cell, p);
+
+        this->update_water_content(dh_cell, p);
+
+        VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
+
+        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
+            water_content = water_content_vec.get( this->cr_disc_dofs_[i] );
+            water_content_previous_time = eq_data_->water_content_previous_time.get( this->cr_disc_dofs_[i] );
+
+            solution[eq_data_->loc_side_dofs[dim-1][i]]
+                += this->edge_source_term_ - this->edge_scale_ * (water_content - water_content_previous_time) / eq_data_->time_step_;
+        }
+
+        IntIdx p_dof = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
+        eq_fields_->conductivity_ptr->vec().set( p_dof, compute_conductivity(dh_cell, p) );
+    }
+
+
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -342,7 +364,7 @@ protected:
 
 
 template <unsigned int dim>
-class ReconstructSchurAssemblyRichards : public ReconstructSchurAssemblyLMH<dim>, public MHMatrixAssemblyRichards<dim>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
@@ -351,7 +373,7 @@ public:
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
     ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), ReconstructSchurAssemblyLMH<dim>(eq_fields, eq_data), MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
     }
 
     /// Integral over element.
@@ -397,28 +419,6 @@ public:
         this->end_reconstruct_schur();
     }
 protected:
-    /// Postprocess velocity after calculating of cell integral.
-    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
-    {
-        this->postprocess_velocity(dh_cell, p);
-
-        this->update_water_content(dh_cell, p);
-
-        VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
-
-        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
-            this->water_content = water_content_vec.get( this->cr_disc_dofs_[i] );
-            this->water_content_previous_time = this->eq_data_->water_content_previous_time.get( this->cr_disc_dofs_[i] );
-
-            solution[this->eq_data_->loc_side_dofs[dim-1][i]]
-                += this->edge_source_term_ - this->edge_scale_ * (this->water_content - this->water_content_previous_time) / this->eq_data_->time_step_;
-        }
-
-        IntIdx p_dof = dh_cell.cell_with_other_dh(this->eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
-        this->eq_fields_->conductivity_ptr->vec().set( p_dof, this->compute_conductivity(dh_cell, p) );
-    }
-
-
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 };

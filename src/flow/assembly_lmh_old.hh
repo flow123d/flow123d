@@ -306,6 +306,47 @@ protected:
     }
 
 
+    /// Common code of begin method of Reconstruct Schur assembly (Darcy and Richards)
+    void begin_reconstruct_schur()
+    {
+        this->eq_data_->full_solution.zero_entries();
+        this->eq_data_->p_edge_solution.local_to_ghost_begin();
+        this->eq_data_->p_edge_solution.local_to_ghost_end();
+
+        this->eq_data_->balance_->start_flux_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->start_source_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
+
+        this->set_dofs();
+    }
+
+
+    /// Common code of end method of Reconstruct Schur assembly (Darcy and Richards)
+    void end_reconstruct_schur()
+    {
+        for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
+        	this->bulk_local_idx_ = dh_cell.local_idx();
+            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs);
+            // reconstruct the velocity and pressure
+            this->eq_data_->loc_system_[this->bulk_local_idx_].reconstruct_solution_schur(this->eq_data_->schur_offset_[dh_cell.dim()-1],
+                                                                                  schur_solution, this->reconstructed_solution_);
+
+            this->reconstructed_solution_ += this->eq_data_->postprocess_solution_[this->bulk_local_idx_];
+
+            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.head(
+                    this->eq_data_->schur_offset_[dh_cell.dim()-1]), this->reconstructed_solution_);
+            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
+                    this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
+        }
+
+        this->eq_data_->full_solution.local_to_ghost_begin();
+        this->eq_data_->full_solution.local_to_ghost_end();
+
+        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
+        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
+    }
+
     /// Part of cell_integral method, common in all descendants
     inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
     {
@@ -711,7 +752,7 @@ protected:
 };
 
 template <unsigned int dim>
-class ReconstructSchurAssemblyLMH : virtual public MHMatrixAssemblyLMH<dim>
+class ReconstructSchurAssemblyLMH : public MHMatrixAssemblyLMH<dim>
 {
 public:
     typedef typename DarcyLMH::EqFields EqFields;
@@ -764,48 +805,6 @@ public:
     void end() override
     {
         this->end_reconstruct_schur();
-    }
-
-protected:
-    /// Common code of begin method of Reconstruct Schur assembly (Darcy and Richards)
-    void begin_reconstruct_schur()
-    {
-        this->eq_data_->full_solution.zero_entries();
-        this->eq_data_->p_edge_solution.local_to_ghost_begin();
-        this->eq_data_->p_edge_solution.local_to_ghost_end();
-
-        this->eq_data_->balance_->start_flux_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->start_source_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
-
-        this->set_dofs();
-    }
-
-
-    /// Common code of end method of Reconstruct Schur assembly (Darcy and Richards)
-    void end_reconstruct_schur()
-    {
-        for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
-        	this->bulk_local_idx_ = dh_cell.local_idx();
-            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs);
-            // reconstruct the velocity and pressure
-            this->eq_data_->loc_system_[this->bulk_local_idx_].reconstruct_solution_schur(this->eq_data_->schur_offset_[dh_cell.dim()-1],
-                                                                                  schur_solution, this->reconstructed_solution_);
-
-            this->reconstructed_solution_ += this->eq_data_->postprocess_solution_[this->bulk_local_idx_];
-
-            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.head(
-                    this->eq_data_->schur_offset_[dh_cell.dim()-1]), this->reconstructed_solution_);
-            this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
-                    this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
-        }
-
-        this->eq_data_->full_solution.local_to_ghost_begin();
-        this->eq_data_->full_solution.local_to_ghost_end();
-
-        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
     }
 
 };
