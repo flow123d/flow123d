@@ -100,27 +100,29 @@ class LocalRun(AbstractRun):
             progress=printf.verbosity() is printf.OutputVerbosity.FULL
         )
 
+        all_ref_files = set(self._get_all_ref_files())
         for check_rule in self.case.check_rules:
             method = str(list(check_rule.keys())[0])
             module = self.get_module(method)
-            comp_data = check_rule[method]
+            check_rule_config = check_rule[method]
             if not module:
                 printf.error('Warning! No module for check_rule method "{}"', method)
                 continue
 
-            pairs = self._get_ref_output_files(comp_data)
-            if pairs:
-                for pair in pairs:
+            comparison_pairs = self._get_ref_output_files(check_rule_config) # [(ref_file, output_file), ...]
+            if comparison_pairs:
+                for pair in comparison_pairs:
+                    all_ref_files.discard(pair[0])
 
                     # load module and determine whether we are dealing with
                     # exec comparison or inplace comparison
                     if issubclass(module.__class__, modules.ExecComparison):
-                        command = module.get_command(*pair, **comp_data)
+                        command = module.get_command(*pair, **check_rule_config)
                         pm = PyPy(BinExecutor(command))
                         pm.executor.output = OutputMode.variable_output()
                     else:
                         module = self.get_module(method)
-                        module.prepare(*pair, **comp_data)
+                        module.prepare(*pair, **check_rule_config)
                         pm = PyPy(module)
                         pm.executor.output = OutputMode.dummy_output()
                         # pm.error_monitor.deactivate()
@@ -141,6 +143,10 @@ class LocalRun(AbstractRun):
                         pm.monitor.error_complete_format = '{}: {} ({})'.format(test_name, path, size)
 
                     comparisons.add(pm)
+        if all_ref_files:
+            message = ["Missing comparison rule for reference files:"]
+            message.extend([f"    {f}" for f in all_ref_files])
+            raise Exception("\n".join(message))
 
         return comparisons
 

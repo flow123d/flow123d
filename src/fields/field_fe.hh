@@ -203,27 +203,27 @@ private:
     };
 
 	/// Create DofHandler object
-	void make_dof_handler(const Mesh *mesh);
+	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
-	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
+	void interpolate_gauss(ElementDataCache<double>::CacheData data_vec);
 
 	/// Interpolate data (use intersection library) over all elements of target mesh.
-	void interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec);
+	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
 
 	/// Calculate native data over all elements of target mesh.
-	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
-	void calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_identic_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
-	void calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.
 	 *
-	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 * TODO: Temporary solution. REMOVE this method and fix all places where is boundary_dofs_ vector used.
 	 */
 	void fill_boundary_dofs();
 
@@ -246,7 +246,7 @@ private:
     template<unsigned int dim>
     void fill_fe_system_data(unsigned int block_index) {
         auto fe_system_ptr = std::dynamic_pointer_cast<FESystem<dim>>( dh_->ds()->fe()[Dim<dim>{}] );
-        ASSERT_DBG(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
+        ASSERT(fe_system_ptr != nullptr).error("Wrong type, must be FESystem!\n");
         this->fe_item_[dim].comp_index_ = fe_system_ptr->function_space()->dof_indices()[block_index].component_offset;
         this->fe_item_[dim].range_begin_ = fe_system_ptr->fe_dofs(block_index)[0];
         this->fe_item_[dim].range_end_ = this->fe_item_[dim].range_begin_ + fe_system_ptr->fe()[block_index]->n_dofs();

@@ -13,11 +13,11 @@
 #include "intersection/mixed_mesh_intersections.hh"
 #include <armadillo>
 
-P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
-: MortarAssemblyBase(data),
+P0_CouplingAssembler::P0_CouplingAssembler(AssemblyFieldsPtr eq_fields, AssemblyDataPtr eq_data)
+: MortarAssemblyBase(eq_fields, eq_data),
   tensor_average_(16),
   col_average_(4),
-  quadrature_(*(data->mesh))
+  quadrature_(*(eq_data->mesh))
 {
     isec_data_list.reserve(30);
 
@@ -61,11 +61,11 @@ void P0_CouplingAssembler::pressure_diff(const DHCellAccessor& dh_cell, double d
         if (side.is_boundary()) {
             Boundary bcd = side.cond();
             ElementAccessor<3> b_ele = bcd.element_accessor();
-            auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
+            auto type = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
-            if (type == DarcyMH::EqData::dirichlet) {
+            if (type == DarcyMH::EqFields::dirichlet) {
                 //DebugOut().fmt("Dirichlet: {}\n", ele->index());
-                double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
+                double bc_pressure = eq_fields_->bc_pressure.value(b_ele.centre(), b_ele);
                 i_data.dirichlet_dofs[i_data.n_dirichlet] = i_side;
                 i_data.dirichlet_sol[i_data.n_dirichlet] = bc_pressure;
                 i_data.n_dirichlet++;
@@ -117,9 +117,9 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
     //slave_ac_.setup(master_ac);
 
     arma::vec3 ele_centre = ele.centre();
-    double m_sigma = data_->sigma.value( ele_centre, ele);
-    double m_conductivity = data_->conductivity.value( ele_centre, ele);
-    double m_crossection = data_->cross_section.value( ele_centre, ele );
+    double m_sigma = eq_fields_->sigma.value( ele_centre, ele);
+    double m_conductivity = eq_fields_->conductivity.value( ele_centre, ele);
+    double m_crossection = eq_fields_->cross_section.value( ele_centre, ele );
 
     double master_sigma = 2*m_sigma*m_conductivity *
                     2/ m_crossection;
@@ -128,7 +128,7 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
                      * 3d-2d : compute nv of 2d triangle
                      * 2d-2d : interpret as 2d-1d-2d, should be symmetric master-slave
                      * 2d-1d : nv is tangent to 2d and normal to 1d
-                    arma::dot(data_->anisotropy.value( ele_centre, ele->element_accessor())*nv, nv)
+                    arma::dot(eq_fields_->anisotropy.value( ele_centre, ele->element_accessor())*nv, nv)
                     */
 
 
@@ -144,13 +144,13 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
     uint i = 0;
     for(; i < isec_list.size(); ++i) {
         bool non_zero = quadrature_.reinit(isec_list[i].second);
-        DHCellAccessor dh_cell_slave(this->data_->dh_.get(), quadrature_.slave_idx());
+        DHCellAccessor dh_cell_slave(this->eq_data_->dh_.get(), quadrature_.slave_idx());
         ElementAccessor<3> ele_slave = dh_cell_slave.elm();
         slave_dim = ele_slave.dim();
         if (slave_dim == ele.dim()) break;
         if (! non_zero) continue; // skip quadratures close to zero
 
-        double cs = data_->cross_section.value(ele_slave.centre(), ele_slave);
+        double cs = eq_fields_->cross_section.value(ele_slave.centre(), ele_slave);
         double isec_measure = quadrature_.measure();
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
@@ -162,7 +162,7 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
         if( fabs(isec_sum - ele.measure()) > 1E-5) {
             string out;
             for(auto & isec : isec_list) {
-                DHCellAccessor dh_cell_slave(this->data_->dh_.get(), isec.second->bulk_ele_idx());
+                DHCellAccessor dh_cell_slave(this->eq_data_->dh_.get(), isec.second->bulk_ele_idx());
                 out += fmt::format(" {}", dh_cell_slave.elm().idx());
             }
 
@@ -191,7 +191,7 @@ void P0_CouplingAssembler::assembly(const DHCellAccessor& dh_cell_master)
         isec_sum = 0.0;
         for(; i < isec_list.size(); ++i) {
                 quadrature_.reinit(isec_list[i].second);
-                DHCellAccessor dh_cell_slave(this->data_->dh_.get(), quadrature_.slave_idx());
+                DHCellAccessor dh_cell_slave(this->eq_data_->dh_.get(), quadrature_.slave_idx());
                 double isec_measure = quadrature_.measure();
                 isec_sum += isec_measure;
                 //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), dh_cell_slave.elm().idx(), isec_measure);
@@ -222,7 +222,7 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              for(uint i=0; i< row_ele.n_dirichlet; i++)
                  loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i], -1.0);
              for(uint i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
-             //ASSERT( arma::norm(product_,2) == 0.0 );
+             //ASSERT_PERMANENT( arma::norm(product_,2) == 0.0 );
              loc_system_.set_matrix(product_);
              // Must have z-coords for every side, can not use averaging vector
              loc_system_.set_rhs( -s * col_average_[row_ele.dim] * col_ele.ele_z_coord_ );
@@ -232,7 +232,7 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
                  this->fix_velocity_local(row_ele, col_ele);
              } else {
                  loc_system_.eliminate_solution();
-                 data_->lin_sys->set_local_system(loc_system_, data_->dh_->get_local_to_global_map());
+                 eq_data_->lin_sys->set_local_system(loc_system_, eq_data_->dh_->get_local_to_global_map());
              }
          }
      }
@@ -247,10 +247,10 @@ void P0_CouplingAssembler::fix_velocity_local(const IsecData &row_ele, const Ise
     arma::vec pressure(n_cols);
     arma::vec add_velocity(n_rows);
     
-    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = data_->full_solution.get(col_ele.dofs[icol]);
+    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = eq_data_->full_solution.get(col_ele.dofs[icol]);
     add_velocity =  loc_system_.get_matrix() * pressure - loc_system_.get_rhs();
     //DebugOut() << "fix_velocity\n" << pressure << add_velocity;
-    for(uint irow=0; irow < n_rows; irow++ ) data_->full_solution.add( row_ele.vel_dofs[irow], add_velocity[irow] );
+    for(uint irow=0; irow < n_rows; irow++ ) eq_data_->full_solution.add( row_ele.vel_dofs[irow], add_velocity[irow] );
 }
 
 void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
@@ -266,12 +266,12 @@ void P1_CouplingAssembler::add_sides(const DHCellAccessor& dh_cell, unsigned int
         if (side.is_boundary()) {
             Boundary bcd = side.cond();
             ElementAccessor<3> b_ele = bcd.element_accessor();
-            auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
+            auto type = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type.value(b_ele.centre(), b_ele);
             //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
-            if (type == DarcyMH::EqData::dirichlet) {
+            if (type == DarcyMH::EqFields::dirichlet) {
                 //DebugOut().fmt("Dirichlet: {}\n", ele->index());
                 dofs[shift + i_side] = -dofs[shift + i_side];
-                double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
+                double bc_pressure = eq_fields_->bc_pressure.value(b_ele.centre(), b_ele);
                 dirichlet[shift + i_side] = bc_pressure;
             }
         }
@@ -289,7 +289,7 @@ void P1_CouplingAssembler::assembly(FMT_UNUSED const DHCellAccessor& dh_cell) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters
-    double master_sigma=data_->sigma.value( ele_ac.element_accessor()->centre(), ele_ac.element_accessor());
+    double master_sigma=eq_fields_->sigma.value( ele_ac.element_accessor()->centre(), ele_ac.element_accessor());
 
     // set mater sides
     add_sides(ele_ac, 3, dofs, dirichlet);
@@ -388,7 +388,7 @@ void P1_CouplingAssembler::assembly(FMT_UNUSED const DHCellAccessor& dh_cell) {
             }
         }
         auto dofs_cp=dofs;
-        data_->lin_sys->set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
+        eq_data_->lin_sys->set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
 
     }*/
 }

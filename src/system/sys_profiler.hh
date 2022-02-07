@@ -885,6 +885,8 @@ public:
     {}
     void output(MPI_Comm, string)
     {}
+    void output(std::ostream &)
+    {}
     void output(string)
     {}
     void output(MPI_Comm)

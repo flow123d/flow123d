@@ -201,6 +201,7 @@ double TimeUnitConversion::read_coef(Input::Iterator<Input::Record> unit_it) con
  */
 
 TimeStep::TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion) :
+use_fparser_(false),
 index_(0),
 length_(1.0),
 end_(init_time),
@@ -210,6 +211,7 @@ time_unit_conversion_(time_unit_conversion)
 
 
 TimeStep::TimeStep() :
+use_fparser_(false),
 index_(0),
 length_(TimeGovernor::inf_time),
 end_(-TimeGovernor::inf_time)
@@ -221,6 +223,7 @@ end_(-TimeGovernor::inf_time)
 
 
 TimeStep::TimeStep(const TimeStep &other):
+use_fparser_(false),
 index_(other.index_),
 length_(other.length_),
 end_(other.end_),
@@ -280,7 +283,7 @@ std::shared_ptr<TimeUnitConversion> TimeStep::get_unit_conversion() const
 }
 
 ostream& operator<<(ostream& out, const TimeStep& t_step) {
-    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+    out << "time: " << t_step.end() << " dt: " << t_step.length() << endl;
     return out;
 }
 
@@ -666,7 +669,7 @@ double TimeGovernor::estimate_dt() const {
 
 void TimeGovernor::next_time()
 {
-    OLD_ASSERT_LE(0.0, t());
+    ASSERT_LE(0.0, t());
     if (is_end()) return;
     
 

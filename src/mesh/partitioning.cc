@@ -76,14 +76,14 @@ Partitioning::~Partitioning() {
 }
 
 const Distribution * Partitioning::get_init_distr() const {
-	OLD_ASSERT(init_el_ds_, "NULL initial distribution.");
+	ASSERT_PTR(init_el_ds_).error("NULL initial distribution.");
     return init_el_ds_;
 }
 
 
 
 const LongIdx * Partitioning::get_loc_part() const {
-	OLD_ASSERT(loc_part_, "NULL local partitioning.");
+	ASSERT_PTR(loc_part_).error("NULL local partitioning.");
     return loc_part_;
 }
 
@@ -236,7 +236,7 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,  Distribution * &new_ds
 
 
 shared_ptr< vector<int> > Partitioning::subdomain_id_field_data() {
-    ASSERT(loc_part_).error("Partition is not yet computed.\n");
+    ASSERT_PERMANENT(loc_part_).error("Partition is not yet computed.\n");
     if (!seq_part_) {
     	unsigned int seq_size=mesh_->get_el_ds()->lsize();
     	seq_part_ = make_shared< vector<int> >(seq_size, mesh_->get_el_ds()->myp());

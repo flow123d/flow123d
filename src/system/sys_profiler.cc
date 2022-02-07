@@ -260,7 +260,7 @@ void Timer::add_child(int child_index, const Timer &child)
         do {
             i=( i < max_n_childs ? i+1 : 0);
         } while (i!=idx && child_timers[i] != timer_no_child);
-        ASSERT(i!=idx)(tag()).error("Too many children of the timer");
+        ASSERT_PERMANENT(i!=idx)(tag()).error("Too many children of the timer");
         idx=i;
     }
     //DebugOut().fmt("Adding child {} at index: {}\n", child_index, idx);
@@ -335,7 +335,7 @@ void Profiler::calibrate() {
         for(uint i=0; i<HALF; i++) {
             block[HALF+i] = block[i]*block[i] + i;
         }
-        delete block;
+        delete[] block;
         count++;
     }
 
@@ -415,7 +415,7 @@ int Profiler::find_child(const CodePoint &cp) {
         if (timer.child_timers[idx] == timer_no_child) break; // tag is not there
 
         child_idx=timer.child_timers[idx];
-        ASSERT_LT(child_idx, timers_.size()).error();
+        ASSERT_PERMANENT_LT(child_idx, timers_.size()).error();
         if (timers_[child_idx].full_hash_ == cp.hash_) return child_idx;
         idx = ( (unsigned int)(idx)==(Timer::max_n_childs - 1) ? 0 : idx+1 );
     } while ( (unsigned int)(idx) != cp.hash_idx_ ); // passed through whole array
@@ -430,7 +430,7 @@ void Profiler::stop_timer(const CodePoint &cp) {
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)
         if (timer.child_timers[i] != timer_no_child)
-        	ASSERT(! timers_[timer.child_timers[i]].running())(timers_[timer.child_timers[i]].tag())(timer.tag())
+        	ASSERT_PERMANENT(! timers_[timer.child_timers[i]].running())(timers_[timer.child_timers[i]].tag())(timer.tag())
 				.error("Child timer running while closing timer.");
 #endif
     unsigned int child_timer = actual_node;
@@ -479,7 +479,7 @@ void Profiler::stop_timer(int timer_index) {
     // timer which is still running MUST be the same as actual_node index
     // if timer is not running index will differ
     if (timers_[timer_index].running()) {
-    	ASSERT_EQ(timer_index, (int)actual_node).error();
+    	ASSERT_PERMANENT_EQ(timer_index, (int)actual_node).error();
         stop_timer(*timers_[timer_index].code_point_);
     }
     
@@ -563,8 +563,8 @@ void Profiler::add_timer_info(ReduceFunctor reduce, nlohmann::json* holder, int 
 
     // get timer and check preconditions
     Timer &timer = timers_[timer_idx];
-    ASSERT(timer_idx >=0)(timer_idx).error("Wrong timer index.");
-    ASSERT(timer.parent_timer >=0).error("Inconsistent tree.");
+    ASSERT_PERMANENT(timer_idx >=0)(timer_idx).error("Wrong timer index.");
+    ASSERT_PERMANENT(timer.parent_timer >=0).error("Inconsistent tree.");
 
     // fix path
     string filepath = timer.code_point_->file_;
@@ -910,7 +910,7 @@ void Profiler::transform_profiler_data (const string &, const string &) {
 
 void Profiler::uninitialize() {
     if (Profiler::instance()) {
-    	ASSERT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
+    	ASSERT_PERMANENT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         Profiler::instance()->stop_timer(0);
         set_memory_monitoring(false, false);
@@ -985,7 +985,7 @@ void operator delete[]( void *p, std::size_t) throw() {
 
 #else // def FLOW123D_DEBUG_PROFILER
 
-Profiler * Profiler::instance(FMT_UNUSED bool clear) {
+Profiler * Profiler::instance(bool) { 
     static Profiler * _instance = new Profiler();
     return _instance;
 } 

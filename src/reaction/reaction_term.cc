@@ -49,18 +49,21 @@ Abstract & ReactionTerm::it_abstract_reaction() {
 
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
-    : EquationBase(init_mesh, in_rec)
-{
-}
+    : EquationBase(init_mesh, in_rec), eq_fields_base_(nullptr)
+{}
 
 ReactionTerm::~ReactionTerm()
-{
-}
+{}
 
+
+
+
+ReactionTerm::EqData::EqData()
+{}
 
 
 
 void ReactionTerm::choose_next_time(void)
 {
-  ASSERT_DBG(0).error("ReactionTerm does not change TimeGovernor.\n");
+  ASSERT(0).error("ReactionTerm does not change TimeGovernor.\n");
 }

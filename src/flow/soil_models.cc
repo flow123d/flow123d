@@ -76,8 +76,8 @@ VanGenuchten::VanGenuchten()
 void VanGenuchten::reset_(SoilData soil)
 {
     // check soil parameters
-    ASSERT_LT_DBG( soil.cut_fraction, 1.0);
-    ASSERT_GT_DBG( soil.cut_fraction, 0.0);
+    ASSERT_LT( soil.cut_fraction, 1.0);
+    ASSERT_GT( soil.cut_fraction, 0.0);
     soil_param_ = soil;
 
     m = 1-1/soil_param_.n;

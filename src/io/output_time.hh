@@ -133,7 +133,7 @@ public:
     }
 
     static void set_discrete_flag(DiscreteSpaceFlags &dsf, DiscreteSpace d_space) {
-        ASSERT_LT_DBG(d_space, N_DISCRETE_SPACES).error("Invalid discrete space.");
+        ASSERT_LT(d_space, N_DISCRETE_SPACES).error("Invalid discrete space.");
         dsf[d_space] = true;
     }
 

@@ -56,7 +56,7 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
-        ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->global_to_local_el_idx_.size()).error("Local element index is out of range!\n");
+        ASSERT_LT(loc_ele_idx_, dof_handler_->global_to_local_el_idx_.size()).error("Local element index is out of range!\n");
         return loc_ele_idx_;
     }
 
@@ -420,6 +420,9 @@ private:
 inline unsigned int DHCellAccessor::n_dofs() const
 {
     switch (this->dim()) {
+        case 0:
+            return fe<0>()->n_dofs();
+            break;
         case 1:
             return fe<1>()->n_dofs();
             break;
@@ -438,6 +441,9 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
     switch (this->dim())
     {
+        case 0:
+            return fe<0>()->dof(idof);
+            break;
         case 1:
             return fe<1>()->dof(idof);
             break;
@@ -449,9 +455,9 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             break;
     }
 
-    ASSERT(0)(this->dim()).error("Unsupported FE dimension.");
+    ASSERT_PERMANENT(0)(this->dim()).error("Unsupported FE dimension.");
     // cannot be reached:
-    return fe<1>()->dof(idof);;
+    return fe<1>()->dof(idof);
 }
 
 

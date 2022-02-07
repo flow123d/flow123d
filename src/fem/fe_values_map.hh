@@ -36,7 +36,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEScalar);
+        ASSERT(fe_values.fe_type_ == FEScalar);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -46,7 +46,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEScalar);
+        ASSERT(fe_values.fe_type_ == FEScalar);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -68,7 +68,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVectorPiola);
+        ASSERT(fe_values.fe_type_ == FEVectorPiola);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -82,7 +82,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVectorPiola);
+        ASSERT(fe_values.fe_type_ == FEVectorPiola);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -109,7 +109,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVectorContravariant);
+        ASSERT(fe_values.fe_type_ == FEVectorContravariant);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -123,7 +123,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVectorContravariant);
+        ASSERT(fe_values.fe_type_ == FEVectorContravariant);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -149,7 +149,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVector);
+        ASSERT(fe_values.fe_type_ == FEVector);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -163,7 +163,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEVector);
+        ASSERT(fe_values.fe_type_ == FEVector);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -189,7 +189,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FETensor);
+        ASSERT(fe_values.fe_type_ == FETensor);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -203,7 +203,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FETensor);
+        ASSERT(fe_values.fe_type_ == FETensor);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -225,7 +225,7 @@ public:
     /// Fill fe_values_vec of components of mixed system FEValues object.
     inline void fill_values_vec(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEMixedSystem);
+        ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         unsigned int comp_offset = 0;
         for (unsigned int f=0; f<fe_values.fe_sys_dofs_.size(); f++)
@@ -241,7 +241,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEMixedSystem);
+        ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         arma::vec fv_vec;
         unsigned int comp_offset = 0;
@@ -263,7 +263,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT_DBG(fe_values.fe_type_ == FEMixedSystem);
+        ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         arma::mat grads;
         unsigned int comp_offset = 0;

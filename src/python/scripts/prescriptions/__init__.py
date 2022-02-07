@@ -98,15 +98,25 @@ class AbstractRun(object):
         result.extend(self._get_flow123d())
         return result
 
+    def _get_all_ref_files(self):
+        return Paths.walk(self.case.fs.ref_output, [PathFilters.filter_type_is_file()])
+
     def _get_ref_output_files(self, comp_data):
         """
         :type comp_data: dict
+        Return: comparison_pairs, filtered
+
+        comparison_pairs is list of filename pairs to compare:
+        [(reference_file, output_file)]
+
+        filtered is list of reference files not matching the the checking rule pattern.
+
         """
         # parse filters
         filters = [PathFilters.filter_wildcards(x) for x in comp_data.get('files', [])]
 
         # browse files and make them relative to ref output so filters works properly
-        files = Paths.walk(self.case.fs.ref_output, [PathFilters.filter_type_is_file()])
+        files = self._get_all_ref_files()
         files = [Paths.relpath(f, self.case.fs.ref_output) for f in files]
 
         # filter files and make them absolute again

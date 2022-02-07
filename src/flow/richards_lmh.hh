@@ -65,9 +65,9 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyLMH::EqData {
+    class EqFields : public DarcyLMH::EqFields {
     public:
-        EqData();
+    	EqFields();
         // input fields
         Field<3, FieldValue<3>::Scalar > water_content_saturated;   // corresponds to the porosity (theta_s = Vw/V = porosity)
         Field<3, FieldValue<3>::Scalar > water_content_residual;
@@ -81,14 +81,17 @@ public:
         Field<3, FieldValue<3>::Scalar > conductivity_richards;
 //         FieldFE<3, FieldValue<3>::Scalar > conductivity_richards;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
+    };
+
+    class EqData : public DarcyLMH::EqData {
+    public:
+        /// Constructor
+        EqData();
 
         // Auxiliary assembly fields.
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
 
-        // This is necessary in the assembly
-        // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
-        double time_step_;
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
@@ -110,7 +113,8 @@ protected:
     void assembly_linear_system() override;
 private:
 
-    std::shared_ptr<EqData> data_;
+    std::shared_ptr<EqFields> eq_fields_;
+    std::shared_ptr<EqData> eq_data_;
 };
 
 

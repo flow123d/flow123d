@@ -81,6 +81,11 @@ const Record & TransportDG<Model>::get_input_type() {
     return Model::get_input_type("DG", "Discontinuous Galerkin (DG) solver")
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Solver for the linear system.")
+        .declare_key("user_fields", Array(
+                TransportDG<Model>::EqFields()
+                    .get_user_field(equation_name)),
+                IT::Default::optional(),
+                "Input fields of the equation defined by user.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqFields()
                     .make_field_descriptor_type(equation_name)),
@@ -260,6 +265,7 @@ void TransportDG<Model>::initialize()
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
     eq_fields_->output_field.set_mesh(*Model::mesh_);
+    eq_fields_->output_fields.set_mesh(*Model::mesh_);
     eq_fields_->output_type(OutputTime::CORNER_DATA);
 
     eq_fields_->output_field.setup_components();
@@ -338,6 +344,11 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
+    }
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->set_user_fields_map(user_fields_arr);
     }
 }
 
@@ -683,14 +694,6 @@ void TransportDG<Model>::set_initial_condition()
 
 
 template<class Model>
-void TransportDG<Model>::get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds)
-{
-    el_4_loc = Model::mesh_->get_el_4_loc();
-    el_ds = Model::mesh_->get_el_ds();
-}
-
-
-template<class Model>
 void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
     if (solution_changed)
@@ -719,12 +722,6 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         MatMult(*(eq_data_->ls_dt[sbi]->get_matrix()), eq_data_->ls[sbi]->get_solution(), mass_vec[sbi]);
-}
-
-template<class Model>
-LongIdx *TransportDG<Model>::get_row_4_el()
-{
-    return Model::mesh_->get_row_4_el();
 }
 
 

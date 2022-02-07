@@ -29,10 +29,6 @@ problem: !Coupling_Sequential
             mesh_data_file: ref_out/44_P0_data_DG_write/flow_fields/flow_fields-000000.vtu
             field_name: anisotropy
             input_discretization: element_data
-        cross_section: !FieldFE
-            mesh_data_file: ref_out/44_P0_data_DG_write/flow_fields/flow_fields-000000.vtu
-            field_name: conductivity
-            input_discretization: node_data
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}

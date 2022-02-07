@@ -10,6 +10,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
+#include <arma_expect.hh>
 
 #include <fields/multi_field.hh>
 #include <fields/field_fe.hh>
@@ -100,6 +101,9 @@ public:
 	typedef MultiField<3, FieldValue<3>::Scalar> ScalarMultiField;
 	typedef ScalarMultiField::SubFieldBaseType ScalarField;
 
+    typedef MultiField<3, FieldValue<3>::VectorFixed> VectorFixedMultiField;
+	typedef VectorFixedMultiField::SubFieldBaseType VectorFixedField;
+
 protected:
     virtual void SetUp() {
     	Profiler::instance();
@@ -120,14 +124,38 @@ protected:
     }
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
+        TimeGovernor tg(0.0, 1.0);
+        auto time_step = tg.step();
+        time_step.use_fparser_ = true;
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
     	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
     		auto subfield = ScalarField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
-    		subfield->set_time(0.0);
+    		subfield->set_time(time_step);
     		auto result = subfield->value( point, elm );
     		EXPECT_DOUBLE_EQ( expected, result );
     		expected += step;
+    	}
+    }
+
+    void check_field_vec_vals(Input::Array &arr_field, ElementAccessor<3> elm, arma::vec &expected, double step) {
+        TimeGovernor tg(0.0, 1.0);
+    	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
+    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
+    		auto subfield = VectorFixedField::function_factory((*it), init_data);
+    		subfield->set_mesh(mesh, false);
+
+            for(uint i=0; i<2; i++)
+            {
+                auto time_step = tg.step();
+                time_step.use_fparser_ = true;
+                subfield->set_time(time_step);
+                auto result = subfield->value( point, elm );
+                // DebugOut() << result << "\n";
+                EXPECT_ARMA_EQ( expected, result );
+                expected += step*arma::vec({1,1,1});
+                tg.next_time();
+            }
     	}
     }
 
@@ -200,7 +228,8 @@ TEST_F(MultiFieldTest, complete_test) {
 		Input::Array fe_field = input.val<Input::Array>("fe_field");
 		EXPECT_EQ(1, fe_field.size());
 
-        check_field_vals(fe_field, mesh->element_accessor(1));
+        arma::vec expected = arma::vec({1,2,3});
+        check_field_vec_vals(fe_field, mesh->element_accessor(1), expected, 1.0);
 	}
 
 	{ // test of FieldInterpolatedP0

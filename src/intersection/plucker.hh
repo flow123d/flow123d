@@ -111,7 +111,7 @@ std::ostream& operator<<(std::ostream& os, const Plucker& p);
 
 /****************** inline implementation *****************************/
 inline double Plucker::operator[](const unsigned int index) const
-{   ASSERT_DBG(computed_);
+{   ASSERT(computed_);
     return coordinates_[index]; }
 
 inline void Plucker::clear()
@@ -124,15 +124,15 @@ inline arma::vec3 Plucker::point(unsigned int idx) const
 {   return points_.vec<3>(idx); }
 
 inline arma::vec3 Plucker::get_u_vector() const
-{   //ASSERT_DBG(computed_);
+{   //ASSERT(computed_);
     return coordinates_(arma::span(0,2)); }
 
 inline arma::vec3 Plucker::get_ua_vector() const
-{   ASSERT_DBG(computed_);
+{   ASSERT(computed_);
     return coordinates_(arma::span(3,5)); }
 
 inline arma::vec6 Plucker::get_plucker_coords() const
-{   ASSERT_DBG(computed_);
+{   ASSERT(computed_);
     return coordinates_; }
 
 #endif
