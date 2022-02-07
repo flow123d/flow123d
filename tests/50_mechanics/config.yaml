@@ -17,11 +17,9 @@ test_cases:
   - 23_square_frac_chopped.yaml
   - 24_square_barrier_chopped.yaml
   - 25_square_frac_contact.yaml
+  - 26_square_frac_x_contact.yaml
   - 30_3d_block_load.yaml
 - files:
   - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml
   time_limit: 200
-- files:
-  - 26_square_frac_x_contact.yaml
-  proc: [1]
