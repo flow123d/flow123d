@@ -69,18 +69,18 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         l_indices_ = cell.get_loc_dof_indices();
         ASSERT_DBG(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
         auto p = *( this->bulk_points(element_patch_idx).begin() );
-        init_value_ = eq_fields_->init_pressure(p);
+        double init_value = eq_fields_->init_pressure(p);
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
-             init_value_on_edge_ = init_value_ / cell.elm().side(i)->edge().n_sides();
-             eq_data_->p_edge_solution.add(l_indices_[i], init_value_on_edge_);
+             double init_value_on_edge = init_value / cell.elm().side(i)->edge().n_sides();
+             eq_data_->p_edge_solution.add(l_indices_[i], init_value_on_edge);
         }
     }
 
@@ -103,9 +103,8 @@ protected:
     EqFields *eq_fields_;
     EqData *eq_data_;
 
-    LocDofVec p_indices_, l_indices_;            ///< Vectors of local DOF indices pre-computed on different DOF handlers
-    unsigned int p_idx_, l_idx_;                 ///< Local DOF indices extract from previous vectors
-    double init_value_, init_value_on_edge_;     ///< Pre-computed values of init_pressure.
+    /// Vector of pre-computed local DOF indices
+    LocDofVec l_indices_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -155,9 +154,6 @@ public:
 
         fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
 
-        ndofs_ = fe_values_.n_dofs();
-        qsize_ = fe_values_.n_points();
-
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
         // TODO the function should be DiscreteSpace.fe(ElementAccessor)
@@ -182,7 +178,7 @@ public:
      */
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -351,25 +347,25 @@ protected:
     inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
     {
         auto ele = cell.elm();
-        scale_sides_ = 1 / eq_fields_->cross_section(p) / conductivity;
+        double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
 
         fe_values_.reinit(ele);
         auto velocity = fe_values_.vector_view(0);
 
-        for (unsigned int k=0; k<qsize_; k++)
-            for (unsigned int i=0; i<ndofs_; i++){
-                rhs_val_ = arma::dot(eq_data_->gravity_vec_, velocity.value(i,k))
+        for (unsigned int k=0; k<fe_values_.n_points(); k++)
+            for (unsigned int i=0; i<fe_values_.n_dofs(); i++){
+                double rhs_val = arma::dot(eq_data_->gravity_vec_, velocity.value(i,k))
                            * fe_values_.JxW(k);
-                eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val_);
+                eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val);
 
-                for (unsigned int j=0; j<ndofs_; j++){
-                    mat_val_ =
+                for (unsigned int j=0; j<fe_values_.n_dofs(); j++){
+                    double mat_val =
                         arma::dot( velocity.value(i,k), //TODO: compute anisotropy before
                                    (eq_fields_->anisotropy(p)).i() * velocity.value(j,k)
                                  )
-                        * scale_sides_ * fe_values_.JxW(k);
+                        * scale_sides * fe_values_.JxW(k);
 
-                    eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val_);
+                    eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
                 }
             }
 
@@ -417,8 +413,8 @@ protected:
     inline void asm_source_term_darcy(const DHCellAccessor& cell, BulkPoint &p)
     {
         // compute lumped source
-        n_sides_ = cell.elm()->n_sides();
-        coef_ = (1.0 / n_sides_) * cell.elm().measure() * eq_fields_->cross_section(p);
+        uint n_sides = cell.elm()->n_sides();
+        coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section(p);
         source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
 
         // in unsteady, compute time term
@@ -431,7 +427,7 @@ protected:
             time_term_ = coef_ * eq_fields_->storativity(p) + eq_fields_->extra_storativity(p);
         }
 
-        for (unsigned int i=0; i<n_sides_; i++)
+        for (unsigned int i=0; i<n_sides; i++)
         {
             if(! eq_data_->use_steady_assembly_)
             {
@@ -520,10 +516,10 @@ protected:
                     // flux inequality leading may be accepted, while the error
                     // in pressure inequality is always satisfied.
 
-                    solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+                    double solution_head = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
 
-                    if ( solution_head_ > bc_pressure_) {
-                        //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head_, bc_pressure, bc_flux);
+                    if ( solution_head > bc_pressure_) {
+                        //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
                         switch_dirichlet=1;
                     }
                 }
@@ -545,25 +541,25 @@ protected:
             eq_data_->is_linear=false;
 
             bc_pressure_ = eq_fields_->bc_pressure(p_bdr);
-            bc_switch_pressure_ = eq_fields_->bc_switch_pressure(p_bdr);
-            bc_flux_ = -eq_fields_->bc_flux(p_bdr);
-            bc_sigma_ = eq_fields_->bc_robin_sigma(p_bdr);
+            double bc_switch_pressure = eq_fields_->bc_switch_pressure(p_bdr);
+            double bc_flux = -eq_fields_->bc_flux(p_bdr);
+            double bc_sigma = eq_fields_->bc_robin_sigma(p_bdr);
 
-            solution_head_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+            double solution_head = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
 
             // Force Robin type during the first iteration of the unsteady case.
-            if (solution_head_ > bc_switch_pressure_  || eq_data_->force_no_neumann_bc) {
+            if (solution_head > bc_switch_pressure  || eq_data_->force_no_neumann_bc) {
                 // Robin BC
                 //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                 eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
-                                        -b_ele.measure() * bc_sigma_ * cross_section_,
-                                        b_ele.measure() * cross_section_ * (bc_flux_ - bc_sigma_ * bc_pressure_)  );
+                                        -b_ele.measure() * bc_sigma * cross_section_,
+                                        b_ele.measure() * cross_section_ * (bc_flux - bc_sigma * bc_pressure_)  );
             } else {
                 // Neumann BC
                 //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
-                bc_total_flux_ = bc_flux_ + bc_sigma_*(bc_switch_pressure_ - bc_pressure_);
+                double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure_);
 
-                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, bc_total_flux_ * b_ele.measure() * cross_section_);
+                eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, bc_total_flux * b_ele.measure() * cross_section_);
             }
         }
         else {
@@ -701,10 +697,10 @@ protected:
 
             if( ! eq_data_->use_steady_assembly_)
             {
-                new_pressure_ = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
-                old_pressure_ = eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                double new_pressure = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                double old_pressure = eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
                 time_term_ = edge_scale_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
-                             / eq_data_->time_step_ * (new_pressure_ - old_pressure_);
+                             / eq_data_->time_step_ * (new_pressure - old_pressure);
             }
             solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_;
         }
@@ -722,8 +718,6 @@ protected:
     FE_RT0<dim> fe_rt_;
     QGauss quad_rt_;
     FEValues<3> fe_values_;
-    unsigned int ndofs_;                                   ///< Number of dofs
-    unsigned int qsize_;                                   ///< Size of quadrature of dim-1
 
     shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
@@ -731,20 +725,16 @@ protected:
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
 
-    double scale_sides_;                                   ///< Precomputed value (1 / cross_section / conductivity)
-    double rhs_val_, mat_val_;                             ///< Precomputed RHS and mat value
-    double n_sides_, coef_, source_term_;                  ///< Variables used in compute lumped source.
+    double coef_, source_term_;                            ///< Variables used in compute lumped source.
     double time_term_diag_, time_term_, time_term_rhs_;    ///< Variables used in compute time term (unsteady)
     double cross_section_;                                 ///< Precomputed cross-section value
     unsigned int bulk_local_idx_;                          ///< Local idx of bulk element
     unsigned int sidx_, side_row_, edge_row_;              ///< Helper indices in boundary assembly
-    double solution_head_;                                 ///< Precomputed value in boundary assembly
-    double bc_total_flux_, bc_flux_, side_flux_;           ///< Precomputed values in boundary assembly
-    double bc_pressure_, bc_switch_pressure_, bc_sigma_;   ///< Precomputed values in boundary assembly
+    double side_flux_;                                     ///< Precomputed values in boundary assembly
+    double bc_pressure_;                                   ///< Precomputed values in boundary assembly
     arma::vec3 nv_;                                        ///< Normal vector
     double ngh_value_;                                     ///< Precomputed ngh value
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
-    double new_pressure_, old_pressure_;                   ///< Precomputed values in postprocess_velocity
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -767,7 +757,7 @@ public:
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );

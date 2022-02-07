@@ -54,17 +54,16 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
-        genuchten_on = false;
     }
 
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         edge_indices_ = cell.get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
         VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
@@ -88,8 +87,8 @@ public:
 
 
 private:
-    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
-        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
+    bool reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
+        bool genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
             soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
@@ -101,6 +100,7 @@ private:
 
             this->eq_data_->soil_model_->reset(soil_data);
         }
+        return genuchten_on;
     }
 
 
@@ -113,7 +113,6 @@ private:
 
     LocDofVec cr_disc_dofs_;                 ///< Vector of local DOF indices pre-computed on different DOF handlers
     LocDofVec edge_indices_;                 ///< Dofs of discontinuous fields on element edges.
-    bool genuchten_on;
     double storativity_;
     double capacity, water_content, phead;
 
@@ -161,14 +160,13 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
     	MHMatrixAssemblyLMH<dim>::initialize(element_cache_map);
-        genuchten_on = false;
     }
 
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -260,8 +258,8 @@ protected:
         }
     }
 
-    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
-        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
+    bool reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
+        bool genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
             soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
@@ -273,6 +271,7 @@ protected:
 
             this->eq_data_->soil_model_->reset(soil_data);
         }
+        return genuchten_on;
     }
 
 
@@ -280,7 +279,7 @@ protected:
         edge_indices_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_.get()).get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
 
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
         VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
@@ -305,7 +304,7 @@ protected:
     /// Precompute conductivity on bulk point.
     double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p)
     {
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
 
         double conductivity = 0;
         if (genuchten_on) {
@@ -351,7 +350,6 @@ protected:
 
     LocDofVec cr_disc_dofs_;                       ///< Vector of local DOF indices pre-computed on different DOF handlers
     LocDofVec edge_indices_;                       ///< Dofs of discontinuous fields on element edges.
-    bool genuchten_on;
     double storativity_;
     double capacity, phead;
     double water_content, water_content_previous_time;
@@ -379,7 +377,7 @@ public:
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
