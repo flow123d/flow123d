@@ -487,10 +487,10 @@ protected:
             // Magnitude of the error is abs(solution_flux - side_flux).
 
             // try reconstructing local system for seepage BC
-            this->load_local_system(cell_side.cell());
+            auto reconstr_solution = this->load_local_system(cell_side.cell());
             double side_flux = -eq_fields_->bc_flux(p_bdr) * b_ele.measure() * cross_section_;
 
-            if ( reconstructed_solution_[side_row_] < side_flux) {
+            if ( reconstr_solution[side_row_] < side_flux) {
                 //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, reconstructed_solution_[side_row_], side_flux);
                 switch_dirichlet = 0;
             }
@@ -658,11 +658,11 @@ protected:
      * and reconstructs the full solution on the element.
      * Currently used only for seepage BC.
      */
-    void load_local_system(const DHCellAccessor& dh_cell)
+    arma::vec load_local_system(const DHCellAccessor& dh_cell)
     {
         // do this only once per element
         if (eq_data_->bc_fluxes_reconstruted[bulk_local_idx_])
-            return;
+            return reconstructed_solution_;
 
         // possibly find the corresponding local system
         auto ls = eq_data_->seepage_bc_systems.find(dh_cell.elm_idx());
@@ -678,6 +678,8 @@ protected:
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
         }
+
+        return reconstructed_solution_;
     }
 
 
