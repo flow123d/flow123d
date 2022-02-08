@@ -184,7 +184,17 @@ public:
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        this->boundary_side_integral_in(cell_side, true);
+        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
+
+        this->precompute_boundary_side(cell_side, p_side, p_bdr);
+
+    	if (this->type_==DarcyMH::EqFields::seepage) {
+    	    this->use_dirichlet_switch(cell_side, b_ele, p_bdr);
+    	}
+
+        this->boundary_side_integral_in(cell_side, b_ele, p_bdr);
     }
 
 
@@ -400,7 +410,13 @@ public:
         ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        this->boundary_side_integral_in(cell_side, false);
+        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
+
+        this->precompute_boundary_side(cell_side, p_side, p_bdr);
+
+        this->boundary_side_integral_in(cell_side, b_ele, p_bdr);
     }
 
 
