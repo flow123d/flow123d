@@ -660,10 +660,6 @@ protected:
      */
     arma::vec load_local_system(const DHCellAccessor& dh_cell)
     {
-        // do this only once per element
-        if (eq_data_->bc_fluxes_reconstruted[bulk_local_idx_])
-            return reconstructed_solution_;
-
         // possibly find the corresponding local system
         auto ls = eq_data_->seepage_bc_systems.find(dh_cell.elm_idx());
         if (ls != eq_data_->seepage_bc_systems.end())
