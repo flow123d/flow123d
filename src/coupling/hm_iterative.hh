@@ -130,10 +130,10 @@ private:
 class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
     
-    class EqData : public FieldSet
+    class EqFields : public FieldSet
     {
     public:
-        EqData();
+        EqFields();
         
         void initialize(Mesh &mesh);
         
@@ -189,7 +189,7 @@ private:
     /// solute transport with chemistry through operator splitting
     std::shared_ptr<Elasticity> mechanics_;
     
-    EqData data_;
+    EqFields eq_fields_;
 
     /// Tuning parameter for iterative splitting.
     double beta_;
