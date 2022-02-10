@@ -10,7 +10,8 @@ problem: !Coupling_Sequential
       - region: BULK
         biot_alpha: 1
         fluid_density: 1
-        gravity: 1
+        gravity: !FieldFormula
+          value: 1*fluid_density
     a_tol: 0
     r_tol: 1e-9
     flow_equation: !Flow_Richards_LMH

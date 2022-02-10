@@ -32,6 +32,8 @@
 class Mesh;
 class FieldCommon;
 class DarcyLMH;
+template<unsigned int dim> class FlowPotentialAssemblyHM;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 namespace it = Input::Type;
 
@@ -190,6 +192,8 @@ private:
     std::shared_ptr<Elasticity> mechanics_;
     
     EqFields eq_fields_;
+
+    GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
 
     /// Tuning parameter for iterative splitting.
     double beta_;

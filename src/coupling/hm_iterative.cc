@@ -21,6 +21,7 @@
 #include "input/input_type.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
+#include "coupling/assembly_hm.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
@@ -166,6 +167,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     eq_fields_.initialize(*mesh_);
     mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
+
+    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(&eq_fields_, nullptr);
 }
 
 
@@ -254,6 +257,8 @@ void HM_Iterative::update_potential()
     auto dh = eq_fields_.potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->eq_fields().field("pressure_edge"));
+
+    flow_potential_assembly_->assemble(dh);
 
     for ( auto ele : dh->local_range() )
     {
@@ -365,6 +370,7 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 HM_Iterative::~HM_Iterative() {
 	flow_.reset();
     mechanics_.reset();
+    if (flow_potential_assembly_ != nullptr) delete flow_potential_assembly_;
 }
 
 
