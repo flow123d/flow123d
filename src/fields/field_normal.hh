@@ -108,46 +108,31 @@ public:
         std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-        unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+        //unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
         arma::vec3 normal;
-        unsigned int dim = 0;
 
-        const MeshBase *mesh; // Holds bulk or boundary mesh by region_idx
-        if (region_idx%2 == 1) mesh = shared_->mesh_;
-        else mesh = shared_->mesh_->bc_mesh();
+        const MeshBase *mesh = shared_->mesh_;
 
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh->element_accessor( elm_idx );
-                dim = elm.dim();
+                unsigned int bulk_elm_idx = cache_map.bdr_to_bulk_element( elm_idx );
+                elm = mesh->element_accessor( bulk_elm_idx );
+                for (unsigned int i_side=0; i_side<elm->n_sides(); i_side++) {
+                    unsigned int bdr_idx = elm->boundary_idx_[i_side];
+                    if (bdr_idx != undef_idx) {
+                        auto bdr = mesh->boundary(bdr_idx);
+                        if (bdr.bc_ele_idx() == elm_idx) {
+                            auto side_i = mesh->edge(bdr.edge_idx()).side(0);
+                            normal = side_i->normal();
+                            break;
+                        }
+                    }
+                }
                 last_element_idx = elm_idx;
-                // TODO precompute normal on element
-                normal = arma::vec3("0 0 0");
             }
-
-//            unsigned int i_point = cache_map.eval_point_data(i_data).i_eval_point_;
-//            switch (dim) {
-//            case 0:
-//                coords = *elm.node(0);
-//                break;
-//            case 1:
-//                coords = MappingP1<1,3>::project_unit_to_real(RefElement<1>::local_to_bary(eval_points->local_point<1>(i_point)),
-//                        MappingP1<1,3>::element_map(elm));
-//                break;
-//            case 2:
-//                coords = MappingP1<2,3>::project_unit_to_real(RefElement<2>::local_to_bary(eval_points->local_point<2>(i_point)),
-//                        MappingP1<2,3>::element_map(elm));
-//                break;
-//            case 3:
-//                coords = MappingP1<3,3>::project_unit_to_real(RefElement<3>::local_to_bary(eval_points->local_point<3>(i_point)),
-//                        MappingP1<3,3>::element_map(elm));
-//                break;
-//            default:
-//                coords = arma::vec3("0 0 0"); //Should not happen
-//            }
             value_cache_.set(i_data) = normal;
         }
     }
