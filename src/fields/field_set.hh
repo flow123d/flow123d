@@ -29,6 +29,7 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field.hh"
 #include "fields/field_coords.hh"  // for FieldCoords
+#include "fields/field_normal.hh"  // for FieldNormal
 #include "fields/field_depth.hh"   // for FieldDepth
 #include "fields/surface_depth.hh" // for SurfaceDepth
 #include "mesh/range_wrapper.hh"
@@ -422,6 +423,9 @@ protected:
 
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
+
+    /// Field computes normal on boundary regions for evaluation of FieldFormulas
+    FieldNormal normal_;
 
     /// Map assigns Input::Record to each field defined in optional Input::Array 'user_fields'
     std::unordered_map<std::string, Input::Record> user_fields_input_;
