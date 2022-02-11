@@ -155,8 +155,23 @@ const int DarcyLMH::registrar =
 
 
 DarcyLMH::EqFields::EqFields()
-: DarcyMH::EqFields::EqFields()
 {
+    *this += cross_section_updated.name("cross_section_updated")
+            .description("Cross-section after deformation.")
+            .units( UnitSI().m() )
+            .flags(input_copy);
+
+    *this += stress
+            .name("stress")
+            .description("Stress tensor.")
+            .units( UnitSI().Pa() )
+            .flags(input_copy);
+    
+    *this += von_mises_stress
+            .name("von_mises_stress")
+            .description("von Mises stress output.")
+            .units( UnitSI().Pa() )
+            .flags(input_copy);
 }
 
 
@@ -233,6 +248,8 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     eq_data_ = make_shared<EqData>();
     this->eq_fieldset_ = eq_fields_.get();
     
+    eq_fields_->set_mesh(*mesh_);
+    
     eq_data_->is_linear=true;
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
@@ -278,7 +295,6 @@ void DarcyLMH::init_eq_data()
 
     START_TIMER("data init");
     eq_data_->mesh = mesh_;
-    eq_fields_->set_mesh(*mesh_);
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
     std::vector<double> gvec;

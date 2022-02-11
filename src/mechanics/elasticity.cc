@@ -407,6 +407,8 @@ Elasticity::~Elasticity()
 
 void Elasticity::update_output_fields()
 {
+    eq_fields_->set_time(time_->step(), LimitSide::right);
+    
     // update ghost values of solution vector
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();

@@ -145,17 +145,22 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
     flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec, time_);
-    flow_->initialize();
-    std::stringstream ss; // print warning message with table of uninitialized fields
-    if ( FieldCommon::print_message_table(ss, "flow") )
-        WarningOut() << ss.str();
     
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
     mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
-    mechanics_->eq_fields()["cross_section"].copy_from(flow_->eq_fields()["cross_section"]);
     mechanics_->initialize();
     
+    // setup coupling fields and finish initialization of flow
+    mechanics_->eq_fields()["cross_section"].copy_from(flow_->eq_fields()["cross_section"]);
+    flow_->eq_fields()["cross_section_updated"].copy_from(mechanics_->eq_fields()["cross_section_updated"]);
+    flow_->eq_fields()["stress"].copy_from(mechanics_->eq_fields()["stress"]);
+    flow_->eq_fields()["von_mises_stress"].copy_from(mechanics_->eq_fields()["von_mises_stress"]);
+    flow_->initialize();
+    std::stringstream ss; // print warning message with table of uninitialized fields
+    if ( FieldCommon::print_message_table(ss, "flow") )
+        WarningOut() << ss.str();
+
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
 
@@ -195,6 +200,7 @@ void HM_Iterative::zero_time_step()
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
         WarningOut() << ss.str();
     
+    mechanics_->update_output_fields(); // init field values for use in flow
     flow_->zero_time_step();
     update_potential();
     mechanics_->zero_time_step();
