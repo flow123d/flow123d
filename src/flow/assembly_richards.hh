@@ -20,7 +20,7 @@
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
-#include "flow/assembly_lmh_old.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/soil_models.hh"
 #include "fields/field_value_cache.hh"
 

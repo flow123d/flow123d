@@ -51,7 +51,7 @@
 //#include "flow/assembly_lmh_old_.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "flow/assembly_lmh_old.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
