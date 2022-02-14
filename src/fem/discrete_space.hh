@@ -54,7 +54,7 @@ public:
   template<unsigned int dim>
   unsigned int n_face_dofs(unsigned int face_id)
   {
-    ASSERT(false).error("Not implemented.");
+    ASSERT_PERMANENT(false).error("Not implemented.");
     return 0;
   }
   

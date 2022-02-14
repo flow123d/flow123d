@@ -17,8 +17,6 @@ test_cases:
   - 12_time_unit_nested_equation.yaml
   - 13_time_steps_func.yaml
   - 14_time_steps_func_include.yaml
-  - 23_elementwise_bc.yaml
-  - 24_elementwise_integer_field.yaml
   - 27_FE_equivalent_mesh.yaml
   - 28_FE_identic_mesh.yaml
   proc: [1]
@@ -36,8 +34,8 @@ test_cases:
    - 15_formula.yaml
    - 21_fields_FE_native.yaml
    - 22_elementwise_fields.yaml
-#   - 23_elementwise_bc.yaml
-#   - 24_elementwise_integer_field.yaml
+   - 23_elementwise_bc.yaml
+   - 24_elementwise_integer_field.yaml
   proc: [1, 2]
 
 # Temporary turn off native input/output tests  

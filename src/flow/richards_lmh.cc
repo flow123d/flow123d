@@ -144,7 +144,7 @@ void RichardsLMH::initialize_specific() {
     else if (model_type == SoilModelBase::irmay)
         eq_data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
     else
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
 
     // create edge vectors
     eq_data_->water_content_previous_time = eq_data_->dh_cr_disc_->create_vector();

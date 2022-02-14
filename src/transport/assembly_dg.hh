@@ -73,7 +73,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
@@ -242,7 +242,7 @@ public:
     /// Assembles the cell (volume) integral into the stiffness matrix.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
 
         ElementAccessor<3> elm = cell.elm();
@@ -281,7 +281,7 @@ public:
     /// Assembles the fluxes on the boundary.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
@@ -367,7 +367,7 @@ public:
 
     /// Assembles the fluxes between sides of elements of the same dimension.
     inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
-        ASSERT_EQ_DBG(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
         double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
@@ -537,7 +537,7 @@ public:
     /// Assembles the fluxes between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
 
@@ -688,7 +688,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
         unsigned int k;
@@ -1032,7 +1032,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
         ElementAccessor<3> elem = cell.elm();
@@ -1128,7 +1128,7 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
 

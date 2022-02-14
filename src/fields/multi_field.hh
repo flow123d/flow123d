@@ -46,7 +46,7 @@ using namespace std;
 #include "mesh/region.hh"                              // for Region (ptr only)
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcMessage::~E...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;
@@ -216,7 +216,7 @@ public:
      */
     inline SubFieldType &operator[](unsigned int idx)
     {
-    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return sub_fields_[idx];
     }
     
@@ -225,7 +225,7 @@ public:
      */
     inline const SubFieldType &operator[](unsigned int idx) const
     {
-    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
         return sub_fields_[idx];
     }
     
@@ -234,7 +234,7 @@ public:
      */
     FieldCommon *get_component(unsigned int idx) override
     {
-    	ASSERT_LT_DBG(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
+    	ASSERT_LT(idx, sub_fields_.size())(this->input_name()).error("Index of subfield in MultiField is out of range.\n");
     	return &(sub_fields_[idx]);
     }
 

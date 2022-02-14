@@ -165,7 +165,7 @@ public:
     /// Sets output data members.
     void set_output_data(const FieldSet &used, std::shared_ptr<OutputTime> stream) {
     	AssemblyOutputBase<dim>::set_output_data(used, stream);
-    	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_component_data(0);
+    	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_data();
     }
 
 

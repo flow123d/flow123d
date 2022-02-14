@@ -69,10 +69,10 @@ public:
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         l_indices_ = cell.get_loc_dof_indices();
-        ASSERT_DBG(l_indices_.n_elem == cell.elm().element()->n_sides());
+        ASSERT(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -178,7 +178,7 @@ public:
      */
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -197,7 +197,7 @@ public:
      */
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         auto p_side = *( this->boundary_points(cell_side).begin() );
@@ -221,7 +221,7 @@ public:
      */
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         unsigned int neigh_idx = ngh_idx(cell_lower_dim, neighb_side); // TODO use better evaluation of neighbour_idx
         unsigned int loc_dof_higher = (2*(cell_lower_dim.dim()+1) + 1) + neigh_idx; // loc dof of higher ele edge
@@ -651,7 +651,7 @@ protected:
             auto side = dh_cell.elm()->neigh_vb[n_i]->side();
             if ( (side->elem_idx() == neighb_side.elem_idx()) && (side->side_idx() == neighb_side.side_idx()) ) return n_i;
         }
-        ASSERT(false)(dh_cell.elm_idx())(neighb_side.side_idx()).error("Side is not a part of neighbour!\n");
+        ASSERT_PERMANENT(false)(dh_cell.elm_idx())(neighb_side.side_idx()).error("Side is not a part of neighbour!\n");
         return 0;
     }
 
@@ -771,7 +771,7 @@ public:
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -791,7 +791,7 @@ public:
     /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         auto p_side = *( this->boundary_points(cell_side).begin() );

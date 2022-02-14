@@ -64,9 +64,9 @@ double PolynomialSpace::basis_value(unsigned int i,
                                     unsigned int comp_index
                                     ) const
 {
-    ASSERT_EQ_DBG(comp_index, 0);
-	ASSERT_LE_DBG(i, powers.size());
-    ASSERT_EQ_DBG(point.size(), space_dim_);
+    ASSERT_EQ(comp_index, 0);
+	ASSERT_LE(i, powers.size());
+    ASSERT_EQ(point.size(), space_dim_);
 
     double v = 1;
     for (unsigned int j=0; j<this->space_dim_; j++)
@@ -80,8 +80,8 @@ const arma::vec PolynomialSpace::basis_grad(unsigned int i,
                                             unsigned int comp_index
                                            ) const
 {
-    ASSERT_EQ_DBG(comp_index, 0);
-	ASSERT_LE_DBG(i, powers.size());
+    ASSERT_EQ(comp_index, 0);
+	ASSERT_LE(i, powers.size());
 
     arma::vec grad(this->space_dim_);
 

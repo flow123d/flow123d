@@ -24,6 +24,8 @@
 #include "input/input_type.hh"
 #include "include/arena_alloc.hh"       // bparser
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/regex.hpp>
+
 
 
 /// Implementation.
@@ -131,7 +133,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
                 int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-                ASSERT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
+                ASSERT_PERMANENT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
             }
 #pragma GCC diagnostic pop
 
@@ -227,7 +229,7 @@ void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, 
                    std::vector<typename Value::return_type>  &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
         ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
@@ -330,7 +332,29 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             boost::replace_all(expr, "min(", "minimum("); // min function
             boost::replace_all(expr, "Pi", "pi"); // Math.pi
             boost::replace_all(expr, "E", "e"); // Math.e
-            {  // ternary operator
+            boost::replace_all(expr, "!", "not");
+            boost::replace_all(expr, "=", "==");
+            boost::replace_all(expr, "<==", "<=");
+            boost::replace_all(expr, ">==", ">=");
+            boost::replace_all(expr, ":=", "=");
+            boost::replace_all(expr, "&", " and ");
+            boost::replace_all(expr, "|", " or ");
+            {
+
+                // Regexp tested with perl syntax, first is matched the inner most if
+                boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
+                boost::smatch res;
+                while (1) {
+                	if (! boost::regex_match(expr, res, r)) break;
+                    std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
+                    expr = tmp;
+                }
+                DebugOut() << "After fparser translation to BParser: " << expr << "\n";
+/*
+
+
+            	// ternary operator
+            	std::regex
                 std::string pref("if(");
                 auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
                 if ( (res.first == pref.end()) && (expr.back() == ')') ) {
@@ -342,6 +366,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     std::string else_case = subexpr.substr(if_case.size()+1);
                     expr = "(" + if_case + " if " + cond + " else " + else_case +")";
                 }
+*/
             }
             try {
                 b_parser_[i_p].parse( expr );
@@ -350,8 +375,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
                     THROW( ExcParserError() << EI_BParserMsg(e.what()) << EI_Formula(expr) << Input::EI_Address( in_rec_.address_string() ) );
                 else throw;
             }
-            auto free_symbols = b_parser_[i_p].free_symbols();
-            variables.insert(variables.end(), free_symbols.begin(), free_symbols.end());
+            auto list = b_parser_[i_p].free_symbols();
+            variables.insert(variables.end(), list.begin(), list.end());
         }
 
     std::sort( variables.begin(), variables.end() );

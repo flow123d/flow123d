@@ -246,7 +246,7 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 	case 3:
 		return value_handler3_.value(p, elm);
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 
     return this->r_value_;
@@ -262,7 +262,7 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
                    std::vector<typename Value::return_type> &value_list)
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-	ASSERT_DBG( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+	ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
 	switch (elm.dim()) {
 	case 0:
@@ -278,7 +278,7 @@ void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const
 		value_handler3_.value_list(point_list, elm, value_list);
 		break;
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 }
 
@@ -450,7 +450,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 			break;
 		}
 		default:
-			ASSERT(false).error("Should not happen!\n");
+			ASSERT_PERMANENT(false).error("Should not happen!\n");
 	}
 
 	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>( const_cast<MeshBase &>(*mesh) );
@@ -504,12 +504,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		double time_unit_coef = time.read_coef(in_rec_.find<Input::Record>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
-		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
-		ReaderCache::get_reader(reader_file_)->find_header(header_query);
-		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		bool is_native = (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			boundary = this->boundary_domain_;
@@ -522,11 +519,16 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
-			n_entities = boundary ? ReaderCache::get_mesh(reader_file_)->bc_mesh()->n_elements() : ReaderCache::get_mesh(reader_file_)->n_elements();
+            auto reader_mesh = ReaderCache::get_mesh(reader_file_);
+			n_entities = boundary ? reader_mesh->bc_mesh()->n_elements() : reader_mesh->n_elements();
 		}
-		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary, this->component_idx_);
-		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+
+        BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
+        auto reader = ReaderCache::get_reader(reader_file_);
+        auto header = reader->find_header(header_query);
+		auto input_data_cache = reader->template get_element_data<double>(
+            header, n_entities, n_components, boundary);
+		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
 
@@ -553,7 +555,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::CacheData data_vec)
 {
 	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
@@ -615,7 +617,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 					contains = MappingP1<3,3>::contains_point(q_points[i], elm);
 					break;
 				default:
-					ASSERT(false).error("Invalid element dimension!");
+					ASSERT_PERMANENT(false).error("Invalid element dimension!");
 				}
 				if ( contains ) {
 					// projection point in element
@@ -637,9 +639,9 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		LocDofVec loc_dofs;
 		loc_dofs = cell.get_loc_dof_indices();
 
-		ASSERT_LE_DBG(loc_dofs.n_elem, elem_value.size());
+		ASSERT_LE(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
-			ASSERT_LT_DBG( loc_dofs[i], (int)data_vec_.size());
+			ASSERT_LT( loc_dofs[i], (int)data_vec_.size());
 			data_vec_.set( loc_dofs[i], elem_value[i] * this->unit_conversion_coefficient_ );
 		}
 	}
@@ -647,7 +649,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::CacheData data_vec)
 {
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
@@ -698,7 +700,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                     }
                     case 1: {
                         IntersectionAux<1,3> is(elm.idx(), source_elm.idx());
-                        ComputeIntersection<1,3> CI(elm, source_elm, source_mesh.get());
+                        ComputeIntersection<1,3> CI(elm, source_elm);
                         CI.init();
                         CI.compute(is);
 
@@ -708,7 +710,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
                     }
                     case 2: {
                         IntersectionAux<2,3> is(elm.idx(), source_elm.idx());
-                        ComputeIntersection<2,3> CI(elm, source_elm, source_mesh.get());
+                        ComputeIntersection<2,3> CI(elm, source_elm);
                         CI.init();
                         CI.compute(is);
 
@@ -735,7 +737,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
-			ASSERT_LE_DBG(loc_dofs.n_elem, value.size());
+			ASSERT_LE(loc_dofs.n_elem, value.size());
 			for (unsigned int i=0; i < value.size(); i++) {
 				data_vec_.set(loc_dofs[i], value[i] / total_measure);
 			}
@@ -749,7 +751,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
@@ -763,7 +765,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 		dof_size = cell.get_dof_indices(global_dof_indices);
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
 		data_vec_i = source_target_vec[cell.elm_idx()] * dof_size;
-		ASSERT_EQ_DBG(dof_size, loc_dofs.n_elem);
+		ASSERT_EQ(dof_size, loc_dofs.n_elem);
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
 		    ++count_vector[ loc_dofs[i] ];
@@ -778,7 +780,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;
@@ -790,7 +792,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
 		data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
 		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-			ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+			ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 			data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 			++count_vector[ loc_dofs[i] ];
 		}
@@ -804,7 +806,7 @@ void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int data_vec_i;
@@ -819,14 +821,14 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 			if ( std::isnan(default_value_) )
 				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
 				++count_vector[ loc_dofs[i] ];
 			}
 		} else {
 			data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT_DBG(loc_dofs[i], (LongIdx)data_vec_.size());
+				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
 				++count_vector[ loc_dofs[i] ];
 			}

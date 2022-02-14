@@ -77,6 +77,10 @@ public:
 			<< "in the input file: " << EI_MeshFile::qval);
 	DECLARE_EXCEPTION(ExcWrongExtension,
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
+  DECLARE_EXCEPTION(ExcWrongComponentsCount,
+			<< "Wrong number of components of field " << EI_FieldName::qval
+      << " at time " << EI_Time::val
+      << " in the input file: " << EI_MeshFile::qval);
 
 
     /***********************************
@@ -185,8 +189,9 @@ public:
      *  @param component_idx component index of MultiField; 0 for single component fields.
 	 */
     template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
-    		bool boundary_domain, unsigned int component_idx);
+    typename ElementDataCache<T>::CacheData get_element_data(
+            MeshDataHeader header, unsigned int expected_n_entities,
+            unsigned int expected_n_components, bool boundary_domain);
 
     /**
      * Returns vector of boundary or bulk element ids by parameter boundary_domain
@@ -230,7 +235,7 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain)=0;
 
     /**
@@ -252,16 +257,6 @@ protected:
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
     vector<LongIdx> bulk_elements_id_, boundary_elements_id_;
-
-    /// Header of actual loaded data.
-    MeshDataHeader actual_header_;
-
-    /** True if the reader can create cache with multiple components (multifield-wise).
-     * GMSH reader - true
-     * VTK reader - false
-     * TODO: find better solution to determine correct component_idx in get_element_data() - GMSH x VTK
-     */
-    bool can_have_components_;
 
     friend class ReaderCache;
 };

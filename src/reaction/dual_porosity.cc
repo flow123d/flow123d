@@ -165,9 +165,9 @@ void DualPorosity::make_reactions() {
 
 void DualPorosity::initialize()
 {
-  ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-  ASSERT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
-  ASSERT(output_stream_ != nullptr).error("Null output stream.\n");
+  ASSERT_PERMANENT(time_ != nullptr).error("Time governor has not been set yet.\n");
+  ASSERT_PERMANENT_LT(0, eq_data_->substances_.size()).error("No substances for rection term.\n");
+  ASSERT_PERMANENT(output_stream_ != nullptr).error("Null output stream.\n");
   
   eq_data_->time_ = this->time_;
 

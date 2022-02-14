@@ -323,7 +323,7 @@ RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 	Input::Iterator<Input::Array> labels = rec.find<Input::Array>("regions");
 
 	std::vector<string> set_names = mesh->region_db().get_and_check_operands(*labels);
-	OLD_ASSERT( set_names.size() == 2, "Wrong number of operands. Expect 2.\n" );
+	ASSERT_PERMANENT_EQ(set_names.size(), 2).error("Wrong number of operands. Expect 2.\n" );
 
 	RegionSet set_1 = region_db_.get_region_set( set_names[0] );
 	RegionSet set_2 = region_db_.get_region_set( set_names[1] );

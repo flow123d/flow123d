@@ -189,9 +189,9 @@ void SorptionBase::make_reactions()
 
 void SorptionBase::initialize()
 {
-  ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
-  ASSERT(output_stream_).error("Null output stream.\n");
-  ASSERT_LT(0, eq_data_->substances_.size());
+  ASSERT_PERMANENT_PTR(time_).error("Time governor has not been set yet.\n");
+  ASSERT_PERMANENT(output_stream_).error("Null output stream.\n");
+  ASSERT_PERMANENT_LT(0, eq_data_->substances_.size());
   
   initialize_substance_ids(); //computes present substances and sets indices
   initialize_from_input();          //reads non-field data from input

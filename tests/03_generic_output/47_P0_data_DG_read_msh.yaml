@@ -1,0 +1,81 @@
+# Test goal: Input/Output fields and their interpolations in DG, MSH format.
+# Author: Pavel Exner
+# Source for reference: qualitative
+#   Same as tests 44-45 but for MSH format.
+#   Test 46 writes different input fields and uses different interpolations.
+#   Test 47 then reads them accordingly and writes them again.
+#   No computation is of interest.
+#   MSH format considered.
+#   The written output of 46 and 47 must equal (checked by kdiff3 - binary equal).
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Anisotropic molecular diffusion
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+    #mesh_file: ../00_mesh/square_1x1_xy.msh
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: BULK
+        conductivity: !FieldFE
+            mesh_data_file: ref_out/46_P0_data_DG_write_msh/flow_fields.msh
+            field_name: conductivity
+            input_discretization: element_data
+        anisotropy: !FieldFE
+            mesh_data_file: ref_out/46_P0_data_DG_write_msh/flow_fields.msh
+            field_name: anisotropy
+            input_discretization: element_data
+    output:
+      fields:
+        - {field: conductivity, interpolation: P0_value}
+        - {field: anisotropy, interpolation: P0_value}
+    output_stream:
+      format: !gmsh
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .BOUNDARY
+          bc_type: diffusive_flux
+        - region: BULK
+          porosity: !FieldFE
+            mesh_data_file: ref_out/46_P0_data_DG_write_msh/solute_fields.msh
+            field_name: porosity
+            input_discretization: element_data
+            #interpolation: identic_mesh
+
+          init_conc:
+            - !FieldFE
+              mesh_data_file: ref_out/46_P0_data_DG_write_msh/solute_fields.msh
+              field_name: 1_init_conc
+              input_discretization: element_data
+              #interpolation: identic_mesh
+            - !FieldFE
+              mesh_data_file: ref_out/46_P0_data_DG_write_msh/solute_fields.msh
+              field_name: 2_init_conc
+              input_discretization: element_data
+              #interpolation: identic_mesh
+
+          diff_m:
+            - !FieldFE
+              mesh_data_file: ref_out/46_P0_data_DG_write_msh/solute_fields.msh
+              field_name: 1_diff_m
+              input_discretization: element_data
+              #interpolation: identic_mesh
+            - !FieldFE
+              mesh_data_file: ref_out/46_P0_data_DG_write_msh/solute_fields.msh
+              field_name: 2_diff_m
+              input_discretization: element_data
+              #interpolation: identic_mesh
+      output:
+        fields:
+        - {field: init_conc, interpolation: P0_value}
+        - {field: diff_m, interpolation: P0_value}
+        - {field: porosity, interpolation: P0_value}
+    output_stream:
+      format: !gmsh
+    substances: [ 1, 2 ]
+    time:
+      end_time: 1

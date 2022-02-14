@@ -159,7 +159,11 @@ public:
     }
 
     /// Check if given index is in element_vec_
-    void check_element_size(unsigned int elem_idx) const;
+    inline void check_element_size(unsigned int elem_idx) const
+    {
+        ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
+    }
+
 
     const std::vector<unsigned int> &get_side_nodes(unsigned int dim, unsigned int side) const
     { return side_nodes[dim][side]; }

@@ -57,7 +57,7 @@ public:
     }
 
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         edge_indices_ = cell.get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
@@ -166,7 +166,7 @@ public:
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -181,7 +181,7 @@ public:
     /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         auto p_side = *( this->boundary_points(cell_side).begin() );
@@ -387,7 +387,7 @@ public:
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
-        ASSERT_EQ_DBG(cell.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
         auto p = *( this->bulk_points(element_patch_idx).begin() );
@@ -407,7 +407,7 @@ public:
     /// Assembles between boundary element and corresponding side on bulk element.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         auto p_side = *( this->boundary_points(cell_side).begin() );

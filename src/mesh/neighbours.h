@@ -145,7 +145,7 @@ private:
 
 // side of the edge in higher dim. mesh
 inline SideIter Neighbour::side() const {
-	OLD_ASSERT( edge().n_sides() == 1 , "VB neighbouring with %d sides.\n", edge().n_sides());
+	ASSERT_EQ( edge().n_sides(), 1 ).error("VB neighbouring must be with 1 side.\n");
     //DebugOut().fmt("VB neighbouring with {} sides.\n", edge_->n_sides);
     return edge().side(0);
 }

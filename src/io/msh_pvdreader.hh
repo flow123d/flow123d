@@ -84,7 +84,7 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
     		bool boundary_domain) override;
 
     /// Store list of VTK files and time steps declared in PVD file.

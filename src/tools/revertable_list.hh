@@ -94,7 +94,7 @@ public:
      */
     inline std::size_t push_back(const Type &t)
     {
-        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
         if (temporary_size_ == reserved_size()) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlardeg_by_ );
         }
@@ -113,7 +113,7 @@ public:
     template<class... Args>
     inline std::size_t emplace_back(Args&&... args)
     {
-        ASSERT_DBG((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
         if (temporary_size_ == reserved_size()) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlardeg_by_ );
         }
@@ -157,7 +157,7 @@ public:
 
     /// Return item on given position
     const Type &operator[](std::size_t pos) const {
-        ASSERT_LT_DBG(pos, temporary_size_).error("Position is out of data size!\n");
+        ASSERT_LT(pos, temporary_size_).error("Position is out of data size!\n");
         return data_[pos];
     }
 

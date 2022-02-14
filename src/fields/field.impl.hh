@@ -183,7 +183,7 @@ it::Instance Field<spacedim,Value>::get_input_type() {
 
 template<int spacedim, class Value>
 it::Array Field<spacedim,Value>::get_multifield_input_type() {
-	ASSERT(false).error("This method can't be used for Field");
+	ASSERT_PERMANENT(false).error("This method can't be used for Field");
 
 	it::Array arr = it::Array( it::Integer() );
 	return arr;
@@ -225,7 +225,7 @@ template<int spacedim, class Value>
 std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
-    ASSERT_LT(reg.idx(), this->region_fields_.size());
+    ASSERT_PERMANENT_LT(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
 */
@@ -365,7 +365,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+	ASSERT( flags().match(FieldFlag::equation_input))(other.name())(this->name())
 	        .error("Can not copy to the non-input field.");
 
 	// do not use copy if the field have its own input
@@ -652,7 +652,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
     ASSERT(output_mesh);
 
-    ASSERT_EQ_DBG(space_type, OutputTime::NATIVE_DATA);
+    ASSERT_EQ(space_type, OutputTime::NATIVE_DATA);
 
     /* Copy data to array */
     std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
@@ -690,7 +690,7 @@ void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
-	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT_EQ(this->mesh()->region_db().size(), region_fields_.size()).error();
 	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
 
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;

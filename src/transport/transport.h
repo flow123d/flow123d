@@ -127,7 +127,7 @@ public:
         { return substances_.size(); }
 
 		inline void set_time_governor(TimeGovernor *time) {
-		    ASSERT_PTR_DBG(time);
+		    ASSERT_PTR(time);
 		    this->time_ = time;
 		}
 

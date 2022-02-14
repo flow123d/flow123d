@@ -27,7 +27,7 @@
 #include <cmath>
 #include <la/matrix_coo.hpp>
 
-#include <system/global_defs.h>
+#include <system/asserts.hh>
 #include <system/system.hh>
 #include "system/sys_profiler.hh"
 
@@ -50,8 +50,8 @@ namespace la{
             unsigned globalIndex = np -> giveId( );
 
             typename MAPTYPE::iterator pos = map.find( globalIndex );
-            OLD_ASSERT( pos != map.end(),
-                                    "Cannot remap node index %d to local indices. \n ", globalIndex );
+            ASSERT_PERMANENT( pos != map.end() )(globalIndex)
+                                    .error("Cannot remap node 'globalIndex' to local indices. \n");
             int localIndexInt = pos -> second;
 
             return localIndexInt;
@@ -313,8 +313,8 @@ void la::BddcmlWrapper::giveSolution( const VEC1 & dofIndices,
 
         // map it to local dof
         Global2LocalMap_::const_iterator pos = global2LocalDofMap_.find( *dofIter );
-        OLD_ASSERT( pos != global2LocalDofMap_.end(),
-                                "Cannot remap index %d to local indices in solution distribution. \n ", *dofIter );
+        ASSERT_PERMANENT( pos != global2LocalDofMap_.end() )
+                                 .error("Cannot remap index dofIter to local indices in solution distribution. \n ");
         unsigned indLoc = pos -> second;
 
         // give solution
