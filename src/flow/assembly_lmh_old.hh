@@ -437,12 +437,15 @@ protected:
             time_term_ = coef_ * eq_fields_->storativity(p) + eq_fields_->extra_storativity(p);
         }
 
+        const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+        auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+
         for (unsigned int i=0; i<n_sides; i++)
         {
             if(! eq_data_->use_steady_assembly_)
             {
                 time_term_diag_ = time_term_ / eq_data_->time_step_;
-                time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
 
                 eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
                                   {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {time_term_}, 0);
@@ -702,12 +705,15 @@ protected:
     	postprocess_velocity(dh_cell, p);
 
         time_term_ = 0.0;
+        const DHCellAccessor cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+        auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
 
             if( ! eq_data_->use_steady_assembly_)
             {
-                double new_pressure = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
-                double old_pressure = eq_data_->p_edge_solution_previous_time.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[i]);
+                double new_pressure = eq_data_->p_edge_solution.get(loc_dof_vec[i]);
+                double old_pressure = eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
                 time_term_ = edge_scale_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
                              / eq_data_->time_step_ * (new_pressure - old_pressure);
             }
