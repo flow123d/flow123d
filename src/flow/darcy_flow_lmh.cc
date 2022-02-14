@@ -156,22 +156,6 @@ const int DarcyLMH::registrar =
 
 DarcyLMH::EqFields::EqFields()
 {
-    *this += cross_section_updated.name("cross_section_updated")
-            .description("Cross-section after deformation.")
-            .units( UnitSI().m() )
-            .flags(input_copy);
-
-    *this += stress
-            .name("stress")
-            .description("Stress tensor.")
-            .units( UnitSI().Pa() )
-            .flags(input_copy);
-    
-    *this += von_mises_stress
-            .name("von_mises_stress")
-            .description("von Mises stress output.")
-            .units( UnitSI().Pa() )
-            .flags(input_copy);
 }
 
 

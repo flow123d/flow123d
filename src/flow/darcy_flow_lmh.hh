@@ -152,9 +152,6 @@ public:
 
     	EqFields();
 
-        Field<3, FieldValue<3>::Scalar> cross_section_updated;
-        Field<3, FieldValue<3>::TensorFixed> stress;
-        Field<3, FieldValue<3>::Scalar> von_mises_stress;
     };
 
     class EqData : public DarcyMH::EqData {
