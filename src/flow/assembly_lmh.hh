@@ -37,6 +37,7 @@
 #include "la/linsys_PETSC.hh"
 #include "la/schur.hh"
 #include "la/local_system.hh"
+#include "la/local_constraint.hh"
 
 #include "coupling/balance.hh"
 
@@ -290,16 +291,23 @@ protected:
     /// Common code of end method of MH matrix assembly (Darcy and Richards)
     void end_mh_matrix()
     {
-        for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+        eq_data_->loc_constraint_.emplace_back(uint(-1), 0, 0.0); // add constraint of invalid element to end of vector
+        unsigned int i_constr = 0;
+        for ( DHCellAccessor dh_cell : eq_data_->dh_cr_->own_range() ) {
+            this->set_loc_schur(dh_cell);
+            while (eq_data_->loc_constraint_[i_constr].i_element() == dh_cell.local_idx()) {
+                this->loc_schur_.set_solution(eq_data_->loc_constraint_[i_constr]);
+            	i_constr++;
+            }
             eq_data_->loc_system_[dh_cell.local_idx()].compute_schur_complement(
-                    eq_data_->schur_offset_[dh_cell.dim()-1], eq_data_->loc_schur_[dh_cell.local_idx()], true);
+                    eq_data_->schur_offset_[dh_cell.dim()-1], this->loc_schur_, true);
 
             // for seepage BC, save local system
             if (eq_data_->save_local_system_[dh_cell.local_idx()])
             	eq_data_->seepage_bc_systems[dh_cell.elm_idx()] = eq_data_->loc_system_[dh_cell.local_idx()];
 
-            eq_data_->loc_schur_[dh_cell.local_idx()].eliminate_solution();
-            eq_data_->lin_sys_schur->set_local_system(eq_data_->loc_schur_[dh_cell.local_idx()], eq_data_->dh_cr_->get_local_to_global_map());
+            this->loc_schur_.eliminate_solution();
+            eq_data_->lin_sys_schur->set_local_system(this->loc_schur_, eq_data_->dh_cr_->get_local_to_global_map());
 
             // TODO:
             // if (mortar_assembly)
@@ -309,6 +317,8 @@ protected:
         eq_data_->balance_->finish_mass_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->finish_source_assembly(eq_data_->water_balance_idx);
         eq_data_->balance_->finish_flux_assembly(eq_data_->water_balance_idx);
+
+        eq_data_->loc_constraint_.clear();
     }
 
 
@@ -526,7 +536,8 @@ protected:
         if ( type_ == DarcyMH::EqFields::none) {
             // homogeneous neumann
         } else if ( type_ == DarcyMH::EqFields::dirichlet ) {
-            eq_data_->loc_schur_[bulk_local_idx_].set_solution( sidx_, eq_fields_->bc_pressure(p_bdr) );
+            //eq_data_->loc_schur_[bulk_local_idx_].set_solution( sidx_, eq_fields_->bc_pressure(p_bdr) );
+            eq_data_->loc_constraint_.emplace_back( bulk_local_idx_, sidx_, eq_fields_->bc_pressure(p_bdr) );
 
         } else if ( type_ == DarcyMH::EqFields::total_flux) {
             // internally we work with outward flux
@@ -545,7 +556,8 @@ protected:
             // Force Dirichlet type during the first iteration of the unsteady case.
             if (eq_data_->save_local_system_[bulk_local_idx_] || eq_data_->force_no_neumann_bc ) {
                 //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                eq_data_->loc_schur_[bulk_local_idx_].set_solution(sidx_, bc_pressure);
+                //eq_data_->loc_schur_[bulk_local_idx_].set_solution(sidx_, bc_pressure);
+                eq_data_->loc_constraint_.emplace_back(bulk_local_idx_, sidx_, bc_pressure);
             } else {
                 //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
                 eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, side_flux);
@@ -642,6 +654,39 @@ protected:
                 eq_data_->loc_system_[dh_cell.local_idx()].add_value(eq_data_->loc_edge_dofs[elm_dim-1][sidx], eq_data_->loc_side_dofs[elm_dim-1][sidx], 1.0);
             }
         }
+    }
+
+
+    /// Precompute loc_schur data member of given cell.
+    void set_loc_schur(const DHCellAccessor dh_cr_cell) {
+        const ElementAccessor<3> ele = dh_cr_cell.elm();
+
+        unsigned int loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
+        LocDofVec dofs_schur(loc_size_schur);
+
+        // add schur vec indices
+        dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
+
+        if(ele->n_neighs_vb() != 0)
+        {
+            //D, E',E block: compatible connections: element-edge
+            unsigned int i = 0;
+
+            for ( DHCellSide neighb_side : dh_cr_cell.neighb_sides() ) {
+
+                // read neighbor dofs (dh dofhandler)
+                // neighbor cell owning neighb_side
+                DHCellAccessor dh_neighb_cr_cell = neighb_side.cell();
+
+                // local index of pedge dof in local schur system
+                const unsigned int tt = dh_cr_cell.n_dofs()+i;
+                dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()[neighb_side.side().side_idx()];
+                i++;
+            }
+        }
+
+
+        loc_schur_.reset(dofs_schur, dofs_schur);
     }
 
 
@@ -749,6 +794,8 @@ protected:
     arma::vec3 nv_;                                        ///< Normal vector
     double ngh_value_;                                     ///< Precomputed ngh value
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
+
+    LocalSystem loc_schur_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
