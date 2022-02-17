@@ -6,6 +6,7 @@
 #include "system/index_types.hh"
 
 class LinSys;
+class LocalConstraint;
 
 /** Local system class is meant to be used for local assembly and then pass to global linear system.
  * The key idea is to take care of known solution values (Dirichlet boundary conditions) in a common way.
@@ -88,6 +89,12 @@ public:
      * @p diag_val is preferred diagonal value on the solution row
      */
     void set_solution(uint loc_dof, double solution, double diag=0.0);
+
+    /** @brief Set the position and value of known solution. E.g. Dirichlet boundary condition.
+     *
+     * @p LocalConstraint data object holds all needed data used in previous method
+     */
+    void set_solution(LocalConstraint &loc_constraint);
 
     void set_solution_row(uint loc_row, double solution, double diag=0.0);
 
