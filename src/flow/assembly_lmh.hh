@@ -341,9 +341,10 @@ protected:
     /// Common code of end method of Reconstruct Schur assembly (Darcy and Richards)
     void end_reconstruct_schur()
     {
-        for ( DHCellAccessor dh_cell : this->eq_data_->dh_->own_range() ) {
-        	this->bulk_local_idx_ = dh_cell.local_idx();
-            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs);
+        for ( DHCellAccessor dh_cell : this->eq_data_->dh_cr_->own_range() ) {
+            auto loc_dof_vec = dh_cell.get_loc_dof_indices();
+            this->bulk_local_idx_ = dh_cell.local_idx();
+            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(loc_dof_vec);
             // reconstruct the velocity and pressure
             this->eq_data_->loc_system_[this->bulk_local_idx_].reconstruct_solution_schur(this->eq_data_->schur_offset_[dh_cell.dim()-1],
                                                                                   schur_solution, this->reconstructed_solution_);
@@ -353,7 +354,7 @@ protected:
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.head(
                     this->eq_data_->schur_offset_[dh_cell.dim()-1]), this->reconstructed_solution_);
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
-                    this->eq_data_->loc_schur_[this->bulk_local_idx_].row_dofs.n_elem), schur_solution);
+                    loc_dof_vec.n_elem), schur_solution);
         }
 
         this->eq_data_->full_solution.local_to_ghost_begin();
@@ -521,7 +522,9 @@ protected:
             // flux inequality leading may be accepted, while the error
             // in pressure inequality is always satisfied.
 
-            double solution_head = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+            const DHCellAccessor cr_cell = cell_side.cell().cell_with_other_dh(eq_data_->dh_cr_.get());
+            auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+            double solution_head = eq_data_->p_edge_solution.get(loc_dof_vec[sidx_]);
             double bc_pressure = eq_fields_->bc_switch_pressure(p_bdr);
 
             if ( solution_head > bc_pressure) {
@@ -539,7 +542,6 @@ protected:
         if ( type_ == DarcyMH::EqFields::none) {
             // homogeneous neumann
         } else if ( type_ == DarcyMH::EqFields::dirichlet ) {
-            //eq_data_->loc_schur_[bulk_local_idx_].set_solution( sidx_, eq_fields_->bc_pressure(p_bdr) );
             eq_data_->loc_constraint_.emplace_back( bulk_local_idx_, sidx_, eq_fields_->bc_pressure(p_bdr) );
 
         } else if ( type_ == DarcyMH::EqFields::total_flux) {
@@ -559,7 +561,6 @@ protected:
             // Force Dirichlet type during the first iteration of the unsteady case.
             if (eq_data_->save_local_system_[bulk_local_idx_] || eq_data_->force_no_neumann_bc ) {
                 //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                //eq_data_->loc_schur_[bulk_local_idx_].set_solution(sidx_, bc_pressure);
                 eq_data_->loc_constraint_.emplace_back(bulk_local_idx_, sidx_, bc_pressure);
             } else {
                 //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
@@ -574,7 +575,9 @@ protected:
             double bc_flux = -eq_fields_->bc_flux(p_bdr);
             double bc_sigma = eq_fields_->bc_robin_sigma(p_bdr);
 
-            double solution_head = eq_data_->p_edge_solution.get(eq_data_->loc_schur_[bulk_local_idx_].row_dofs[sidx_]);
+            const DHCellAccessor cr_cell = cell_side.cell().cell_with_other_dh(eq_data_->dh_cr_.get());
+            auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+            double solution_head = eq_data_->p_edge_solution.get(loc_dof_vec[sidx_]);
 
             // Force Robin type during the first iteration of the unsteady case.
             if (solution_head > bc_switch_pressure  || eq_data_->force_no_neumann_bc) {
@@ -602,22 +605,17 @@ protected:
 
     /// Precompute loc_system and loc_schur data members.
     void set_dofs() {
-        unsigned int size, loc_size, loc_size_schur, elm_dim;;
+        unsigned int size, loc_size, elm_dim;;
         for ( DHCellAccessor dh_cell : eq_data_->dh_->local_range() ) {
             const ElementAccessor<3> ele = dh_cell.elm();
-            const DHCellAccessor dh_cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
 
             elm_dim = ele.dim();
             size = (elm_dim+1) + 1 + (elm_dim+1); // = n_sides + 1 + n_sides
             loc_size = size + ele->n_neighs_vb();
-            loc_size_schur = ele->n_sides() + ele->n_neighs_vb();
             LocDofVec dofs(loc_size);
-            LocDofVec dofs_schur(loc_size_schur);
 
             // add full vec indices
             dofs.head(dh_cell.n_dofs()) = dh_cell.get_loc_dof_indices();
-            // add schur vec indices
-            dofs_schur.head(dh_cr_cell.n_dofs()) = dh_cr_cell.get_loc_dof_indices();
 
             if(ele->n_neighs_vb() != 0)
             {
@@ -639,15 +637,10 @@ protected:
                     // local index of pedge dof on neighboring cell
                     const unsigned int t = dh_neighb_cell.n_dofs() - dh_neighb_cr_cell.n_dofs() + neighb_side.side().side_idx();
                     dofs[p] = dh_neighb_cell.get_loc_dof_indices()[t];
-
-                    // local index of pedge dof in local schur system
-                    const unsigned int tt = dh_cr_cell.n_dofs()+i;
-                    dofs_schur[tt] = dh_neighb_cr_cell.get_loc_dof_indices()[neighb_side.side().side_idx()];
                     i++;
                 }
             }
             eq_data_->loc_system_[dh_cell.local_idx()].reset(dofs, dofs);
-            eq_data_->loc_schur_[dh_cell.local_idx()].reset(dofs_schur, dofs_schur);
 
             // Set side-edge (flux-lambda) terms
             for (DHCellSide dh_side : dh_cell.side_range()) {
@@ -715,7 +708,9 @@ protected:
         auto ls = eq_data_->seepage_bc_systems.find(dh_cell.elm_idx());
         if (ls != eq_data_->seepage_bc_systems.end())
         {
-            arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(eq_data_->loc_schur_[bulk_local_idx_].row_dofs);
+            const DHCellAccessor cr_cell = dh_cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+            auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+            arma::vec schur_solution = eq_data_->p_edge_solution.get_subvec(loc_dof_vec);
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 

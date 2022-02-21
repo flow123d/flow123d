@@ -173,7 +173,6 @@ void DarcyLMH::EqData::init()
     save_local_system_.resize(size);
     bc_fluxes_reconstruted.resize(size);
     loc_system_.resize(size);
-    loc_schur_.resize(size);
     postprocess_solution_.resize(size);
 }
 

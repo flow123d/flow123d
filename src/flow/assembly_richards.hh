@@ -225,6 +225,9 @@ protected:
 
         VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
 
+        const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+        auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+
         for (unsigned int i=0; i<ele->n_sides(); i++)
         {
 
@@ -246,7 +249,7 @@ protected:
                 */
 
 
-                mass_rhs_ = mass_diagonal_ * eq_data_->p_edge_solution.get( eq_data_->loc_schur_[cell.local_idx()].row_dofs[i] ) / eq_data_->time_step_
+                mass_rhs_ = mass_diagonal_ * eq_data_->p_edge_solution.get( loc_dof_vec[i] ) / eq_data_->time_step_
                                   + diagonal_coef_ * water_content_diff_ / eq_data_->time_step_;
 
                 /*
@@ -318,9 +321,12 @@ protected:
 
         double conductivity = 0;
         if (genuchten_on) {
+            const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+            auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+
             for (unsigned int i=0; i<cell.elm()->n_sides(); i++)
             {
-                double phead = eq_data_->p_edge_solution.get( eq_data_->loc_schur_[cell.local_idx()].row_dofs[i] );
+                double phead = eq_data_->p_edge_solution.get( loc_dof_vec[i] );
                 conductivity += eq_data_->soil_model_->conductivity(phead);
             }
             conductivity /= cell.elm()->n_sides();

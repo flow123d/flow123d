@@ -191,7 +191,6 @@ public:
 //        std::vector<unsigned int> dirichlet_edge;
 
         std::vector<LocalSystem> loc_system_;
-        std::vector<LocalSystem> loc_schur_;
         std::vector<LocalConstraint> loc_constraint_;
         std::vector<arma::vec> postprocess_solution_;
         std::array<std::vector<unsigned int>, 3> loc_side_dofs;
