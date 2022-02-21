@@ -291,6 +291,7 @@ protected:
     /// Common code of end method of MH matrix assembly (Darcy and Richards)
     void end_mh_matrix()
     {
+	    std::sort(eq_data_->loc_constraint_.begin(), eq_data_->loc_constraint_.end());
         eq_data_->loc_constraint_.emplace_back(uint(-1), 0, 0.0); // add constraint of invalid element to end of vector
         unsigned int i_constr = 0;
         for ( DHCellAccessor dh_cell : eq_data_->dh_cr_->own_range() ) {
@@ -361,6 +362,8 @@ protected:
         this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
         this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
         this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
+
+        eq_data_->loc_constraint_.clear();
     }
 
     /// Part of cell_integral method, common in all descendants

@@ -69,6 +69,10 @@ public:
 	    return this->i_element_;
 	}
 
+    bool operator < (const LocalConstraint &other) {
+        return (i_element_ < other.i_element_);
+    }
+
 private:
 	ConstraintType type_;
 	uint i_element_;
