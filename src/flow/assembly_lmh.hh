@@ -342,9 +342,9 @@ protected:
     void end_reconstruct_schur()
     {
         for ( DHCellAccessor dh_cell : this->eq_data_->dh_cr_->own_range() ) {
-            auto loc_dof_vec = dh_cell.get_loc_dof_indices();
             this->bulk_local_idx_ = dh_cell.local_idx();
-            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(loc_dof_vec);
+            this->set_loc_schur(dh_cell);
+            arma::vec schur_solution = this->eq_data_->p_edge_solution.get_subvec(this->loc_schur_.row_dofs);
             // reconstruct the velocity and pressure
             this->eq_data_->loc_system_[this->bulk_local_idx_].reconstruct_solution_schur(this->eq_data_->schur_offset_[dh_cell.dim()-1],
                                                                                   schur_solution, this->reconstructed_solution_);
@@ -354,7 +354,7 @@ protected:
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.head(
                     this->eq_data_->schur_offset_[dh_cell.dim()-1]), this->reconstructed_solution_);
             this->eq_data_->full_solution.set_subvec(this->eq_data_->loc_system_[this->bulk_local_idx_].row_dofs.tail(
-                    loc_dof_vec.n_elem), schur_solution);
+                    this->loc_schur_.row_dofs.n_elem), schur_solution);
         }
 
         this->eq_data_->full_solution.local_to_ghost_begin();
