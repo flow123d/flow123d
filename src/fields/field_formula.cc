@@ -75,16 +75,13 @@ template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
+  b_parser_( 1.1 * CacheMapElementNumber::get() ),
   first_time_set_(true), arena_alloc_(nullptr)
 {
 	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
     for(unsigned int row=0; row < this->value_.n_rows(); row++) {
         parser_matrix_[row].resize(this->value_.n_cols());
-    }
-    b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
-    for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
-        b_parser_.emplace_back( 1.1 * CacheMapElementNumber::get() );
     }
 }
 
@@ -294,16 +291,14 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            b_parser_[row*this->value_.n_cols()+col].set_subset(subset_vec);
-            b_parser_[row*this->value_.n_cols()+col].run();
-            for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-                auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-                cache_val(row, col) = res_[i];
-                data_cache.set(i) = cache_val;
-            }
-        }
+    b_parser_.set_subset(subset_vec);
+    b_parser_.run();
+    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
+        auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
+//        cache_val(row, col) = res_[i];
+        cache_val = res_[i];
+        data_cache.set(i) = cache_val;
+    }
 }
 
 
@@ -332,64 +327,61 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     required_fields_.clear(); // returned value
 
 	std::vector<std::string> variables;
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            // set expression and data to BParser
-            unsigned int i_p = row*this->value_.n_cols()+col;
-            //b_parser_[i_p].parse(formula_matrix_.at(row,col));
-            std::string expr = formula_matrix_.at(row,col); // Need replace some operations to make them compatible with BParser.
-                                                            // It will be solved by conversion script after remove fparser, but
-                                                            // we mix using of BParser and fparser and need this solution now.
-            boost::replace_all(expr, "^", "**"); // power function
-            boost::replace_all(expr, "max(", "maximum("); // max function
-            boost::replace_all(expr, "min(", "minimum("); // min function
-            boost::replace_all(expr, "Pi", "pi"); // Math.pi
-            boost::replace_all(expr, "E", "e"); // Math.e
-            boost::replace_all(expr, "!", "not");
-            boost::replace_all(expr, "=", "==");
-            boost::replace_all(expr, "<==", "<=");
-            boost::replace_all(expr, ">==", ">=");
-            boost::replace_all(expr, ":=", "=");
-            boost::replace_all(expr, "&", " and ");
-            boost::replace_all(expr, "|", " or ");
-            {
+//    for(unsigned int row=0; row < this->value_.n_rows(); row++)
+//        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+    // set expression and data to BParser
+    //b_parser_.parse(formula_matrix_.at(row,col));
+    std::string expr = formula_matrix_.at(0,0);
+//    std::string expr = formula_matrix_.at(row,col); // Need replace some operations to make them compatible with BParser.
+                                                    // It will be solved by conversion script after remove fparser, but
+                                                    // we mix using of BParser and fparser and need this solution now.
+    boost::replace_all(expr, "^", "**"); // power function
+    boost::replace_all(expr, "max(", "maximum("); // max function
+    boost::replace_all(expr, "min(", "minimum("); // min function
+    boost::replace_all(expr, "Pi", "pi"); // Math.pi
+    boost::replace_all(expr, "E", "e"); // Math.e
+    boost::replace_all(expr, "!", "not");
+    boost::replace_all(expr, "=", "==");
+    boost::replace_all(expr, "<==", "<=");
+    boost::replace_all(expr, ">==", ">=");
+    boost::replace_all(expr, ":=", "=");
+    boost::replace_all(expr, "&", " and ");
+    boost::replace_all(expr, "|", " or ");
+    {
 
-                // Regexp tested with perl syntax, first is matched the inner most if
-                boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
-                boost::smatch res;
-                while (1) {
-                	if (! boost::regex_match(expr, res, r)) break;
-                    std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
-                    expr = tmp;
-                }
-                DebugOut() << "After fparser translation to BParser: " << expr << "\n";
-/*
-
-
-            	// ternary operator
-            	std::regex
-                std::string pref("if(");
-                auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
-                if ( (res.first == pref.end()) && (expr.back() == ')') ) {
-                    std::string subexpr = expr.substr(3, expr.size()-4);
-                    std::string delimiter = ",";
-                    std::string cond = subexpr.substr(0, subexpr.find(delimiter));
-                    subexpr.erase(0, cond.size()+1);
-                    std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
-                    std::string else_case = subexpr.substr(if_case.size()+1);
-                    expr = "(" + if_case + " if " + cond + " else " + else_case +")";
-                }
-*/
-            }
-            try {
-                b_parser_[i_p].parse( expr );
-            } catch (std::exception const& e) {
-                if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
-                else throw;
-            }
-            auto list = b_parser_[i_p].free_symbols();
-            variables.insert(variables.end(), list.begin(), list.end());
+        // Regexp tested with perl syntax, first is matched the inner most if
+        boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
+        boost::smatch res;
+        while (1) {
+           	if (! boost::regex_match(expr, res, r)) break;
+            std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
+            expr = tmp;
         }
+        DebugOut() << "After fparser translation to BParser: " << expr << "\n";
+/*
+       	// ternary operator
+       	std::regex
+        std::string pref("if(");
+        auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
+        if ( (res.first == pref.end()) && (expr.back() == ')') ) {
+            std::string subexpr = expr.substr(3, expr.size()-4);
+            std::string delimiter = ",";
+            std::string cond = subexpr.substr(0, subexpr.find(delimiter));
+            subexpr.erase(0, cond.size()+1);
+            std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
+            std::string else_case = subexpr.substr(if_case.size()+1);
+            expr = "(" + if_case + " if " + cond + " else " + else_case +")";
+        }
+*/
+    }
+    try {
+        b_parser_.parse( expr );
+    } catch (std::exception const& e) {
+        if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
+        else throw;
+    }
+    auto list = b_parser_.free_symbols();
+    variables.insert(variables.end(), list.begin(), list.end());
 
     std::sort( variables.begin(), variables.end() );
     variables.erase( std::unique( variables.begin(), variables.end() ), variables.end() );
@@ -449,25 +441,21 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     }
     subsets_ = arena_alloc_->create_array<uint>(n_subsets);
 
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            // set expression and data to BParser
-            unsigned int i_p = row*this->value_.n_cols()+col;
-            if (has_time_) {
-                b_parser_[i_p].set_constant("t",  {}, {this->time_.end()});
-            }
-            for (auto field : required_fields_) {
-                std::string field_name = field->name();
-                if (field_name == "X") {
-                    b_parser_[i_p].set_variable("x",  {}, x_);
-                    b_parser_[i_p].set_variable("y",  {}, y_);
-                    b_parser_[i_p].set_variable("z",  {}, z_);
-                } else
-                    b_parser_[i_p].set_variable(field_name, field->shape_, eval_field_data_[field]);
-            }
-            b_parser_[i_p].set_variable("_result_", get_shape( Value::NRows_, Value::NCols_ ), res_);
-            b_parser_[i_p].compile();
-        }
+    // set expression and data to BParser
+    if (has_time_) {
+        b_parser_.set_constant("t",  {}, {this->time_.end()});
+    }
+    for (auto field : required_fields_) {
+        std::string field_name = field->name();
+        if (field_name == "X") {
+            b_parser_.set_variable("x",  {}, x_);
+            b_parser_.set_variable("y",  {}, y_);
+            b_parser_.set_variable("z",  {}, z_);
+        } else
+            b_parser_.set_variable(field_name, field->shape_, eval_field_data_[field]);
+    }
+    b_parser_.set_variable("_result_", get_shape( Value::NRows_, Value::NCols_ ), res_);
+    b_parser_.compile();
     for (uint i=0; i<n_subsets; ++i)
         subsets_[i] = i;
 }
