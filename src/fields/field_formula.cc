@@ -42,7 +42,7 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
     return it::Record("FieldFormula", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by runtime interpreted formula.")
             .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
             .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-            .declare_key("value", STI::get_input_type() , it::Default::obligatory(),
+            .declare_key("value", it::String() , it::Default::obligatory(),
                                         "String, array of strings, or matrix of strings with formulas for individual "
                                         "entries of scalar, vector, or tensor value respectively.\n"
                                         "For vector values, you can use just one string to enter homogeneous vector.\n"
@@ -244,12 +244,27 @@ void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, 
 }
 
 
+std::vector<uint> get_shape(uint n_rows, uint n_cols) {
+    std::vector<uint> vec;
+    if (n_cols==1) vec = { n_rows };
+    else vec = { n_rows, n_cols };
+    return vec;
+}
+
+uint n_shape(std::vector<uint> shape) {
+    uint r = 1;
+    for (auto i : shape) r *= i;
+    return r;
+}
+
+
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+    uint vec_size = 1.1 * CacheMapElementNumber::get();
 
     for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
         res_[i] = 0.0;
@@ -263,8 +278,13 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
                 x_[i] = value_cache->template vec<3>(i)(0);
                 y_[i] = value_cache->template vec<3>(i)(1);
                 z_[i] = value_cache->template vec<3>(i)(2);
-            } else
+            } else if ( n_shape( it.first->shape_ ) == 3) {
+            	it.second[i] = value_cache->template vec<3>(i)(0);
+            	it.second[i+vec_size] = value_cache->template vec<3>(i)(1);
+            	it.second[i+2*vec_size] = value_cache->template vec<3>(i)(2);
+            } else {
         	   it.second[i] = value_cache->data_[i];
+            }
         }
     }
 
@@ -306,13 +326,6 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 		return p;
 	}
 }
-
-uint n_shape(std::vector<uint> shape) {
-    uint r = 1;
-    for (auto i : shape) r *= i;
-    return r;
-}
-
 
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
@@ -450,9 +463,9 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
                     b_parser_[i_p].set_variable("y",  {}, y_);
                     b_parser_[i_p].set_variable("z",  {}, z_);
                 } else
-                    b_parser_[i_p].set_variable(field_name,  {}, eval_field_data_[field]);
+                    b_parser_[i_p].set_variable(field_name, field->shape_, eval_field_data_[field]);
             }
-            b_parser_[i_p].set_variable("_result_", {}, res_);
+            b_parser_[i_p].set_variable("_result_", get_shape( Value::NRows_, Value::NCols_ ), res_);
             b_parser_[i_p].compile();
         }
     for (uint i=0; i<n_subsets; ++i)
