@@ -45,6 +45,7 @@ public:
         this->used_fields_ += this->eq_fields_->water_content_residual;
         this->used_fields_ += this->eq_fields_->water_content_saturated;
         this->used_fields_ += this->eq_fields_->conductivity;
+        this->used_fields_ += this->eq_fields_->cross_section;
     }
 
     /// Destructor.
@@ -61,14 +62,17 @@ public:
 
         edge_indices_ = cell.get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
+        const DHCellAccessor dh_cell = cell.cell_with_other_dh(this->eq_data_->dh_.get());
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
         VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
+        double diagonal_coef = cell.elm().measure() * eq_fields_->cross_section(p) / cell.elm()->n_sides();
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
+            const int local_side = cr_disc_dofs_[i];
             capacity = 0;
             water_content = 0;
             phead = this->eq_data_->p_edge_solution.get( edge_indices_[i] );
@@ -82,7 +86,23 @@ public:
             }
             this->eq_data_->capacity.set( cr_disc_dofs_[i], capacity + storativity_ );
             water_content_vec.set( cr_disc_dofs_[i], water_content + storativity_ * phead);
+
+            this->eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, dh_cell, {local_side},
+                                               {0.0}, diagonal_coef*(water_content + storativity_ * phead) );
         }
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
     }
 
 
@@ -399,10 +419,6 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
-        this->asm_element();
-        this->asm_source_term_richards(cell, p);
-
         { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
             this->postprocess_velocity_richards(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
@@ -411,19 +427,11 @@ public:
 
 
     /// Assembles between boundary element and corresponding side on bulk element.
-    inline void boundary_side_integral(DHCellSide cell_side)
-    {
-        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side)
+    {}
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
-        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
-
-        this->precompute_boundary_side(cell_side, p_side, p_bdr);
-
-        this->boundary_side_integral_in(cell_side, b_ele, p_bdr);
-    }
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side)
+    {}
 
 
     /// Implements @p AssemblyBase::begin.

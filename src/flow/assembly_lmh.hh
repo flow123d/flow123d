@@ -329,12 +329,6 @@ protected:
         this->eq_data_->full_solution.zero_entries();
         this->eq_data_->p_edge_solution.local_to_ghost_begin();
         this->eq_data_->p_edge_solution.local_to_ghost_end();
-
-        this->eq_data_->balance_->start_flux_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->start_source_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
-
-        this->set_dofs();
     }
 
 
@@ -359,10 +353,6 @@ protected:
 
         this->eq_data_->full_solution.local_to_ghost_begin();
         this->eq_data_->full_solution.local_to_ghost_end();
-
-        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_source_assembly(this->eq_data_->water_balance_idx);
-        this->eq_data_->balance_->finish_flux_assembly(this->eq_data_->water_balance_idx);
 
         eq_data_->loc_constraint_.clear();
     }
@@ -822,10 +812,6 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, this->eq_fields_->conductivity(p));
-        this->asm_element();
-        this->asm_source_term_darcy(cell, p);
-
         { // postprocess the velocity
             this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
             this->postprocess_velocity_darcy(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
@@ -834,19 +820,11 @@ public:
 
 
     /// Assembles between boundary element and corresponding side on bulk element.
-    inline void boundary_side_integral(DHCellSide cell_side)
-    {
-        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side)
+    {}
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
-        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
-
-        this->precompute_boundary_side(cell_side, p_side, p_bdr);
-
-        this->boundary_side_integral_in(cell_side, b_ele, p_bdr);
-    }
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side)
+    {}
 
 
     /// Implements @p AssemblyBase::begin.

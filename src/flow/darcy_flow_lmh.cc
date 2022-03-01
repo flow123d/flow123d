@@ -493,15 +493,14 @@ void DarcyLMH::zero_time_step()
     } else {
         MessageOut() << "Flow zero time step - unsteady case\n";
         eq_data_->time_step_ = time_->dt();
-//        read_initial_condition();
-    	this->read_init_cond_asm();
+        assembly_linear_system();
+        this->read_init_cond_asm();
         accept_time_step(); // accept zero time step, i.e. initial condition
         
         // we reconstruct the initial solution here
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-//        reconstruct_solution_from_schur(eq_data_->multidim_assembler);
         START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
         this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
         END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
