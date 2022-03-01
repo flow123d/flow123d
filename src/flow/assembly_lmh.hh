@@ -438,7 +438,7 @@ protected:
 
         if(! eq_data_->use_steady_assembly_)
         {
-            time_term_ = coef_ * eq_fields_->storativity(p) + eq_fields_->extra_storativity(p);
+            time_term_ = coef_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p));
         }
 
         const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
