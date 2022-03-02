@@ -31,7 +31,7 @@
 
 class Mesh;
 class FieldCommon;
-class RichardsLMH;
+class DarcyLMH;
 
 namespace it = Input::Type;
 
@@ -184,7 +184,7 @@ private:
     static const int registrar;
 
     /// steady or unsteady water flow simulator based on MH scheme
-    std::shared_ptr<RichardsLMH> flow_;
+    std::shared_ptr<DarcyLMH> flow_;
 
     /// solute transport with chemistry through operator splitting
     std::shared_ptr<Elasticity> mechanics_;

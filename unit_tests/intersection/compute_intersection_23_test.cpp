@@ -236,8 +236,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     
     IntersectionAux<2,3> is(triangle_ele_idx, tetra_ele_idx);
     ComputeIntersection<2,3> CI(mesh->element_accessor(triangle_ele_idx),
-                                mesh->element_accessor(tetra_ele_idx),
-                                mesh);
+                                mesh->element_accessor(tetra_ele_idx));
     CI.init();
     CI.compute(is);
     

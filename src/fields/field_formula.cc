@@ -377,7 +377,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     try {
         b_parser_.parse( expr );
     } catch (std::exception const& e) {
-        if (typeid(e) == typeid(bparser::Exception)) THROW( ExcParserError() << EI_BParserMsg(e.what()) );
+        if (typeid(e) == typeid(bparser::Exception))
+            THROW( ExcParserError() << EI_BParserMsg(e.what()) << EI_Formula(expr) << Input::EI_Address( in_rec_.address_string() ) );
         else throw;
     }
     auto list = b_parser_.free_symbols();
@@ -399,10 +400,10 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             else {
                 field_ptr = field_set.user_field(var, this->time_);
                 if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-                else THROW( ExcUnknownField() << EI_Field(var) );
+                else THROW( ExcUnknownField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             }
             // TODO: Test the exception, report input line of the formula.
-            if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) );
+            if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
 
             sum_shape_sizes_ += n_shape( field_ptr->shape_ );

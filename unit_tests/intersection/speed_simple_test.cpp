@@ -228,7 +228,7 @@ void compute_intersection<1,2>(Mesh* mesh)
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<1,2> is(0, 1); //component_ele_idx, bulk_ele_idx
-        ComputeIntersection<1,2> CI(eleA, eleB, mesh);
+        ComputeIntersection<1,2> CI(eleA, eleB);
         END_TIMER("CI create");
         START_TIMER("CI compute");
         CI.compute_final(is.points());
@@ -262,7 +262,7 @@ void compute_intersection(Mesh* mesh)
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<dimA,dimB> is(0, 1); //component_ele_idx, bulk_ele_idx
-        ComputeIntersection<dimA, dimB> CI(eleA, eleB, mesh);
+        ComputeIntersection<dimA, dimB> CI(eleA, eleB);
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");

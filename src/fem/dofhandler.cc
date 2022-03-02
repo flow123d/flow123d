@@ -54,6 +54,14 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(MeshBase& _mesh, bool make_elem_part)
 	  scatter_to_seq_(nullptr),
 	  el_ds_(nullptr)
 {
+    // Set up flag that ensures that edges are allocated, so that dofs can be distributed on edges.
+    // Currently this works only for Mesh objects, not for BCMesh.
+    if (dynamic_cast<Mesh*>(mesh_) != nullptr) {
+        distribute_edge_dofs = true;
+    } else {
+        distribute_edge_dofs = false;
+    }
+
 	if (make_elem_part) make_elem_partitioning();
 }
 
@@ -139,22 +147,31 @@ void DOFHandlerMultiDim::init_status(
       }
     }
     
-    // mark local edges
-    for (auto eid : edg_4_loc)
-        edge_status[eid] = VALID_NFACE;
-    
-    // unmark dofs on ghost cells from lower procs
-	for (auto cell : this->ghost_range())
+    if (distribute_edge_dofs)
     {
-      if (cell.elm().proc() < el_ds_->myp())
-      {
-        for (unsigned int n=0; n<cell.dim()+1; n++)
+        // mark local edges
+        for (auto eid : edg_4_loc)
+            edge_status[eid] = VALID_NFACE;
+        
+        // unmark dofs on ghost cells from lower procs
+        for (auto cell : this->ghost_range())
         {
-          unsigned int eid = cell.elm().side(n)->edge_idx();
-          edge_status[eid] = INVALID_NFACE;
+            if (cell.elm().proc() < el_ds_->myp())
+            {
+                for (unsigned int n=0; n<cell.dim()+1; n++)
+                {
+                    unsigned int eid = cell.elm().side(n)->edge_idx();
+                    edge_status[eid] = INVALID_NFACE;
+                }
+            }
         }
-      }
     }
+    else
+    {
+        for (auto eid : edg_4_loc)
+            edge_status[eid] = INVALID_NFACE;
+    }
+    
 }
 
 
@@ -245,6 +262,8 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             }
             else if (dh_cell.cell_dof(idof).dim == dh_cell.dim()-1)
             {   // update edge dof
+                if (!distribute_edge_dofs) break;
+
                 unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
                 unsigned int eid = dh_cell.elm().side(dof_nface_idx)->edge_idx();
                 unsigned int edge_dof_idx = edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx];
@@ -288,6 +307,8 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 loc_node_dof_count[dof_nface_idx]++;
             } else if (cell.cell_dof(idof).dim == cell.dim()-1)
             {
+                if (!distribute_edge_dofs) break;
+                
                 if (dof_indices[cell_starts[cell.local_idx()]+idof] == INVALID_DOF)
                 {   // update edge dof
                     unsigned int eid = cell.elm().side(dof_nface_idx)->edge_idx();
@@ -358,6 +379,8 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
         }
         else if (dof_dim == cell.dim()-1)
         {   // add dofs shared by edges
+            if (!distribute_edge_dofs) break;
+
             unsigned int eid = cell.elm().side(dof_nface_idx)->edge_idx();
             unsigned int edge_dof_idx = edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx];
             switch (edge_status[eid])

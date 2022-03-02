@@ -1177,10 +1177,6 @@ Range<NodeAccessor<3>> MeshBase::node_range() const {
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
-inline void MeshBase::check_element_size(unsigned int elem_idx) const
-{
-    ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
-}
 
 /*
  * Output of internal flow data.
