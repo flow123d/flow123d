@@ -2,7 +2,7 @@
 \def\ee{\vc\varepsilon}
 \newcommand{\eq}[1]{\begin{equation}#1\end{equation}}
 \def\nn{\vc n}
-% \def{\tr}{\operatorname{tr}}
+\def\tr{\operatorname{tr}}
 \def\uu{\vc u}
 
 Deformation of the porous media is modelled by the stationary linear elasticity equation:
@@ -60,5 +60,14 @@ The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
 \eq{ \vc f_{Cd} = \begin{cases}\sum_{i=1}^n\vc t^i_{d+1,d} & \mbox{ if }d\in\{1,2\},\\\vc 0 & \mbox{ else}.\end{cases} }
 
 
-
+\paragraph{Output fields.}
+The mechanics equation provides several fields for output:
+\begin{itemize}
+    \item \textbf{displacement}: The computed displacement vector field $\uu$;
+    \item \textbf{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
+    \item \textbf{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tr\tn\sigma(\uu)$;
+    \item \textbf{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\frac13(\tr\tn\sigma(\uu))\tn I$ is the deviatoric stress;
+    \item \textbf{cross\_section\_updated}: This field is relevant on lower dimensional elements (i.e. fractures), and is defined as $\delta_u:=\delta-\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
+    \item \textbf{displacement\_divergence}: $\div\uu-\frac1\delta\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$.
+\end{itemize}
 
