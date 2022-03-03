@@ -589,6 +589,7 @@ public:
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
         output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
+        output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
     }
@@ -622,12 +623,14 @@ public:
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
         double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+        double mean_stress = arma::trace(stress) / 3;
         output_div_vec_.add(dof_indices_scalar_[0], div);
 
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<3; j++)
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
         output_von_mises_stress_vec_.set( dof_indices_scalar_[0], von_mises_stress );
+        output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
 
         output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
     }
@@ -695,6 +698,7 @@ private:
     VectorMPI output_vec_;
     VectorMPI output_stress_vec_;
     VectorMPI output_von_mises_stress_vec_;
+    VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
 

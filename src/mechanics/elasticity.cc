@@ -222,6 +222,12 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
+    *this += output_mean_stress
+            .name("mean_stress")
+            .description("mean stress output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
     *this += output_cross_section
             .name("cross_section_updated")
             .description("Cross-section after deformation - output.")
@@ -349,6 +355,10 @@ void Elasticity::initialize()
     // setup output von Mises stress
     eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
+
+    // setup output mean stress
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
     eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
@@ -424,6 +434,8 @@ void Elasticity::update_output_fields()
     eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();

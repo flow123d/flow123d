@@ -158,24 +158,9 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // flow_->eq_fields()["von_mises_stress"].copy_from(mechanics_->eq_fields()["von_mises_stress"]);
 
     flow_->eq_fields() += mechanics_->eq_fields()["cross_section_updated"];
-    // cross_section_updated.name("cross_section_updated")
-    //         .description("Cross-section after deformation.")
-    //         .units( UnitSI().m() )
-    //         .flags(input_copy);
-
     flow_->eq_fields() += mechanics_->eq_fields()["stress"];
-    // stress
-    //         .name("stress")
-    //         .description("Stress tensor.")
-    //         .units( UnitSI().Pa() )
-    //         .flags(input_copy);
-    
     flow_->eq_fields() += mechanics_->eq_fields()["von_mises_stress"];
-    // von_mises_stress
-    //         .name("von_mises_stress")
-    //         .description("von Mises stress output.")
-    //         .units( UnitSI().Pa() )
-    //         .flags(input_copy);
+    flow_->eq_fields() += mechanics_->eq_fields()["mean_stress"];
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )
