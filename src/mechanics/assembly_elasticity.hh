@@ -214,15 +214,15 @@ public:
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guit = (m==1) ? mat_t(vec_view_side_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuit = (m==1) ? arma::trace(guit) : 0;
+                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
+                            double divuft = (m==0) ? arma::trace(guft) : 0;
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
                                      arma::dot(vf-vi,
                                       2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guit)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuit*nv
+                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
+                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
                                      )
                                      - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fe_values_sub_.JxW(k);

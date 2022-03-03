@@ -379,7 +379,7 @@ void Elasticity::initialize()
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -dual_mat_inv_pc_type lu -dual_mat_inv_pc_factor_mat_solver_type mumps";
+    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
     LinSys *ls;
