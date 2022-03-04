@@ -92,7 +92,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
 	this->init_unit_conversion_coefficient(rec, init_data);
 
 	// read formulas form input
-    STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
+    formula_matrix_.at(0,0) = rec.val<std::string>("value");
     in_rec_ = rec;
 }
 
@@ -276,11 +276,11 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
                 y_[i] = value_cache->template vec<3>(i)(1);
                 z_[i] = value_cache->template vec<3>(i)(2);
             } else if ( n_shape( it.first->shape_ ) == 3) {
-            	it.second[i] = value_cache->template vec<3>(i)(0);
-            	it.second[i+vec_size] = value_cache->template vec<3>(i)(1);
-            	it.second[i+2*vec_size] = value_cache->template vec<3>(i)(2);
+                it.second[i] = value_cache->template vec<3>(i)(0);
+                it.second[i+vec_size] = value_cache->template vec<3>(i)(1);
+                it.second[i+2*vec_size] = value_cache->template vec<3>(i)(2);
             } else {
-        	   it.second[i] = value_cache->data_[i];
+        	    it.second[i] = value_cache->data_[i];
             }
         }
     }
@@ -293,11 +293,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
 
     b_parser_.set_subset(subset_vec);
     b_parser_.run();
-    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-        auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-//        cache_val(row, col) = res_[i];
-        cache_val = res_[i];
-        data_cache.set(i) = cache_val;
+    for (uint i_comp = 0; i_comp < Value::NRows_*Value::NCols_; ++i_comp) {
+    	data_cache.set_raw(i_comp, reg_chunk_begin, reg_chunk_end, &res_[i_comp*vec_size+reg_chunk_begin]);
     }
 }
 
@@ -426,11 +423,13 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     eval_field_data_.clear();
     uint vec_size = 1.1 * CacheMapElementNumber::get();
     while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
+    uint n_comp = Value::NRows_ * Value::NCols_; // number of components of this field
+
     // number of subset alignment to block size
     uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
-    uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
+    uint n_vectors = sum_shape_sizes_ + n_comp; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
-    res_ = arena_alloc_->create_array<double>(vec_size);
+    res_ = arena_alloc_->create_array<double>(vec_size * n_comp);
     for (auto field : required_fields_) {
         std::string field_name = field->name();
         eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
