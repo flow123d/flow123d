@@ -875,7 +875,7 @@ public:
      *
      * Block is given by component index (i_comp) and it is limited by values of data_begin and data_end.
      */
-    inline void get_raw(uint i_comp, uint data_begin, uint data_end, double * data_array)
+    inline void get_raw(uint i_comp, uint data_begin, uint data_end, double * data_array) const
     {
         ASSERT_LT(i_comp, n_rows_*n_cols_).error("Invalid component index!\n");
         ASSERT_LT(data_begin, data_end).error("Position of begin must be lesser than end!\n");

@@ -263,24 +263,17 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
     uint vec_size = 1.1 * CacheMapElementNumber::get();
 
-    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-        res_[i] = 0.0;
-    }
     for (auto it : eval_field_data_) {
         // Copy data from dependent fields to arena. Temporary solution.
         // TODO hold field data caches in arena, remove this step
         auto value_cache = it.first->value_cache();
-        for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-            if (it.first->name() == "X") {
-                x_[i] = value_cache->template vec<3>(i)(0);
-                y_[i] = value_cache->template vec<3>(i)(1);
-                z_[i] = value_cache->template vec<3>(i)(2);
-            } else if ( n_shape( it.first->shape_ ) == 3) {
-                it.second[i] = value_cache->template vec<3>(i)(0);
-                it.second[i+vec_size] = value_cache->template vec<3>(i)(1);
-                it.second[i+2*vec_size] = value_cache->template vec<3>(i)(2);
-            } else {
-        	    it.second[i] = value_cache->data_[i];
+        if (it.first->name() == "X") {
+            value_cache->get_raw(0, reg_chunk_begin, reg_chunk_end, &x_[reg_chunk_begin]);
+            value_cache->get_raw(1, reg_chunk_begin, reg_chunk_end, &y_[reg_chunk_begin]);
+            value_cache->get_raw(2, reg_chunk_begin, reg_chunk_end, &z_[reg_chunk_begin]);
+        } else {
+            for (uint i_comp = 0; i_comp < n_shape( it.first->shape_ ); ++i_comp) {
+                value_cache->get_raw(i_comp, reg_chunk_begin, reg_chunk_end, &it.second[i_comp*vec_size+reg_chunk_begin]);
             }
         }
     }
