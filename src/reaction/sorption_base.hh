@@ -53,6 +53,7 @@ namespace Input {
 }
 template <int spacedim> class ElementAccessor;
 template<unsigned int dim> class InitConditionAssemblySorp;
+template<unsigned int dim> class ReactionAssemblySorp;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -131,6 +132,31 @@ public:
     std::vector<unsigned int> substance_global_idx_;
 
     unsigned int n_substances_;   ///< number of substances that take part in the sorption mode
+    /**
+     * Density of the solvent.
+     *  TODO: Could be done region dependent, easily.
+     */
+    double solvent_density_;
+    /**
+     * Critical concentrations of species dissolved in water.
+     */
+    std::vector<double> solubility_vec_;
+    /**
+     * Concentration table limits of species dissolved in water.
+     */
+    std::vector<double> table_limit_;
+    /**
+     * Maximum concentration per region.
+     * It is used for optimization of interpolation table.
+     */
+    std::vector<std::vector<double>> max_conc;
+    /**
+     * Three dimensional array contains intersections between isotherms and mass balance lines.
+     * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
+     * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step
+     * lenght in cocidered system of coordinates, just function values are stored.
+     */
+    std::vector<std::vector<Isotherm> > isotherms;
   };
 
 
@@ -189,14 +215,14 @@ protected:
   /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
   
-  /// Reinitializes the isotherm.
-  /**
-   * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   */
-  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
-  
-  /// Calls @p isotherm_reinit for all isotherms.
-  void isotherm_reinit_all(const ElementAccessor<3> &elm);
+//  /// Reinitializes the isotherm.
+//  /**
+//   * On data change the isotherm is recomputed, possibly new interpolation table is made.
+//   */
+//  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
+//
+//  /// Calls @p isotherm_reinit for all isotherms.
+//  void isotherm_reinit_all(const ElementAccessor<3> &elm);
   
     /**
    * Creates interpolation table for isotherms.
@@ -219,31 +245,6 @@ protected:
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
    */
   unsigned int n_interpolation_steps_;
-  /**
-   * Density of the solvent. 
-   *  TODO: Could be done region dependent, easily.
-   */
-  double solvent_density_;
-  /**
-   * Critical concentrations of species dissolved in water.
-   */
-  std::vector<double> solubility_vec_;
-  /**
-   * Concentration table limits of species dissolved in water.
-   */
-  std::vector<double> table_limit_;
-  /**
-   * Maximum concentration per region.
-   * It is used for optimization of interpolation table.
-   */
-  std::vector<std::vector<double>> max_conc;
-  /**
-   * Three dimensional array contains intersections between isotherms and mass balance lines. 
-   * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
-   * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step 
-   * lenght in cocidered system of coordinates, just function values are stored.
-   */
-  std::vector<std::vector<Isotherm> > isotherms;
   
   /**
    * Reaction model that follows the sorption.
@@ -253,6 +254,7 @@ protected:
   
   /// general assembly objects, hold assembly objects of appropriate dimension
   GenericAssembly< InitConditionAssemblySorp > * init_condition_assembly_;
+  GenericAssembly< ReactionAssemblySorp > * reaction_assembly_;
 
 
 };
