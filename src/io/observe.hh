@@ -104,6 +104,12 @@ public:
     { return observe_data_.element_idx_; }
 
     /**
+     * Return Local coordinates of the observation point.
+     */
+    inline arma::vec local_coords() const
+    { return observe_data_.local_coords_; }
+
+    /**
      * Return global coordinates of the observation point.
      */
     inline arma::vec3 global_coords() const
@@ -262,7 +268,7 @@ public:
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
      */
     template <typename T>
-    ElementDataCache<T> & prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
 
 
 

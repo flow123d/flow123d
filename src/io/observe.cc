@@ -396,7 +396,7 @@ Observe::~Observe() {
 
 
 template <typename T>
-ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
+Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
 		unsigned int n_cols)
 {
     double time_unit_seconds = time_unit_conversion_->get_coef();
@@ -412,12 +412,12 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
 					= std::make_shared< ElementDataCache<T> >(field_name, n_rows * n_cols, point_ds_->lsize());
         it=observe_field_values_.find(field_name);
     }
-    return dynamic_cast<ElementDataCache<T> &>(*(it->second));
+    return it->second;
 }
 
 // explicit instantiation of template method
 #define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
-template ElementDataCache<TYPE> & Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
+template Observe::OutputDataPtr Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
 		unsigned int n_rows, unsigned int n_cols)
 
 OBSERVE_PREPARE_COMPUTE_DATA(int);

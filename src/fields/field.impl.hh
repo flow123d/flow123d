@@ -398,8 +398,9 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 
     if (observe->point_ds()->size() == 0) return;
 
-    ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
+    auto output_data_base = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
     						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(output_data_base));
 
     unsigned int loc_point_time_index, ele_index;
     for(ObservePointAccessor op_acc : observe->local_range()) {
@@ -644,6 +645,16 @@ void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace spac
     auto output_cache_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
             (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
     output_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::set_observe_data_cache(std::shared_ptr<Observe> observe) {
+    typedef typename Value::element_type ElemType;
+
+    auto output_cache_base = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
+            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    observe_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
 }
 
 

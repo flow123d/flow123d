@@ -119,6 +119,22 @@ uint EvalPoints::DimEvalPoints::add_subset() {
 }
 
 
+template <unsigned int dim>
+unsigned int EvalPoints::DimEvalPoints::add_local_point(arma::vec loc_p) {
+    ASSERT_GT(dim, 0).error("Dimension 0 not supported!\n");
+
+    unsigned int local_points_old_size = local_points_.size();
+    local_points_.resize(local_points_old_size+1);
+    arma::vec::fixed<dim> fix_p = loc_p.subvec(0, dim-1);
+    local_points_.set(local_points_old_size) = fix_p;
+    subset_starts_[0] = 0;
+    subset_starts_[1] = local_points_old_size+1;
+    n_subsets_ = 1;
+
+    return local_points_old_size;
+}
+
+
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<1>(const Quadrature &);
 template std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<2>(const Quadrature &);
@@ -134,3 +150,6 @@ template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Qua
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);
+template unsigned int EvalPoints::DimEvalPoints::add_local_point<1>(arma::vec);
+template unsigned int EvalPoints::DimEvalPoints::add_local_point<2>(arma::vec);
+template unsigned int EvalPoints::DimEvalPoints::add_local_point<3>(arma::vec);
