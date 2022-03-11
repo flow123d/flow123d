@@ -11,6 +11,7 @@
 #include "fields/equation_output.hh"
 #include "fields/field.hh"
 #include "fields/assembly_output.hh"
+#include "fields/assembly_observe.hh"
 #include "io/output_time_set.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/dofhandler.hh"
@@ -68,7 +69,8 @@ IT::Record &EquationOutput::get_input_type() {
 
 
 EquationOutput::EquationOutput()
-: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr) {
+: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr),
+  observe_output_assembly_(nullptr) {
     this->add_coords_field();
 }
 
@@ -76,6 +78,7 @@ EquationOutput::~EquationOutput() {
     if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
     if (output_node_data_assembly_ != nullptr) delete output_node_data_assembly_;
     if (output_corner_data_assembly_ != nullptr) delete output_corner_data_assembly_;
+    if (observe_output_assembly_ != nullptr) delete observe_output_assembly_;
 }
 
 
@@ -148,6 +151,7 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
 	output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
 	output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+	observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this);
 }
 
 
