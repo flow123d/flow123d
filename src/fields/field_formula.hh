@@ -74,14 +74,14 @@ public:
             << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
 
     TYPEDEF_ERR_INFO(EI_BParserMsg, std::string);
+    TYPEDEF_ERR_INFO(EI_Formula, std::string);
     DECLARE_INPUT_EXCEPTION(ExcParserError,
-            << "Parsing in " << EI_BParserMsg::val << " in the formula: \n");
+            << "Parsing in " << EI_BParserMsg::val << " in the formula: " << EI_Formula::qval << "\n");
 
     // Temporary exception of FParser. TODO remove at the same time as FParser
     TYPEDEF_ERR_INFO(EI_FParserMsg, std::string);
     TYPEDEF_ERR_INFO(EI_Row, unsigned int);
     TYPEDEF_ERR_INFO(EI_Col, unsigned int);
-    TYPEDEF_ERR_INFO(EI_Formula, std::string);
     DECLARE_INPUT_EXCEPTION(ExcFParserError,
             << "ParserError: " << EI_FParserMsg::val << "\n in the FieldFormula[" << EI_Row::val
 			<< "][" << EI_Row::val << "] == " << EI_Formula::qval << " \n");

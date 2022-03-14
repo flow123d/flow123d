@@ -1,5 +1,6 @@
 
 #include "local_system.hh"
+#include "la/local_constraint.hh"
 
 #include <armadillo>
 #include "system/asserts.hh"
@@ -84,6 +85,14 @@ void LocalSystem::set_solution(uint loc_dof, double solution, double diag)
     //ASSERT( arma::all(row_dofs == col_dofs) );
     set_solution_row(loc_dof, solution, diag);
     set_solution_col(loc_dof, solution);
+}
+
+void LocalSystem::set_solution(LocalConstraint &loc_constraint)
+{
+	if (loc_constraint.type_ == ConstraintType::rows || loc_constraint.type_ == ConstraintType::both)
+        set_solution_row(loc_constraint.loc_dof_, loc_constraint.solution_, loc_constraint.diag_);
+	if (loc_constraint.type_ == ConstraintType::cols || loc_constraint.type_ == ConstraintType::both)
+        set_solution_col(loc_constraint.loc_dof_, loc_constraint.solution_);
 }
 
 void LocalSystem::set_solution_row(uint loc_row, double solution, double diag) {
