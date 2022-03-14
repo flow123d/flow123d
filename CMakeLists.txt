@@ -190,21 +190,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
--Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
--Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
+message(STATUS "COMPILER ID: ${CMAKE_CXX_COMPILER_ID}")
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.
 ## Needs special definition of trigonometric functions held in the comment below:
-# if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-#     ...
-#     # Necessary for FParser - TODO: move to better place
-#     # ?? what about Clang
-#     flow_define(HAVE_SINCOS)
-# else()
-#     ...
-# endif()
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    -Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "CLang")
+    # TODO: CLang support in BParser
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    -Wno-enum-compare-switch -Wno-undefined-bool-conversion -Wno-dangling-field")
+    #-Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    #-Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+    # TODO: Update JSON library to submodule
+    # TODO: CLang support in BParser
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    ")
+    #-Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    #-Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+
+endif()
 
 # set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
 flow_define(LITTLE_ENDIAN true)
