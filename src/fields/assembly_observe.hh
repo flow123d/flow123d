@@ -27,9 +27,30 @@
 //#include "quadrature/quadrature_lib.hh"
 //#include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
-#include "io/observe.hh"
 //#include "io/element_data_cache.hh"
 //#include "mesh/ref_element.hh"
+
+
+/// Holds data of one eval point on patch (index of element and local coordinations).
+struct PatchPointData {
+    /// Default constructor
+	PatchPointData() {}
+
+    /// Constructor with data mebers initialization
+	PatchPointData(unsigned int elm_idx, arma::vec loc_coords)
+    : elem_idx(elm_idx), local_coords(loc_coords), i_quad(0), i_quad_point(0) {}
+
+    /// Copy constructor
+	PatchPointData(const PatchPointData &other)
+    : elem_idx(other.elem_idx), local_coords(other.local_coords), i_quad(other.i_quad), i_quad_point(other.i_quad_point) {}
+
+    unsigned int elem_idx;      ///< Index of element
+    arma::vec local_coords;     ///< Local coords of point
+    unsigned int i_quad;        ///< Index of quadrature (use during patch creating)
+	unsigned int i_quad_point;  ///< Index of point in quadrature (use during patch creating)
+};
+typedef std::vector<PatchPointData> PatchPointVec;
+
 
 /**
  * @brief Generic class of observe output assemblation.
@@ -46,10 +67,10 @@ class GenericAssemblyObserve : public GenericAssemblyBase
 public:
     /// Constructor
 	GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
-    : multidim_assembly_(eq_fields, eq_data), observe_(nullptr)
+    : multidim_assembly_(eq_fields, eq_data)
     {
         eval_points_ = std::make_shared<EvalPoints>();
-        element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_); // maybe make it later during first creating of patch
     }
 
     /// Getter to set of assembly objects
@@ -64,8 +85,6 @@ public:
 	 * object of each cells over space dimension.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
-        ASSERT_PTR(observe_).error("Uninitialized observe object!\n");
-
         START_TIMER( DimAssembly<1>::name() );
         multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
         this->create_patch(dh);
@@ -75,8 +94,8 @@ public:
         END_TIMER( DimAssembly<1>::name() );
     }
 
-    inline void set_observe(std::shared_ptr<Observe> observe) {
-        this->observe_ = observe;
+    inline PatchPointVec &patch_point_data() {
+        return patch_point_data_;
     }
 
 
@@ -86,30 +105,67 @@ private:
         eval_points_->clear();
         element_cache_map_.eval_point_data_.reset();
 
-        unsigned int reg_idx, ele_idx, i_ep;
         MeshBase *dh_mesh = dh->mesh();
-        for(ObservePointAccessor op_acc : observe_->local_range()) {
-        	ele_idx = op_acc.observe_point().element_idx();
-            auto el_acc = dh_mesh->element_accessor(ele_idx);
-            reg_idx = el_acc.region_idx().idx();
-            switch (el_acc.dim()) {
-            case 1:
-                i_ep = eval_points_->add_local_point<1>(op_acc.observe_point().local_coords());
-                break;
-            case 2:
-                i_ep = eval_points_->add_local_point<2>(op_acc.observe_point().local_coords());
-                break;
-            case 3:
-                i_ep = eval_points_->add_local_point<3>(op_acc.observe_point().local_coords());
-                break;
-            default:
-                ASSERT_PERMANENT(false);
-                break;
-            }
-            element_cache_map_.eval_point_data_.emplace_back(reg_idx, ele_idx, i_ep, op_acc.loc_point_time_index());
-            // Value dh_loc_idx_ holds index of observe point in data cache.
+        unsigned int n_regions = dh_mesh->region_db().size();
+        std::vector< std::vector<arma::vec> > reg_points;
+        std::vector< std::shared_ptr<BulkIntegral> > bulk_integrals;
+        reg_points.resize(n_regions);
+        bulk_integrals.resize(n_regions);
+
+        for(auto & p_data : patch_point_data_) {
+            auto el_acc = dh_mesh->element_accessor(p_data.elem_idx);
+            p_data.i_quad = el_acc.region_idx().idx();
+            p_data.i_quad_point = reg_points[p_data.i_quad].size();
+            reg_points[p_data.i_quad].push_back(p_data.local_coords);
         }
 
+        for (uint i=0; i<n_regions; i++) {
+            if (reg_points[i].size() == 0) continue;
+            Quadrature q(dh_mesh->region_db().get_dim(i), reg_points[i].size());
+            for (uint j=0; j<reg_points[i].size(); j++) {
+                switch (q.dim()) {
+                case 1:
+                {
+                    arma::vec::fixed<1> fix_p1 = reg_points[i][j].subvec(0, 0);
+                    q.set(j) = fix_p1;
+                    break;
+                }
+                case 2:
+                {
+                    arma::vec::fixed<2> fix_p2 = reg_points[i][j].subvec(0, 1);
+                    q.set(j) = fix_p2;
+                    break;
+                }
+                case 3:
+                {
+                    arma::vec::fixed<3> fix_p3 = reg_points[i][j].subvec(0, 2);
+                    q.set(j) = fix_p3;
+                    break;
+                }
+                default:
+                    ASSERT_PERMANENT(false);
+                    break;
+                }
+            }
+            switch (q.dim()) {
+            case 1:
+                bulk_integrals[i] = eval_points_->add_bulk<1>(q);
+                break;
+            case 2:
+                bulk_integrals[i] = eval_points_->add_bulk<2>(q);
+                break;
+            case 3:
+                bulk_integrals[i] = eval_points_->add_bulk<3>(q);
+                break;
+            }
+        }
+
+        unsigned int i_ep, subset_begin;
+        for(auto & p_data : patch_point_data_) {
+        	subset_begin = eval_points_->subset_begin(dh_mesh->region_db().get_dim(p_data.i_quad), bulk_integrals[p_data.i_quad]->get_subset_idx());
+            i_ep = subset_begin + p_data.i_quad_point;
+            element_cache_map_.eval_point_data_.emplace_back(p_data.i_quad, p_data.elem_idx, i_ep, 0);
+        }
         element_cache_map_.eval_point_data_.make_permanent();
         element_cache_map_.create_patch();
     }
@@ -117,7 +173,7 @@ private:
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
-    std::shared_ptr<Observe> observe_;                            ///< Shared observe object
+    PatchPointVec patch_point_data_;                              ///< Holds data of eval points on patch
 };
 
 
