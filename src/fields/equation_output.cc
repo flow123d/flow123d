@@ -13,6 +13,7 @@
 #include "fields/assembly_output.hh"
 #include "fields/assembly_observe.hh"
 #include "io/output_time_set.hh"
+#include "io/observe.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/dofhandler.hh"
 #include "fem/discrete_space.hh"
@@ -322,6 +323,30 @@ void EquationOutput::output(TimeStep step)
     }
 
     // observe output
+    { // prepare of new assembly
+        FieldSet used_fields;
+        for(FieldListAccessor f_acc : this->fields_range()) {
+            if ( f_acc.field()->flags().match( FieldFlag::allow_output) ) {
+                if (observe_fields_.find(f_acc.field()->name()) != observe_fields_.end()) {
+                    f_acc->set_observe_data_cache( observe_ptr );
+                    used_fields += *(f_acc.field());
+                }
+            }
+        }
+        if (used_fields.size()>0) {
+            auto & patch_point_data = observe_output_assembly_->patch_point_data();
+            patch_point_data.clear();
+            for(ObservePointAccessor op_acc : observe_ptr->local_range()) {
+                patch_point_data.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords());
+            }
+
+            auto mixed_assmbly = observe_output_assembly_->multidim_assembly();
+            mixed_assmbly[1_d]->set_observe_data(used_fields);
+            mixed_assmbly[2_d]->set_observe_data(used_fields);
+            mixed_assmbly[3_d]->set_observe_data(used_fields);
+            observe_output_assembly_->assemble(this->dh_);
+        }
+    }
     for(FieldCommon * field : this->field_list) {
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
