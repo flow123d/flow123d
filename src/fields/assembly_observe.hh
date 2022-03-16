@@ -53,6 +53,29 @@ typedef std::vector<PatchPointData> PatchPointVec;
 
 
 /**
+ * Helper structure holds data of cell (bulk) integral
+ *
+ * Data is specified by cell, subset index in EvalPoint object and index of point in subset
+ */
+struct BulkIntegralPointData {
+	/// Default constructor
+	BulkIntegralPointData() {}
+
+    /// Constructor with data mebers initialization
+	BulkIntegralPointData(DHCellAccessor dhcell, unsigned int subset_idx, unsigned int i_p)
+    : cell(dhcell), subset_index(subset_idx), i_point(i_p) {}
+
+    /// Copy constructor
+	BulkIntegralPointData(const BulkIntegralPointData &other)
+    : cell(other.cell), subset_index(other.subset_index), i_point(other.i_point) {}
+
+    DHCellAccessor cell;          ///< Specified cell (element)
+    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
+    unsigned int i_point;         ///< Index of point in subset
+};
+
+
+/**
  * @brief Generic class of observe output assemblation.
  *
  * Class
@@ -67,7 +90,7 @@ class GenericAssemblyObserve : public GenericAssemblyBase
 public:
     /// Constructor
 	GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
-    : multidim_assembly_(eq_fields, eq_data)
+    : multidim_assembly_(eq_fields, eq_data), bulk_integral_data_(20, 10)
     {
         eval_points_ = std::make_shared<EvalPoints>();
         element_cache_map_.init(eval_points_); // maybe make it later during first creating of patch
@@ -86,11 +109,16 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
-        this->create_patch(dh);
+        eval_points_->clear();
+        element_cache_map_.eval_point_data_.reset();
+        this->create_bulk_integrals(dh);
+
+        this->reallocate_cache();
+        element_cache_map_.create_patch();
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_);
 
-        multidim_assembly_[1_d]->assemble_cell_integrals();
+        multidim_assembly_[1_d]->assemble_cell_integrals(bulk_integral_data_);
+        bulk_integral_data_.reset();
         END_TIMER( DimAssembly<1>::name() );
     }
 
@@ -100,11 +128,13 @@ public:
 
 
 private:
+    /// Calls cache_reallocate method on set of used fields
+    inline void reallocate_cache() {
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
+    }
 
-    void create_patch(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        eval_points_->clear();
-        element_cache_map_.eval_point_data_.reset();
-
+    void create_bulk_integrals(std::shared_ptr<DOFHandlerMultiDim> dh) {
         MeshBase *dh_mesh = dh->mesh();
         unsigned int n_regions = dh_mesh->region_db().size();
         std::vector< std::vector<arma::vec> > reg_points;
@@ -160,20 +190,24 @@ private:
             }
         }
 
-        unsigned int i_ep, subset_begin;
+        unsigned int i_ep, subset_begin, subset_idx;
         for(auto & p_data : patch_point_data_) {
-        	subset_begin = eval_points_->subset_begin(dh_mesh->region_db().get_dim(p_data.i_quad), bulk_integrals[p_data.i_quad]->get_subset_idx());
+            subset_idx = bulk_integrals[p_data.i_quad]->get_subset_idx();
+        	subset_begin = eval_points_->subset_begin(dh_mesh->region_db().get_dim(p_data.i_quad), subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
+            DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
+            bulk_integral_data_.emplace_back(dh_cell, subset_idx, p_data.i_quad_point);
             element_cache_map_.eval_point_data_.emplace_back(p_data.i_quad, p_data.elem_idx, i_ep, 0);
         }
+        bulk_integral_data_.make_permanent();
         element_cache_map_.eval_point_data_.make_permanent();
-        element_cache_map_.create_patch();
     }
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
     PatchPointVec patch_point_data_;                              ///< Holds data of eval points on patch
+    RevertableList<BulkIntegralPointData> bulk_integral_data_;    ///< Holds data for computing bulk integrals.
 };
 
 
@@ -184,7 +218,6 @@ public:
     // TODO set used_fields: same as in AssemblyOutputBase
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
-    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyObserveOutput"; }
 
@@ -202,16 +235,17 @@ public:
     }
 
     /// Assembles the cell integrals for the given dimension.
-    inline void assemble_cell_integrals(/*const RevertableList<BulkIntegralData> &bulk_integral_data*/) {
+    inline void assemble_cell_integrals(FMT_UNUSED const RevertableList<BulkIntegralPointData> &bulk_integral_data) {
         if (dim!=1) return;  // Perform full output in one loop
-//        unsigned int element_patch_idx, field_value_cache_position, val_idx;
-//        this->reset_offsets();
+//        unsigned int element_patch_idx, field_value_cache_position;//, val_idx;
+//        //this->reset_offsets();
 //        for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
 //            element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
-//            auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
-//            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx());
-//            val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx());
-//            this->offsets_[field_value_cache_position] = val_idx;
+//            auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
+//            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].i_point);
+//            std::cout << " - position in cache: " << field_value_cache_position << std::endl;
+//            //val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx());
+//            //this->offsets_[field_value_cache_position] = val_idx;
 //        }
 //        for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
 //            f_acc->fill_data_value(this->offsets_);
