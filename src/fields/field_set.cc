@@ -317,9 +317,16 @@ void FieldSet::add_coords_field() {
                .flags( FieldFlag::input_copy )
                .description("Depth field.");
 
+    *this += normal_.name("normal")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Normal field.");
+
     if (this->mesh_ != nullptr) {
         X_.set_mesh(*this->mesh_);
         depth_.set_mesh(*this->mesh_);
+        normal_.set_mesh(*this->mesh_);
     }
 
     depth_.set_field_coords(&X_);

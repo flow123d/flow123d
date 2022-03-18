@@ -870,6 +870,42 @@ public:
         return vec;
     }
 
+    /**
+     * Copy block of raw data from Armor::Array to data_array.
+     *
+     * Block is given by component index (i_comp) and it is limited by values of data_begin and data_end.
+     */
+    inline void get_raw(uint i_comp, uint data_begin, uint data_end, double * data_array) const
+    {
+        ASSERT_LT(i_comp, n_rows_*n_cols_).error("Invalid component index!\n");
+        ASSERT_LT(data_begin, data_end).error("Position of begin must be lesser than end!\n");
+        ASSERT_LT(data_end, size_).error("Position of end is out of array size!\n");
+
+        uint i_begin = i_comp * reserved_ + data_begin;
+        uint i_end = i_comp * reserved_ + data_end;
+        for (uint i_data = i_begin, i_arr = 0; i_data < i_end; i_data++, i_arr++) {
+            data_array[i_arr] = this->data_[i_data];
+        }
+    }
+
+    /**
+     * Copy block of raw data from data_array to Armor::Array.
+     *
+     * Block is given by component index (i_comp) and it is limited by values of data_begin and data_end.
+     */
+    inline void set_raw(uint i_comp, uint data_begin, uint data_end, double * data_array)
+    {
+        ASSERT_LT(i_comp, n_rows_*n_cols_).error("Invalid component index!\n");
+        ASSERT_LT(data_begin, data_end).error("Position of begin must be lesser than end!\n");
+        ASSERT_LT(data_end, size_).error("Position of end is out of array size!\n");
+
+        uint i_begin = i_comp * reserved_ + data_begin;
+        uint i_end = i_comp * reserved_ + data_end;
+        for (uint i_data = i_begin, i_arr = 0; i_data < i_end; i_data++, i_arr++) {
+            this->data_[i_data] = data_array[i_arr];
+        }
+    }
+
     Type * data_;
 
 private:

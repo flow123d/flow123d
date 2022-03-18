@@ -181,6 +181,7 @@ public:
         	set_element_eval_point(i_elem_row, eval_point_data_[i].i_eval_point_, ElementCacheMap::unused_point);
         }
         eval_point_data_.reset();
+        bdr_to_bulk_.clear();
     }
 
     /// Start update of cache.
@@ -285,6 +286,49 @@ public:
         ASSERT(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
+
+    /// Add new item to eval_point_data_ list.
+    inline void add_eval_point_data(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx) {
+        eval_point_data_.emplace_back(i_reg, i_ele, i_ep, dh_loc_idx);
+    }
+
+    /// Same as previous but add dependency between boundary and bulk element too.
+    inline void add_eval_point_data(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx, unsigned int i_bulk_ele) {
+        eval_point_data_.emplace_back(i_reg, i_ele, i_ep, dh_loc_idx);
+        bdr_to_bulk_[i_ele] = i_bulk_ele;
+    }
+
+    /// Return idx of bulk element neighbouring with boundary element of given idx.
+    inline unsigned int bdr_to_bulk_element(unsigned int bc_elm_idx) {
+        auto map_it = bdr_to_bulk_.find(bc_elm_idx);
+        ASSERT(map_it != bdr_to_bulk_.end());
+        return map_it->second;
+    }
+
+    /// Return permanent size of eval_point_data_ list.
+    inline std::size_t epd_permanent_size() const
+    {
+        return eval_point_data_.permanent_size();
+    }
+
+    /// Return temporary size of eval_point_data_ list.
+    inline std::size_t epd_temporary_size() const
+    {
+        return eval_point_data_.temporary_size();
+    }
+
+    /// Finalize temporary part of eval_point_data_ list.
+    inline std::size_t epd_make_permanent()
+    {
+        return eval_point_data_.make_permanent();
+    }
+
+    /// Erase temporary part of eval_point_data_ list.
+    inline std::size_t epd_revert_temporary()
+    {
+        return eval_point_data_.revert_temporary();
+    }
+
 protected:
 
     /// Special constant (@see element_eval_points_map_).
@@ -343,12 +387,9 @@ protected:
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
     std::unordered_map<unsigned int, unsigned int> element_to_map_;     ///< Maps bulk element_idx to element index in patch - TODO remove
     std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> bdr_to_bulk_;        ///< Maps holds dependencies of boundary elements on bulk elements
 
     // @}
-
-    // TODO: remove friend class
-    template < template<IntDim...> class DimAssembly>
-    friend class GenericAssembly;
 };
 
 

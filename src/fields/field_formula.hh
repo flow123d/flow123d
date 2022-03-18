@@ -144,11 +144,12 @@ private:
     inline arma::vec eval_depth_var(const Point &p);
 
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
+    // TODO change to IT::String after remove FParser
     StringTensor formula_matrix_;
 
     // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
-    std::vector< bparser::Parser > b_parser_;
+    bparser::Parser b_parser_;
 
     /// Accessor to Input::Record
     Input::Record in_rec_;

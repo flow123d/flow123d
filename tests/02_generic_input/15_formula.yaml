@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/big_cube_nc.msh
   # steady velocity field, with velocity v:0.1
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -20,9 +20,13 @@ problem: !Coupling_Sequential
         sigma: !FieldFormula
           value: d
           surface_region: .3d_top
-      - region: .BOUNDARY
+      - region: [.IMPLICIT_BOUNDARY, .3d_top, .3d_bottom]
         bc_type: dirichlet
         bc_pressure: 1
+      - region: [.2d, .3d_sides]
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: "[0.9, 0.9, 1.2] @ normal"
     n_schurs: 2
     output:
       fields:
@@ -38,6 +42,8 @@ problem: !Coupling_Sequential
       input_fields:
         - region: .BOUNDARY
           bc_conc: 0.5
+          #bc_conc: !FieldFormula
+          #  value: "[0.5, 0.5, 2.0] @ normal"
         - region: BULK
           init_conc: 0.5
           cross_section: 0.5 * x + y
