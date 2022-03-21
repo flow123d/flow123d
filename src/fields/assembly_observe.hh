@@ -93,7 +93,6 @@ public:
     : multidim_assembly_(eq_fields, eq_data), bulk_integral_data_(20, 10)
     {
         eval_points_ = std::make_shared<EvalPoints>();
-        element_cache_map_.init(eval_points_); // maybe make it later during first creating of patch
     }
 
     /// Getter to set of assembly objects
@@ -189,6 +188,10 @@ private:
                 break;
             }
         }
+        element_cache_map_.init(eval_points_); // should be made only once
+        multidim_assembly_[1_d]->initialize(&element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&element_cache_map_);
 
         unsigned int i_ep, subset_begin, subset_idx;
         for(auto & p_data : patch_point_data_) {
@@ -227,6 +230,11 @@ public:
 
     /// Destructor.
     ~AssemblyObserveOutput() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+    }
 
     /// Sets observe output data members (set of used fields).
     void set_observe_data(const FieldSet &used) {
