@@ -121,6 +121,8 @@ public:
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(bulk_integral_data_);
+        multidim_assembly_[2_d]->assemble_cell_integrals(bulk_integral_data_);
+        multidim_assembly_[3_d]->assemble_cell_integrals(bulk_integral_data_);
         bulk_integral_data_.reset();
         END_TIMER( DimAssembly<1>::name() );
     }
@@ -235,10 +237,10 @@ public:
 
     /// Assembles the cell integrals for the given dimension.
     inline void assemble_cell_integrals(const RevertableList<BulkIntegralPointData> &bulk_integral_data) {
-        if (dim!=1) return;  // Perform full output in one loop
         unsigned int element_patch_idx, field_value_cache_position, val_idx;
         this->reset_offsets();
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            if (bulk_integral_data[i].cell.dim() != dim) continue;
             element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
             auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
             field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].i_point);
