@@ -190,7 +190,14 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
-        observe_fields_.insert(string(*it));
+        FieldCommon *found_field = field(string(*it));
+        if (found_field->is_multifield()) {
+            for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
+                observe_fields_.insert(found_field->full_comp_name(i_comp));
+            }
+        } else {
+            observe_fields_.insert(string(*it));
+        }
     }
 
 }
@@ -327,7 +334,7 @@ void EquationOutput::output(TimeStep step)
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
             if ( f_acc.field()->flags().match( FieldFlag::allow_output) ) {
-                if (observe_fields_.find(f_acc.field()->name()) != observe_fields_.end()) {
+                if (observe_fields_.find(f_acc->name()) != observe_fields_.end()) {
                     f_acc->set_observe_data_cache( observe_ptr );
                     used_fields += *(f_acc.field());
                 }
@@ -337,7 +344,8 @@ void EquationOutput::output(TimeStep step)
             auto & patch_point_data = observe_output_assembly_->patch_point_data();
             patch_point_data.clear();
             for(ObservePointAccessor op_acc : observe_ptr->local_range()) {
-                patch_point_data.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords());
+                patch_point_data.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords(),
+                        op_acc.loc_point_time_index());
             }
 
             auto mixed_assmbly = observe_output_assembly_->multidim_assembly();
@@ -347,13 +355,13 @@ void EquationOutput::output(TimeStep step)
             observe_output_assembly_->assemble(this->dh_);
         }
     }
-    for(FieldCommon * field : this->field_list) {
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-                field->observe_output( observe_ptr );
-            }
-        }
-    }
+//    for(FieldCommon * field : this->field_list) {
+//        if ( field->flags().match( FieldFlag::allow_output) ) {
+//            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
+//                field->observe_output( observe_ptr );
+//            }
+//        }
+//    }
 }
 
 

@@ -358,6 +358,9 @@ public:
     /// Implements FieldCommon::fill_data_value
     void fill_data_value(const std::vector<int> &offsets) override;
 
+    /// Implements FieldCommon::fill_observe_value
+    void fill_observe_value(const std::vector<int> &offsets) override;
+
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.

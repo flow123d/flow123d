@@ -518,6 +518,13 @@ public:
     }
 
 
+    /// Fill data to ElementDataCache on given patch.
+    virtual void fill_observe_value(FMT_UNUSED const std::vector<int> &offsets)
+    {
+        ASSERT_PERMANENT(false);
+    }
+
+
     /**
      * Print stored messages to table.
      *

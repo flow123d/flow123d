@@ -700,6 +700,18 @@ void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 
 
 template<int spacedim, class Value>
+void Field<spacedim,Value>::fill_observe_value(const std::vector<int> &offsets)
+{
+    for (unsigned int i=0; i<offsets.size(); ++i) {
+        if (offsets[i] == -1) continue; // skip empty value
+        auto ret_value = Value::get_from_array(this->value_cache_, i);
+        const Value &ele_value = Value( ret_value );
+        observe_data_cache_->store_value(offsets[i], ele_value.mem_ptr() );
+    }
+}
+
+
+template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
 	ASSERT_EQ(this->mesh()->region_db().size(), region_fields_.size()).error();
 	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
