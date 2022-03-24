@@ -1,6 +1,41 @@
 List of all changes in user interface and major internal changes.
 
 ***********************************************
+# Flow123d version 3.9.0 
+(2022-3-5)
+Alpha version of 4.x major release, with mostly backward compatible input.
+TODO: go through merges/pull requests
+
+## User interface
+* FieldFormula use BParser with some conversion rules to keep FParser syntax, but 
+  minor incompatibilities may happen.
+
+* VTK output does not prevent numbering of elements and nodes of the input mesh
+* Repporting of HM solver non-convergence
+
+## New features
+* Implementation of Native VTK output
+* Implementation of GMSH and VTK readers, compatible writers and readers allowing passing outputs as initiali conditions.
+* Poroelasticity model with nonlinear effects: ??
+* Allowed output of a field in several "interpolations", e.g. CellData together with NodeData and NativeData
+* FieldFormula can depend on other field within the equation FieldSet
+* user fields 
+
+## Bug fixes
+* Poroelasticity bug fixes, extended test suite.
+* Year time unit changed to 365.2425 days to be closer to astronomical year.
+
+## Internals
+* BParser used in FieldFormula. Requires SSE2 instructions.
+* New assembly algorithm used consistently through the code (without performance regrassion)
+* FieldModel
+* FieldModel in DarcyFlow (pressure head to piezometric head conversion), DG transport Concentration and Heat parameter models.
+* Removed explicit face permutations, replaced by element-nodes premutations with guaranteed face matching
+* Optimization of the elements and nodes for the memory locality.
+* removed xprintf
+* Boundary Mesh
+
+***********************************************
 # Flow123d version 3.1.0
 (2020-12-17)
 
@@ -10,7 +45,7 @@ List of all changes in user interface and major internal changes.
 ### Bug fixes
 * ignore unused nodes if these are present in mesh
 
-### Internals:
+### Internals
 * remove old mixed-hybrid dofhandler
 * apply field_fe in equations, mainly passing darcian velocity to transport model, field_fe in reaction term etc.
 * improvements in FE classes (FEValues)
@@ -19,6 +54,8 @@ List of all changes in user interface and major internal changes.
 <!--
 Probably even more changes - mirrors current master branch.
 -->
+
+***********************************************
 
 # Flow123d version 3.0.4
 (2020-06-16)
@@ -83,6 +120,8 @@ TODO: do not know what was actually released...
 * update runtest, better logging support, (verbosity level support)
 * docker image hosting is now preferable way to deliver Flow123d
 -->
+
+***********************************************
 
 # Flow123d version 3.0.0
 (2017-12-30)
