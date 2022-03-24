@@ -330,7 +330,7 @@ void EquationOutput::output(TimeStep step)
     }
 
     // observe output
-    { // prepare of new assembly
+    {
         FieldSet used_fields;
         for(FieldListAccessor f_acc : this->fields_range()) {
             if ( f_acc.field()->flags().match( FieldFlag::allow_output) ) {
@@ -355,13 +355,6 @@ void EquationOutput::output(TimeStep step)
             observe_output_assembly_->assemble(this->dh_);
         }
     }
-//    for(FieldCommon * field : this->field_list) {
-//        if ( field->flags().match( FieldFlag::allow_output) ) {
-//            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-//                field->observe_output( observe_ptr );
-//            }
-//        }
-//    }
 }
 
 

@@ -110,11 +110,6 @@ public:
         return max_size_;
     }
 
-    template <unsigned int dim>
-    unsigned int add_local_point(arma::vec loc_p) {
-        return dim_eval_points_[dim].add_local_point<dim>(loc_p);
-    }
-
     inline void clear() {
         for (uint i=0; i<4; ++i)
             dim_eval_points_[i].clear();
@@ -169,9 +164,6 @@ private:
 
         /// Adds new subset and its end size to subset_starts_ array.
         uint add_subset();
-
-        template <unsigned int dim>
-        unsigned int add_local_point(arma::vec loc_p);
 
         inline void clear() {
             local_points_.resize(0);
