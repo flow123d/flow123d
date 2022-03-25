@@ -143,7 +143,6 @@ public:
         Field<3, FieldValue<3>::Scalar> flow_source;
         
         /// FieldFE for pressure_potential field.
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > beta_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;

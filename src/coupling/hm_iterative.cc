@@ -21,12 +21,21 @@
 #include "input/input_type.hh"
 #include "flow/richards_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
+#include "fields/field_model.hh"      // for Model
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(coupling_iterative)
 
 
 namespace it = Input::Type;
+
+
+struct fn_pressure_potential {
+    inline double operator() (double alpha, double density, double gravity, double pressure)
+    {
+        return -alpha*density*gravity*pressure;
+    }
+};
 
 
 const it::Record & HM_Iterative::get_input_type() {
@@ -111,9 +120,6 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh)
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
     
-    potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
-    pressure_potential.set(potential_ptr_, 0.0);
-
     ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     ref_pressure_potential.set(ref_potential_ptr_, 0.0);
     
@@ -166,6 +172,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     if ( FieldCommon::print_message_table(ss, "flow") )
         WarningOut() << ss.str();
 
+    eq_fields_ += *flow_->eq_fields().field("pressure_edge");
+
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
 
@@ -181,6 +189,9 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
+    eq_fields_.pressure_potential.set(Model<3, FieldValue<3>::Scalar>::create(
+        fn_pressure_potential(), eq_fields_.alpha, eq_fields_.density, eq_fields_.gravity, flow_->eq_fields().field_edge_pressure
+        ), 0.0);
 }
 
 
@@ -260,9 +271,8 @@ void HM_Iterative::update_after_converged()
 
 void HM_Iterative::update_potential()
 {
-    auto potential_vec_ = eq_fields_.potential_ptr_->vec();
     auto ref_potential_vec_ = eq_fields_.ref_potential_ptr_->vec();
-    auto dh = eq_fields_.potential_ptr_->get_dofhandler();
+    auto dh = eq_fields_.ref_potential_ptr_->get_dofhandler();
     Field<3, FieldValue<3>::Scalar> field_edge_pressure;
     field_edge_pressure.copy_from(*flow_->eq_fields().field("pressure_edge"));
 
@@ -275,10 +285,6 @@ void HM_Iterative::update_potential()
             double alpha = eq_fields_.alpha.value(side.centre(), elm);
             double density = eq_fields_.density.value(side.centre(), elm);
             double gravity = eq_fields_.gravity.value(side.centre(), elm);
-            double pressure = field_edge_pressure.value(side.centre(), elm);
-            double potential = -alpha*density*gravity*pressure;
-        
-            potential_vec_.set( dof_indices[side.side_idx()], potential );
 
             // The reference potential is applied only on dirichlet and total_flux b.c.,
             // i.e. where only mechanical traction is prescribed.
@@ -295,8 +301,6 @@ void HM_Iterative::update_potential()
         }
     }
     
-    potential_vec_.local_to_ghost_begin();
-    potential_vec_.local_to_ghost_end();
     ref_potential_vec_.local_to_ghost_begin();
     ref_potential_vec_.local_to_ghost_end();
     eq_fields_.pressure_potential.set_time_result_changed();
