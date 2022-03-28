@@ -23,25 +23,20 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "fem/dofhandler.hh"
-//#include "fem/fe_values.hh"
-//#include "quadrature/quadrature_lib.hh"
-//#include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
-//#include "io/element_data_cache.hh"
-//#include "mesh/ref_element.hh"
 
 
 /// Holds data of one eval point on patch (index of element and local coordinations).
 struct PatchPointData {
     /// Default constructor
-	PatchPointData() {}
+    PatchPointData() {}
 
     /// Constructor with data mebers initialization
-	PatchPointData(unsigned int elm_idx, arma::vec loc_coords, unsigned int point_idx)
+    PatchPointData(unsigned int elm_idx, arma::vec loc_coords, unsigned int point_idx)
     : elem_idx(elm_idx), local_coords(loc_coords), point_cache_idx(point_idx), i_quad(0), i_quad_point(0) {}
 
     /// Copy constructor
-	PatchPointData(const PatchPointData &other)
+    PatchPointData(const PatchPointData &other)
     : elem_idx(other.elem_idx), local_coords(other.local_coords), point_cache_idx(other.point_cache_idx),
       i_quad(other.i_quad), i_quad_point(other.i_quad_point) {}
 
@@ -50,7 +45,7 @@ struct PatchPointData {
     unsigned int point_cache_idx; ///< Local point time index hold position of point in output element data cache
     unsigned int i_reg;           ///< Index of region (use during patch creating)
     unsigned int i_quad;          ///< Index of quadrature (use during patch creating), i_quad = dim-1
-	unsigned int i_quad_point;    ///< Index of point in quadrature (use during patch creating)
+    unsigned int i_quad_point;    ///< Index of point in quadrature (use during patch creating)
 };
 typedef std::vector<PatchPointData> PatchPointVec;
 
@@ -61,15 +56,15 @@ typedef std::vector<PatchPointData> PatchPointVec;
  * Data is specified by cell, subset index in EvalPoint object and index of point in subset
  */
 struct BulkIntegralPointData {
-	/// Default constructor
-	BulkIntegralPointData() {}
+    /// Default constructor
+    BulkIntegralPointData() {}
 
     /// Constructor with data mebers initialization
-	BulkIntegralPointData(DHCellAccessor dhcell, unsigned int subset_idx, unsigned int point_idx, unsigned int i_p)
+    BulkIntegralPointData(DHCellAccessor dhcell, unsigned int subset_idx, unsigned int point_idx, unsigned int i_p)
     : cell(dhcell), subset_index(subset_idx), point_cache_idx(point_idx), i_point(i_p) {}
 
     /// Copy constructor
-	BulkIntegralPointData(const BulkIntegralPointData &other)
+    BulkIntegralPointData(const BulkIntegralPointData &other)
     : cell(other.cell), subset_index(other.subset_index), point_cache_idx(other.point_cache_idx), i_point(other.i_point) {}
 
     DHCellAccessor cell;          ///< Specified cell (element)
@@ -93,7 +88,7 @@ class GenericAssemblyObserve : public GenericAssemblyBase
 {
 public:
     /// Constructor
-	GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
+    GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : multidim_assembly_(eq_fields, eq_data), bulk_integral_data_(20, 10)
     {
         eval_points_ = std::make_shared<EvalPoints>();
@@ -104,12 +99,12 @@ public:
         return multidim_assembly_;
     }
 
-	/**
-	 * @brief General assemble methods.
-	 *
-	 * Loops through local cells and calls assemble methods of assembly
-	 * object of each cells over space dimension.
-	 */
+    /**
+     * @brief General assemble methods.
+     *
+     * Loops through local cells and calls assemble methods of assembly
+     * object of each cells over space dimension.
+     */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
         eval_points_->clear();
@@ -209,7 +204,6 @@ template <unsigned int dim>
 class AssemblyObserveOutput : public AssemblyBase<dim>
 {
 public:
-    // TODO set used_fields: same as in AssemblyOutputBase
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
 
