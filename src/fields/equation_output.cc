@@ -335,13 +335,6 @@ void EquationOutput::output(TimeStep step)
             }
         }
         if (n_fields>0) {
-            auto & patch_point_data = observe_output_assembly_->patch_point_data();
-            patch_point_data.clear();
-            for(ObservePointAccessor op_acc : observe_ptr->local_range()) {
-                patch_point_data.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords(),
-                        op_acc.loc_point_time_index());
-            }
-
             observe_output_assembly_->assemble(this->dh_);
         }
     }
