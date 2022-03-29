@@ -190,14 +190,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
-        FieldCommon *found_field = field(string(*it));
-        if (found_field->is_multifield()) {
-            for (uint i_comp=0; i_comp<found_field->n_comp(); ++i_comp) {
-                observe_fields_.insert(found_field->full_comp_name(i_comp));
-            }
-        } else {
-            observe_fields_.insert(string(*it));
-        }
+        observe_fields_.insert(string(*it));
     }
 
 }
@@ -332,15 +325,16 @@ void EquationOutput::output(TimeStep step)
     // observe output
     {
         FieldSet used_fields;
-        for(FieldListAccessor f_acc : this->fields_range()) {
-            if ( f_acc.field()->flags().match( FieldFlag::allow_output) ) {
+        uint n_fields = 0;
+        for(FieldCommon * f_acc : this->field_list) {
+            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
                 if (observe_fields_.find(f_acc->name()) != observe_fields_.end()) {
                     f_acc->set_observe_data_cache( observe_ptr );
-                    used_fields += *(f_acc.field());
+                    n_fields++;
                 }
             }
         }
-        if (used_fields.size()>0) {
+        if (n_fields>0) {
             auto & patch_point_data = observe_output_assembly_->patch_point_data();
             patch_point_data.clear();
             for(ObservePointAccessor op_acc : observe_ptr->local_range()) {
@@ -348,10 +342,6 @@ void EquationOutput::output(TimeStep step)
                         op_acc.loc_point_time_index());
             }
 
-            auto mixed_assmbly = observe_output_assembly_->multidim_assembly();
-            mixed_assmbly[1_d]->set_observe_data(used_fields);
-            mixed_assmbly[2_d]->set_observe_data(used_fields);
-            mixed_assmbly[3_d]->set_observe_data(used_fields);
             observe_output_assembly_->assemble(this->dh_);
         }
     }

@@ -60,17 +60,16 @@ struct BulkIntegralPointData {
     BulkIntegralPointData() {}
 
     /// Constructor with data mebers initialization
-    BulkIntegralPointData(DHCellAccessor dhcell, unsigned int subset_idx, unsigned int point_idx, unsigned int i_p)
-    : cell(dhcell), subset_index(subset_idx), point_cache_idx(point_idx), i_point(i_p) {}
+    BulkIntegralPointData(DHCellAccessor dhcell, unsigned int subset_idx, unsigned int point_idx)
+    : cell(dhcell), subset_index(subset_idx), point_cache_idx(point_idx) {}
 
     /// Copy constructor
     BulkIntegralPointData(const BulkIntegralPointData &other)
-    : cell(other.cell), subset_index(other.subset_index), point_cache_idx(other.point_cache_idx), i_point(other.i_point) {}
+    : cell(other.cell), subset_index(other.subset_index), point_cache_idx(other.point_cache_idx) {}
 
     DHCellAccessor cell;          ///< Specified cell (element)
     unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
     unsigned int point_cache_idx; ///< Local point time index hold position of point in output element data cache
-    unsigned int i_point;         ///< Index of point in subset
 };
 
 
@@ -92,6 +91,9 @@ public:
     : multidim_assembly_(eq_fields, eq_data), bulk_integral_data_(20, 10)
     {
         eval_points_ = std::make_shared<EvalPoints>();
+        multidim_assembly_[1_d]->initialize(&element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&element_cache_map_);
     }
 
     /// Getter to set of assembly objects
@@ -174,9 +176,6 @@ private:
             multidim_assembly_[3_d]->set_bulk_integral(bulk_integrals_[2]);
         }
         element_cache_map_.init(eval_points_); // should be made only once
-        multidim_assembly_[1_d]->initialize(&element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&element_cache_map_);
 
         unsigned int i_ep, subset_begin, subset_idx;
         for(auto & p_data : patch_point_data_) {
@@ -184,7 +183,7 @@ private:
         	subset_begin = eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
-            bulk_integral_data_.emplace_back(dh_cell, subset_idx, p_data.point_cache_idx, p_data.i_quad_point);
+            bulk_integral_data_.emplace_back(dh_cell, p_data.i_quad_point, p_data.point_cache_idx);
             element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
         }
         bulk_integral_data_.make_permanent();
@@ -213,6 +212,11 @@ public:
     AssemblyObserveOutput(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         offsets_.resize(1.1 * CacheMapElementNumber::get());
+
+        for (auto observe_field : eq_data_->observe_fields()) {
+            auto found_field = eq_fields_->field(observe_field);
+            used_fields_ += *found_field;
+        }
     }
 
     /// Destructor.
@@ -223,12 +227,6 @@ public:
         this->element_cache_map_ = element_cache_map;
     }
 
-    /// Sets observe output data members (set of used fields).
-    void set_observe_data(const FieldSet &used) {
-    	used_fields_ = FieldSet();
-    	used_fields_ += used;
-    }
-
     /// Assembles the cell integrals for the given dimension.
     inline void assemble_cell_integrals(const RevertableList<BulkIntegralPointData> &bulk_integral_data) {
         unsigned int element_patch_idx, field_value_cache_position, val_idx;
@@ -237,7 +235,7 @@ public:
             if (bulk_integral_data[i].cell.dim() != dim) continue;
             element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
             auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
-            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].i_point);
+            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
             val_idx = bulk_integral_data[i].point_cache_idx;
             this->offsets_[field_value_cache_position] = val_idx;
         }
