@@ -95,6 +95,21 @@ public:
      */
     void output(TimeStep step);
 
+    /// Getter for set of observe fields.
+    inline const std::unordered_set<string> &observe_fields() const {
+        return observe_fields_;
+    }
+
+    /// Getter for OutputTime object.
+    inline std::shared_ptr<OutputTime> output_stream() {
+        return stream_;
+    }
+
+    /// Getter for OutputTime object.
+    inline Mesh *eq_mesh() {
+        return mesh_;
+    }
+
     /// Selects the error control field out of output field set according to input record.
     typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
     
