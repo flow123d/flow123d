@@ -143,6 +143,7 @@ public:
     /// Constructor.
     AssemblyObserveOutput(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 
         for (auto observe_field : eq_data_->observe_fields()) {
