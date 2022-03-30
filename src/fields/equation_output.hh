@@ -37,6 +37,8 @@ template<unsigned int dim> class AssemblyOutputNodeData;
 template<unsigned int dim> class AssemblyObserveOutput;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
+struct PatchPointData;
+typedef std::vector<PatchPointData> PatchPointVec;
 
 
 /**
@@ -113,6 +115,11 @@ public:
     /// Selects the error control field out of output field set according to input record.
     typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
     
+    /// Getter from patch_point_data.
+    inline PatchPointVec &patch_point_data() {
+	    return patch_point_data_;
+    }
+
 private:
     /**
      * Creates output selection from the field set.
@@ -180,6 +187,9 @@ private:
     GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
     GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
     GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly_;
+
+    /// Holds observe data of eval points on patch
+    PatchPointVec patch_point_data_;
 
 };
 
