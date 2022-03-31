@@ -17,6 +17,7 @@
 #include <vector>
 
 
+typedef std::shared_ptr<DarcyMH::EqFields> AssemblyFieldsPtr;
 typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
 
 
@@ -24,9 +25,10 @@ class MortarAssemblyBase {
 public:
     typedef vector<unsigned int> IsecList;
 
-    MortarAssemblyBase(AssemblyDataPtr data)
-    : data_(data),
-      mixed_mesh_(data->mesh->mixed_intersections()),
+    MortarAssemblyBase(AssemblyFieldsPtr eq_fields, AssemblyDataPtr eq_data)
+    : eq_fields_(eq_fields),
+	  eq_data_(eq_data),
+	  mixed_mesh_(eq_data->mesh->mixed_intersections()),
       fix_velocity_flag(false)
     {
 
@@ -44,7 +46,8 @@ public:
     }
 
 protected:
-    AssemblyDataPtr data_;
+    AssemblyFieldsPtr eq_fields_;
+    AssemblyDataPtr eq_data_;
     MixedMeshIntersections &mixed_mesh_;
     LocalSystem loc_system_;
     bool fix_velocity_flag;
@@ -66,7 +69,7 @@ struct IsecData {
 
 class P0_CouplingAssembler :public MortarAssemblyBase {
 public:
-    P0_CouplingAssembler(AssemblyDataPtr data);
+    P0_CouplingAssembler(AssemblyFieldsPtr eq_fields, AssemblyDataPtr eq_data);
     void assembly(const DHCellAccessor& dh_cell);
     void pressure_diff(const DHCellAccessor& dh_cell, double delta);
     void fix_velocity_local(const IsecData & row_ele, const IsecData &col_ele);
@@ -91,8 +94,8 @@ private:
 
 class P1_CouplingAssembler :public MortarAssemblyBase {
 public:
-    P1_CouplingAssembler(AssemblyDataPtr data)
-: MortarAssemblyBase(data),
+    P1_CouplingAssembler(AssemblyFieldsPtr eq_fields, AssemblyDataPtr eq_data)
+: MortarAssemblyBase(eq_fields, eq_data),
       rhs(5),
       dofs(5),
       dirichlet(5)

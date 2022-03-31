@@ -88,7 +88,7 @@ void MH_DofHandler::prepare_parallel() {
 
 
     //ierr = MPI_Barrier(PETSC_COMM_WORLD);
-    //OLD_ASSERT(ierr == 0, "Error in MPI_Barrier.");
+    //ASSERT_PERMANENT(ierr == 0).error("Error in MPI_Barrier.");
 
     // row_4_el will be modified so we make a copy of the array from mesh
     row_4_el = new LongIdx[mesh_->n_elements()];
@@ -216,7 +216,7 @@ unsigned int MH_DofHandler::side_dof(const SideIter side) const {
 
 
 void MH_DofHandler::set_solution( double time, double * solution) {
-	OLD_ASSERT( solution != NULL, "Empty solution.\n");
+	ASSERT_PTR( solution ).error("Empty solution.\n");
     mh_solution = solution;
     time_ = time;
 }

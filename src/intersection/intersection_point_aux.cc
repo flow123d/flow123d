@@ -42,7 +42,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
 
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
-    ASSERT_DBG(M>1 && M<4);
+    ASSERT(M>1 && M<4);
     
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<M>::template interpolate<M-1>(IP.local_bcoords_B(), idx_B);
@@ -80,7 +80,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1
 
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
-    ASSERT_DBG(M == 3);
+    ASSERT(M == 3);
 
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
@@ -111,7 +111,7 @@ IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
 template<unsigned int N, unsigned int M>
 arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementAccessor<3> ele) const
 {
-    ASSERT_DBG(N == ele->dim());
+    ASSERT(N == ele->dim());
     
     arma::vec::fixed< 3  > c;
     c.zeros();

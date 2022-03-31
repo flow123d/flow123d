@@ -25,7 +25,7 @@
 #include "fem/finite_element.hh"                       // for FiniteElement
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT, msg
 
 
 /**

@@ -166,7 +166,7 @@ public:
         if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
             //
             auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
-            ASSERT_EQ_DBG( il->size(), 2);
+            ASSERT_EQ( il->size(), 2);
 
             arma::vec3 diff = (*il)[0].coords(ele) - (*il)[1].coords(ele);
             measure_= arma::norm(diff, 2);

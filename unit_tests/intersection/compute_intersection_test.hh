@@ -71,7 +71,7 @@ void read_files_from_dir(const string &dir_name,
         }
         closedir (dir);
     } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
+        ASSERT_PERMANENT(0).error("Could not open directory with testing meshes.");
     }
     
     if(sort_filenames)

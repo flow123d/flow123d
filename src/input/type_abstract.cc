@@ -95,7 +95,7 @@ TypeBase::TypeHash Abstract::content_hash() const
 
 
 Abstract & Abstract::allow_auto_conversion(const string &type_default) {
-	ASSERT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
+	ASSERT_PERMANENT(!child_data_->closed_)(type_name()).error("Can not specify default value for TYPE key as the Abstract is closed.");
     child_data_->selection_default_=Default("\""+type_default+"\""); // default record is closed; other constructor creates the zero item
     return *this;
 }

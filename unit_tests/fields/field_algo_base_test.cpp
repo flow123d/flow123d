@@ -650,10 +650,12 @@ TEST(Field, init_from_input) {
 
 
 
-    sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
-    init_conc.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity.set_time(TimeGovernor().step(), LimitSide::right);
-    conductivity_3d.set_time(TimeGovernor().step(), LimitSide::right);
+    auto step = TimeGovernor().step();
+    step.use_fparser_ = true;
+    sorption_type.set_time(step, LimitSide::right);
+    init_conc.set_time(step, LimitSide::right);
+    conductivity.set_time(step, LimitSide::right);
+    conductivity_3d.set_time(step, LimitSide::right);
 
     {	
 
@@ -861,7 +863,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(12)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->bc_mesh()->element_accessor(3)) );
 
     }
 

@@ -19,7 +19,7 @@
 #define FUNCTORBASE_IMPL_H
 
 #include "tools/functors.hh"
-#include "system/global_defs.h"
+#include "system/asserts.hh"
 
 /**************************************** FunctorCommon *****************************************/
 template<class Type>
@@ -59,7 +59,7 @@ void FunctorCommon<Type>::set_param_from_func(FunctorCommon<TType>* func)
 template<class Type>
 double FunctorCommon<Type>::param(unsigned int param_name)
 {
-  OLD_ASSERT(param_name < param_.size(),"Parameter of the functor was not set.");
+  ASSERT_PERMANENT_LT(param_name, param_.size()).error("Parameter of the functor was not set.");
   
   return param_[param_name];
 }

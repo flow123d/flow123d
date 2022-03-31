@@ -75,6 +75,13 @@ TEST(FieldFormula, read_from_input) {
     point_2(0)=2.0; point_2(1)=4.0; point_2(2)=6.0;
     ElementAccessor<3> elm;
 
+    TimeGovernor tg(0.0, 1.0);
+    auto step_0 = tg.step();
+    step_0.use_fparser_ = true;
+    tg.next_time();
+    auto step_1 = tg.step();
+    step_1.use_fparser_ = true;
+
 
     UnitSI unit_conc = UnitSI().kg().m(-3);
     FieldAlgoBaseInitData init_data_conc("init_conc", 3, unit_conc);
@@ -82,7 +89,7 @@ TEST(FieldFormula, read_from_input) {
     {
         arma::vec result;
 
-        conc->set_time(0.0);
+        conc->set_time(step_0);
         result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( point_1(0)*point_1(1),    result[1]);
@@ -93,7 +100,7 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( point_2(0)*point_2(1),    result[1]);
         EXPECT_DOUBLE_EQ( point_2(1),               result[2]);
 
-        conc->set_time(1.0);
+        conc->set_time(step_1);
         result = conc->value( point_1, elm);
         EXPECT_DOUBLE_EQ( point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( point_1(0)*point_1(1),    result[1]);
@@ -105,7 +112,7 @@ TEST(FieldFormula, read_from_input) {
         arma::vec result;
         double c = 1000.0; // multiplicative coefficient
 
-        conc_unit_conv->set_time(0.0);
+        conc_unit_conv->set_time(step_0);
         result = conc_unit_conv->value( point_1, elm);
         EXPECT_DOUBLE_EQ( c*point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( c*point_1(0)*point_1(1),    result[1]);
@@ -116,7 +123,7 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( c*point_2(0)*point_2(1),    result[1]);
         EXPECT_DOUBLE_EQ( c*point_2(1),               result[2]);
 
-        conc_unit_conv->set_time(1.0);
+        conc_unit_conv->set_time(step_1);
         result = conc_unit_conv->value( point_1, elm);
         EXPECT_DOUBLE_EQ( c*point_1(0) ,              result[0]);
         EXPECT_DOUBLE_EQ( c*point_1(0)*point_1(1),    result[1]);
@@ -125,7 +132,7 @@ TEST(FieldFormula, read_from_input) {
 
     FieldAlgoBaseInitData init_data_conductivity("conductivity_3d", 0, UnitSI::dimensionless());
     auto cond=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("conductivity_3d"), init_data_conductivity);
-    cond->set_time(0.0);
+    cond->set_time(step_0);
     {
         arma::mat::fixed<3,3> result;
         double x,y,base;
@@ -169,7 +176,7 @@ TEST(FieldFormula, read_from_input) {
     	reader->read_raw_mesh(mesh);
 
     	depth->set_mesh( const_cast<const Mesh *>(mesh), true );
-    	depth->set_time(0.0);
+    	depth->set_time(step_0);
 
         arma::vec3 result;
         Space<3>::Point point;
@@ -222,8 +229,14 @@ TEST(FieldFormula, set_time) {
 
     {
         auto field=VectorField::function_factory(*it, init_data);
-        EXPECT_TRUE( field->set_time(3.0) );
-        EXPECT_FALSE( field->set_time(4.0) );
+        TimeGovernor tg(3.0, 1.0);
+        auto step0 = tg.step();
+        step0.use_fparser_ = true;
+        EXPECT_TRUE( field->set_time(step0) );
+        tg.next_time();
+        auto step1 = tg.step();
+        step1.use_fparser_ = true;
+        EXPECT_FALSE( field->set_time(step1) );
     }
     ++it;
 
@@ -236,8 +249,14 @@ TEST(FieldFormula, set_time) {
 
     {
         auto field=VectorField::function_factory(*it, init_data);
-        EXPECT_TRUE( field->set_time(0.0) );
-        EXPECT_FALSE( field->set_time(2.0) );
+        TimeGovernor tg(0.0, 2.0);
+        auto step0 = tg.step();
+        step0.use_fparser_ = true;
+        EXPECT_TRUE( field->set_time(step0) );
+        tg.next_time();
+        auto step1 = tg.step();
+        step1.use_fparser_ = true;
+        EXPECT_FALSE( field->set_time(step1) );
     }
 
 }

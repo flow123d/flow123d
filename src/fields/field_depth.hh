@@ -47,7 +47,7 @@ public:
     }
 
     IT::Instance get_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldDepth");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldDepth");
 
         IT::Abstract abstract = IT::Abstract();
         IT::Instance inst = IT::Instance( abstract, std::vector<IT::TypeBase::ParameterPair>() );
@@ -55,14 +55,14 @@ public:
     }
 
     IT::Array get_multifield_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldDepth");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldDepth");
 
         IT::Array arr = IT::Array( IT::Integer() );
         return arr;
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -74,15 +74,15 @@ public:
     }
 
     void copy_from(FMT_UNUSED const FieldCommon & other) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpaceFlags type) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     FieldResult field_result(FMT_UNUSED RegionSet region_set) const override {
@@ -155,7 +155,6 @@ private:
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
 
-    const Mesh *mesh_;                  ///< Pointer to the mesh.
     FieldCoords * field_coords_;        ///< Pointer to coordinates field.
 };
 

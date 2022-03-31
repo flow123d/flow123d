@@ -238,7 +238,7 @@ private:
     }
 
     inline std::vector<int> sort(std::vector<Permutee> &refs, std::vector<unsigned int> &mesh_perm) {
-    	ASSERT_DBG(refs.size() <= mesh_perm.size());
+    	ASSERT(refs.size() <= mesh_perm.size());
         std::sort(refs.begin(), refs.end());
         std::vector<int> mesh_ids;
         mesh_ids.reserve(refs.size());

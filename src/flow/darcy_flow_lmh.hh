@@ -65,6 +65,7 @@ class Intersection;
 class LinSys;
 // class LinSys_BDDC;
 class LocalSystem;
+class LocalConstraint;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -73,9 +74,10 @@ namespace Input {
 		class Selection;
 	}
 }
+template<unsigned int dim> class ReadInitCondAssemblyLMH;
+class GenericAssemblyBase;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
-template<int spacedim, class Value> class FieldAddPotential;
-template<int spacedim, class Value> class FieldDivide;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -146,11 +148,20 @@ public:
     * This is the only dependence between DarcyMH and DarcyLMH classes.
     * It is also base class of RichardsLMH::EqData.
     * */
+    class EqFields : public DarcyMH::EqFields {
+    public:
+
+    	EqFields();
+    };
+
     class EqData : public DarcyMH::EqData {
     public:
         
         EqData();
         
+        void init();     ///< Initialize vectors, ...
+        void reset();    ///< Reset data members
+
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
         
         // Propagate test for the time term to the assembly.
@@ -166,6 +177,31 @@ public:
         VectorMPI p_edge_solution_previous_time; //< 2. Schur complement previous solution (time)
 
         std::map<LongIdx, LocalSystem> seepage_bc_systems;
+
+        /// Shared Balance object
+    	std::shared_ptr<Balance> balance_;
+
+    	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
+
+    	/// Following data members are stored in vectors, one item for every cell.
+//        /** TODO: Investigate why the hell do we need this flag.
+//        *  If removed, it does not break any of the integration tests,
+//        * however it must influence the Dirichlet rows in matrix.
+//        */
+//        std::vector<unsigned int> dirichlet_edge;
+
+        std::vector<LocalSystem> loc_system_;
+        std::vector<LocalConstraint> loc_constraint_;
+        std::vector<arma::vec> postprocess_solution_;
+        std::array<std::vector<unsigned int>, 3> loc_side_dofs;
+        std::array<std::vector<unsigned int>, 3> loc_edge_dofs;
+        std::array<unsigned int, 3> loc_ele_dof;
+
+//        // std::shared_ptr<MortarAssemblyBase> mortar_assembly;
+
+        std::vector<bool> save_local_system_;       ///< Flag for saving the local system. Currently used only in case of seepage BC.
+        std::vector<bool> bc_fluxes_reconstruted;   ///< Flag indicating whether the fluxes for seepage BC has been reconstructed already.
+        std::array<unsigned int, 3> schur_offset_;  ///< Index offset in the local system for the Schur complement (of dim = 1,2,3).
     };
 
     /// Selection for enum MortarMethod.
@@ -194,16 +230,18 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
+    virtual double solved_time() override;
 
-    EqData &data() { return *data_; }
+    inline EqFields &eq_fields() { return *eq_fields_; }
+    inline EqData &eq_data() { return *eq_data_; }
 
     /// Sets external storarivity field (coupling with other equation).
     void set_extra_storativity(const Field<3, FieldValue<3>::Scalar> &extra_stor)
-    { data_->extra_storativity = extra_stor; }
+    { eq_fields_->extra_storativity = extra_stor; }
 
     /// Sets external source field (coupling with other equation).
     void set_extra_source(const Field<3, FieldValue<3>::Scalar> &extra_src)
-    { data_->extra_source = extra_src; }
+    { eq_fields_->extra_source = extra_src; }
 
     virtual ~DarcyLMH() override;
 
@@ -232,14 +270,14 @@ protected:
      * For the LMH scheme we have to be able to save edge pressures in order to
      * restart simulation or use results of one simulation as initial condition for other one.
      */
-    void read_initial_condition();
+//    void read_initial_condition();
     
     /**
      * In some circumstances, the intial condition must be processed.
      * It is called at the end of @p read_initial_condition().
      * This is used in Richards equation due the update of water content.
      */
-    virtual void initial_condition_postprocess();
+//    virtual void initial_condition_postprocess();
     
     /**
      * Allocates linear system matrix for MH.
@@ -257,9 +295,9 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(MultidimAssembly& assembler);
+//    void assembly_mh_matrix(MultidimAssembly& assembler);
     
-    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
+//    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
 
     /**
      * Assembly or update whole linear system.
@@ -272,7 +310,7 @@ protected:
      * TODO: Introduce Equation::compute_residual() updating
      * residual field, standard part of EqData.
      */
-    virtual double solution_precision() const;
+//    virtual double solution_precision() const;
     
     /// Print darcy flow matrix in matlab format into a file.
     void print_matlab_matrix(string matlab_file);
@@ -282,7 +320,13 @@ protected:
 
     /// Getter for the linear system of the 2. Schur complement.
     LinSys& lin_sys_schur()
-    { return *(data_->lin_sys_schur); }
+    { return *(eq_data_->lin_sys_schur); }
+
+    /// Create and initialize assembly objects
+    virtual void initialize_asm();
+
+    /// Call assemble of read_init_cond_assembly_
+    virtual void read_init_cond_asm();
 
     std::shared_ptr<Balance> balance_;
 
@@ -296,17 +340,22 @@ protected:
 	double tolerance_;
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
-	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
-	std::shared_ptr<EqData> data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
+
 
     friend class DarcyFlowMHOutput;
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+    GenericAssemblyBase * mh_matrix_assembly_;
+    GenericAssemblyBase * reconstruct_schur_assembly_;
 private:
-  /// Registrar of class to factory
-  static const int registrar;
+    /// Registrar of class to factory
+    static const int registrar;
 };
 
 #endif  //DARCY_FLOW_LMH_HH

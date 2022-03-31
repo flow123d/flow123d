@@ -169,11 +169,13 @@ function image_exist() {
 
 
 # Will pull all the images to newest
-function update_images() {
-  for image in $flow123d_images
-  do
-    docker pull flow123d/$image:$image_tag
-  done
+function update_image() {
+    pull_image=$1
+    autopull=$2
+    
+    if [[ $autopull == "1" ]]; then
+      docker pull flow123d/$pull_image:$image_tag
+    fi
 }
 
 
@@ -354,7 +356,7 @@ fi
 # set flow123d_images if empty
 if [ -z "$flow123d_images" ]
 then
-flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"
+flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel flow-dev-${image_env}-profile"
 fi
 
 
@@ -394,28 +396,25 @@ case $action in
     dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
   run)
-    if [[ $autopull == "1" ]]; then
-      update_images
-    fi
+    update_image $base_image $autopull
     dbg2 "Executing flow123d with args $rest"
     dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image "$REL_FLOW_DIR/bin/flow123d" "$rest"
   ;;
   exec)
-    if [[ $autopull == "1" ]]; then
-      update_images
-    fi
+    update_image $base_image $autopull
     dbg2 "Executing command $rest"
     dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image "$rest"
   ;;
   shell)
-    if [[ $autopull == "1" ]]; then
-      update_images
-    fi
+    update_image $base_image $autopull
     dbg2 "Entering shell"
     dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
   ;;
   update)
-    update_images
+    for image in $flow123d_images
+    do
+        update_image $image 1
+    done
   ;;
   clean)
     remove_old

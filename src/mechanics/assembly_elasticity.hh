@@ -125,7 +125,7 @@ public:
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
@@ -172,7 +172,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
@@ -302,6 +302,7 @@ public:
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->bc_displacement;
         this->used_fields_ += eq_fields_->bc_traction;
+        this->used_fields_ += eq_fields_->bc_stress;
     }
 
     /// Destructor.
@@ -384,7 +385,7 @@ public:
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
@@ -466,7 +467,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
@@ -635,7 +636,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         normal_displacement_ = 0;
         normal_stress_.zeros();

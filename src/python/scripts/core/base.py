@@ -452,6 +452,7 @@ class Paths(object):
         paths = [cls.join(path, p) for p in os.listdir(path)]
         return sorted(cls.filter(paths, filters))
 
+
     @classmethod
     def walk(cls, path, filters=()):
         paths = list()
@@ -471,6 +472,7 @@ class Paths(object):
 
     @classmethod
     def match(cls, paths, filters):
+        """ Paths that match any of the given filters."""
         result = list()
         for p in paths:
             for f in filters:
@@ -700,7 +702,7 @@ class TestPrinterStatus(object):
         result = '| wrong result: '
         for t in thread.comp.threads:
             if t.returncode != 0:
-                result += '\n{:18s}FAILED comprasion in {}'.format('', t.name)
+                result += '\n{:18s}FAILED comparison in {}'.format('', t.name)
         return result
 
     @classmethod

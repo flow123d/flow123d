@@ -62,6 +62,143 @@
 
 namespace IT = Input::Type;
 
+const unsigned int MeshBase::undef_idx;
+
+MeshBase::MeshBase()
+:   nodes_(make_shared<Armor::Array<double>>(3, 1, 0)),
+    node_ids_(make_shared<BidirectionalMap<int>>()),
+    row_4_el(nullptr),
+    el_4_loc(nullptr),
+    el_ds(nullptr),
+    duplicate_nodes_(nullptr),
+    region_db_(make_shared<RegionDB>())
+{
+        // Initialize numbering of nodes on sides.
+    // This is temporary solution, until class Element is templated
+    // by dimension. Then we can replace Mesh::side_nodes by
+    // RefElement<dim>::side_nodes.
+
+    // indices of side nodes in element node array
+    // Currently this is made ad libitum
+    // with some ordering here we can get sides with correct orientation.
+    // This speedup normal calculation.
+
+    side_nodes.resize(3); // three side dimensions
+    for(int dim=0; dim < 3; dim++) {
+        side_nodes[dim].resize(dim+2); // number of sides
+        for(int i_side=0; i_side < dim+2; i_side++)
+            side_nodes[dim][i_side].resize(dim+1);
+    }
+
+    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
+    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
+            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
+
+    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
+                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
+
+    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
+        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
+        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
+
+    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
+}
+
+MeshBase::~MeshBase()
+{
+    for(EdgeData &edg : this->edges)
+        if (edg.side_) delete[] edg.side_;
+
+    for (unsigned int idx=0; idx < element_vec_.size(); idx++) {
+    	Element *ele=&(element_vec_[idx]);
+        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
+    }
+
+    if (row_4_el != nullptr) delete[] row_4_el;
+    if (el_4_loc != nullptr) delete[] el_4_loc;
+    if (el_ds != nullptr) delete el_ds;
+    if (duplicate_nodes_ != nullptr) delete duplicate_nodes_;
+}
+
+Range<Edge> MeshBase::edge_range() const {
+	auto bgn_it = make_iter<Edge>( Edge(this, 0) );
+	auto end_it = make_iter<Edge>( Edge(this, edges.size()) );
+    return Range<Edge>(bgn_it, end_it);
+}
+
+Edge MeshBase::edge(uint edge_idx) const
+{
+    ASSERT_LT(edge_idx, edges.size());
+    return Edge(this, edge_idx);
+}
+
+unsigned int MeshBase::n_vb_neighbours() const
+{ 
+    return vb_neighbours_.size();
+}
+
+//void Mesh::array_sort(std::array<uint, 4> &nodes) {
+//    // TODO: use templated insert sort with recursion over length of array so that compiler can
+//    // optimize for the small array size.
+//
+//    std::sort(nodes.begin(), nodes.end());
+//}
+
+std::array<std::pair<uint,uint>, 6> _comparisons = { {{0,1},{0,2},{0,3},{1,2},{1,3},{2,3}} };
+
+
+void MeshBase::canonical_faces() {
+	// Fill mappings from canonical element nodes to original
+	// for individual permitations.
+	// Permutations are numbered by the bifield of all six _comparisons.
+	element_nodes_original_[0] = {0,1,2,3};
+	element_nodes_original_[1] = {0,1,3,2};
+	element_nodes_original_[4] = {0,2,1,3};
+	element_nodes_original_[6] = {0,2,3,1};
+	element_nodes_original_[3] = {0,3,1,2};
+	element_nodes_original_[7] = {0,3,2,1};
+	element_nodes_original_[32] = {1,0,2,3};
+	element_nodes_original_[33] = {1,0,3,2};
+	element_nodes_original_[48] = {1,2,0,3};
+	element_nodes_original_[56] = {1,2,3,0};
+	element_nodes_original_[41] = {1,3,0,2};
+	element_nodes_original_[57] = {1,3,2,0};
+	element_nodes_original_[20] = {2,0,1,3};
+	element_nodes_original_[22] = {2,0,3,1};
+	element_nodes_original_[52] = {2,1,0,3};
+	element_nodes_original_[60] = {2,1,3,0};
+	element_nodes_original_[30] = {2,3,0,1};
+	element_nodes_original_[62] = {2,3,1,0};
+	element_nodes_original_[11] = {3,0,1,2};
+	element_nodes_original_[15] = {3,0,2,1};
+	element_nodes_original_[43] = {3,1,0,2};
+	element_nodes_original_[59] = {3,1,2,0};
+	element_nodes_original_[31] = {3,2,0,1};
+	element_nodes_original_[63] = {3,2,1,0};
+
+
+    // element_vec_ still contains both bulk and boundary elements
+    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
+        Element &ele = element_vec_[i_el];
+    	uint cmp_bits = 0;
+        for(uint i=0; i<6; i++) {
+    		cmp_bits <<=1;
+    		cmp_bits += (ele.nodes_[_comparisons[i].first] > ele.nodes_[_comparisons[i].second]);
+    	}
+        ele.permutation_ = cmp_bits;
+        std::sort(ele.nodes_.begin(), ele.nodes_.end());
+    }
+
+    if (bc_mesh() != nullptr) bc_mesh()->canonical_faces();
+
+}
+
+
+
+
+
 const Input::Type::Selection & Mesh::get_input_intersection_variant() {
     return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
         .add_value(Mesh::BIHsearch, "BIHsearch",
@@ -100,34 +237,22 @@ const IT::Record & Mesh::get_input_type() {
 }
 
 Mesh::Mesh()
-: tree(nullptr),
-  comm_(MPI_COMM_WORLD),
-  bulk_size_(0),
-  nodes_(3, 1, 0),
-  row_4_el(nullptr),
-  el_4_loc(nullptr),
-  el_ds(nullptr),
+: comm_(MPI_COMM_WORLD),
   node_4_loc_(nullptr),
   node_ds_(nullptr),  
-  bc_mesh_(nullptr)
+  bc_mesh_(new BCMesh(this))
   
 {init();}
 
 
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
-: tree(nullptr),
-  optimize_memory_locality(true),
+: optimize_memory_locality(true),
   in_record_(in_record),
   comm_(com),
-  bulk_size_(0),
-  nodes_(3, 1, 0),
-  row_4_el(nullptr),
-  el_4_loc(nullptr),
-  el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  bc_mesh_(nullptr)
+  bc_mesh_(new BCMesh(this))
 {
 
 	init();
@@ -135,18 +260,12 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 
 
 Mesh::Mesh(Mesh &other)
-  : tree(nullptr),
-  optimize_memory_locality(other.optimize_memory_locality),
+  : optimize_memory_locality(other.optimize_memory_locality),
   in_record_(other.in_record_),
   comm_(other.comm_),
-  bulk_size_(0),
-  nodes_(3, 1, 0),
-  row_4_el(nullptr),
-  el_4_loc(nullptr),
-  el_ds(nullptr),
   node_4_loc_(nullptr),
   node_ds_(nullptr),
-  bc_mesh_(nullptr)
+  bc_mesh_(new BCMesh(this))
 {
     init();
 }
@@ -176,62 +295,13 @@ void Mesh::init()
     n_insides = NDEF;
     n_exsides = NDEF;
     n_sides_ = NDEF;
-
-    for (int d=0; d<3; d++) max_edge_sides_[d] = 0;
-
-    // Initialize numbering of nodes on sides.
-    // This is temporary solution, until class Element is templated
-    // by dimension. Then we can replace Mesh::side_nodes by
-    // RefElement<dim>::side_nodes.
-
-    // indices of side nodes in element node array
-    // Currently this is made ad libitum
-    // with some ordering here we can get sides with correct orientation.
-    // This speedup normal calculation.
-
-    side_nodes.resize(3); // three side dimensions
-    for(int dim=0; dim < 3; dim++) {
-        side_nodes[dim].resize(dim+2); // number of sides
-        for(int i_side=0; i_side < dim+2; i_side++)
-            side_nodes[dim][i_side].resize(dim+1);
-    }
-
-    for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
-    	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
-            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
-
-    for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
-        	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
-                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
-
-    for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
-        	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
-        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
 }
 
 
 Mesh::~Mesh() {
-    for(EdgeData &edg : this->edges)
-        if (edg.side_) delete[] edg.side_;
-
-    for (unsigned int idx=0; idx < bulk_size_; idx++) {
-    	Element *ele=&(element_vec_[idx]);
-        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
-        if (ele->neigh_vb) delete[] ele->neigh_vb;
-    }
-
-    for(unsigned int idx=bulk_size_; idx < element_vec_.size(); idx++) {
-        Element *ele=&(element_vec_[idx]);
-        if (ele->boundary_idx_) delete[] ele->boundary_idx_;
-    }
-
-    if (row_4_el != nullptr) delete[] row_4_el;
-    if (el_4_loc != nullptr) delete[] el_4_loc;
-    if (el_ds != nullptr) delete el_ds;
     if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (node_ds_ != nullptr) delete node_ds_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
-    if (tree != nullptr) delete tree;
 }
 
 
@@ -244,10 +314,6 @@ unsigned int Mesh::n_sides() const
     return n_sides_;
 }
 
-unsigned int Mesh::n_vb_neighbours() const {
-     return vb_neighbours_.size();
- }
-
 
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
@@ -259,15 +325,9 @@ unsigned int Mesh::n_corners() {
     return count;
 }
 
-Edge Mesh::edge(uint edge_idx) const
-{
-    ASSERT_LT_DBG(edge_idx, edges.size());
-    return Edge(this, edge_idx);
-}
-
 Boundary Mesh::boundary(uint bc_idx) const
 {
-    ASSERT_LT_DBG(bc_idx, boundary_.size());
+    ASSERT_LT(bc_idx, boundary_.size());
     return Boundary(&boundary_[bc_idx]);
 }
 
@@ -290,7 +350,7 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
     if(map.size() > 0){
         Element &ele = element_vec_[ elem_index(map.begin()->first) ];
         dim_to_check = ele.dim();
-        reg_name = region_db_.find_id(map.begin()->second).label();
+        reg_name = region_db_->find_id(map.begin()->second).label();
     }
 
 	for (auto elem_to_region : map) {
@@ -301,8 +361,8 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
                     << EI_DimOther(ele.dim()) << EI_ElemId(elem_to_region.first) );
         }
 
-		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
-		region_db_.mark_used_region(ele.region_idx_.idx());
+		ele.region_idx_ = region_db_->get_region( elem_to_region.second, ele.dim() );
+		region_db_->mark_used_region(ele.region_idx_.idx());
 	}
 }
 
@@ -315,8 +375,8 @@ void Mesh::check_mesh_on_read() {
         // element quality
     	double quality = ele.quality_measure_smooth();
     	if (quality < 0) {
-    	    ASSERT_LT_DBG(ele.jacobian_S3(), 0);
-    	    element_vec_[ele.mesh_idx()].inverted = true;
+    	    ASSERT_LT(ele.jacobian_S3(), 0);
+    	    element_vec_[ele.idx()].inverted = true;
     	    quality = -quality;
     	}
     	if (quality < 4*std::numeric_limits<double>::epsilon())
@@ -333,7 +393,7 @@ void Mesh::check_mesh_on_read() {
 
     // possibly build new node ids map
     BidirectionalMap<int> new_node_ids_;
-    new_node_ids_.reserve(node_ids_.size());
+    new_node_ids_.reserve(node_ids_->size());
 
     // remove unused nodes from the mesh
     uint inode_new = 0;
@@ -348,8 +408,8 @@ void Mesh::check_mesh_on_read() {
             nodes_new_idx[inode] = inode_new;
             
             // possibly move the nodes
-            nodes_.vec<3>(inode_new) = nodes_.vec<3>(inode);
-            new_node_ids_.add_item(node_ids_[inode]);
+            nodes_->vec<3>(inode_new) = nodes_->vec<3>(inode);
+            new_node_ids_.add_item((*node_ids_)[inode]);
 
             inode_new++;
         }
@@ -364,15 +424,15 @@ void Mesh::check_mesh_on_read() {
             << print_var(n_nodes_new) << print_var(nodes_new_idx.size()) << "\n";
 
         // throw away unused nodes
-        nodes_.resize(n_nodes_new);
-        node_ids_ = new_node_ids_;
+        nodes_->resize(n_nodes_new);
+        *node_ids_ = new_node_ids_;
 
         // update node-element numbering
         for (auto ele : this->elements_range()) {
             for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
                 uint inode_orig = ele->node_idx(ele_node);
                 uint inode = nodes_new_idx[inode_orig];
-                ASSERT_DBG(inode != undef_idx);
+                ASSERT(inode != undef_idx);
                 const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
             }
         }
@@ -380,21 +440,6 @@ void Mesh::check_mesh_on_read() {
 }
 
 
-//void Mesh::array_sort(std::array<uint, 4> &nodes) {
-//    // TODO: use templated insert sort with recursion over length of array so that compiler can
-//    // optimize for the small array size.
-//
-//    std::sort(nodes.begin(), nodes.end());
-//}
-
-void Mesh::canonical_faces() {
-    // element_vec_ still contains both bulk and boundary elements
-    for (uint i_el=0; i_el < element_vec_.size(); i_el++) {
-        Element &ele = element_vec_[i_el];
-        std::sort(ele.nodes_.begin(), ele.nodes_.end());
-    }
-
-}
 
 void Mesh::setup_topology() {
     if (optimize_memory_locality) {
@@ -413,7 +458,7 @@ void Mesh::setup_topology() {
     element_to_neigh_vb();
     count_side_types();
     
-    tree = new DuplicateNodes(this);
+    this->duplicate_nodes_ = new DuplicateNodes(this);
 
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
@@ -423,6 +468,8 @@ void Mesh::setup_topology() {
     for (auto ele : this->elements_range())
         id_4_old[i++] = ele.idx();
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
+    bc_mesh_->init_distribution();
+    bc_mesh_->duplicate_nodes_ = new DuplicateNodes(bc_mesh_);
 
     delete[] id_4_old;
     
@@ -443,25 +490,30 @@ void Mesh::optimize() {
 
 
 void Mesh::sort_permuted_nodes_elements(std::vector<int> new_node_ids, std::vector<int> new_elem_ids) {
-    BidirectionalMap<int> node_ids_backup = this->node_ids_;
-    this->node_ids_.clear();
-    this->node_ids_.reserve(this->n_nodes());
-    Armor::Array<double> nodes_backup = this->nodes_;
+    BidirectionalMap<int> node_ids_backup = *this->node_ids_;
+    this->node_ids_->clear();
+    this->node_ids_->reserve(this->n_nodes());
+    Armor::Array<double> nodes_backup = *this->nodes_;
     for (uint i = 0; i < this->element_vec_.size(); ++i) {
         for (uint j = 0; j < this->element_vec_[i].dim() + 1; ++j) {
             this->element_vec_[i].nodes_[j] = this->node_permutation_[this->element_vec_[i].nodes_[j]];
         }
     }
+    for (uint i = 0; i < bc_mesh_->n_elements(); ++i) {
+        for (uint j = 0; j < bc_mesh_->element(i).dim() + 1; ++j) {
+            bc_mesh_->element_vec_[i].nodes_[j] = this->node_permutation_[bc_mesh_->element_vec_[i].nodes_[j]];
+        }
+    }
     for (uint i = 0; i < this->n_nodes(); ++i) {
-    	this->nodes_.set(node_permutation_[i]) = nodes_backup.vec<3>(i);
-    	this->node_ids_.add_item( node_ids_backup[new_node_ids[i]] );
+    	this->nodes_->set(node_permutation_[i]) = nodes_backup.vec<3>(i);
+    	this->node_ids_->add_item( node_ids_backup[new_node_ids[i]] );
     }
 
     BidirectionalMap<int> elem_ids_backup = this->element_ids_;
     this->element_ids_.clear();
-    this->element_ids_.reserve(bulk_size_);
+    this->element_ids_.reserve(element_vec_.size());
     std::vector<Element> elements_backup = this->element_vec_;
-    for (uint i = 0; i < bulk_size_; ++i) {
+    for (uint i = 0; i < element_vec_.size(); ++i) {
         this->element_vec_[elem_permutation_[i]] = elements_backup[i];
     	this->element_ids_.add_item( elem_ids_backup[new_elem_ids[i]] );
     }
@@ -474,16 +526,17 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-	for (auto ele : this->elements_range())
+	for (auto ele : this->elements_range()) {
         for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
         }
+	}
 }
 
 
 
-void Mesh::create_node_element_lists() {
+void MeshBase::create_node_element_lists() {
     // for each node we make a list of elements that use this node
     node_elements_.resize( this->n_nodes() );
 
@@ -496,7 +549,7 @@ void Mesh::create_node_element_lists() {
 }
 
 
-void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
+void MeshBase::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
 {
 	if (node_elements_.size() == 0) {
 		this->create_node_element_lists();
@@ -528,7 +581,7 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
 }
 
 
-bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx) {
+bool MeshBase::find_lower_dim_element( vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx) {
     bool is_neighbour = false;
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
@@ -550,7 +603,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
     return is_neighbour;
 }
 
-bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
+bool MeshBase::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
     unsigned int ni=0;
     while ( ni < si->n_nodes()
@@ -569,9 +622,6 @@ bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
 
 void Mesh::make_neighbours_and_edges()
 {
-	ASSERT(bc_element_tmp_.size()==0)
-			.error("Temporary structure of boundary element data is not empty. Did you call create_boundary_elements?");
-
     Neighbour neighbour;
     EdgeData *edg = nullptr;
     unsigned int ngh_element_idx;
@@ -588,9 +638,9 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( unsigned int i=bulk_size_; i<element_vec_.size(); ++i) {
+	for( unsigned int i=0; i<bc_mesh()->n_elements(); ++i) {
 
-		ElementAccessor<3> bc_ele = this->element_accessor(i);
+		ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
 		ASSERT(bc_ele.region().is_boundary());
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
@@ -628,14 +678,14 @@ void Mesh::make_neighbours_and_edges()
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx(ecs) != undef_idx) {
-                        	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                        	ASSERT_PTR(elem->boundary_idx_).error("Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
-                                    << EI_ElemLast(this->find_elem_id(last_bc_ele_idx))
-                                    << EI_RegLast(this->element_accessor(last_bc_ele_idx).region().label())
-                                    << EI_ElemNew(this->find_elem_id(new_bc_ele_idx))
-                                    << EI_RegNew(this->element_accessor(new_bc_ele_idx).region().label())
+                                    << EI_ElemLast(bc_mesh_->find_elem_id(last_bc_ele_idx))
+                                    << EI_RegLast(bc_mesh_->element_accessor(last_bc_ele_idx).region().label())
+                                    << EI_ElemNew(bc_mesh_->find_elem_id(new_bc_ele_idx))
+                                    << EI_RegNew(bc_mesh_->element_accessor(new_bc_ele_idx).region().label())
                                     );
                         }
                         element_vec_[*isect].edge_idx_[ecs] = last_edge_idx;
@@ -651,12 +701,11 @@ void Mesh::make_neighbours_and_edges()
                     }
                 }
             }
-
         }
 
 	}
 	// Now we go through all element sides and create edges and neighbours
-	unsigned int new_bc_elem_idx = element_vec_.size();  //Mesh_idx of new boundary element generated in following block
+    unsigned int new_bc_elem_idx = bc_mesh_->n_elements();  //Mesh_idx of new boundary element generated in following block
 	for (auto e : this->elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
@@ -703,14 +752,14 @@ void Mesh::make_neighbours_and_edges()
                     elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    Element * bc_ele = add_element_to_vector(-bdr_idx);
-                    bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
-                    region_db_.mark_used_region( bc_ele->region_idx_.idx() );
+                    Element * bc_ele = add_element_to_vector(-bdr_idx, true);
+                    bc_ele->init(e->dim()-1, region_db_->implicit_boundary_region() );
+                    region_db_->mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = new_bc_elem_idx; //elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = new_bc_elem_idx; //bc_mesh()->elem_index(-bdr_idx);
                     bdr.mesh_=this;
                     new_bc_elem_idx++;
 
@@ -741,9 +790,9 @@ void Mesh::make_neighbours_and_edges()
                             vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                         } else {
                             // connect the side to the edge, and side to the edge
-                            ASSERT_PTR_DBG(edg);
+                            ASSERT_PTR(edg);
                             edg->side_[ edg->n_sides++ ] = si;
-                            ASSERT_DBG(last_edge_idx != undef_idx);
+                            ASSERT(last_edge_idx != undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
@@ -752,7 +801,7 @@ void Mesh::make_neighbours_and_edges()
             } // connected elements
 
             if (! is_neighbour)
-				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.index())(s).error("Missing edge sides.");
+				ASSERT_EQ( (unsigned int) edg->n_sides, intersection_list.size())(e.input_id())(s).error("Missing edge sides.");
 		} // for element sides
 	}   // for elements
 
@@ -769,14 +818,14 @@ void Mesh::element_to_neigh_vb()
 
 	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
-	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
+	for (auto ele : elements_range())
 		ele->n_neighs_vb_ =0;
 
     // count vb neighs per element
     for (auto & ngh : this->vb_neighbours_)  ngh.element()->n_neighs_vb_++;
 
     // Allocation of the array per element
-    for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
+    for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.end(); ++ele)
         if( ele->n_neighs_vb() > 0 ) {
             ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb()];
             ele->n_neighs_vb_=0;
@@ -814,13 +863,13 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
+ElementAccessor<3> MeshBase::element_accessor(unsigned int idx) const {
     return ElementAccessor<3>(this, idx);
 }
 
 
 
-NodeAccessor<3> Mesh::node(unsigned int idx) const {
+NodeAccessor<3> MeshBase::node(unsigned int idx) const {
     return NodeAccessor<3>(this, idx);
 }
 
@@ -830,30 +879,24 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 {
     if (bulk_elements_id.size() ==0) {
         std::vector<LongIdx>::iterator map_it;
-        LongIdx last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
-        last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
         	LongIdx id = this->find_elem_id(idx);
-            last_id=*map_it = id;
+            *map_it = id;
         }
         std::sort(bulk_elements_id.begin(), bulk_elements_id.end());
 
-        boundary_elements_id.resize(element_ids_.size()-bulk_size_);
+        boundary_elements_id.resize(bc_mesh_->n_elements());
         map_it = boundary_elements_id.begin();
-        last_id = -1;
-        for(unsigned int idx=bulk_size_; idx<element_ids_.size(); idx++, ++map_it) {
-        	LongIdx id = this->find_elem_id(idx);
+        for(unsigned int idx=0; idx<bc_mesh_->n_elements(); idx++, ++map_it) {
+        	LongIdx id = bc_mesh_->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
-            if (id < 0) last_id=*map_it=-1;
-            else {
-                if (last_id >= id) THROW( ExcElmWrongOrder() << EI_ElemId(id) );
-                last_id=*map_it = id;
-            }
+            if (id < 0) *map_it=-1;
+            else *map_it = id;
         }
     }
 }
@@ -876,7 +919,7 @@ std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh
 
 	std::vector<unsigned int> node_ids; // indices map: nodes from source mesh to nodes of target mesh
 	std::shared_ptr<EquivalentMeshMap> map_ptr = 
-        std::make_shared<EquivalentMeshMap>(n_elements(), get_bc_mesh()->n_elements(), (LongIdx)undef_idx);
+        std::make_shared<EquivalentMeshMap>(n_elements(), bc_mesh()->n_elements(), (LongIdx)undef_idx);
     // indices map: nodes from source mesh to nodes of target mesh
 
     {
@@ -923,7 +966,7 @@ std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh
     // create map for bulk elements
     n_found += check_compatible_elements(&input_mesh, this, node_ids, map_ptr->bulk);
     // create map for boundary elements
-    n_found += check_compatible_elements(input_mesh.get_bc_mesh(), this->get_bc_mesh(), node_ids, map_ptr->boundary);
+    n_found += check_compatible_elements(input_mesh.bc_mesh(), this->bc_mesh(), node_ids, map_ptr->boundary);
 
     // no equivalent element found => mesh is not compatible
     if (n_found==0)
@@ -932,7 +975,7 @@ std::shared_ptr<EquivalentMeshMap> Mesh::check_compatible_mesh(Mesh & input_mesh
         return map_ptr;
 }
 
-unsigned int Mesh::check_compatible_elements(Mesh* source_mesh, Mesh* target_mesh,
+unsigned int Mesh::check_compatible_elements(MeshBase* source_mesh, MeshBase* target_mesh,
                                              const std::vector<unsigned int>& node_ids,
                                              std::vector<LongIdx>& map)
 {
@@ -988,14 +1031,14 @@ void Mesh::read_regions_from_input(Input::Array region_list)
 
 void Mesh::check_and_finish()
 {
-	modify_element_ids(region_db_.el_to_reg_map_);
-	region_db_.el_to_reg_map_.clear();
-	region_db_.close();
-	region_db_.check_regions();
+	modify_element_ids(region_db_->el_to_reg_map_);
+	region_db_->el_to_reg_map_.clear();
+	region_db_->close();
+	region_db_->check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
 		stringstream ss;
-		region_db_.print_region_table(ss);
+		region_db_->print_region_table(ss);
 		MessageOut() << ss.str();
 	}
 }
@@ -1030,37 +1073,31 @@ double Mesh::global_snap_radius() const {
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
-	region_db_.add_region(id, name, dim, "$PhysicalNames");
+	region_db_->add_region(id, name, dim, "$PhysicalNames");
 }
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
-    nodes_.append(coords);
-    node_ids_.add_item(node_id);
+    nodes_->append(coords);
+    node_ids_->add_item(node_id);
     node_permutation_.push_back(node_permutation_.size());
 }
 
 
 void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
-	RegionIdx region_idx = region_db_.get_region( region_id, dim );
+	RegionIdx region_idx = region_db_->get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
-		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
+		region_idx = region_db_->add_region( region_id, region_db_->create_label_from_id(region_id), dim, "$Element" );
 	}
-	region_db_.mark_used_region(region_idx.idx());
+	region_db_->mark_used_region(region_idx.idx());
 
-	if (region_idx.is_boundary()) {
-		bc_element_tmp_.push_back( ElementTmpData(elm_id, dim, region_idx, partition_id, node_ids) );
+	if (!region_idx.is_boundary() && dim == 0) {
+        WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
 	} else {
-		if(dim == 0 ) {
-			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
-		}
-		else {
-			Element *ele = add_element_to_vector(elm_id);
-			bulk_size_++;
-			this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
-		}
+        Element *ele = add_element_to_vector(elm_id, region_idx.is_boundary());
+        this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
 	}
 }
 
@@ -1088,7 +1125,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 }
 
 
-vector<vector<unsigned int> > const & Mesh::node_elements() {
+vector<vector<unsigned int> > const & MeshBase::node_elements() {
 	if (node_elements_.size() == 0) {
 		this->create_node_element_lists();
 	}
@@ -1096,59 +1133,50 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 }
 
 
-void Mesh::init_element_vector(unsigned int size) {
+void MeshBase::init_element_vector(unsigned int size) {
 	element_vec_.clear();
     element_ids_.clear();
     elem_permutation_.clear();
 	element_vec_.reserve(size);
     element_ids_.reserve(size);
     elem_permutation_.reserve(size);
-	bc_element_tmp_.clear();
-	bc_element_tmp_.reserve(size);
-	bulk_size_ = 0;
-	boundary_loaded_size_ = 0;
 }
 
 
-void Mesh::init_node_vector(unsigned int size) {
-	nodes_.reinit(size);
-	node_ids_.clear();
-	node_ids_.reserve(size);
+void MeshBase::init_node_vector(unsigned int size) {
+	nodes_->reinit(size);
+	node_ids_->clear();
+	node_ids_->reserve(size);
 	node_permutation_.clear();
 	node_permutation_.reserve(size);
 }
 
 
-Element * Mesh::add_element_to_vector(int id) {
-    element_vec_.push_back( Element() );
-    Element * elem = &element_vec_.back(); //[element_vec_.size()-1];
-    element_ids_.add_item((unsigned int)(id));
-    elem_permutation_.push_back(elem_permutation_.size());
+Element * MeshBase::add_element_to_vector(int id, bool is_boundary) {
+    Element * elem;
+    if (is_boundary) {
+        elem = bc_mesh()->add_element_to_vector(id, false);
+    } else {
+        element_vec_.push_back( Element() );
+        elem = &element_vec_.back(); //[element_vec_.size()-1];
+        element_ids_.add_item((unsigned int)(id));
+        elem_permutation_.push_back(elem_permutation_.size());
+    }
 	return elem;
 }
 
-Range<ElementAccessor<3>> Mesh::elements_range() const {
+Range<ElementAccessor<3>> MeshBase::elements_range() const {
 	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, 0) );
-	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, bulk_size_) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, element_vec_.size()) );
 	return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
-Range<NodeAccessor<3>> Mesh::node_range() const {
+Range<NodeAccessor<3>> MeshBase::node_range() const {
 	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
 	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, n_nodes()) );
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
-Range<Edge> Mesh::edge_range() const {
-	auto bgn_it = make_iter<Edge>( Edge(this, 0) );
-	auto end_it = make_iter<Edge>( Edge(this, edges.size()) );
-    return Range<Edge>(bgn_it, end_it);
-}
-
-inline void Mesh::check_element_size(unsigned int elem_idx) const
-{
-    ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
-}
 
 /*
  * Output of internal flow data.
@@ -1200,14 +1228,30 @@ void Mesh::output_internal_ngh_data()
             }
         }
     }
-    
-    for (auto ele : this->elements_range()) {
-        raw_ngh_output_file << ele.idx() << " ";
-        raw_ngh_output_file << ele->n_sides() << " ";
-        
+
+    for (unsigned int i_elem=0; i_elem<n_elements(); ++i_elem)
+    {
+        auto ele = element_accessor(elem_permutation_[i_elem]);
+        std::stringstream ss;
+        ss << ele.input_id() << " ";
+        ss << ele->n_sides() << " ";
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
+
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele.side(i)->edge().n_sides()-1;  //n_sides - the current one
+            uint new_iside = old_to_new_side[i];
+
+            uint n_side_neighs = ele.side(new_iside)->edge().n_sides()-1;  //n_sides - the current one
             // check vb neighbors (lower dimension)
             if(n_side_neighs == 0){
                 //update search
@@ -1215,57 +1259,44 @@ void Mesh::output_internal_ngh_data()
                     search_neigh = neigh_vb_map.find(ele.idx());
                 
                 if(search_neigh != neigh_vb_map.end())
-                    if(search_neigh->second[i] != undefined_ele_id)
+                    if(search_neigh->second[new_iside] != undefined_ele_id)
                         n_side_neighs = 1;
             }
-            raw_ngh_output_file << n_side_neighs << " ";
+            ss << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Edge edge = ele.side(i)->edge();
+            uint new_iside = old_to_new_side[i];
+            Edge edge = ele.side(new_iside)->edge();
             if(edge.n_sides() > 1){
                 for (uint j = 0; j < edge.n_sides(); j++) {
-                    if(edge.side(j) != ele.side(i))
-                        raw_ngh_output_file << edge.side(j)->element().idx() << " ";
+                    if(edge.side(j) != ele.side(new_iside))
+                        ss << edge.side(j)->element().input_id() << " ";
                 }
             }
             //check vb neighbour
             else if(search_neigh != neigh_vb_map.end()
-                    && search_neigh->second[i] != undefined_ele_id){
-                raw_ngh_output_file << search_neigh->second[i] << " ";
+                    && search_neigh->second[new_iside] != undefined_ele_id){
+                auto neigh_ele = element_accessor(search_neigh->second[new_iside]);
+                ss << neigh_ele.input_id() << " ";
             }
         }
         
         // list higher dim neighbours
-        raw_ngh_output_file << ele->n_neighs_vb() << " ";
+        ss << ele->n_neighs_vb() << " ";
         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++)
-            raw_ngh_output_file << ele->neigh_vb[i]->side()->element().idx() << " ";
+            ss << ele->neigh_vb[i]->side()->element().input_id() << " ";
         
-        raw_ngh_output_file << endl;
+        // remove last white space
+        string line = ss.str();
+        raw_ngh_output_file << line.substr(0, line.size()-1) << endl;
         cit ++;
     }
     raw_ngh_output_file << "$EndFlowField\n" << endl;
 }
 
 
-unsigned int Mesh::create_boundary_elements() {
-    // Copy boundary elements in temporary storage to the second part of the element vector
-	for(ElementTmpData &e_data : bc_element_tmp_) {
-	    Element *ele = add_element_to_vector(e_data.elm_id);
-		this->init_element(ele, e_data.elm_id, e_data.dim, e_data.region_idx,
-				e_data.partition_id, e_data.node_ids);
-	}
-	// release memory
-	unsigned int bdr_size = bc_element_tmp_.size();
-	vector<ElementTmpData>().swap(bc_element_tmp_);
-	return bdr_size;
-}
 
-
-BCMesh *Mesh::get_bc_mesh() {
-	if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
-	return bc_mesh_;
-}
 
 
 void Mesh::distribute_nodes() {
@@ -1295,7 +1326,7 @@ void Mesh::distribute_nodes() {
         if (i_proc == my_proc)
             n_own_nodes++;
         else if (i_proc == n_proc)
-            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
+            ASSERT_PERMANENT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
     }
 
     //DebugOut() << print_var(n_own_nodes) << print_var(n_local_nodes) << this->n_nodes();
@@ -1317,6 +1348,19 @@ void Mesh::distribute_nodes() {
     node_ds_->get_lsizes_array(); // need to initialize lsizes data member
     n_local_nodes_ = n_local_nodes;
 
+}
+
+
+inline int MeshBase::elem_index(int elem_id) const
+{
+    return element_ids_.get_position(elem_id);
+}
+
+
+const Neighbour &MeshBase::vb_neighbour(unsigned int nb) const
+{ 
+    // ASSERT_PERMANENT(nb < vb_neighbours_.size());
+    return vb_neighbours_[nb];
 }
 
 //-----------------------------------------------------------------------------

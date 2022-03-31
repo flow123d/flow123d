@@ -171,7 +171,7 @@ public:
 
     /// Reset all items of elements_eval_points_map
     inline void clear_element_eval_points_map() {
-        ASSERT_PTR_DBG(element_eval_points_map_);
+        ASSERT_PTR(element_eval_points_map_);
         unsigned int last_element_idx = -1, i_elem_row = -1;
         for (unsigned int i=0; i<eval_point_data_.permanent_size(); ++i) {
             if (eval_point_data_[i].i_element_ != last_element_idx) { // new element
@@ -202,7 +202,7 @@ public:
      * @return                 index of point in FieldValueCache.
      */
     inline int element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point) const {
-        ASSERT_PTR_DBG(element_eval_points_map_);
+        ASSERT_PTR(element_eval_points_map_);
         return element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point];
     }
 
@@ -212,10 +212,17 @@ public:
     }
 
     /// Return position of element stored in ElementCacheMap
-    inline unsigned int position_in_cache(unsigned mesh_elm_idx) const {
-        std::unordered_map<unsigned int, unsigned int>::const_iterator it = element_to_map_.find(mesh_elm_idx);
-        if ( it != element_to_map_.end() ) return it->second;
-        else return ElementCacheMap::undef_elem_idx;
+    inline unsigned int position_in_cache(unsigned mesh_elm_idx, bool bdr=false) const {
+        std::unordered_map<unsigned int, unsigned int>::const_iterator it;
+        if (bdr) {
+            it = element_to_map_bdr_.find(mesh_elm_idx);
+            if ( it != element_to_map_bdr_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        } else {
+            it = element_to_map_.find(mesh_elm_idx);
+            if ( it != element_to_map_.end() ) return it->second;
+            else return ElementCacheMap::undef_elem_idx;
+        }
     }
 
     /// Return number of stored regions.
@@ -230,25 +237,25 @@ public:
 
     /// Return begin position of element chunk in FieldValueCache
     inline unsigned int element_chunk_begin(unsigned int elm_patch_idx) const {
-        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        ASSERT_LT(elm_patch_idx, n_elements());
         return element_starts_[elm_patch_idx];
     }
 
     /// Return end position of element chunk in FieldValueCache
     inline unsigned int element_chunk_end(unsigned int elm_patch_idx) const {
-        ASSERT_LT_DBG(elm_patch_idx, n_elements());
+        ASSERT_LT(elm_patch_idx, n_elements());
         return element_starts_[elm_patch_idx+1];
     }
 
     /// Return begin position of region chunk in FieldValueCache
     inline unsigned int region_chunk_begin(unsigned int region_patch_idx) const {
-        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        ASSERT_LT(region_patch_idx, n_regions());
         return element_starts_[ regions_starts_[region_patch_idx] ];
     }
 
     /// Return end position of region chunk in FieldValueCache
     inline unsigned int region_chunk_end(unsigned int region_patch_idx) const {
-        ASSERT_LT_DBG(region_patch_idx, n_regions());
+        ASSERT_LT(region_patch_idx, n_regions());
         return element_starts_[ regions_starts_[region_patch_idx+1] ];
     }
 
@@ -272,10 +279,10 @@ public:
     template<class Value>
     inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
             unsigned int elem_patch_idx, unsigned int eval_points_idx) const {
-        ASSERT_EQ_DBG(Value::NRows_, field_cache.n_rows());
-        ASSERT_EQ_DBG(Value::NCols_, field_cache.n_cols());
+        ASSERT_EQ(Value::NRows_, field_cache.n_rows());
+        ASSERT_EQ(Value::NCols_, field_cache.n_cols());
         unsigned int value_cache_idx = this->element_eval_point(elem_patch_idx, eval_points_idx);
-        ASSERT_DBG(value_cache_idx != ElementCacheMap::undef_elem_idx);
+        ASSERT(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
 protected:
@@ -291,7 +298,7 @@ protected:
 
     /// Set item of \p element_eval_points_map_.
     inline void set_element_eval_point(unsigned int i_elem_in_cache, unsigned int i_eval_point, int val) const {
-        ASSERT_PTR_DBG(element_eval_points_map_);
+        ASSERT_PTR(element_eval_points_map_);
         element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
     }
 
@@ -334,7 +341,8 @@ protected:
 
     RevertableList<unsigned int> regions_starts_;         ///< Start positions of elements in regions (size = n_regions+1, last value is end of last region)
     RevertableList<unsigned int> element_starts_;         ///< Start positions of elements in eval_point_data_ (size = n_elements+1)
-    std::unordered_map<unsigned int, unsigned int> element_to_map_; ///< Maps element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_;     ///< Maps bulk element_idx to element index in patch - TODO remove
+    std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
 
     // @}
 

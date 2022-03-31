@@ -91,7 +91,7 @@ TEST(Quadrature, midpoint){
 template<unsigned int dim>
 void test_side_projection(Quadrature &subq)
 {
-	ASSERT_EQ(subq.dim(), dim-1);
+	ASSERT_PERMANENT_EQ(subq.dim(), dim-1);
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; sid++)
     {
             Quadrature q = subq.make_from_side<dim>(sid);

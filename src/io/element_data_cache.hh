@@ -49,8 +49,7 @@ class ElementDataCache : public ElementDataCacheBase {
  * Read of values from tokenizer and output of values to stream is implemented as it depends on the value type T.
  */
 public:
-	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
-	typedef std::vector< ComponentDataPtr > CacheData;
+	typedef std::shared_ptr< std::vector<T> > CacheData;
 
 	/// Default constructor
 	ElementDataCache();
@@ -62,10 +61,9 @@ public:
 	 *
      * @param field_name    Field name thas is read
      * @param time          Actual time of data
-	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int row_vec_size);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)
@@ -85,13 +83,13 @@ public:
      */
     virtual ~ElementDataCache() override;
 
-    /// Return vector of element data for get component.
-	ComponentDataPtr get_component_data(unsigned int component_idx);
+    /// Return underlying vector of element data.
+	CacheData get_data();
 
 	/**
-	 * Create data cache with given count of columns (\p size_of_cache) and rows (\p row_vec_size).
+	 * Create data cache with given count rows (\p row_vec_size).
 	 */
-	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size);
+	static CacheData create_data_cache(unsigned int row_vec_size);
 
 	/// Implements @p ElementDataCacheBase::read_ascii_data.
 	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override;

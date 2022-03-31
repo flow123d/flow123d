@@ -23,6 +23,9 @@
 #include "fields/eval_points.hh"                       // for EvalPoints
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/point.hh"                               // for Point
+
+template <int spacedim> class ElementAccessor;
 
 namespace IT=Input::Type;
 
@@ -32,6 +35,7 @@ namespace IT=Input::Type;
  */
 class FieldCoords : public FieldCommon {
 public:
+	typedef typename Space<3>::Point Point;
 
     /// Constructor
     FieldCoords()
@@ -45,7 +49,7 @@ public:
     }
 
     IT::Instance get_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldCoords");
 
         IT::Abstract abstract = IT::Abstract();
         IT::Instance inst = IT::Instance( abstract, std::vector<IT::TypeBase::ParameterPair>() );
@@ -53,14 +57,14 @@ public:
     }
 
     IT::Array get_multifield_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldCoords");
 
         IT::Array arr = IT::Array( IT::Integer() );
         return arr;
     }
 
     void set_mesh(const Mesh &mesh) override {
-        this->mesh_ = &mesh;
+        shared_->mesh_ = &mesh;
     }
 
     bool is_constant(FMT_UNUSED Region reg) override {
@@ -72,15 +76,15 @@ public:
     }
 
     void copy_from(FMT_UNUSED const FieldCommon & other) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpaceFlags type) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+    void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     FieldResult field_result(FMT_UNUSED RegionSet region_set) const override {
@@ -104,15 +108,20 @@ public:
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+        unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
     	arma::vec3 coords;
         unsigned int dim = 0;
 
+        const MeshBase *mesh; // Holds bulk or boundary mesh by region_idx
+        if (region_idx%2 == 1) mesh = shared_->mesh_;
+        else mesh = shared_->mesh_->bc_mesh();
+
         for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
             unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
             if (elm_idx != last_element_idx) {
-                elm = mesh_->element_accessor( elm_idx );
+                elm = mesh->element_accessor( elm_idx );
                 dim = elm.dim();
                 last_element_idx = elm_idx;
             }
@@ -156,6 +165,28 @@ public:
         return std::vector<const FieldCommon *>();
     }
 
+    /// Returns one value of coordinates in one given point @p.
+    inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
+    {
+        return p;
+    }
+
+    inline void value_list(const Armor::array &point_list, const ElementAccessor<3> &elm,
+                       std::vector<arma::vec3> &value_list) const
+    {
+        ASSERT(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
+        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template vec<3>(i), elm);
+    }
+
+    /// Return item of @p value_cache_ given by i_cache_point.
+    arma::vec3 operator[] (unsigned int i_cache_point) const
+    {
+        return this->value_cache_.template vec<3>(i_cache_point);
+    }
+
 private:
     /**
      * Field value data cache
@@ -163,8 +194,6 @@ private:
      * See implementation of Field<spacedim, Value>::value_cache_
      */
     mutable FieldValueCache<double> value_cache_;
-
-    const Mesh *mesh_;                 ///< Pointer to the mesh.
 };
 
 #endif /* FIELD_COORDS_HH_ */

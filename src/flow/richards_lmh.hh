@@ -27,6 +27,9 @@ namespace Input {
 		class Record;
 	}
 }
+template<unsigned int dim> class InitCondPostprocessAssembly;
+template<unsigned int dim> class MHMatrixAssemblyRichards;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
@@ -65,9 +68,9 @@ public:
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
-    class EqData : public DarcyLMH::EqData {
+    class EqFields : public DarcyLMH::EqFields {
     public:
-        EqData();
+    	EqFields();
         // input fields
         Field<3, FieldValue<3>::Scalar > water_content_saturated;   // corresponds to the porosity (theta_s = Vw/V = porosity)
         Field<3, FieldValue<3>::Scalar > water_content_residual;
@@ -81,14 +84,17 @@ public:
         Field<3, FieldValue<3>::Scalar > conductivity_richards;
 //         FieldFE<3, FieldValue<3>::Scalar > conductivity_richards;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> conductivity_ptr;
+    };
+
+    class EqData : public DarcyLMH::EqData {
+    public:
+        /// Constructor
+        EqData();
 
         // Auxiliary assembly fields.
         VectorMPI water_content_previous_time;
         VectorMPI capacity;
 
-        // This is necessary in the assembly
-        // TODO: store time information in the field set and in fields, is it ok also for more complex discretization methods?
-        double time_step_;
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
@@ -98,6 +104,8 @@ public:
     
     void accept_time_step() override;
     
+    virtual ~RichardsLMH() override;
+
 protected:
     /// Registrar of class to factory
     static const int registrar;
@@ -106,11 +114,23 @@ protected:
 
     void initialize_specific() override;
 
-    void initial_condition_postprocess() override;
+//    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
+
+    /// Create and initialize assembly objects
+    void initialize_asm() override;
+
+    /// Call assemble of read_init_cond_assembly_ and init_cond_postprocess_assembly_
+    void read_init_cond_asm() override;
+
 private:
 
-    std::shared_ptr<EqData> data_;
+    std::shared_ptr<EqFields> eq_fields_;
+    std::shared_ptr<EqData> eq_data_;
+
+    /// general assembly object, hold assembly objects of appropriate dimension
+    GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
+
 };
 
 

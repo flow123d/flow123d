@@ -181,21 +181,21 @@ public:
      */
     inline double determinant(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.determinants[point_no];
     }
     
     /// Return Jacobian matrix at point @p point_no.
     inline arma::mat jacobian(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.jacobians.arma_mat(point_no);
     }
     
     /// Return inverse Jacobian matrix at point @p point_no.
     inline arma::mat inverse_jacobian(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.inverse_jacobians.arma_mat(point_no);
     }
 
@@ -207,7 +207,7 @@ public:
      */
     inline double JxW(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.JxW_values[point_no];
     }
 
@@ -219,7 +219,7 @@ public:
      */
     inline double side_JxW(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.side_JxW_values[point_no];
     }
 
@@ -230,7 +230,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return data.points.template vec<spacedim>(point_no);
     }
 
@@ -248,7 +248,7 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
 	    return data.normal_vectors.template vec<spacedim>(point_no);
 	}
 	

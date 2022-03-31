@@ -1,9 +1,21 @@
+# Test goal: Transport 1D-2D (convection, dual porosity, sources).
+# Author: Pavel Exner (last edit)
+# Source for reference:
+#   only qualitative check in Paraview
+#
+# features:
+#   - convection (FV)
+#   - dual porosity
+#   - mobile/immobile sorption
+#   - conc sources
+#
+# similar to tests: 22-01, 27-02
+
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption, sources).'
+  description: 'Transport 1D-2D (convection, reaction term, sources).'
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
-  # mesh
     regions:
       - !Union
         name: 1d_domain
@@ -11,9 +23,8 @@ problem: !Coupling_Sequential
           - 1d_upper
           - 1d_lower
           - 1d_left_branch
-  # mesh
+
   flow_equation: !Flow_Darcy_MH
-  # primary equation
     input_fields:
       - region: 1d_domain
         conductivity: 1.0e-06
@@ -29,25 +40,13 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    output:
-      fields:
-        - pressure_p0
-        #- pressure_p1  # ?? does pressure_p1 still work 
-        - velocity_p0
-    output_stream:
-      file: flow.pvd
-      format: !vtk
-        variant: ascii
-    #balance:
-  # primary equation
+
   solute_equation: !Coupling_OperatorSplitting
     substances:
-      - name: age
+      - name: age # water age
         molar_mass: 0.018
-      # water age
-      - name: U235
+      - name: U235 # uranium 235
         molar_mass: 0.235
-      # uranium 235
     transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
@@ -56,15 +55,16 @@ problem: !Coupling_Sequential
           sources_density:
             - 0.25
             - 0
-          # source is in the whole volume (l+s) -> times porosity
+        # source is in the whole volume (l+s) -> times porosity
         - region: .BOUNDARY
           bc_conc:
             - 0.0
             - 1.0
     time:
-      end_time: 1000000.0
+      end_time: 1e6
     balance:
       cumulative: true
+
     reaction_term: !DualPorosity
       input_fields:
         - region: ALL
@@ -76,8 +76,7 @@ problem: !Coupling_Sequential
             - 0.0
             - 0.0
       reaction_mobile: !SorptionMobile
-        solvent_density: 1000.0
-        # water
+        solvent_density: 1000 # water
         substances:
           - age
           - U235
@@ -86,8 +85,7 @@ problem: !Coupling_Sequential
           - 1.0
         input_fields: &anchor1
           - region: ALL
-            rock_density: 2800.0
-            # granit
+            rock_density: 2800 # granit
             sorption_type:
               - none
               - freundlich
@@ -100,8 +98,7 @@ problem: !Coupling_Sequential
         output:
           fields: []
       reaction_immobile: !SorptionImmobile
-        solvent_density: 1000.0
-        # water
+        solvent_density: 1000 # water
         substances:
           - age
           - U235
@@ -114,10 +111,5 @@ problem: !Coupling_Sequential
       output:
         fields: []
     output_stream:
-      file: transport.pvd
-      format: !vtk
-        variant: ascii
-  # secondary_equation
-# problem
       times:
-        - step: 100000.0
+        - step: 1e5

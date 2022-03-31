@@ -59,7 +59,7 @@ template<class FS> double Dof::evaluate(const FS &function_space,
     }
         
     default:
-        OLD_ASSERT(false, "Dof evaluation not implemented for this type.");
+        ASSERT_PERMANENT(false).error("Dof evaluation not implemented for this type.");
     }
     return 0;
 }
@@ -113,8 +113,8 @@ double FiniteElement<dim>::shape_value(const unsigned int i,
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
-    ASSERT_DBG( comp < n_components() );
-	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
+    ASSERT( comp < n_components() );
+	ASSERT( i < dofs_.size()).error("Index of basis function is out of range.");
     
     double value = 0;
     for (unsigned int j=0; j<function_space_->dim(); j++)
@@ -128,8 +128,8 @@ arma::vec::fixed<dim> FiniteElement<dim>::shape_grad(const unsigned int i,
                                                      const arma::vec::fixed<dim> &p,
                                                      const unsigned int comp) const
 {
-    ASSERT_DBG( comp < n_components() );
-	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
+    ASSERT( comp < n_components() );
+	ASSERT( i < dofs_.size()).error("Index of basis function is out of range.");
     
     // uword is a typedef for an unsigned integer type; it is used for matrix indices as well as all internal counters and loops
     // sword is a typedef for a signed integer type
@@ -191,7 +191,7 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
             break;
         case FEMixedSystem:
             const FESystem<dim> *fe_sys = dynamic_cast<const FESystem<dim>*>(this);
-            ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
+            ASSERT(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
             return  fe_sys->get_scalar_components().size()
                    +fe_sys->get_vector_components().size()*spacedim
                    +fe_sys->get_tensor_components().size()*spacedim*spacedim;
@@ -199,7 +199,7 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
     }
 
     // should be never reached
-    ASSERT(0).error("Unknown type of FiniteElement.");
+    ASSERT_PERMANENT(0).error("Unknown type of FiniteElement.");
     return 0;
 }
 

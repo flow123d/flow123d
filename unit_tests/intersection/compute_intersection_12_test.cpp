@@ -106,7 +106,7 @@ void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerat
 {
     // Compute intersection with a "reference element".
     IntersectionAux<1,2> is(0, 1);
-    ComputeIntersection<1,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
+    ComputeIntersection<1,2> CI(mesh->element_accessor(0), mesh->element_accessor(1));
     if(degenerate)
         CI.compute_final_in_plane(is.points());
     else
@@ -152,7 +152,7 @@ TEST(intersections_12d, all) {
         bool degenerate = test_case.first.at(3) == 'd';
 
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
-        ASSERT(mesh_file.exists())(dir_name+file_name);
+        ASSERT_PERMANENT(mesh_file.exists())(dir_name+file_name);
         
         string in_mesh_string = "{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }";
         

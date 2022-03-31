@@ -189,7 +189,7 @@ void ObservePoint::snap(Mesh &mesh)
         	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
             break;
         }
-        default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
+        default: ASSERT_PERMANENT(false).error("Clipping supported only for dim=1,2,3.");
     }
 }
 
@@ -321,7 +321,7 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAcces
 		break;
 	}
 	default:
-		ASSERT(false).error("Invalid element dimension!");
+		ASSERT_PERMANENT(false).error("Invalid element dimension!");
 	}
 
 	return ObservePointData(); // Should not happen.

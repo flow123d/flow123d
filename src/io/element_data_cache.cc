@@ -35,12 +35,12 @@ ElementDataCache<T>::ElementDataCache()
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size)
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int row_vec_size)
 : check_scale_data_(CheckScaleData::none)
 {
 	this->time_ = time;
 	this->field_input_name_ = field_name;
-	this->data_ = create_data_cache(size_of_cache, row_vec_size);
+	this->data_ = create_data_cache(row_vec_size);
 	this->n_dofs_per_element_ = 1;
 }
 
@@ -59,7 +59,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_com
     this->fe_type_ = fe_type;
     this->n_dofs_per_element_ = n_dofs_per_element;
 
-    this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_comp_ * this->n_dofs_per_element_);
+    this->data_ = ElementDataCache<T>::create_data_cache(this->n_values_ * this->n_comp_ * this->n_dofs_per_element_);
 }
 
 
@@ -68,50 +68,38 @@ ElementDataCache<T>::~ElementDataCache() {}
 
 
 template <typename T>
-typename ElementDataCache<T>::ComponentDataPtr ElementDataCache<T>::get_component_data(unsigned int component_idx) {
-	ASSERT_LT(component_idx, data_.size()).error("Index of component is out of range.\n");
-	return data_[component_idx];
+typename ElementDataCache<T>::CacheData ElementDataCache<T>::get_data() {
+	return data_;
 }
 
 
 template <typename T>
-typename ElementDataCache<T>::CacheData ElementDataCache<T>::create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size) {
-    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
-    for (unsigned int i=0; i<size_of_cache; ++i) {
-		typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
-		row_vec->resize(row_vec_size, numeric_limits<T>::signaling_NaN());
-		data_cache[i] = row_vec;
-    }
-
+typename ElementDataCache<T>::CacheData ElementDataCache<T>::create_data_cache(unsigned int row_vec_size) {
+    typename ElementDataCache<T>::CacheData data_cache = std::make_shared<std::vector<T>>();
+    data_cache->resize(row_vec_size, numeric_limits<T>::signaling_NaN());
     return data_cache;
 }
 
 
 template <typename T>
 void ElementDataCache<T>::read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) {
-	unsigned int idx;
-	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
-		idx = i_row * n_components;
-		std::vector<T> &vec = *( data_[i_vec].get() );
-		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-            ASSERT_DBG(idx < vec.size());
-			vec[idx] = boost::lexical_cast<T>(*tok);
-			++tok;
-		}
-	}
+	unsigned int idx = i_row * n_components;
+    std::vector<T> &vec = *( data_.get() );
+    for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+        ASSERT_LT(idx, vec.size());
+        vec[idx] = boost::lexical_cast<T>(*tok);
+        ++tok;
+    }
 }
 
 
 template <typename T>
 void ElementDataCache<T>::read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) {
-	unsigned int idx;
-	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
-		idx = i_row * n_components;
-		std::vector<T> &vec = *( data_[i_vec].get() );
-		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-			data_stream.read(reinterpret_cast<char *>(&vec[idx]), sizeof(T));
-		}
-	}
+	unsigned int idx = i_row * n_components;
+    std::vector<T> &vec = *( data_.get() );
+    for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+        data_stream.read(reinterpret_cast<char *>(&vec[idx]), sizeof(T));
+    }
 }
 
 
@@ -125,7 +113,7 @@ template <typename T>
 void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
 {
 	ASSERT_LT(idx, this->n_values_).error();
-	std::vector<T> &vec = *( this->data_[0].get() );
+	std::vector<T> &vec = *( this->data_.get() );
 	for(unsigned int i = n_comp_*n_dofs_per_element_*idx; i < n_comp_*n_dofs_per_element_*(idx+1); ++i )
 		out_stream << vec[i] << " ";
 }
@@ -140,7 +128,7 @@ void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
 template <typename T>
 void ElementDataCache<T>::print_ascii_all(ostream &out_stream, unsigned int start)
 {
-    std::vector<T> &vec = *( this->data_[0].get() );
+    std::vector<T> &vec = *( this->data_.get() );
 	for(unsigned int idx = start; idx < this->n_values_; idx++) {
 	    for(unsigned int i = n_comp_*n_dofs_per_element_*idx; i < n_comp_*n_dofs_per_element_*(idx+1); ++i )
     		out_stream << vec[i] << " ";
@@ -158,7 +146,7 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 		out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
 	}
     // write data
-	std::vector<T> &vec = *( this->data_[0].get() );
+	std::vector<T> &vec = *( this->data_.get() );
     for(unsigned int idx = start; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(T));
@@ -170,7 +158,7 @@ template <typename T>
 void ElementDataCache<T>::print_yaml_subarray(ostream &out_stream, unsigned int precision, unsigned int begin, unsigned int end)
 {
     out_stream << "[ ";
-	std::vector<T> &vec = *( this->data_[0].get() );
+	std::vector<T> &vec = *( this->data_.get() );
     for(unsigned int idx = begin; idx < end; idx++) {
         if (idx != begin) out_stream << " , ";
         unsigned int vec_pos = n_comp_ * idx; // position of element value in data cache
@@ -205,7 +193,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
 {
 	min = std::numeric_limits<double>::max();
 	max = std::numeric_limits<double>::min();
-	std::vector<T> &vec = *( this->data_[0].get() );
+	std::vector<T> &vec = *( this->data_.get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_comp_*n_dofs_per_element_*idx; i < n_comp_*n_dofs_per_element_*(idx+1); ++i ) {
     		if (vec[i] < min) min = vec[i];
@@ -220,8 +208,8 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
  */
 template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values_)(this->field_name_);
-    std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_LT(idx, this->n_values_)(this->field_name_);
+    std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
     	vec[vec_idx] = value[i];
@@ -233,8 +221,8 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::add(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values_);
-    std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_LT(idx, this->n_values_);
+    std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
     	vec[vec_idx] += value[i];
@@ -246,8 +234,8 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::zero(unsigned int idx) {
-    ASSERT_LT_DBG(idx, this->n_values_);
-    std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_LT(idx, this->n_values_);
+    std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
     	vec[vec_idx] = 0;
@@ -259,8 +247,8 @@ void ElementDataCache<T>::zero(unsigned int idx) {
  */
 template <typename T>
 void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
-    ASSERT_LT_DBG(idx, this->n_values_);
-    std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_LT(idx, this->n_values_);
+    std::vector<T> &vec = *( this->data_.get() );
     unsigned int vec_idx = idx*this->n_comp_*n_dofs_per_element_;
     for(unsigned int i = 0; i < this->n_comp_*n_dofs_per_element_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
@@ -273,15 +261,13 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
     check_scale_data_ = CheckScaleData::check;
 
     bool is_nan = false, out_of_limit = false;
-    for (unsigned int j=0; j<data_.size(); ++j) {
-        std::vector<T> &vec = *( this->data_[j].get() );
-        for(unsigned int i=0; i<vec.size(); ++i) {
-            if ( std::isnan(vec[i]) ) {
-                if ( std::isnan(default_val) ) is_nan = true;
-                else vec[i] = default_val;
-            }
-            if ( (vec[i] < lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
+    std::vector<T> &vec = *( this->data_.get() );
+    for(unsigned int i=0; i<vec.size(); ++i) {
+        if ( std::isnan(vec[i]) ) {
+            if ( std::isnan(default_val) ) is_nan = true;
+            else vec[i] = default_val;
         }
+        if ( (vec[i] < lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
     }
 
     if (is_nan) return CheckResult::not_a_number;
@@ -292,13 +278,11 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
 template <typename T>
 void ElementDataCache<T>::scale_data(double coef) {
     if (check_scale_data_ == CheckScaleData::scale) return; // method is executed only once
-    ASSERT_DBG(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
+    ASSERT(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
 
-    for (unsigned int j=0; j<data_.size(); ++j) {
-        std::vector<T> &vec = *( this->data_[j].get() );
-        for(unsigned int i=0; i<vec.size(); ++i) {
-            vec[i] *= coef;
-        }
+    std::vector<T> &vec = *( this->data_.get() );
+    for(unsigned int i=0; i<vec.size(); ++i) {
+        vec[i] *= coef;
     }
 
     check_scale_data_ = CheckScaleData::scale;
@@ -317,13 +301,13 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
     int *rec_indices_ids = nullptr; // collective values of local to global indexes map of data
     T *rec_data = nullptr;          // collective values of data
 
+    n_global_data = distr->size();
     // collects values of data vectors and local to global indexes map on each process
     if (rank==0) {
         for (int i=0; i<n_proc; ++i) {
             rec_starts[i] = distr->begin(i);
             rec_counts[i] = distr->lsize(i);
         }
-        n_global_data = distr->size();
         rec_indices_ids = new int [ n_global_data ];
     }
     MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
@@ -334,13 +318,13 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
         }
         rec_data = new T [ this->n_comp() * this->n_dofs_per_element() * n_global_data ];
     }
-    auto &local_cache_vec = *( this->get_component_data(0).get() );
+    auto &local_cache_vec = *( this->get_data().get() );
     MPI_Gatherv( &local_cache_vec[0], this->n_comp()*this->n_dofs_per_element()*distr->lsize(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD) ;
 
     // create and fill serial cache
     if (rank==0) {
         gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), n_global_data, this->fe_type_, this->n_dofs_per_element_);
-        auto &gather_vec = *( gather_cache->get_component_data(0).get() );
+        auto &gather_vec = *( gather_cache->get_data().get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {
             i_global_coord = this->n_comp() * this->n_dofs_per_element() * rec_indices_ids[i];
@@ -362,9 +346,9 @@ template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) {
     unsigned int n_elem = offset_vec.size()-1;
     std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, 4*this->n_comp(), n_elem, this->fe_type_, this->n_dofs_per_element_);
-    auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
+    auto &data_out_vec = *( elem_node_cache->get_data().get() );
     std::fill( data_out_vec.begin(), data_out_vec.end(), (T)0 );
-    auto &data_in_vec = *( this->get_component_data(0).get() );
+    auto &data_in_vec = *( this->get_data().get() );
 
     unsigned int i_node, i_old, i_new;
     for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size()-1; i_el++) {
@@ -387,8 +371,8 @@ template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) {
     std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_,
             this->n_comp()/4, offset_vec[offset_vec.size()-1], this->fe_type_, this->n_dofs_per_element_);
-    auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
-    auto &data_in_vec = *( this->get_component_data(0).get() );
+    auto &data_out_vec = *( elem_node_cache->get_data().get() );
+    auto &data_in_vec = *( this->get_data().get() );
 
     unsigned int i_node, i_old, i_new;
     for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size()-1; i_el++) {
@@ -417,7 +401,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
     for (idx=0; idx < node_cache->n_values(); idx++)
         node_cache->zero(idx);
 
-    auto &data_in_vec = *( this->get_component_data(0).get() );
+    auto &data_in_vec = *( this->get_data().get() );
     for (idx=0; idx < conn_vec.size(); idx++) {
     	ASSERT_LT(conn_vec[idx], node_cache->n_values());
     	ASSERT_LT(this->n_comp()*this->n_dofs_per_element()*idx, data_in_vec.size());
@@ -453,8 +437,8 @@ MPI_Datatype ElementDataCache<unsigned int>::mpi_data_type() {
 template <class T>
 T& ElementDataCache<T>::operator[](unsigned int i)
 {
-	std::vector<T> &vec = *( this->data_[0].get() );
-    ASSERT_DBG(i < vec.size());
+    std::vector<T> &vec = *( this->data_.get() );
+    ASSERT_LT(i, vec.size());
     return vec[i];
 }
 

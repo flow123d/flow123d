@@ -160,7 +160,7 @@ void Logger::set_mask()
 
 #endif
 	default:
-	    ASSERT(false);
+	    ASSERT_PERMANENT(false);
 	}
 
 	full_streams_mask_ = full_streams_mask_ | streams_mask_;

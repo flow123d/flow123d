@@ -84,7 +84,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
         case NODE_DATA:
         case CORNER_DATA:
         {
-            auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+            auto &offset_vec = *( output_mesh_->offsets_->get_data().get() );
             size = offset_vec[offset_vec.size()-1];
             break;
         }
@@ -95,7 +95,7 @@ OutputTime::OutputDataPtr OutputTime::prepare_compute_data(std::string field_nam
             size = output_mesh_->offsets_->n_values()-1;
             break;
         default:
-            ASSERT(false).error("Should not happen.");
+            ASSERT_PERMANENT(false).error("Should not happen.");
             break;
     }
 

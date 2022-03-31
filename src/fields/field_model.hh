@@ -97,7 +97,7 @@ namespace detail
             if (n_comp == 0) {
                 n_comp = n_comp_new;
             } else {
-                ASSERT_DBG(n_comp == n_comp_new);
+                ASSERT(n_comp == n_comp_new);
             }
             return n_components<FIELD_TUPLE, INDEX - 1>::eval(std::forward<decltype(fields)>(fields), n_comp);
         };
@@ -131,7 +131,7 @@ namespace detail
     template<int spacedim, class Value>
     auto field_component(const MultiField<spacedim, Value> &f, uint i_comp) -> decltype(auto)
     {
-        ASSERT(f.is_multifield());
+        ASSERT_PERMANENT(f.is_multifield());
         return f[i_comp];
     }
 
@@ -141,7 +141,7 @@ namespace detail
     template<int spacedim, class Value>
     auto field_component(const Field<spacedim, Value> &f, FMT_UNUSED uint i_comp) -> decltype(auto)
     {
-        ASSERT(!f.is_multifield());
+        ASSERT_PERMANENT(!f.is_multifield());
         return f;
     }
 
@@ -195,6 +195,35 @@ namespace detail
     };
 
 
+
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE, int INDEX >
+    struct field_value
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(const Point &p, const ElementAccessor<spacedim> &elm, CALLABLE f, FIELD_TUPLE fields, Vs&&... args) -> decltype(auto) {
+            const auto &single_field = std::get < INDEX - 1 > (std::forward<decltype(fields)>(fields));
+            return field_value<spacedim, Value, CALLABLE, FIELD_TUPLE, INDEX - 1>::eval(
+                    p, elm, f, std::forward<decltype(fields)>(fields),
+                    single_field.value(p, elm), std::forward<Vs>(args)...);
+        }
+    };
+
+
+    /// terminal case - do the actual function call
+    template< int spacedim, class Value, typename CALLABLE, typename FIELD_TUPLE >
+    struct field_value< spacedim, Value, CALLABLE, FIELD_TUPLE, 0 >
+    {
+        typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
+
+        template< typename... Vs >
+        static auto eval(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, CALLABLE f, FMT_UNUSED FIELD_TUPLE fields,
+                Vs&&... args) -> decltype(auto)
+        {
+            return f(std::forward<Vs>(args)...);
+        }
+    };
 
 
     template<typename Function, typename Tuple>
@@ -283,15 +312,20 @@ public:
     }
 
     /// Implementation of virtual method
-    typename Value::return_type const &value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm) override {
-        ASSERT(false).error("Forbidden method!\n");
+    typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) override {
+    	this->r_value_ = detail::field_value<
+                spacedim, Value, Fn, decltype(input_fields), std::tuple_size<FieldsTuple>::value
+		        >::eval(p, elm, fn, input_fields);
         return this->r_value_;
     }
 
     /// Implementation of virtual method
-    void value_list(FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
-    	        FMT_UNUSED std::vector<typename Value::return_type> &value_list) override {
-        ASSERT(false).error("Forbidden method!\n");
+    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
+    	        std::vector<typename Value::return_type> &value_list) override {
+        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+
+        for (uint i=0; i<point_list.size(); ++i)
+            value_list[i] = this->value(point_list.template mat<Value::NRows_, Value::NCols_>(i), elm);
     }
 
 };
@@ -335,7 +369,7 @@ public:
         FieldTuple field_tuple = std::forward_as_tuple((inputs)...);
         constexpr uint n_inputs = sizeof...(InputFields);
         uint n_comp = detail::n_components< FieldTuple, n_inputs>::eval(field_tuple, 0);
-        ASSERT_DBG(n_comp > 0);
+        ASSERT(n_comp > 0);
         std::vector<FieldBasePtr> result_components;
         for(uint i=0; i<n_comp; i++) {
             const auto & component_of_inputs = detail::get_components< FieldTuple, n_inputs>::eval(field_tuple, i);

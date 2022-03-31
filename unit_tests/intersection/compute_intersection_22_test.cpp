@@ -95,7 +95,7 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
     IntersectionAux<2,2> is(0, 1);
-    ComputeIntersection<2,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
+    ComputeIntersection<2,2> CI(mesh->element_accessor(0), mesh->element_accessor(1));
     CI.init();
     CI.compute(is);
     
