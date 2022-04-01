@@ -186,6 +186,13 @@ Elasticity::EqFields::EqFields()
             .input_default("1.0")
             .flags_add(in_main_matrix & in_rhs);
 
+    *this+=initial_stress
+        .name("initial_stress")
+        .description("Initial stress tensor.")
+        .units( UnitSI().Pa() )
+        .input_default("0.0")
+        .flags_add(in_rhs);
+
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
