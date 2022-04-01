@@ -700,8 +700,8 @@ include_directories(
     ${YamlCpp_INCLUDE_DIR}
     ${PugiXml_INCLUDE_DIR}
     ${Zlib_INCLUDE_DIR}
-    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
-    ${CMAKE_SOURCE_DIR}/src/dealii/include
+#    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
+#    ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
@@ -745,6 +745,7 @@ set_source_files_properties(${CONFIG_FILE_HEADER}
 # get git information also through configure phase
 set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 include(Flow123d_git_info)
+
 
 # version in reference manual
 STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})

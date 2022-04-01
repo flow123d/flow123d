@@ -42,7 +42,7 @@ PROJECT_NAME           = Flow123d
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER=${GIT_DESCRIBE}
+PROJECT_NUMBER=${GIT_BRANCH_DESCRIBE}
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.

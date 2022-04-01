@@ -85,29 +85,42 @@
  *
  * @page Authors
  *
- * Jan Březina - coordinator, parallelism, schur complements
+ * Active developers
+ * =================
+ * 
+ * Jan Březina - coordinator, Fields, Mesh, Richards
+ * 
+ * Jan Stebel - DG transport, Mechanics, HM coupling, fracture contacts
+ * 
+ * David Flanderka - new assembly algorithm, bug fixes, technical improvements
+ * 
+ * Pavel Exner - mesh intersections, tests, bug fixes
  *
- * Otto Severýn - original multidimensional flow
+ * 
+ * Contributors
+ * ============
+ * 
+ * Otto Severýn - first versions of multidimensional flow
  *
- * Milan Hokr - density driven flow
+ * Milan Hokr - density driven flow 
  *
- * Jiří Kopal - transport
+ * Jan Hybš - profiler, Python formaters, infrastructure
+ * 
+ * Jiří Kopal - FV transport
  *
- * Jiří Hnídek - GMASH and VTK output classes, infrastructure
+ * Jiří Hnídek - GMESH and VTK output classes, infrastructure
  *
  * Jiří Jeníček - JSON reader
  *
- * Lukáš Zedek - SEMCHEM interface, linear reactions
+ * Lukáš Zedek - projection algorithm for fast non-linear sorption, linear reactions
  *
- * Jakub Šístek - two level domain decomposition methods without overlap
+ * Jakub Šístek - two level domain decomposition method without overlap
  *
  * Dalibor Frydrich
  *
  * Jan Lisal
  *
  * Tomáš Bambuch - profiler class
- *
- * Michal Nekvasil - automatic builds and tests
  */
 
 /**
