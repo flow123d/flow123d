@@ -17,37 +17,37 @@
 
 
 \section{Introduction}
-Flow123d is a~software for simulation of water flow, reactionary solute transport and heat transfer in a~heterogeneous 
-porous and fractured medium. In particular it is suited for simulation of underground processes in a~granite rock.
+Flow123d is a~software for simulating water flow, reactionary solute transport, heat transfer, and mechanics in a~heterogeneous
+porous and fractured medium. In particular, it is well-suited for simulations of underground processes in a~granite rock.
 The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
-domains of different dimensions. The computational mesh is therefore a~collection of tetrahedra, triangles and line segments.
+domains of different dimensions. Therefore, the computational mesh is a~collection of tetrahedra, triangles, and line segments.
 
-Two water flow models are available: The water flow model for a~saturated medium based on the Darcy law 
-and the model for partially saturated medium described by the Richards' equation. 
-Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization. 
-Both models can also switch between a~transient case and a~sequence of the steady states within a~single simulation. The model for unsaturated medium use 
-a lumped variant of the mixed-hybrid method in order to guarantee stability for short time steps which is connected with the satisfaction of the maximum principle.
+Two water flow models are available: a model for a~saturated medium based on the Darcy law
+and a~model for a~partially saturated medium described by Richards' equation.
+Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization.
+Both models can also switch between a~transient case and a~sequence of steady states within a~single simulation. The model for unsaturated medium uses
+a lumped variant of the mixed-hybrid method to satisfy the maximum principle and to guarantee stability for short time steps.
 
-In the present version,  only the model for the unsaturated media can be sequentially coupled  with the transport models including 
+In the current version,  only the model for saturated media can be sequentially coupled  with the transport models, including
 two models for the solute transport and one model for the heat transfer.
 
-The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses 
-the explicit Euler method for time discretization and the finite volume method for space discretization.
-The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances. 
+The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses
+the explicit Euler method for the time discretization and the finite volume method for the space discretization.
+The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances.
 It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
-the first, second or third order for the discretization in space.
+the first, second, or third order for the discretization in space.
 The operator splitting method can be used to couple any of these two solute transport models with  
- various processes described by the reaction term.  The reaction term can treat any meaningful combination of the dual porosity, 
-equilibrium sorptions, decays and linear reactions. 
+ various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity,
+equilibrium sorptions, decays, and linear reactions.
 
-The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model, 
-that is implicit DG method.
+The heat transfer model assumes equilibrium between the temperature of the rock and of the fluid phase. It uses the same numerical scheme as the second transport model, i.e., the DG method with the implicit time discretization.
 
-The program supports output of all input and output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
-or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
+The mechanical model computes linear elastic problems, taking into account the reduced dimension approach.
+It can be coupled with the flow model and solve linear poroelastic problems. This coupling is realized by an iterative scheme. Nonlinear dependency between strain and hydraulic conductivity and nonlinearity due to contacts and shear stress effects is the focus of ongoing development.
 
-The program is implemented in C/C++ using essentially PETSc library for linear algebra. All models can run in parallel using MPI environment, however, 
-the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
+The program supports the output of all input and output fields into two file formats. One can use the GMSH mesh generator and post-processor file format or the output into widely supported VTK format. In particular, we recommend Paraview software for the visualization and post-processing of the VTK data.
+
+The program is implemented in C/C++ using the PETSc library for linear algebra. All models can run in parallel using the MPI environment; however, the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
 
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
@@ -58,31 +58,30 @@ with sources on the GitHub:
 
 
 \section{Reading Documentation}
-The Flow123d documentation has two main parts. The chapters \ref{chapter:getting_started} up to \ref{chapter:tutorials} 
-form a~user guide while the last chapter \ref{chapter:input-tree-reference} provides an input reference.
-The user manual starts with Chapter \ref{chapter:getting_started} providing instructions for installation and execution of the program.
-The Chapter \ref{chapter:mathematical_models} provides detailed description of the implemented mathematical models.
-The Chapter \ref{chapter:numerical} presents used numerical methods. The input and output file formats are documented by the Chapter 
-\ref{chapter:file-formats}. Finally, the Chapter \ref{chapter:tutorials}  consists of tutorial problems.
+The Flow123d documentation has two main parts. Chapters \ref{chapter:getting_started} to \ref{chapter:tutorials} form a user
+manual, while the last Chapter \ref{chapter:input-tree-reference} provides an input reference.
+The user manual starts with Chapter \ref{chapter:getting_started} giving instructions for the installation and execution of the program.
+The Chapter \ref{chapter:mathematical_models} provides a detailed description of the implemented mathematical models. The
+Chapter \ref{chapter:numerical} presents used numerical methods.
+The input and output file formats are documented in Chapter \ref{chapter:file-formats}.
+Finally, Chapter \ref{chapter:tutorials} consists of tutorial problems.
 
-The reference guide, consisting only of the chapter \ref{chapter:input-tree-reference}, is automatically
-generated. It mirrors directly the code and describes whole structure of the main input file. Description
-of input records, their structure and default values are supplied there and bidirectional links to the user 
-guide are provided.
+The input reference guide, consisting only of Chapter \ref{chapter:input-tree-reference}, is automatically generated.
+It mirrors the code directly and describes the whole structure of the main input file. Description
+of input records, their structure, and default values are supplied there, and bidirectional links to the user manual are provided.
 
-The document is interactive. The blue text marks the links in the document. The magenta text marks the web links.
+The document is interactive; the {\color{blue}blue text} marks the links in the document, and the {\color{magenta}magenta text} marks the web links.
 
 
 
 
 \section{Installing Flow123d}
-Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
-Docker is an open-source project that automates the deployment of Linux applications inside software containers. 
-Entire Flow123d software is wrapped in a~docker image that contains also necessary libraries and crucial components 
-of the Linux operating system.
+Software Flow123d requires the tool \href{https://www.docker.com}{Docker}. Docker is an open-source project that automates
+the deployment of Linux applications inside software containers. Entire Flow123d software is packed in a~Docker image that
+also contains necessary libraries and crucial components of the Linux operating system.
 
-The installation process imports docker image into your machine and personalize the docker image. The installation 
-instructions for the Linux and the Windows operating systems are provided in the next two sections.
+The installation process imports the Docker image into the user's machine and personalizes the Docker image.
+The installation instructions for Linux and Windows operating systems are provided in the two following sections.
 
 
 \subsection{Installing Flow123d on Linux}
