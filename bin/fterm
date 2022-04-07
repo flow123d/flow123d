@@ -356,7 +356,7 @@ fi
 # set flow123d_images if empty
 if [ -z "$flow123d_images" ]
 then
-flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel flow-dev-${image_env}-profile"
+flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"  # flow-dev-${image_env}-profile"
 fi
 
 
