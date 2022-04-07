@@ -124,8 +124,7 @@ The form of the isotherm $f$ is determined by the parameter \hyperA{Sorption-Dat
 ``$freundlich$'' & $k_F \varrho_l c_l^{\alpha}$ &\\\hline
 ``$langmuir$'' & $k_L \varrho_l \frac{\alpha c_l}{1 + \alpha c_l}$ &
        Langmuir isotherm has been derived from thermodynamic laws. The number $k_L\varrho_l$ denotes the maximal amount 
-       of sorbing specie which can be kept in an unit volume of a~bulk matrix. Coefficient $\alpha$ is 
-       a~fraction of sorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.\\\hline
+       of sorbing specie which can be kept in an unit volume of a~bulk matrix. Coefficient $\alpha$ is a~fraction of sorption and desorption rates.\\\hline
 \end{tabular}
 \end{center}
 Main parameter of these isotherms is the \hyperA{Sorption-Data::distribution-coefficient}{distribution coefficient} $k_i, i\in\{ l,F,L\}$ \units{-1}{3}{}.
@@ -133,11 +132,11 @@ Nonlinear isotherms have an \hyperA{Sorption-Data::isotherm-other}{additional pa
 Note that older versions of Flow123d prior to 2.0.0 used a~different coefficient $k_i$ denoted \texttt{isotherm\_mult} with the unit [mol$\,\mathrm{kg}^{-1}$].
 The conversion rule between the old and new distribution coefficient is
 \[ k_i^{new} = \frac{M_s}{\varrho_l} k_i^{old}, \]
-where $M_s$ stands for the \hyperA{Substance::molar-mass}{molar mass} of a~substance.
+where $M_s$ [$\mathrm{kg}\,\mathrm{mol}^{-1}$] stands for the \hyperA{Substance::molar-mass}{molar mass} of a~substance.
 
-Concept of the general distribution coefficient is thoroughly discussed e.g. in \cite{ORIA1999}. Key assumptions about $k$ are:
+Concept of the general distribution coefficient is thoroughly discussed e.g. in \cite{ORIA1999}. Key assumptions about $k_i$ are:
 \begin{itemize}
- \item Density $\rho_l$ in isotherm expressions is technically the density of the solvent used during measurement of $k$, 
+ \item Density $\rho_l$ in isotherm expressions is technically the density of the solvent used during measurement of $k_i$, 
  which could be different then the density of the solvent used in calculation.
  E.g. slight changes in the density of water according to variations in chemical composition and isotopes. But usually the difference is negligible. 
  \item Concentrations in both liquid and solid phase are very small. In particular the number of unoccupied adsorption sites 
@@ -145,7 +144,7 @@ Concept of the general distribution coefficient is thoroughly discussed e.g. in 
  \item All adsorption sites are equivalent.
  \item Sorption is understood in general manner including all linear processes that are able to store the substance.
  \item System is considered in thermodynamic equilibrium.
- \item Single distribution coefficient $K$ is specific for combination adsorbent, solvent, substance.
+ \item Single distribution coefficient $k_i$ is specific for combination adsorbent, solvent, substance.
 \end{itemize}
 
 
