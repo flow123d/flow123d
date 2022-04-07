@@ -1,15 +1,15 @@
 
 
 \section{Tutorial Problem}
-In the following section, we shall provide an example cook book for preparing and running a~model,
+In the following section, we shall provide an example cookbook for preparing and running a~model
 based on one of the test problems, namely
 \begin{verbatim}
-tests/21_solute_fv_frac/03_fv_dp_sorp_small.yaml.
+    tests/21_solute_fv_frac/03_fv_dp_sorp_small.yaml.
 \end{verbatim}
-We shall start with the preparation of the geometry using an external software and then we shall go step by step through the 
+We shall start with the preparation of the geometry using external software, and then we shall go step by step through the
 commented main input file. The problem includes steady Darcy flow, transport of two substances with explicit
-time discretization and a~reaction term consisting of dual porosity and sorption model.
-Further tutorials focused on particular features can be found in Chapter \ref{chapter:tutorials}.
+time discretization, and a~reaction term consisting of dual porosity and sorption models.
+More tutorials focused on particular features can be found in Chapter \ref{chapter:tutorials}.
 
 \subsection{Geometry}
 We consider a~simple 2D problem with a~branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). 
@@ -78,7 +78,7 @@ The mesh file contains both the 'bulk' elements where we perform calculations an
 
 \subsection{YAML File Format}
 The main input file uses the YAML file format with some restrictions. 
-We prefer to call YAML objects ``records'' and we introduce also ``abstract records''
+We prefer to call YAML objects \emph{records} and we introduce also \emph{abstract records}
 that mimic C++ abstract classes.
 Arrays have only elements of the same type (possibly using abstract record types for polymorphism). 
 The usual keys are in lower case and without spaces (using underscores instead).
@@ -88,9 +88,8 @@ For detailed description see Section \ref{sec:CONformat}.
 Having the computational mesh from the previous step, we can create the main input file with the description of our problem. 
 \begin{Verbatim}[numbers=left]
 flow123d_version: 3.1.0
-problem: !CouplingSequential
-  description: Tutorial problem: Transport 1D-2D (convection, dual
-               porosity, sorption, sources).
+problem: !Coupling_Sequential
+  description: 'Transport 1D-2D (convection, reaction term, sources).'
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
     regions:
@@ -101,10 +100,11 @@ problem: !CouplingSequential
           - 1d_lower
           - 1d_left_branch
 \end{Verbatim}
-The file starts with a~selection of problem type (\verb'CouplingSequential'), and a~textual problem description.
-Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one region 
-given as the union of all 1D regions i.e. representing the whole fracture. Other keys of the \Alink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
-defining new regions in terms of element numbers (e.g to have leakage on single element), 
+The version of Flow123d for which the file is a~valid input is specified at the first line.
+Then the description starts with a~selection of the problem type (\verb'Coupling_Sequential'), and a~textual problem description.
+Next, the computational mesh is defined; here it consists of the name of the mesh file and the declaration of one region
+given as the union of all 1D regions, i.e., representing the whole fracture. Other keys of the \Alink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers,
+defining new regions in terms of element numbers (e.g to have a~leakage on single element),
 defining boundary regions, and several operations with region sets, see Section \ref{sec:Mesh} for details.
 
 \subsection{Flow Setting}
@@ -152,7 +152,7 @@ On line \ref{vrb:tutorial_floweq}, we specify particular implementation (numeric
 solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end} in the array \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}, 
 we set both mathematical fields that live on the computational domain 
 and those defining the boundary conditions.
-We use implicitly defined region ``.BOUNDARY'' that contains all boundary regions and we set there Dirichlet boundary condition in terms of the 
+We use implicitly defined region \verb'.BOUNDARY' that contains all boundary regions and we set there Dirichlet boundary condition in terms of the
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt !FieldFormula}.
 See Section \ref{sec:Fields} for other field types. 
 Next, we specify the type of the linear solver and its tolerances.
