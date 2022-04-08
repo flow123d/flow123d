@@ -628,7 +628,7 @@ public:
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
-        arma::mat33 stress = arma::zeros(3,3);
+        arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
@@ -637,12 +637,9 @@ public:
             div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
         }
 
-        arma::mat33 initial_stress = eq_fields_->initial_stress(p);
-        arma::mat33 absolute_stress = stress + initial_stress;
-        // arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
-        arma::mat33 stress_dev = absolute_stress - arma::trace(absolute_stress)/3*arma::eye(3,3);
+        arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
         double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
-        double mean_stress = arma::trace(absolute_stress) / 3;
+        double mean_stress = arma::trace(stress) / 3;
         output_div_vec_.add(dof_indices_scalar_[0], div);
 
         for (unsigned int i=0; i<3; i++)
