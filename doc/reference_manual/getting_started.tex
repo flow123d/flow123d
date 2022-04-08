@@ -128,9 +128,9 @@ Whole process may take several minutes (depending on user's machine performance 
 \subsection{Installing Flow123d on Windows}
 \subsubsection{Before you install}
 
-This version uses \verb'Docker for Windows', previous versions which used \verb'Docker Toolbox' will \textbf{stop working}.
+This version uses \verb'Docker Desktop', previous versions which used \verb'Docker for Windows' and \verb'Docker Toolbox' will \textbf{stop working}.
 
-Make sure your system fullfills following requirements in order to support \verb'Docker for Windows':
+Make sure your system fullfills following requirements in order to support \verb'Docker Desktop':
 \begin{itemize}
     \item Windows 10 64bit: Pro, Enterprise or Education (1607 Anniversary Update, Build 14393 or later).
     \item Virtualization is enabled in BIOS. Typically, virtualization is enabled by default. This is different from having Hyper-V enabled. For more detail see \href{https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled}{Virtualization must be enabled} in Troubleshooting.
@@ -144,7 +144,7 @@ Make sure your system fullfills following requirements in order to support \verb
 To install Flow123d on Windows, download installer from \href{http://flow123d.github.io/}{Official pages}, execute it and follow instructions
 on your screen. To make things easier, you can also \href{https://www.youtube.com/watch?v=xDR2vU-1IhM}{watch a installation video}.
 
-If for some reason the installation failed, make sure eveything below is in order:
+If for some reason the installation failed, make sure everything below is in order:
 
 
 \subsubsection{Flow123d troubleshooting}
@@ -163,19 +163,19 @@ If for some reason the installation failed, make sure eveything below is in orde
    To add this location to the system PATH variable follow the instructions at
    \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
 
-   \item For detailed instructions refer to \href{https://docs.docker.com/docker-for-windows/}{Docker docs}.
+   \item For detailed instructions refer to \href{https://docs.docker.com/desktop/windows/}{Docker docs}.
 \end{itemize}
 
 
 \subsubsection{Uninstalling Flow123d}
 To uninstall Flow123d, in Windows open \verb'Apps & features' (\verb'Aplikace a funkce' in Czech), find the Flow123d in the list
-and click uninstall. This will only uninstall the Flow123d but not \verb'Docker for Windows'.
+and click uninstall. This will only uninstall the Flow123d but not \verb'Docker Desktop'.
 
 
 \subsubsection{Reinstalling Flow123d}
 \label{duplicit-image}
 If you are installing same version of Flow123d again, installation process will be the same,
-except \verb'Docker for Windows' installation will be skipped.
+except \verb'Docker Desktop' installation will be skipped.
 
 
 \section{Running Flow123d}
@@ -256,7 +256,7 @@ may look like:
 
 \subsubsection{Adjusting memory of virtual machine}
 To change the memory limits of the Virtual machine, open the Docker Settings dialog (right click on the whale icon) and select \verb'Settings'.
-Navigate to \verb'Advanced' tab and adjust the memory. Detailed instructions can be found \href{https://docs.docker.com/docker-for-windows/#advanced}{Docker docs}.
+Navigate to \verb'Advanced' tab and adjust the memory. Detailed instructions can be found \href{https://docs.docker.com/desktop/windows/#advanced}{Docker docs}.
 
 
 \section{Flow123d arguments}
