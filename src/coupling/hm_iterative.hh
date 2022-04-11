@@ -130,7 +130,7 @@ public:
     public:
         EqFields();
         
-        void initialize(Mesh &mesh);
+        void initialize(Mesh &mesh, HM_Iterative &parent);
         
         Field<3, FieldValue<3>::Scalar> alpha;   ///< Biot coefficient.
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
@@ -141,13 +141,13 @@ public:
         Field<3, FieldValue<3>::Scalar> pressure_potential;
         Field<3, FieldValue<3>::Scalar> ref_pressure_potential; ///< Potential of reference (prescribed) pressure from flow b.c. TODO: Swith to BCField when possible.
         Field<3, FieldValue<3>::Scalar> flow_source;
+        Field<3, FieldValue<3>::Scalar> old_pressure;
+        Field<3, FieldValue<3>::Scalar> old_div_u;
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
     
