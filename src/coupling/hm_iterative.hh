@@ -144,7 +144,6 @@ public:
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > beta_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
@@ -185,9 +184,6 @@ private:
     
     EqFields eq_fields_;
 
-    /// Tuning parameter for iterative splitting.
-    double beta_;
-    
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */

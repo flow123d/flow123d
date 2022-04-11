@@ -37,6 +37,22 @@ struct fn_pressure_potential {
     }
 };
 
+struct fn_hm_coupling_beta {
+
+    fn_hm_coupling_beta(double beta_f) : beta_factor(beta_f) {}
+
+
+    inline double operator() (double alpha, double lame_mu, double lame_lambda)
+    {
+        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda);
+    }
+
+private:
+
+    const double beta_factor; ///< User-defined factor for iteration parameter.
+
+};
+
 
 const it::Record & HM_Iterative::get_input_type() {
     return it::Record("Coupling_Iterative",
@@ -123,16 +139,13 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh)
     ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     ref_pressure_potential.set(ref_potential_ptr_, 0.0);
     
-    beta_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
-    beta.set(beta_ptr_, 0.0);
-    
-    flow_source_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    flow_source_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
     flow_source.set(flow_source_ptr_, 0.0);
     
-    old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
-    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
-    div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
-    old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(beta_ptr_->get_dofhandler());
+    old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(flow_source_ptr_->get_dofhandler());
+    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(flow_source_ptr_->get_dofhandler());
+    div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(flow_source_ptr_->get_dofhandler());
+    old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(flow_source_ptr_->get_dofhandler());
 }
 
                                     
@@ -174,9 +187,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     eq_fields_ += *flow_->eq_fields().field("pressure_edge");
 
-    // read parameters controlling the iteration
-    beta_ = in_record.val<double>("iteration_parameter");
-
     this->eq_fieldset_ = &eq_fields_;
     
     // setup input fields
@@ -190,7 +200,18 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 void HM_Iterative::initialize()
 {
     eq_fields_.pressure_potential.set(Model<3, FieldValue<3>::Scalar>::create(
-        fn_pressure_potential(), eq_fields_.alpha, eq_fields_.density, eq_fields_.gravity, flow_->eq_fields().field_edge_pressure
+        fn_pressure_potential(),
+        eq_fields_.alpha,
+        eq_fields_.density,
+        eq_fields_.gravity,
+        flow_->eq_fields().field_edge_pressure
+        ), 0.0);
+    
+    eq_fields_.beta.set(Model<3, FieldValue<3>::Scalar>::create(
+        fn_hm_coupling_beta(input_record_.val<double>("iteration_parameter")),
+        eq_fields_.alpha,
+        mechanics_->eq_fields().lame_mu,
+        mechanics_->eq_fields().lame_lambda
         ), 0.0);
 }
 
@@ -311,9 +332,8 @@ void HM_Iterative::update_potential()
 
 void HM_Iterative::update_flow_fields()
 {
-    auto beta_vec = eq_fields_.beta_ptr_->vec();
     auto src_vec = eq_fields_.flow_source_ptr_->vec();
-    auto dh = eq_fields_.beta_ptr_->get_dofhandler();
+    auto dh = eq_fields_.flow_source_ptr_->get_dofhandler();
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
     field_ele_pressure.copy_from(*flow_->eq_fields().field("pressure_p0"));
     for ( auto ele : dh->local_range() )
@@ -321,23 +341,17 @@ void HM_Iterative::update_flow_fields()
         auto elm = ele.elm();
         
         double alpha = eq_fields_.alpha.value(elm.centre(), elm);
-        double young = mechanics_->eq_fields().young_modulus.value(elm.centre(), elm);
-        double poisson = mechanics_->eq_fields().poisson_ratio.value(elm.centre(), elm);
-        double beta = beta_*0.5*alpha*alpha/(2*lame_mu(young, poisson)/elm.dim() + lame_lambda(young, poisson));
-        
         double old_p = eq_fields_.old_pressure_ptr_->value(elm.centre(), elm);
         double p = field_ele_pressure.value(elm.centre(), elm);
         double div_u = eq_fields_.div_u_ptr_->value(elm.centre(), elm);
         double old_div_u = eq_fields_.old_div_u_ptr_->value(elm.centre(), elm);
+        double beta = eq_fields_.beta.value(elm.centre(), elm);
         double src = (beta*(p-old_p) + alpha*(old_div_u - div_u)) / time_->dt();
         
-        beta_vec.set(ele.local_idx(), beta);
         src_vec.set(ele.local_idx(), src);
     }
     
-    beta_vec.local_to_ghost_begin();
     src_vec.local_to_ghost_begin();
-    beta_vec.local_to_ghost_end();
     src_vec.local_to_ghost_end();
     eq_fields_.beta.set_time_result_changed();
     eq_fields_.flow_source.set_time_result_changed();
@@ -348,7 +362,7 @@ void HM_Iterative::update_flow_fields()
 
 void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 {
-    auto dh = eq_fields_.beta_ptr_->get_dofhandler();
+    auto dh = eq_fields_.flow_source_ptr_->get_dofhandler();
     double p_dif2 = 0, p_norm2 = 0;
     Field<3,FieldValue<3>::Scalar> field_ele_pressure;
     field_ele_pressure.copy_from(*flow_->eq_fields().field("pressure_p0"));
