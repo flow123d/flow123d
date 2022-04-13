@@ -303,6 +303,7 @@ public:
         this->used_fields_ += eq_fields_->bc_displacement;
         this->used_fields_ += eq_fields_->bc_traction;
         this->used_fields_ += eq_fields_->bc_stress;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -366,6 +367,7 @@ public:
                 local_rhs_[i] += (
                                  arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
                                  -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
+                                 -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
                                 )*eq_fields_->cross_section(p)*fe_values_.JxW(k);
             ++k;
         }
@@ -401,7 +403,20 @@ public:
         // local_flux_balance_vector.assign(n_dofs_, 0);
         // local_flux_balance_rhs = 0;
 
-        unsigned int k=0;
+        unsigned int k = 0;
+
+        // addtion from initial stress
+        for (auto p : this->boundary_points(cell_side) )
+        {
+            for (unsigned int i=0; i<n_dofs_; i++)
+                local_rhs_[i] += eq_fields_->cross_section(p) *
+                        arma::dot(( eq_fields_->initial_stress(p) * fe_values_bdr_side_.normal_vector(k)),
+                                    vec_view_bdr_->value(i,k)) *
+                        fe_values_bdr_side_.JxW(k);
+            ++k;
+        }
+
+        k = 0;
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
@@ -565,6 +580,7 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -612,7 +628,7 @@ public:
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
-        arma::mat33 stress = arma::zeros(3,3);
+        arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {

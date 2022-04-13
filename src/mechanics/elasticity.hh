@@ -70,6 +70,7 @@ public:
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
+        Field<3, FieldValue<3>::TensorFixed> initial_stress;
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
