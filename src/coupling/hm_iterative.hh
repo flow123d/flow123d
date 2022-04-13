@@ -32,6 +32,9 @@ class Mesh;
 class FieldCommon;
 class RichardsLMH;
 
+template<unsigned int dim> class FlowPotentialAssemblyHM;
+template<unsigned int dim> class ResidualAssemblyHM;
+
 namespace it = Input::Type;
 
 
@@ -125,12 +128,26 @@ private:
 class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
     
+    class EqData
+    {
+    public:
+        /// steady or unsteady water flow simulator based on MH scheme
+        std::shared_ptr<RichardsLMH> flow_;
+
+        /// solute transport with chemistry through operator splitting
+        std::shared_ptr<Elasticity> mechanics_;
+
+        double p_dif2; ///< Squared norm of pressure difference in two subsequent iterations.
+        double p_norm2; ///< Squared pressure norm in the last iteration.
+    };
+
+
     class EqFields : public FieldSet
     {
     public:
         EqFields();
         
-        void initialize(Mesh &mesh, HM_Iterative &parent);
+        void initialize(Mesh &mesh, HM_Iterative::EqData &eq_data);
         
         Field<3, FieldValue<3>::Scalar> alpha;   ///< Biot coefficient.
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
@@ -142,6 +159,7 @@ public:
         Field<3, FieldValue<3>::Scalar> ref_pressure_potential; ///< Potential of reference (prescribed) pressure from flow b.c. TODO: Swith to BCField when possible.
         Field<3, FieldValue<3>::Scalar> flow_source;
         Field<3, FieldValue<3>::Scalar> old_pressure;
+        Field<3, FieldValue<3>::Scalar> old_iter_pressure;
         Field<3, FieldValue<3>::Scalar> old_div_u;
         
         /// FieldFE for pressure_potential field.
@@ -150,6 +168,7 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
+
     
     /// Define input record.
     static const Input::Type::Record & get_input_type();
@@ -176,13 +195,12 @@ private:
     
     static const int registrar;
 
-    /// steady or unsteady water flow simulator based on MH scheme
-    std::shared_ptr<RichardsLMH> flow_;
-
-    /// solute transport with chemistry through operator splitting
-    std::shared_ptr<Elasticity> mechanics_;
+    GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
+    GenericAssembly<ResidualAssemblyHM> *residual_assembly_;
     
     EqFields eq_fields_;
+
+    EqData eq_data_;
 
 };
 
