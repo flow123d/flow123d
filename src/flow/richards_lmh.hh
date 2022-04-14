@@ -27,6 +27,9 @@ namespace Input {
 		class Record;
 	}
 }
+template<unsigned int dim> class InitCondPostprocessAssembly;
+template<unsigned int dim> class MHMatrixAssemblyRichards;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
  * @brief Edge lumped mixed-hybrid solution of unsteady Darcy flow.
@@ -101,6 +104,8 @@ public:
     
     void accept_time_step() override;
     
+    virtual ~RichardsLMH() override;
+
 protected:
     /// Registrar of class to factory
     static const int registrar;
@@ -109,12 +114,23 @@ protected:
 
     void initialize_specific() override;
 
-    void initial_condition_postprocess() override;
+//    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
+
+    /// Create and initialize assembly objects
+    void initialize_asm() override;
+
+    /// Call assemble of read_init_cond_assembly_ and init_cond_postprocess_assembly_
+    void read_init_cond_asm() override;
+
 private:
 
     std::shared_ptr<EqFields> eq_fields_;
     std::shared_ptr<EqData> eq_data_;
+
+    /// general assembly object, hold assembly objects of appropriate dimension
+    GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
+
 };
 
 

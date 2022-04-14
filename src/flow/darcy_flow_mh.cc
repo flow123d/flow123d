@@ -76,7 +76,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 
 
-
 namespace it = Input::Type;
 
 const it::Selection & DarcyMH::get_mh_mortar_selection() {

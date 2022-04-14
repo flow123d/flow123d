@@ -19,7 +19,6 @@
 #define TIMEPOINT_HH_
 
 
-using namespace std;
 
 /**
  * Class TimerData serves for getting current time in ticks units.

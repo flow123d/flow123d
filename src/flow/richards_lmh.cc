@@ -16,8 +16,8 @@
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
 #include "flow/soil_models.hh"
-#include "flow/assembly_richards_old.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_richards.hh"
 #include "tools/time_governor.hh"
 
 #include "petscmat.h"
@@ -34,8 +34,6 @@
 
 FLOW123D_FORCE_LINK_IN_CHILD(richards_lmh)
 
-
-namespace it=Input::Type;
 
 
 RichardsLMH::EqFields::EqFields()
@@ -80,8 +78,10 @@ RichardsLMH::EqData::EqData()
 : DarcyLMH::EqData::EqData() {}
 
 
-const it::Record & RichardsLMH::get_input_type() {
-    it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
+const Input::Type::Record & RichardsLMH::get_input_type() {
+	namespace it=Input::Type;
+
+	it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
     .copy_keys( DarcyLMH::type_field_descriptor() )
     .copy_keys( RichardsLMH::EqFields().make_field_descriptor_type("RichardsLMH_Data_aux") )
     .close();
@@ -161,19 +161,19 @@ void RichardsLMH::initialize_specific() {
     eq_fields_->conductivity_richards.set(eq_fields_->conductivity_ptr, 0.0);
 
 
-    eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(eq_fields_, eq_data_);
+    //eq_data_->multidim_assembler = AssemblyFlowBase::create< AssemblyRichards >(eq_fields_, eq_data_);
 }
 
 
-void RichardsLMH::initial_condition_postprocess()
-{
-    // modify side fluxes in parallel
-    // for every local edge take time term on diagonal and add it to the corresponding flux
-    
-    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
-    	eq_data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
-    }
-}
+//void RichardsLMH::initial_condition_postprocess()
+//{
+//    // modify side fluxes in parallel
+//    // for every local edge take time term on diagonal and add it to the corresponding flux
+//
+//    for ( DHCellAccessor dh_cell : eq_data_->dh_->own_range() ) {
+//    	eq_data_->multidim_assembler[dh_cell.elm().dim()-1]->update_water_content(dh_cell);
+//    }
+//}
 
 
 void RichardsLMH::accept_time_step()
@@ -223,8 +223,33 @@ void RichardsLMH::assembly_linear_system()
         lin_sys_schur().mat_zero_entries();
         lin_sys_schur().rhs_zero_entries();
 
-        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+//        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
+        START_TIMER("RichardsLMH::assembly_steady_mh_matrix");
+        this->mh_matrix_assembly_->assemble(eq_data_->dh_); // fill matrix
+        END_TIMER("RichardsLMH::assembly_steady_mh_matrix");
 
         lin_sys_schur().finish_assembly();
         lin_sys_schur().set_matrix_changed();
+}
+
+
+void RichardsLMH::initialize_asm() {
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+}
+
+
+void RichardsLMH::read_init_cond_asm() {
+    this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
+    this->init_cond_postprocess_assembly_->assemble(eq_data_->dh_cr_);
+}
+
+
+RichardsLMH::~RichardsLMH() {
+    if (init_cond_postprocess_assembly_!=nullptr) {
+        delete init_cond_postprocess_assembly_;
+        init_cond_postprocess_assembly_ = nullptr;
+    }
 }

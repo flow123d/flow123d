@@ -37,6 +37,7 @@ if (GIT_FOUND)
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
   
+  
   # Get remote branch we are tracking
   execute_process(
     COMMAND git branch --list -vv ${GIT_BRANCH}
@@ -103,11 +104,22 @@ if (GIT_FOUND)
   list(GET BRANCH_VERSION_LIST 2 GIT_VERSION_PATCH)
       
   set(GIT_BRANCH ${GIT_BRANCH} CACHE INTERNAL "Current git branch.")
-  set(GIT_DESCRIBE ${GIT_DESCRIBE} CACHE INTERNAL "Human readable description of last git commit.")
+  set(GIT_DESCRIBE ${GIT_DESCRIBE} CACHE INTERNAL "Human readable description of the commit containing last annotated tag.")
+  set(GIT_BRANCH_DESCRIBE ${GIT_BRANCH}-${GIT_SHORT_HASH} CACHE INTERNAL "Human readable description of the commit containing actual branch.") 
   set(GIT_SHORT_HASH ${GIT_SHORT_HASH} CACHE INTERNAL "Short hash of current commit.")
   set(GIT_URL ${GIT_URL} CACHE INTERNAL "URL of remote repository.")
   set(GIT_VERSION_MAJOR ${GIT_VERSION_MAJOR} CACHE INTERNAL "Major version component.")
   set(GIT_VERSION_MINOR ${GIT_VERSION_MINOR} CACHE INTERNAL "Minor version component.")
   set(GIT_VERSION_PATCH ${GIT_VERSION_PATCH} CACHE INTERNAL "Patch version component.")
   set(GIT_VERSION_FULL ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH} CACHE INTERNAL "Full version name.")
+  
+  message(STATUS "======================================")
+  message(STATUS "====== Git summary ===================")
+  message(STATUS "======================================")
+  message(STATUS "GIT_BRANCH:      ${GIT_BRANCH}")
+  message(STATUS "GIT_DESCRIBE:    ${GIT_DESCRIBE}")
+  message(STATUS "GIT_BRANCH_DESCRIBE:    ${GIT_BRANCH_DESCRIBE}")
+  message(STATUS "GIT_URL:         ${GIT_URL}")
+  message(STATUS "GIT_SHORT_HASH:  ${GIT_SHORT_HASH}")
+  message(STATUS "GIT_VERSION_FULL: ${GIT_VERSION_FULL}")
 endif()

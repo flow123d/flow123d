@@ -457,6 +457,9 @@ protected:
     /// Arrays of ghost cells for each neighbouring processor.
     map<unsigned int, vector<LongIdx> > ghost_proc_el;
 
+    /// Temporary flag which prevents using dof handler on meshes where edges are not allocated (currently BCMesh).
+    bool distribute_edge_dofs;
+
 };
 
 

@@ -1,6 +1,49 @@
 List of all changes in user interface and major internal changes.
 
 ***********************************************
+# Flow123d version 3.9.0 
+(2022-03-05)
+Alpha version of 4.x major release, with mostly backward compatible input.
+
+## User interface
+* FieldFormula use BParser with some conversion rules to keep FParser syntax, but 
+  minor incompatibilities may happen.
+* VTK output does not prevent numbering of elements and nodes of the input mesh
+* Repporting of HM solver non-convergence
+
+## New features
+* Implementation of Native VTK output
+* Implementation of GMSH and VTK readers, compatible writers and readers allowing passing outputs as initiali conditions.
+* Support for "native" output of presure edge DOFs
+* Poroelasticity model with nonlinear effects: ??
+* Allowed output of a field in several "interpolations", e.g. CellData together with NodeData and NativeData
+* FieldFormula can depend on other field within the equation FieldSet
+* user fields (test 02/16) 
+
+## Bug fixes
+* Poroelasticity bug fixes, extended test suite.
+* Year time unit changed to 365.2425 days to be closer to astronomical year.
+* velocity reconstruction in zero time step
+* partialy fixed sequantial coupling that must work for both steady and unsteady Darcy flow, 
+  while the time interpolation of the resulting velocity should be different
+* fixed check of the mash compatibility for the boundary FieldFE
+
+## Internals
+* BParser used in FieldFormula. Requires SSE2 instructions.
+* New assembly algorithm used consistently through the code (without performance regrassion)
+* FieldModel introduced.
+* FieldModel used in DarcyFlow (pressure head to piezometric head conversion), DG transport Concentration and Heat parameter models, darcy flow to velocity.
+* Removed explicit face permutations, replaced by element-nodes premutations with guaranteed face matching
+* Optimization of the elements and nodes order for the memory locality.
+* removed xprintf
+* Boundary Mesh - allow setup of a limited DOF Handler on the boundary
+* old asserts completely replaced
+* new scheme for building docker images, own build of MPICH with Intel Omnipath support
+* Intel and GNU based images, consistent image naming scheme
+* VecMPI improved and used in FV transport
+
+
+***********************************************
 # Flow123d version 3.1.0
 (2020-12-17)
 
@@ -10,7 +53,7 @@ List of all changes in user interface and major internal changes.
 ### Bug fixes
 * ignore unused nodes if these are present in mesh
 
-### Internals:
+### Internals
 * remove old mixed-hybrid dofhandler
 * apply field_fe in equations, mainly passing darcian velocity to transport model, field_fe in reaction term etc.
 * improvements in FE classes (FEValues)
@@ -19,6 +62,8 @@ List of all changes in user interface and major internal changes.
 <!--
 Probably even more changes - mirrors current master branch.
 -->
+
+***********************************************
 
 # Flow123d version 3.0.4
 (2020-06-16)
@@ -83,6 +128,8 @@ TODO: do not know what was actually released...
 * update runtest, better logging support, (verbosity level support)
 * docker image hosting is now preferable way to deliver Flow123d
 -->
+
+***********************************************
 
 # Flow123d version 3.0.0
 (2017-12-30)
