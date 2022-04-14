@@ -186,6 +186,13 @@ Elasticity::EqFields::EqFields()
             .input_default("1.0")
             .flags_add(in_main_matrix & in_rhs);
 
+    *this+=initial_stress
+        .name("initial_stress")
+        .description("Initial stress tensor.")
+        .units( UnitSI().Pa() )
+        .input_default("0.0")
+        .flags_add(in_rhs);
+
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
@@ -222,6 +229,12 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
+    *this += output_mean_stress
+            .name("mean_stress")
+            .description("mean stress output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
     *this += output_cross_section
             .name("cross_section_updated")
             .description("Cross-section after deformation - output.")
@@ -349,6 +362,10 @@ void Elasticity::initialize()
     // setup output von Mises stress
     eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
+
+    // setup output mean stress
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
     eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
@@ -407,24 +424,28 @@ Elasticity::~Elasticity()
 
 void Elasticity::update_output_fields()
 {
-    // update ghost values of solution vector
+    eq_fields_->set_time(time_->step(), LimitSide::right);
+    
+    // update ghost values of solution vector and prepare dependent fields
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_stress_ptr->vec().zero_entries();
+	eq_fields_->output_cross_section_ptr->vec().zero_entries();
+	eq_fields_->output_div_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
-	eq_fields_->output_stress_ptr->vec().zero_entries();
-	eq_fields_->output_cross_section_ptr->vec().zero_entries();
-	eq_fields_->output_div_ptr->vec().zero_entries();
     output_fields_assembly_->assemble(eq_data_->dh_);
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
 }
 

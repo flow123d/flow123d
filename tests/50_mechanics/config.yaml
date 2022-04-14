@@ -14,12 +14,14 @@ test_cases:
   - 01_inject.yaml
   - 02_terzaghi.yaml
   - 03_mandel.yaml
+  - 06_inject_var_cond.yaml
   - 20_2d_block_load.yaml
   - 21_2d_displacement.yaml
   - 23_square_frac_chopped.yaml
   - 24_square_barrier_chopped.yaml
   - 26_2d_bc_stress.yaml
   - 30_3d_block_load.yaml
+  - 31_3d_block_initial_stress.yaml
 - files:
   - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml

@@ -123,7 +123,8 @@ const int RichardsLMH::registrar =
 
 
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
-    : DarcyLMH(mesh_in, in_rec, tm)
+    : DarcyLMH(mesh_in, in_rec, tm),
+    init_cond_postprocess_assembly_(nullptr)
 {
     eq_fields_ = make_shared<EqFields>();
     eq_data_ = make_shared<EqData>();
@@ -131,6 +132,8 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGoverno
     DarcyLMH::eq_fields_ = eq_fields_;
     this->eq_fieldset_ = eq_fields_.get();
     //eq_data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
+
+    eq_fields_->set_mesh(*mesh_);
 }
 
 
@@ -152,7 +155,6 @@ void RichardsLMH::initialize_specific() {
 
     ASSERT_PTR(mesh_);
     eq_data_->mesh = mesh_;
-    eq_fields_->set_mesh(*mesh_);
 
     eq_fields_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_cr_disc_);
     eq_fields_->water_content.set(eq_fields_->water_content_ptr, 0.0);
