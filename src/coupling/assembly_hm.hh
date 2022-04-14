@@ -162,8 +162,8 @@ public:
         {
             double new_p = eq_data_->flow_->eq_fields().field_ele_pressure(p);
             double old_p = eq_fields_->old_iter_pressure(p);
-            eq_data_->p_dif2 += pow(new_p - old_p, 2)*fe_values_.JxW(k);
-            eq_data_->p_norm2 += pow(old_p, 2)*fe_values_.JxW(k);
+            eq_data_->p_dif2 += (new_p - old_p)*(new_p - old_p) * fe_values_.JxW(k);
+            eq_data_->p_norm2 += old_p*old_p * fe_values_.JxW(k);
             ++k;
         }
     }
