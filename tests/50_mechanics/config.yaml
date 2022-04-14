@@ -21,6 +21,7 @@ test_cases:
   - 24_square_barrier_chopped.yaml
   - 26_2d_bc_stress.yaml
   - 30_3d_block_load.yaml
+  - 31_3d_block_initial_stress.yaml
 - files:
   - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml
