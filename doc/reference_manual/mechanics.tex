@@ -63,12 +63,14 @@ The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
 \paragraph{Output fields.}
 The mechanics equation provides several fields for output:
 \begin{itemize}
-    \item \textbf{displacement}: The computed displacement vector field $\uu$;
-    \item \textbf{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
-    \item \textbf{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tr\tn\sigma(\uu)$;
-    \item \textbf{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\frac13(\tr\tn\sigma(\uu))\tn I$ is the deviatoric stress.
-    Equivalently, von Mises stress can be expressed as $\sigma_{VM} = \sqrt{\frac12\left((\sigma_1-\sigma_2)^2+(\sigma_1-\sigma_3)^2+(\sigma_2-\sigma_3)^2\right)}$, where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$;
-    \item \textbf{cross\_section\_updated}: This field expresses the cross-section of fractures after deformation and is defined as $\delta_d-\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
-    \item \textbf{displacement\_divergence}: $\widetilde\div\uu_d$.
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement}{displacement}: The computed displacement vector field $\uu$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::stress}{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-stress}{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\sigma_m\tn I$ is the deviatoric stress.
+    Equivalently, von Mises stress can be expressed as
+    \[ \sigma_{VM} = \sqrt{\frac12\left((\sigma_1-\sigma_2)^2+(\sigma_1-\sigma_3)^2+(\sigma_2-\sigma_3)^2\right)}, \]
+    where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}{cross\_section\_updated}: This field expresses the cross-section of fractures after deformation and is defined as $\delta_d-\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}{displacement\_divergence}: $\widetilde\div\uu_d$.
 \end{itemize}
 
