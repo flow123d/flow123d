@@ -92,7 +92,7 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
-        ASSERT_EQ_DBG(elem_patch_idx_, other.elem_patch_idx_);
+        ASSERT_EQ(elem_patch_idx_, other.elem_patch_idx_);
         return (local_point_idx_ == other.local_point_idx_);
     }
 
@@ -138,8 +138,8 @@ public:
 
     /// Comparison of accessors.
     bool operator==(const SidePoint& other) {
-        ASSERT_EQ_DBG(elem_patch_idx_, other.elem_patch_idx_);
-        ASSERT_EQ_DBG(side_begin_, other.side_begin_);
+        ASSERT_EQ(elem_patch_idx_, other.elem_patch_idx_);
+        ASSERT_EQ(side_begin_, other.side_begin_);
         return (local_point_idx_ == other.local_point_idx_);
     }
 
@@ -309,7 +309,7 @@ public:
     /// Default constructor
 	EdgeIntegral() : BaseIntegral()
     {
-	    ASSERT(false);
+	    ASSERT_PERMANENT(false);
     }
 
     /// Constructor of edge integral
@@ -334,7 +334,7 @@ public:
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_EQ_DBG(cell_side.dim(), dim_);
+        ASSERT_EQ(cell_side.dim(), dim_);
         //DebugOut() << "points per side: " << n_points_per_side_;
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = side_begin(cell_side);
@@ -393,7 +393,7 @@ public:
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_EQ_DBG(cell_side.dim(), dim_);
+        ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
@@ -445,7 +445,7 @@ public:
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_EQ_DBG(cell_side.dim(), dim_);
+        ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(

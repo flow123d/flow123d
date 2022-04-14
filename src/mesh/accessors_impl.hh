@@ -51,14 +51,6 @@ void ElementAccessor<spacedim>::inc() {
     element_idx_++;
 }
 
-template <int spacedim> inline
-vector<arma::vec3> ElementAccessor<spacedim>::vertex_list() const {
-    vector<arma::vec3> vertices(element()->n_nodes());
-    for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=*node(i);
-    return vertices;
-}
-
-
 /**
  * SET THE "METRICS" FIELD IN STRUCT ELEMENT
  */
@@ -146,6 +138,20 @@ const SideIter ElementAccessor<spacedim>::side(const unsigned int loc_index) con
 }
 
 
+template <int spacedim> inline
+BoundingBox ElementAccessor<spacedim>::bounding_box() const {
+    arma::vec3 node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(0) );
+    BoundingBox bb(node_vertex);
+
+    for(unsigned int i=1; i<element()->n_nodes(); i++) {
+        node_vertex = mesh_->nodes_->vec<spacedim>( element()->node_idx(i) );
+        bb.expand(node_vertex);
+    }
+
+    return bb;
+}
+
+
 
 /*******************************************************************************
  * Edge IMPLEMENTATION
@@ -163,8 +169,8 @@ inline Edge::Edge(const MeshBase *mesh, unsigned int edge_idx)
 
 inline const EdgeData* Edge::edge_data() const
 {
-    ASSERT_DBG(is_valid());
-    ASSERT_LT_DBG(edge_idx_, mesh_->edges.size());
+    ASSERT(is_valid());
+    ASSERT_LT(edge_idx_, mesh_->edges.size());
     return &mesh_->edges[edge_idx_];
 }
 
@@ -246,13 +252,13 @@ inline Boundary::Boundary(BoundaryData* boundary_data)
 
 inline Edge Boundary::edge()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return boundary_data_->mesh_->edge(boundary_data_->edge_idx_);
 }
 
 inline ElementAccessor<3> Boundary::element_accessor()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return boundary_data_->mesh_->bc_mesh()->element_accessor(boundary_data_->bc_ele_idx_);
 }
 
@@ -263,6 +269,6 @@ inline Region Boundary::region()
 
 inline const Element * Boundary::element()
 {
-    ASSERT_DBG(is_valid());
+    ASSERT(is_valid());
     return &( boundary_data_->mesh_->bc_mesh()->element(boundary_data_->bc_ele_idx_) );
 }

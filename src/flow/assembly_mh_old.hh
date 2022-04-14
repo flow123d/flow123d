@@ -144,7 +144,7 @@ public:
 
     void assemble_reconstruct(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        ASSERT_EQ(dh_cell.dim(), dim);
         loc_system_.reset();
     
         // assemble_local_system(dh_cell);   //do not switch dirichlet in seepage when reconstructing
@@ -199,7 +199,7 @@ public:
 
     void assemble(const DHCellAccessor& dh_cell) override
     {
-        ASSERT_EQ_DBG(dh_cell.dim(), dim);
+        ASSERT_EQ(dh_cell.dim(), dim);
         loc_system_.reset();
     
         set_dofs_and_bc(dh_cell, true);
@@ -221,7 +221,7 @@ public:
 
     void assembly_local_vb(ElementAccessor<3> ele, DHCellSide neighb_side) //override
     {
-        ASSERT_LT_DBG(ele->dim(), 3);
+        ASSERT_LT(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
@@ -318,7 +318,7 @@ protected:
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
-                        ASSERT_DBG(ad_->dh_->distr()->is_local(global_dofs_[side_row]))(global_dofs_[side_row]);
+                        ASSERT(ad_->dh_->distr()->is_local(global_dofs_[side_row]))(global_dofs_[side_row]);
                         unsigned int loc_side_row = local_dofs_[side_row];
                         double & solution_flux = ls->get_solution_array()[loc_side_row];
 
@@ -337,7 +337,7 @@ protected:
                         // cause that a solution  with the flux violating the
                         // flux inequality leading may be accepted, while the error
                         // in pressure inequality is always satisfied.
-                        ASSERT_DBG(ad_->dh_->distr()->is_local(global_dofs_[edge_row]))(global_dofs_[edge_row]);
+                        ASSERT(ad_->dh_->distr()->is_local(global_dofs_[edge_row]))(global_dofs_[edge_row]);
                         unsigned int loc_edge_row = local_dofs_[edge_row];
                         double & solution_head = ls->get_solution_array()[loc_edge_row];
 
@@ -367,7 +367,7 @@ protected:
                     double bc_switch_pressure = af_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -af_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_sigma = af_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    ASSERT_DBG(ad_->dh_->distr()->is_local(global_dofs_[edge_row]))(global_dofs_[edge_row]);
+                    ASSERT(ad_->dh_->distr()->is_local(global_dofs_[edge_row]))(global_dofs_[edge_row]);
                     unsigned int loc_edge_row = local_dofs_[edge_row];
                     double & solution_head = ls->get_solution_array()[loc_edge_row];
 

@@ -25,3 +25,9 @@ test_cases:
   - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml
   time_limit: 200
+- files: 27_square_expansion.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Program Error: Nonlinear solver did not converge. Reason: Reached max_it."

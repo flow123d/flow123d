@@ -16,9 +16,8 @@
 #include "input/factory.hh"
 #include "flow/richards_lmh.hh"
 #include "flow/soil_models.hh"
-//#include "flow/assembly_richards_old_.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "flow/assembly_richards_old.hh"
+#include "flow/assembly_richards.hh"
 #include "tools/time_governor.hh"
 
 #include "petscmat.h"
@@ -148,7 +147,7 @@ void RichardsLMH::initialize_specific() {
     else if (model_type == SoilModelBase::irmay)
         eq_data_->soil_model_ = std::make_shared<SoilModel_Irmay>(fraction);
     else
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
 
     // create edge vectors
     eq_data_->water_content_previous_time = eq_data_->dh_cr_disc_->create_vector();

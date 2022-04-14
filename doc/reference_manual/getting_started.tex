@@ -17,37 +17,37 @@
 
 
 \section{Introduction}
-Flow123d is a~software for simulation of water flow, reactionary solute transport and heat transfer in a~heterogeneous 
-porous and fractured medium. In particular it is suited for simulation of underground processes in a~granite rock.
+Flow123d is a~software for simulating water flow, reactionary solute transport, heat transfer, and mechanics in a~heterogeneous
+porous and fractured medium. In particular, it is well-suited for simulations of underground processes in a~granite rock.
 The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
-domains of different dimensions. The computational mesh is therefore a~collection of tetrahedra, triangles and line segments.
+domains of different dimensions. Therefore, the computational mesh is a~collection of tetrahedra, triangles, and line segments.
 
-Two water flow models are available: The water flow model for a~saturated medium based on the Darcy law 
-and the model for partially saturated medium described by the Richards' equation. 
-Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization. 
-Both models can also switch between a~transient case and a~sequence of the steady states within a~single simulation. The model for unsaturated medium use 
-a lumped variant of the mixed-hybrid method in order to guarantee stability for short time steps which is connected with the satisfaction of the maximum principle.
+Two water flow models are available: a model for a~saturated medium based on the Darcy law
+and a~model for a~partially saturated medium described by Richards' equation.
+Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization.
+Both models can also switch between a~transient case and a~sequence of steady states within a~single simulation. The model for unsaturated medium uses
+a lumped variant of the mixed-hybrid method to satisfy the maximum principle and to guarantee stability for short time steps.
 
-In the present version,  only the model for the unsaturated media can be sequentially coupled  with the transport models including 
+In the current version,  only the model for saturated media can be sequentially coupled  with the transport models, including
 two models for the solute transport and one model for the heat transfer.
 
-The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses 
-the explicit Euler method for time discretization and the finite volume method for space discretization.
-The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances. 
+The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses
+the explicit Euler method for the time discretization and the finite volume method for the space discretization.
+The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances.
 It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
-the first, second or third order for the discretization in space.
+the first, second, or third order for the discretization in space.
 The operator splitting method can be used to couple any of these two solute transport models with  
- various processes described by the reaction term.  The reaction term can treat any meaningful combination of the dual porosity, 
-equilibrium sorptions, decays and linear reactions. 
+ various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity,
+equilibrium sorptions, decays, and linear reactions.
 
-The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model, 
-that is implicit DG method.
+The heat transfer model assumes equilibrium between the temperature of the rock and of the fluid phase. It uses the same numerical scheme as the second transport model, i.e., the DG method with the implicit time discretization.
 
-The program supports output of all input and output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
-or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
+The mechanical model computes linear elastic problems, taking into account the reduced dimension approach.
+It can be coupled with the flow model and solve linear poroelastic problems. This coupling is realized by an iterative scheme. Nonlinear dependency between strain and hydraulic conductivity and nonlinearity due to contacts and shear stress effects is the focus of ongoing development.
 
-The program is implemented in C/C++ using essentially PETSc library for linear algebra. All models can run in parallel using MPI environment, however, 
-the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
+The program supports the output of all input and output fields into two file formats. One can use the GMSH mesh generator and post-processor file format or the output into widely supported VTK format. In particular, we recommend Paraview software for the visualization and post-processing of the VTK data.
+
+The program is implemented in C/C++ using the PETSc library for linear algebra. All models can run in parallel using the MPI environment; however, the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
 
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
@@ -58,65 +58,79 @@ with sources on the GitHub:
 
 
 \section{Reading Documentation}
-The Flow123d documentation has two main parts. The chapters \ref{chapter:getting_started} up to \ref{chapter:tutorials} 
-form a~user guide while the last chapter \ref{chapter:input-tree-reference} provides an input reference.
-The user manual starts with Chapter \ref{chapter:getting_started} providing instructions for installation and execution of the program.
-The Chapter \ref{chapter:mathematical_models} provides detailed description of the implemented mathematical models.
-The Chapter \ref{chapter:numerical} presents used numerical methods. The input and output file formats are documented by the Chapter 
-\ref{chapter:file-formats}. Finally, the Chapter \ref{chapter:tutorials}  consists of tutorial problems.
+The Flow123d documentation has two main parts. Chapters \ref{chapter:getting_started} to \ref{chapter:tutorials} form a user
+manual, while the last Chapter \ref{chapter:input-tree-reference} provides an input reference.
+The user manual starts with Chapter \ref{chapter:getting_started} giving instructions for the installation and execution of the program.
+The Chapter \ref{chapter:mathematical_models} provides a detailed description of the implemented mathematical models. The
+Chapter \ref{chapter:numerical} presents used numerical methods.
+The input and output file formats are documented in Chapter \ref{chapter:file-formats}.
+Finally, Chapter \ref{chapter:tutorials} consists of tutorial problems.
 
-The reference guide, consisting only of the chapter \ref{chapter:input-tree-reference}, is automatically
-generated. It mirrors directly the code and describes whole structure of the main input file. Description
-of input records, their structure and default values are supplied there and bidirectional links to the user 
-guide are provided.
+The input reference guide, consisting only of Chapter \ref{chapter:input-tree-reference}, is automatically generated.
+It mirrors the code directly and describes the whole structure of the main input file. Description
+of input records, their structure, and default values are supplied there, and bidirectional links to the user manual are provided.
 
-The document is interactive. The blue text marks the links in the document. The magenta text marks the web links.
+The document is interactive; the {\color{blue}blue text} marks the links in the document, and the {\color{magenta}magenta text} marks the web links.
 
 
 
 
 \section{Installing Flow123d}
-Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
-Docker is an open-source project that automates the deployment of Linux applications inside software containers. 
-Entire Flow123d software is wrapped in a~docker image that contains also necessary libraries and crucial components 
-of the Linux operating system.
+Software Flow123d requires the tool \href{https://www.docker.com}{Docker}. Docker is an open-source project that automates
+the deployment of Linux applications inside software containers. Entire Flow123d software is packed in a~Docker image that
+also contains necessary libraries and crucial components of the Linux operating system.
 
-The installation process imports docker image into your machine and personalize the docker image. The installation 
-instructions for the Linux and the Windows operating systems are provided in the next two sections.
+The installation process imports the Docker image into the user's machine and personalizes the Docker image.
+The installation instructions for Linux and Windows operating systems are provided in the two following sections.
 
 
 \subsection{Installing Flow123d on Linux}
-The installation is done under regular user, who must be in the group 'docker'.
-Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder:
+The installation is done under a~regular user, who must be in the group 'docker'.
+Download the Linux installation package archive
+\begin{center}
+\verb'flow123d_<version>_linux_install.tar.gz'
+\end{center}
+from \href{http://flow123d.github.io/}{Official pages} and extract it to any folder:
 \begin{verbatim}
-  > tar -xzf flow123d_<version>_linux_install.tar.gz
+  $> tar -xzf flow123d_<version>_linux_install.tar.gz
 \end{verbatim}
-This will create a~directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
-and execute the \verb'install.sh' script:
+This will create a~directory \verb'flow123d_<version>'. In the next step, navigate to this directory
+and execute the \verb'install.sh' script. Example output:
 \begin{verbatim}
-  > cd flow123d_2.1.0
-  > ./install.sh
-  Pulling docker image 'flow123d/v2.1.0'
+  $> cd flow123d_3.0.4
+  $> ./install.sh
+  Pulling docker image 'flow123d/3.0.4'
   ...
+  flow123d/3.0.4
+  Installation of Flow123d finished successfully.
+  Run Flow123d using script fterm.sh or flow123d.sh in bin folder.
+  You can start by printing the version of Flow123d:
+    bin/fterm.sh run --version
 \end{verbatim}
-Install script will download Docker image from the \href{https://hub.docker.com/u/flow123d}{Docker Hub}. The script will also print
-additional information during personalization process. Whole process may take several minutes (depending on your machine performance and internet connectivity).
+The install script will download Docker image from the \href{https://hub.docker.com/u/flow123d}{Docker Hub}.
+% The script will also print additional information during personalization process.
+Whole process may take several minutes (depending on user's machine performance and internet connectivity).
 
 
-\subsubsection{Alternate way to install}
-Assuming you have \href{https://www.docker.com}{Docker} installed, you can simply run:
-\begin{verbatim}
-  curl -s https://flow.nti.tul.cz/get | bash
-\end{verbatim}
-This will check your system and download scripts \verb'flow123d' and \verb'fterm'.
-
+% \subsubsection{Alternate way to install}
+% Assuming having \href{https://www.docker.com}{Docker} installed, one can simply run:
+% \begin{verbatim}
+%   > curl -s https://flow.nti.tul.cz/get | bash
+% \end{verbatim}
+% This will check user's system and download scripts \verb'flow123d' and \verb'fterm'.
+% Then the user can continue by running 
+% \begin{verbatim}
+%   > fterm --version 3.0.4 run
+% \end{verbatim}
+% to open the shell of the Docker container. This will download the Docker image of the selected version
+% if it is not already available.
 
 \subsection{Installing Flow123d on Windows}
 \subsubsection{Before you install}
 
-This version uses \verb'Docker for Windows', previous versions which used \verb'Docker Toolbox' will \textbf{stop working}.
+This version uses \verb'Docker Desktop', previous versions which used \verb'Docker for Windows' and \verb'Docker Toolbox' will \textbf{stop working}.
 
-Make sure your system fullfills following requirements in order to support \verb'Docker for Windows':
+Make sure your system fullfills following requirements in order to support \verb'Docker Desktop':
 \begin{itemize}
     \item Windows 10 64bit: Pro, Enterprise or Education (1607 Anniversary Update, Build 14393 or later).
     \item Virtualization is enabled in BIOS. Typically, virtualization is enabled by default. This is different from having Hyper-V enabled. For more detail see \href{https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled}{Virtualization must be enabled} in Troubleshooting.
@@ -130,7 +144,7 @@ Make sure your system fullfills following requirements in order to support \verb
 To install Flow123d on Windows, download installer from \href{http://flow123d.github.io/}{Official pages}, execute it and follow instructions
 on your screen. To make things easier, you can also \href{https://www.youtube.com/watch?v=xDR2vU-1IhM}{watch a installation video}.
 
-If for some reason the installation failed, make sure eveything below is in order:
+If for some reason the installation failed, make sure everything below is in order:
 
 
 \subsubsection{Flow123d troubleshooting}
@@ -149,34 +163,36 @@ If for some reason the installation failed, make sure eveything below is in orde
    To add this location to the system PATH variable follow the instructions at
    \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
 
-   \item For detailed instructions refer to \href{https://docs.docker.com/docker-for-windows/}{Docker docs}.
+   \item For detailed instructions refer to \href{https://docs.docker.com/desktop/windows/}{Docker docs}.
 \end{itemize}
 
 
 \subsubsection{Uninstalling Flow123d}
 To uninstall Flow123d, in Windows open \verb'Apps & features' (\verb'Aplikace a funkce' in Czech), find the Flow123d in the list
-and click uninstall. This will only uninstall the Flow123d but not \verb'Docker for Windows'.
+and click uninstall. This will only uninstall the Flow123d but not \verb'Docker Desktop'.
 
 
 \subsubsection{Reinstalling Flow123d}
 \label{duplicit-image}
 If you are installing same version of Flow123d again, installation process will be the same,
-except \verb'Docker for Windows' installation will be skipped.
+except \verb'Docker Desktop' installation will be skipped.
 
 
 \section{Running Flow123d}
 \subsection{Running Flow123d on Linux}
 \label{subsec:running-flow123d-on-linux}
-All necessary scripts for Flow123d are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-linux-install'.
-Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
-Directory \verb'bin' contains:
+All necessary scripts for running Flow123d are located in the \verb'bin' subdirectory of the installation directory \verb'flow123d_<version>'.
+From the user's perspective, an unpleasant issue with the Docker container is that it cannot easily interact with the host file system by default.
+Using the supplied scripts in \verb'bin' will make things a~lot easier for the user.
+The directory \verb'bin' contains:
 \begin{itemize}
 	\item \verb'fterm.sh' \\
-	 Script will invoke shell inside docker container and mount your home directory.
-	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
+	 The script will invoke a~shell inside the Docker container and mount the user's home directory.
+	 In this shell, the user has access to the system path where Flow123d is installed.
+	 By default, the command \verb'flow123d' is in the \verb'PATH' variable.
 	 
-	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behavior by right-clicking on window bar and selecting 
-	\verb'default' or (\verb'vychozi' in Czech) see \autoref{fig:TerminalFont}.
+	\note{ On some systems, the shell's font is extremely small, you can change this behavior by right-clicking on the window bar and selecting} 
+	\verb'default' \emph{or} (\verb'vychozi' in Czech) \emph{see \autoref{fig:TerminalFont}.}
 	 \begin{figure}
 		 \center
 		 \includegraphics[width=1\textwidth]{\fig/TerminalFont.png}
@@ -185,29 +201,32 @@ Directory \verb'bin' contains:
 	 \end{figure}
 
 	\item \verb'flow123d.sh' \\
-	 Script will run Flow123d inside docker container and mount your home  directory.
-	 All arguments passed to this script will be passed to \verb'flow123d' binary file inside docker.
+	 The script will run Flow123d inside the Docker container and mount the user's home directory.
+	 All arguments passed to this script will be passed to \verb'flow123d' binary file inside the container.
 
 	\item \verb'runtest.sh' \\
-	 Script will run Flow123d tests inside docker container and mount your home  directory.
-	 All arguments passed to this script will be passed to \verb'runtest.py' binary file inside docker.
+	 The script will run Flow123d tests inside the Docker container and mount the user's home directory.
+	 All arguments passed to this script will be passed to \verb'runtest.py' Python script inside the container.
 \end{itemize}
 
-\textbf{Note:}
-\textit{Using above} \verb'.sh' \textit{scripts will mount your your home directory to docker container under the same name.}
-\textit{Also your current working directory will be the same. Example below shows behavior of the scripts:}
+\note{ Using the above} \verb'.sh'
+\emph{scripts will mount the user's home directory to the Docker container under the same name.
+Also your current working directory will be the same. The example below shows the behavior of the scripts:}
 \begin{verbatim}
 $> pwd
-/home/jan-hybs/install-folder
+/home/username/local/flow123d_3.0.4
 
 $> ls
-bin  data  doc	install.sh  tests
+bin  doc  install.sh  tests uninstall.sh
 
 $> bin/fterm.sh
-Home directory mounted to '/home/jan-hybs'
-
-jan-hybs@v2.0.0:/home/jan-hybs/install-folder$ ls
-bin  data  doc	install.sh  tests
+ ___ _            _ ___ ____   _
+| __| |_____ __ _/ |_  )__ / __| |
+| _|| / _ \ V  V / |/ / |_ \/ _  |
+|_| |_\___/\_/\_/|_/___|___/\__,_|
+                         3.0.4
+flow@flow:3.0.4 /home/username/local/flow123d_3.0.4$> ls
+bin  doc  install.sh  tests uninstall.sh
 \end{verbatim}
 
 
@@ -218,7 +237,7 @@ On system Windows you will have a shortcut on your desktop, to verify everything
 Each bat file serves a different purpose:
 \begin{itemize}
   \item \verb'flow123d.bat' serves as a binary, it possible to run the bat file multiple times (useful for a batch processing)
-  \item \verb'fterm.bat' serves as an interactive shell console session invoked inside docker container.
+  \item \verb'fterm.bat' serves as an interactive shell console session invoked inside Docker container.
 \end{itemize}
 
 By default \verb'flow123d.bat' will run the last installed version on your system. If you have multiple version installed and want to run specific one, each version has a unique bat files \verb'flow123d-<version>.bat' and \verb'fterm-<version>.bat' file (e.g. \verb'flow123d-3.0.9.bat' and \verb'fterm-3.0.9.bat').
@@ -237,17 +256,14 @@ may look like:
 
 \subsubsection{Adjusting memory of virtual machine}
 To change the memory limits of the Virtual machine, open the Docker Settings dialog (right click on the whale icon) and select \verb'Settings'.
-Navigate to \verb'Advanced' tab and adjust the memory. Detailed instructions can be found \href{https://docs.docker.com/docker-for-windows/#advanced}{Docker docs}.
+Navigate to \verb'Advanced' tab and adjust the memory. Detailed instructions can be found \href{https://docs.docker.com/desktop/windows/#advanced}{Docker docs}.
 
 
 \section{Flow123d arguments}
-When you are inside docker container, you have access to entire file system. Flow123d is installed in
-\verb'/opt/flow123d' directory. Folder \verb'/bin' contains binary files and is automatically
-added to \verb'PATH' variable, meaning every executable in this folder can be called from anywhere.
+When you are inside of the Docker container, you have access to the entire file system of the container. Flow123d is installed in \verb'/opt/flow123d' directory. Folder \verb'bin' contains binary files and is automatically
+added to the variable \verb'PATH', so that every executable in this folder can be called from anywhere.
 
-Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arguments:
-
-
+The main Flow123d binary is located in \verb'bin/flow123d' and accepts the following arguments:
 \begin{description}
  \item[{\tt --help}] \hfill\\
         Help for parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
@@ -262,6 +278,8 @@ Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arg
  \item[{\tt -l, --log}] \verb'<file_name>' \hfill\\
  	Set base name of log files. Default value is \verb'flow123d'. The log files are individual for every MPI process, placed in the output directory.
  	The MPI rank of the process and the \verb'log' suffix are appended to the base name.
+ \item[{\tt --version}] \hfill\\
+        Display version and build information.
  \item[{\tt --no\_log}] \hfill\\
         Turn off logging.
  \item[{\tt --no\_profiler}] \hfill\\
@@ -269,20 +287,26 @@ Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arg
  \item[{\tt --petsc\_redirect <file>}] \hfill\\
         Redirect all PETSc stdout and stderr to given file.
  \item[{\tt --input\_format}] \hfill\\
-        Prints a~description of the main input file in JSON format. Is used by GeoMop model editor and by python scripts for
+        Print a~description of the main input file in JSON format.
+        This is used by GeoMop model editor and by python scripts for
         generating reference documentation in Latex or HTML format.
  \item[{\tt --yaml\_balance}] \hfill\\
         Generate balance file also in machine readable YAML format. Will be default in future, used by GeoMop.
  \item[{\tt --no\_signal\_handler}] \hfill\\
         For debugging purpose.
-
 \end{description}
-All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options
-use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
+
+The {\tt -s} identifier can be skipped:
+\begin{verbatim}
+  flow123d <main_input>.yaml <options> <PETSC options>
+\end{verbatim}
+
+Any different parameters are passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options
+use parameter \verb'-help' together with a~valid input file. Options for various PETSC modules are displayed when the module is used for the first time.
 
 Alternatively, you can use python script \verb'exec_parallel' located in \verb'bin/python' to start parallel jobs or limit resources used by the program.
 
-After double dash specify which \verb'mpiexec' binary will be used (\verb'MPI-EXECUTABLE') and then specify what should be run.
+After double dash specify which \verb'mpiexec' binary will be used (\verb'MPI-EXECUTABLE') and then specify what should be executed.
 The script does not need to run solely \verb'flow123d'.
 
 If we want to run command \verb'whoami' in parallel we can do:
@@ -328,26 +352,21 @@ and yaml files. To see full details run \verb'runtest.sh --help'. The script wil
 output. Example usage of the script:
 
 \begin{verbatim}
-$> bin/runtest.sh -n 1 tests/10_darcy/01_source.yaml
-...
-Case 01 of 02
-Running: 1 x 10_darcy/01_source
-Done    | elapsed time 0:00:00:898
-    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
-    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
-    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+$> bin/runtest.sh tests/10_darcy/01_source.yaml
+configuration:
 ------------------------------------------------------------
-Case 02 of 02
-Running: 2 x 10_darcy/01_source
-Done    | elapsed time 0:00:00:900
-    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
-    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
-    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+  yaml files       1
+  total cases      2
 ------------------------------------------------------------
-Summary:
-    [ PASSED ]  | 1 x 10_darcy/01_source                        [ 1.40 sec]
-    [ PASSED ]  | 2 x 10_darcy/01_source                        [ 1.41 sec]
-    ------------------------------------------------------------
-    [ PASSED ]  | passed=2, failed=0, skipped=0 in [ 2.81 sec]
-
+execution:
+  done [01 of 02] 1 x 10_darcy/01_source [00:03.070] [31 MiB] exitcode 0
+  done [02 of 02] 2 x 10_darcy/01_source [00:01.378] [31 MiB] exitcode 0
+------------------------------------------------------------
+SUMMARY 
+------------------------------------------------------------
+  [ PASSED ]  | 1 x 10_darcy/01_source                        [ 2.76 sec] 
+  [ PASSED ]  | 2 x 10_darcy/01_source                        [ 1.07 sec] 
+  ------------------------------------------------------------
+  [ PASSED ]  | passed=2, failed=0, skipped=0 in              [ 3.83 sec]
+------------------------------------------------------------
 \end{verbatim}

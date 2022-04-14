@@ -51,7 +51,7 @@ void VectorMPI::resize(unsigned int local_size) {
     if (data_ptr_.use_count() ==0) {
         data_ptr_ = std::make_shared< std::vector<double> >(local_size);
     } else {
-        ASSERT_DBG( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
+        ASSERT( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
         chkerr(VecDestroy(&data_petsc_));
         data_ptr_->resize(local_size);
     }
@@ -64,11 +64,11 @@ void VectorMPI::resize(unsigned int local_size) {
 
 
 void VectorMPI::resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx) {
-    ASSERT_DBG(communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
+    ASSERT(communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
     if (data_ptr_.use_count() ==0) {
         data_ptr_ = std::make_shared< std::vector<double> >(local_size + ghost_idx.size());
     } else {
-        ASSERT_DBG( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
+        ASSERT( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
         chkerr(VecDestroy(&data_petsc_));
         data_ptr_->resize(local_size + ghost_idx.size());
     }
@@ -78,14 +78,14 @@ void VectorMPI::resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx)
 
 
 void VectorMPI::duplicate_from(VectorMPI other) {
-    ASSERT_EQ(this->communicator_, other.communicator_);
+    ASSERT_PERMANENT_EQ(this->communicator_, other.communicator_);
     this->resize(other.size());
 }
 
 
 void VectorMPI::swap(VectorMPI &other) {
-    ASSERT_EQ(this->communicator_, other.communicator_);
-    ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
+    ASSERT_PERMANENT_EQ(this->communicator_, other.communicator_);
+    ASSERT_PERMANENT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
     uint size = this->data_ptr_->size();
     std::swap(this->data_ptr_, other.data_ptr_);
     chkerr(VecDestroy(&data_petsc_));
@@ -101,20 +101,20 @@ void VectorMPI::swap(VectorMPI &other) {
 
 
 void VectorMPI::copy_from(VectorMPI &other) {
-    ASSERT_EQ(this->communicator_, other.communicator_);
-    ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
+    ASSERT_PERMANENT_EQ(this->communicator_, other.communicator_);
+    ASSERT_PERMANENT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
     chkerr(VecCopy(other.data_petsc_, data_petsc_));
 }
 
 
 arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices)
 {
-    ASSERT_DBG(data_ptr_);
+    ASSERT(data_ptr_);
     arma::vec vec(loc_indices.n_elem);
     
     for(unsigned int i=0; i<loc_indices.n_elem; i++){
         unsigned int idx = loc_indices(i);
-        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
         vec(i) = (*data_ptr_)[idx];
     }
     return vec;
@@ -123,12 +123,12 @@ arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices)
 
 arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices) const
 {
-    ASSERT_DBG(data_ptr_);
+    ASSERT(data_ptr_);
     arma::vec vec(loc_indices.n_elem);
     
     for(unsigned int i=0; i<loc_indices.n_elem; i++){
         unsigned int idx = loc_indices(i);
-        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
         vec(i) = (*data_ptr_)[idx];
     }
     return vec;
@@ -137,12 +137,12 @@ arma::vec VectorMPI::get_subvec(const LocDofVec& loc_indices) const
 
 void VectorMPI::set_subvec(const LocDofVec& loc_indices, const arma::vec& values)
 {
-    ASSERT_DBG(data_ptr_);
-    ASSERT_EQ_DBG(loc_indices.n_elem, values.n_elem);
+    ASSERT(data_ptr_);
+    ASSERT_EQ(loc_indices.n_elem, values.n_elem);
     
     for(unsigned int i=0; i<loc_indices.n_elem; i++){
         unsigned int idx = loc_indices(i);
-        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+        ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
         (*data_ptr_)[idx] = values(i);
     }
 }

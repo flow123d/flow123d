@@ -36,10 +36,10 @@ unsigned int count_components(const vector<shared_ptr<FunctionSpace> > &fs_vecto
 
 unsigned int check_spacedim(const vector<shared_ptr<FunctionSpace> > &fs_vector)
 {
-    ASSERT_DBG(fs_vector.size() > 0);
+    ASSERT(fs_vector.size() > 0);
     unsigned int space_dim = fs_vector[0]->space_dim();
     for (auto fs : fs_vector)
-        ASSERT_DBG(fs->space_dim() == space_dim).error("FunctionSpace space_dim mismatch.");
+        ASSERT(fs->space_dim() == space_dim).error("FunctionSpace space_dim mismatch.");
     
     return space_dim;
 }
@@ -68,8 +68,8 @@ double FESystemFunctionSpace::basis_value(unsigned int i,
                              const arma::vec &p,
                              unsigned int comp) const
 {
-    ASSERT_DBG(i < dim_).error("Index of basis function is out of range.");
-    ASSERT_DBG(comp < n_components()).error("Index of component is out of range.");
+    ASSERT(i < dim_).error("Index of basis function is out of range.");
+    ASSERT(comp < n_components()).error("Index of component is out of range.");
 
     // component index in the base FE
     int l_comp = comp-dof_indices_[i].component_offset;
@@ -84,8 +84,8 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
                                                   const arma::vec &p, 
                                                   const unsigned int comp) const
 {
-    ASSERT_DBG(i < dim_).error("Index of basis function is out of range.");
-    ASSERT_DBG(comp < n_components()).error("Index of component is out of range.");
+    ASSERT(i < dim_).error("Index of basis function is out of range.");
+    ASSERT(comp < n_components()).error("Index of component is out of range.");
 
     // component index in the base FE
     int l_comp = comp-dof_indices_[i].component_offset;
@@ -101,9 +101,9 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
 template<unsigned int dim>
 FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 {
-  OLD_ASSERT(fe->n_components() == 1, "FEVectorContravariant and FEVectorPiola can only be created from scalar FE.");
-  OLD_ASSERT(t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola,
-             "This constructor can be used only for FEVectorContravariant or FEVectorPiola.");
+  ASSERT_EQ(fe->n_components(), 1).error("FEVectorContravariant and FEVectorPiola can only be created from scalar FE.");
+  ASSERT(t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola)
+             .error("This constructor can be used only for FEVectorContravariant or FEVectorPiola.");
   
   FiniteElement<dim>::init(false, t);
   fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim, fe);
@@ -114,10 +114,10 @@ FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 template<unsigned int dim>
 FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n)
 {
-    OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FEMixedSystem,
-               "This constructor can be used only for FEVector, FETensor or FEMixedSystem.");
-    OLD_ASSERT(fe->n_components() == 1 || t == FEType::FEMixedSystem,
-               "FEVector and FETensor can only be created from scalar FE.");
+    ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FEMixedSystem)
+               .error("This constructor can be used only for FEVector, FETensor or FEMixedSystem.");
+    ASSERT(fe->n_components() == 1 || t == FEType::FEMixedSystem)
+               .error("FEVector and FETensor can only be created from scalar FE.");
     
     FiniteElement<dim>::init(false, t);
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
@@ -160,7 +160,7 @@ void FESystem<dim>::initialize()
         tensor_components_.push_back(comp_offset);
         break;
       default:
-        OLD_ASSERT(false, "Not implemented.");
+        ASSERT_PERMANENT(false).error("Not implemented.");
         break;
     }
 

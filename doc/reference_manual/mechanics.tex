@@ -2,17 +2,17 @@
 \def\ee{\vc\varepsilon}
 \newcommand{\eq}[1]{\begin{equation}#1\end{equation}}
 \def\nn{\vc n}
-\def\tr{\operatorname{tr}}
+% \def{\tr}{\operatorname{tr}}
 \def\uu{\vc u}
 
 Deformation of the porous media is modelled by the stationary linear elasticity equation:
 \eq{\label{eq:lin_el} -\div(\delta\tn \sigma(\uu)) = \delta\vc f + \vc f_C + \vc f_H. }
 Here $\uu$ \units{}{1}{} is the displacement vector field with 3 components, the stress tensor is given by the Hooke law
-\eq{ \tn\sigma(\uu) = \tn C\ee(\uu) = 2\mu\ee(\uu) + \lambda(\tr\ee(\uu))\tn I, }
+\eq{ \tn\sigma(\uu) = \tn C\widetilde\ee(\uu) = 2\mu\widetilde\ee(\uu) + \lambda(\tn I:\widetilde\ee(\uu))\tn I, }
 and the Lam\'e parameters are determined in terms of the \hyperA{Mechanics-LinearElasticity-FE-Data::young-modulus}{Young modulus} $E$ [$\mathrm{Pa}$] and \hyperA{Mechanics-LinearElasticity-FE-Data::poisson-ratio}{Poisson's ratio} $\nu$ \units{}{}{}:
 \eq{ \mu = \frac{E}{2(1+\nu)},\quad \lambda = \frac{E\nu}{(1+\nu)(1-2\nu)}. }
 The strain tensor in $\Omega_d$ is defined as follows:
-\eq{ \ee(\uu) = \frac12(\nabla\uu_d+\nabla\uu_d^\top) + \begin{cases}0&\mbox{ if }d=3,\\\frac1\delta\sum_{i=1}^n\uu_{d+1}^i\otimes_s\nn_{d+1}^i & \mbox{ else}.\end{cases} }
+\eq{ \widetilde\ee(\uu) = \frac12(\nabla\uu_d+\nabla\uu_d^\top) + \begin{cases}0&\mbox{ if }d=3,\\\frac1\delta\sum_{i=1}^n\uu_{d+1}^i\otimes_s\nn_{d+1}^i & \mbox{ else}.\end{cases} }
 Here $\vc a\otimes_s\vc b:=\frac12(\vc a\otimes\vc b+\vc b\otimes\vc a)$.
 
 The symbol $\vc f$ stands for the \hyperA{Mechanics-LinearElasticity-FE-Data::load}{body load} [$\mathrm{Nm}^{-3}$].
@@ -26,15 +26,15 @@ Conversely, the deformation affects the flow via the additional term
 \eq{\label{eq:fluid_source_div_u} F_M = -\partial_t(\delta\alpha\widetilde\div\uu) }
 on the right hand side of \eqref{eq:continuity}.
 The expression $\widetilde\div\uu$ is defined as follows:
-\eq{ \widetilde\div\uu_d = \div\uu_d + \begin{cases}\frac{\delta_{d+1}}{\delta_d}\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1} & \mbox{ if }d\in\{1,2\},\\0 & \mbox{ else. }\end{cases} }
-The numerical solution of coupled hydro-mechanical problems is solved by an iterative splitting, where in order to achieve convergence the flow equation is modified as follows:
+\eq{ \widetilde\div\uu_d = \div\uu_d + \begin{cases}0 & \mbox{ if }d=3,\\\frac{\delta_{d+1}}{\delta_d}\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1} & \mbox{ else}.\end{cases} }
+The numerical solution of coupled hydro-mechanical problems is solved by an iterative splitting, where, in order to achieve convergence, the flow equation is modified as follows:
 \eq{ \partial_t(\delta(S+S_{extra})h) + \div\vc q = F + F_M + \partial_t(\delta S_{extra} h_{old}). }
 Here $h_{old}$ is the previous value of piezometric head in the iteration process and $S_{extra}$ is an extra storativity coefficient whose value affects the rate of convergence.
 It can be manually tuned using the \hyperA{Coupling-Iterative::iteration-parameter}{iteration parameter}.
 
 
 \paragraph{Boundary conditions.}
-Given the decomposition $\partial\Omega_d=\Gamma_D\cup\Gamma_{DN}\cup\Gamma_T\cup\Gamma_S$, we prescribe the following \hyperA{Mechanics-LinearElasticity-FE-Data::bc-type}{boundary conditions}:
+Given the decomposition $\partial\Omega_d=\Gamma_D\cup\Gamma_{DN}\cup\Gamma_T\cup\Gamma_S$, we impose the following \hyperA{Mechanics-LinearElasticity-FE-Data::bc-type}{boundary conditions}:
 \begin{itemize}
 \item \textbf{displacement} condition prescribes
 \eq{ \uu = \uu_D \mbox{ on }\Gamma_D }
@@ -42,7 +42,7 @@ via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-displacement}{given displacem
 \item \textbf{displacement\_n}: Displacement is prescribed only in the normal component, in tangent directions(s) zero traction is assumed:
 \eq{ \left.\begin{aligned}\uu\cdot\nn &= \uu_D\cdot\nn\\
 (\sigma(\uu)\nn)_\tau &= \vc 0\end{aligned}\right\} \mbox{ on }\Gamma_{DN}. }
-Here $\vc a_\tau := \vc a - (\vc a\cdot\nn)\nn$ is the projection of a vector $\vc a$ to the tangent plane of the boundary
+Here $\vc a_\tau := \vc a - (\vc a\cdot\nn)\nn$ is the projection of a vector $\vc a$ to the tangent plane of the boundary.
 \item \textbf{traction} condition (default) is imposed via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-traction}{given traction} $\vc t_N$ [$\mathrm{Pa}$]:
 \eq{ \sigma(\uu)\nn = \vc t_N \mbox{ on }\Gamma_T. }
 \item \textbf{stress} condition is the same type as \textbf{traction}, but instead of traction the user supplies the full \hyperA{Mechanics-LinearElasticity-FE-Data::bc-stress}{stress tensor} $\tn\sigma_N$ [$\mathrm{Pa}$]:
@@ -57,7 +57,7 @@ where
 \eq{ \vc t^i_{d+1,d} = \sigma^U_{d+1,d}\delta_{d+1}\left(\frac{2\delta_{d+1}}{\delta_d}\tn C_d\left((\uu_{d+1}^i-\uu_d)\otimes\nn_{d+1}^i\right)-\alpha_d p_d\tn I\right)\nn_{d+1}^i }
 and $\sigma^U_{d+1,d}$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::fracture-sigma}{transition coefficient}.
 The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
-\eq{ \vc f_{Cd} = \begin{cases}\sum_{i=1}^n\vc t^i_{d+1,d} & \mbox{ if }d\in\{1,2\},\\\vc 0 & \mbox{ else}.\end{cases} }
+\eq{ \vc f_{Cd} = \begin{cases}\vc 0 & \mbox{ if }d=3,\\\sum_{i=1}^n\vc t^i_{d+1,d} & \mbox{ else}.\end{cases} }
 
 
 \paragraph{Output fields.}

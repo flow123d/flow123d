@@ -113,6 +113,7 @@ html-doc:
 .PHONY: doxy-doc
 doxy-doc:
 	make -C $(BUILD_DIR)/doc doxy-doc
+	ln -s $(BUILD_DIR)/doc/online-doc/flow123d/index.html doc/index.html
 
 
 TUTORIALS_IN_DOC= \

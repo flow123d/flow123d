@@ -130,7 +130,7 @@ Range<Edge> MeshBase::edge_range() const {
 
 Edge MeshBase::edge(uint edge_idx) const
 {
-    ASSERT_LT_DBG(edge_idx, edges.size());
+    ASSERT_LT(edge_idx, edges.size());
     return Edge(this, edge_idx);
 }
 
@@ -327,7 +327,7 @@ unsigned int Mesh::n_corners() {
 
 Boundary Mesh::boundary(uint bc_idx) const
 {
-    ASSERT_LT_DBG(bc_idx, boundary_.size());
+    ASSERT_LT(bc_idx, boundary_.size());
     return Boundary(&boundary_[bc_idx]);
 }
 
@@ -375,7 +375,7 @@ void Mesh::check_mesh_on_read() {
         // element quality
     	double quality = ele.quality_measure_smooth();
     	if (quality < 0) {
-    	    ASSERT_LT_DBG(ele.jacobian_S3(), 0);
+    	    ASSERT_LT(ele.jacobian_S3(), 0);
     	    element_vec_[ele.idx()].inverted = true;
     	    quality = -quality;
     	}
@@ -432,7 +432,7 @@ void Mesh::check_mesh_on_read() {
             for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
                 uint inode_orig = ele->node_idx(ele_node);
                 uint inode = nodes_new_idx[inode_orig];
-                ASSERT_DBG(inode != undef_idx);
+                ASSERT(inode != undef_idx);
                 const_cast<Element*>(ele.element())->nodes_[ele_node] = inode;
             }
         }
@@ -678,7 +678,7 @@ void Mesh::make_neighbours_and_edges()
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx(ecs) != undef_idx) {
-                        	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
+                        	ASSERT_PTR(elem->boundary_idx_).error("Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
@@ -790,9 +790,9 @@ void Mesh::make_neighbours_and_edges()
                             vb_neighbours_.push_back(neighbour); // copy neighbour with this edge setting
                         } else {
                             // connect the side to the edge, and side to the edge
-                            ASSERT_PTR_DBG(edg);
+                            ASSERT_PTR(edg);
                             edg->side_[ edg->n_sides++ ] = si;
-                            ASSERT_DBG(last_edge_idx != undef_idx);
+                            ASSERT(last_edge_idx != undef_idx);
                             element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
@@ -1177,10 +1177,6 @@ Range<NodeAccessor<3>> MeshBase::node_range() const {
     return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
-inline void MeshBase::check_element_size(unsigned int elem_idx) const
-{
-    ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
-}
 
 /*
  * Output of internal flow data.
@@ -1330,7 +1326,7 @@ void Mesh::distribute_nodes() {
         if (i_proc == my_proc)
             n_own_nodes++;
         else if (i_proc == n_proc)
-            ASSERT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
+            ASSERT_PERMANENT(0)(find_node_id(n_own_nodes)).error("A node does not belong to any element!");
     }
 
     //DebugOut() << print_var(n_own_nodes) << print_var(n_local_nodes) << this->n_nodes();
@@ -1363,7 +1359,7 @@ inline int MeshBase::elem_index(int elem_id) const
 
 const Neighbour &MeshBase::vb_neighbour(unsigned int nb) const
 { 
-    // ASSERT(nb < vb_neighbours_.size());
+    // ASSERT_PERMANENT(nb < vb_neighbours_.size());
     return vb_neighbours_[nb];
 }
 

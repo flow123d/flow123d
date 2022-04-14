@@ -51,7 +51,7 @@
 //#include "flow/assembly_lmh_old_.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
-#include "flow/assembly_lmh_old.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/assembly_models.hh"
 
 #include "tools/time_governor.hh"
@@ -172,7 +172,6 @@ void DarcyLMH::EqData::init()
     save_local_system_.resize(size);
     bc_fluxes_reconstruted.resize(size);
     loc_system_.resize(size);
-    loc_schur_.resize(size);
     postprocess_solution_.resize(size);
 }
 
@@ -222,7 +221,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
             if (!tm_from_rec.is_default()) // is_default() == false when time record is present in input file
             { 
                 MessageOut() << "Duplicate key 'time', time in flow equation is already initialized from parent class!";
-                ASSERT(false);
+                ASSERT_PERMANENT(false);
             }
             time_ = tm;
         }
@@ -310,7 +309,7 @@ void DarcyLMH::init_eq_data()
         //THROW(ExcAssertMsg());
         //THROW(ExcMissingTimeGovernor() << input_record_.ei_address());
         MessageOut() << "Missing the key 'time', obligatory for the transient problems." << endl;
-        ASSERT(false);
+        ASSERT_PERMANENT(false);
     }
 
     eq_fields_->mark_input_times(*time_);
@@ -494,15 +493,14 @@ void DarcyLMH::zero_time_step()
     } else {
         MessageOut() << "Flow zero time step - unsteady case\n";
         eq_data_->time_step_ = time_->dt();
-//        read_initial_condition();
-    	this->read_init_cond_asm();
+        assembly_linear_system();
+        this->read_init_cond_asm();
         accept_time_step(); // accept zero time step, i.e. initial condition
         
         // we reconstruct the initial solution here
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-//        reconstruct_solution_from_schur(eq_data_->multidim_assembler);
         START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
         this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
         END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
@@ -617,7 +615,7 @@ void DarcyLMH::solve_nonlinear()
 
     while (eq_data_->nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  eq_data_->nonlinear_iteration_ < this->max_n_it_ )) {
-    	OLD_ASSERT_EQUAL( convergence_history.size(), eq_data_->nonlinear_iteration_ );
+    	ASSERT_EQ( convergence_history.size(), eq_data_->nonlinear_iteration_ );
         convergence_history.push_back(residual_norm);
 
         // print_matlab_matrix("matrix_" + std::to_string(time_->step().index()) + "_it_" + std::to_string(nonlinear_iteration_));
@@ -660,7 +658,7 @@ void DarcyLMH::solve_nonlinear()
         VecAXPBY(eq_data_->p_edge_solution.petsc_vec(), (1-alpha), alpha, eq_data_->p_edge_solution_previous.petsc_vec());
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
-        //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
+        //ASSERT_PERMANENT_GE( si.converged_reason, 0).error("Linear solver failed to converge.\n");
         assembly_linear_system();
 
         residual_norm = lin_sys_schur().compute_residual();
@@ -979,7 +977,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 
 //                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
 //                 //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-//                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+//                 //ASSERT_PERMANENT(err == 0).error("Error in ISCreateStride.");
 
 //                 SchurComplement *ls = new SchurComplement(&(*eq_data_->dh_->distr()), is);
 
@@ -1004,7 +1002,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 
 //                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
 //                     //ISView(is, PETSC_VIEWER_STDOUT_SELF);
-//                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
+//                     //ASSERT_PERMANENT(err == 0).error("Error in ISCreateStride.");
 //                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
 //                     ls1->set_negative_definite();
 
@@ -1248,8 +1246,7 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 //         // Maybe divide by cs
 //         coef = conduct*coef / 3;
 // 
-//         OLD_ASSERT( coef > 0.,
-//                 "Zero coefficient of hydrodynamic resistance %f . \n ", coef );
+//         ASSERT_PERMANENT_GT(coef, 0).error("Zero coefficient of hydrodynamic resistance.\n");
 //         element_permeability.push_back( 1. / coef );
 //     }
 // //    uint i_inet = 0;
@@ -1270,7 +1267,7 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 //     //convert set of dofs to vectors
 //     // number of nodes (= dofs) on the subdomain
 //     int numNodeSub = localDofMap.size();
-//     //ASSERT_EQ( (unsigned int)numNodeSub, eq_data_->dh_->lsize() );
+//     //ASSERT_PERMANENT_EQ( (unsigned int)numNodeSub, eq_data_->dh_->lsize() );
 //     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
 //     std::vector<int> isngn( numNodeSub );
 //     // pseudo-coordinates of local nodes (i.e. dofs)
@@ -1312,8 +1309,7 @@ void DarcyLMH::print_matlab_matrix(std::string matlab_file)
 //             int indGlob = inet[indInet];
 //             // map it to local node
 //             Global2LocalMap_::iterator pos = global2LocalNodeMap.find( indGlob );
-//             OLD_ASSERT( pos != global2LocalNodeMap.end(),
-//                     "Cannot remap node index %d to local indices. \n ", indGlob );
+//             ASSERT_PERMANENT( pos != global2LocalNodeMap.end())(indGlob).error("Cannot remap node index to local indices. \n " );
 //             int indLoc = static_cast<int> ( pos -> second );
 // 
 //             // store the node
@@ -1367,7 +1363,7 @@ DarcyLMH::~DarcyLMH() {
 
 
 std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) const {
-	ASSERT_LT_DBG(component, 3).error("Invalid component!");
+	ASSERT_LT(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
     std::vector<int> dof_vec;
     std::vector<LongIdx> dof_indices(eq_data_->dh_->max_elem_dofs());

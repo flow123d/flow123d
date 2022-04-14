@@ -373,8 +373,10 @@ In particular, it is used to find the closest mesh element of an observe point; 
 			{optimize{\_}mesh}
 			{{Bool}}{}
 			{ \ValueDefault{true}}
-			{{{If true, make optimization of nodes and elements order.
-This will speed up the calculations in assembations.}% 
+			{{{If true, permute nodes and elements in order to increase cache locality.
+This will speed up the calculations.
+GMSH output preserves original ordering but is slower.
+All variants of VTK output use the permuted.}% 
 }}
 \end{RecordType}
 \begin{AbstractType}
@@ -654,9 +656,9 @@ neighboring of elements of different dimension.}%
 Abstraction of various porous media flow models.}% 
 }}
 		\Descendant{\TypeLink{IT::Flow-Darcy-LMH}{Flow{\_}Darcy{\_}LMH}}% 
-		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
 		\Descendant{\TypeLink{IT::Coupling-Iterative}{Coupling{\_}Iterative}}% 
 		\Descendant{\TypeLink{IT::Flow-Darcy-MH}{Flow{\_}Darcy{\_}MH}}% 
+		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
 \end{AbstractType}
 \begin{RecordType}
 	{IT::Flow-Darcy-LMH}
@@ -851,6 +853,27 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
 }}
 		\RecKey
+			{Flow-Darcy-LMH-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-LMH-Data::bc-gravity}
+			{bc{\_}gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-LMH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+		\RecKey
 			{Flow-Darcy-LMH-Data::bc-piezo-head}
 			{bc{\_}piezo{\_}head}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
@@ -863,13 +886,6 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
-}}
-		\RecKey
-			{Flow-Darcy-LMH-Data::init-piezo-head}
-			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for the pressure given as the piezometric head.}% 
 }}
 \end{RecordType}
 \begin{AbstractType}
@@ -1482,6 +1498,263 @@ Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by the fields }\begin{ttfamily}
 For the water level above the bedrock, }{$H_d > H_d^S$}{, the Robin boundary condition is used with the inflow given by: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d) )$}{. For the water level under the bedrock, constant infiltration is used: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d^S) )$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma\end{ttfamily}{, }\begin{ttfamily}bc{\_}flux\end{ttfamily}{.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::Field-R3-to-R-3-}
+	{Field{\_}R3{\_}to{\_}R[3]}
+	{\TypeLink{IT::FieldConstant-3}{FieldConstant}}
+	{{{Abstract for all time-space functions.}% 
+}}
+		\Descendant{\TypeLink{IT::FieldPython-3}{FieldPython}}% 
+		\Descendant{\TypeLink{IT::FieldConstant-3}{FieldConstant}}% 
+		\Descendant{\TypeLink{IT::FieldFormula-3}{FieldFormula}}% 
+		\Descendant{\TypeLink{IT::FieldTimeFunction-3}{FieldTimeFunction}}% 
+		\Descendant{\TypeLink{IT::FieldFE-3}{FieldFE}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::FieldPython-3}
+	{FieldPython}
+	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R[3] Field given by a Python script.}% 
+}}
+		\RecKey
+			{FieldPython-3::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldPython-3::script-string}
+			{script{\_}string}
+			{{String}}{}
+			{implicit value: "{Obligatory if 'script{\_}file' is not given. }"}
+			{{{Python script given as in place string}% 
+}}
+		\RecKey
+			{FieldPython-3::script-file}
+			{script{\_}file}
+			{{Filename}}{}
+			{implicit value: "{Obligatory if 'script{\_}striong' is not given. }"}
+			{{{Python script given as external file}% 
+}}
+		\RecKey
+			{FieldPython-3::function}
+			{function}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Function in the given script that returns tuple containing components of the return type.}\\{
+For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldConstant-3}
+	{FieldConstant}
+	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
+	{\TypeLink{FieldConstant-3::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R[3] Field constant in space.}% 
+}}
+		\RecKey
+			{FieldConstant-3::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldConstant-3::value}
+			{value}
+			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{{Value of the constant field.
+For vector values, you can use scalar value to enter constant vector.
+For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
+% 
+}
+\begin{itemize}
+\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {scalar to enter multiple of the unit matrix.}
+\end{itemize}
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldFormula-3}
+	{FieldFormula}
+	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
+	{\TypeLink{FieldFormula-3::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R[3] Field given by runtime interpreted formula.}% 
+}}
+		\RecKey
+			{FieldFormula-3::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFormula-3::value}
+			{value}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
+For vector values, you can use just one string to enter homogeneous vector.}\\{
+For square }{$N\times N$}{-matrix values, you can use:}
+% 
+}
+\begin{itemize}
+\item {array of strings of size }{$N$}{ to enter diagonal matrix}
+\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
+Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
+\end{itemize}
+}}
+		\RecKey
+			{FieldFormula-3::surface-direction}
+			{surface{\_}direction}
+			{{String}}{}
+			{ \ValueDefault{"0 0 1"}}
+			{{{The vector used to project evaluation point onto the surface.}% 
+}}
+		\RecKey
+			{FieldFormula-3::surface-region}
+			{surface{\_}region}
+			{{String}}{}
+			{ \it{Optional}}
+			{{{The name of region set considered as the surface.
+You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldTimeFunction-3}
+	{FieldTimeFunction}
+	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
+	{\TypeLink{FieldTimeFunction-3::time-function}{time{\_}function}}% reducible to key
+	{{{R3{\_}to{\_}R[3] Field time-dependent function in space.}% 
+}}
+		\RecKey
+			{FieldTimeFunction-3::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldTimeFunction-3::time-function}
+			{time{\_}function}
+			{{record: }\TypeLink{IT::TableFunction-3}{TableFunction}}{}
+			{ \it{Obligatory}}
+			{{{Values of time series initialization of Field.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::TableFunction-3}
+	{TableFunction}
+	{}% implements
+	{\TypeLink{TableFunction-3::values}{values}}% reducible to key
+	{{{Allow set variable series initialization of Fields.}% 
+}}
+		\RecKey
+			{TableFunction-3::values}
+			{values}
+			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue-3}{IndependentValue}}{}
+			{ \it{Obligatory}}
+			{{{Initizaliation values of Field.}% 
+}}
+\end{RecordType}
+\begin{TupleType}
+	{IT::IndependentValue-3}
+	{IndependentValue}
+	{}% implements
+	{}% reducible to key
+	{{{Value of Field for time variable.}% 
+}}
+		\RecKey
+			{IndependentValue-3::t}
+			{t}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \it{Obligatory}}
+			{{{Time stamp.}% 
+}}
+		\RecKey
+			{IndependentValue-3::value}
+			{value}
+			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{Value of the field in given stamp.}% 
+}}
+\end{TupleType}
+\begin{RecordType}
+	{IT::FieldFE-3}
+	{FieldFE}
+	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R[3] Field given by finite element approximation.}% 
+}}
+		\RecKey
+			{FieldFE-3::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFE-3::mesh-data-file}
+			{mesh{\_}data{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{GMSH mesh with data.
+Can be different from actual computational mesh.}% 
+}}
+		\RecKey
+			{FieldFE-3::input-discretization}
+			{input{\_}discretization}
+			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
+			{ \it{Optional}}
+			{{{Section where to find the field.}\\{
+ Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
+If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
+}}
+		\RecKey
+			{FieldFE-3::field-name}
+			{field{\_}name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
+}}
+		\RecKey
+			{FieldFE-3::default-value}
+			{default{\_}value}
+			{{Double (-inf, +inf)}}{}
+			{ \it{Optional}}
+			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE-3::time-unit}
+			{time{\_}unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{implicit value: "{Common time unit of the equation's Time Governor.
+See the key 'common{\_}time{\_}unit'.}"}
+			{{{Definition of the unit of all times defined in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE-3::read-time-shift}
+			{read{\_}time{\_}shift}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{This key allows reading field data from the mesh data file shifted in time.
+Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
+}}
+		\RecKey
+			{FieldFE-3::interpolation}
+			{interpolation}
+			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
+			{ \ValueDefault{"equivalent{\_}mesh"}}
+			{{{Type of interpolation applied to the input spatial data.}\\{
+The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
+In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
+Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
+}}
+\end{RecordType}
 \begin{RecordType}
 	{IT::NonlinearSolver}
 	{NonlinearSolver}
@@ -2050,6 +2323,16 @@ Determines type of output data (element, node, native etc).}%
 			{storativity}
 			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
 }}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::gravity}
+			{gravity}
+			{{{}{$[-]$}{ Input field: Gravity vector.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
 \end{SelectionType}
 \begin{RecordType}
 	{IT::Output-DarcyMHSpecific}
@@ -2208,405 +2491,6 @@ If true, then balance is calculated at each computational time step, which can s
 }}
 \end{SelectionType}
 \begin{RecordType}
-	{IT::Flow-Richards-LMH}
-	{Flow{\_}Richards{\_}LMH}
-	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
-	{}% reducible to key
-	{{{Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor setting.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::gravity}
-			{gravity}
-			{{array [3, 3] of }{Double (-inf, +inf)}}{}
-			{ \ValueDefault{[0, 0, -1]}}
-			{{{Vector of the gravity force.
-Dimensionless.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::input-fields}
-			{input{\_}fields}
-			{{array [0, UINT] of }{record: }\TypeLink{IT::RichardsLMH-Data}{RichardsLMH{\_}Data}}{}
-			{ \it{Obligatory}}
-			{{{Input data for Darcy flow model.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::nonlinear-solver}
-			{nonlinear{\_}solver}
-			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Non-linear solver for MH problem.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::output-stream}
-			{output{\_}stream}
-			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Output stream settings.}\\{
- Specify file format, precision etc.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::output}
-			{output}
-			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Richards-LMH-OutputFields}{Flow{\_}Richards{\_}LMH:OutputFields}}
-			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
-			{{{Specification of output fields and output times.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::output-specific}
-			{output{\_}specific}
-			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
-			{ \it{Optional}}
-			{{{Output settings specific to Darcy flow model.}\\{
-Includes raw output and some experimental functionality.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::balance}
-			{balance}
-			{{record: }\TypeLink{IT::Balance}{Balance}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Settings for computing mass balance.}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::mortar-method}
-			{mortar{\_}method}
-			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
-			{ \ValueDefault{"None"}}
-			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
-}}
-		\RecKey
-			{Flow-Richards-LMH::soil-model}
-			{soil{\_}model}
-			{{record: }\TypeLink{IT::SoilModel}{SoilModel}}{}
-			{ \ValueDefault{"van{\_}genuchten"}}
-			{{{Soil model settings.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::RichardsLMH-Data}
-	{RichardsLMH{\_}Data}
-	{}% implements
-	{}% reducible to key
-	{{{Record to set fields of the equation.}\\{
-The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
-and after the time given by the key 'time'. The field setting can be overridden by}\\{
- any RichardsLMH{\_}Data record that comes later in the boundary data array.}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::region}
-			{region}
-			{{array [1, UINT] of }{String}}{}
-			{ \it{Optional}}
-			{{{Labels of the regions where to set fields. }% 
-}}
-		\RecKey
-			{RichardsLMH-Data::rid}
-			{rid}
-			{{Integer [0, INT]}}{}
-			{ \it{Optional}}
-			{{{ID of the region where to set fields.}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::time}
-			{time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Apply field setting in this record after this time.}\\{
-These times have to form an increasing sequence.}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::anisotropy}
-			{anisotropy}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::cross-section}
-			{cross{\_}section}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::conductivity}
-			{conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::sigma}
-			{sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Transition coefficient between dimensions. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::water-source-density}
-			{water{\_}source{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Water source density. }{$[s^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-type}
-			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
-			{ \it{Optional}}
-			{{{Boundary condition type. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-pressure}
-			{bc{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed pressure value on the boundary.
-Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-flux}
-			{bc{\_}flux}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Incoming water boundary flux.
-Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-robin-sigma}
-			{bc{\_}robin{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-switch-pressure}
-			{bc{\_}switch{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::init-pressure}
-			{init{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::storativity}
-			{storativity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::water-content-saturated}
-			{water{\_}content{\_}saturated}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Saturated water content }{$ \theta_s $}{.}\\{
-                Relative volume of water in a reference volume of a saturated porous media. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::water-content-residual}
-			{water{\_}content{\_}residual}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Residual water content }{$ \theta_r $}{.}\\{
-                Relative volume of water in a reference volume of an ideally dry porous media. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::genuchten-p-head-scale}
-			{genuchten{\_}p{\_}head{\_}scale}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
-                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
-                where the relative water content starts to decrease below 1. }{$[m^{-1}]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::genuchten-n-exponent}
-			{genuchten{\_}n{\_}exponent}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{The van Genuchten exponent parameter }{$ n $}{. }{$[-]$}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-piezo-head}
-			{bc{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::bc-switch-piezo-head}
-			{bc{\_}switch{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
-}}
-		\RecKey
-			{RichardsLMH-Data::init-piezo-head}
-			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for the pressure given as the piezometric head.}% 
-}}
-\end{RecordType}
-\begin{SelectionType}
-	{IT::Flow-Richards-LMH-OutputFields}
-	{Flow{\_}Richards{\_}LMH:OutputFields}
-	{{{Selection of output fields for the Flow{\_}Richards{\_}LMH model.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::subdomain}
-			{subdomain}
-			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::region-id}
-			{region{\_}id}
-			{{{}{$[-]$}{ Input field: Region ids.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::pressure-p0}
-			{pressure{\_}p0}
-			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::piezo-head-p0}
-			{piezo{\_}head{\_}p0}
-			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::velocity-p0}
-			{velocity{\_}p0}
-			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::flux}
-			{flux}
-			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::anisotropy}
-			{anisotropy}
-			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::cross-section}
-			{cross{\_}section}
-			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::conductivity}
-			{conductivity}
-			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::sigma}
-			{sigma}
-			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::water-source-density}
-			{water{\_}source{\_}density}
-			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::init-pressure}
-			{init{\_}pressure}
-			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::storativity}
-			{storativity}
-			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::water-content}
-			{water{\_}content}
-			{{{}{$[-]$}{ Water content.}\\{
-                It is a fraction of water volume to the whole volume.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::conductivity-richards}
-			{conductivity{\_}richards}
-			{{{}{$[ms^{-1}]$}{ Computed isotropic scalar conductivity by the soil model.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::water-content-saturated}
-			{water{\_}content{\_}saturated}
-			{{{}{$[-]$}{ Input field: Saturated water content }{$ \theta_s $}{.}\\{
-                Relative volume of water in a reference volume of a saturated porous media.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::water-content-residual}
-			{water{\_}content{\_}residual}
-			{{{}{$[-]$}{ Input field: Residual water content }{$ \theta_r $}{.}\\{
-                Relative volume of water in a reference volume of an ideally dry porous media.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::genuchten-p-head-scale}
-			{genuchten{\_}p{\_}head{\_}scale}
-			{{{}{$[m^{-1}]$}{ Input field: The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
-                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
-                where the relative water content starts to decrease below 1.}% 
-}}
-		\SelectionItem
-			{Flow-Richards-LMH-OutputFields::genuchten-n-exponent}
-			{genuchten{\_}n{\_}exponent}
-			{{{}{$[-]$}{ Input field: The van Genuchten exponent parameter }{$ n $}{.}% 
-}}
-\end{SelectionType}
-\begin{RecordType}
-	{IT::SoilModel}
-	{SoilModel}
-	{}% implements
-	{\TypeLink{SoilModel::model-type}{model{\_}type}}% reducible to key
-	{{{Soil model settings.}% 
-}}
-		\RecKey
-			{SoilModel::model-type}
-			{model{\_}type}
-			{{selection: }\TypeLink{IT::Soil-Model-Type}{Soil{\_}Model{\_}Type}}{}
-			{ \ValueDefault{"van{\_}genuchten"}}
-			{{{Selection of the globally applied soil model.
-In future we replace this key by a field for selection of the model.
-That will allow usage of different soil model in a single simulation.}% 
-}}
-		\RecKey
-			{SoilModel::cut-fraction}
-			{cut{\_}fraction}
-			{{Double [0, 1]}}{}
-			{ \ValueDefault{0.999}}
-			{{{Fraction of the water content where we cut  and rescale the curve.}% 
-}}
-\end{RecordType}
-\begin{SelectionType}
-	{IT::Soil-Model-Type}
-	{Soil{\_}Model{\_}Type}
-	{}
-		\SelectionItem
-			{Soil-Model-Type::van-genuchten}
-			{van{\_}genuchten}
-			{{{Van Genuchten soil model with cutting near zero.}% 
-}}
-		\SelectionItem
-			{Soil-Model-Type::irmay}
-			{irmay}
-			{{{Irmay model for conductivity, Van Genuchten model for the water content.
-Suitable for bentonite.}% 
-}}
-\end{SelectionType}
-\begin{RecordType}
 	{IT::Coupling-Iterative}
 	{Coupling{\_}Iterative}
 	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
@@ -2651,7 +2535,7 @@ Suitable for bentonite.}%
 		\RecKey
 			{Coupling-Iterative::flow-equation}
 			{flow{\_}equation}
-			{{record: }\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}{}
+			{{record: }\TypeLink{IT::Flow-Darcy-LMH}{Flow{\_}Darcy{\_}LMH}}{}
 			{ \it{Obligatory}}
 			{{{Flow equation, provides the velocity field as a result.}% 
 }}
@@ -2675,7 +2559,7 @@ Suitable for bentonite.}%
 			{{Double (-inf, +inf)}}{}
 			{ \ValueDefault{1}}
 			{{{Tuning parameter for iterative splitting.
-Its default valuecorresponds to a theoretically optimal value with fastest convergence.}% 
+Its default value corresponds to a theoretically optimal value with fastest convergence.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -2864,263 +2748,6 @@ These times have to form an increasing sequence.}%
 			{{{Prescribed stress tensor.}% 
 }}
 \end{SelectionType}
-\begin{AbstractType}
-	{IT::Field-R3-to-R-3-}
-	{Field{\_}R3{\_}to{\_}R[3]}
-	{\TypeLink{IT::FieldConstant-3}{FieldConstant}}
-	{{{Abstract for all time-space functions.}% 
-}}
-		\Descendant{\TypeLink{IT::FieldPython-3}{FieldPython}}% 
-		\Descendant{\TypeLink{IT::FieldConstant-3}{FieldConstant}}% 
-		\Descendant{\TypeLink{IT::FieldFormula-3}{FieldFormula}}% 
-		\Descendant{\TypeLink{IT::FieldTimeFunction-3}{FieldTimeFunction}}% 
-		\Descendant{\TypeLink{IT::FieldFE-3}{FieldFE}}% 
-\end{AbstractType}
-\begin{RecordType}
-	{IT::FieldPython-3}
-	{FieldPython}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by a Python script.}% 
-}}
-		\RecKey
-			{FieldPython-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldPython-3::script-string}
-			{script{\_}string}
-			{{String}}{}
-			{implicit value: "{Obligatory if 'script{\_}file' is not given. }"}
-			{{{Python script given as in place string}% 
-}}
-		\RecKey
-			{FieldPython-3::script-file}
-			{script{\_}file}
-			{{Filename}}{}
-			{implicit value: "{Obligatory if 'script{\_}striong' is not given. }"}
-			{{{Python script given as external file}% 
-}}
-		\RecKey
-			{FieldPython-3::function}
-			{function}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{Function in the given script that returns tuple containing components of the return type.}\\{
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldConstant-3}
-	{FieldConstant}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldConstant-3::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field constant in space.}% 
-}}
-		\RecKey
-			{FieldConstant-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldConstant-3::value}
-			{value}
-			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
-% 
-}
-\begin{itemize}
-\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {scalar to enter multiple of the unit matrix.}
-\end{itemize}
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldFormula-3}
-	{FieldFormula}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldFormula-3::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by runtime interpreted formula.}% 
-}}
-		\RecKey
-			{FieldFormula-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFormula-3::value}
-			{value}
-			{{array [1, UINT] of }{String}}{}
-			{ \it{Obligatory}}
-			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
-For vector values, you can use just one string to enter homogeneous vector.}\\{
-For square }{$N\times N$}{-matrix values, you can use:}
-% 
-}
-\begin{itemize}
-\item {array of strings of size }{$N$}{ to enter diagonal matrix}
-\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
-Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
-\end{itemize}
-}}
-		\RecKey
-			{FieldFormula-3::surface-direction}
-			{surface{\_}direction}
-			{{String}}{}
-			{ \ValueDefault{"0 0 1"}}
-			{{{The vector used to project evaluation point onto the surface.}% 
-}}
-		\RecKey
-			{FieldFormula-3::surface-region}
-			{surface{\_}region}
-			{{String}}{}
-			{ \it{Optional}}
-			{{{The name of region set considered as the surface.
-You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldTimeFunction-3}
-	{FieldTimeFunction}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldTimeFunction-3::time-function}{time{\_}function}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field time-dependent function in space.}% 
-}}
-		\RecKey
-			{FieldTimeFunction-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldTimeFunction-3::time-function}
-			{time{\_}function}
-			{{record: }\TypeLink{IT::TableFunction-3}{TableFunction}}{}
-			{ \it{Obligatory}}
-			{{{Values of time series initialization of Field.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::TableFunction-3}
-	{TableFunction}
-	{}% implements
-	{\TypeLink{TableFunction-3::values}{values}}% reducible to key
-	{{{Allow set variable series initialization of Fields.}% 
-}}
-		\RecKey
-			{TableFunction-3::values}
-			{values}
-			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue-3}{IndependentValue}}{}
-			{ \it{Obligatory}}
-			{{{Initizaliation values of Field.}% 
-}}
-\end{RecordType}
-\begin{TupleType}
-	{IT::IndependentValue-3}
-	{IndependentValue}
-	{}% implements
-	{}% reducible to key
-	{{{Value of Field for time variable.}% 
-}}
-		\RecKey
-			{IndependentValue-3::t}
-			{t}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{ \it{Obligatory}}
-			{{{Time stamp.}% 
-}}
-		\RecKey
-			{IndependentValue-3::value}
-			{value}
-			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{Value of the field in given stamp.}% 
-}}
-\end{TupleType}
-\begin{RecordType}
-	{IT::FieldFE-3}
-	{FieldFE}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by finite element approximation.}% 
-}}
-		\RecKey
-			{FieldFE-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFE-3::mesh-data-file}
-			{mesh{\_}data{\_}file}
-			{{Filename}}{}
-			{ \it{Obligatory}}
-			{{{GMSH mesh with data.
-Can be different from actual computational mesh.}% 
-}}
-		\RecKey
-			{FieldFE-3::input-discretization}
-			{input{\_}discretization}
-			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
-			{ \it{Optional}}
-			{{{Section where to find the field.}\\{
- Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
-If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
-}}
-		\RecKey
-			{FieldFE-3::field-name}
-			{field{\_}name}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
-}}
-		\RecKey
-			{FieldFE-3::default-value}
-			{default{\_}value}
-			{{Double (-inf, +inf)}}{}
-			{ \it{Optional}}
-			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-3::time-unit}
-			{time{\_}unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{implicit value: "{Common time unit of the equation's Time Governor.
-See the key 'common{\_}time{\_}unit'.}"}
-			{{{Definition of the unit of all times defined in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-3::read-time-shift}
-			{read{\_}time{\_}shift}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{This key allows reading field data from the mesh data file shifted in time.
-Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
-}}
-		\RecKey
-			{FieldFE-3::interpolation}
-			{interpolation}
-			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
-			{ \ValueDefault{"equivalent{\_}mesh"}}
-			{{{Type of interpolation applied to the input spatial data.}\\{
-The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
-In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
-Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
-}}
-\end{RecordType}
 \begin{SelectionType}
 	{IT::Mechanics-LinearElasticity-FE-OutputFields}
 	{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}
@@ -3451,6 +3078,27 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
 }}
 		\RecKey
+			{Flow-Darcy-MH-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-gravity}
+			{bc{\_}gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+		\RecKey
 			{Flow-Darcy-MH-Data::bc-piezo-head}
 			{bc{\_}piezo{\_}head}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
@@ -3463,13 +3111,6 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::init-piezo-head}
-			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for the pressure given as the piezometric head.}% 
 }}
 \end{RecordType}
 \begin{SelectionType}
@@ -3541,6 +3182,439 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{Flow-Darcy-MH-OutputFields::storativity}
 			{storativity}
 			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::gravity}
+			{gravity}
+			{{{}{$[-]$}{ Input field: Gravity vector.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
+\end{SelectionType}
+\begin{RecordType}
+	{IT::Flow-Richards-LMH}
+	{Flow{\_}Richards{\_}LMH}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::gravity}
+			{gravity}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \ValueDefault{[0, 0, -1]}}
+			{{{Vector of the gravity force.
+Dimensionless.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::RichardsLMH-Data}{RichardsLMH{\_}Data}}{}
+			{ \it{Obligatory}}
+			{{{Input data for Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::nonlinear-solver}
+			{nonlinear{\_}solver}
+			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Non-linear solver for MH problem.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Richards-LMH-OutputFields}{Flow{\_}Richards{\_}LMH:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output-specific}
+			{output{\_}specific}
+			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
+			{ \it{Optional}}
+			{{{Output settings specific to Darcy flow model.}\\{
+Includes raw output and some experimental functionality.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::mortar-method}
+			{mortar{\_}method}
+			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
+			{ \ValueDefault{"None"}}
+			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::soil-model}
+			{soil{\_}model}
+			{{record: }\TypeLink{IT::SoilModel}{SoilModel}}{}
+			{ \ValueDefault{"van{\_}genuchten"}}
+			{{{Soil model settings.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::RichardsLMH-Data}
+	{RichardsLMH{\_}Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any RichardsLMH{\_}Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{RichardsLMH-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::anisotropy}
+			{anisotropy}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::cross-section}
+			{cross{\_}section}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::conductivity}
+			{conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::sigma}
+			{sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transition coefficient between dimensions. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-source-density}
+			{water{\_}source{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Water source density. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Boundary condition type. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-pressure}
+			{bc{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::init-pressure}
+			{init{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::storativity}
+			{storativity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-gravity}
+			{bc{\_}gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-content-saturated}
+			{water{\_}content{\_}saturated}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Saturated water content }{$ \theta_s $}{.}\\{
+                Relative volume of water in a reference volume of a saturated porous media. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-content-residual}
+			{water{\_}content{\_}residual}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Residual water content }{$ \theta_r $}{.}\\{
+                Relative volume of water in a reference volume of an ideally dry porous media. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::genuchten-p-head-scale}
+			{genuchten{\_}p{\_}head{\_}scale}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
+                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
+                where the relative water content starts to decrease below 1. }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::genuchten-n-exponent}
+			{genuchten{\_}n{\_}exponent}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{The van Genuchten exponent parameter }{$ n $}{. }{$[-]$}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::Flow-Richards-LMH-OutputFields}
+	{Flow{\_}Richards{\_}LMH:OutputFields}
+	{{{Selection of output fields for the Flow{\_}Richards{\_}LMH model.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::region-id}
+			{region{\_}id}
+			{{{}{$[-]$}{ Input field: Region ids.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::pressure-p0}
+			{pressure{\_}p0}
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::piezo-head-p0}
+			{piezo{\_}head{\_}p0}
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::velocity-p0}
+			{velocity{\_}p0}
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::flux}
+			{flux}
+			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::anisotropy}
+			{anisotropy}
+			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::cross-section}
+			{cross{\_}section}
+			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::conductivity}
+			{conductivity}
+			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::sigma}
+			{sigma}
+			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-source-density}
+			{water{\_}source{\_}density}
+			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::init-pressure}
+			{init{\_}pressure}
+			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::storativity}
+			{storativity}
+			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::gravity}
+			{gravity}
+			{{{}{$[-]$}{ Input field: Gravity vector.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content}
+			{water{\_}content}
+			{{{}{$[-]$}{ Water content.}\\{
+                It is a fraction of water volume to the whole volume.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::conductivity-richards}
+			{conductivity{\_}richards}
+			{{{}{$[ms^{-1}]$}{ Computed isotropic scalar conductivity by the soil model.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content-saturated}
+			{water{\_}content{\_}saturated}
+			{{{}{$[-]$}{ Input field: Saturated water content }{$ \theta_s $}{.}\\{
+                Relative volume of water in a reference volume of a saturated porous media.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::water-content-residual}
+			{water{\_}content{\_}residual}
+			{{{}{$[-]$}{ Input field: Residual water content }{$ \theta_r $}{.}\\{
+                Relative volume of water in a reference volume of an ideally dry porous media.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::genuchten-p-head-scale}
+			{genuchten{\_}p{\_}head{\_}scale}
+			{{{}{$[m^{-1}]$}{ Input field: The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
+                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
+                where the relative water content starts to decrease below 1.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::genuchten-n-exponent}
+			{genuchten{\_}n{\_}exponent}
+			{{{}{$[-]$}{ Input field: The van Genuchten exponent parameter }{$ n $}{.}% 
+}}
+\end{SelectionType}
+\begin{RecordType}
+	{IT::SoilModel}
+	{SoilModel}
+	{}% implements
+	{\TypeLink{SoilModel::model-type}{model{\_}type}}% reducible to key
+	{{{Soil model settings.}% 
+}}
+		\RecKey
+			{SoilModel::model-type}
+			{model{\_}type}
+			{{selection: }\TypeLink{IT::Soil-Model-Type}{Soil{\_}Model{\_}Type}}{}
+			{ \ValueDefault{"van{\_}genuchten"}}
+			{{{Selection of the globally applied soil model.
+In future we replace this key by a field for selection of the model.
+That will allow usage of different soil model in a single simulation.}% 
+}}
+		\RecKey
+			{SoilModel::cut-fraction}
+			{cut{\_}fraction}
+			{{Double [0, 1]}}{}
+			{ \ValueDefault{0.999}}
+			{{{Fraction of the water content where we cut  and rescale the curve.}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::Soil-Model-Type}
+	{Soil{\_}Model{\_}Type}
+	{}
+		\SelectionItem
+			{Soil-Model-Type::van-genuchten}
+			{van{\_}genuchten}
+			{{{Van Genuchten soil model with cutting near zero.}% 
+}}
+		\SelectionItem
+			{Soil-Model-Type::irmay}
+			{irmay}
+			{{{Irmay model for conductivity, Van Genuchten model for the water content.
+Suitable for bentonite.}% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -3806,6 +3880,13 @@ These times have to form an increasing sequence.}%
 			{{{Solver for the linear system.}% 
 }}
 		\RecKey
+			{Solute-AdvectionDiffusion-DG::user-fields}
+			{user{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Solute-AdvectionDiffusion-DG-UserData}{Solute{\_}AdvectionDiffusion{\_}DG:UserData}}{}
+			{ \it{Optional}}
+			{{{Input fields of the equation defined by user.}% 
+}}
+		\RecKey
 			{Solute-AdvectionDiffusion-DG::input-fields}
 			{input{\_}fields}
 			{{array [0, UINT] of }{record: }\TypeLink{IT::Solute-AdvectionDiffusion-DG-Data}{Solute{\_}AdvectionDiffusion{\_}DG:Data}}{}
@@ -3840,6 +3921,53 @@ Otherwise, evaluate initial condition field directly (well suited for reading na
 			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-DG-OutputFields}{Solute{\_}AdvectionDiffusion{\_}DG:OutputFields}}
 			{ \ValueDefault{{\{}"fields": ["conc"]{\}}}}
 			{{{Specification of output fields and output times.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Solute-AdvectionDiffusion-DG-UserData}
+	{Solute{\_}AdvectionDiffusion{\_}DG:UserData}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation: Solute{\_}AdvectionDiffusion{\_}DG.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-UserData::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name of user defined field.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-UserData::is-boundary}
+			{is{\_}boundary}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Type of field: boundary or bulk.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-UserData::scalar-field}
+			{scalar{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
+One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
+If you set more than one of these keys, only first key is accepted.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-UserData::vector-field}
+			{vector{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Instance of FieldAlgoBase VectorField descendant.
+See above for details.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-UserData::tensor-field}
+			{tensor{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Instance of FieldAlgoBase TensorField descendant.
+See above for details.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -4236,7 +4364,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -4321,7 +4449,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
@@ -5009,6 +5137,13 @@ It is a vector: one value for every substance.}%
 			{{{Solver for the linear system.}% 
 }}
 		\RecKey
+			{Heat-AdvectionDiffusion-DG::user-fields}
+			{user{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Heat-AdvectionDiffusion-DG-UserData}{Heat{\_}AdvectionDiffusion{\_}DG:UserData}}{}
+			{ \it{Optional}}
+			{{{Input fields of the equation defined by user.}% 
+}}
+		\RecKey
 			{Heat-AdvectionDiffusion-DG::input-fields}
 			{input{\_}fields}
 			{{array [0, UINT] of }{record: }\TypeLink{IT::Heat-AdvectionDiffusion-DG-Data}{Heat{\_}AdvectionDiffusion{\_}DG:Data}}{}
@@ -5043,6 +5178,53 @@ Otherwise, evaluate initial condition field directly (well suited for reading na
 			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Heat-AdvectionDiffusion-DG-OutputFields}{Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}}
 			{ \ValueDefault{{\{}"fields": ["temperature"]{\}}}}
 			{{{Specification of output fields and output times.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Heat-AdvectionDiffusion-DG-UserData}
+	{Heat{\_}AdvectionDiffusion{\_}DG:UserData}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation: Heat{\_}AdvectionDiffusion{\_}DG.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-UserData::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name of user defined field.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-UserData::is-boundary}
+			{is{\_}boundary}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Type of field: boundary or bulk.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-UserData::scalar-field}
+			{scalar{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
+One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
+If you set more than one of these keys, only first key is accepted.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-UserData::vector-field}
+			{vector{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Instance of FieldAlgoBase VectorField descendant.
+See above for details.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-UserData::tensor-field}
+			{tensor{\_}field}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Instance of FieldAlgoBase TensorField descendant.
+See above for details.}% 
 }}
 \end{RecordType}
 \begin{RecordType}

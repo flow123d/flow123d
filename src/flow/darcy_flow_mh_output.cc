@@ -27,7 +27,7 @@
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/assembly_mh_old.hh"
-#include "flow/assembly_lmh_old.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
 #include "io/output_time.hh"
@@ -382,7 +382,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                    FEValues<3> &fe_values, FEValues<3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
-    ASSERT_DBG( fe_values.dim() == fv_rt.dim());
+    ASSERT( fe_values.dim() == fv_rt.dim());
     unsigned int dim = fe_values.dim();
 
     ElementAccessor<3> ele = dh_cell.elm();
@@ -436,7 +436,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                 case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
                 case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
                 case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
-                default: ASSERT(false)(dim).error("Unsupported FE dimension."); break;
+                default: ASSERT_PERMANENT(false)(dim).error("Unsupported FE dimension."); break;
             }
 
             diff += fluxes[ i_shape ] *

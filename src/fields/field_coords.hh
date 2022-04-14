@@ -49,7 +49,7 @@ public:
     }
 
     IT::Instance get_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldCoords");
 
         IT::Abstract abstract = IT::Abstract();
         IT::Instance inst = IT::Instance( abstract, std::vector<IT::TypeBase::ParameterPair>() );
@@ -57,7 +57,7 @@ public:
     }
 
     IT::Array get_multifield_input_type() override {
-        ASSERT(false).error("This method can't be used for FieldCoords");
+        ASSERT_PERMANENT(false).error("This method can't be used for FieldCoords");
 
         IT::Array arr = IT::Array( IT::Integer() );
         return arr;
@@ -76,15 +76,15 @@ public:
     }
 
     void copy_from(FMT_UNUSED const FieldCommon & other) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
-        ASSERT(false).error("Forbidden method for FieldCoords!");
+        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
     FieldResult field_result(FMT_UNUSED RegionSet region_set) const override {
@@ -174,8 +174,8 @@ public:
     inline void value_list(const Armor::array &point_list, const ElementAccessor<3> &elm,
                        std::vector<arma::vec3> &value_list) const
     {
-        ASSERT_DBG(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
-        ASSERT_EQ_DBG(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
+        ASSERT(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
+        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
 
         for (uint i=0; i<point_list.size(); ++i)
             value_list[i] = this->value(point_list.template vec<3>(i), elm);

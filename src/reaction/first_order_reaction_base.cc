@@ -47,8 +47,8 @@ FirstOrderReactionBase::~FirstOrderReactionBase()
 
 void FirstOrderReactionBase::initialize()
 {
-	ASSERT(time_ != nullptr).error("Time governor has not been set yet.\n");
-	ASSERT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
+	ASSERT_PERMANENT(time_ != nullptr).error("Time governor has not been set yet.\n");
+	ASSERT_PERMANENT_LT(0, eq_data_base_->substances_.size()).error("No substances for rection term.\n");
     
     n_substances_ = eq_data_base_->substances_.size();
     initialize_from_input();

@@ -84,13 +84,13 @@ public:
 
     //VectorData &data()
     //{
-    //    ASSERT_DBG(data_ptr_);
+    //    ASSERT(data_ptr_);
     //    return *data_ptr_;
     //}
     
     //const VectorData &data() const
     //{
-    //    ASSERT_DBG(data_ptr_);
+    //    ASSERT(data_ptr_);
     //    return *data_ptr_;
     //}
 
@@ -103,34 +103,34 @@ public:
 
     /// Return value on given position
     inline double get(unsigned int pos) const {
-        ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+        ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
         return (*data_ptr_)[pos];
     }
 
     /// Set value on given position
     inline void set(unsigned int pos, double val) {
-    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
-        ASSERT_LT_DBG(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
+    	ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+        ASSERT_LT(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
         (*data_ptr_)[pos] = val;
     }
 
     /// Normalize value on given position
     inline void normalize(unsigned int pos, double divisor) {
-    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
-        ASSERT_LT_DBG(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
+    	ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+        ASSERT_LT(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
         (*data_ptr_)[pos] /= divisor;
     }
 
     /// Add value to item on given position
     inline void add(unsigned int pos, double val) {
-    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
-        ASSERT_LT_DBG(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
+    	ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+        ASSERT_LT(pos, data_ptr_->size()).error("Given 'pos' out of vector size!\n");
         (*data_ptr_)[pos] += val;
     }
 
     /// Add value to item on given global position
     inline void add_global(unsigned int pos, double val) {
-    	ASSERT_PTR_DBG(data_ptr_).error("Uninitialized data vector.\n");
+    	ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
         VecSetValue(data_petsc_, pos, val, ADD_VALUES);
     }
 
@@ -176,8 +176,8 @@ public:
      */
 //    inline double &operator[](unsigned int idx)
 //    {
-//        ASSERT_DBG(data_ptr_);
-//        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+//        ASSERT(data_ptr_);
+//        ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
 //        return (*data_ptr_)[idx];
 //    }
     
@@ -186,8 +186,8 @@ public:
      */
 //    inline double &operator[](unsigned int idx) const
 //    {
-//        ASSERT_DBG(data_ptr_);
-//        ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
+//        ASSERT(data_ptr_);
+//        ASSERT(idx < data_ptr_->size()) (idx) (data_ptr_->size());
 //        return (*data_ptr_)[idx];
 //    }
 

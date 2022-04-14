@@ -75,7 +75,7 @@ void LinSys::start_add_assembly()
         case DONE:
             break;
         default:
-        	OLD_ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
+        	ASSERT_PERMANENT(0).error("Can not set values. Matrix is not preallocated.\n");
     }
     status=ADD;
 }
@@ -93,7 +93,7 @@ void LinSys::start_insert_assembly()
         case DONE:
             break;
         default:
-        	OLD_ASSERT(0, "Can not set values. Matrix is not preallocated.\n");
+        	ASSERT_PERMANENT(0).error("Can not set values. Matrix is not preallocated.\n");
     }
     status=INSERT;
 }
@@ -261,7 +261,7 @@ void LSSetCSR( LinSystem *mtx )
         MatGetRow(mtx->A,row,&nnz_loc,&cols,&vals);
         DebugOut().fmt("CSR row: {} nnz_loc {}\n", row, nnz_loc);
         for(i=0; i<nnz_loc; i++) {
-                OLD_ASSERT(pos<nnz,"More nonzeroes then allocated! row: %d entry: %d\n",row,i);
+                ASSERT_PERMANENT(pos<nnz)(row)(i).error("More nonzeroes then allocated!\n");
                 mtx->j[pos]=cols[i];
                 mtx->a[pos]=vals[i];
                 pos++;
@@ -296,7 +296,7 @@ void LinSys_MPIAIJ::start_allocation()
 
 void LinSys_MPIAIJ::preallocate_matrix()
 {
-     OLD_ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
+     ASSERT_PERMANENT(status == ALLOCATE).error("Linear system has to be in ALLOCATE status.");
 
      PetscScalar *on_array, *off_array;
      int *on_nz, *off_nz;
@@ -379,14 +379,14 @@ LinSys_MATIS::LinSys_MATIS(std::shared_ptr<LocalToGlobalMap> global_row_4_sub_ro
 
     // vytvorit mapping v PETSc z global_row_4_sub_row
     // check possible index range of lg_map to fit into signed int type
-    // ASSERT should be replaced with exception
-    ASSERT_LE(lg_map->get_distr()->size(), numeric_limits<PetscInt>::max()).error("Index range doesn't fit into signed int!");
+    // ASSERT_PERMANENT should be replaced with exception
+    ASSERT_PERMANENT_LE(lg_map->get_distr()->size(), numeric_limits<PetscInt>::max()).error("Index range doesn't fit into signed int!");
     err = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD,
             lg_map->size(),
             (const PetscInt*)(&(lg_map->get_map_vector()[0])),
             PETSC_COPY_VALUES, &map_local_to_global);
 
-    OLD_ASSERT(err == 0,"Error in ISLocalToGlobalMappingCreate.");
+    ASSERT_PERMANENT(err == 0).error("Error in ISLocalToGlobalMappingCreate.");
 
     // initialize loc_rows array
     loc_rows_size=100;
@@ -398,7 +398,7 @@ LinSys_MATIS::LinSys_MATIS(std::shared_ptr<LocalToGlobalMap> global_row_4_sub_ro
 
 void LinSys_MATIS::start_allocation()
 {
-  OLD_ASSERT(0, "Not implemented");
+    ASSERT_PERMANENT(0).error("Not implemented");
   /*
      PetscErrorCode err;
 
@@ -408,10 +408,10 @@ void LinSys_MATIS::start_allocation()
      }
      err = MatCreateIS(PETSC_COMM_WORLD, 1, vec_ds.lsize(), vec_ds.lsize(), vec_ds.size(), vec_ds.size(),
              map_local_to_global, &matrix);
-     OLD_ASSERT(err == 0,"Error in MatCreateIS.");
+     ASSERT_PERMANENT(err == 0).error("Error in MatCreateIS.");
 
      err = MatISGetLocalMat(matrix, &local_matrix);
-     OLD_ASSERT(err == 0,"Error in MatISGetLocalMat.");
+     ASSERT_PERMANENT(err == 0).error("Error in MatISGetLocalMat.");
 
      // extract scatter
      MatMyIS *mis = (MatMyIS*) matrix->data;
@@ -428,7 +428,7 @@ void LinSys_MATIS::start_allocation()
 
 void LinSys_MATIS::preallocate_matrix()
 {
-     OLD_ASSERT(status == ALLOCATE, "Linear system has to be in ALLOCATE status.");
+     ASSERT_PERMANENT(status == ALLOCATE).error("Linear system has to be in ALLOCATE status.");
 
      // printing subdomain_nz
      //DBGPRINT_INT("subdomain_nz",subdomain_size,subdomain_nz);
@@ -457,8 +457,8 @@ void LinSys_MATIS::preallocate_values(int nrow,int *rows,int ncol,int *cols)
 
      // translate from global to local indexes
      err = ISGlobalToLocalMappingApply(map_local_to_global, IS_GTOLM_DROP, nrow, rows, &n_loc_rows, loc_rows);
-     OLD_ASSERT(err == 0,"Error in ISGlobalToLocalMappingApply.");
-     OLD_ASSERT(nrow == n_loc_rows,"Not all global indices translated to local indices.");
+     ASSERT_PERMANENT(err == 0).error("Error in ISGlobalToLocalMappingApply.");
+     ASSERT_PERMANENT(nrow == n_loc_rows).error("Not all global indices translated to local indices.");
      // printing subdomain_embedding
      //DBGPRINT_INT("embed_element_to",nrow,loc_rows);
 
@@ -489,27 +489,27 @@ void LinSys_MATIS::view_local_matrix()
 //     int ierr;
 
 //     err = PetscViewerSetFormat(PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_ASCII_DENSE);
-//     OLD_ASSERT(err == 0,"Error in PetscViewerSetFormat.");
+//     ASSERT_PERMANENT(err == 0).error("Error in PetscViewerSetFormat.");
 
      // print local subdomain matrix
      err = MatView(local_matrix,PETSC_VIEWER_STDOUT_SELF);
-     OLD_ASSERT(err == 0,"Error in MatView.");
+     ASSERT_PERMANENT(err == 0).error("Error in MatView.");
 //
 //     ierr=MPI_Comm_rank(PETSC_COMM_WORLD, &(myid));
-//     OLD_ASSERT( ! ierr , "Can not get MPI rank.\n" );
+//     ASSERT_PERMANENT( ! ierr ).error("Can not get MPI rank.\n" );
 //
 //     sprintf(numstring,"%5.5d",myid);
 //     printf("Nunstring is >>>%s<<<\n",numstring);
 //
 //     PetscViewerASCIIOpen(PETSC_COMM_SELF,numstring,&lab);
 //
-//     OLD_ASSERT(!(loc_rows == NULL),"Local matrix is not assigned.");
+//     ASSERT_PERMANENT(!(loc_rows == NULL)).error("Local matrix is not assigned.");
 //     err = PetscViewerSetFormat(lab,PETSC_VIEWER_ASCII_DENSE);
-//     OLD_ASSERT(err == 0,"Error in PetscViewerSetFormat.");
+//     ASSERT_PERMANENT(err == 0).error("Error in PetscViewerSetFormat.");
 //
 //     // print local subdomain matrix
 //     err = MatView(local_matrix,lab);
-//     OLD_ASSERT(err == 0,"Error in MatView.");
+//     ASSERT_PERMANENT(err == 0).error("Error in MatView.");
 //
 //     PetscViewerDestroy(lab);
 }
@@ -520,7 +520,7 @@ LinSys_MATIS:: ~LinSys_MATIS()
 
      // destroy mapping
      err = ISLocalToGlobalMappingDestroy(&map_local_to_global);
-     OLD_ASSERT(err == 0,"Error in ISLocalToGlobalMappingDestroy.");
+     ASSERT_PERMANENT(err == 0).error("Error in ISLocalToGlobalMappingDestroy.");
      MessageOut().fmt("Error code {} \n", err);
 
 

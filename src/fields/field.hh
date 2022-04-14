@@ -48,7 +48,6 @@
 #include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;
@@ -450,10 +449,9 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 {
 
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
-    		"Null field ptr on region id: %d, idx: %d, field: %s\n", elm.region().id(), elm.region_idx().idx(), name().c_str());
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    		.error("Null field ptr on region\n");
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
 
@@ -464,11 +462,10 @@ inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, co
                    std::vector<typename Value::return_type>  &value_list) const
 {
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
-    		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
-    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    		.error("Null field ptr on region\n");
+    ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }

@@ -39,10 +39,8 @@
 #include "mesh/ref_element.hh"
 #include "intersection/intersection_point_aux.hh"
 
-#include "mesh/mesh.h"
 
 // forward declare
-class Mesh;
 template <int spacedim> class ElementAccessor;
 template<unsigned int, unsigned int> class ComputeIntersection;
 class Plucker;
@@ -74,7 +72,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> triangle, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> triangle);
 	~ComputeIntersection();
     
     /** @brief Computes intersection points of line and triangle.
@@ -250,7 +248,7 @@ public:
     /** @brief Constructor, sets both triangle objects.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementAccessor<3> triaA, ElementAccessor<3> triaB, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> triaA, ElementAccessor<3> triaB);
     ~ComputeIntersection();
     
     /** @brief Initializes lower dimensional objects.
@@ -353,7 +351,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> tetrahedron, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> tetrahedron);
 	~ComputeIntersection();
 	
     /** @brief Initializes lower dimensional objects.
@@ -481,7 +479,7 @@ public:
      * @param triangle intersecting triangle object
      * @param tetrahedron intersecting tetrahedron object
      */
-    ComputeIntersection(ElementAccessor<3> triangle, ElementAccessor<3> tetrahedron, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> triangle, ElementAccessor<3> tetrahedron);
     ~ComputeIntersection();
 
     /** @brief Initializes lower dimensional objects.
@@ -575,7 +573,6 @@ private:
 
     bool S3_inverted;
     IntersectionAux<2,3>* intersection_;
-    Mesh *mesh_;
 };
 
 

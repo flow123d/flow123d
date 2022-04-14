@@ -143,7 +143,7 @@ TEST_F( OutputTest, test_create_output_stream ) {
     OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
 
     /* The name of instance has to be equal to configuration file:
@@ -172,7 +172,7 @@ TEST( OutputTest, find_outputstream_by_name ) {
     Input::ReaderToStorage reader_3(output_stream3, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     auto os_3 = OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
-    //ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    //ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     //std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     //OutputTime *output_time = *output_iter;
@@ -443,7 +443,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
             OutputTime::ELEM_DATA, &integer_field);
 
     /* There should be three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get first OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -452,7 +452,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream1"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->elem_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->elem_data.size(), 2);
 
     /* Get first registered data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->elem_data.begin();
@@ -521,7 +521,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
             OutputTime::CORNER_DATA, &integer_field);
 
     /* There should three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -533,7 +533,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream2"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->corner_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->corner_data.begin();
@@ -616,7 +616,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
             OutputTime::NODE_DATA, &integer_field);
 
     /* There should three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -629,7 +629,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream3"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->node_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->node_data.size(), 2);
 
     /* Get first registered corner data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->node_data.begin();

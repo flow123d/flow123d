@@ -18,7 +18,7 @@ Plucker::Plucker(Point a, Point b)
     coordinates_(arma::span(0,2)) = point(1) - point(0);
     
     // Check empty
-    ASSERT_DBG(arma::norm(coordinates_(arma::span(0,2)),2) > 0);
+    ASSERT(arma::norm(coordinates_(arma::span(0,2)),2) > 0);
 
     scale_ = 0;
     scale_ = std::max(  scale_, std::fabs(coordinates_[0]));

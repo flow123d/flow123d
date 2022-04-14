@@ -27,10 +27,11 @@
 #include "coupling/equation.hh"
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
+#include "system/exceptions.hh"
 
 class Mesh;
 class FieldCommon;
-class RichardsLMH;
+class DarcyLMH;
 
 template<unsigned int dim> class FlowPotentialAssemblyHM;
 template<unsigned int dim> class ResidualAssemblyHM;
@@ -40,6 +41,10 @@ namespace it = Input::Type;
 
 class IterativeCoupling {
 public:
+    TYPEDEF_ERR_INFO( EI_Reason, string);
+    DECLARE_EXCEPTION(ExcSolverDiverge,
+            << "Nonlinear solver did not converge. Reason: " << EI_Reason::val
+             );
 
     static const Input::Type::Record &record_template() {
         return it::Record("Coupling_Iterative_AUX",
@@ -132,7 +137,7 @@ public:
     {
     public:
         /// steady or unsteady water flow simulator based on MH scheme
-        std::shared_ptr<RichardsLMH> flow_;
+        std::shared_ptr<DarcyLMH> flow_;
 
         /// solute transport with chemistry through operator splitting
         std::shared_ptr<Elasticity> mechanics_;
@@ -168,7 +173,6 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
-
     
     /// Define input record.
     static const Input::Type::Record & get_input_type();

@@ -40,7 +40,7 @@
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
 #include "mesh/accessors.hh"
-#include "system/asserts.hh"               // for Assert, ASSERT
+#include "system/asserts.hh"               // for Assert, ASSERT_PERMANENT
 #include "tools/time_governor.hh"          // for TimeStep
 
 class Mesh;
@@ -207,7 +207,7 @@ public:
         * TODO: think what kind of information we may need, is the next time value enough?
         */
        virtual double next_change_time()
-       { ASSERT(false).error("Not implemented yet."); return 0.0; }
+       { ASSERT_PERMANENT(false).error("Not implemented yet."); return 0.0; }
 
        /**
         * Returns one value in one given point @p on an element given by ElementAccessor @p elm.

@@ -20,7 +20,7 @@
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
-#include "flow/assembly_lmh_old.hh"
+#include "flow/assembly_lmh.hh"
 #include "flow/soil_models.hh"
 #include "fields/field_value_cache.hh"
 
@@ -45,6 +45,7 @@ public:
         this->used_fields_ += this->eq_fields_->water_content_residual;
         this->used_fields_ += this->eq_fields_->water_content_saturated;
         this->used_fields_ += this->eq_fields_->conductivity;
+        this->used_fields_ += this->eq_fields_->cross_section;
     }
 
     /// Destructor.
@@ -54,22 +55,24 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
-        genuchten_on = false;
     }
 
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
-        if (cell.dim() != dim) return;
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         edge_indices_ = cell.get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
+        const DHCellAccessor dh_cell = cell.cell_with_other_dh(this->eq_data_->dh_.get());
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
         VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
+        double diagonal_coef = cell.elm().measure() * eq_fields_->cross_section(p) / cell.elm()->n_sides();
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
+            const int local_side = cr_disc_dofs_[i];
             capacity = 0;
             water_content = 0;
             phead = this->eq_data_->p_edge_solution.get( edge_indices_[i] );
@@ -83,13 +86,29 @@ public:
             }
             this->eq_data_->capacity.set( cr_disc_dofs_[i], capacity + storativity_ );
             water_content_vec.set( cr_disc_dofs_[i], water_content + storativity_ * phead);
+
+            this->eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, dh_cell, {local_side},
+                                               {0.0}, diagonal_coef*(water_content + storativity_ * phead) );
         }
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        this->eq_data_->balance_->start_mass_assembly(this->eq_data_->water_balance_idx);
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->eq_data_->balance_->finish_mass_assembly(this->eq_data_->water_balance_idx);
     }
 
 
 private:
-    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
-        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
+    bool reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
+        bool genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
             soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
@@ -101,6 +120,7 @@ private:
 
             this->eq_data_->soil_model_->reset(soil_data);
         }
+        return genuchten_on;
     }
 
 
@@ -113,7 +133,6 @@ private:
 
     LocDofVec cr_disc_dofs_;                 ///< Vector of local DOF indices pre-computed on different DOF handlers
     LocDofVec edge_indices_;                 ///< Dofs of discontinuous fields on element edges.
-    bool genuchten_on;
     double storativity_;
     double capacity, water_content, phead;
 
@@ -123,7 +142,7 @@ private:
 
 
 template <unsigned int dim>
-class MHMatrixAssemblyRichards : virtual public MHMatrixAssemblyLMH<dim>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
@@ -161,12 +180,61 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
     	MHMatrixAssemblyLMH<dim>::initialize(element_cache_map);
-        genuchten_on = false;
+    }
+
+
+    /// Integral over element.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        // evaluation point
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        this->bulk_local_idx_ = cell.local_idx();
+
+        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_element();
+        this->asm_source_term_richards(cell, p);
+    }
+
+
+    /// Assembles between boundary element and corresponding side on bulk element.
+    inline void boundary_side_integral(DHCellSide cell_side)
+    {
+        ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (!cell_side.cell().is_own()) return;
+
+        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
+        ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
+
+        this->precompute_boundary_side(cell_side, p_side, p_bdr);
+
+    	if (this->type_==DarcyMH::EqFields::seepage) {
+    	    this->use_dirichlet_switch(cell_side, b_ele, p_bdr);
+    	}
+
+        this->boundary_side_integral_in(cell_side, b_ele, p_bdr);
+    }
+
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+        this->begin_mh_matrix();
+    }
+
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        this->end_mh_matrix();
     }
 
 
 protected:
-    void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p) override
+    /// Part of cell_integral method, specialized in Richards equation
+    inline void asm_source_term_richards(const DHCellAccessor& cell, BulkPoint &p)
     {
         update_water_content(cell, p);
         const ElementAccessor<3> ele = cell.elm();
@@ -176,6 +244,9 @@ protected:
         source_diagonal_ = diagonal_coef_ * ( eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
 
         VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
+
+        const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+        auto loc_dof_vec = cr_cell.get_loc_dof_indices();
 
         for (unsigned int i=0; i<ele->n_sides(); i++)
         {
@@ -198,7 +269,7 @@ protected:
                 */
 
 
-                mass_rhs_ = mass_diagonal_ * eq_data_->p_edge_solution.get( eq_data_->loc_schur_[cell.local_idx()].row_dofs[i] ) / eq_data_->time_step_
+                mass_rhs_ = mass_diagonal_ * eq_data_->p_edge_solution.get( loc_dof_vec[i] ) / eq_data_->time_step_
                                   + diagonal_coef_ * water_content_diff_ / eq_data_->time_step_;
 
                 /*
@@ -220,8 +291,8 @@ protected:
         }
     }
 
-    void reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
-        genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
+    bool reset_soil_model(const DHCellAccessor& cell, BulkPoint &p) {
+        bool genuchten_on = (this->eq_fields_->genuchten_p_head_scale.field_result({cell.elm().region()}) != result_zeros);
         if (genuchten_on) {
             SoilData soil_data;
             soil_data.n     = this->eq_fields_->genuchten_n_exponent(p);
@@ -233,6 +304,7 @@ protected:
 
             this->eq_data_->soil_model_->reset(soil_data);
         }
+        return genuchten_on;
     }
 
 
@@ -240,7 +312,7 @@ protected:
         edge_indices_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_.get()).get_loc_dof_indices();
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
 
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
         VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
@@ -262,35 +334,19 @@ protected:
         }
     }
 
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
-                                               double edge_scale, double edge_source_term) override
+    /// Precompute conductivity on bulk point.
+    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p)
     {
-        update_water_content(dh_cell, p);
-
-        VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
-
-        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
-            water_content = water_content_vec.get( cr_disc_dofs_[i] );
-            water_content_previous_time = eq_data_->water_content_previous_time.get( cr_disc_dofs_[i] );
-
-            solution[eq_data_->loc_side_dofs[dim-1][i]]
-                += edge_source_term - edge_scale * (water_content - water_content_previous_time) / eq_data_->time_step_;
-        }
-
-        IntIdx p_dof = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
-        eq_fields_->conductivity_ptr->vec().set( p_dof, compute_conductivity(dh_cell, p) );
-    }
-
-
-    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
-    {
-        reset_soil_model(cell, p);
+        bool genuchten_on = reset_soil_model(cell, p);
 
         double conductivity = 0;
         if (genuchten_on) {
+            const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
+            auto loc_dof_vec = cr_cell.get_loc_dof_indices();
+
             for (unsigned int i=0; i<cell.elm()->n_sides(); i++)
             {
-                double phead = eq_data_->p_edge_solution.get( eq_data_->loc_schur_[cell.local_idx()].row_dofs[i] );
+                double phead = eq_data_->p_edge_solution.get( loc_dof_vec[i] );
                 conductivity += eq_data_->soil_model_->conductivity(phead);
             }
             conductivity /= cell.elm()->n_sides();
@@ -301,13 +357,35 @@ protected:
         return conductivity;
     }
 
+
+    /// Postprocess velocity after calculating of cell integral.
+    void postprocess_velocity_richards(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution)
+    {
+        this->postprocess_velocity(dh_cell, p);
+
+        this->update_water_content(dh_cell, p);
+
+        VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
+
+        for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
+            water_content = water_content_vec.get( this->cr_disc_dofs_[i] );
+            water_content_previous_time = eq_data_->water_content_previous_time.get( this->cr_disc_dofs_[i] );
+
+            solution[eq_data_->loc_side_dofs[dim-1][i]]
+                += this->edge_source_term_ - this->edge_scale_ * (water_content - water_content_previous_time) / eq_data_->time_step_;
+        }
+
+        IntIdx p_dof = dh_cell.cell_with_other_dh(eq_data_->dh_p_.get()).get_loc_dof_indices()(0);
+        eq_fields_->conductivity_ptr->vec().set( p_dof, compute_conductivity(dh_cell, p) );
+    }
+
+
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;
     EqData *eq_data_;
 
     LocDofVec cr_disc_dofs_;                       ///< Vector of local DOF indices pre-computed on different DOF handlers
     LocDofVec edge_indices_;                       ///< Dofs of discontinuous fields on element edges.
-    bool genuchten_on;
     double storativity_;
     double capacity, phead;
     double water_content, water_content_previous_time;
@@ -320,7 +398,7 @@ protected:
 
 
 template <unsigned int dim>
-class ReconstructSchurAssemblyRichards : public ReconstructSchurAssemblyLMH<dim>, public MHMatrixAssemblyRichards<dim>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim>
 {
 public:
     typedef typename RichardsLMH::EqFields EqFields;
@@ -329,46 +407,46 @@ public:
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
     ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), ReconstructSchurAssemblyLMH<dim>(eq_fields, eq_data), MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
     }
+
+    /// Integral over element.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        // evaluation point
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        this->bulk_local_idx_ = cell.local_idx();
+
+        { // postprocess the velocity
+            this->eq_data_->postprocess_solution_[this->bulk_local_idx_].zeros(this->eq_data_->schur_offset_[dim-1]);
+            this->postprocess_velocity_richards(cell, p, this->eq_data_->postprocess_solution_[this->bulk_local_idx_]);
+        }
+    }
+
+
+    /// Assembles between boundary element and corresponding side on bulk element.
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side)
+    {}
+
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side)
+    {}
+
 
     /// Implements @p AssemblyBase::begin.
     void begin() override
     {
-        ReconstructSchurAssemblyLMH<dim>::begin();
+        this->begin_reconstruct_schur();
     }
 
 
     /// Implements @p AssemblyBase::end.
     void end() override
     {
-        ReconstructSchurAssemblyLMH<dim>::end();
+        this->end_reconstruct_schur();
     }
 protected:
-
-    void assemble_source_term(const DHCellAccessor& cell, BulkPoint &p) override
-    {
-        MHMatrixAssemblyRichards<dim>::assemble_source_term(cell, p);
-    }
-
-    void postprocess_velocity_specific(const DHCellAccessor& dh_cell, BulkPoint &p, arma::vec& solution,
-                                               double edge_scale, double edge_source_term) override
-    {
-        MHMatrixAssemblyRichards<dim>::postprocess_velocity_specific(dh_cell, p, solution, edge_scale, edge_source_term);
-    }
-
-    double compute_conductivity(const DHCellAccessor& cell, BulkPoint &p) override
-    {
-        return MHMatrixAssemblyRichards<dim>::compute_conductivity(cell, p);
-    }
-
-    void postprocess_bulk_integral(const DHCellAccessor& cell, unsigned int element_patch_idx) override {
-        ReconstructSchurAssemblyLMH<dim>::postprocess_bulk_integral(cell, element_patch_idx);
-    }
-
-    void dirichlet_switch(FMT_UNUSED char & switch_dirichlet, FMT_UNUSED DHCellSide cell_side) override
-    {}
-
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 };

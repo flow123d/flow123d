@@ -286,7 +286,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 void ConvectionTransport::zero_time_step()
 {
-	OLD_ASSERT_EQUAL(time_->tlevel(), 0);
+	ASSERT_EQ(time_->tlevel(), 0);
 
 	eq_fields_->mark_input_times(*time_);
 	eq_fields_->set_time(time_->step(), LimitSide::right);

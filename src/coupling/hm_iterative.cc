@@ -19,7 +19,7 @@
 #include "hm_iterative.hh"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
-#include "flow/richards_lmh.hh"
+#include "flow/darcy_flow_lmh.hh"
 #include "fields/field_fe.hh"         // for create_field_fe()
 #include "fields/field_model.hh"      // for Model
 #include "assembly_hm.hh"
@@ -77,7 +77,7 @@ const it::Record & HM_Iterative::get_input_type() {
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
         .copy_keys(IterativeCoupling::record_template())
-		.declare_key("flow_equation", RichardsLMH::get_input_type(),
+		.declare_key("flow_equation", DarcyLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
@@ -193,7 +193,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    eq_data_.flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec, time_);
+    eq_data_.flow_ = std::make_shared<DarcyLMH>(*mesh_, flow_rec, time_);
     
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
@@ -379,7 +379,7 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
                          iteration(), abs_error, rel_error);
 
     if(iteration() >= max_it_ && (abs_error > a_tol_ || rel_error > r_tol_))
-        MessageOut().fmt("HM solver did not converge in {} iterations.\n", iteration());
+        THROW(ExcSolverDiverge() << EI_Reason("Reached max_it."));
 }
 
 

@@ -222,7 +222,7 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              for(uint i=0; i< row_ele.n_dirichlet; i++)
                  loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i], -1.0);
              for(uint i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
-             //ASSERT( arma::norm(product_,2) == 0.0 );
+             //ASSERT_PERMANENT( arma::norm(product_,2) == 0.0 );
              loc_system_.set_matrix(product_);
              // Must have z-coords for every side, can not use averaging vector
              loc_system_.set_rhs( -s * col_average_[row_ele.dim] * col_ele.ele_z_coord_ );
