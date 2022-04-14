@@ -152,7 +152,7 @@ public:
     public:
         EqFields();
         
-        void initialize(Mesh &mesh, HM_Iterative::EqData &eq_data);
+        void initialize(Mesh &mesh, HM_Iterative::EqData &eq_data, const TimeGovernor *time_, double beta_);
         
         Field<3, FieldValue<3>::Scalar> alpha;   ///< Biot coefficient.
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
@@ -169,7 +169,6 @@ public:
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };

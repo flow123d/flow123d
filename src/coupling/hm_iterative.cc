@@ -58,7 +58,7 @@ private:
 
 struct fn_fluid_source {
 
-    fn_fluid_source(TimeGovernor *time) : time_(time) {}
+    fn_fluid_source(const TimeGovernor *time) : time_(time) {}
 
     inline double operator() (double alpha, double beta, double pressure, double old_pressure, double div_u, double old_div_u)
     {
@@ -163,17 +163,47 @@ HM_Iterative::EqFields::EqFields()
 }
 
 
-void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_data)
+void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_data, const TimeGovernor *time_, double beta_)
 {
     // initialize coupling fields with FieldFE
     set_mesh(mesh);
+
+    pressure_potential.set(Model<3, FieldValue<3>::Scalar>::create(
+        fn_pressure_potential(),
+        alpha,
+        density,
+        gravity,
+        eq_data.flow_->eq_fields().field_edge_pressure
+        ), 0.0);
     
     ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
     ref_pressure_potential.set(ref_potential_ptr_, 0.0);
-    
-    old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
+
+    beta.set(Model<3, FieldValue<3>::Scalar>::create(
+        fn_hm_coupling_beta(beta_),
+        alpha,
+        eq_data.mechanics_->eq_fields().lame_mu,
+        eq_data.mechanics_->eq_fields().lame_lambda
+        ), 0.0);
+
+    auto old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
+    old_pressure.set(old_pressure_ptr_, 0.0);
+
     old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
+    old_iter_pressure.set(old_iter_pressure_ptr_, 0.0);
+
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.mechanics_->eq_fields().output_div_ptr->get_dofhandler());
+    old_div_u.set(old_div_u_ptr_, 0.0);
+
+    flow_source.set(Model<3, FieldValue<3>::Scalar>::create(
+        fn_fluid_source(time_),
+        alpha,
+        beta,
+        eq_data.flow_->eq_fields().field_edge_pressure,
+        old_pressure,
+        eq_data.mechanics_->eq_fields().output_divergence,
+        old_div_u
+        ), 0.0);
 }
 
                                     
@@ -202,10 +232,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     
     // setup coupling fields and finish initialization of flow
     eq_data_.mechanics_->eq_fields()["cross_section"].copy_from(eq_data_.flow_->eq_fields()["cross_section"]);
-    // flow_->eq_fields()["cross_section_updated"].copy_from(mechanics_->eq_fields()["cross_section_updated"]);
-    // flow_->eq_fields()["stress"].copy_from(mechanics_->eq_fields()["stress"]);
-    // flow_->eq_fields()["von_mises_stress"].copy_from(mechanics_->eq_fields()["von_mises_stress"]);
-
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["cross_section_updated"];
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["stress"];
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["von_mises_stress"];
@@ -222,42 +248,13 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup input fields
     eq_fields_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
-    eq_fields_.initialize(*mesh_, eq_data_);
+    eq_fields_.initialize(*mesh_, eq_data_, time_, input_record_.val<double>("iteration_parameter"));
     eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
 }
 
 
 void HM_Iterative::initialize()
 {
-    eq_fields_.old_pressure.set(eq_fields_.old_pressure_ptr_, 0.0);
-    eq_fields_.old_iter_pressure.set(eq_fields_.old_iter_pressure_ptr_, 0.0);
-    eq_fields_.old_div_u.set(eq_fields_.old_div_u_ptr_, 0.0);
-
-    eq_fields_.pressure_potential.set(Model<3, FieldValue<3>::Scalar>::create(
-        fn_pressure_potential(),
-        eq_fields_.alpha,
-        eq_fields_.density,
-        eq_fields_.gravity,
-        eq_data_.flow_->eq_fields().field_edge_pressure
-        ), 0.0);
-    
-    eq_fields_.beta.set(Model<3, FieldValue<3>::Scalar>::create(
-        fn_hm_coupling_beta(input_record_.val<double>("iteration_parameter")),
-        eq_fields_.alpha,
-        eq_data_.mechanics_->eq_fields().lame_mu,
-        eq_data_.mechanics_->eq_fields().lame_lambda
-        ), 0.0);
-
-    eq_fields_.flow_source.set(Model<3, FieldValue<3>::Scalar>::create(
-        fn_fluid_source(time_),
-        eq_fields_.alpha,
-        eq_fields_.beta,
-        eq_data_.flow_->eq_fields().field_edge_pressure,
-        eq_fields_.old_pressure,
-        eq_data_.mechanics_->eq_fields().output_divergence,
-        eq_fields_.old_div_u
-        ), 0.0);
-    
     flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(&eq_fields_, &eq_data_);
     residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(&eq_fields_, &eq_data_);
 }
