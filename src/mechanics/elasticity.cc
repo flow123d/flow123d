@@ -210,6 +210,7 @@ Elasticity::EqFields::EqFields()
     
     *this+=cross_section_min
       .name("cross_section_min")
+      .description("Minimal cross-section of fractures.")
       .units( UnitSI().m(3).md() )
       .input_default("0.0");
       

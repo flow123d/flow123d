@@ -793,7 +793,7 @@ public:
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
             }
         	k++;
         }
