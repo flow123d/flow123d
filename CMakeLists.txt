@@ -145,12 +145,12 @@ if(FLOW_BUILD_TYPE STREQUAL "debug")
   #flow_define(DEBUG)
 elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # Release mode
-  set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG -fno-omit-frame-pointer" )
-  set(CMAKE_C_FLAGS "-O3 -DNDEBUG -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
+  set(CMAKE_C_FLAGS "-O3 -DNDEBUG")
   set(CMAKE_BUILD_TYPE Release)
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-  flow_define(DEBUG_PROFILER)
+  #flow_define(DEBUG_PROFILER)
   flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
