@@ -131,11 +131,18 @@ include (Flow123d_config_header)
 message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
 if(FLOW_BUILD_TYPE STREQUAL "debug")
   # debug mode
-  set(CMAKE_CXX_FLAGS "-g -O0")
-  set(CMAKE_C_FLAGS "-g -O0")
+  # set(CMAKE_CXX_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
+  # set(CMAKE_C_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer")
   set(CMAKE_EXE_LINKER_FLAGS "-g ")
   set(CMAKE_BUILD_TYPE Debug)
-  flow_define(DEBUG)
+  
+  # Turn off profiler data for debug builds as it is useless anyway and PROFILER new/delete operators are in conflict with
+  # memory sanitizers.
+  flow_define(DEBUG_MESSAGES)
+  flow_define(DEBUG_ASSERTS)
+  #flow_define(DEBUG)
 elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # Release mode
   set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
@@ -143,7 +150,7 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   set(CMAKE_BUILD_TYPE Release)
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-  flow_define(DEBUG_PROFILER)
+  #flow_define(DEBUG_PROFILER)
   flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 

@@ -494,9 +494,6 @@ void Profiler::add_calls(unsigned int n_calls) {
 
 
 void Profiler::notify_malloc(const size_t size, const long p) {
-    if (!global_monitor_memory)
-        return;
-
     MemoryAlloc::malloc_map()[p] = static_cast<int>(size);
     timers_[actual_node].total_allocated_ += size;
     timers_[actual_node].current_allocated_ += size;
@@ -509,9 +506,6 @@ void Profiler::notify_malloc(const size_t size, const long p) {
 
 
 void Profiler::notify_free(const long p) {
-    if (!global_monitor_memory)
-        return;
-    
     int size = sizeof(p);
     if (MemoryAlloc::malloc_map()[(long)p] > 0) {
         size = MemoryAlloc::malloc_map()[(long)p];
@@ -924,14 +918,6 @@ void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc
     petsc_monitor_memory = petsc_monitor;
 }
 
-bool Profiler::get_global_memory_monitoring() {
-    return global_monitor_memory;
-}
-
-bool Profiler::get_petsc_memory_monitoring() {
-    return petsc_monitor_memory;
-}
-
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {
     static unordered_map_with_alloc static_malloc_map;
     return static_malloc_map;
@@ -947,39 +933,46 @@ void Profiler::operator delete (void* p) {
 
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
 	void * p = malloc(size);
-    Profiler::instance()->notify_malloc(size, (long)p);
+    if (Profiler::get_global_memory_monitoring())
+        Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION {
     void * p = malloc(size);
-    Profiler::instance()->notify_malloc(size, (long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void *operator new[] (std::size_t size, const std::nothrow_t&) throw() {
     void * p = malloc(size);
-    Profiler::instance()->notify_malloc(size, (long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_malloc(size, (long)p);
 	return p;
 }
 
 void operator delete( void *p) throw() {
-    Profiler::instance()->notify_free((long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 
 void operator delete( void *p, std::size_t) throw() {
-    Profiler::instance()->notify_free((long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 
 void operator delete[]( void *p) throw() {
-    Profiler::instance()->notify_free((long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 
 void operator delete[]( void *p, std::size_t) throw() {
-    Profiler::instance()->notify_free((long)p);
+    if (Profiler::get_global_memory_monitoring())
+    	Profiler::instance()->notify_free((long)p);
 	free(p);
 }
 
