@@ -881,8 +881,8 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
 void Profiler::uninitialize() {
     if (_instance) {
-    	ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
-    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
+    	// ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    	// 		.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         _instance->stop_timer(0);
         set_memory_monitoring(false, false);
         delete _instance;
@@ -963,10 +963,10 @@ void Profiler::initialize() {
 
 void Profiler::uninitialize() {
     if (_instance) {
-        ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
-    			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
+        // ASSERT(_instance->actual_node==0)(_instance->timers_[_instance->actual_node].tag())
+    	// 		.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         // set_memory_monitoring(false, false);
-        _instance->stop_timer(0);
+        // _instance->stop_timer(0);
         delete _instance;
         _instance = NULL;
     }
