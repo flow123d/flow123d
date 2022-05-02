@@ -150,6 +150,10 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
         FieldCommon *found_field = field(field_name);
         OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
         found_field->output_type(interpolation);
+
+        // DebugOut().fmt("output fieldname: {} discretization: {}\n", found_field->name(), found_field->get_output_type());
+        used_interpolations_.insert( found_field->get_output_type() );
+
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
@@ -164,11 +168,6 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
-    }
-
-    // register interpolation type of fields to OutputStream
-    for(FieldCommon * field : this->field_list) {
-    	used_interpolations_.insert( field->get_output_type() );
     }
 }
 
