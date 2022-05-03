@@ -351,7 +351,7 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    dbg|rel)
+    dbg|rel|dbg_gnu|rel_gnu)
       image_version=$1
       shift
     ;;
@@ -386,6 +386,14 @@ while [[ $# -gt 0 ]]
   esac
 done
 
+# resolve rel_gnu and dbg_gnu
+image_kind=${image_version%%_*}
+image_env=${image_version#*_}
+
+if [ $image_kind != $image_env ]
+then
+  image_version=$image_kind
+fi
 
 # determine image names
 base_image=flow123d/flow-libs-dev-$image_version:$image_tag
