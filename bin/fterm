@@ -297,7 +297,6 @@ uid=$(id -u)
 uname=flow
 autopull=${autopull:-1}
 theme=${theme:-light}
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 # source config, that way we know what to mount, etc.
 if [[ -f "$CFG/docker.cfg" ]]; then
@@ -387,21 +386,42 @@ while [[ $# -gt 0 ]]
 done
 
 # resolve rel_gnu and dbg_gnu
+# image_kind=${image_version%%_*}
+# image_env=${image_version#*_}
+# 
+# if [ $image_kind != $image_env ]
+# then
+#   image_version=$image_kind
+# fi
+
+# determine image names
+# base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+# base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+
+
 image_kind=${image_version%%_*}
 image_env=${image_version#*_}
 
-if [ $image_kind != $image_env ]
+if [ $image_kind = $image_env ]
 then
-  image_version=$image_kind
+  image_env="gnu"
 fi
 
+# set flow123d_images if empty
+if [ -z "$flow123d_images" ]
+then
+flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"  # flow-dev-${image_env}-profile"
+fi
+
+
 # determine image names
-base_image=flow123d/flow-libs-dev-$image_version:$image_tag
+base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
 dbg "base_image     = $base_image"
 dbg "image_tag      = $image_tag"
-dbg "image_version  = $image_version"
+dbg "image_kind     = $image_kind"
+dbg "image_env      = $image_env"
 dbg "action         = $action"
 dbg "mount dirs     - $work"
 dbg "               - $OLD_PWD"
