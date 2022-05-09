@@ -1,115 +1,1177 @@
+\begin{RecordType}
+	{IT::Root}
+	{Root}
+	{}% implements
+	{}% reducible to key
+	{{{Root record of JSON input for Flow123d.}% 
+}}
+		\RecKey
+			{Root::flow123d-version}
+			{flow123d{\_}version}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Version of Flow123d for which the input file was created.
+Flow123d only warn about version incompatibility.
+However, external tools may use this information to provide conversion of the input file to the structure required by another version of Flow123d.}% 
+}}
+		\RecKey
+			{Root::problem}
+			{problem}
+			{{abstract: }\TypeLink{IT::Coupling-Base}{Coupling{\_}Base}}{}
+			{ \it{Obligatory}}
+			{{{Simulation problem to be solved.}% 
+}}
+		\RecKey
+			{Root::pause-after-run}
+			{pause{\_}after{\_}run}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{If true, the program will wait for key press before it terminates.}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::Coupling-Base}
+	{Coupling{\_}Base}
+	{}
+	{{{The root record of description of particular the problem to solve.}% 
+}}
+		\Descendant{\TypeLink{IT::Coupling-Sequential}{Coupling{\_}Sequential}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::Coupling-Sequential}
+	{Coupling{\_}Sequential}
+	{\TypeLink{IT::Coupling-Base}{Coupling{\_}Base}}% implements
+	{}% reducible to key
+	{{{Record with data for a general sequential coupling.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::description}
+			{description}
+			{{String}}{}
+			{ \it{Optional}}
+			{{{Short description of the solved problem.}\\{
+Is displayed in the main log, and possibly in other text output files.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::mesh}
+			{mesh}
+			{{record: }\TypeLink{IT::Mesh}{Mesh}}{}
+			{ \it{Obligatory}}
+			{{{Computational mesh common to all equations.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \it{Optional}}
+			{{{Simulation time frame and time step.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::flow-equation}
+			{flow{\_}equation}
+			{{abstract: }\TypeLink{IT::DarcyFlow}{DarcyFlow}}{}
+			{ \it{Obligatory}}
+			{{{Flow equation, provides the velocity field as a result.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::solute-equation}
+			{solute{\_}equation}
+			{{abstract: }\TypeLink{IT::AdvectionProcess}{AdvectionProcess}}{}
+			{ \it{Optional}}
+			{{{Transport of soluted substances, depends on the velocity field from a Flow equation.}% 
+}}
+		\RecKey
+			{Coupling-Sequential::heat-equation}
+			{heat{\_}equation}
+			{{abstract: }\TypeLink{IT::AdvectionProcess}{AdvectionProcess}}{}
+			{ \it{Optional}}
+			{{{Heat transfer, depends on the velocity field from a Flow equation.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Mesh}
+	{Mesh}
+	{}% implements
+	{\TypeLink{Mesh::mesh-file}{mesh{\_}file}}% reducible to key
+	{{{Record with mesh related data.}% 
+}}
+		\RecKey
+			{Mesh::mesh-file}
+			{mesh{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{Input file with mesh description.}% 
+}}
+		\RecKey
+			{Mesh::regions}
+			{regions}
+			{{array [0, UINT] of }{abstract: }\TypeLink{IT::Region}{Region}}{}
+			{ \it{Optional}}
+			{{{{List of additional region and region set definitions not contained in the mesh.
+There are three region sets implicitly defined:}
+% 
+}
+\begin{itemize}
+\item {ALL (all regions of the mesh)}
+\item {.BOUNDARY (all boundary regions)}
+\item {BULK (all bulk regions)}
+\end{itemize}
+}}
+		\RecKey
+			{Mesh::partitioning}
+			{partitioning}
+			{{record: }\TypeLink{IT::Partition}{Partition}}{}
+			{ \ValueDefault{"any{\_}neighboring"}}
+			{{{Parameters of mesh partitioning algorithms.}% 
+}}
+		\RecKey
+			{Mesh::print-regions}
+			{print{\_}regions}
+			{{Bool}}{}
+			{ \ValueDefault{true}}
+			{{{If true, print table of all used regions.}% 
+}}
+		\RecKey
+			{Mesh::intersection-search}
+			{intersection{\_}search}
+			{{selection: }\TypeLink{IT::Types-of-search-algorithm-for-finding-intersection-candidates-}{Types of search algorithm for finding intersection candidates.}}{}
+			{ \ValueDefault{"BIHsearch"}}
+			{{{Search algorithm for element intersections.}% 
+}}
+		\RecKey
+			{Mesh::global-snap-radius}
+			{global{\_}snap{\_}radius}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.001}}
+			{{{Maximal snapping distance from Mesh in various search operations.
+In particular is used in ObservePoint to find closest mesh element and in FieldFormula to find closest surface element in plan view (Z projection).}% 
+}}
+		\RecKey
+			{Mesh::raw-ngh-output}
+			{raw{\_}ngh{\_}output}
+			{{Filename}}{}
+			{ \it{Optional}}
+			{{{Output file with neighboring data from mesh.}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::Region}
+	{Region}
+	{}
+	{{{Abstract record for Region.}% 
+}}
+		\Descendant{\TypeLink{IT::From-Id}{From{\_}Id}}% 
+		\Descendant{\TypeLink{IT::From-Label}{From{\_}Label}}% 
+		\Descendant{\TypeLink{IT::From-Elements}{From{\_}Elements}}% 
+		\Descendant{\TypeLink{IT::Union}{Union}}% 
+		\Descendant{\TypeLink{IT::Difference}{Difference}}% 
+		\Descendant{\TypeLink{IT::Intersection}{Intersection}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::From-Id}
+	{From{\_}Id}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Elementary region declared by its id.}\\{
+It allows to create a new region with given id and name, or to rename an existing region of given id.}% 
+}}
+		\RecKey
+			{From-Id::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name (label) of the region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{From-Id::id}
+			{id}
+			{{Integer [0, INT]}}{}
+			{ \it{Obligatory}}
+			{{{Id of the region to which you assign the name.}% 
+}}
+		\RecKey
+			{From-Id::dim}
+			{dim}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{Dimension of the region to which you assign the name.}\\{
+The value is taken into account only if a new region is created.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::From-Label}
+	{From{\_}Label}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Elementary region declared by its name (label).}\\{
+It gives a new name to an elementary region with the original name (in the mesh file) given by the }\begin{ttfamily}mesh{\_}label.\end{ttfamily}% 
+}}
+		\RecKey
+			{From-Label::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{New name (label) of the region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{From-Label::mesh-label}
+			{mesh{\_}label}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The original region name in the input file, e.g. a physical volume name in the GMSH format.}% 
+}}
+		\RecKey
+			{From-Label::allow-empty}
+			{allow{\_}empty}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{If true it allows to the region set to be empty (no elements).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::From-Elements}
+	{From{\_}Elements}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Elementary region declared by a list of elements.}\\{
+The new region is assigned to the list of elements specified by the key }\begin{ttfamily}element{\_}list\end{ttfamily}{.}% 
+}}
+		\RecKey
+			{From-Elements::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name (label) of the region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{From-Elements::id}
+			{id}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{Id of the region.
+If unset, a unique id will be generated automatically.}% 
+}}
+		\RecKey
+			{From-Elements::element-list}
+			{element{\_}list}
+			{{array [1, UINT] of }{Integer [0, INT]}}{}
+			{ \it{Obligatory}}
+			{{{List of ids of elements.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Union}
+	{Union}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Defines a new region (set) as a union of two or more regions.
+The regions can be given by their names or ids or both.}% 
+}}
+		\RecKey
+			{Union::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name (label) of the new region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{Union::region-ids}
+			{region{\_}ids}
+			{{array [0, UINT] of }{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{List of region ids to be added to the new region set.}% 
+}}
+		\RecKey
+			{Union::regions}
+			{regions}
+			{{array [0, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{List of region names (labels) to be added to the new region set.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Difference}
+	{Difference}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Defines a new region (set) as a difference of two regions (sets), given by their names.}% 
+}}
+		\RecKey
+			{Difference::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name (label) of the new region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{Difference::regions}
+			{regions}
+			{{array [2, 2] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{List of exactly two region (set) names.}\\{
+Supposing region sets r1, r2, the result includes all regions of r1 that are not in r2.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Intersection}
+	{Intersection}
+	{\TypeLink{IT::Region}{Region}}% implements
+	{}% reducible to key
+	{{{Defines a new region (set) as an intersection of two or more regions (sets), given by their names.}% 
+}}
+		\RecKey
+			{Intersection::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name (label) of the new region.
+It has to be unique per single mesh.}% 
+}}
+		\RecKey
+			{Intersection::regions}
+			{regions}
+			{{array [2, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{List of two or more region (set) names.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Partition}
+	{Partition}
+	{}% implements
+	{\TypeLink{Partition::graph-type}{graph{\_}type}}% reducible to key
+	{{{Setting for various types of mesh partitioning.}% 
+}}
+		\RecKey
+			{Partition::tool}
+			{tool}
+			{{selection: }\TypeLink{IT::PartTool}{PartTool}}{}
+			{ \ValueDefault{"METIS"}}
+			{{{Software package used for partitioning.
+See corresponding selection.}% 
+}}
+		\RecKey
+			{Partition::graph-type}
+			{graph{\_}type}
+			{{selection: }\TypeLink{IT::GraphType}{GraphType}}{}
+			{ \ValueDefault{"any{\_}neighboring"}}
+			{{{Algorithm for generating graph and its weights from a multidimensional mesh.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-PartTool}
-	{instance{\_}PartTool}
+	{IT::PartTool}
+	{PartTool}
 	{{{Select the partitioning tool to use.}% 
 }}
 		\SelectionItem
-			{instance-PartTool::PETSc}
+			{PartTool::PETSc}
 			{PETSc}
 			{{{Use PETSc interface to various partitioning tools.}% 
 }}
 		\SelectionItem
-			{instance-PartTool::METIS}
+			{PartTool::METIS}
 			{METIS}
 			{{{Use direct interface to Metis.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-GraphType}
-	{instance{\_}GraphType}
+	{IT::GraphType}
+	{GraphType}
 	{{{Different algorithms to make the sparse graph with weighted edges}\\{
 from the multidimensional mesh.
 Main difference is dealing with }\\{
 neighboring of elements of different dimension.}% 
 }}
 		\SelectionItem
-			{instance-GraphType::any-neighboring}
+			{GraphType::any-neighboring}
 			{any{\_}neighboring}
 			{{{Add an edge for any pair of neighboring elements.}% 
 }}
 		\SelectionItem
-			{instance-GraphType::any-weight-lower-dim-cuts}
+			{GraphType::any-weight-lower-dim-cuts}
 			{any{\_}weight{\_}lower{\_}dim{\_}cuts}
 			{{{Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.}% 
 }}
 		\SelectionItem
-			{instance-GraphType::same-dimension-neighboring}
+			{GraphType::same-dimension-neighboring}
 			{same{\_}dimension{\_}neighboring}
 			{{{Add an edge for any pair of neighboring elements of the same dimension (bad for matrix multiply).}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-Types-of-search-algorithm-for-finding-intersection-candidates-}
-	{instance{\_}Types of search algorithm for finding intersection candidates.}
+	{IT::Types-of-search-algorithm-for-finding-intersection-candidates-}
+	{Types of search algorithm for finding intersection candidates.}
 	{}
 		\SelectionItem
-			{instance-Types-of-search-algorithm-for-finding-intersection-candidates-::BIHsearch}
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BIHsearch}
 			{BIHsearch}
 			{{{Use BIH for finding initial candidates, then continue by prolongation.}% 
 }}
 		\SelectionItem
-			{instance-Types-of-search-algorithm-for-finding-intersection-candidates-::BIHonly}
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BIHonly}
 			{BIHonly}
 			{{{Use BIH for finding all candidates.}% 
 }}
 		\SelectionItem
-			{instance-Types-of-search-algorithm-for-finding-intersection-candidates-::BBsearch}
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BBsearch}
 			{BBsearch}
 			{{{Use bounding boxes for finding initial candidates, then continue by prolongation.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::TimeGovernor}
+	{TimeGovernor}
+	{}% implements
+	{\TypeLink{TimeGovernor::max-dt}{max{\_}dt}}% reducible to key
+	{{{Time axis settings of the simulation.}\\{
+The settings is specific to a particular equation.}\\{
+TimeGovernor allows to:}\\{
+ - define start time and end time of simulation}\\{
+ - define lower and upper limits of time steps}\\{
+ - direct fixed time marks of whole simulation}\\{
+ - set global time unit of equation (see 'common{\_}time{\_}unit' key)}\\{
+Limits of time steps are defined by keys 'min{\_}dt', 'max{\_}dt', 'init{\_}dt' and 'dt{\_}limits'. Key 'init{\_}dt' has the highest priority and allows set fix size of time steps.
+Pair of keys 'min{\_}dt' and 'max{\_}dt' define interval of time steps.
+Both previous cases ('init{\_}dt' or pair 'min{\_}dt' and 'max{\_}dt') set global limits of whole simulation.
+In contrasts, 'dt{\_}limits' allow set time-dependent function of min{\_}dt/max{\_}dt.
+Used time steps of simulation can be printed to YAML output file (see 'write{\_}used{\_}timesteps'.}\\{
+Fixed time marks define exact values of time steps.
+They are defined in:}\\{
+ - start time and end time of simulation}\\{
+ - output times printed to output mesh file}\\{
+ - times defined in 'dt{\_}limits' table (optional, see 'add{\_}dt{\_}limits{\_}time{\_}marks' key)}% 
+}}
+		\RecKey
+			{TimeGovernor::start-time}
+			{start{\_}time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Start time of the simulation.}% 
+}}
+		\RecKey
+			{TimeGovernor::end-time}
+			{end{\_}time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{5e+17}}
+			{{{End time of the simulation.}\\{
+The default value is higher than the age of the Universe (given in seconds).}% 
+}}
+		\RecKey
+			{TimeGovernor::init-dt}
+			{init{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Initial guess for the time step.}\\{
+It applies to equations that use an adaptive time stepping.
+If set to 0.0, the time step is determined in fully autonomous way, assuming the equation supports it.}% 
+}}
+		\RecKey
+			{TimeGovernor::min-dt}
+			{min{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{implicit value: "{Machine precision.}"}
+			{{{Soft lower limit for the time step.}\\{
+Equation using an adaptive time stepping cannot suggest smaller time step.
+The actual time step can only decrease below the limit in order to match the prescribed input or output times.}% 
+}}
+		\RecKey
+			{TimeGovernor::max-dt}
+			{max{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{implicit value: "{Whole time of the simulation if specified, infinity else.}"}
+			{{{Hard upper limit for the time step.}\\{
+The actual time step can only increase above the limit in order to match the prescribed input or output times.}% 
+}}
+		\RecKey
+			{TimeGovernor::dt-limits}
+			{dt{\_}limits}
+			{{array [0, UINT] of }{tuple: }\TypeLink{IT::DtLimits}{DtLimits}}{}
+			{ \it{Optional}}
+			{{{Allow to set a time dependent changes in }\begin{ttfamily}min{\_}dt\end{ttfamily}{ and }\begin{ttfamily}max{\_}dt\end{ttfamily}{ limits.
+This list is processed at individual times overwriting previous values of }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{. Limits equal to 0 are ignored and replaced with }\begin{ttfamily}min{\_}dt\end{ttfamily}{/}\begin{ttfamily}max{\_}dt\end{ttfamily}{ values.}% 
+}}
+		\RecKey
+			{TimeGovernor::add-dt-limits-time-marks}
+			{add{\_}dt{\_}limits{\_}time{\_}marks}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Add all times defined in }\begin{ttfamily}dt{\_}limits\end{ttfamily}{ table to the list of fixed TimeMarks.}% 
+}}
+		\RecKey
+			{TimeGovernor::write-used-timesteps}
+			{write{\_}used{\_}timesteps}
+			{{Filename}}{}
+			{ \it{Optional}}
+			{{{Write used time steps to the given file in YAML format corresponding with the format of }\begin{ttfamily}dt{\_}limits\end{ttfamily}{.}% 
+}}
+		\RecKey
+			{TimeGovernor::common-time-unit}
+			{common{\_}time{\_}unit}
+			{{String}}{}
+			{ \ValueDefault{"s"}}
+			{{{Common time unit of the equation.}\\{
+This unit will be used for all time inputs and outputs within the equation.
+Individually, the common time unit can be overwritten for every declared time.}\\{
+Time units are used in the following cases:}\\{
+1) Time units of time value keys in: TimeGovernor, FieldDescriptors.}\\{
+   The common time unit can be overwritten for every declared time.}\\{
+2) Time units in: }\\{
+   a) input fields: FieldFE and FieldTimeFunction}\\{
+   b) time steps definition of OutputTimeSet}\\{
+   Common time unit can be overwritten by one unit value for every whole mesh data file or time function.}\\{
+3) Time units in output files: observation times, balance times, frame times of VTK and GMSH}\\{
+   Common time unit cannot be overwritten in these cases.}% 
+}}
+\end{RecordType}
+\begin{TupleType}
+	{IT::TimeValue}
+	{TimeValue}
+	{}% implements
+	{\TypeLink{TimeValue::time}{time}}% reducible to key
+	{{{A time with unit specification.}% 
+}}
+		\RecKey
+			{TimeValue::time}
+			{time}
+			{{Double (-inf, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{Numeric value of time.}% 
+}}
+		\RecKey
+			{TimeValue::unit}
+			{unit}
+			{{String}}{}
+			{implicit value: "{Common time unit of equation defined in Time Governor}"}
+			{{{Specify unit of an input time value.}% 
+}}
+\end{TupleType}
+\begin{TupleType}
+	{IT::TimeValue-2}
+	{TimeValue}
+	{}% implements
+	{\TypeLink{TimeValue-2::time}{time}}% reducible to key
+	{{{A time with unit specification.}% 
+}}
+		\RecKey
+			{TimeValue-2::time}
+			{time}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{Numeric value of time.}% 
+}}
+		\RecKey
+			{TimeValue-2::unit}
+			{unit}
+			{{String}}{}
+			{implicit value: "{Common time unit of equation defined in Time Governor}"}
+			{{{Specify unit of an input time value.}% 
+}}
+\end{TupleType}
+\begin{TupleType}
+	{IT::DtLimits}
+	{DtLimits}
+	{}% implements
+	{\TypeLink{DtLimits::time}{time}}% reducible to key
+	{{{Time dependent changes in min{\_}dt and max{\_}dt limits.}% 
+}}
+		\RecKey
+			{DtLimits::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \it{Obligatory}}
+			{{{The start time of dt step set.}% 
+}}
+		\RecKey
+			{DtLimits::min-dt}
+			{min{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{implicit value: "{'min{\_}dt' value of TimeGovernor.}"}
+			{{{Soft lower limit for the time step.}% 
+}}
+		\RecKey
+			{DtLimits::max-dt}
+			{max{\_}dt}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{implicit value: "{'max{\_}dt' value of TimeGovernor.}"}
+			{{{Whole time of the simulation if specified, infinity else.}% 
+}}
+\end{TupleType}
+\begin{AbstractType}
+	{IT::DarcyFlow}
+	{DarcyFlow}
+	{}
+	{{{Darcy flow model.
+Abstraction of various porous media flow models.}% 
+}}
+		\Descendant{\TypeLink{IT::Flow-Darcy-MH}{Flow{\_}Darcy{\_}MH}}% 
+		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH}
+	{Flow{\_}Darcy{\_}MH}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Mixed-Hybrid  solver for saturated Darcy flow.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::gravity}
+			{gravity}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \ValueDefault{[0, 0, -1]}}
+			{{{Vector of the gravity force.
+Dimensionless.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-MH-Data}{Flow{\_}Darcy{\_}MH{\_}Data}}{}
+			{ \it{Obligatory}}
+			{{{Input data for Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::nonlinear-solver}
+			{nonlinear{\_}solver}
+			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Non-linear solver for MH problem.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-specific}
+			{output{\_}specific}
+			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
+			{ \it{Optional}}
+			{{{Output settings specific to Darcy flow model.}\\{
+Includes raw output and some experimental functionality.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor settings for the unsteady Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::n-schurs}
+			{n{\_}schurs}
+			{{Integer [0, 2]}}{}
+			{ \ValueDefault{2}}
+			{{{Number of Schur complements to perform when solving MH system.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::mortar-method}
+			{mortar{\_}method}
+			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
+			{ \ValueDefault{"None"}}
+			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH-Data}
+	{Flow{\_}Darcy{\_}MH{\_}Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Flow{\_}Darcy{\_}MH{\_}Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::anisotropy}
+			{anisotropy}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::cross-section}
+			{cross{\_}section}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::conductivity}
+			{conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::sigma}
+			{sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transition coefficient between dimensions. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::water-source-density}
+			{water{\_}source{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Water source density. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Boundary condition type. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-pressure}
+			{bc{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-pressure}
+			{init{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::storativity}
+			{storativity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::Field-R3-to-R-3-3-}
+	{Field{\_}R3{\_}to{\_}R[3,3]}
+	{\TypeLink{IT::FieldConstant}{FieldConstant}}
+	{{{Abstract for all time-space functions.}% 
+}}
+		\Descendant{\TypeLink{IT::FieldPython}{FieldPython}}% 
+		\Descendant{\TypeLink{IT::FieldConstant}{FieldConstant}}% 
+		\Descendant{\TypeLink{IT::FieldFormula}{FieldFormula}}% 
+		\Descendant{\TypeLink{IT::FieldTimeFunction}{FieldTimeFunction}}% 
+		\Descendant{\TypeLink{IT::FieldFE}{FieldFE}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::FieldPython}
+	{FieldPython}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field given by a Python script.}% 
+}}
+		\RecKey
+			{FieldPython::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldPython::script-string}
+			{script{\_}string}
+			{{String}}{}
+			{implicit value: "{Obligatory if 'script{\_}file' is not given. }"}
+			{{{Python script given as in place string}% 
+}}
+		\RecKey
+			{FieldPython::script-file}
+			{script{\_}file}
+			{{Filename}}{}
+			{implicit value: "{Obligatory if 'script{\_}striong' is not given. }"}
+			{{{Python script given as external file}% 
+}}
+		\RecKey
+			{FieldPython::function}
+			{function}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Function in the given script that returns tuple containing components of the return type.}\\{
+For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Unit}
+	{Unit}
+	{}% implements
+	{\TypeLink{Unit::unit-formula}{unit{\_}formula}}% reducible to key
+	{{{{Specify unit of an input value.
+Evaluation of the unit formula results into a coeficient and a unit in terms of powers of base SI units.
+The unit must match expected SI unit of the value, while the value provided on the input is multiplied by the coefficient before further processing.
+The unit formula have a form:}\\
+\begin{ttfamily}{\textless}UnitExpr{\textgreater};{\textless}Variable{\textgreater}={\textless}Number{\textgreater}*{\textless}UnitExpr{\textgreater};...,\end{ttfamily}\\{
+where }\begin{ttfamily}{\textless}Variable{\textgreater}\end{ttfamily}{ is a variable name and }\begin{ttfamily}{\textless}UnitExpr{\textgreater}\end{ttfamily}{ is a units expression which consists of products and divisions of terms.}
+% 
+}{{A term has a form: }\begin{ttfamily}{\textless}Base{\textgreater}{\^{}}{\textless}N{\textgreater}\end{ttfamily}{, where }\begin{ttfamily}{\textless}N{\textgreater}\end{ttfamily}{ is an integer exponent and }\begin{ttfamily}{\textless}Base{\textgreater}\end{ttfamily}{ is either a base SI unit, a derived unit, or a variable defined in the same unit formula.
+Example, unit for the pressure head:}
+% 
+}{{}\begin{ttfamily}MPa/rho/g{\_}; rho = 990*kg*m{\^{}}-3; g{\_} = 9.8*m*s{\^{}}-2\end{ttfamily}% 
+}}}
+		\RecKey
+			{Unit::unit-formula}
+			{unit{\_}formula}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Definition of unit.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldConstant}
+	{FieldConstant}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{\TypeLink{FieldConstant::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field constant in space.}% 
+}}
+		\RecKey
+			{FieldConstant::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldConstant::value}
+			{value}
+			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{{Value of the constant field.
+For vector values, you can use scalar value to enter constant vector.
+For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
+% 
+}
+\begin{itemize}
+\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {scalar to enter multiple of the unit matrix.}
+\end{itemize}
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldFormula}
+	{FieldFormula}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{\TypeLink{FieldFormula::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field given by runtime interpreted formula.}% 
+}}
+		\RecKey
+			{FieldFormula::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFormula::value}
+			{value}
+			{{array [1, UINT] of }{array [1, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
+For vector values, you can use just one string to enter homogeneous vector.}\\{
+For square }{$N\times N$}{-matrix values, you can use:}
+% 
+}
+\begin{itemize}
+\item {array of strings of size }{$N$}{ to enter diagonal matrix}
+\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
+Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
+\end{itemize}
+}}
+		\RecKey
+			{FieldFormula::surface-direction}
+			{surface{\_}direction}
+			{{String}}{}
+			{ \ValueDefault{"0 0 1"}}
+			{{{The vector used to project evaluation point onto the surface.}% 
+}}
+		\RecKey
+			{FieldFormula::surface-region}
+			{surface{\_}region}
+			{{String}}{}
+			{ \it{Optional}}
+			{{{The name of region set considered as the surface.
+You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldTimeFunction}
+	{FieldTimeFunction}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{\TypeLink{FieldTimeFunction::time-function}{time{\_}function}}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field time-dependent function in space.}% 
+}}
+		\RecKey
+			{FieldTimeFunction::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldTimeFunction::time-function}
+			{time{\_}function}
+			{{record: }\TypeLink{IT::TableFunction}{TableFunction}}{}
+			{ \it{Obligatory}}
+			{{{Values of time series initialization of Field.}% 
+}}
+		\RecKey
+			{FieldTimeFunction::time-unit}
+			{time{\_}unit}
+			{{String}}{}
+			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{{Definition of unit of all times defined in FieldTimeFunction.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::TableFunction}
+	{TableFunction}
+	{}% implements
+	{\TypeLink{TableFunction::values}{values}}% reducible to key
+	{{{Allow set variable series initialization of Fields.}% 
+}}
+		\RecKey
+			{TableFunction::values}
+			{values}
+			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue}{IndependentValue}}{}
+			{ \it{Obligatory}}
+			{{{Initizaliation values of Field.}% 
+}}
+\end{RecordType}
+\begin{TupleType}
+	{IT::IndependentValue}
+	{IndependentValue}
+	{}% implements
+	{}% reducible to key
+	{{{Value of Field for independent variable.}% 
+}}
+		\RecKey
+			{IndependentValue::t}
+			{t}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{Independent variable of stamp.}% 
+}}
+		\RecKey
+			{IndependentValue::value}
+			{value}
+			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{Value of the field in given stamp.}% 
+}}
+\end{TupleType}
+\begin{RecordType}
+	{IT::FieldFE}
+	{FieldFE}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field given by finite element approximation.}% 
+}}
+		\RecKey
+			{FieldFE::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFE::mesh-data-file}
+			{mesh{\_}data{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{GMSH mesh with data.
+Can be different from actual computational mesh.}% 
+}}
+		\RecKey
+			{FieldFE::input-discretization}
+			{input{\_}discretization}
+			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
+			{ \it{Optional}}
+			{{{Section where to find the field.}\\{
+ Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
+If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
+}}
+		\RecKey
+			{FieldFE::field-name}
+			{field{\_}name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
+}}
+		\RecKey
+			{FieldFE::default-value}
+			{default{\_}value}
+			{{Double (-inf, +inf)}}{}
+			{ \it{Optional}}
+			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE::time-unit}
+			{time{\_}unit}
+			{{String}}{}
+			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{{Definition of the unit of all times defined in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE::read-time-shift}
+			{read{\_}time{\_}shift}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{This key allows reading field data from the mesh data file shifted in time.
+Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
+}}
+		\RecKey
+			{FieldFE::interpolation}
+			{interpolation}
+			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
+			{ \ValueDefault{"equivalent{\_}mesh"}}
+			{{{Type of interpolation applied to the input spatial data.}\\{
+The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
+In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
+Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-FE-discretization}
-	{instance{\_}FE{\_}discretization}
+	{IT::FE-discretization}
+	{FE{\_}discretization}
 	{{{Specify the section in mesh input file where field data is listed.}\\{
 Some sections are specific to file format.}% 
 }}
 		\SelectionItem
-			{instance-FE-discretization::node-data}
+			{FE-discretization::node-data}
 			{node{\_}data}
 			{{{point{\_}data (VTK) / node{\_}data (GMSH)}% 
 }}
 		\SelectionItem
-			{instance-FE-discretization::element-data}
+			{FE-discretization::element-data}
 			{element{\_}data}
 			{{{cell{\_}data (VTK) / element{\_}data (GMSH)}% 
 }}
 		\SelectionItem
-			{instance-FE-discretization::element-node-data}
+			{FE-discretization::element-node-data}
 			{element{\_}node{\_}data}
 			{{{element{\_}node{\_}data (only for GMSH)}% 
 }}
 		\SelectionItem
-			{instance-FE-discretization::native-data}
+			{FE-discretization::native-data}
 			{native{\_}data}
 			{{{native{\_}data (only for VTK)}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-interpolation}
-	{instance{\_}interpolation}
+	{IT::interpolation}
+	{interpolation}
 	{{{Specify interpolation of the input data from its input mesh to the computational mesh.}% 
 }}
 		\SelectionItem
-			{instance-interpolation::identic-mesh}
+			{interpolation::identic-mesh}
 			{identic{\_}mesh}
 			{{{Topology and indices of nodes and elements ofthe input mesh and the computational mesh are identical.
 This interpolation is typically used for GMSH input files containing only the field values without explicit mesh specification.}% 
 }}
 		\SelectionItem
-			{instance-interpolation::equivalent-mesh}
+			{interpolation::equivalent-mesh}
 			{equivalent{\_}mesh}
 			{{{Topologies of the input mesh and the computational mesh are the same, the node and element numbering may differ.
 This interpolation can be used also for VTK input data.}% 
 }}
 		\SelectionItem
-			{instance-interpolation::P0-gauss}
+			{interpolation::P0-gauss}
 			{P0{\_}gauss}
 			{{{Topologies of the input mesh and the computational mesh may differ.
 Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of the fixed order 4, where the quadrature points and their values are found in the input mesh and input data using the BIH tree search.}% 
 }}
 		\SelectionItem
-			{instance-interpolation::P0-intersection}
+			{interpolation::P0-intersection}
 			{P0{\_}intersection}
 			{{{Topologies of the input mesh and the computational mesh may differ.
 Can be applied only for boundary fields.
@@ -117,29 +1179,292 @@ For every (boundary) element of the computational mesh the intersection with the
 Constant values on the elements of the computational mesh are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::Field-R3-to-R}
+	{Field{\_}R3{\_}to{\_}R}
+	{\TypeLink{IT::FieldConstant-2}{FieldConstant}}
+	{{{Abstract for all time-space functions.}% 
+}}
+		\Descendant{\TypeLink{IT::FieldPython-2}{FieldPython}}% 
+		\Descendant{\TypeLink{IT::FieldConstant-2}{FieldConstant}}% 
+		\Descendant{\TypeLink{IT::FieldFormula-2}{FieldFormula}}% 
+		\Descendant{\TypeLink{IT::FieldTimeFunction-2}{FieldTimeFunction}}% 
+		\Descendant{\TypeLink{IT::FieldFE-2}{FieldFE}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::FieldPython-2}
+	{FieldPython}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R Field given by a Python script.}% 
+}}
+		\RecKey
+			{FieldPython-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldPython-2::script-string}
+			{script{\_}string}
+			{{String}}{}
+			{implicit value: "{Obligatory if 'script{\_}file' is not given. }"}
+			{{{Python script given as in place string}% 
+}}
+		\RecKey
+			{FieldPython-2::script-file}
+			{script{\_}file}
+			{{Filename}}{}
+			{implicit value: "{Obligatory if 'script{\_}striong' is not given. }"}
+			{{{Python script given as external file}% 
+}}
+		\RecKey
+			{FieldPython-2::function}
+			{function}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Function in the given script that returns tuple containing components of the return type.}\\{
+For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldConstant-2}
+	{FieldConstant}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{FieldConstant-2::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R Field constant in space.}% 
+}}
+		\RecKey
+			{FieldConstant-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldConstant-2::value}
+			{value}
+			{{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{{Value of the constant field.
+For vector values, you can use scalar value to enter constant vector.
+For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
+% 
+}
+\begin{itemize}
+\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {scalar to enter multiple of the unit matrix.}
+\end{itemize}
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldFormula-2}
+	{FieldFormula}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{FieldFormula-2::value}{value}}% reducible to key
+	{{{R3{\_}to{\_}R Field given by runtime interpreted formula.}% 
+}}
+		\RecKey
+			{FieldFormula-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFormula-2::value}
+			{value}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
+For vector values, you can use just one string to enter homogeneous vector.}\\{
+For square }{$N\times N$}{-matrix values, you can use:}
+% 
+}
+\begin{itemize}
+\item {array of strings of size }{$N$}{ to enter diagonal matrix}
+\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
+\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
+Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
+\end{itemize}
+}}
+		\RecKey
+			{FieldFormula-2::surface-direction}
+			{surface{\_}direction}
+			{{String}}{}
+			{ \ValueDefault{"0 0 1"}}
+			{{{The vector used to project evaluation point onto the surface.}% 
+}}
+		\RecKey
+			{FieldFormula-2::surface-region}
+			{surface{\_}region}
+			{{String}}{}
+			{ \it{Optional}}
+			{{{The name of region set considered as the surface.
+You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldTimeFunction-2}
+	{FieldTimeFunction}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{FieldTimeFunction-2::time-function}{time{\_}function}}% reducible to key
+	{{{R3{\_}to{\_}R Field time-dependent function in space.}% 
+}}
+		\RecKey
+			{FieldTimeFunction-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldTimeFunction-2::time-function}
+			{time{\_}function}
+			{{record: }\TypeLink{IT::TableFunction-2}{TableFunction}}{}
+			{ \it{Obligatory}}
+			{{{Values of time series initialization of Field.}% 
+}}
+		\RecKey
+			{FieldTimeFunction-2::time-unit}
+			{time{\_}unit}
+			{{String}}{}
+			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{{Definition of unit of all times defined in FieldTimeFunction.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::TableFunction-2}
+	{TableFunction}
+	{}% implements
+	{\TypeLink{TableFunction-2::values}{values}}% reducible to key
+	{{{Allow set variable series initialization of Fields.}% 
+}}
+		\RecKey
+			{TableFunction-2::values}
+			{values}
+			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue-2}{IndependentValue}}{}
+			{ \it{Obligatory}}
+			{{{Initizaliation values of Field.}% 
+}}
+\end{RecordType}
+\begin{TupleType}
+	{IT::IndependentValue-2}
+	{IndependentValue}
+	{}% implements
+	{}% reducible to key
+	{{{Value of Field for independent variable.}% 
+}}
+		\RecKey
+			{IndependentValue-2::t}
+			{t}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{Independent variable of stamp.}% 
+}}
+		\RecKey
+			{IndependentValue-2::value}
+			{value}
+			{{parameter: element{\_}input{\_}type}}{}
+			{ \it{Obligatory}}
+			{{{Value of the field in given stamp.}% 
+}}
+\end{TupleType}
+\begin{RecordType}
+	{IT::FieldFE-2}
+	{FieldFE}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R Field given by finite element approximation.}% 
+}}
+		\RecKey
+			{FieldFE-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFE-2::mesh-data-file}
+			{mesh{\_}data{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{GMSH mesh with data.
+Can be different from actual computational mesh.}% 
+}}
+		\RecKey
+			{FieldFE-2::input-discretization}
+			{input{\_}discretization}
+			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
+			{ \it{Optional}}
+			{{{Section where to find the field.}\\{
+ Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
+If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
+}}
+		\RecKey
+			{FieldFE-2::field-name}
+			{field{\_}name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
+}}
+		\RecKey
+			{FieldFE-2::default-value}
+			{default{\_}value}
+			{{Double (-inf, +inf)}}{}
+			{ \it{Optional}}
+			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE-2::time-unit}
+			{time{\_}unit}
+			{{String}}{}
+			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{{Definition of the unit of all times defined in the mesh data file.}% 
+}}
+		\RecKey
+			{FieldFE-2::read-time-shift}
+			{read{\_}time{\_}shift}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{This key allows reading field data from the mesh data file shifted in time.
+Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
+}}
+		\RecKey
+			{FieldFE-2::interpolation}
+			{interpolation}
+			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
+			{ \ValueDefault{"equivalent{\_}mesh"}}
+			{{{Type of interpolation applied to the input spatial data.}\\{
+The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
+In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
+Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Flow-Darcy-BC-Type}
-	{instance{\_}Flow{\_}Darcy{\_}BC{\_}Type}
+	{IT::Flow-Darcy-BC-Type}
+	{Flow{\_}Darcy{\_}BC{\_}Type}
 	{}
 		\SelectionItem
-			{instance-Flow-Darcy-BC-Type::none}
+			{Flow-Darcy-BC-Type::none}
 			{none}
 			{{{Homogeneous Neumann boundary condition}\\{
 (zero normal flux over the boundary).}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-BC-Type::dirichlet}
+			{Flow-Darcy-BC-Type::dirichlet}
 			{dirichlet}
 			{{{Dirichlet boundary condition.
 Specify the pressure head through the }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ field or the piezometric head through the }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ field.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-BC-Type::total-flux}
+			{Flow-Darcy-BC-Type::total-flux}
 			{total{\_}flux}
 			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \delta_d(q_d^N + \sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ field, the transition coefficient by }\begin{ttfamily}bc{\_}robin{\_}sigma\end{ttfamily}{ and the reference pressure head or piezometric head through }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-BC-Type::seepage}
+			{Flow-Darcy-BC-Type::seepage}
 			{seepage}
 			{{{Seepage face boundary condition.
 Pressure and inflow bounded from above.
@@ -148,706 +1473,2765 @@ Caution: setting }{$q_d^N$}{ strictly negative may lead to an ill posed problem 
 Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by the fields }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}switch{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-BC-Type::river}
+			{Flow-Darcy-BC-Type::river}
 			{river}
 			{{{River boundary condition.
 For the water level above the bedrock, }{$H_d > H_d^S$}{, the Robin boundary condition is used with the inflow given by: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d) )$}{. For the water level under the bedrock, constant infiltration is used: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d^S) )$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma\end{ttfamily}{, }\begin{ttfamily}bc{\_}flux\end{ttfamily}{.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::NonlinearSolver}
+	{NonlinearSolver}
+	{}% implements
+	{}% reducible to key
+	{{{Non-linear solver settings.}% 
+}}
+		\RecKey
+			{NonlinearSolver::linear-solver}
+			{linear{\_}solver}
+			{{abstract: }\TypeLink{IT::LinSys}{LinSys}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Linear solver for MH problem.}% 
+}}
+		\RecKey
+			{NonlinearSolver::tolerance}
+			{tolerance}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1e-06}}
+			{{{Residual tolerance.}% 
+}}
+		\RecKey
+			{NonlinearSolver::min-it}
+			{min{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{1}}
+			{{{Minimum number of iterations (linear solutions) to use.}\\{
+This is usefull if the convergence criteria does not characterize your goal well enough so it converges prematurely, possibly even without a single linear solution.
+If greater then 'max{\_}it' the value is set to 'max{\_}it'.}% 
+}}
+		\RecKey
+			{NonlinearSolver::max-it}
+			{max{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{100}}
+			{{{Maximum number of iterations (linear solutions) of the non-linear solver.}% 
+}}
+		\RecKey
+			{NonlinearSolver::converge-on-stagnation}
+			{converge{\_}on{\_}stagnation}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{If a stagnation of the nonlinear solver is detected the solver stops.
+A divergence is reported by default, forcing the end of the simulation.
+By setting this flag to 'true', the solver ends with convergence success on stagnation, but it reports warning about it.}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::LinSys}
+	{LinSys}
+	{\TypeLink{IT::Petsc}{Petsc}}
+	{{{Linear solver settings.}% 
+}}
+		\Descendant{\TypeLink{IT::Petsc}{Petsc}}% 
+		\Descendant{\TypeLink{IT::Bddc}{Bddc}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::Petsc}
+	{Petsc}
+	{\TypeLink{IT::LinSys}{LinSys}}% implements
+	{}% reducible to key
+	{{{PETSc solver settings.}\\{
+ It provides interface to various PETSc solvers.
+The convergence criteria is:}\\
+\begin{ttfamily}norm( res{\_}i )  {\textless} max( norm( res{\_}0 ) * r{\_}tol, a{\_}tol )\end{ttfamily}\\{
+where }\begin{ttfamily}res{\_}i\end{ttfamily}{ is the residuum vector after i-th iteration of the solver and }\begin{ttfamily}res{\_}0\end{ttfamily}{ is the estimate of the norm of the initial residual.
+If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, otherwise the norm of preconditioned RHS is used.
+The default norm is }{$L_2$}{ norm of preconditioned residual: }{$ P^{-1}(Ax-b)$}{, usage of other norm may be prescribed using the 'option' key.
+See also PETSc documentation for KSPSetNormType.}% 
+}}
+		\RecKey
+			{Petsc::r-tol}
+			{r{\_}tol}
+			{{Double [0, 1]}}{}
+			{implicit value: "{Default value is set by the nonlinear solver or the equation. If not, we use the value 1.0e-7.}"}
+			{{{Residual tolerance relative to the initial error.}% 
+}}
+		\RecKey
+			{Petsc::a-tol}
+			{a{\_}tol}
+			{{Double [0, +inf)}}{}
+			{implicit value: "{Default value is set by the nonlinear solver or the equation. If not, we use the value 1.0e-11.}"}
+			{{{Absolute residual tolerance.}% 
+}}
+		\RecKey
+			{Petsc::max-it}
+			{max{\_}it}
+			{{Integer [0, INT]}}{}
+			{implicit value: "{Default value is set by the nonlinear solver or the equation. If not, we use the value 1000.}"}
+			{{{Maximum number of outer iterations of the linear solver.}% 
+}}
+		\RecKey
+			{Petsc::options}
+			{options}
+			{{String}}{}
+			{ \ValueDefault{""}}
+			{{{This options is passed to PETSC to create a particular KSP (Krylov space method).}\\{
+If the string is left empty (by default), the internal default options is used.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Bddc}
+	{Bddc}
+	{\TypeLink{IT::LinSys}{LinSys}}% implements
+	{}% reducible to key
+	{{{BDDCML (Balancing Domain Decomposition by Constraints - Multi-Level) solver settings.}% 
+}}
+		\RecKey
+			{Bddc::r-tol}
+			{r{\_}tol}
+			{{Double [0, 1]}}{}
+			{implicit value: "{Default value is set by the nonlinear solver or the equation. If not, we use the value 1.0e-7.}"}
+			{{{Residual tolerance relative to the initial error.}% 
+}}
+		\RecKey
+			{Bddc::max-it}
+			{max{\_}it}
+			{{Integer [0, INT]}}{}
+			{implicit value: "{Default value is set by the nonlinear solver or the equation. If not, we use the value 1000.}"}
+			{{{Maximum number of outer iterations of the linear solver.}% 
+}}
+		\RecKey
+			{Bddc::max-nondecr-it}
+			{max{\_}nondecr{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{30}}
+			{{{Maximum number of iterations of the linear solver with non-decreasing residual.}% 
+}}
+		\RecKey
+			{Bddc::number-of-levels}
+			{number{\_}of{\_}levels}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{2}}
+			{{{Number of levels in the multilevel method (=2 for the standard BDDC).}% 
+}}
+		\RecKey
+			{Bddc::use-adaptive-bddc}
+			{use{\_}adaptive{\_}bddc}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Use adaptive selection of constraints in BDDCML.}% 
+}}
+		\RecKey
+			{Bddc::bddcml-verbosity-level}
+			{bddcml{\_}verbosity{\_}level}
+			{{Integer [0, 2]}}{}
+			{ \ValueDefault{0}}
+			{{{{Level of verbosity of the BDDCML library:}
+% 
+}
+\begin{itemize}
+\item {0 - no output,}
+\item {1 - mild output,}
+\item {2 - detailed output.}
+\end{itemize}
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::OutputStream}
+	{OutputStream}
+	{}% implements
+	{}% reducible to key
+	{{{Configuration of the spatial output of a single balance equation.}% 
+}}
+		\RecKey
+			{OutputStream::file}
+			{file}
+			{{Filename}}{}
+			{implicit value: "{Name of the equation associated with the output stream.}"}
+			{{{File path to the connected output file.}% 
+}}
+		\RecKey
+			{OutputStream::format}
+			{format}
+			{{abstract: }\TypeLink{IT::OutputTime}{OutputTime}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{File format of the output stream and possible parameters.}% 
+}}
+		\RecKey
+			{OutputStream::times}
+			{times}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::TimeGrid}{TimeGrid}}{}
+			{ \it{Optional}}
+			{{{Output times used for fields that do not have their own output times defined.}% 
+}}
+		\RecKey
+			{OutputStream::output-mesh}
+			{output{\_}mesh}
+			{{record: }\TypeLink{IT::OutputMesh}{OutputMesh}}{}
+			{ \it{Optional}}
+			{{{Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only].Sofar refinement is performed only in discontinous sense.
+Therefore only corner and element data can be written on refined output mesh.
+Node data are to be transformed to corner data, native data cannot be written.
+Do not include any node or native data in output fields.}% 
+}}
+		\RecKey
+			{OutputStream::precision}
+			{precision}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{17}}
+			{{{The number of decimal digits used in output of floating point values.}\\{
+Default is 17 decimal digits which are necessary to reproduce double values exactly after write-read cycle.}% 
+}}
+		\RecKey
+			{OutputStream::observe-points}
+			{observe{\_}points}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::ObservePoint}{ObservePoint}}{}
+			{ \ValueDefault{[]}}
+			{{{Array of observe points.}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::OutputTime}
+	{OutputTime}
+	{\TypeLink{IT::vtk}{vtk}}
+	{{{Format of output stream and possible parameters.}% 
+}}
+		\Descendant{\TypeLink{IT::vtk}{vtk}}% 
+		\Descendant{\TypeLink{IT::gmsh}{gmsh}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::vtk}
+	{vtk}
+	{\TypeLink{IT::OutputTime}{OutputTime}}% implements
+	{}% reducible to key
+	{{{Parameters of vtk output format.}% 
+}}
+		\RecKey
+			{vtk::variant}
+			{variant}
+			{{selection: }\TypeLink{IT::VTK-variant-ascii-or-binary-}{VTK variant (ascii or binary)}}{}
+			{ \ValueDefault{"ascii"}}
+			{{{Variant of output stream file format.}% 
+}}
+		\RecKey
+			{vtk::parallel}
+			{parallel}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Parallel or serial version of file format.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-VTK-variant-ascii-or-binary-}
-	{instance{\_}VTK variant (ascii or binary)}
+	{IT::VTK-variant-ascii-or-binary-}
+	{VTK variant (ascii or binary)}
 	{}
 		\SelectionItem
-			{instance-VTK-variant-ascii-or-binary-::ascii}
+			{VTK-variant-ascii-or-binary-::ascii}
 			{ascii}
 			{{{ASCII variant of VTK file format}% 
 }}
 		\SelectionItem
-			{instance-VTK-variant-ascii-or-binary-::binary}
+			{VTK-variant-ascii-or-binary-::binary}
 			{binary}
 			{{{Uncompressed appended binary XML VTK format without usage of base64 encoding of appended data.}% 
 }}
 		\SelectionItem
-			{instance-VTK-variant-ascii-or-binary-::binary-zlib}
+			{VTK-variant-ascii-or-binary-::binary-zlib}
 			{binary{\_}zlib}
 			{{{Appended binary XML VTK format without usage of base64 encoding of appended data.
 Compressed with ZLib.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::gmsh}
+	{gmsh}
+	{\TypeLink{IT::OutputTime}{OutputTime}}% implements
+	{}% reducible to key
+	{{{Parameters of gmsh output format.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::TimeGrid}
+	{TimeGrid}
+	{}% implements
+	{\TypeLink{TimeGrid::begin}{begin}}% reducible to key
+	{{{Equally spaced grid of time points.}% 
+}}
+		\RecKey
+			{TimeGrid::begin}
+			{begin}
+			{{Double [0, +inf)}}{}
+			{implicit value: "{The initial time of the associated equation.}"}
+			{{{The start time of the grid.}% 
+}}
+		\RecKey
+			{TimeGrid::step}
+			{step}
+			{{Double [0, +inf)}}{}
+			{ \it{Optional}}
+			{{{The step of the grid.
+If not specified, the grid consists of the single time given by the }\begin{ttfamily}begin\end{ttfamily}{ key.}% 
+}}
+		\RecKey
+			{TimeGrid::end}
+			{end}
+			{{Double [0, +inf)}}{}
+			{implicit value: "{The end time of the simulation.}"}
+			{{{The time greater or equal to the last time in the grid.}% 
+}}
+		\RecKey
+			{TimeGrid::time-unit}
+			{time{\_}unit}
+			{{String}}{}
+			{implicit value: "{Common unit of TimeGovernor.}"}
+			{{{Definition of unit of all defined times (begin, step and end time).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::OutputMesh}
+	{OutputMesh}
+	{}% implements
+	{}% reducible to key
+	{{{Parameters of the refined output mesh. [Not impemented]}% 
+}}
+		\RecKey
+			{OutputMesh::max-level}
+			{max{\_}level}
+			{{Integer [1, 20]}}{}
+			{ \ValueDefault{3}}
+			{{{Maximal level of refinement of the output mesh.}% 
+}}
+		\RecKey
+			{OutputMesh::refine-by-error}
+			{refine{\_}by{\_}error}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Set true for using }\begin{ttfamily}error{\_}control{\_}field\end{ttfamily}{. Set false for global uniform refinement to max{\_}level.}% 
+}}
+		\RecKey
+			{OutputMesh::error-control-field}
+			{error{\_}control{\_}field}
+			{{String}}{}
+			{ \it{Optional}}
+			{{{Name of an output field, according to which the output mesh will be refined.
+The field must be a SCALAR one.}% 
+}}
+		\RecKey
+			{OutputMesh::refinement-error-tolerance}
+			{refinement{\_}error{\_}tolerance}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.01}}
+			{{{Tolerance for element refinement by error.
+If tolerance is reached, refinement is stopped.
+Relative difference between error control field and its linear approximation on element is computedand compared with tolerance.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::ObservePoint}
+	{ObservePoint}
+	{}% implements
+	{\TypeLink{ObservePoint::point}{point}}% reducible to key
+	{{{{Specification of the observation point.}\\{
+The actual observation element and the observation point on it is determined as follows:}
+% 
+}
+\begin{enumerate}
+\item {Find an initial element containing the initial point.
+If no such element exists, we report an error.}
+\item {Use BFS (Breadth-first search) starting from the inital element to find the 'observe element'. The observe element is the closest element.}
+\item {Find the closest projection of the inital point on the observe element and snap this projection according to the }\begin{ttfamily}snap{\_}dim\end{ttfamily}{.}
+\end{enumerate}
+}}
+		\RecKey
+			{ObservePoint::name}
+			{name}
+			{{String}}{}
+			{implicit value: "{Default name have the form 'obs{\_}{\textless}id{\textgreater}', where 'id' is the rank of the point on the input.}"}
+			{{{Optional point name, which has to be unique.}\\{
+Any string that is a valid YAML key in record without any quoting can be used, however, using just alpha-numerical characters, and underscore instead of the space, is recommended.}% 
+}}
+		\RecKey
+			{ObservePoint::point}
+			{point}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{Initial point for the observe point search.}% 
+}}
+		\RecKey
+			{ObservePoint::snap-dim}
+			{snap{\_}dim}
+			{{Integer [0, 4]}}{}
+			{ \ValueDefault{4}}
+			{{{The dimension of the sub-element to which center we snap.
+For value 4 no snapping is done.
+For values 0 up to 3 the element containing the initial point is found and then the observepoint is snapped to the nearest center of the sub-element of the given dimension.
+E.g. for dimension 2 we snap to the nearest center of the face of the initial element.}% 
+}}
+		\RecKey
+			{ObservePoint::snap-region}
+			{snap{\_}region}
+			{{String}}{}
+			{ \ValueDefault{"ALL"}}
+			{{{The region of the initial element for snapping.
+Without snapping we make a projection to the initial element.}% 
+}}
+		\RecKey
+			{ObservePoint::search-radius}
+			{search{\_}radius}
+			{{Double [0, +inf)}}{}
+			{implicit value: "{Maximal distance of observe point from Mesh relative to its size (bounding box). }"}
+			{{{Global value is define in Mesh by the key global{\_}snap{\_}radius.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::EquationOutput}
+	{EquationOutput}
+	{}% implements
+	{}% reducible to key
+	{{{Output of the equation's fields.
+The output is done through the output stream of the associated balance law equation.
+The stream defines output format for the full space information in selected times and observe points for the full time information.
+The key 'fields' select the fields for the full spatial output.
+The set of output times may be specified  per field otherwise common time set 'times' is used.
+If even this is not providedthe time set of the output{\_}stream is used.
+The initial time of the equation is automatically added to the time set of every selected field.
+The end time of the equation is automatically added to the common output time set.}% 
+}}
+		\RecKey
+			{EquationOutput::times}
+			{times}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::TimeGrid}{TimeGrid}}{}
+			{ \it{Optional}}
+			{{{Output times used for the output fields without is own time series specification.}% 
+}}
+		\RecKey
+			{EquationOutput::add-input-times}
+			{add{\_}input{\_}times}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Add all input time points of the equation, mentioned in the 'input{\_}fields' list, also as the output points.}% 
+}}
+		\RecKey
+			{EquationOutput::fields}
+			{fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::FieldOutputSetting}{FieldOutputSetting}}{}
+			{ \ValueDefault{[]}}
+			{{{Array of output fields and their individual output settings.}% 
+}}
+		\RecKey
+			{EquationOutput::observe-fields}
+			{observe{\_}fields}
+			{{array [0, UINT] of }{parameter: output{\_}field{\_}selection}}{}
+			{ \ValueDefault{[]}}
+			{{{Array of the fields evaluated in the observe points of the associated output stream.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FieldOutputSetting}
+	{FieldOutputSetting}
+	{}% implements
+	{\TypeLink{FieldOutputSetting::field}{field}}% reducible to key
+	{{{Setting of the field output.
+The field name, output times, output interpolation (future).}% 
+}}
+		\RecKey
+			{FieldOutputSetting::field}
+			{field}
+			{{parameter: output{\_}field{\_}selection}}{}
+			{ \it{Obligatory}}
+			{{{The field name (from selection).}% 
+}}
+		\RecKey
+			{FieldOutputSetting::times}
+			{times}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::TimeGrid}{TimeGrid}}{}
+			{ \it{Optional}}
+			{{{Output times specific to particular field.}% 
+}}
+		\RecKey
+			{FieldOutputSetting::interpolation}
+			{interpolation}
+			{{selection: }\TypeLink{IT::Discrete-output}{Discrete{\_}output}}{}
+			{implicit value: "{Interpolation type of output data.}"}
+			{{{Optional value.
+Implicit value is given by field and can be changed.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Discrete-output}
-	{instance{\_}Discrete{\_}output}
+	{IT::Discrete-output}
+	{Discrete{\_}output}
 	{{{Discrete type of output.
 Determines type of output data (element, node, native etc).}% 
 }}
 		\SelectionItem
-			{instance-Discrete-output::P1-average}
+			{Discrete-output::P1-average}
 			{P1{\_}average}
 			{{{Node data / point data.}% 
 }}
 		\SelectionItem
-			{instance-Discrete-output::D1-value}
+			{Discrete-output::D1-value}
 			{D1{\_}value}
 			{{{Corner data.}% 
 }}
 		\SelectionItem
-			{instance-Discrete-output::P0-value}
+			{Discrete-output::P0-value}
 			{P0{\_}value}
 			{{{Element data / cell data.}% 
 }}
 		\SelectionItem
-			{instance-Discrete-output::Native}
+			{Discrete-output::Native}
 			{Native}
 			{{{Native data (Flow123D data).}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-Flow-Darcy-MH-OutputFields}
-	{instance{\_}Flow{\_}Darcy{\_}MH:OutputFields}
+	{IT::Flow-Darcy-MH-OutputFields}
+	{Flow{\_}Darcy{\_}MH:OutputFields}
 	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::pressure-p0}
+			{Flow-Darcy-MH-OutputFields::pressure-p0}
 			{pressure{\_}p0}
 			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::pressure-p1}
+			{Flow-Darcy-MH-OutputFields::pressure-p1}
 			{pressure{\_}p1}
 			{{{}{$[m]$}{ Pressure solution - P1 interpolation.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::piezo-head-p0}
+			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
 			{piezo{\_}head{\_}p0}
 			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::velocity-p0}
+			{Flow-Darcy-MH-OutputFields::velocity-p0}
 			{velocity{\_}p0}
 			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::subdomain}
+			{Flow-Darcy-MH-OutputFields::subdomain}
 			{subdomain}
 			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::region-id}
+			{Flow-Darcy-MH-OutputFields::region-id}
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::anisotropy}
+			{Flow-Darcy-MH-OutputFields::anisotropy}
 			{anisotropy}
 			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::cross-section}
+			{Flow-Darcy-MH-OutputFields::cross-section}
 			{cross{\_}section}
 			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::conductivity}
+			{Flow-Darcy-MH-OutputFields::conductivity}
 			{conductivity}
 			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::sigma}
+			{Flow-Darcy-MH-OutputFields::sigma}
 			{sigma}
 			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::water-source-density}
+			{Flow-Darcy-MH-OutputFields::water-source-density}
 			{water{\_}source{\_}density}
 			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::init-pressure}
+			{Flow-Darcy-MH-OutputFields::init-pressure}
 			{init{\_}pressure}
 			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-OutputFields::storativity}
+			{Flow-Darcy-MH-OutputFields::storativity}
 			{storativity}
 			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Output-DarcyMHSpecific}
+	{Output{\_}DarcyMHSpecific}
+	{}% implements
+	{}% reducible to key
+	{{{Specific Darcy flow MH output.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::times}
+			{times}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::TimeGrid}{TimeGrid}}{}
+			{ \it{Optional}}
+			{{{Output times used for the output fields without is own time series specification.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::add-input-times}
+			{add{\_}input{\_}times}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Add all input time points of the equation, mentioned in the 'input{\_}fields' list, also as the output points.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::fields}
+			{fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::FieldOutputSetting}{FieldOutputSetting}}{}
+			{ \ValueDefault{[]}}
+			{{{Array of output fields and their individual output settings.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::observe-fields}
+			{observe{\_}fields}
+			{{array [0, UINT] of }{parameter: output{\_}field{\_}selection}}{}
+			{ \ValueDefault{[]}}
+			{{{Array of the fields evaluated in the observe points of the associated output stream.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::compute-errors}
+			{compute{\_}errors}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{SPECIAL PURPOSE. Computes error norms of the solution, particulary suited for non-compatible coupling models.}% 
+}}
+		\RecKey
+			{Output-DarcyMHSpecific::raw-flow-output}
+			{raw{\_}flow{\_}output}
+			{{Filename}}{}
+			{ \it{Optional}}
+			{{{Output file with raw data from MH module.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Flow-Darcy-MH-specific-OutputFields}
-	{instance{\_}Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}
+	{IT::Flow-Darcy-MH-specific-OutputFields}
+	{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}
 	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH{\_}specific model.}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-specific-OutputFields::pressure-diff}
+			{Flow-Darcy-MH-specific-OutputFields::pressure-diff}
 			{pressure{\_}diff}
 			{{{}{$[m]$}{ Error norm of the pressure solution. [Experimental]}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-specific-OutputFields::velocity-diff}
+			{Flow-Darcy-MH-specific-OutputFields::velocity-diff}
 			{velocity{\_}diff}
 			{{{}{$[ms^{-1}]$}{ Error norm of the velocity solution. [Experimental]}% 
 }}
 		\SelectionItem
-			{instance-Flow-Darcy-MH-specific-OutputFields::div-diff}
+			{Flow-Darcy-MH-specific-OutputFields::div-diff}
 			{div{\_}diff}
 			{{{}{$[s^{-1}]$}{ Error norm of the divergence of the velocity solution. [Experimental]}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Balance}
+	{Balance}
+	{}% implements
+	{}% reducible to key
+	{{{Balance of a conservative quantity, boundary fluxes and sources.}% 
+}}
+		\RecKey
+			{Balance::times}
+			{times}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::TimeGrid}{TimeGrid}}{}
+			{ \ValueDefault{[]}}
+			{}
+		\RecKey
+			{Balance::add-output-times}
+			{add{\_}output{\_}times}
+			{{Bool}}{}
+			{ \ValueDefault{true}}
+			{{{Add all output times of the balanced equation to the balance output times set.
+Note that this is not the time set of the output stream.}% 
+}}
+		\RecKey
+			{Balance::format}
+			{format}
+			{{selection: }\TypeLink{IT::Balance-output-format}{Balance{\_}output{\_}format}}{}
+			{ \ValueDefault{"txt"}}
+			{{{Format of output file.}% 
+}}
+		\RecKey
+			{Balance::cumulative}
+			{cumulative}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Compute cumulative balance over time.
+If true, then balance is calculated at each computational time step, which can slow down the program.}% 
+}}
+		\RecKey
+			{Balance::file}
+			{file}
+			{{Filename}}{}
+			{implicit value: "{File name generated from the balanced quantity: {\textless}quantity{\_}name{\textgreater}{\_}balance.*}"}
+			{{{File name for output of balance.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Balance-output-format}
-	{instance{\_}Balance{\_}output{\_}format}
+	{IT::Balance-output-format}
+	{Balance{\_}output{\_}format}
 	{{{Format of output file for balance.}% 
 }}
 		\SelectionItem
-			{instance-Balance-output-format::legacy}
+			{Balance-output-format::legacy}
 			{legacy}
 			{{{Legacy format used by previous program versions.}% 
 }}
 		\SelectionItem
-			{instance-Balance-output-format::txt}
+			{Balance-output-format::txt}
 			{txt}
 			{{{Excel format with tab delimiter.}% 
 }}
 		\SelectionItem
-			{instance-Balance-output-format::gnuplot}
+			{Balance-output-format::gnuplot}
 			{gnuplot}
 			{{{Format compatible with GnuPlot datafile with fixed column width.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-MH-MortarMethod}
-	{instance{\_}MH{\_}MortarMethod}
+	{IT::MH-MortarMethod}
+	{MH{\_}MortarMethod}
 	{}
 		\SelectionItem
-			{instance-MH-MortarMethod::None}
+			{MH-MortarMethod::None}
 			{None}
 			{{{No Mortar method is applied.}% 
 }}
 		\SelectionItem
-			{instance-MH-MortarMethod::P0}
+			{MH-MortarMethod::P0}
 			{P0}
 			{{{Mortar space: P0 on elements of lower dimension.}% 
 }}
 		\SelectionItem
-			{instance-MH-MortarMethod::P1}
+			{MH-MortarMethod::P1}
 			{P1}
 			{{{Mortar space: P1 on intersections, using non-conforming pressures.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Flow-Richards-LMH}
+	{Flow{\_}Richards{\_}LMH}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::gravity}
+			{gravity}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \ValueDefault{[0, 0, -1]}}
+			{{{Vector of the gravity force.
+Dimensionless.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::RichardsLMH-Data}{RichardsLMH{\_}Data}}{}
+			{ \it{Obligatory}}
+			{{{Input data for Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::nonlinear-solver}
+			{nonlinear{\_}solver}
+			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Non-linear solver for MH problem.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::output-specific}
+			{output{\_}specific}
+			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
+			{ \it{Optional}}
+			{{{Output settings specific to Darcy flow model.}\\{
+Includes raw output and some experimental functionality.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor settings for the unsteady Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::n-schurs}
+			{n{\_}schurs}
+			{{Integer [0, 2]}}{}
+			{ \ValueDefault{2}}
+			{{{Number of Schur complements to perform when solving MH system.}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::mortar-method}
+			{mortar{\_}method}
+			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
+			{ \ValueDefault{"None"}}
+			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
+}}
+		\RecKey
+			{Flow-Richards-LMH::soil-model}
+			{soil{\_}model}
+			{{record: }\TypeLink{IT::SoilModel}{SoilModel}}{}
+			{ \ValueDefault{"van{\_}genuchten"}}
+			{{{Soil model settings.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::RichardsLMH-Data}
+	{RichardsLMH{\_}Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any RichardsLMH{\_}Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{RichardsLMH-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::anisotropy}
+			{anisotropy}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::cross-section}
+			{cross{\_}section}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::conductivity}
+			{conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::sigma}
+			{sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transition coefficient between dimensions. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-source-density}
+			{water{\_}source{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Water source density. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Boundary condition type. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-pressure}
+			{bc{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::init-pressure}
+			{init{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::storativity}
+			{storativity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-content-saturated}
+			{water{\_}content{\_}saturated}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Saturated water content }{$ \theta_s $}{.}\\{
+                Relative volume of water in a reference volume of a saturated porous media. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::water-content-residual}
+			{water{\_}content{\_}residual}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Residual water content }{$ \theta_r $}{.}\\{
+                Relative volume of water in a reference volume of an ideally dry porous media. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::genuchten-p-head-scale}
+			{genuchten{\_}p{\_}head{\_}scale}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
+                It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
+                where the relative water content starts to decrease below 1. }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::genuchten-n-exponent}
+			{genuchten{\_}n{\_}exponent}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{The van Genuchten exponent parameter }{$ n $}{. }{$[-]$}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
+}}
+		\RecKey
+			{RichardsLMH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::SoilModel}
+	{SoilModel}
+	{}% implements
+	{\TypeLink{SoilModel::model-type}{model{\_}type}}% reducible to key
+	{{{Soil model settings.}% 
+}}
+		\RecKey
+			{SoilModel::model-type}
+			{model{\_}type}
+			{{selection: }\TypeLink{IT::Soil-Model-Type}{Soil{\_}Model{\_}Type}}{}
+			{ \ValueDefault{"van{\_}genuchten"}}
+			{{{Selection of the globally applied soil model.
+In future we replace this key by a field for selection of the model.
+That will allow usage of different soil model in a single simulation.}% 
+}}
+		\RecKey
+			{SoilModel::cut-fraction}
+			{cut{\_}fraction}
+			{{Double [0, 1]}}{}
+			{ \ValueDefault{0.999}}
+			{{{Fraction of the water content where we cut  and rescale the curve.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Soil-Model-Type}
-	{instance{\_}Soil{\_}Model{\_}Type}
+	{IT::Soil-Model-Type}
+	{Soil{\_}Model{\_}Type}
 	{}
 		\SelectionItem
-			{instance-Soil-Model-Type::van-genuchten}
+			{Soil-Model-Type::van-genuchten}
 			{van{\_}genuchten}
 			{{{Van Genuchten soil model with cutting near zero.}% 
 }}
 		\SelectionItem
-			{instance-Soil-Model-Type::irmay}
+			{Soil-Model-Type::irmay}
 			{irmay}
 			{{{Irmay model for conductivity, Van Genuchten model for the water content.
 Suitable for bentonite.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::AdvectionProcess}
+	{AdvectionProcess}
+	{}
+	{{{Abstract advection process.
+In particular: transport of substances or heat transfer.}% 
+}}
+		\Descendant{\TypeLink{IT::Coupling-OperatorSplitting}{Coupling{\_}OperatorSplitting}}% 
+		\Descendant{\TypeLink{IT::Heat-AdvectionDiffusion-DG}{Heat{\_}AdvectionDiffusion{\_}DG}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::Coupling-OperatorSplitting}
+	{Coupling{\_}OperatorSplitting}
+	{\TypeLink{IT::AdvectionProcess}{AdvectionProcess}}% implements
+	{}% reducible to key
+	{{{Transport by convection and/or diffusion}\\{
+coupled with reaction and adsorption model (ODE per element)}\\{
+ via operator splitting.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \it{Obligatory}}
+			{{{Time governor settings for the transport equation.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::substances}
+			{substances}
+			{{array [1, UINT] of }{record: }\TypeLink{IT::Substance}{Substance}}{}
+			{ \it{Obligatory}}
+			{{{Specification of transported substances.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::transport}
+			{transport}
+			{{abstract: }\TypeLink{IT::Solute}{Solute}}{}
+			{ \it{Obligatory}}
+			{{{Type of the numerical method for the transport equation.}% 
+}}
+		\RecKey
+			{Coupling-OperatorSplitting::reaction-term}
+			{reaction{\_}term}
+			{{abstract: }\TypeLink{IT::ReactionTerm}{ReactionTerm}}{}
+			{ \it{Optional}}
+			{{{Reaction model involved in transport.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Substance}
+	{Substance}
+	{}% implements
+	{\TypeLink{Substance::name}{name}}% reducible to key
+	{{{Chemical substance.}% 
+}}
+		\RecKey
+			{Substance::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{Name of the substance.}% 
+}}
+		\RecKey
+			{Substance::molar-mass}
+			{molar{\_}mass}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1}}
+			{{{Molar mass of the substance [kg/mol].}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::Solute}
+	{Solute}
+	{}
+	{{{Transport of soluted  substances.}% 
+}}
+		\Descendant{\TypeLink{IT::Solute-Advection-FV}{Solute{\_}Advection{\_}FV}}% 
+		\Descendant{\TypeLink{IT::Solute-AdvectionDiffusion-DG}{Solute{\_}AdvectionDiffusion{\_}DG}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::Solute-Advection-FV}
+	{Solute{\_}Advection{\_}FV}
+	{\TypeLink{IT::Solute}{Solute}}% implements
+	{}% reducible to key
+	{{{Finite volume method, explicit in time, for advection only solute transport.}% 
+}}
+		\RecKey
+			{Solute-Advection-FV::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Solute-Advection-FV-Data}{Solute{\_}Advection{\_}FV:Data}}{}
+			{ \it{Obligatory}}
+			{}
+		\RecKey
+			{Solute-Advection-FV::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Solute-Advection-FV-OutputFields}{Solute{\_}Advection{\_}FV:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Solute-Advection-FV-Data}
+	{Solute{\_}Advection{\_}FV:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Solute{\_}Advection{\_}FV:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::porosity}
+			{porosity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Porosity of the mobile phase. }{$[-]$}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::sources-density}
+			{sources{\_}density}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::sources-sigma}
+			{sources{\_}sigma}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration flux. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::sources-conc}
+			{sources{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::bc-conc}
+			{bc{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary condition for concentration of substances. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-Advection-FV-Data::init-conc}
+			{init{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial values for concentration of substances. }{$[m^{-3}kg]$}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Solute-Advection-FV-OutputFields}
-	{instance{\_}Solute{\_}Advection{\_}FV:OutputFields}
+	{IT::Solute-Advection-FV-OutputFields}
+	{Solute{\_}Advection{\_}FV:OutputFields}
 	{{{Selection of output fields for the Solute{\_}Advection{\_}FV model.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::porosity}
+			{Solute-Advection-FV-OutputFields::porosity}
 			{porosity}
 			{{{}{$[-]$}{ Input field: Porosity of the mobile phase.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::water-content}
+			{Solute-Advection-FV-OutputFields::water-content}
 			{water{\_}content}
 			{{{}{$[-]$}{ Input field: INTERNAL. Water content passed from unsaturated Darcy flow model.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::sources-density}
+			{Solute-Advection-FV-OutputFields::sources-density}
 			{sources{\_}density}
 			{{{}{$[m^{-3}kgs^{-1}]$}{ Input field: Density of concentration sources.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::sources-sigma}
+			{Solute-Advection-FV-OutputFields::sources-sigma}
 			{sources{\_}sigma}
 			{{{}{$[s^{-1}]$}{ Input field: Concentration flux.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::sources-conc}
+			{Solute-Advection-FV-OutputFields::sources-conc}
 			{sources{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::init-conc}
+			{Solute-Advection-FV-OutputFields::init-conc}
 			{init{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Initial values for concentration of substances.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::conc}
+			{Solute-Advection-FV-OutputFields::conc}
 			{conc}
 			{{{}{$[m^{-3}kg]$}{ Concentration solution.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::region-id}
+			{Solute-Advection-FV-OutputFields::region-id}
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
-			{instance-Solute-Advection-FV-OutputFields::subdomain}
+			{Solute-Advection-FV-OutputFields::subdomain}
 			{subdomain}
 			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Solute-AdvectionDiffusion-DG}
+	{Solute{\_}AdvectionDiffusion{\_}DG}
+	{\TypeLink{IT::Solute}{Solute}}% implements
+	{}% reducible to key
+	{{{Discontinuous Galerkin (DG) solver for solute transport.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::solvent-density}
+			{solvent{\_}density}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{Density of the solvent [ }{$kg.m^{-3}$}{ ].}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::solver}
+			{solver}
+			{{record: }\TypeLink{IT::Petsc}{Petsc}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Solver for the linear system.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Solute-AdvectionDiffusion-DG-Data}{Solute{\_}AdvectionDiffusion{\_}DG:Data}}{}
+			{ \it{Obligatory}}
+			{{{Input fields of the equation.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::dg-variant}
+			{dg{\_}variant}
+			{{selection: }\TypeLink{IT::DG-variant}{DG{\_}variant}}{}
+			{ \ValueDefault{"non-symmetric"}}
+			{{{Variant of the interior penalty discontinuous Galerkin method.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::dg-order}
+			{dg{\_}order}
+			{{Integer [0, 3]}}{}
+			{ \ValueDefault{1}}
+			{{{Polynomial order for the finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-DG-OutputFields}{Solute{\_}AdvectionDiffusion{\_}DG:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Solute-AdvectionDiffusion-DG-Data}
+	{Solute{\_}AdvectionDiffusion{\_}DG:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Solute{\_}AdvectionDiffusion{\_}DG:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::porosity}
+			{porosity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Porosity of the mobile phase. }{$[-]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-density}
+			{sources{\_}density}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-sigma}
+			{sources{\_}sigma}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration flux. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sources-conc}
+			{sources{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::bc-type}
+			{bc{\_}type}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-BC-Type}{Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Type of boundary condition. }{$[-]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::bc-conc}
+			{bc{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Dirichlet boundary condition (for each substance). }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::bc-flux}
+			{bc{\_}flux}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::init-conc}
+			{init{\_}conc}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial values for concentration of substances. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::disp-l}
+			{disp{\_}l}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Longitudinal dispersivity in the liquid (for each substance). }{$[m]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::disp-t}
+			{disp{\_}t}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transverse dispersivity in the liquid (for each substance). }{$[m]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::diff-m}
+			{diff{\_}m}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Molecular diffusivity in the liquid (for each substance). }{$[m^{2}s^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::rock-density}
+			{rock{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Rock matrix density. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::sorption-coefficient}
+			{sorption{\_}coefficient}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Coefficient of linear sorption. }{$[m^{3}kg^{-1}]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}
+			{fracture{\_}sigma}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
+}}
+		\RecKey
+			{Solute-AdvectionDiffusion-DG-Data::dg-penalty}
+			{dg{\_}penalty}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
+Higher value diminishes the inter-element jumps. }{$[-]$}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Solute-AdvectionDiffusion-BC-Type}
-	{instance{\_}Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}
+	{IT::Solute-AdvectionDiffusion-BC-Type}
+	{Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}
 	{{{Types of boundary conditions for advection-diffusion solute transport model.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-BC-Type::inflow}
+			{Solute-AdvectionDiffusion-BC-Type::inflow}
 			{inflow}
 			{{{Default transport boundary condition.}\\{
 On water inflow }{$(q_w \le 0)$}{, total flux is given by the reference concentration 'bc{\_}conc'. On water outflow we prescribe zero diffusive flux, i.e. the mass flows out only due to advection.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-BC-Type::dirichlet}
+			{Solute-AdvectionDiffusion-BC-Type::dirichlet}
 			{dirichlet}
 			{{{Dirichlet boundary condition }{$ c = c_D $}{.}\\{
 The prescribed concentration }{$c_D$}{ is specified by the field 'bc{\_}conc'.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-BC-Type::total-flux}
+			{Solute-AdvectionDiffusion-BC-Type::total-flux}
 			{total{\_}flux}
 			{{{Total mass flux boundary condition.}\\{
 The prescribed total incoming flux can have the general form }{$\delta(f_N+\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-BC-Type::diffusive-flux}
+			{Solute-AdvectionDiffusion-BC-Type::diffusive-flux}
 			{diffusive{\_}flux}
 			{{{Diffusive flux boundary condition.}\\{
 The prescribed incoming mass flux due to diffusion can have the general form }{$\delta(f_N+\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-DG-variant}
-	{instance{\_}DG{\_}variant}
+	{IT::DG-variant}
+	{DG{\_}variant}
 	{{{Type of penalty term.}% 
 }}
 		\SelectionItem
-			{instance-DG-variant::non-symmetric}
+			{DG-variant::non-symmetric}
 			{non-symmetric}
 			{{{non-symmetric weighted interior penalty DG method}% 
 }}
 		\SelectionItem
-			{instance-DG-variant::incomplete}
+			{DG-variant::incomplete}
 			{incomplete}
 			{{{incomplete weighted interior penalty DG method}% 
 }}
 		\SelectionItem
-			{instance-DG-variant::symmetric}
+			{DG-variant::symmetric}
 			{symmetric}
 			{{{symmetric weighted interior penalty DG method}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-Solute-AdvectionDiffusion-DG-OutputFields}
-	{instance{\_}Solute{\_}AdvectionDiffusion{\_}DG:OutputFields}
+	{IT::Solute-AdvectionDiffusion-DG-OutputFields}
+	{Solute{\_}AdvectionDiffusion{\_}DG:OutputFields}
 	{{{Selection of output fields for the Solute{\_}AdvectionDiffusion{\_}DG model.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::porosity}
+			{Solute-AdvectionDiffusion-DG-OutputFields::porosity}
 			{porosity}
 			{{{}{$[-]$}{ Input field: Porosity of the mobile phase.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::water-content}
+			{Solute-AdvectionDiffusion-DG-OutputFields::water-content}
 			{water{\_}content}
 			{{{}{$[-]$}{ Input field: INTERNAL. Water content passed from unsaturated Darcy flow model.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::sources-density}
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-density}
 			{sources{\_}density}
 			{{{}{$[m^{-3}kgs^{-1}]$}{ Input field: Density of concentration sources.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::sources-sigma}
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-sigma}
 			{sources{\_}sigma}
 			{{{}{$[s^{-1}]$}{ Input field: Concentration flux.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::sources-conc}
+			{Solute-AdvectionDiffusion-DG-OutputFields::sources-conc}
 			{sources{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::init-conc}
+			{Solute-AdvectionDiffusion-DG-OutputFields::init-conc}
 			{init{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Initial values for concentration of substances.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
+			{Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
 			{{{}{$[m]$}{ Input field: Longitudinal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
+			{Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
 			{{{}{$[m]$}{ Input field: Transverse dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
+			{Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
 			{diff{\_}m}
 			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::rock-density}
+			{Solute-AdvectionDiffusion-DG-OutputFields::rock-density}
 			{rock{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::sorption-coefficient}
+			{Solute-AdvectionDiffusion-DG-OutputFields::sorption-coefficient}
 			{sorption{\_}coefficient}
 			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Coefficient of linear sorption.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::conc}
+			{Solute-AdvectionDiffusion-DG-OutputFields::conc}
 			{conc}
 			{{{}{$[m^{-3}kg]$}{ Concentration solution.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
+			{Solute-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
 			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::dg-penalty}
+			{Solute-AdvectionDiffusion-DG-OutputFields::dg-penalty}
 			{dg{\_}penalty}
 			{{{}{$[-]$}{ Input field: Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::region-id}
+			{Solute-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
-			{instance-Solute-AdvectionDiffusion-DG-OutputFields::subdomain}
+			{Solute-AdvectionDiffusion-DG-OutputFields::subdomain}
 			{subdomain}
 			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::ReactionTerm}
+	{ReactionTerm}
+	{}
+	{{{Abstract equation for a reaction term (dual porosity, sorption, reactions). Can be part of coupling with a transport equation via. operator splitting.}% 
+}}
+		\Descendant{\TypeLink{IT::FirstOrderReaction}{FirstOrderReaction}}% 
+		\Descendant{\TypeLink{IT::RadioactiveDecay}{RadioactiveDecay}}% 
+		\Descendant{\TypeLink{IT::Sorption}{Sorption}}% 
+		\Descendant{\TypeLink{IT::DualPorosity}{DualPorosity}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::FirstOrderReaction}
+	{FirstOrderReaction}
+	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
+	{}% reducible to key
+	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
+}}
+		\RecKey
+			{FirstOrderReaction::reactions}
+			{reactions}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Reaction}{Reaction}}{}
+			{ \it{Obligatory}}
+			{{{An array of first order chemical reactions.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Reaction}
+	{Reaction}
+	{}% implements
+	{}% reducible to key
+	{{{Describes a single first order chemical reaction.}% 
+}}
+		\RecKey
+			{Reaction::reactants}
+			{reactants}
+			{{array [1, UINT] of }{record: }\TypeLink{IT::FirstOrderReactionReactant}{FirstOrderReactionReactant}}{}
+			{ \it{Obligatory}}
+			{{{An array of reactants.
+Do not use array, reactions with only one reactant (decays) are implemented at the moment!}% 
+}}
+		\RecKey
+			{Reaction::reaction-rate}
+			{reaction{\_}rate}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{The reaction rate coefficient of the first order reaction.}% 
+}}
+		\RecKey
+			{Reaction::products}
+			{products}
+			{{array [1, UINT] of }{record: }\TypeLink{IT::FirstOrderReactionProduct}{FirstOrderReactionProduct}}{}
+			{ \it{Obligatory}}
+			{{{An array of products.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FirstOrderReactionReactant}
+	{FirstOrderReactionReactant}
+	{}% implements
+	{\TypeLink{FirstOrderReactionReactant::name}{name}}% reducible to key
+	{{{A record describing a reactant of a reaction.}% 
+}}
+		\RecKey
+			{FirstOrderReactionReactant::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The name of the reactant.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::FirstOrderReactionProduct}
+	{FirstOrderReactionProduct}
+	{}% implements
+	{\TypeLink{FirstOrderReactionProduct::name}{name}}% reducible to key
+	{{{A record describing a product of a reaction.}% 
+}}
+		\RecKey
+			{FirstOrderReactionProduct::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The name of the product.}% 
+}}
+		\RecKey
+			{FirstOrderReactionProduct::branching-ratio}
+			{branching{\_}ratio}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{The branching ratio of the product when there are more products.}\\{
+The value must be positive.
+Further, the branching ratios of all products are normalized in order to sum to one.}\\{
+The default value 1.0, should only be used in the case of single product.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::RadioactiveDecay}
+	{RadioactiveDecay}
+	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
+	{}% reducible to key
+	{{{A model of a radioactive decay and possibly of a decay chain.}% 
+}}
+		\RecKey
+			{RadioactiveDecay::decays}
+			{decays}
+			{{array [1, UINT] of }{record: }\TypeLink{IT::Decay}{Decay}}{}
+			{ \it{Obligatory}}
+			{{{An array of radioactive decays.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Decay}
+	{Decay}
+	{}% implements
+	{}% reducible to key
+	{{{A model of a radioactive decay.}% 
+}}
+		\RecKey
+			{Decay::radionuclide}
+			{radionuclide}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The name of the parent radionuclide.}% 
+}}
+		\RecKey
+			{Decay::half-life}
+			{half{\_}life}
+			{{Double [0, +inf)}}{}
+			{ \it{Obligatory}}
+			{{{The half life of the parent radionuclide in seconds.}% 
+}}
+		\RecKey
+			{Decay::products}
+			{products}
+			{{array [1, UINT] of }{record: }\TypeLink{IT::RadioactiveDecayProduct}{RadioactiveDecayProduct}}{}
+			{ \it{Obligatory}}
+			{{{An array of the decay products (daughters).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::RadioactiveDecayProduct}
+	{RadioactiveDecayProduct}
+	{}% implements
+	{\TypeLink{RadioactiveDecayProduct::name}{name}}% reducible to key
+	{{{A record describing a product of a radioactive decay.}% 
+}}
+		\RecKey
+			{RadioactiveDecayProduct::name}
+			{name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The name of the product.}% 
+}}
+		\RecKey
+			{RadioactiveDecayProduct::energy}
+			{energy}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.0}}
+			{{{Not used at the moment! The released energy in MeV from the decay of the radionuclide into the product.}% 
+}}
+		\RecKey
+			{RadioactiveDecayProduct::branching-ratio}
+			{branching{\_}ratio}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{The branching ratio of the product when there is more than one.
+Considering only one product, the default ratio 1.0 is used.
+Its value must be positive.
+Further, the branching ratios of all products are normalizedby their sum, so the sum then gives 1.0 (this also resolves possible rounding errors).}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Sorption}
+	{Sorption}
+	{\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{}% reducible to key
+	{{{Sorption model in the reaction term of transport.}% 
+}}
+		\RecKey
+			{Sorption::substances}
+			{substances}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{Names of the substances that take part in the sorption model.}% 
+}}
+		\RecKey
+			{Sorption::solvent-density}
+			{solvent{\_}density}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{Density of the solvent.}% 
+}}
+		\RecKey
+			{Sorption::substeps}
+			{substeps}
+			{{Integer [1, INT]}}{}
+			{ \ValueDefault{1000}}
+			{{{Number of equidistant substeps, molar mass and isotherm intersections}% 
+}}
+		\RecKey
+			{Sorption::solubility}
+			{solubility}
+			{{array [0, UINT] of }{Double [0, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies solubility limits of all the sorbing species.}% 
+}}
+		\RecKey
+			{Sorption::table-limits}
+			{table{\_}limits}
+			{{array [0, UINT] of }{Double [-1, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies the highest aqueous concentration in the isotherm function interpolation table.
+Use any negative value for an automatic choice according to current maximal concentration (default and recommended). Use '0' to always evaluate isotherm function directly (can be very slow). Use a positive value to set the interpolation table limit manually (if aqueous concentration is higher, then the isotherm function is evaluated directly).}% 
+}}
+		\RecKey
+			{Sorption::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Sorption-Data}{Sorption:Data}}{}
+			{ \it{Obligatory}}
+			{{{Containes region specific data necessary to construct isotherms.}% 
+}}
+		\RecKey
+			{Sorption::reaction-liquid}
+			{reaction{\_}liquid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the liquid.}% 
+}}
+		\RecKey
+			{Sorption::reaction-solid}
+			{reaction{\_}solid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the solid.}% 
+}}
+		\RecKey
+			{Sorption::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Sorption-OutputFields}{Sorption:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc{\_}solid"]{\}}}}
+			{{{Setting of the fields output.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Sorption-Data}
+	{Sorption:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Sorption:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Sorption-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Sorption-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Sorption-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Sorption-Data::rock-density}
+			{rock{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Rock matrix density. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Sorption-Data::sorption-type}
+			{sorption{\_}type}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::SorptionType}{SorptionType}}
+			{ \it{Optional}}
+			{{{Considered sorption is described by selected isotherm.}\\{
+If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically. }{$[-]$}% 
+}}
+		\RecKey
+			{Sorption-Data::distribution-coefficient}
+			{distribution{\_}coefficient}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Distribution coefficient }{ $k_l, k_F, k_L $}{ of linear, Freundlich or Langmuir isotherm respectively. }{$[m^{3}kg^{-1}]$}% 
+}}
+		\RecKey
+			{Sorption-Data::isotherm-other}
+			{isotherm{\_}other}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Additional parameter }{$ \alpha $}{ of nonlinear isotherms. }{$[-]$}% 
+}}
+		\RecKey
+			{Sorption-Data::init-conc-solid}
+			{init{\_}conc{\_}solid}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial solid concentration of substances.
+It is a vector: one value for every substance. }{$[-]$}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-SorptionType}
-	{instance{\_}SorptionType}
+	{IT::SorptionType}
+	{SorptionType}
 	{}
 		\SelectionItem
-			{instance-SorptionType::none}
+			{SorptionType::none}
 			{none}
 			{{{No sorption considered.}% 
 }}
 		\SelectionItem
-			{instance-SorptionType::linear}
+			{SorptionType::linear}
 			{linear}
 			{{{Linear isotherm runs the concentration exchange between liquid and solid.}% 
 }}
 		\SelectionItem
-			{instance-SorptionType::langmuir}
+			{SorptionType::langmuir}
 			{langmuir}
 			{{{Langmuir isotherm runs the concentration exchange between liquid and solid.}% 
 }}
 		\SelectionItem
-			{instance-SorptionType::freundlich}
+			{SorptionType::freundlich}
 			{freundlich}
 			{{{Freundlich isotherm runs the concentration exchange between liquid and solid.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::GenericReaction}
+	{GenericReaction}
+	{}
+	{{{Abstract equation for a reaction of species in single compartment (e.g. mobile solid).It can be part of: direct operator splitting coupling, dual porosity model, any sorption.}% 
+}}
+		\Descendant{\TypeLink{IT::FirstOrderReaction}{FirstOrderReaction}}% 
+		\Descendant{\TypeLink{IT::RadioactiveDecay}{RadioactiveDecay}}% 
+\end{AbstractType}
 \begin{SelectionType}
-	{IT::instance-Sorption-OutputFields}
-	{instance{\_}Sorption:OutputFields}
+	{IT::Sorption-OutputFields}
+	{Sorption:OutputFields}
 	{{{Selection of output fields for the Sorption model.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::rock-density}
+			{Sorption-OutputFields::rock-density}
 			{rock{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::sorption-type}
+			{Sorption-OutputFields::sorption-type}
 			{sorption{\_}type}
 			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
 If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::distribution-coefficient}
+			{Sorption-OutputFields::distribution-coefficient}
 			{distribution{\_}coefficient}
-			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Distribution coefficient }{ $k_l, k_F, k_L $}{ of linear, Freundlich or Langmuir isotherm respectively.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::isotherm-other}
+			{Sorption-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
+			{{{}{$[-]$}{ Input field: Additional parameter }{$ \alpha $}{ of nonlinear isotherms.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::init-conc-solid}
+			{Sorption-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
 			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
 It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
-			{instance-Sorption-OutputFields::conc-solid}
+			{Sorption-OutputFields::conc-solid}
 			{conc{\_}solid}
 			{{{}{$[-]$}{ Concentration solution in the solid phase.}% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::DualPorosity}
+	{DualPorosity}
+	{\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{}% reducible to key
+	{{{Dual porosity model in transport problems.}\\{
+Provides computing the concentration of substances in mobile and immobile zone.}% 
+}}
+		\RecKey
+			{DualPorosity::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::DualPorosity-Data}{DualPorosity:Data}}{}
+			{ \it{Obligatory}}
+			{{{Containes region specific data necessary to construct dual porosity model.}% 
+}}
+		\RecKey
+			{DualPorosity::scheme-tolerance}
+			{scheme{\_}tolerance}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.001}}
+			{{{Tolerance according to which the explicit Euler scheme is used or not.
+Set 0.0 to use analytic formula only (can be slower).}% 
+}}
+		\RecKey
+			{DualPorosity::reaction-mobile}
+			{reaction{\_}mobile}
+			{{abstract: }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}{}
+			{ \it{Optional}}
+			{{{Reaction model in mobile zone.}% 
+}}
+		\RecKey
+			{DualPorosity::reaction-immobile}
+			{reaction{\_}immobile}
+			{{abstract: }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}{}
+			{ \it{Optional}}
+			{{{Reaction model in immobile zone.}% 
+}}
+		\RecKey
+			{DualPorosity::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::DualPorosity-OutputFields}{DualPorosity:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc{\_}immobile"]{\}}}}
+			{{{Setting of the fields output.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::DualPorosity-Data}
+	{DualPorosity:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any DualPorosity:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{DualPorosity-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{DualPorosity-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{DualPorosity-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{DualPorosity-Data::diffusion-rate-immobile}
+			{diffusion{\_}rate{\_}immobile}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{DualPorosity-Data::porosity-immobile}
+			{porosity{\_}immobile}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Porosity of the immobile zone. }{$[-]$}% 
+}}
+		\RecKey
+			{DualPorosity-Data::init-conc-immobile}
+			{init{\_}conc{\_}immobile}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial concentration of substances in the immobile zone. }{$[m^{-3}kg]$}% 
+}}
+\end{RecordType}
+\begin{AbstractType}
+	{IT::ReactionTermMobile}
+	{ReactionTermMobile}
+	{}
+	{{{Abstract equation for a reaction term of the MOBILE pores (sorption, reactions). Is part of dual porosity model.}% 
+}}
+		\Descendant{\TypeLink{IT::FirstOrderReaction}{FirstOrderReaction}}% 
+		\Descendant{\TypeLink{IT::RadioactiveDecay}{RadioactiveDecay}}% 
+		\Descendant{\TypeLink{IT::SorptionMobile}{SorptionMobile}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::SorptionMobile}
+	{SorptionMobile}
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{}% reducible to key
+	{{{Sorption model in the mobile zone, following the dual porosity model.}% 
+}}
+		\RecKey
+			{SorptionMobile::substances}
+			{substances}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{Names of the substances that take part in the sorption model.}% 
+}}
+		\RecKey
+			{SorptionMobile::solvent-density}
+			{solvent{\_}density}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{Density of the solvent.}% 
+}}
+		\RecKey
+			{SorptionMobile::substeps}
+			{substeps}
+			{{Integer [1, INT]}}{}
+			{ \ValueDefault{1000}}
+			{{{Number of equidistant substeps, molar mass and isotherm intersections}% 
+}}
+		\RecKey
+			{SorptionMobile::solubility}
+			{solubility}
+			{{array [0, UINT] of }{Double [0, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies solubility limits of all the sorbing species.}% 
+}}
+		\RecKey
+			{SorptionMobile::table-limits}
+			{table{\_}limits}
+			{{array [0, UINT] of }{Double [-1, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies the highest aqueous concentration in the isotherm function interpolation table.
+Use any negative value for an automatic choice according to current maximal concentration (default and recommended). Use '0' to always evaluate isotherm function directly (can be very slow). Use a positive value to set the interpolation table limit manually (if aqueous concentration is higher, then the isotherm function is evaluated directly).}% 
+}}
+		\RecKey
+			{SorptionMobile::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Sorption-Data}{Sorption:Data}}{}
+			{ \it{Obligatory}}
+			{{{Containes region specific data necessary to construct isotherms.}% 
+}}
+		\RecKey
+			{SorptionMobile::reaction-liquid}
+			{reaction{\_}liquid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the liquid.}% 
+}}
+		\RecKey
+			{SorptionMobile::reaction-solid}
+			{reaction{\_}solid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the solid.}% 
+}}
+		\RecKey
+			{SorptionMobile::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::SorptionMobile-OutputFields}{SorptionMobile:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc{\_}solid"]{\}}}}
+			{{{Setting of the fields output.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-SorptionMobile-OutputFields}
-	{instance{\_}SorptionMobile:OutputFields}
+	{IT::SorptionMobile-OutputFields}
+	{SorptionMobile:OutputFields}
 	{{{Selection of output fields for the SorptionMobile model.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::rock-density}
+			{SorptionMobile-OutputFields::rock-density}
 			{rock{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::sorption-type}
+			{SorptionMobile-OutputFields::sorption-type}
 			{sorption{\_}type}
 			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
 If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::distribution-coefficient}
+			{SorptionMobile-OutputFields::distribution-coefficient}
 			{distribution{\_}coefficient}
-			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Distribution coefficient }{ $k_l, k_F, k_L $}{ of linear, Freundlich or Langmuir isotherm respectively.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::isotherm-other}
+			{SorptionMobile-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
+			{{{}{$[-]$}{ Input field: Additional parameter }{$ \alpha $}{ of nonlinear isotherms.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::init-conc-solid}
+			{SorptionMobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
 			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
 It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
-			{instance-SorptionMobile-OutputFields::conc-solid}
+			{SorptionMobile-OutputFields::conc-solid}
 			{conc{\_}solid}
 			{{{}{$[-]$}{ Concentration solution in the solid mobile phase.}% 
 }}
 \end{SelectionType}
+\begin{AbstractType}
+	{IT::ReactionTermImmobile}
+	{ReactionTermImmobile}
+	{}
+	{{{Abstract equation for a reaction term of the IMMOBILE pores (sorption, reactions). Is part of dual porosity model.}% 
+}}
+		\Descendant{\TypeLink{IT::FirstOrderReaction}{FirstOrderReaction}}% 
+		\Descendant{\TypeLink{IT::RadioactiveDecay}{RadioactiveDecay}}% 
+		\Descendant{\TypeLink{IT::SorptionImmobile}{SorptionImmobile}}% 
+\end{AbstractType}
+\begin{RecordType}
+	{IT::SorptionImmobile}
+	{SorptionImmobile}
+	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}% implements
+	{}% reducible to key
+	{{{Sorption model in the immobile zone, following the dual porosity model.}% 
+}}
+		\RecKey
+			{SorptionImmobile::substances}
+			{substances}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Obligatory}}
+			{{{Names of the substances that take part in the sorption model.}% 
+}}
+		\RecKey
+			{SorptionImmobile::solvent-density}
+			{solvent{\_}density}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1.0}}
+			{{{Density of the solvent.}% 
+}}
+		\RecKey
+			{SorptionImmobile::substeps}
+			{substeps}
+			{{Integer [1, INT]}}{}
+			{ \ValueDefault{1000}}
+			{{{Number of equidistant substeps, molar mass and isotherm intersections}% 
+}}
+		\RecKey
+			{SorptionImmobile::solubility}
+			{solubility}
+			{{array [0, UINT] of }{Double [0, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies solubility limits of all the sorbing species.}% 
+}}
+		\RecKey
+			{SorptionImmobile::table-limits}
+			{table{\_}limits}
+			{{array [0, UINT] of }{Double [-1, +inf)}}{}
+			{ \it{Optional}}
+			{{{Specifies the highest aqueous concentration in the isotherm function interpolation table.
+Use any negative value for an automatic choice according to current maximal concentration (default and recommended). Use '0' to always evaluate isotherm function directly (can be very slow). Use a positive value to set the interpolation table limit manually (if aqueous concentration is higher, then the isotherm function is evaluated directly).}% 
+}}
+		\RecKey
+			{SorptionImmobile::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Sorption-Data}{Sorption:Data}}{}
+			{ \it{Obligatory}}
+			{{{Containes region specific data necessary to construct isotherms.}% 
+}}
+		\RecKey
+			{SorptionImmobile::reaction-liquid}
+			{reaction{\_}liquid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the liquid.}% 
+}}
+		\RecKey
+			{SorptionImmobile::reaction-solid}
+			{reaction{\_}solid}
+			{{abstract: }\TypeLink{IT::GenericReaction}{GenericReaction}}{}
+			{ \it{Optional}}
+			{{{Reaction model following the sorption in the solid.}% 
+}}
+		\RecKey
+			{SorptionImmobile::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::SorptionImmobile-OutputFields}{SorptionImmobile:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["conc{\_}immobile{\_}solid"]{\}}}}
+			{{{Setting of the fields output.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-SorptionImmobile-OutputFields}
-	{instance{\_}SorptionImmobile:OutputFields}
+	{IT::SorptionImmobile-OutputFields}
+	{SorptionImmobile:OutputFields}
 	{{{Selection of output fields for the SorptionImmobile model.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::rock-density}
+			{SorptionImmobile-OutputFields::rock-density}
 			{rock{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::sorption-type}
+			{SorptionImmobile-OutputFields::sorption-type}
 			{sorption{\_}type}
 			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
 If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::distribution-coefficient}
+			{SorptionImmobile-OutputFields::distribution-coefficient}
 			{distribution{\_}coefficient}
-			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Distribution coefficient }{ $k_l, k_F, k_L $}{ of linear, Freundlich or Langmuir isotherm respectively.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::isotherm-other}
+			{SorptionImmobile-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
+			{{{}{$[-]$}{ Input field: Additional parameter }{$ \alpha $}{ of nonlinear isotherms.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::init-conc-solid}
+			{SorptionImmobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
 			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
 It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
-			{instance-SorptionImmobile-OutputFields::conc-immobile-solid}
+			{SorptionImmobile-OutputFields::conc-immobile-solid}
 			{conc{\_}immobile{\_}solid}
 			{{{}{$[-]$}{ Concentration solution in the solid immobile phase.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-DualPorosity-OutputFields}
-	{instance{\_}DualPorosity:OutputFields}
+	{IT::DualPorosity-OutputFields}
+	{DualPorosity:OutputFields}
 	{{{Selection of output fields for the DualPorosity model.}% 
 }}
 		\SelectionItem
-			{instance-DualPorosity-OutputFields::diffusion-rate-immobile}
+			{DualPorosity-OutputFields::diffusion-rate-immobile}
 			{diffusion{\_}rate{\_}immobile}
 			{{{}{$[s^{-1}]$}{ Input field: Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.}% 
 }}
 		\SelectionItem
-			{instance-DualPorosity-OutputFields::porosity-immobile}
+			{DualPorosity-OutputFields::porosity-immobile}
 			{porosity{\_}immobile}
 			{{{}{$[-]$}{ Input field: Porosity of the immobile zone.}% 
 }}
 		\SelectionItem
-			{instance-DualPorosity-OutputFields::init-conc-immobile}
+			{DualPorosity-OutputFields::init-conc-immobile}
 			{init{\_}conc{\_}immobile}
 			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentration of substances in the immobile zone.}% 
 }}
 		\SelectionItem
-			{instance-DualPorosity-OutputFields::conc-immobile}
+			{DualPorosity-OutputFields::conc-immobile}
 			{conc{\_}immobile}
 			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Heat-AdvectionDiffusion-DG}
+	{Heat{\_}AdvectionDiffusion{\_}DG}
+	{\TypeLink{IT::AdvectionProcess}{AdvectionProcess}}% implements
+	{}% reducible to key
+	{{{Discontinuous Galerkin (DG) solver for heat transfer.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \it{Obligatory}}
+			{{{Time governor setting for the secondary equation.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing balance.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Parameters of output stream.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::solver}
+			{solver}
+			{{record: }\TypeLink{IT::Petsc}{Petsc}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Solver for the linear system.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Heat-AdvectionDiffusion-DG-Data}{Heat{\_}AdvectionDiffusion{\_}DG:Data}}{}
+			{ \it{Obligatory}}
+			{{{Input fields of the equation.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::dg-variant}
+			{dg{\_}variant}
+			{{selection: }\TypeLink{IT::DG-variant}{DG{\_}variant}}{}
+			{ \ValueDefault{"non-symmetric"}}
+			{{{Variant of the interior penalty discontinuous Galerkin method.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::dg-order}
+			{dg{\_}order}
+			{{Integer [0, 3]}}{}
+			{ \ValueDefault{1}}
+			{{{Polynomial order for the finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Heat-AdvectionDiffusion-DG-OutputFields}{Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["temperature"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Heat-AdvectionDiffusion-DG-Data}
+	{Heat{\_}AdvectionDiffusion{\_}DG:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Heat{\_}AdvectionDiffusion{\_}DG:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Heat-BC-Type}{Heat{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Type of boundary condition. }{$[-]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::bc-temperature}
+			{bc{\_}temperature}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary value of temperature. }{$[K]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::init-temperature}
+			{init{\_}temperature}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial temperature. }{$[K]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::porosity}
+			{porosity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Porosity. }{$[-]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-density}
+			{fluid{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of fluid. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-capacity}
+			{fluid{\_}heat{\_}capacity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat capacity of fluid. }{$[m^{2}s^{-2}K^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-conductivity}
+			{fluid{\_}heat{\_}conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat conductivity of fluid. }{$[mkgs^{-3}K^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-density}
+			{solid{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of solid (rock). }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-heat-capacity}
+			{solid{\_}heat{\_}capacity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat capacity of solid (rock). }{$[m^{2}s^{-2}K^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-heat-conductivity}
+			{solid{\_}heat{\_}conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat conductivity of solid (rock). }{$[mkgs^{-3}K^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::disp-l}
+			{disp{\_}l}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Longitudinal heat dispersivity in fluid. }{$[m]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::disp-t}
+			{disp{\_}t}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transverse heat dispersivity in fluid. }{$[m]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-thermal-source}
+			{fluid{\_}thermal{\_}source}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of thermal source in fluid. }{$[m^{-1}kgs^{-3}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-thermal-source}
+			{solid{\_}thermal{\_}source}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Density of thermal source in solid. }{$[m^{-1}kgs^{-3}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-exchange-rate}
+			{fluid{\_}heat{\_}exchange{\_}rate}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat exchange rate of source in fluid. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-heat-exchange-rate}
+			{solid{\_}heat{\_}exchange{\_}rate}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Heat exchange rate of source in solid. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fluid-ref-temperature}
+			{fluid{\_}ref{\_}temperature}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Reference temperature of source in fluid. }{$[K]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::solid-ref-temperature}
+			{solid{\_}ref{\_}temperature}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Reference temperature in solid. }{$[K]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::fracture-sigma}
+			{fracture{\_}sigma}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
+}}
+		\RecKey
+			{Heat-AdvectionDiffusion-DG-Data::dg-penalty}
+			{dg{\_}penalty}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
+Higher value diminishes the inter-element jumps. }{$[-]$}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
-	{IT::instance-Heat-BC-Type}
-	{instance{\_}Heat{\_}BC{\_}Type}
+	{IT::Heat-BC-Type}
+	{Heat{\_}BC{\_}Type}
 	{{{Types of boundary conditions for heat transfer model.}% 
 }}
 		\SelectionItem
-			{instance-Heat-BC-Type::inflow}
+			{Heat-BC-Type::inflow}
 			{inflow}
 			{{{Default heat transfer boundary condition.}\\{
 On water inflow }{$(q_w \le 0)$}{, total energy flux is given by the reference temperature 'bc{\_}temperature'. On water outflow we prescribe zero diffusive flux, i.e. the energy flows out only due to advection.}% 
 }}
 		\SelectionItem
-			{instance-Heat-BC-Type::dirichlet}
+			{Heat-BC-Type::dirichlet}
 			{dirichlet}
 			{{{Dirichlet boundary condition }{$T = T_D $}{.}\\{
 The prescribed temperature }{$T_D$}{ is specified by the field 'bc{\_}temperature'.}% 
 }}
 		\SelectionItem
-			{instance-Heat-BC-Type::total-flux}
+			{Heat-BC-Type::total-flux}
 			{total{\_}flux}
 			{{{Total energy flux boundary condition.}\\{
 The prescribed incoming total flux can have the general form }{$\delta(f_N+\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
 }}
 		\SelectionItem
-			{instance-Heat-BC-Type::diffusive-flux}
+			{Heat-BC-Type::diffusive-flux}
 			{diffusive{\_}flux}
 			{{{Diffusive flux boundary condition.}\\{
 The prescribed incoming energy flux due to diffusion can have the general form }{$\delta(f_N+\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
-	{IT::instance-Heat-AdvectionDiffusion-DG-OutputFields}
-	{instance{\_}Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}
+	{IT::Heat-AdvectionDiffusion-DG-OutputFields}
+	{Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}
 	{{{Selection of output fields for the Heat{\_}AdvectionDiffusion{\_}DG model.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::init-temperature}
+			{Heat-AdvectionDiffusion-DG-OutputFields::init-temperature}
 			{init{\_}temperature}
 			{{{}{$[K]$}{ Input field: Initial temperature.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::porosity}
+			{Heat-AdvectionDiffusion-DG-OutputFields::porosity}
 			{porosity}
 			{{{}{$[-]$}{ Input field: Porosity.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::water-content}
+			{Heat-AdvectionDiffusion-DG-OutputFields::water-content}
 			{water{\_}content}
 			{{{}{$[-]$}{ Input field: }% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-density}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-density}
 			{fluid{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Density of fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-capacity}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-capacity}
 			{fluid{\_}heat{\_}capacity}
 			{{{}{$[m^{2}s^{-2}K^{-1}]$}{ Input field: Heat capacity of fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-conductivity}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-conductivity}
 			{fluid{\_}heat{\_}conductivity}
 			{{{}{$[mkgs^{-3}K^{-1}]$}{ Input field: Heat conductivity of fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-density}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-density}
 			{solid{\_}density}
 			{{{}{$[m^{-3}kg]$}{ Input field: Density of solid (rock).}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-capacity}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-capacity}
 			{solid{\_}heat{\_}capacity}
 			{{{}{$[m^{2}s^{-2}K^{-1}]$}{ Input field: Heat capacity of solid (rock).}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-conductivity}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-conductivity}
 			{solid{\_}heat{\_}conductivity}
 			{{{}{$[mkgs^{-3}K^{-1}]$}{ Input field: Heat conductivity of solid (rock).}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::disp-l}
+			{Heat-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
 			{{{}{$[m]$}{ Input field: Longitudinal heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::disp-t}
+			{Heat-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
 			{{{}{$[m]$}{ Input field: Transverse heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-thermal-source}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-thermal-source}
 			{fluid{\_}thermal{\_}source}
 			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Density of thermal source in fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-thermal-source}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-thermal-source}
 			{solid{\_}thermal{\_}source}
 			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Density of thermal source in solid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-exchange-rate}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-exchange-rate}
 			{fluid{\_}heat{\_}exchange{\_}rate}
 			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate of source in fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-exchange-rate}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-exchange-rate}
 			{solid{\_}heat{\_}exchange{\_}rate}
 			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate of source in solid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-ref-temperature}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-ref-temperature}
 			{fluid{\_}ref{\_}temperature}
 			{{{}{$[K]$}{ Input field: Reference temperature of source in fluid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::solid-ref-temperature}
+			{Heat-AdvectionDiffusion-DG-OutputFields::solid-ref-temperature}
 			{solid{\_}ref{\_}temperature}
 			{{{}{$[K]$}{ Input field: Reference temperature in solid.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::temperature}
+			{Heat-AdvectionDiffusion-DG-OutputFields::temperature}
 			{temperature}
 			{{{}{$[K]$}{ Temperature solution.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
+			{Heat-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
 			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::dg-penalty}
+			{Heat-AdvectionDiffusion-DG-OutputFields::dg-penalty}
 			{dg{\_}penalty}
 			{{{}{$[-]$}{ Input field: Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::region-id}
+			{Heat-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
-			{instance-Heat-AdvectionDiffusion-DG-OutputFields::subdomain}
+			{Heat-AdvectionDiffusion-DG-OutputFields::subdomain}
 			{subdomain}
 			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
