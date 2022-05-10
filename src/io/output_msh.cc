@@ -84,7 +84,7 @@ void OutputMSH::write_msh_geometry(void)
     unsigned int i_gmsh_node;
     auto &id_node_vec = *( this->node_ids_->get_data().get() );
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
-        if (is_corner_output) i_gmsh_node = i_node;
+        if (is_corner_output) i_gmsh_node = i_node+1;
         else i_gmsh_node = permutation_vec[i_node];
         file << id_node_vec[i_gmsh_node] << " ";
         this->nodes_->print_ascii(file, i_gmsh_node);
@@ -130,7 +130,7 @@ void OutputMSH::write_msh_topology(void)
         unsigned int i_gmsh_elm = permutation_vec[i_elm];
     	n_nodes = offsets_vec[i_gmsh_elm+1]-offsets_vec[i_gmsh_elm];
         // element_id element_type 3_other_tags material region partition
-    	if (is_corner_output) gmsh_id = i_elm;
+    	if (is_corner_output) gmsh_id = i_elm+1;
     	else gmsh_id = id_elem_vec[i_gmsh_elm];
         file << gmsh_id
              << " " << gmsh_simplex_types_[ n_nodes-1 ]
