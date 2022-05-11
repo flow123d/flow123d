@@ -123,7 +123,7 @@ void OutputMeshBase::create_id_caches()
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
         if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->find_elem_id(it->idx());
-		else elm_idx[0] = it->idx();
+		else elm_idx[0] = it->idx() + 1;    // GMSH starts at 1
 		elem_ids_->store_value( i, elm_idx );
 
 		region_idx[0] = orig_mesh_->element_accessor(it->idx()).region().id();
@@ -135,7 +135,7 @@ void OutputMeshBase::create_id_caches()
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
 			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->find_node_id(node_list[j]);
-			else node_idx[0] = node_list[j] + 1;
+			else node_idx[0] = node_list[j] + 1;    // GMSH starts at 1
 			node_ids_->store_value( node_list[j], node_idx );
 		}
 	}
