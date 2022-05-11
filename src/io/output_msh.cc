@@ -84,7 +84,7 @@ void OutputMSH::write_msh_geometry(void)
     unsigned int i_gmsh_node;
     auto &id_node_vec = *( this->node_ids_->get_data().get() );
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
-        if (is_corner_output) i_gmsh_node = i_node+1;
+        if (is_corner_output) i_gmsh_node = i_node;
         else i_gmsh_node = permutation_vec[i_node];
         file << id_node_vec[i_gmsh_node] << " ";
         this->nodes_->print_ascii(file, i_gmsh_node);

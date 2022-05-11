@@ -135,7 +135,7 @@ void OutputMeshBase::create_id_caches()
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
 			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->find_node_id(node_list[j]);
-			else node_idx[0] = node_list[j];
+			else node_idx[0] = node_list[j] + 1;
 			node_ids_->store_value( node_list[j], node_idx );
 		}
 	}
