@@ -21,6 +21,7 @@
 #include <iostream>
 #include <string>
 #include <vector>                // for vector
+#include "system/global_defs.h"
 #include "system/exceptions.hh"
 #include "system/fmt/posix.h"
 
