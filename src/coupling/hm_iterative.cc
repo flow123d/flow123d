@@ -81,6 +81,7 @@ const it::Record & HM_Iterative::get_input_type() {
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
+				it::Default::obligatory(),
 				"Mechanics, provides the displacement field.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqFields()
