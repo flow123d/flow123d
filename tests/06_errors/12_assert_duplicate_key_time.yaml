@@ -7,7 +7,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 10
     input_fields:
-    flow_equation: !Flow_Richards_LMH
+    flow_equation: !Flow_Darcy_LMH
 ### ERROR Duplicate key 'time'
       time:
         end_time: 10
@@ -22,3 +22,17 @@ problem: !Coupling_Sequential
         file: ./test10.pvd
         format: !vtk
           variant: ascii
+    mechanics_equation:
+        input_fields:
+        solver: !Petsc
+          a_tol: 0
+          r_tol: 1e-9
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+            variant: ascii
+        output:
+          times:
+            - step: 2
+          fields:
+            - displacement
