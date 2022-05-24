@@ -28,7 +28,6 @@
 #include <vector>                                      // for vector
 #include <armadillo>
 #include "mesh/point.hh"                               // for Space, Space<>...
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcStream, ope...
 #include "system/global_defs.h"                        // for msg, rank, ss
 
