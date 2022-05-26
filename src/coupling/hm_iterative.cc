@@ -250,6 +250,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     eq_fields_.initialize(*mesh_, eq_data_, time_, input_record_.val<double>("iteration_parameter"));
     eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
+
+    eq_fields_.add_coords_field();
 }
 
 
