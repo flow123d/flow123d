@@ -7,3 +7,4 @@ git config --global --add safe.directory /c/Users/davidflanderka/vyvoj/flow123d/
 git config --global --add safe.directory /c/Users/davidflanderka/vyvoj/flow123d/third_party/bparser
 git config --global --add safe.directory /c/Users/davidflanderka/vyvoj/flow123d/third_party/gtest-1.10.0
 git config --global --add safe.directory /c/Users/davidflanderka/vyvoj/flow123d/third_party/json-3.10.5
+git config --global --add safe.directory /c/Users/davidflanderka/vyvoj/flow123d/third_party/pybind11-2.9.2
