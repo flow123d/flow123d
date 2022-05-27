@@ -207,6 +207,32 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
 
 
 template <int spacedim, class Value>
+std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set) {
+    return std::vector<const FieldCommon *>();
+}
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{
+    // implement
+}
+
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+        FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_patch_idx)
+{
+    // implement
+//    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+//    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+
+}
+
+
+
+template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {
 #ifdef FLOW123D_HAVE_PYTHON
     Py_CLEAR(p_module_);

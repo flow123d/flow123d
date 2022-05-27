@@ -87,6 +87,21 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
+
+    /**
+     * Set reference of FieldSet.
+     */
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
+
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit arena data member.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
     virtual ~FieldPython();
 
 private:
