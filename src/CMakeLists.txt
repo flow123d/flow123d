@@ -308,6 +308,7 @@ add_library(coupling_lib
     fields/eval_points.cc
     fields/field_value_cache.cc
     fields/surface_depth.cc
+    fields/python_field_base.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
@@ -317,7 +318,8 @@ target_link_libraries(coupling_lib
     fparser   
     bparser  
     armadillo
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${PYTHON_LIBRARIES})
 
 
 

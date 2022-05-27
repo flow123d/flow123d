@@ -698,6 +698,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
+    ${CMAKE_SOURCE_DIR}/third_party/pybind11-2.9.2
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
     
@@ -859,6 +860,11 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add bparser sources
 message(STATUS "add subdir BParser")
 add_subdirectory(third_party/bparser)
+
+# add pybind11 sources
+message(STATUS "add subdir pybind11")
+add_subdirectory(third_party/pybind11-2.9.2)
+pybind11_add_module("flow123d" "src/fields/python_field_base.cc")
 
 # add tbb sources
 #message(STATUS "add subdir TBB")
