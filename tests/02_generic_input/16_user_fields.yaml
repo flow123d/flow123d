@@ -12,14 +12,24 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
-        r_tol: 1.0e-12    
+        r_tol: 1.0e-12
+    user_fields:
+      - name: user_cond
+        is_boundary: false
+        scalar_field: !FieldFormula
+          value: 1e-5
+      - name: user_dir
+        is_boundary: true
+        scalar_field: !FieldFormula
+          value: 0.2
     input_fields:
       - region: ALL
-        conductivity: 1
+        conductivity: !FieldFormula
+          value: 1e5*user_cond
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: y
+          value: y*5*user_dir
     output:
       fields:
         - pressure_p0

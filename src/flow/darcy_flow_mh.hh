@@ -398,6 +398,8 @@ protected:
 private:
   /// Registrar of class to factory
   static const int registrar;
+
+  static const std::string equation_name_;
 };
 
 

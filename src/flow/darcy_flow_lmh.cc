@@ -78,6 +78,8 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_lmh)
 
 namespace it = Input::Type;
 
+const std::string DarcyLMH::equation_name_ = "Flow_Darcy_LMH";
+
 const it::Selection & DarcyLMH::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "No Mortar method is applied.")
@@ -89,8 +91,8 @@ const it::Selection & DarcyLMH::get_mh_mortar_selection() {
 const it::Record & DarcyLMH::type_field_descriptor() {
 
         const it::Record &field_descriptor =
-        it::Record("Flow_Darcy_LMH_Data",FieldCommon::field_descriptor_record_description("Flow_Darcy_LMH_Data") )
-        .copy_keys( DarcyLMH::EqFields().make_field_descriptor_type("Flow_Darcy_LMH_Data_aux") )
+        it::Record(equation_name_ + "_Data",FieldCommon::field_descriptor_record_description(equation_name_ + "_Data") )
+        .copy_keys( DarcyLMH::EqFields().make_field_descriptor_type(equation_name_ + "_Data_aux") )
             .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                     "Boundary piezometric head for BC types: dirichlet, robin, and river." )
             .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -102,7 +104,6 @@ const it::Record & DarcyLMH::type_field_descriptor() {
 }
 
 const it::Record & DarcyLMH::get_input_type() {
-
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
@@ -122,11 +123,14 @@ const it::Record & DarcyLMH::get_input_type() {
 
     DarcyLMH::EqFields eq_fields;
     
-    return it::Record("Flow_Darcy_LMH", "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
+    return it::Record(equation_name_, "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
+        .declare_key("user_fields", it::Array(DarcyLMH::EqFields().get_user_field(equation_name_)),
+                IT::Default::optional(),
+                "Input fields of the equation defined by user.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default("{}"),
@@ -134,7 +138,7 @@ const it::Record & DarcyLMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, "Flow_Darcy_LMH"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name_),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
@@ -149,7 +153,7 @@ const it::Record & DarcyLMH::get_input_type() {
 
 
 const int DarcyLMH::registrar =
-		Input::register_class< DarcyLMH, Mesh &, const Input::Record >("Flow_Darcy_LMH") +
+		Input::register_class< DarcyLMH, Mesh &, const Input::Record >(equation_name_) +
 		DarcyLMH::get_input_type().size();
 
 
@@ -304,6 +308,12 @@ void DarcyLMH::init_eq_data()
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
+    // read optional user fields
+    Input::Array user_fields_arr;
+    if (input_record_.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->set_user_fields_map(user_fields_arr);
+    }
+
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
         //THROW(ExcAssertMsg());
@@ -408,7 +418,6 @@ void DarcyLMH::initialize() {
     initialize_specific();
     
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
@@ -478,7 +487,6 @@ void DarcyLMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-	//time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
@@ -528,7 +536,6 @@ void DarcyLMH::update_solution()
 
 void DarcyLMH::solve_time_step(bool output)
 {
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
@@ -559,7 +566,6 @@ void DarcyLMH::solve_time_step(bool output)
         return;
     }
 
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
