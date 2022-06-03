@@ -57,6 +57,9 @@ const Record & Elasticity::get_input_type() {
                     "Parameters of output stream.")
            .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
+           .declare_key("user_fields", Array(Elasticity::EqFields().get_user_field(equation_name)),
+                IT::Default::optional(),
+                "Input fields of the equation defined by user.")
 		   .declare_key("input_fields", Array(
 		        Elasticity::EqFields()
 		            .make_field_descriptor_type(equation_name)),
@@ -394,6 +397,12 @@ void Elasticity::initialize()
     eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
+
+    // read optional user fields
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->set_user_fields_map(user_fields_arr);
+    }
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
