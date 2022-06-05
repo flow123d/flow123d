@@ -72,11 +72,32 @@ ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &
 
 void ReaderCache::get_element_ids(const FilePath &file_path, const Mesh &mesh) {
 	auto reader_ptr = ReaderCache::get_reader(file_path);
-	reader_ptr->has_compatible_mesh_ = true;
-	mesh.elements_id_maps(reader_ptr->bulk_elements_id_, reader_ptr->boundary_elements_id_);
+	reader_ptr->set_element_ids(mesh);
 }
 
-std::shared_ptr<EquivalentMeshMap> ReaderCache::get_target_mesh_element_map(const FilePath &file_path,
+
+
+
+std::shared_ptr<EquivalentMeshMap> ReaderCache::identic_mesh_map(const FilePath &file_path,
+                                                                            Mesh *computational_mesh) {
+	ASSERT(false).error("Not implemented yet." );
+    auto it = ReaderCache::get_reader_data(file_path);
+    auto reader_data = (*it).second;
+    if ( reader_data.target_mesh_element_map_ == nullptr ) {
+    	// Create map for the identic mesh taking the computational mesh permutation into account.
+    	// Assume that element IDs in the source and computational mesh match.
+    	// map index of the sorted IDs to the index of the element in permuted computational mesh.
+    	// make for both bulk and boundary mesh.
+    	reader_data.reader_->has_compatible_mesh_ = true;
+    	reader_data.reader_->set_element_ids(*computational_mesh);
+
+        //(*it).second.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
+    }
+    return (*it).second.target_mesh_element_map_;
+
+}
+
+std::shared_ptr<EquivalentMeshMap> ReaderCache::eqivalent_mesh_map(const FilePath &file_path,
                                                                             Mesh *computational_mesh) {
     auto it = ReaderCache::get_reader_data(file_path);
     ASSERT_PTR( (*it).second.mesh_ ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
@@ -85,3 +106,4 @@ std::shared_ptr<EquivalentMeshMap> ReaderCache::get_target_mesh_element_map(cons
     }
     return (*it).second.target_mesh_element_map_;
 }
+

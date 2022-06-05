@@ -374,12 +374,13 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
         ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
         this->boundary_domain_ = boundary_domain;
         if (this->interpolation_ == DataInterpolation::identic_msh) {
-            ReaderCache::get_element_ids(reader_file_, *mesh);
+            source_target_mesh_elm_map_ = ReaderCache::identic_mesh_map(reader_file_, const_cast<Mesh *>(mesh));
         } else {
             auto source_mesh = ReaderCache::get_mesh(reader_file_);
+            // TODO: move the call into equivalent_mesh_map, get rd of get_element_ids method.
             ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
-                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
+                source_target_mesh_elm_map_ = ReaderCache::eqivalent_mesh_map(reader_file_, const_cast<Mesh *>(mesh));
                 if (source_target_mesh_elm_map_->empty()) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
