@@ -201,6 +201,12 @@ public:
     void set_element_ids(const Mesh &mesh);
 
     /**
+     * Returns vector of boundary or bulk element IDs to read.
+     * Used by GMSH reader only.
+     */
+    std::vector<int> const & get_element_ids(bool boundary_domain);
+
+    /**
 	 * Find data header for time and field given by header_query.
 	 */
     virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
@@ -219,11 +225,6 @@ protected:
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values);
 
-    /**
-     * Returns vector of boundary or bulk element IDs to read.
-     * Used by GMSH reader only.
-     */
-    std::vector<int> const & get_element_ids(bool boundary_domain);
 
 	/**
      * private method for reading of nodes

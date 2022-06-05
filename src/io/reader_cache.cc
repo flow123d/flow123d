@@ -21,6 +21,7 @@
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "input/accessors.hh"
 
 
@@ -76,13 +77,25 @@ void ReaderCache::get_element_ids(const FilePath &file_path, const Mesh &mesh) {
 }
 
 
+void _set_identic_mesh_map(std::vector<int> &map, std::vector<int> ids, const MeshBase * mesh)
+{
+
+	// assume both bulk_elements_id and boundary_elements_id are sorted
+	uint i = 0;
+	for(int id : ids) {
+		if ((uint)id == Mesh::undef_idx) return; // Boundary IDs may be undef.
+		map[mesh->elem_index(id)] = i;
+		i++;
+	}
+	ASSERT(i == map.size());
+}
 
 
 std::shared_ptr<EquivalentMeshMap> ReaderCache::identic_mesh_map(const FilePath &file_path,
                                                                             Mesh *computational_mesh) {
-	ASSERT(false).error("Not implemented yet." );
+	//ASSERT_PERMANENT(false).error("Not implemented yet." );
     auto it = ReaderCache::get_reader_data(file_path);
-    auto reader_data = (*it).second;
+    auto &reader_data = (*it).second;
     if ( reader_data.target_mesh_element_map_ == nullptr ) {
     	// Create map for the identic mesh taking the computational mesh permutation into account.
     	// Assume that element IDs in the source and computational mesh match.
@@ -91,19 +104,28 @@ std::shared_ptr<EquivalentMeshMap> ReaderCache::identic_mesh_map(const FilePath 
     	reader_data.reader_->has_compatible_mesh_ = true;
     	reader_data.reader_->set_element_ids(*computational_mesh);
 
-        //(*it).second.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
+    	std::shared_ptr<EquivalentMeshMap> map_ptr =
+    		std::make_shared<EquivalentMeshMap>(computational_mesh->n_elements(),
+    				computational_mesh->bc_mesh()->n_elements(), (LongIdx)undef_idx);
+    	_set_identic_mesh_map(map_ptr->bulk, reader_data.reader_->get_element_ids(false), computational_mesh);
+    	_set_identic_mesh_map(map_ptr->boundary, reader_data.reader_->get_element_ids(true), computational_mesh->bc_mesh());
+
+    	reader_data.target_mesh_element_map_ = map_ptr;
     }
-    return (*it).second.target_mesh_element_map_;
+    return reader_data.target_mesh_element_map_;
 
 }
 
 std::shared_ptr<EquivalentMeshMap> ReaderCache::eqivalent_mesh_map(const FilePath &file_path,
                                                                             Mesh *computational_mesh) {
     auto it = ReaderCache::get_reader_data(file_path);
-    ASSERT_PTR( (*it).second.mesh_ ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
-    if ( (*it).second.target_mesh_element_map_ == nullptr ) {
-        (*it).second.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
+    auto source_mesh = ReaderCache::get_mesh(file_path);
+    auto &reader_data = (*it).second;
+    //ASSERT_PTR( reader_data.mesh_ ).error("Mesh is not created. Did you call 'ReaderCache::get_mesh(file_path)'?\n");
+    if ( reader_data.target_mesh_element_map_ == nullptr ) {
+    	reader_data.reader_->set_element_ids(*source_mesh);
+    	reader_data.target_mesh_element_map_ = computational_mesh->check_compatible_mesh( *((*it).second.mesh_.get()) );
     }
-    return (*it).second.target_mesh_element_map_;
+    return reader_data.target_mesh_element_map_;
 }
 
