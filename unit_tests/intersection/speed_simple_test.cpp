@@ -33,7 +33,7 @@
 using namespace std;
 
 
-#ifdef FLOW123D_DEBUG
+#ifdef FLOW123D_DEBUG_ASSERTS
 // Use smaller number of meshes  in debug (slow) mode
 static const unsigned int n_meshes = 500;
 #else

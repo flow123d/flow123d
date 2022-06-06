@@ -20,9 +20,16 @@
 #include "boost/lexical_cast.hpp"
 
 
+#ifdef FLOW123D_DEBUG_ASSERTS
+// Use smaller loop count in debug (slow) mode
+static const unsigned int loop_call_count =   25000;
+static const unsigned int file_line_count =   50000;
+static const unsigned int line_step_count =   17251;
+#else
 static const unsigned int loop_call_count =  500000;
 static const unsigned int file_line_count = 1000000;
 static const unsigned int line_step_count =  345001;
+#endif
 static const std::string file_line_text = "\"some_text_line\"";
 
 

@@ -209,8 +209,8 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
     make_output_mesh();
 
     /* Simulate field output */
-    data.init_scalar.field_output(stream, OutputTime::ELEM_DATA);
-    data.init_vector.field_output(stream, OutputTime::ELEM_DATA);
+    data.init_scalar.field_output(stream, OutputTime::NATIVE_DATA);
+    data.init_vector.field_output(stream, OutputTime::NATIVE_DATA);
     stream->gather_data(my_mesh);
 
     /* Tests of output data */

@@ -230,7 +230,7 @@ TEST(Exceptions, assert_msg) {
 
     int zero=1;
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( { ASSERT_PERMANENT_EQ(zero, 0) "Zero is not zero.\n");} , feal::Exc_assert, "Violated Assert! Zero is not zero." );
+    EXPECT_THROW_WHAT( { ASSERT_PERMANENT_EQ(zero, 0).error("Zero is not zero.\n");} , feal::Exc_assert, "Violated assert! Zero is not zero." );
 #endif
 
 }

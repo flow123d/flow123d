@@ -21,7 +21,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 3
 
-    flow_equation: !Flow_Richards_LMH
+    flow_equation: !Flow_Darcy_LMH
         input_fields:
           - region: BULK
             conductivity: 1
