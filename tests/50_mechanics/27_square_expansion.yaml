@@ -15,7 +15,7 @@ problem: !Coupling_Sequential
       end_time: 80
       # common time unit cannot be used in field formulas
       common_time_unit: d
-    iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
+    iteration_parameter: 1e-4 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 0
     r_tol: 1e-6
     flow_equation: !Flow_Richards_LMH

@@ -44,9 +44,9 @@ struct fn_hm_coupling_beta {
     fn_hm_coupling_beta(double beta_f) : beta_factor(beta_f) {}
 
 
-    inline double operator() (double alpha, double lame_mu, double lame_lambda)
+    inline double operator() (double alpha, double lame_mu, double lame_lambda, double density, double gravity)
     {
-        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda);
+        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda)*density*gravity;
     }
 
 private:
@@ -183,7 +183,9 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
         fn_hm_coupling_beta(beta_),
         alpha,
         eq_data.mechanics_->eq_fields().lame_mu,
-        eq_data.mechanics_->eq_fields().lame_lambda
+        eq_data.mechanics_->eq_fields().lame_lambda,
+        density,
+        gravity
         ), 0.0);
 
     auto old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
