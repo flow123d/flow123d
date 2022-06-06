@@ -78,8 +78,13 @@ void BaseMeshReader::read_raw_mesh(Mesh * mesh) {
     read_elements(mesh);
 }
 
+void BaseMeshReader::set_element_ids(const Mesh &mesh)
+{
+	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
+}
 
-std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain) {
+
+std::vector<int> const & BaseMeshReader::get_element_ids(bool boundary_domain) {
 	if (boundary_domain) return boundary_elements_id_;
 	else return bulk_elements_id_;
 }

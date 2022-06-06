@@ -890,14 +890,20 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
 
         boundary_elements_id.resize(bc_mesh_->n_elements());
         map_it = boundary_elements_id.begin();
+        int last = -1;
         for(unsigned int idx=0; idx<bc_mesh_->n_elements(); idx++, ++map_it) {
         	LongIdx id = bc_mesh_->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
             if (id < 0) *map_it=-1;
-            else *map_it = id;
+            else {
+            	*map_it = id;
+                ASSERT_PERMANENT(last < id);
+            }
+
         }
+        // TODO: should call sort, as for bulk case, but keep -1 at the end.
     }
 }
 
@@ -979,7 +985,7 @@ unsigned int Mesh::check_compatible_elements(MeshBase* source_mesh, MeshBase* ta
                                              const std::vector<unsigned int>& node_ids,
                                              std::vector<LongIdx>& map)
 {
-    // create map `element_ids_map` from ele indices of source mesh to ele indices of target mesh
+    // create map `element_ids_map` from ele indices of the target (computational) mesh to the ele indices of the source mesh
     // - iterate over elements of source mesh
     // - get adjacent nodes of target mesh using `node_ids` map
     // - find adjacent element of target mesh using the found nodes
@@ -1351,10 +1357,6 @@ void Mesh::distribute_nodes() {
 }
 
 
-inline int MeshBase::elem_index(int elem_id) const
-{
-    return element_ids_.get_position(elem_id);
-}
 
 
 const Neighbour &MeshBase::vb_neighbour(unsigned int nb) const

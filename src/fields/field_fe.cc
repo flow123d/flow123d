@@ -374,12 +374,13 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
         ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
         this->boundary_domain_ = boundary_domain;
         if (this->interpolation_ == DataInterpolation::identic_msh) {
-            ReaderCache::get_element_ids(reader_file_, *mesh);
+        	//DebugOut() << "Identic mesh branch\n";
+            source_target_mesh_elm_map_ = ReaderCache::identic_mesh_map(reader_file_, const_cast<Mesh *>(mesh));
         } else {
-            auto source_mesh = ReaderCache::get_mesh(reader_file_);
-            ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()));
+            //auto source_mesh = ReaderCache::get_mesh(reader_file_);
+            // TODO: move the call into equivalent_mesh_map, get rd of get_element_ids method.
+            source_target_mesh_elm_map_ = ReaderCache::eqivalent_mesh_map(reader_file_, const_cast<Mesh *>(mesh));
             if (this->interpolation_ == DataInterpolation::equivalent_msh) {
-                source_target_mesh_elm_map_ = ReaderCache::get_target_mesh_element_map(reader_file_, const_cast<Mesh *>(mesh));
                 if (source_target_mesh_elm_map_->empty()) { // incompatible meshes
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
@@ -539,7 +540,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		if (is_native) {
 			this->calculate_native_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
-			this->calculate_identic_values(input_data_cache);
+			this->calculate_equivalent_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::equivalent_msh) {
 			this->calculate_equivalent_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
@@ -817,7 +818,9 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto cell : dh_->own_range()) {
 		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		if (source_target_vec[cell.elm_idx()] == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+		//DebugOut() << cell.elm_idx() << " < " << source_target_vec.size() << "\n";
+		int source_idx = source_target_vec[cell.elm_idx()];
+		if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
 			if ( std::isnan(default_value_) )
 				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
@@ -826,7 +829,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 				++count_vector[ loc_dofs[i] ];
 			}
 		} else {
-			data_vec_i = source_target_vec[cell.elm_idx()] * dh_->max_elem_dofs();
+			data_vec_i = source_idx * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
