@@ -1,14 +1,14 @@
 # Test goal: 2D elastic model with a single fracture with different BC.
 # Author: Jan Stebel
 # Source for reference:
-#   - the domain is a square, chopped to its half
+#   - the domain is a square with 2 crossing fractures
 #   - for testing contact conditions
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: 2D elastic model with a single fracture with different BC.
+  description: 2D elastic model with crossing fractures.
   mesh:
-    mesh_file: ../00_mesh/square_1x1_frac_chopped.msh
+    mesh_file: ../00_mesh/square_1x1_frac_x.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
@@ -18,12 +18,12 @@ problem: !Coupling_Sequential
     time:
       end_time: 1
 
-    flow_equation: !Flow_Darcy_LMH
+    flow_equation: !Flow_Richards_LMH
         input_fields:
           - region: BULK
             conductivity: 1
             init_pressure: 0
-          - region: fracture
+          - region: [ fracture_x, fracture_xy ]
             cross_section: 0.01
           - region: .BOUNDARY
             bc_type: dirichlet
@@ -47,17 +47,17 @@ problem: !Coupling_Sequential
         solver: !Petsc
         contact: true
         input_fields:
-          - region: bulk
-            young_modulus: 1
+          - region: rock
+            young_modulus: 1e9
             poisson_ratio: 0.25
-          - region: fracture
-            young_modulus: 1e-6
+          - region: [ fracture_x, fracture_xy ]
+            young_modulus: 1e6
             poisson_ratio: 0.25
             cross_section_min: 0.01
 
-          - region: .left_x
+          - region: .bottom
             bc_type: displacement
             bc_displacement: 0
-          - region: .right_x
+          - region: .top
             bc_type: traction
-            bc_traction: [ -0.2, 0, 0 ]
+            bc_traction: [ 1e6, -1e7, 0 ]
