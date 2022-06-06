@@ -80,6 +80,7 @@ void BaseMeshReader::read_raw_mesh(Mesh * mesh) {
 
 void BaseMeshReader::set_element_ids(const Mesh &mesh)
 {
+	has_compatible_mesh_ = true;
 	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
 }
 

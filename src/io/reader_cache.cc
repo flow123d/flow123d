@@ -101,9 +101,8 @@ std::shared_ptr<EquivalentMeshMap> ReaderCache::identic_mesh_map(const FilePath 
     	// Assume that element IDs in the source and computational mesh match.
     	// map index of the sorted IDs to the index of the element in permuted computational mesh.
     	// make for both bulk and boundary mesh.
-    	reader_data.reader_->has_compatible_mesh_ = true;
-    	reader_data.reader_->set_element_ids(*computational_mesh);
 
+    	reader_data.reader_->set_element_ids(*computational_mesh);
     	std::shared_ptr<EquivalentMeshMap> map_ptr =
     		std::make_shared<EquivalentMeshMap>(computational_mesh->n_elements(),
     				computational_mesh->bc_mesh()->n_elements(), (LongIdx)undef_idx);
