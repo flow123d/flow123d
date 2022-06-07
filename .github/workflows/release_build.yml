@@ -41,7 +41,7 @@ jobs:
       run: |
         # docker rm -f  || echo "container not running"
         bin/fterm update
-        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume .:$FLOW
+        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $(pwd):$FLOW
         #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
         
         # copy config
@@ -50,6 +50,11 @@ jobs:
 
         # configure and compile
         docker exec ${build_container} make -C $FLOW -j4 all
+    - name: make doc
+      run: |
+        docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
+        docker exec ${build_container} make -C ${FLOW} html-doc
+        docker exec ${build_container} make -C ${FLOW} doxy-doc
 
         
         
