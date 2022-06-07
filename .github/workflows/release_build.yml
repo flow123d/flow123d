@@ -49,6 +49,7 @@ jobs:
         docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
 
         # configure and compile
+        docker exec ${build_container} git config --global --add safe.directory $FLOW
         docker exec ${build_container} make -C $FLOW -j4 all
     - name: make doc
       run: |
