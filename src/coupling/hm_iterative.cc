@@ -235,7 +235,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     
     // setup coupling fields and finish initialization of flow
     eq_data_.mechanics_->eq_fields()["cross_section"].copy_from(eq_data_.flow_->eq_fields()["cross_section"]);
-    eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["cross_section_updated"];
+    eq_data_.flow_->eq_fields()["cross_section_updated"].copy_from(eq_data_.mechanics_->eq_fields()["cross_section_updated"]);
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["stress"];
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["von_mises_stress"];
     eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["mean_stress"];

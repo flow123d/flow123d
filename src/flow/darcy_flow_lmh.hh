@@ -153,6 +153,8 @@ public:
 
     	EqFields();
 
+        Field<3, FieldValue<3>::Scalar> cross_section_updated;
+
     };
 
     class EqData : public DarcyMH::EqData {

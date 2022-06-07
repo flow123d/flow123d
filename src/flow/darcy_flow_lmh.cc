@@ -156,6 +156,11 @@ const int DarcyLMH::registrar =
 
 DarcyLMH::EqFields::EqFields()
 {
+    *this += cross_section_updated
+        .name("cross_section_updated")
+        .description("Cross-section after deformation - output.")
+        .units( UnitSI().m() )
+        .flags(input_copy);
 }
 
 
@@ -353,7 +358,7 @@ void DarcyLMH::initialize() {
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section_updated), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);

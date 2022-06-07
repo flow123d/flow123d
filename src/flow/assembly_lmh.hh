@@ -127,7 +127,7 @@ public:
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->cross_section_updated;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
         this->used_fields_ += eq_fields_->sigma;
@@ -238,9 +238,9 @@ public:
         ngh_value_ = eq_fields_->sigma(p_low) *
                         2*eq_fields_->conductivity(p_low) *
                         arma::dot(eq_fields_->anisotropy(p_low)*nv_, nv_) *
-						eq_fields_->cross_section(p_high) * // cross-section of higher dim. (2d)
-						eq_fields_->cross_section(p_high) /
-						eq_fields_->cross_section(p_low) *      // crossection of lower dim.
+						eq_fields_->cross_section_updated(p_high) * // cross-section of higher dim. (2d)
+						eq_fields_->cross_section_updated(p_high) /
+						eq_fields_->cross_section_updated(p_low) *      // crossection of lower dim.
                         neighb_side.measure();
 
         eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], eq_data_->loc_ele_dof[dim-2], -ngh_value_);
@@ -361,7 +361,7 @@ protected:
     inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
     {
         auto ele = cell.elm();
-        double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
+        double scale_sides = 1 / eq_fields_->cross_section_updated(p) / conductivity;
 
         fe_values_.reinit(ele);
         auto velocity = fe_values_.vector_view(0);
@@ -428,7 +428,7 @@ protected:
     {
         // compute lumped source
         uint n_sides = cell.elm()->n_sides();
-        coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section(p);
+        coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section_updated(p);
         source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
 
         // in unsteady, compute time term
@@ -476,7 +476,7 @@ protected:
     {
         bulk_local_idx_ = cell_side.cell().local_idx();
 
-        cross_section_ = eq_fields_->cross_section(p_side);
+        cross_section_ = eq_fields_->cross_section_updated(p_side);
         type_ = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type(p_bdr);
 
         sidx_ = cell_side.side_idx();
@@ -723,7 +723,7 @@ protected:
     void postprocess_velocity(const DHCellAccessor& dh_cell, BulkPoint &p)
     {
         edge_scale_ = dh_cell.elm().measure()
-                          * eq_fields_->cross_section(p)
+                          * eq_fields_->cross_section_updated(p)
                           / dh_cell.elm()->n_sides();
 
         edge_source_term_ = edge_scale_ *
