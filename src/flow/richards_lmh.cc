@@ -81,9 +81,10 @@ RichardsLMH::EqData::EqData()
 const Input::Type::Record & RichardsLMH::get_input_type() {
 	namespace it=Input::Type;
 
-	it::Record field_descriptor = it::Record("RichardsLMH_Data",FieldCommon::field_descriptor_record_description("RichardsLMH_Data"))
+	it::Record field_descriptor = it::Record(equation_name() + "_Data",
+        FieldCommon::field_descriptor_record_description(equation_name() + "_Data"))
     .copy_keys( DarcyLMH::type_field_descriptor() )
-    .copy_keys( RichardsLMH::EqFields().make_field_descriptor_type("RichardsLMH_Data_aux") )
+    .copy_keys( RichardsLMH::EqFields().make_field_descriptor_type(equation_name() + "_Data_aux") )
     .close();
 
     auto model_selection = it::Selection("Soil_Model_Type", "")
@@ -102,12 +103,12 @@ const Input::Type::Record & RichardsLMH::get_input_type() {
 
     RichardsLMH::EqFields eq_fields;
     
-    return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
+    return it::Record(equation_name(), "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyLMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, "Flow_Richards_LMH"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name()),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
@@ -117,7 +118,7 @@ const Input::Type::Record & RichardsLMH::get_input_type() {
 
 
 const int RichardsLMH::registrar =
-        Input::register_class< RichardsLMH, Mesh &, const Input::Record >("Flow_Richards_LMH") +
+        Input::register_class< RichardsLMH, Mesh &, const Input::Record >(equation_name()) +
         RichardsLMH::get_input_type().size();
 
 

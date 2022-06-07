@@ -78,8 +78,6 @@ FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh)
 
 namespace it = Input::Type;
 
-const std::string DarcyMH::equation_name_ = "Flow_Darcy_MH";
-
 const it::Selection & DarcyMH::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
 		.add_value(NoMortar, "None", "No Mortar method is applied.")
@@ -121,8 +119,8 @@ const it::Selection & DarcyMH::EqFields::get_bc_type_selection() {
 const it::Record & DarcyMH::type_field_descriptor() {
 
         const it::Record &field_descriptor =
-        it::Record(equation_name_ + "_Data",FieldCommon::field_descriptor_record_description(equation_name_ + "_Data") )
-        .copy_keys( DarcyMH::EqFields().make_field_descriptor_type(equation_name_ + "_Data_aux") )
+        it::Record(equation_name() + "_Data",FieldCommon::field_descriptor_record_description(equation_name() + "_Data") )
+        .copy_keys( DarcyMH::EqFields().make_field_descriptor_type(equation_name() + "_Data_aux") )
             .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                     "Boundary piezometric head for BC types: dirichlet, robin, and river." )
             .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -153,12 +151,12 @@ const it::Record & DarcyMH::get_input_type() {
 
     DarcyMH::EqFields eq_fields;
     
-    return it::Record(equation_name_, "Mixed-Hybrid  solver for saturated Darcy flow.")
+    return it::Record(equation_name(), "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
-        .declare_key("user_fields", it::Array(DarcyMH::EqFields().get_user_field(equation_name_)),
+        .declare_key("user_fields", it::Array(DarcyMH::EqFields().get_user_field(equation_name())),
                 IT::Default::optional(),
                 "Input fields of the equation defined by user.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
@@ -168,7 +166,7 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name_),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name()),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
@@ -185,7 +183,7 @@ const it::Record & DarcyMH::get_input_type() {
 
 
 const int DarcyMH::registrar =
-		Input::register_class< DarcyMH, Mesh &, const Input::Record >(equation_name_) +
+		Input::register_class< DarcyMH, Mesh &, const Input::Record >(equation_name()) +
 		DarcyMH::get_input_type().size();
 
 
