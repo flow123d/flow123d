@@ -46,7 +46,7 @@ jobs:
         
         # copy config
         docker exec ${build_container} ls $FLOW
-        docker exec ${build_container} cp config/config-jenkins-docker-${build_type}.cmake ./config.cmake
+        docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
 
         # configure and compile
         docker exec ${build_container} make -C $FLOW -j4 all
