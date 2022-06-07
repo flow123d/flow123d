@@ -21,7 +21,7 @@ env:
   DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
   environment: gnu
   build-type: release
-  build-container: cont${{environment}}${{build-type}}  
+  build-container: contgnurelease
   
 jobs:
   build:
