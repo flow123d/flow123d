@@ -63,21 +63,38 @@ jobs:
         docker exec ${build_container} make -C ${FLOW} html-doc
         docker exec ${build_container} make -C ${FLOW} doxy-doc
 
-        
-        
-    #- name: Install dependencies
-      #run: |
-        #python -m pip install --upgrade pip
-        #pip install setuptools wheel twine
-    #- name: Build and publish
-      #env:
-        #TWINE_USERNAME: ${{ secrets.PYPI_JBREZ_USER }}
-        #TWINE_PASSWORD: ${{ secrets.PYPI_JBREZ_PASS }}
-      #run: |
-        #python setup.py sdist bdist_wheel
-        #twine upload dist/*
-        #twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-        
+    - name: package
+      run: |        
+        destination=$(pwd)/publish_{environment}
+        imagesversion=$(cat $(pwd)/config/docker/image_tag)
+      
+        git clone https://github.com/flow123d/docker-config.git
+        make -C docker-config/package \
+              container_name=${build_container} \
+              install_image="install-${environment}:${imagesversion}" \
+              target_image=flow123d-${environment} \
+              destination=$destination \
+              all
+        make -C docker-config/package \
+              container_name=${build_container} \
+              target_image=flow123d-${environment} \
+              destination=${destination} \
+              remove-unwanted
+
+        make -C docker-config/package \
+              container_name=${build_container} \
+              target_image=flow123d-${environment} \
+              push-to-hub
+
+      #ls -la $destination
+
+#publishers:
+  #- cifs:
+      #site: 'flow123d.at.public'
+      #target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
+      #source: publish_{environment}/**/*
+      #remove-prefix: publish_{environment}/
+
 #Jenkins prop.file
   #- inject:
       #script-content: |
