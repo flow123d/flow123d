@@ -327,47 +327,47 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             std::string expr = formula_matrix_.at(row,col); // Need replace some operations to make them compatible with BParser.
                                                             // It will be solved by conversion script after remove fparser, but
                                                             // we mix using of BParser and fparser and need this solution now.
-            boost::replace_all(expr, "^", "**"); // power function
-            boost::replace_all(expr, "max(", "maximum("); // max function
-            boost::replace_all(expr, "min(", "minimum("); // min function
-            boost::replace_all(expr, "Pi", "pi"); // Math.pi
-            boost::replace_all(expr, "E", "e"); // Math.e
-            boost::replace_all(expr, "!", "not");
-            boost::replace_all(expr, "=", "==");
-            boost::replace_all(expr, "<==", "<=");
-            boost::replace_all(expr, ">==", ">=");
-            boost::replace_all(expr, ":=", "=");
-            boost::replace_all(expr, "&", " and ");
-            boost::replace_all(expr, "|", " or ");
-            {
+//             boost::replace_all(expr, "^", "**"); // power function
+//             boost::replace_all(expr, "max(", "maximum("); // max function
+//             boost::replace_all(expr, "min(", "minimum("); // min function
+//             boost::replace_all(expr, "Pi", "pi"); // Math.pi
+//             boost::replace_all(expr, "E", "e"); // Math.e
+//             boost::replace_all(expr, "!", "not");
+//             boost::replace_all(expr, "=", "==");
+//             boost::replace_all(expr, "<==", "<=");
+//             boost::replace_all(expr, ">==", ">=");
+//             boost::replace_all(expr, ":=", "=");
+//             boost::replace_all(expr, "&", " and ");
+//             boost::replace_all(expr, "|", " or ");
+//             {
 
-                // Regexp tested with perl syntax, first is matched the inner most if
-                boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
-                boost::smatch res;
-                while (1) {
-                	if (! boost::regex_match(expr, res, r)) break;
-                    std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
-                    expr = tmp;
-                }
-                DebugOut() << "After fparser translation to BParser: " << expr << "\n";
-/*
+//                 // Regexp tested with perl syntax, first is matched the inner most if
+//                 boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
+//                 boost::smatch res;
+//                 while (1) {
+//                 	if (! boost::regex_match(expr, res, r)) break;
+//                     std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
+//                     expr = tmp;
+//                 }
+//                 DebugOut() << "After fparser translation to BParser: " << expr << "\n";
+// /*
 
 
-            	// ternary operator
-            	std::regex
-                std::string pref("if(");
-                auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
-                if ( (res.first == pref.end()) && (expr.back() == ')') ) {
-                    std::string subexpr = expr.substr(3, expr.size()-4);
-                    std::string delimiter = ",";
-                    std::string cond = subexpr.substr(0, subexpr.find(delimiter));
-                    subexpr.erase(0, cond.size()+1);
-                    std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
-                    std::string else_case = subexpr.substr(if_case.size()+1);
-                    expr = "(" + if_case + " if " + cond + " else " + else_case +")";
-                }
-*/
-            }
+//             	// ternary operator
+//             	std::regex
+//                 std::string pref("if(");
+//                 auto res = std::mismatch(pref.begin(), pref.end(), expr.begin());
+//                 if ( (res.first == pref.end()) && (expr.back() == ')') ) {
+//                     std::string subexpr = expr.substr(3, expr.size()-4);
+//                     std::string delimiter = ",";
+//                     std::string cond = subexpr.substr(0, subexpr.find(delimiter));
+//                     subexpr.erase(0, cond.size()+1);
+//                     std::string if_case = subexpr.substr(0, subexpr.find(delimiter));
+//                     std::string else_case = subexpr.substr(if_case.size()+1);
+//                     expr = "(" + if_case + " if " + cond + " else " + else_case +")";
+//                 }
+// */
+//             }
             try {
                 b_parser_[i_p].parse( expr );
             } catch (std::exception const& e) {
