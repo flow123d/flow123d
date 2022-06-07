@@ -1,0 +1,149 @@
+name: Build release package
+# Build official release installation packages on the Jenkins.
+
+#on:
+  #release:
+    #types: [created, published, edited, released]
+
+on:
+  push:
+    branches:
+      - 'master'
+      - '3.9.0'
+# TODO: add to manual reference to web generated doc and mention that one should trust the generated part 
+
+# článek Martin
+
+# 
+
+env:
+  DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
+  DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
+  environment: gnu
+  build-type: release
+  build-container: cont${{environment}}${{build-type}}  
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    - name: Docker Hub login
+      #uses: docker/login-action@v1  
+      # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
+      run: |
+        echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+    - name: Build
+      run: |
+        # docker rm -f  || echo "container not running"
+        bin/fterm update
+        bin/fterm rel_${{environment}} -- \
+          --privileged -di \
+          --name ${{build-container}} \
+          --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+          --volume ${{WORKSPACE}}/docker:${{FLOW}}
+
+      # delete old build
+      #docker exec cont{environment}{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
+
+      # setup local reference repository for faster cloning
+      #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+      # copy config
+      docker exec ${{build-container}} cp config/config-jenkins-docker-${{build-type}}.cmake ./config.cmake
+
+      # configure and compile
+      docker exec ${{build-container}} make -C ${{FLOW}} -j4 all
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
+
+        
+        
+    #- name: Install dependencies
+      #run: |
+        #python -m pip install --upgrade pip
+        #pip install setuptools wheel twine
+    #- name: Build and publish
+      #env:
+        #TWINE_USERNAME: ${{ secrets.PYPI_JBREZ_USER }}
+        #TWINE_PASSWORD: ${{ secrets.PYPI_JBREZ_PASS }}
+      #run: |
+        #python setup.py sdist bdist_wheel
+        #twine upload dist/*
+        #twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+        
+#Jenkins prop.file
+  #- inject:
+      #script-content: |
+        #rm -f prop.file && touch prop.file
+        #echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
+        #echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
+        #echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
+#Jenkins Build
+  #- inject:
+      #properties-file: prop.file
+  #- shell: |
+      #start image
+      #docker rm -f cont{environment}{build-type} || echo "container not running"
+      #flow123d/bin/fterm update
+      #flow123d/bin/fterm rel_{environment} -- \
+          #--privileged -di \
+          #--name cont{environment}{build-type} \
+          #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+          #--volume ${{WORKSPACE}}/docker:${{FLOW}}
+
+      #delete old build
+      #docker exec cont{environment}{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
+
+      #copy config
+      #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+      #docker exec cont{environment}{build-type} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
+
+      #configure and compile
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}} -j4 all
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
+#Jenkins make doc
+  #- shell: |
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}} html-doc
+      #docker exec cont{environment}{build-type} make -C ${{FLOW}} doxy-doc
+
+#Jenkins package and upload
+  #- inject:
+      #properties-file: prop.file
+  #- shell: |
+      #destination=$(pwd)/publish_{environment}
+      
+      #imagesversion=$(cat flow123d/config/docker/image_tag)
+      
+      #rm -rf $destination && mkdir -p $destination
+      #rm -rf docker-config
+      #git clone https://github.com/flow123d/docker-config.git
+
+      #make -C docker-config/package \
+              #container_name=cont{environment}{build-type} \
+              #install_image="install-{environment}:$imagesversion" \
+              #target_image=ci-{environment} \
+              #destination=$destination \
+              #all
+
+      #make -C docker-config/package \
+              #container_name=cont{environment}{build-type} \
+              #target_image=ci-{environment} \
+              #destination=$destination \
+              #remove-unwanted
+
+      #make -C docker-config/package \
+              #container_name=cont{environment}{build-type} \
+              #target_image=ci-{environment} \
+              #push-to-hub
+
+      #ls -la $destination
+
+#publishers:
+  #- cifs:
+      #site: 'flow123d.at.public'
+      #target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
+      #source: publish_{environment}/**/*
+      #remove-prefix: publish_{environment}/
