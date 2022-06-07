@@ -45,18 +45,11 @@ jobs:
         bin/fterm rel_$environment -- --privileged -di --name $build-container --volume $WORKSPACE/docker:$FLOW
         #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
         
-
-        # delete old build
-        #docker exec cont{environment}{build-type} bash -c "rm -rf $FLOW/{{*,.*}}" || true
-
-        # setup local reference repository for faster cloning
-        #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
         # copy config
         docker exec ${{build-container}} cp config/config-jenkins-docker-${{build-type}}.cmake ./config.cmake
 
         # configure and compile
         docker exec $build-container make -C $FLOW -j4 all
-        #docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
 
         
         
@@ -96,8 +89,9 @@ jobs:
       #delete old build
       #docker exec cont{environment}{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
 
-      #copy config
+      # setup local reference repository for faster cloning
       #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+      #copy config
       #docker exec cont{environment}{build-type} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
 
       #configure and compile
