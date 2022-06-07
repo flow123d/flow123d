@@ -358,7 +358,8 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    static const std::string equation_name_;
+    static std::string equation_name()
+    { return "Flow_Darcy_LMH";}
 };
 
 #endif  //DARCY_FLOW_LMH_HH
