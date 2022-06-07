@@ -20,8 +20,8 @@ env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
   DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
   environment: gnu
-  build-type: release
-  build-container: cont${environment}${build-type}
+  build_type: release
+  build_container: cont${environment}${build_type}
   WORKSPACE: .
   FLOW: /opt/flow123d/flow123d
   
@@ -42,14 +42,14 @@ jobs:
       run: |
         # docker rm -f  || echo "container not running"
         bin/fterm update
-        bin/fterm rel_$environment -- --privileged -di --name $build-container --volume $WORKSPACE/docker:$FLOW
+        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $WORKSPACE/docker:$FLOW
         #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
         
         # copy config
-        docker exec $build-container cp config/config-jenkins-docker-$build-type.cmake ./config.cmake
+        docker exec ${build_container} cp config/config-jenkins-docker-${build_type}.cmake ./config.cmake
 
         # configure and compile
-        docker exec $build-container make -C $FLOW -j4 all
+        docker exec ${build_container} make -C $FLOW -j4 all
 
         
         
@@ -78,30 +78,30 @@ jobs:
       #properties-file: prop.file
   #- shell: |
       #start image
-      #docker rm -f cont{environment}{build-type} || echo "container not running"
+      #docker rm -f cont{environment}{build_type} || echo "container not running"
       #flow123d/bin/fterm update
       #flow123d/bin/fterm rel_{environment} -- \
           #--privileged -di \
-          #--name cont{environment}{build-type} \
+          #--name cont{environment}{build_type} \
           #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
           #--volume ${{WORKSPACE}}/docker:${{FLOW}}
 
       #delete old build
-      #docker exec cont{environment}{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
+      #docker exec cont{environment}{build_type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
 
       # setup local reference repository for faster cloning
-      #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+      #docker exec cont{environment}{build_type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
       #copy config
-      #docker exec cont{environment}{build-type} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
+      #docker exec cont{environment}{build_type} cp ${{FLOW}}/config/config-jenkins-docker-{build_type}.cmake ${{FLOW}}/config.cmake
 
       #configure and compile
-      #docker exec cont{environment}{build-type} make -C ${{FLOW}} -j4 all
-      #docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
+      #docker exec cont{environment}{build_type} make -C ${{FLOW}} -j4 all
+      #docker exec cont{environment}{build_type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
 #Jenkins make doc
   #- shell: |
-      #docker exec cont{environment}{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
-      #docker exec cont{environment}{build-type} make -C ${{FLOW}} html-doc
-      #docker exec cont{environment}{build-type} make -C ${{FLOW}} doxy-doc
+      #docker exec cont{environment}{build_type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
+      #docker exec cont{environment}{build_type} make -C ${{FLOW}} html-doc
+      #docker exec cont{environment}{build_type} make -C ${{FLOW}} doxy-doc
 
 #Jenkins package and upload
   #- inject:
@@ -116,20 +116,20 @@ jobs:
       #git clone https://github.com/flow123d/docker-config.git
 
       #make -C docker-config/package \
-              #container_name=cont{environment}{build-type} \
+              #container_name=cont{environment}{build_type} \
               #install_image="install-{environment}:$imagesversion" \
               #target_image=ci-{environment} \
               #destination=$destination \
               #all
 
       #make -C docker-config/package \
-              #container_name=cont{environment}{build-type} \
+              #container_name=cont{environment}{build_type} \
               #target_image=ci-{environment} \
               #destination=$destination \
               #remove-unwanted
 
       #make -C docker-config/package \
-              #container_name=cont{environment}{build-type} \
+              #container_name=cont{environment}{build_type} \
               #target_image=ci-{environment} \
               #push-to-hub
 
