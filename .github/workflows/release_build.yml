@@ -46,7 +46,7 @@ jobs:
         #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
         
         # copy config
-        docker exec ${{build-container}} cp config/config-jenkins-docker-${{build-type}}.cmake ./config.cmake
+        docker exec $build-container cp config/config-jenkins-docker-$build-type.cmake ./config.cmake
 
         # configure and compile
         docker exec $build-container make -C $FLOW -j4 all
