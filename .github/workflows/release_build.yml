@@ -21,7 +21,9 @@ env:
   DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
   environment: gnu
   build-type: release
-  build-container: contgnurelease
+  build-container: cont${environment}${build-type}
+  WORKSPACE: .
+  FLOW: /opt/flow123d/flow123d
   
 jobs:
   build:
@@ -35,19 +37,17 @@ jobs:
       #uses: docker/login-action@v1  
       # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
       run: |
-        echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
     - name: Build
       run: |
         # docker rm -f  || echo "container not running"
         bin/fterm update
-        bin/fterm rel_${{environment}} -- \
-          --privileged -di \
-          --name ${{build-container}} \
-          --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
-          --volume ${{WORKSPACE}}/docker:${{FLOW}}
+        bin/fterm rel_$environment -- --privileged -di --name $build-container --volume $WORKSPACE/docker:$FLOW
+        #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+        
 
         # delete old build
-        #docker exec cont{environment}{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
+        #docker exec cont{environment}{build-type} bash -c "rm -rf $FLOW/{{*,.*}}" || true
 
         # setup local reference repository for faster cloning
         #docker exec cont{environment}{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
@@ -55,7 +55,7 @@ jobs:
         docker exec ${{build-container}} cp config/config-jenkins-docker-${{build-type}}.cmake ./config.cmake
 
         # configure and compile
-        docker exec ${{build-container}} make -C ${{FLOW}} -j4 all
+        docker exec $build-container make -C $FLOW -j4 all
         #docker exec cont{environment}{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
 
         
