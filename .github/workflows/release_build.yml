@@ -22,7 +22,6 @@ env:
   environment: gnu
   build_type: release
   build_container: contgnurelease
-  WORKSPACE: .
   FLOW: /opt/flow123d/flow123d
   
 jobs:
@@ -42,7 +41,7 @@ jobs:
       run: |
         # docker rm -f  || echo "container not running"
         bin/fterm update
-        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $WORKSPACE/docker:$FLOW
+        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume docker:$FLOW
         #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
         
         # copy config
