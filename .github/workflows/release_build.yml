@@ -7,9 +7,9 @@ name: Build release package
 
 on:
   push:
-    branches:
-      - 'master'
-      - '3.9.0'
+    tags:
+    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
 # TODO: add to manual reference to web generated doc and mention that one should trust the generated part 
 
 # článek Martin
@@ -67,24 +67,38 @@ jobs:
       run: |        
         destination=$(pwd)/publish_{environment}
         imagesversion=$(cat $(pwd)/config/docker/image_tag)
-      
+        release_version=$(cat $(pwd)/version)      
         git clone https://github.com/flow123d/docker-config.git
         make -C docker-config/package \
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
               target_image=flow123d-${environment} \
+              image_tag=${release_version}
+              image_tag=${release_version}
               destination=$destination \
               all
         make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
-              destination=${destination} \
+              image_tag=${release_version}destination=${des
+              tination} }
+              destination=${destination} }\
               remove-unwanted
 
         make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
+              destination=${destination} }
               push-to-hub
+              
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+          files: |
+            flow123d_${release_version}_doc.pdf
+            flow123d_${release_version}_linux_install.tar.gz
+            flow123d_${release_version}_windows_install.exe
+          name: release_${release_version}          
 
       #ls -la $destination
 
