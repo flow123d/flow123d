@@ -73,22 +73,20 @@ jobs:
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
               target_image=flow123d-${environment} \
-              image_tag=${release_version}
-              image_tag=${release_version}
-              destination=$destination \
+              image_tag=${release_version} \
+              image_tag=${release_version} \
+              destination=${destination} \
               all
         make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
-              image_tag=${release_version}destination=${des
-              tination} }
-              destination=${destination} }\
+              image_tag=${release_version} \
+              destination=${destination} \
               remove-unwanted
-
         make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
-              destination=${destination} }
+              destination=${destination} \
               push-to-hub
               
     - name: Release
@@ -99,7 +97,24 @@ jobs:
             flow123d_${release_version}_linux_install.tar.gz
             flow123d_${release_version}_windows_install.exe
           name: release_${release_version}          
-
+    - name: SSH
+      uses: appleboy/scp-action@master
+      with:
+-   host: "example.com"
++   host: "foo.com,bar.com"
+    username: foo
+    password: bar
+    port: 22      
+        host: ${{ secrets.PUBLISH_HOST }}
+        username: ${{ secrets.PUBLISH_USER }}
+        key: ${{ secrets.PUBLISH_KEY }}
+        passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
+        port: 22
+        source: publish_{environment}/*
+        target: 'packages/${release_version}'
+        strip_components: 1
+        
+        
       #ls -la $destination
 
 #publishers:
