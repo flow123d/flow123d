@@ -100,11 +100,6 @@ jobs:
     - name: SSH
       uses: appleboy/scp-action@master
       with:
--   host: "example.com"
-+   host: "foo.com,bar.com"
-    username: foo
-    password: bar
-    port: 22      
         host: ${{ secrets.PUBLISH_HOST }}
         username: ${{ secrets.PUBLISH_USER }}
         key: ${{ secrets.PUBLISH_KEY }}
