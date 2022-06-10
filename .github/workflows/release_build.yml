@@ -92,14 +92,14 @@ jobs:
               destination=${destination} \
               push-to-hub
               
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-          files: |
-            flow123d_${release_version}_doc.pdf
-            flow123d_${release_version}_linux_install.tar.gz
-            flow123d_${release_version}_windows_install.exe
-          name: release_${release_version}          
+#    - name: Release
+#      uses: softprops/action-gh-release@v1
+#      with:
+#          files: |
+#            flow123d_${release_version}_doc.pdf
+#            flow123d_${release_version}_linux_install.tar.gz
+#            flow123d_${release_version}_windows_install.exe
+ #         name: release_${release_version}          
     - name: SSH
       uses: appleboy/scp-action@master
       with:
