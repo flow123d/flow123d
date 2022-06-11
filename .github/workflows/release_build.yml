@@ -91,6 +91,7 @@ jobs:
               target_image=flow123d-${environment} \
               destination=${destination} \
               push-to-hub
+        curl http://ifconfig.me
               
 #    - name: Release
 #      uses: softprops/action-gh-release@v1
