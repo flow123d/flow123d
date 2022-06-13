@@ -106,8 +106,9 @@ jobs:
       with:
         host: ${{ secrets.PUBLISH_HOST }}
         username: ${{ secrets.PUBLISH_USER }}
-        key: ${{ secrets.PUBLISH_KEY }}
-        passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
+        #key: ${{ secrets.PUBLISH_KEY }}
+        password: ${{ secrets.PUBLISH_PASS }}
+        #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
         source: publish_{environment}/*
         target: 'packages/${release_version}'
