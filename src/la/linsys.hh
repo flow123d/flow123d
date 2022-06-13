@@ -79,7 +79,6 @@
 #include "input/accessors.hh"                          // for Record
 #include "la/local_system.hh"
 #include "la/distribution.hh"                          // for Distribution
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/system.hh"                            // for chkerr
 #include "system/asserts.hh"                           // for ASSERT, msg

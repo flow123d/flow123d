@@ -11,11 +11,11 @@
 
 /**
  * Macro to test ASSERTS. It is similar to EXPECT_THROW_WHAT but
- * - it sets exception type to ExcAssertMsg
+ * - it sets exception type to feal::Exc_assert
  * - it is defined empty if ASSERTS are off
  */
 #ifdef FLOW123D_DEBUG_ASSERTS
-#define	EXPECT_ASSERT_DEATH(statement, pattern) EXPECT_THROW_WHAT(statement,ExcAssertMsg, pattern)
+#define	EXPECT_ASSERT_DEATH(statement, pattern) EXPECT_THROW_WHAT(statement,feal::Exc_assert, pattern)
 #else
 #define	EXPECT_ASSERT_DEATH(statement, pattern)
 #endif

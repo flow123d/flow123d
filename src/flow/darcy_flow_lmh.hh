@@ -152,6 +152,7 @@ public:
     public:
 
     	EqFields();
+
     };
 
     class EqData : public DarcyMH::EqData {

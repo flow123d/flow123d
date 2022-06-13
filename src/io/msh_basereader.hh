@@ -194,9 +194,17 @@ public:
             unsigned int expected_n_components, bool boundary_domain);
 
     /**
-     * Returns vector of boundary or bulk element ids by parameter boundary_domain
+     * Set ID vectors from a different mesh.
+     * Must be set in order to determine for which IDs the GMSH reader should read the data.
+     * Could possibly read just a subset.
      */
-    std::vector<int> const & get_element_vector(bool boundary_domain);
+    void set_element_ids(const Mesh &mesh);
+
+    /**
+     * Returns vector of boundary or bulk element IDs to read.
+     * Used by GMSH reader only.
+     */
+    std::vector<int> const & get_element_ids(bool boundary_domain);
 
     /**
 	 * Find data header for time and field given by header_query.
@@ -216,6 +224,7 @@ protected:
 
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values);
+
 
 	/**
      * private method for reading of nodes
@@ -256,6 +265,7 @@ protected:
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
+    /// If set through set_element_ids, the GMSH reader only reads given IDs and check that all IDs are read.
     vector<LongIdx> bulk_elements_id_, boundary_elements_id_;
 
     friend class ReaderCache;

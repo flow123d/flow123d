@@ -656,9 +656,9 @@ neighboring of elements of different dimension.}%
 Abstraction of various porous media flow models.}% 
 }}
 		\Descendant{\TypeLink{IT::Flow-Darcy-LMH}{Flow{\_}Darcy{\_}LMH}}% 
-		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
 		\Descendant{\TypeLink{IT::Coupling-Iterative}{Coupling{\_}Iterative}}% 
 		\Descendant{\TypeLink{IT::Flow-Darcy-MH}{Flow{\_}Darcy{\_}MH}}% 
+		\Descendant{\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}% 
 \end{AbstractType}
 \begin{RecordType}
 	{IT::Flow-Darcy-LMH}
@@ -2491,6 +2491,746 @@ If true, then balance is calculated at each computational time step, which can s
 }}
 \end{SelectionType}
 \begin{RecordType}
+	{IT::Coupling-Iterative}
+	{Coupling{\_}Iterative}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Record with data for iterative coupling of flow and mechanics.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::max-it}
+			{max{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{100}}
+			{{{Maximal count of HM iterations.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::min-it}
+			{min{\_}it}
+			{{Integer [0, INT]}}{}
+			{ \ValueDefault{1}}
+			{{{Minimal count of HM iterations.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::a-tol}
+			{a{\_}tol}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0}}
+			{{{Absolute tolerance for difference in HM iteration.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::r-tol}
+			{r{\_}tol}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{1e-07}}
+			{{{Relative tolerance for difference in HM iteration.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::flow-equation}
+			{flow{\_}equation}
+			{{record: }\TypeLink{IT::Flow-Darcy-LMH}{Flow{\_}Darcy{\_}LMH}}{}
+			{ \it{Obligatory}}
+			{{{Flow equation, provides the velocity field as a result.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::mechanics-equation}
+			{mechanics{\_}equation}
+			{{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE}{Mechanics{\_}LinearElasticity{\_}FE}}{}
+			{ \it{Optional}}
+			{{{Mechanics, provides the displacement field.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Coupling-Iterative-Data}{Coupling{\_}Iterative:Data}}{}
+			{ \it{Obligatory}}
+			{{{Input fields of the HM coupling.}% 
+}}
+		\RecKey
+			{Coupling-Iterative::iteration-parameter}
+			{iteration{\_}parameter}
+			{{Double (-inf, +inf)}}{}
+			{ \ValueDefault{1}}
+			{{{Tuning parameter for iterative splitting.
+Its default value corresponds to a theoretically optimal value with fastest convergence.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Mechanics-LinearElasticity-FE}
+	{Mechanics{\_}LinearElasticity{\_}FE}
+	{}% implements
+	{}% reducible to key
+	{{{FEM for linear elasticity.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing balance.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \it{Obligatory}}
+			{{{Parameters of output stream.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::solver}
+			{solver}
+			{{record: }\TypeLink{IT::Petsc}{Petsc}}{}
+			{ \it{Obligatory}}
+			{{{Linear solver for elasticity.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE-Data}{Mechanics{\_}LinearElasticity{\_}FE:Data}}{}
+			{ \it{Obligatory}}
+			{{{Input fields of the equation.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Mechanics-LinearElasticity-FE-OutputFields}{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["displacement"]{\}}}}
+			{{{Setting of the field output.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::contact}
+			{contact}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Indicates the use of contact conditions on fractures.}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Mechanics-LinearElasticity-FE-Data}
+	{Mechanics{\_}LinearElasticity{\_}FE:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Mechanics{\_}LinearElasticity{\_}FE:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Elasticity-BC-Type}{Elasticity{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Type of boundary condition. }{$[-]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::bc-displacement}
+			{bc{\_}displacement}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed displacement on boundary. }{$[m]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::bc-traction}
+			{bc{\_}traction}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed traction on boundary. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::bc-stress}
+			{bc{\_}stress}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed stress on boundary. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::load}
+			{load}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed bulk load. }{$[m^{-3}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::young-modulus}
+			{young{\_}modulus}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Young's modulus. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::poisson-ratio}
+			{poisson{\_}ratio}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Poisson's ratio. }{$[-]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::fracture-sigma}
+			{fracture{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Coefficient of transfer of forces through fractures. }{$[-]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::initial-stress}
+			{initial{\_}stress}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial stress tensor. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::cross-section-min}
+			{cross{\_}section{\_}min}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Minimal cross-section of fractures. }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::lame-mu}
+			{lame{\_}mu}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field lame{\_}mu. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::lame-lambda}
+			{lame{\_}lambda}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field lame{\_}lambda. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE-Data::dirichlet-penalty}
+			{dirichlet{\_}penalty}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Field dirichlet{\_}penalty. }{$[m^{-1}kgs^{-2}]$}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::Elasticity-BC-Type}
+	{Elasticity{\_}BC{\_}Type}
+	{{{Types of boundary conditions for mechanics.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::displacement}
+			{displacement}
+			{{{Prescribed displacement.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::displacement-n}
+			{displacement{\_}n}
+			{{{Prescribed displacement in the normal direction to the boundary.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::traction}
+			{traction}
+			{{{Prescribed traction.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::stress}
+			{stress}
+			{{{Prescribed stress tensor.}% 
+}}
+\end{SelectionType}
+\begin{SelectionType}
+	{IT::Mechanics-LinearElasticity-FE-OutputFields}
+	{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}
+	{{{Selection of output fields for the Mechanics{\_}LinearElasticity{\_}FE model.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::load}
+			{load}
+			{{{}{$[m^{-3}kgs^{-2}]$}{ Input field: Prescribed bulk load.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::young-modulus}
+			{young{\_}modulus}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Young's modulus.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::poisson-ratio}
+			{poisson{\_}ratio}
+			{{{}{$[-]$}{ Input field: Poisson's ratio.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::fracture-sigma}
+			{fracture{\_}sigma}
+			{{{}{$[-]$}{ Input field: Coefficient of transfer of forces through fractures.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::initial-stress}
+			{initial{\_}stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Initial stress tensor.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::region-id}
+			{region{\_}id}
+			{{{}{$[-]$}{ Input field: }% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: }% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::cross-section-min}
+			{cross{\_}section{\_}min}
+			{{{}{$[m^{3-d}]$}{ Input field: Minimal cross-section of fractures.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::displacement}
+			{displacement}
+			{{{}{$[m]$}{ Displacement vector field output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::stress}
+			{stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Stress tensor output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}
+			{von{\_}mises{\_}stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ von Mises stress output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::mean-stress}
+			{mean{\_}stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ mean stress output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}
+			{cross{\_}section{\_}updated}
+			{{{}{$[m]$}{ Cross-section after deformation - output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}
+			{displacement{\_}divergence}
+			{{{}{$[-]$}{ Displacement divergence output.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::lame-mu}
+			{lame{\_}mu}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}mu.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::lame-lambda}
+			{lame{\_}lambda}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}lambda.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::dirichlet-penalty}
+			{dirichlet{\_}penalty}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field dirichlet{\_}penalty.}% 
+}}
+\end{SelectionType}
+\begin{RecordType}
+	{IT::Coupling-Iterative-Data}
+	{Coupling{\_}Iterative:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Coupling{\_}Iterative:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::biot-alpha}
+			{biot{\_}alpha}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Biot poroelastic coefficient. }{$[-]$}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::fluid-density}
+			{fluid{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Volumetric mass density of the fluid. }{$[m^{-3}kg]$}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Gravitational acceleration constant. }{$[ms^{-2}]$}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH}
+	{Flow{\_}Darcy{\_}MH}
+	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
+	{}% reducible to key
+	{{{Mixed-Hybrid  solver for saturated Darcy flow.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::time}
+			{time}
+			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Time governor setting.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::gravity}
+			{gravity}
+			{{array [3, 3] of }{Double (-inf, +inf)}}{}
+			{ \ValueDefault{[0, 0, -1]}}
+			{{{Vector of the gravity force.
+Dimensionless.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-MH-Data}{Flow{\_}Darcy{\_}MH{\_}Data}}{}
+			{ \it{Obligatory}}
+			{{{Input data for Darcy flow model.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::nonlinear-solver}
+			{nonlinear{\_}solver}
+			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Non-linear solver for MH problem.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-stream}
+			{output{\_}stream}
+			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Output stream settings.}\\{
+ Specify file format, precision etc.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output}
+			{output}
+			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
+			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
+			{{{Specification of output fields and output times.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::output-specific}
+			{output{\_}specific}
+			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
+			{ \it{Optional}}
+			{{{Output settings specific to Darcy flow model.}\\{
+Includes raw output and some experimental functionality.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::balance}
+			{balance}
+			{{record: }\TypeLink{IT::Balance}{Balance}}{}
+			{ \ValueDefault{{\{}{\}}}}
+			{{{Settings for computing mass balance.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::n-schurs}
+			{n{\_}schurs}
+			{{Integer [0, 2]}}{}
+			{ \ValueDefault{2}}
+			{{{Number of Schur complements to perform when solving MH system.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH::mortar-method}
+			{mortar{\_}method}
+			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
+			{ \ValueDefault{"None"}}
+			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
+}}
+\end{RecordType}
+\begin{RecordType}
+	{IT::Flow-Darcy-MH-Data}
+	{Flow{\_}Darcy{\_}MH{\_}Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Flow{\_}Darcy{\_}MH{\_}Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::anisotropy}
+			{anisotropy}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::cross-section}
+			{cross{\_}section}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::conductivity}
+			{conductivity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::sigma}
+			{sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Transition coefficient between dimensions. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::water-source-density}
+			{water{\_}source{\_}density}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Water source density. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-type}
+			{bc{\_}type}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{ \it{Optional}}
+			{{{Boundary condition type. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-pressure}
+			{bc{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-flux}
+			{bc{\_}flux}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-pressure}
+			{init{\_}pressure}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::storativity}
+			{storativity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::gravity}
+			{gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-gravity}
+			{bc{\_}gravity}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary gravity vector. }{$[-]$}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Initial condition for the pressure given as the piezometric head.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
+}}
+		\RecKey
+			{Flow-Darcy-MH-Data::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::Flow-Darcy-MH-OutputFields}
+	{Flow{\_}Darcy{\_}MH:OutputFields}
+	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::region-id}
+			{region{\_}id}
+			{{{}{$[-]$}{ Input field: Region ids.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::pressure-p0}
+			{pressure{\_}p0}
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
+			{piezo{\_}head{\_}p0}
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::velocity-p0}
+			{velocity{\_}p0}
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::flux}
+			{flux}
+			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::anisotropy}
+			{anisotropy}
+			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::cross-section}
+			{cross{\_}section}
+			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::conductivity}
+			{conductivity}
+			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::sigma}
+			{sigma}
+			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::water-source-density}
+			{water{\_}source{\_}density}
+			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::init-pressure}
+			{init{\_}pressure}
+			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::storativity}
+			{storativity}
+			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::gravity}
+			{gravity}
+			{{{}{$[-]$}{ Input field: Gravity vector.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-MH-OutputFields::init-piezo-head}
+			{init{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
+\end{SelectionType}
+\begin{RecordType}
 	{IT::Flow-Richards-LMH}
 	{Flow{\_}Richards{\_}LMH}
 	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
@@ -2911,710 +3651,6 @@ That will allow usage of different soil model in a single simulation.}%
 			{irmay}
 			{{{Irmay model for conductivity, Van Genuchten model for the water content.
 Suitable for bentonite.}% 
-}}
-\end{SelectionType}
-\begin{RecordType}
-	{IT::Coupling-Iterative}
-	{Coupling{\_}Iterative}
-	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
-	{}% reducible to key
-	{{{Record with data for iterative coupling of flow and mechanics.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::max-it}
-			{max{\_}it}
-			{{Integer [0, INT]}}{}
-			{ \ValueDefault{100}}
-			{{{Maximal count of HM iterations.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::min-it}
-			{min{\_}it}
-			{{Integer [0, INT]}}{}
-			{ \ValueDefault{1}}
-			{{{Minimal count of HM iterations.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::a-tol}
-			{a{\_}tol}
-			{{Double [0, +inf)}}{}
-			{ \ValueDefault{0}}
-			{{{Absolute tolerance for difference in HM iteration.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::r-tol}
-			{r{\_}tol}
-			{{Double [0, +inf)}}{}
-			{ \ValueDefault{1e-07}}
-			{{{Relative tolerance for difference in HM iteration.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor setting.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::flow-equation}
-			{flow{\_}equation}
-			{{record: }\TypeLink{IT::Flow-Richards-LMH}{Flow{\_}Richards{\_}LMH}}{}
-			{ \it{Obligatory}}
-			{{{Flow equation, provides the velocity field as a result.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::mechanics-equation}
-			{mechanics{\_}equation}
-			{{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE}{Mechanics{\_}LinearElasticity{\_}FE}}{}
-			{ \it{Optional}}
-			{{{Mechanics, provides the displacement field.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::input-fields}
-			{input{\_}fields}
-			{{array [0, UINT] of }{record: }\TypeLink{IT::Coupling-Iterative-Data}{Coupling{\_}Iterative:Data}}{}
-			{ \it{Obligatory}}
-			{{{Input fields of the HM coupling.}% 
-}}
-		\RecKey
-			{Coupling-Iterative::iteration-parameter}
-			{iteration{\_}parameter}
-			{{Double (-inf, +inf)}}{}
-			{ \ValueDefault{1}}
-			{{{Tuning parameter for iterative splitting.
-Its default value corresponds to a theoretically optimal value with fastest convergence.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::Mechanics-LinearElasticity-FE}
-	{Mechanics{\_}LinearElasticity{\_}FE}
-	{}% implements
-	{}% reducible to key
-	{{{FEM for linear elasticity.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor setting.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::balance}
-			{balance}
-			{{record: }\TypeLink{IT::Balance}{Balance}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Settings for computing balance.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::output-stream}
-			{output{\_}stream}
-			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
-			{ \it{Obligatory}}
-			{{{Parameters of output stream.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::solver}
-			{solver}
-			{{record: }\TypeLink{IT::Petsc}{Petsc}}{}
-			{ \it{Obligatory}}
-			{{{Linear solver for elasticity.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::input-fields}
-			{input{\_}fields}
-			{{array [0, UINT] of }{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE-Data}{Mechanics{\_}LinearElasticity{\_}FE:Data}}{}
-			{ \it{Obligatory}}
-			{{{Input fields of the equation.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE::output}
-			{output}
-			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Mechanics-LinearElasticity-FE-OutputFields}{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}}
-			{ \ValueDefault{{\{}"fields": ["displacement"]{\}}}}
-			{{{Setting of the field output.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::Mechanics-LinearElasticity-FE-Data}
-	{Mechanics{\_}LinearElasticity{\_}FE:Data}
-	{}% implements
-	{}% reducible to key
-	{{{Record to set fields of the equation.}\\{
-The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
-and after the time given by the key 'time'. The field setting can be overridden by}\\{
- any Mechanics{\_}LinearElasticity{\_}FE:Data record that comes later in the boundary data array.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::region}
-			{region}
-			{{array [1, UINT] of }{String}}{}
-			{ \it{Optional}}
-			{{{Labels of the regions where to set fields. }% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::rid}
-			{rid}
-			{{Integer [0, INT]}}{}
-			{ \it{Optional}}
-			{{{ID of the region where to set fields.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::time}
-			{time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Apply field setting in this record after this time.}\\{
-These times have to form an increasing sequence.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::bc-type}
-			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Elasticity-BC-Type}{Elasticity{\_}BC{\_}Type}}
-			{ \it{Optional}}
-			{{{Type of boundary condition. }{$[-]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::bc-displacement}
-			{bc{\_}displacement}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed displacement on boundary. }{$[m]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::bc-traction}
-			{bc{\_}traction}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed traction on boundary. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::bc-stress}
-			{bc{\_}stress}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed stress on boundary. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::load}
-			{load}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed bulk load. }{$[m^{-3}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::young-modulus}
-			{young{\_}modulus}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Young's modulus. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::poisson-ratio}
-			{poisson{\_}ratio}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Poisson's ratio. }{$[-]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::fracture-sigma}
-			{fracture{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Coefficient of transfer of forces through fractures. }{$[-]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::lame-mu}
-			{lame{\_}mu}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Field lame{\_}mu. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::lame-lambda}
-			{lame{\_}lambda}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Field lame{\_}lambda. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::dirichlet-penalty}
-			{dirichlet{\_}penalty}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Field dirichlet{\_}penalty. }{$[m^{-1}kgs^{-2}]$}% 
-}}
-\end{RecordType}
-\begin{SelectionType}
-	{IT::Elasticity-BC-Type}
-	{Elasticity{\_}BC{\_}Type}
-	{{{Types of boundary conditions for mechanics.}% 
-}}
-		\SelectionItem
-			{Elasticity-BC-Type::displacement}
-			{displacement}
-			{{{Prescribed displacement.}% 
-}}
-		\SelectionItem
-			{Elasticity-BC-Type::displacement-n}
-			{displacement{\_}n}
-			{{{Prescribed displacement in the normal direction to the boundary.}% 
-}}
-		\SelectionItem
-			{Elasticity-BC-Type::traction}
-			{traction}
-			{{{Prescribed traction.}% 
-}}
-		\SelectionItem
-			{Elasticity-BC-Type::stress}
-			{stress}
-			{{{Prescribed stress tensor.}% 
-}}
-\end{SelectionType}
-\begin{SelectionType}
-	{IT::Mechanics-LinearElasticity-FE-OutputFields}
-	{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}
-	{{{Selection of output fields for the Mechanics{\_}LinearElasticity{\_}FE model.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::load}
-			{load}
-			{{{}{$[m^{-3}kgs^{-2}]$}{ Input field: Prescribed bulk load.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::young-modulus}
-			{young{\_}modulus}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Young's modulus.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::poisson-ratio}
-			{poisson{\_}ratio}
-			{{{}{$[-]$}{ Input field: Poisson's ratio.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::fracture-sigma}
-			{fracture{\_}sigma}
-			{{{}{$[-]$}{ Input field: Coefficient of transfer of forces through fractures.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::region-id}
-			{region{\_}id}
-			{{{}{$[-]$}{ Input field: }% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::subdomain}
-			{subdomain}
-			{{{}{$[-]$}{ Input field: }% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::displacement}
-			{displacement}
-			{{{}{$[m]$}{ Displacement vector field output.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::stress}
-			{stress}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Stress tensor output.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}
-			{von{\_}mises{\_}stress}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ von Mises stress output.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}
-			{cross{\_}section{\_}updated}
-			{{{}{$[m]$}{ Cross-section after deformation - output.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}
-			{displacement{\_}divergence}
-			{{{}{$[-]$}{ Displacement divergence output.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::lame-mu}
-			{lame{\_}mu}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}mu.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::lame-lambda}
-			{lame{\_}lambda}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field lame{\_}lambda.}% 
-}}
-		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::dirichlet-penalty}
-			{dirichlet{\_}penalty}
-			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Field dirichlet{\_}penalty.}% 
-}}
-\end{SelectionType}
-\begin{RecordType}
-	{IT::Coupling-Iterative-Data}
-	{Coupling{\_}Iterative:Data}
-	{}% implements
-	{}% reducible to key
-	{{{Record to set fields of the equation.}\\{
-The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
-and after the time given by the key 'time'. The field setting can be overridden by}\\{
- any Coupling{\_}Iterative:Data record that comes later in the boundary data array.}% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::region}
-			{region}
-			{{array [1, UINT] of }{String}}{}
-			{ \it{Optional}}
-			{{{Labels of the regions where to set fields. }% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::rid}
-			{rid}
-			{{Integer [0, INT]}}{}
-			{ \it{Optional}}
-			{{{ID of the region where to set fields.}% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::time}
-			{time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Apply field setting in this record after this time.}\\{
-These times have to form an increasing sequence.}% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::biot-alpha}
-			{biot{\_}alpha}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Biot poroelastic coefficient. }{$[-]$}% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::fluid-density}
-			{fluid{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Volumetric mass density of the fluid. }{$[m^{-3}kg]$}% 
-}}
-		\RecKey
-			{Coupling-Iterative-Data::gravity}
-			{gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Gravitational acceleration constant. }{$[ms^{-2}]$}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::Flow-Darcy-MH}
-	{Flow{\_}Darcy{\_}MH}
-	{\TypeLink{IT::DarcyFlow}{DarcyFlow}}% implements
-	{}% reducible to key
-	{{{Mixed-Hybrid  solver for saturated Darcy flow.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::time}
-			{time}
-			{{record: }\TypeLink{IT::TimeGovernor}{TimeGovernor}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Time governor setting.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::gravity}
-			{gravity}
-			{{array [3, 3] of }{Double (-inf, +inf)}}{}
-			{ \ValueDefault{[0, 0, -1]}}
-			{{{Vector of the gravity force.
-Dimensionless.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::input-fields}
-			{input{\_}fields}
-			{{array [0, UINT] of }{record: }\TypeLink{IT::Flow-Darcy-MH-Data}{Flow{\_}Darcy{\_}MH{\_}Data}}{}
-			{ \it{Obligatory}}
-			{{{Input data for Darcy flow model.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::nonlinear-solver}
-			{nonlinear{\_}solver}
-			{{record: }\TypeLink{IT::NonlinearSolver}{NonlinearSolver}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Non-linear solver for MH problem.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::output-stream}
-			{output{\_}stream}
-			{{record: }\TypeLink{IT::OutputStream}{OutputStream}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Output stream settings.}\\{
- Specify file format, precision etc.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::output}
-			{output}
-			{{gen. record: }\TypeLink{IT::EquationOutput}{EquationOutput}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-OutputFields}{Flow{\_}Darcy{\_}MH:OutputFields}}
-			{ \ValueDefault{{\{}"fields": ["pressure{\_}p0", "velocity{\_}p0"]{\}}}}
-			{{{Specification of output fields and output times.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::output-specific}
-			{output{\_}specific}
-			{{gen. record: }\TypeLink{IT::Output-DarcyMHSpecific}{Output{\_}DarcyMHSpecific}}{{output{\_}field{\_}selection}{ = }\TypeLink{IT::Flow-Darcy-MH-specific-OutputFields}{Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}}
-			{ \it{Optional}}
-			{{{Output settings specific to Darcy flow model.}\\{
-Includes raw output and some experimental functionality.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::balance}
-			{balance}
-			{{record: }\TypeLink{IT::Balance}{Balance}}{}
-			{ \ValueDefault{{\{}{\}}}}
-			{{{Settings for computing mass balance.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::n-schurs}
-			{n{\_}schurs}
-			{{Integer [0, 2]}}{}
-			{ \ValueDefault{2}}
-			{{{Number of Schur complements to perform when solving MH system.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH::mortar-method}
-			{mortar{\_}method}
-			{{selection: }\TypeLink{IT::MH-MortarMethod}{MH{\_}MortarMethod}}{}
-			{ \ValueDefault{"None"}}
-			{{{Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::Flow-Darcy-MH-Data}
-	{Flow{\_}Darcy{\_}MH{\_}Data}
-	{}% implements
-	{}% reducible to key
-	{{{Record to set fields of the equation.}\\{
-The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
-and after the time given by the key 'time'. The field setting can be overridden by}\\{
- any Flow{\_}Darcy{\_}MH{\_}Data record that comes later in the boundary data array.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::region}
-			{region}
-			{{array [1, UINT] of }{String}}{}
-			{ \it{Optional}}
-			{{{Labels of the regions where to set fields. }% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::rid}
-			{rid}
-			{{Integer [0, INT]}}{}
-			{ \it{Optional}}
-			{{{ID of the region where to set fields.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::time}
-			{time}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{Apply field setting in this record after this time.}\\{
-These times have to form an increasing sequence.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::anisotropy}
-			{anisotropy}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::cross-section}
-			{cross{\_}section}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::conductivity}
-			{conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::sigma}
-			{sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Transition coefficient between dimensions. }{$[-]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::water-source-density}
-			{water{\_}source{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Water source density. }{$[s^{-1}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-type}
-			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
-			{ \it{Optional}}
-			{{{Boundary condition type. }{$[-]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-pressure}
-			{bc{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Prescribed pressure value on the boundary.
-Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-flux}
-			{bc{\_}flux}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Incoming water boundary flux.
-Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-robin-sigma}
-			{bc{\_}robin{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-switch-pressure}
-			{bc{\_}switch{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::init-pressure}
-			{init{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::storativity}
-			{storativity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::gravity}
-			{gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Gravity vector. }{$[-]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-gravity}
-			{bc{\_}gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Boundary gravity vector. }{$[-]$}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::init-piezo-head}
-			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Initial condition for the pressure given as the piezometric head.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-piezo-head}
-			{bc{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
-}}
-		\RecKey
-			{Flow-Darcy-MH-Data::bc-switch-piezo-head}
-			{bc{\_}switch{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
-}}
-\end{RecordType}
-\begin{SelectionType}
-	{IT::Flow-Darcy-MH-OutputFields}
-	{Flow{\_}Darcy{\_}MH:OutputFields}
-	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::subdomain}
-			{subdomain}
-			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::region-id}
-			{region{\_}id}
-			{{{}{$[-]$}{ Input field: Region ids.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::pressure-p0}
-			{pressure{\_}p0}
-			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
-			{piezo{\_}head{\_}p0}
-			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::velocity-p0}
-			{velocity{\_}p0}
-			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::flux}
-			{flux}
-			{{{}{$[ms^{-1}]$}{ Darcy flow flux.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::anisotropy}
-			{anisotropy}
-			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::cross-section}
-			{cross{\_}section}
-			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::conductivity}
-			{conductivity}
-			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::sigma}
-			{sigma}
-			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::water-source-density}
-			{water{\_}source{\_}density}
-			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::init-pressure}
-			{init{\_}pressure}
-			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::storativity}
-			{storativity}
-			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::gravity}
-			{gravity}
-			{{{}{$[-]$}{ Input field: Gravity vector.}% 
-}}
-		\SelectionItem
-			{Flow-Darcy-MH-OutputFields::init-piezo-head}
-			{init{\_}piezo{\_}head}
-			{{{}{$[m]$}{ Input field: Init piezo head.}% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -4364,7 +4400,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -4449,7 +4485,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}

@@ -280,7 +280,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 
 
 TYPED_TEST(FieldFix, set_mesh) {
-	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 0.0, this->my_domain_names);}, "Null; mesh pointer");
+	EXPECT_ASSERT_DEATH( {this->set(this->my_field_algo_base, 0.0, this->my_domain_names);}, "Null mesh pointer");
 
 	EXPECT_EQ(nullptr, this->shared_->mesh_);
 	this->set_mesh(*(this->my_mesh));

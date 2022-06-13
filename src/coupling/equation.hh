@@ -25,7 +25,6 @@
 #include <string>                                      // for basic_string
 #include <typeinfo>                                    // for type_info
 #include "input/accessors.hh"                          // for Record
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/asserts.hh"                           // for ASSERT_PERMANENT, ...
 #include "system/logger.hh"                            // for Logger, DebugOut

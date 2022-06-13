@@ -54,11 +54,12 @@
  *      which bounds the time step to very small values. Advection module can also compute sorption and dual porosity model (substance exchange between mobile and
  *      immobile pores.
  *
- * <b> Reactions. </b> There are two modules for simulation of chemical reactions. SEMCHEM module can solve nonlinear differential equations rising form
- *      general multicompoent reactiong systems. On the other side this is very costly and is suitable only for small meshes. The second chemical module
- *      is fast but can cope only with linear reactions, i.e. decays.
+ * <b> Reactions. </b> There is fast chemical module but can cope only with linear reactions. It allows to compute with different types of reactions: Radioactive decay,
+ *      Sorption, First order reaction and Dual porosity. 
  *
  * <b> Paralellism. </b> Both the water flow solver and transport solver can run in parallel on distributed memory systems. We use essentially PETSc and MPI libraries.
+ *
+ * <b> @ref assembly_process "Assembly Process" </b> All equations use effective assembly process. Detail description of individual steps and used classes.
  *
  * <h2> Main program modules </h2>
  *
@@ -84,29 +85,42 @@
  *
  * @page Authors
  *
- * Jan Březina - coordinator, parallelism, schur complements
+ * Active developers
+ * =================
+ * 
+ * Jan Březina - coordinator, Fields, Mesh, Richards
+ * 
+ * Jan Stebel - DG transport, Mechanics, HM coupling, fracture contacts
+ * 
+ * David Flanderka - new assembly algorithm, bug fixes, technical improvements
+ * 
+ * Pavel Exner - mesh intersections, tests, bug fixes
  *
- * Otto Severýn - original multidimensional flow
+ * 
+ * Contributors
+ * ============
+ * 
+ * Otto Severýn - first versions of multidimensional flow
  *
- * Milan Hokr - density driven flow
+ * Milan Hokr - density driven flow 
  *
- * Jiří Kopal - transport
+ * Jan Hybš - profiler, Python formaters, infrastructure
+ * 
+ * Jiří Kopal - FV transport
  *
- * Jiří Hnídek - GMASH and VTK output classes, infrastructure
+ * Jiří Hnídek - GMESH and VTK output classes, infrastructure
  *
  * Jiří Jeníček - JSON reader
  *
- * Lukáš Zedek - SEMCHEM interface, linear reactions
+ * Lukáš Zedek - projection algorithm for fast non-linear sorption, linear reactions
  *
- * Jakub Šístek - two level domain decomposition methods without overlap
+ * Jakub Šístek - two level domain decomposition method without overlap
  *
  * Dalibor Frydrich
  *
  * Jan Lisal
  *
  * Tomáš Bambuch - profiler class
- *
- * Michal Nekvasil - automatic builds and tests
  */
 
 /**

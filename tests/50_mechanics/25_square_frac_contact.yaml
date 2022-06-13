@@ -18,7 +18,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 1
 
-    flow_equation: !Flow_Richards_LMH
+    flow_equation: !Flow_Darcy_LMH
         input_fields:
           - region: BULK
             conductivity: 1
@@ -42,9 +42,10 @@ problem: !Coupling_Sequential
           fields:
             - displacement
             - stress
+            - cross_section_updated
             - region_id
         solver: !Petsc
-          options: -ksp_type preonly -pc_type lu
+        contact: true
         input_fields:
           - region: bulk
             young_modulus: 1
@@ -52,7 +53,7 @@ problem: !Coupling_Sequential
           - region: fracture
             young_modulus: 1e-6
             poisson_ratio: 0.25
-            fracture_sigma: 0.5001
+            cross_section_min: 0.01
 
           - region: .left_x
             bc_type: displacement

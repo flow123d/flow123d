@@ -235,7 +235,7 @@ void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
 template<unsigned int spacedim>
 void ElementValues<spacedim>::reinit(const Side & cell_side)
 {
-    ASSERT_EQ( dim_, cell_side.dim() );
+    ASSERT_EQ( dim_, cell_side.dim()+1 );
     data.side = cell_side;
     
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)

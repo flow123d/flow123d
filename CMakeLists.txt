@@ -131,11 +131,18 @@ include (Flow123d_config_header)
 message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
 if(FLOW_BUILD_TYPE STREQUAL "debug")
   # debug mode
-  set(CMAKE_CXX_FLAGS "-g -O0")
-  set(CMAKE_C_FLAGS "-g -O0")
+  # set(CMAKE_CXX_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
+  # set(CMAKE_C_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer")
+  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer")
   set(CMAKE_EXE_LINKER_FLAGS "-g ")
   set(CMAKE_BUILD_TYPE Debug)
-  flow_define(DEBUG)
+  
+  # Turn off profiler data for debug builds as it is useless anyway and PROFILER new/delete operators are in conflict with
+  # memory sanitizers.
+  flow_define(DEBUG_MESSAGES)
+  flow_define(DEBUG_ASSERTS)
+  #flow_define(DEBUG)
 elseif(FLOW_BUILD_TYPE STREQUAL "release")
   # Release mode
   set(CMAKE_CXX_FLAGS "-O3 -DNDEBUG" )
@@ -143,7 +150,7 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   set(CMAKE_BUILD_TYPE Release)
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-  flow_define(DEBUG_PROFILER)
+  #flow_define(DEBUG_PROFILER)
   flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
@@ -190,21 +197,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       # -Wvla - variable length arrays
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
--Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
--Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
+message(STATUS "COMPILER ID: ${CMAKE_CXX_COMPILER_ID}")
 ## Compiler-specific C++11 activation.
 ## It was replaced in commit a66193035 with C++14 specification.
 ## Needs special definition of trigonometric functions held in the comment below:
-# if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
-#     ...
-#     # Necessary for FParser - TODO: move to better place
-#     # ?? what about Clang
-#     flow_define(HAVE_SINCOS)
-# else()
-#     ...
-# endif()
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    -Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    -Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "CLang")
+    # TODO: CLang support in BParser
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    -Wno-enum-compare-switch -Wno-undefined-bool-conversion -Wno-dangling-field")
+    #-Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    #-Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+    # TODO: Update JSON library to submodule
+    # TODO: CLang support in BParser
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
+    ")
+    #-Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
+    #-Wno-vla -Wno-unused-local-typedefs -Wno-deprecated-declarations")
+
+endif()
 
 # set encoding of VTU output files to Little Endian, VTU files can be encoded in Little Endian or Big Endian format  
 flow_define(LITTLE_ENDIAN true)
@@ -458,6 +474,22 @@ message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
 message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
 message(STATUS "=======================================================\n\n")
 
+################################################################################
+#  PERMON_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== PERMON =========================================")
+message(STATUS "=======================================================")
+message(STATUS "PERMON_ROOT = ${PERMON_ROOT}")
+
+find_package(PERMON)
+if (PERMON_FOUND)
+    flow_define(HAVE_PERMON)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "PERMON_FOUND = ${PERMON_FOUND}")
+    message(STATUS "PERMON_INCLUDES = ${PERMON_INCLUDES}")
+    message(STATUS "PERMON_LIBRARY = ${PERMON_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+endif()
 
 ################################################################################
 #  BDDCML_FOUND - set to true if the library is found
@@ -682,6 +714,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
+    ${PERMON_INCLUDES}
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
     
@@ -691,8 +724,8 @@ include_directories(
     ${YamlCpp_INCLUDE_DIR}
     ${PugiXml_INCLUDE_DIR}
     ${Zlib_INCLUDE_DIR}
-    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
-    ${CMAKE_SOURCE_DIR}/src/dealii/include
+#    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
+#    ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
@@ -736,6 +769,7 @@ set_source_files_properties(${CONFIG_FILE_HEADER}
 # get git information also through configure phase
 set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 include(Flow123d_git_info)
+
 
 # version in reference manual
 STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})

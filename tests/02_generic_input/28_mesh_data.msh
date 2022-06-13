@@ -18,3 +18,20 @@ $ElementData
 5 0.5
 6 0.6
 $EndElementData
+
+$ElementData
+1
+"anisotropy"
+1
+0.0
+3
+0
+9
+6
+1 1 0 0 0 2 0 0 0 3
+2 1 0 0 0 4 0 0 0 9
+3 1 0 0 0 8 0 0 0 27
+4 1 0 0 0 16 0 0 0 81
+5 1 0 0 0 32 0 0 0 243
+6 1 0 0 0 64 0 0 0 729
+$EndElementData

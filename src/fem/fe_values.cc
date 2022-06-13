@@ -550,7 +550,7 @@ void FEValues<spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 template<unsigned int spacedim>
 void FEValues<spacedim>::reinit(const Side &cell_side)
 {
-    ASSERT_EQ( dim_, cell_side.dim() );
+    ASSERT_EQ( dim_, cell_side.dim()+1 );
     
     if (!elm_values->side().is_valid() || 
         elm_values->side() != cell_side)

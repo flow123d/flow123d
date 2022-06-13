@@ -214,15 +214,15 @@ public:
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guit = (m==1) ? mat_t(vec_view_side_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuit = (m==1) ? arma::trace(guit) : 0;
+                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
+                            double divuft = (m==0) ? arma::trace(guft) : 0;
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
                                      arma::dot(vf-vi,
                                       2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guit)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuit*nv
+                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
+                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
                                      )
                                      - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fe_values_sub_.JxW(k);
@@ -303,6 +303,7 @@ public:
         this->used_fields_ += eq_fields_->bc_displacement;
         this->used_fields_ += eq_fields_->bc_traction;
         this->used_fields_ += eq_fields_->bc_stress;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -366,6 +367,7 @@ public:
                 local_rhs_[i] += (
                                  arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
                                  -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
+                                 -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
                                 )*eq_fields_->cross_section(p)*fe_values_.JxW(k);
             ++k;
         }
@@ -401,7 +403,20 @@ public:
         // local_flux_balance_vector.assign(n_dofs_, 0);
         // local_flux_balance_rhs = 0;
 
-        unsigned int k=0;
+        unsigned int k = 0;
+
+        // addtion from initial stress
+        for (auto p : this->boundary_points(cell_side) )
+        {
+            for (unsigned int i=0; i<n_dofs_; i++)
+                local_rhs_[i] += eq_fields_->cross_section(p) *
+                        arma::dot(( eq_fields_->initial_stress(p) * fe_values_bdr_side_.normal_vector(k)),
+                                    vec_view_bdr_->value(i,k)) *
+                        fe_values_bdr_side_.JxW(k);
+            ++k;
+        }
+
+        k = 0;
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
@@ -565,6 +580,7 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -589,6 +605,7 @@ public:
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
         output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
+        output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
     }
@@ -611,7 +628,7 @@ public:
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
-        arma::mat33 stress = arma::zeros(3,3);
+        arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
@@ -622,12 +639,14 @@ public:
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
         double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+        double mean_stress = arma::trace(stress) / 3;
         output_div_vec_.add(dof_indices_scalar_[0], div);
 
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<3; j++)
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
         output_von_mises_stress_vec_.set( dof_indices_scalar_[0], von_mises_stress );
+        output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
 
         output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
     }
@@ -695,8 +714,117 @@ private:
     VectorMPI output_vec_;
     VectorMPI output_stress_vec_;
     VectorMPI output_von_mises_stress_vec_;
+    VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+
+/**
+ * Container class for assembly of constraint matrix for contact condition.
+ */
+template <unsigned int dim>
+class ConstraintAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqFields EqFields;
+    typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
+
+    /// Constructor.
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::coupling;
+        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->cross_section_min;
+    }
+
+    /// Destructor.
+    ~ConstraintAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fe_values_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_side_JxW_values | update_normal_vectors);
+
+        n_dofs_ = fe_->n_dofs();
+        dof_indices_.resize(n_dofs_);
+        local_matrix_.resize(n_dofs_*n_dofs_);
+        vec_view_side_ = &fe_values_side_.vector_view(0);
+    }
+
+
+    /// Assembles between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    	if (dim == 1) return;
+        if (!cell_lower_dim.is_own()) return;
+        
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+		cell_higher_dim.get_dof_indices(dof_indices_);
+
+		fe_values_side_.reinit(neighb_side.side());
+
+        for (unsigned int i=0; i<n_dofs_; i++)
+            local_matrix_[i] = 0;
+
+        // Assemble matrix and vector for contact conditions in the form B*x <= c,
+        // where B*x is the average jump of normal displacements and c is the average cross-section on element.
+        // Positive value means that the fracture closes.
+        unsigned int k=0;
+        double local_vector = 0;
+        for (auto p_high : this->coupling_points(neighb_side) )
+        {
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+            arma::vec3 nv = fe_values_side_.normal_vector(k);
+
+            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+
+            for (unsigned int i=0; i<n_dofs_; i++)
+            {
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
+            }
+        	k++;
+        }
+
+        int arow[1] = { eq_data_->constraint_idx[cell_lower_dim.elm_idx()] };
+        MatSetValues(eq_data_->constraint_matrix, 1, arow, n_dofs_, dof_indices_.data(), &(local_matrix_[0]), ADD_VALUES);
+        VecSetValue(eq_data_->constraint_vec, arow[0], local_vector, ADD_VALUES);
+    }
+
+
+
+private:
+
+
+
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    FEValues<3> fe_values_side_;                              ///< FEValues of side object
+
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
+    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

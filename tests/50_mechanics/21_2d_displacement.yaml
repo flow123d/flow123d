@@ -19,7 +19,7 @@ problem: !Coupling_Sequential
     a_tol: 1e-15
     r_tol: 1e-12
 
-    flow_equation: !Flow_Richards_LMH
+    flow_equation: !Flow_Darcy_LMH
         input_fields:
           - region: BULK
             conductivity: 1

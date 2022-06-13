@@ -28,6 +28,7 @@
 #include "fem/fe_system.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
+#include "la/linsys_PERMON.hh"
 #include "coupling/balance.hh"
 #include "mesh/neighbours.h"
 #include "coupling/generic_assembly.hh"
@@ -65,6 +66,7 @@ const Record & Elasticity::get_input_type() {
                 EqFields().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
+           .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
 		   .close();
 }
 
@@ -186,6 +188,13 @@ Elasticity::EqFields::EqFields()
             .input_default("1.0")
             .flags_add(in_main_matrix & in_rhs);
 
+    *this+=initial_stress
+        .name("initial_stress")
+        .description("Initial stress tensor.")
+        .units( UnitSI().Pa() )
+        .input_default("0.0")
+        .flags_add(in_rhs);
+
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
@@ -198,6 +207,12 @@ Elasticity::EqFields::EqFields()
       .name("cross_section")
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
+    
+    *this+=cross_section_min
+      .name("cross_section_min")
+      .description("Minimal cross-section of fractures.")
+      .units( UnitSI().m(3).md() )
+      .input_default("0.0");
       
     *this+=potential_load
       .name("potential_load")
@@ -222,6 +237,12 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
+    *this += output_mean_stress
+            .name("mean_stress")
+            .description("mean stress output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
     *this += output_cross_section
             .name("cross_section_updated")
             .description("Cross-section after deformation - output.")
@@ -284,6 +305,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  input_rec(in_rec),
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
+          constraint_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -349,6 +371,10 @@ void Elasticity::initialize()
     // setup output von Mises stress
     eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
+
+    // setup output mean stress
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
     eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
@@ -374,10 +400,37 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    LinSys_PETSC *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+    LinSys *ls;
+    has_contact_ = input_rec.val<bool>("contact");
+    if (has_contact_) {
+#ifndef FLOW123D_HAVE_PERMON
+        ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
+#endif //FLOW123D_HAVE_PERMON
+        ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
+
+        // allocate constraint matrix and vector
+        unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
+        for (auto cell : eq_data_->dh_->own_range())
+            if (cell.elm()->n_neighs_vb() > 0)
+                n_own_constraints++;
+        unsigned int n_constraints = 0; // count all cells with neighbours
+        for (auto elm : mesh_->elements_range())
+            if (elm->n_neighs_vb() > 0)
+                eq_data_->constraint_idx[elm.idx()] = n_constraints++;
+        unsigned int nnz = eq_data_->dh_->ds()->fe()[1_d]->n_dofs()*mesh_->max_edge_sides(1) +
+                        eq_data_->dh_->ds()->fe()[2_d]->n_dofs()*mesh_->max_edge_sides(2) +
+                        eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
+        MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
+        VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
+        ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+
+        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    } else {
+        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
+    }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
-    ls->set_initial_guess_nonzero();
     eq_data_->ls = ls;
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
@@ -397,6 +450,7 @@ Elasticity::~Elasticity()
 
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
+    if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -407,24 +461,28 @@ Elasticity::~Elasticity()
 
 void Elasticity::update_output_fields()
 {
-    // update ghost values of solution vector
+    eq_fields_->set_time(time_->step(), LimitSide::right);
+    
+    // update ghost values of solution vector and prepare dependent fields
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_stress_ptr->vec().zero_entries();
+	eq_fields_->output_cross_section_ptr->vec().zero_entries();
+	eq_fields_->output_div_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
-	eq_fields_->output_stress_ptr->vec().zero_entries();
-	eq_fields_->output_cross_section_ptr->vec().zero_entries();
-	eq_fields_->output_div_ptr->vec().zero_entries();
     output_fields_assembly_->assemble(eq_data_->dh_);
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
 }
 
@@ -470,6 +528,9 @@ void Elasticity::preallocate()
 	eq_data_->ls->start_allocation();
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
+
+    if (has_contact_)
+        assemble_constraint_matrix();
 }
 
 
@@ -566,4 +627,17 @@ void Elasticity::calculate_cumulative_balance()
 //         balance_->calculate_cumulative(subst_idx, eq_data_->ls->get_solution());
 //     }
 }
+
+
+void Elasticity::assemble_constraint_matrix()
+{
+    MatZeroEntries(eq_data_->constraint_matrix);
+    VecZeroEntries(eq_data_->constraint_vec);
+    constraint_assembly_->assemble(eq_data_->dh_);
+    MatAssemblyBegin(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
+    VecAssemblyBegin(eq_data_->constraint_vec);
+    VecAssemblyEnd(eq_data_->constraint_vec);
+}
+
 
