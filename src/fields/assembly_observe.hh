@@ -123,10 +123,7 @@ private:
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
-    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object
-    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
-    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
 };
 
