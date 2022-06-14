@@ -17,7 +17,6 @@
 #include "fields/field_values.hh"  // for FieldValue, FieldValue<>::Scalar
 #include "io/output_time_set.hh"   // for OutputTimeSet
 #include "io/output_mesh.hh"
-#include "io/observe.hh"
 #include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
 #include "tools/time_marks.hh"     // for TimeMark, TimeMark::Type
 
@@ -95,21 +94,6 @@ public:
      * Performs output of the fields marked for output in the time @param step.
      */
     void output(TimeStep step);
-
-    /// Getter for set of observe fields.
-    inline const std::unordered_set<string> &observe_fields() const {
-        return observe_fields_;
-    }
-
-    /// Getter for OutputTime object.
-    inline std::shared_ptr<OutputTime> output_stream() {
-        return stream_;
-    }
-
-    /// Getter for OutputTime object.
-    inline Mesh *eq_mesh() {
-        return mesh_;
-    }
 
     /// Selects the error control field out of output field set according to input record.
     typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
