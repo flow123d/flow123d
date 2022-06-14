@@ -27,29 +27,6 @@
 #include "io/observe.hh"
 
 
-/// Holds data of one eval point on patch (index of element and local coordinations).
-struct PatchPointData {
-    /// Default constructor
-    PatchPointData() {}
-
-    /// Constructor with data mebers initialization
-    PatchPointData(unsigned int elm_idx, arma::vec loc_coords)
-    : elem_idx(elm_idx), local_coords(loc_coords), i_quad(0), i_quad_point(0) {}
-
-    /// Copy constructor
-    PatchPointData(const PatchPointData &other)
-    : elem_idx(other.elem_idx), local_coords(other.local_coords),
-      i_quad(other.i_quad), i_quad_point(other.i_quad_point) {}
-
-    unsigned int elem_idx;        ///< Index of element
-    arma::vec local_coords;       ///< Local coords of point
-    unsigned int i_reg;           ///< Index of region (use during patch creating)
-    unsigned int i_quad;          ///< Index of quadrature (use during patch creating), i_quad = dim-1
-    unsigned int i_quad_point;    ///< Index of point in quadrature (use during patch creating)
-};
-typedef std::vector<PatchPointData> PatchPointVec;
-
-
 /**
  * @brief Generic class of observe output assemblation.
  *
@@ -64,9 +41,9 @@ class GenericAssemblyObserve : public GenericAssemblyBase
 {
 public:
     /// Constructor
-    GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data,
-            const std::unordered_set<string> &observe_fields_list)
-    : multidim_assembly_(eq_fields, eq_data, observe_fields_list), bulk_integral_data_(20, 10)
+    GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
+            std::shared_ptr<Observe> observe)
+    : multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
     {
         eval_points_ = std::make_shared<EvalPoints>();
         multidim_assembly_[1_d]->create_observe_integrals(eval_points_, integrals_);
@@ -93,7 +70,7 @@ public:
         START_TIMER( DimAssembly<1>::name() );
 
         unsigned int i_ep, subset_begin, subset_idx;
-        auto &patch_point_data = multidim_assembly_[1_d]->eq_data_->patch_point_data();
+        auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
             subset_idx = integrals_.bulk_[p_data.i_quad]->get_subset_idx();
         	subset_begin = eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
@@ -125,6 +102,7 @@ private:
     }
 
     MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
+    std::shared_ptr<Observe> observe_;                            ///< Shared Observe object.
     RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
 };
 
@@ -134,13 +112,12 @@ class AssemblyObserveOutput : public AssemblyBase<dim>
 {
 public:
     typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
 
     static constexpr const char * name() { return "AssemblyObserveOutput"; }
 
     /// Constructor.
-    AssemblyObserveOutput(EqFields *eq_fields, EqData *eq_data, const std::unordered_set<string> &observe_fields_list)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe)
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), observe_(observe) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 
@@ -167,7 +144,7 @@ public:
             element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
             auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
             field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
-            val_idx = ObservePointAccessor(eq_data_->output_stream()->observe( eq_data_->eq_mesh() ).get(), i).loc_point_time_index();
+            val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
         }
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
@@ -180,7 +157,7 @@ public:
     void create_observe_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
         std::vector<arma::vec> reg_points;
 
-        auto &patch_point_data = eq_data_->patch_point_data();
+        auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
             auto el_acc = eq_fields_->mesh()->element_accessor(p_data.elem_idx);
             if (el_acc.dim()!=dim) continue;
@@ -209,7 +186,7 @@ private:
 
     /// Data objects shared with EquationOutput
     EqFields *eq_fields_;
-    EqData *eq_data_;
+    Observe *observe_;
 
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
     std::vector<int> offsets_;                                ///< Holds indices (offsets) of cached data to output data vector

@@ -384,6 +384,11 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array,
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_array)
         output_header();
     }
+
+    // Create vector of observe data on patch
+    for (ObservePointAccessor op_acc : this->local_range()) {
+        patch_point_data_.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords());
+    }
 }
 
 Observe::~Observe() {
