@@ -157,7 +157,7 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
     output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
     output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
     output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
-    observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this);
+    observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this, this->observe_fields_);
 }
 
 
