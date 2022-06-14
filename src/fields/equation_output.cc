@@ -149,10 +149,15 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	    dh_node_->distribute_dofs(ds);
     }
 
-	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
-	output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
-	output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
-	observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this);
+    auto observe_ptr = stream_->observe( mesh_ );
+    for (ObservePointAccessor op_acc : observe_ptr->local_range()) {
+        patch_point_data_.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords());
+    }
+
+    output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
+    output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this);
 }
 
 

@@ -147,14 +147,6 @@ public:
             auto found_field = eq_fields_->field(observe_field);
             used_fields_ += *found_field;
         }
-
-        if (dim==1) {
-            auto observe_ptr = eq_data_->output_stream()->observe( eq_data_->eq_mesh() );
-            auto &patch_point_data = eq_data_->patch_point_data();
-            for (ObservePointAccessor op_acc : observe_ptr->local_range()) {
-                patch_point_data.emplace_back(op_acc.observe_point().element_idx(), op_acc.observe_point().local_coords());
-            }
-        }
     }
 
     /// Destructor.
