@@ -441,13 +441,6 @@ public:
     virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) =0;
 
     /**
-     * Perform the observe output of the field.
-     * The Observe object passed by the parameter is called with the particular Field<> as the parameter
-     * to evaluate the field in observation points and store the values in the OutputData arrays.
-     */
-    virtual void observe_output(std::shared_ptr<Observe> observe) =0;
-
-    /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
     virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const =0;

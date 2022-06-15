@@ -252,11 +252,6 @@ public:
     void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
-     * Implementation of FieldCommonBase::observe_output().
-     */
-    void observe_output(std::shared_ptr<Observe> observe) override;
-
-    /**
      * Returns true, if field is currently set to a time in which it is discontinuous.
      */
     //bool is_jump_time();
