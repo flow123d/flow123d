@@ -57,7 +57,7 @@ const Record & Elasticity::get_input_type() {
                     "Parameters of output stream.")
            .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
-           .declare_key("user_fields", Array(Elasticity::EqFields().get_user_field(equation_name)),
+           .declare_key("user_fields", Array(Elasticity::EqFields().make_user_field_type(equation_name)),
                 IT::Default::optional(),
                 "Input fields of the equation defined by user.")
 		   .declare_key("input_fields", Array(
@@ -401,7 +401,7 @@ void Elasticity::initialize()
     // read optional user fields
     Input::Array user_fields_arr;
     if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->set_user_fields_map(user_fields_arr);
+       	eq_fields_->init_user_fields(user_fields_arr, time_->step());
     }
 
     // equation default PETSc solver options

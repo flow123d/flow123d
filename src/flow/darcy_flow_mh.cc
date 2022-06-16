@@ -156,9 +156,9 @@ const it::Record & DarcyMH::get_input_type() {
         .copy_keys(EquationBase::record_template())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
-        .declare_key("user_fields", it::Array(DarcyMH::EqFields().get_user_field(equation_name())),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
+//        .declare_key("user_fields", it::Array(DarcyMH::EqFields().make_user_field_type(equation_name())),
+//                IT::Default::optional(),
+//                "Input fields of the equation defined by user.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default("{}"),
@@ -459,10 +459,10 @@ void DarcyMH::init_eq_data()
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
     // read optional user fields
-    Input::Array user_fields_arr;
-    if (input_record_.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->set_user_fields_map(user_fields_arr);
-    }
+//    Input::Array user_fields_arr;
+//    if (input_record_.opt_val("user_fields", user_fields_arr)) {
+//       	eq_fields_->init_user_fields(user_fields_arr, time_->step());
+//    }
 
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {

@@ -83,7 +83,7 @@ const Record & TransportDG<Model>::get_input_type() {
                 "Solver for the linear system.")
         .declare_key("user_fields", Array(
                 TransportDG<Model>::EqFields()
-                    .get_user_field(equation_name)),
+                    .make_user_field_type(equation_name)),
                 IT::Default::optional(),
                 "Input fields of the equation defined by user.")
         .declare_key("input_fields", Array(
@@ -348,7 +348,7 @@ void TransportDG<Model>::initialize()
 
     Input::Array user_fields_arr;
     if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->set_user_fields_map(user_fields_arr);
+       	eq_fields_->init_user_fields(user_fields_arr, Model::time_->step());
     }
 }
 
