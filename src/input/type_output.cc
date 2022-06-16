@@ -441,7 +441,7 @@ void OutputText::print_impl(ostream& stream, const FileName *type) {
 
 
 void OutputText::print_impl(FMT_UNUSED ostream& stream, FMT_UNUSED const Parameter *type) {
-	ASSERT_DBG(false).error("Parameter appears in the IST. Check where Instance is missing.");
+	ASSERT(false).error("Parameter appears in the IST. Check where Instance is missing.");
 }
 
 

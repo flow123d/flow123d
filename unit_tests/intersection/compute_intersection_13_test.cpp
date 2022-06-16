@@ -92,7 +92,7 @@ void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
     IntersectionAux<1,3> is(0,1);
-    ComputeIntersection<1,3> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
+    ComputeIntersection<1,3> CI(mesh->element_accessor(0), mesh->element_accessor(1));
     CI.init();
     CI.compute(is);
     

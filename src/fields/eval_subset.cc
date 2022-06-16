@@ -67,7 +67,7 @@ CouplingIntegral::CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, 
  : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()),
    edge_integral_(edge_integral), bulk_integral_(bulk_integral)
 {
-    ASSERT_EQ_DBG(edge_integral->dim(), bulk_integral->dim());
+    ASSERT_EQ(edge_integral->dim()-1, bulk_integral->dim());
 }
 
 CouplingIntegral::~CouplingIntegral()

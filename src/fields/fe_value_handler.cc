@@ -40,7 +40,7 @@ public:
 
 	inline static typename Value::return_type fe_value(FEValues<spacedim> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		ASSERT(false).error("Unsupported format of FieldFE!\n");
+		ASSERT_PERMANENT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
 		Value val(ret);
 		val.zeros();

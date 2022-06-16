@@ -25,9 +25,8 @@
 #include <string>                                      // for basic_string
 #include <typeinfo>                                    // for type_info
 #include "input/accessors.hh"                          // for Record
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/asserts.hh"                           // for ASSERT_PERMANENT, ...
 #include "system/logger.hh"                            // for Logger, DebugOut
 #include "tools/time_governor.hh"                      // for TimeGovernor
 #include "tools/time_marks.hh"                         // for TimeMark, Time...
@@ -148,7 +147,7 @@ public:
      */
     inline TimeGovernor &time()
     {
-    	OLD_ASSERT( time_,"Time governor was not created.\n");
+    	ASSERT_PTR( time_ ).error("Time governor was not created.\n");
         return *time_;
     }
 
@@ -166,10 +165,12 @@ public:
         { return time_->estimate_time(); }
 
     /**
-     * Time of actual solution returned by get_solution_vector().
+     * Time until which the actual solution is valid.
+     * By default, it returns the actual time of the time governor.
+     * However, it can be overriden by a specific equation.
+     * E.g. it differs in Darcy flow in the steady case.
      */
-    inline double solved_time()
-        { return time_->t(); }
+    virtual double solved_time();
 
     /**
      * This getter method provides the computational mesh currently used by the model.
@@ -201,7 +202,7 @@ public:
      */
     FieldSet &eq_fieldset()
     {
-    	OLD_ASSERT(eq_fieldset_, "The equation %s did not set eq_fieldset_ pointer.\n", input_record_.address_string().c_str());
+    	ASSERT_PTR(eq_fieldset_)(input_record_.address_string()).error("The equation did not set eq_fieldset_ pointer.\n");
     	return *eq_fieldset_;
     }
 

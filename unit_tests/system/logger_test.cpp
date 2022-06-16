@@ -119,9 +119,9 @@ TEST(FealAssert, warning) {
 
 	std::string s1 = "feal";
     std::string s2 = "assert";
-    FEAL_ASSERT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
+    FEAL_ASSERT_PERMANENT(s1.empty() && s2.empty())(s1)(s2).warning("Strings must be empty.");
 
-    // shorter version of macro - "ASSERT" - is not in conflict with external library
-    ASSERT(0).warning("Zero value.");
+    // shorter version of macro - "ASSERT_PERMANENT" - is not in conflict with external library
+    ASSERT_PERMANENT(0).warning("Zero value.");
 
 }

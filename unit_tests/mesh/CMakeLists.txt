@@ -43,3 +43,4 @@ add_test_directory("${libs}")
     define_test(range)
     define_mpi_test(mesh_optimization 1)
 
+    define_mpi_test(bcmesh 1)

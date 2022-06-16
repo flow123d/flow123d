@@ -125,7 +125,7 @@ public:
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
@@ -172,7 +172,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
@@ -214,15 +214,15 @@ public:
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guit = (m==1) ? mat_t(vec_view_side_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuit = (m==1) ? arma::trace(guit) : 0;
+                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
+                            double divuft = (m==0) ? arma::trace(guft) : 0;
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
                                      arma::dot(vf-vi,
                                       2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guit)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuit*nv
+                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
+                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
                                      )
                                      - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fe_values_sub_.JxW(k);
@@ -302,6 +302,8 @@ public:
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->bc_displacement;
         this->used_fields_ += eq_fields_->bc_traction;
+        this->used_fields_ += eq_fields_->bc_stress;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -365,6 +367,7 @@ public:
                 local_rhs_[i] += (
                                  arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
                                  -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
+                                 -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
                                 )*eq_fields_->cross_section(p)*fe_values_.JxW(k);
             ++k;
         }
@@ -384,7 +387,7 @@ public:
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-    	ASSERT_EQ_DBG(cell_side.dim(), dim).error("Dimension of element mismatch!");
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
@@ -400,7 +403,20 @@ public:
         // local_flux_balance_vector.assign(n_dofs_, 0);
         // local_flux_balance_rhs = 0;
 
-        unsigned int k=0;
+        unsigned int k = 0;
+
+        // addtion from initial stress
+        for (auto p : this->boundary_points(cell_side) )
+        {
+            for (unsigned int i=0; i<n_dofs_; i++)
+                local_rhs_[i] += eq_fields_->cross_section(p) *
+                        arma::dot(( eq_fields_->initial_stress(p) * fe_values_bdr_side_.normal_vector(k)),
+                                    vec_view_bdr_->value(i,k)) *
+                        fe_values_bdr_side_.JxW(k);
+            ++k;
+        }
+
+        k = 0;
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
@@ -466,7 +482,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
@@ -564,6 +580,7 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->initial_stress;
     }
 
     /// Destructor.
@@ -588,6 +605,7 @@ public:
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
         output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
+        output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
         output_displ_jump_vec_ = eq_fields_->output_displ_jump_ptr->vec();
@@ -611,7 +629,7 @@ public:
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
-        arma::mat33 stress = arma::zeros(3,3);
+        arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
@@ -622,12 +640,14 @@ public:
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
         double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+        double mean_stress = arma::trace(stress) / 3;
         output_div_vec_.add(dof_indices_scalar_[0], div);
 
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<3; j++)
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
         output_von_mises_stress_vec_.set( dof_indices_scalar_[0], von_mises_stress );
+        output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
 
         output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
     }
@@ -636,7 +656,7 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         normal_displacement_ = 0;
         normal_stress_.zeros();
@@ -707,6 +727,7 @@ private:
     VectorMPI output_vec_;
     VectorMPI output_stress_vec_;
     VectorMPI output_von_mises_stress_vec_;
+    VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
     VectorMPI output_displ_jump_vec_;
@@ -763,7 +784,9 @@ public:
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
-        ASSERT_EQ_DBG(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (!cell_lower_dim.is_own()) return;
+        
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(dof_indices_);
@@ -786,18 +809,15 @@ public:
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = fe_values_side_.normal_vector(k);
 
-            if (cell_lower_dim.is_own())
-            {
-                arma::vec3 u = eq_fields_->output_displacement_jump(p_low);
-                arma::vec3 ut = u-arma::dot(u,normal_vector_ref)*normal_vector_ref;
-                double contact_distance = eq_fields_->cross_section_min(p_low)
-                                        + std::min(eq_fields_->roughness_height(p_low), tan(eq_fields_->roughness_angle(p_low))*arma::norm(ut,2));
-                local_vector += (eq_fields_->cross_section(p_low) - contact_distance)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
-            }
+            arma::vec3 u = eq_fields_->output_displacement_jump(p_low);
+            arma::vec3 ut = u-arma::dot(u,normal_vector_ref)*normal_vector_ref;
+            double contact_distance = eq_fields_->cross_section_min(p_low)
+                                    + std::min(eq_fields_->roughness_height(p_low), tan(eq_fields_->roughness_angle(p_low))*arma::norm(ut,2));
+            local_vector += (eq_fields_->cross_section(p_low) - contact_distance)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
             }
         	k++;
         }

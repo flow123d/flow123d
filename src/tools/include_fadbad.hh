@@ -5,8 +5,8 @@
     #undef ASSERT
 #endif
 
-#ifdef ASSERT_DBG
-    #undef ASSERT_DBG
+#ifdef ASSERT_PERMANENT
+    #undef ASSERT_PERMANENT
 #endif
 
 #include "fadbad.h"
@@ -18,11 +18,11 @@
 #ifdef ASSERT
     #undef ASSERT
 #endif
-#ifdef ASSERT_DBG
-    #undef ASSERT_DBG
+#ifdef ASSERT_PERMANENT
+    #undef ASSERT_PERMANENT
 #endif
 
 // define our asserts as in: 
 // #include "system/asserts.hh"
 #define ASSERT( expr) FEAL_ASSERT( expr)
-#define ASSERT_DBG( expr) FEAL_ASSERT_DBG( expr)
+#define ASSERT_PERMANENT( expr) FEAL_ASSERT_PERMANENT( expr)

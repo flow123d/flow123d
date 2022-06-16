@@ -143,7 +143,7 @@ TEST_F( OutputTest, test_create_output_stream ) {
     OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
     /* Make sure that there are 3 OutputTime instances */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
 
     /* The name of instance has to be equal to configuration file:
@@ -172,7 +172,7 @@ TEST( OutputTest, find_outputstream_by_name ) {
     Input::ReaderToStorage reader_3(output_stream3, OutputTime::get_input_type(), Input::FileFormat::format_JSON);
     auto os_3 = OutputTime::output_stream(reader_3.get_root_interface<Input::Record>());
 
-    //ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    //ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     //std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
     //OutputTime *output_time = *output_iter;
@@ -227,6 +227,12 @@ public:
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
+        // create output mesh identical to computational mesh
+        output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
+        output_mesh_->create_sub_mesh();
+        output_mesh_->make_serial_master_mesh();
+        this->set_output_data_caches(output_mesh_);
+
 	}
 	virtual ~TestOutputTime() {
 	    delete my_mesh;
@@ -237,11 +243,12 @@ public:
 
 
 	// test_compute_field_data
-	template <class FieldType>
-	void test_compute_field_data(string init, string result) {
+	template <int spacedim, class Value>
+	void test_compute_field_data(string init, string result, string rval) {
+	    typedef typename Value::element_type ElemType;
 
-		// make field init it form the init string
-	    FieldType field("test_field", false); // bulk field
+	    // make field init it form the init string
+	    Field<spacedim, Value> field("test_field", false); // bulk field
 		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);
@@ -250,20 +257,19 @@ public:
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
         
-        // create output mesh identical to computational mesh
-        auto output_mesh = std::make_shared<OutputMesh>(*my_mesh);
-        output_mesh->create_sub_mesh();
-        output_mesh->make_serial_master_mesh();
-        this->set_output_data_caches(output_mesh);
-        
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
         //this->output_mesh_discont_->create_sub_mesh();
         //this->output_mesh_discont_->make_serial_master_mesh();
         
 		{
-    	    auto output_types = OutputTime::empty_discrete_flags();
-    	    output_types[OutputTime::ELEM_DATA] = true;
-        	field.compute_field_data(output_types, shared_from_this());
+            field.set_output_data_cache(OutputTime::ELEM_DATA, shared_from_this());
+            auto output_cache_base = this->prepare_compute_data<ElemType>("test_field", OutputTime::ELEM_DATA,
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            std::shared_ptr<ElementDataCache<ElemType>> output_data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+            arma::mat ret_value(rval);
+            for (uint i=0; i<output_data_cache->n_values(); ++i)
+                output_data_cache->store_value(i, ret_value.memptr() );
+
         	this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
@@ -276,9 +282,14 @@ public:
 		}
 
 		{
-		    auto output_types = OutputTime::empty_discrete_flags();
-		    output_types[OutputTime::NODE_DATA] = true;
-			field.compute_field_data(output_types, shared_from_this());
+            field.set_output_data_cache(OutputTime::NODE_DATA, shared_from_this());
+            auto output_cache_base = this->prepare_compute_data<ElemType>("test_field", OutputTime::NODE_DATA,
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            std::shared_ptr<ElementDataCache<ElemType>> output_data_cache = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+            arma::mat ret_value(rval);
+            for (uint i=0; i<output_data_cache->n_values(); ++i)
+                output_data_cache->store_value(i, ret_value.memptr() );
+
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
@@ -292,9 +303,7 @@ public:
 
 		{
 			// TODO need fix to discontinuous output data
-            /*auto output_types = OutputTime::empty_discrete_flags();
-            output_types[OutputTime::CORNER_DATA] = true;
-			field.compute_field_data(output_types, shared_from_this());
+            /*field.compute_field_data(OutputTime::CORNER_DATA, shared_from_this());
 			this->gather_output_data();
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
@@ -314,15 +323,11 @@ public:
 
 		/*
 
-	    auto output_types = OutputTime::empty_discrete_flags();
-	    output_types[OutputTime::NODE_DATA] = true;
-		compute_field_data(output_types, field);
+		compute_field_data(OutputTime::NODE_DATA, field);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-	    auto output_types2 = OutputTime::empty_discrete_flags();
-	    output_types2[OutputTime::CORNER_DATA] = true;
-		compute_field_data(output_types2, field);
+		compute_field_data(OutputTime::CORNER_DATA, field);
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
@@ -342,6 +347,7 @@ public:
 
 	Mesh * my_mesh;
 	std::vector<string> component_names;
+	std::shared_ptr<OutputMeshBase> output_mesh_;
 };
 
 
@@ -380,13 +386,13 @@ TEST(TestOutputTime, fix_main_file_extension)
 #define FV FieldValue
 TEST(TestOutputTime, compute_field_data) {
 	std::shared_ptr<TestOutputTime> output_time = std::make_shared<TestOutputTime>();
-	output_time->test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	output_time->test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	output_time->test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
-	output_time->test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
-	//output_time->test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	output_time->test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 0], [2, 4, 3], [0, 3, 5]]", "1 2 0 2 4 3 0 3 5 ");
-	//output_time->test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+	output_time->test_compute_field_data<3, FV<0>::Scalar>("1.3", "1.3 ", "1.3 ");
+	//output_time->test_compute_field_data<3, FV<0>::Enum>("\"white\"", "3 ", "3 ");
+	//output_time->test_compute_field_data<3, FV<0>::Integer>("3", "3 ", "3 ");
+	output_time->test_compute_field_data<3, FV<3>::VectorFixed>("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ", "1.2 3.4 5.6 ");
+	//output_time->test_compute_field_data<3, FV<2>::VectorFixed>("[1.2, 3.4]", "1.2 3.4 0 ", "1.2 3.4 0 ");
+	output_time->test_compute_field_data<3, FV<3>::TensorFixed>("[[1, 2, 0], [2, 4, 3], [0, 3, 5]]", "1 2 0 2 4 3 0 3 5 ", "1 2 0; 2 4 3; 0 3 5 ");
+	//output_time->test_compute_field_data<3, FV<2>::TensorFixed>("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ", "1 2 0; 4 5 0; 0 0 0 ");
 }
 
 
@@ -437,7 +443,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
             OutputTime::ELEM_DATA, &integer_field);
 
     /* There should be three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get first OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -446,7 +452,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream1"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->elem_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->elem_data.size(), 2);
 
     /* Get first registered data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->elem_data.begin();
@@ -515,7 +521,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
             OutputTime::CORNER_DATA, &integer_field);
 
     /* There should three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -527,7 +533,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream2"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->corner_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->corner_data.begin();
@@ -610,7 +616,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
             OutputTime::NODE_DATA, &integer_field);
 
     /* There should three output streams */
-    ASSERT_EQ(OutputTime::output_streams.size(), 3);
+    ASSERT_PERMANENT_EQ(OutputTime::output_streams.size(), 3);
 
     /* Get this OutputTime instance */
     std::vector<OutputTime*>::iterator output_iter = OutputTime::output_streams.begin();
@@ -623,7 +629,7 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     EXPECT_EQ(output_time, OutputTime::output_stream_by_name("flow_output_stream3"));
 
     /* There should be two items in vector of registered element data */
-    ASSERT_EQ(output_time->node_data.size(), 2);
+    ASSERT_PERMANENT_EQ(output_time->node_data.size(), 2);
 
     /* Get first registered corner data */
     std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->node_data.begin();

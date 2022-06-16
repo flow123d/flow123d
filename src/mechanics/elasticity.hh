@@ -73,6 +73,7 @@ public:
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
         Field<3, FieldValue<3>::Scalar> roughness_angle;
         Field<3, FieldValue<3>::Scalar> roughness_height;
+        Field<3, FieldValue<3>::TensorFixed> initial_stress;
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -85,6 +86,7 @@ public:
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
+        Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         Field<3, FieldValue<3>::VectorFixed> output_displacement_jump;
@@ -101,6 +103,7 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_displ_jump_ptr;
@@ -235,6 +238,9 @@ private:
 
 	/// Data for model parameters.
 	std::shared_ptr<EqData> eq_data_;
+
+    /// Indicator of contact conditions on fractures.
+    bool has_contact_;
 
     
 	// @}

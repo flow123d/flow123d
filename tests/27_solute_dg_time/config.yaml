@@ -4,7 +4,8 @@ common_config:
   check_rules:
     - vtkdiff:
         files: ["*.vtu"]
-        interpolate: True
+    - ndiff:
+        files: ["*.pvd", "*.txt", "*.yaml", "*.msh"]
 
 test_cases:
 - files:
@@ -12,7 +13,9 @@ test_cases:
   - 02_dg_dp_sorp_small.yaml
   - 03_bc.yaml
   - 04_bc_short_pulse.yaml
-  - 06_sources.yaml        
+  - 06_sources.yaml
+  - 07_steady_flow_bc_change_MH.yaml
+  - 08_steady_flow_bc_change_LMH.yaml
 
 - files:
   - 05_unsteady_flow.yaml

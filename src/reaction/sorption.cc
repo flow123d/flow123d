@@ -24,6 +24,7 @@
 #include "system/asserts.hh"
 #include "mesh/accessors.hh"
 #include "input/factory.hh"
+#include "fields/field_model.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(sorptionMobile)
 FLOW123D_FORCE_LINK_IN_CHILD(sorptionImmobile)
@@ -32,6 +33,26 @@ FLOW123D_FORCE_LINK_IN_CHILD(sorption)
 
 /********************************* SORPTION_SIMPLE *********************************************************/
 /*********************************                 *********************************************************/
+
+// Functors for computing models
+struct fn_simple_scale_aqua {
+    inline double operator() (double por_m) {
+        return por_m;
+    }
+};
+
+struct fn_simple_scale_sorbed {
+    inline double operator() (double surface_cond, double rock_density) {
+        return surface_cond * rock_density;
+    }
+};
+
+struct fn_simple_surface_cond {
+    inline double operator() (double por_m) {
+        return 1 - por_m;
+    }
+};
+
 
 const IT::Record & SorptionSimple::get_input_type() {
 	return IT::Record("Sorption", "Sorption model in the reaction term of transport.")
@@ -47,8 +68,9 @@ const IT::Record & SorptionSimple::get_input_type() {
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
 {
-	data_ = new EqData("conc_solid", "Concentration solution in the solid phase.");
-    this->eq_fieldset_ = data_;
+    eq_fields_ = std::make_shared<EqFields>("conc_solid", "Concentration solution in the solid phase.");
+    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 }
 
 const int SorptionSimple::registrar =
@@ -58,14 +80,12 @@ const int SorptionSimple::registrar =
 SorptionSimple::~SorptionSimple(void)
 {}
 
-void SorptionSimple::compute_common_ele_data(const ElementAccessor<3> &elem)
+void SorptionSimple::init_field_models()
 {
-    double rock_density = data_->rock_density.value(elem.centre(),elem);
-    double por_m = data_->porosity.value(elem.centre(),elem);
-    
-    this->common_ele_data.scale_aqua = por_m;
-    this->common_ele_data.scale_sorbed = (1 - por_m) * rock_density;
-    this->common_ele_data.no_sorbing_surface_cond = 1-por_m;
+    eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_simple_scale_aqua(), eq_fields_->porosity), 0.0);
+    eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_simple_scale_sorbed(), eq_fields_->no_sorbing_surface_cond, eq_fields_->rock_density), 0.0);
+    eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(fn_simple_surface_cond(), eq_fields_->porosity), 0.0);
 }
 
 
@@ -73,17 +93,24 @@ void SorptionSimple::compute_common_ele_data(const ElementAccessor<3> &elem)
 /*********************************** SORPTION_DUAL *********************************************************/
 /***********************************               *********************************************************/
 
+SorptionDual::EqFields::EqFields(const string &output_field_name, const string &output_field_desc)
+: SorptionBase::EqFields(output_field_name, output_field_desc)
+{
+    *this+=immob_porosity_
+            .flags_add(FieldFlag::input_copy)
+            .name("porosity_immobile")
+            .set_limits(0.0);
+}
+
 SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                            const string &output_conc_name,
                            const string &output_conc_desc)
     : SorptionBase(init_mesh, in_rec)
 {
-    data_ = new EqData(output_conc_name, output_conc_desc);
-    *data_+=immob_porosity_
-        .flags_add(FieldFlag::input_copy)
-        .name("porosity_immobile")
-		.set_limits(0.0);
-    this->eq_fieldset_ = data_;
+    eq_fields_dual_ = std::make_shared<EqFields>(output_conc_name, output_conc_desc);
+    this->eq_fieldset_ = eq_fields_dual_.get();
+    this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_dual_);
+    this->eq_fields_ = std::static_pointer_cast<SorptionBase::EqFields>(eq_fields_dual_);
 }
 
 SorptionDual::~SorptionDual(void)
@@ -92,6 +119,27 @@ SorptionDual::~SorptionDual(void)
 /**********************************                  *******************************************************/
 /*********************************** SORPTION_MOBILE *******************************************************/
 /**********************************                  *******************************************************/
+
+// Functors for computing models
+struct fn_mob_scale_aqua {
+    inline double operator() (double por_m) {
+        return por_m;
+    }
+};
+
+struct fn_mob_scale_sorbed {
+    inline double operator() (double por_m, double por_imm, double surface_cond, double rock_density) {
+        double phi = por_m/(por_m + por_imm);
+    	return phi * surface_cond * rock_density;
+    }
+};
+
+struct fn_mob_surface_cond {
+    inline double operator() (double por_m, double por_imm) {
+        return 1 - por_m - por_imm;
+    }
+};
+
 
 const IT::Record & SorptionMob::get_input_type() {
 	return IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
@@ -118,22 +166,41 @@ SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
 SorptionMob::~SorptionMob(void)
 {}
 
-void SorptionMob::compute_common_ele_data(const ElementAccessor<3> &elem)
+void SorptionMob::init_field_models()
 {
-    double rock_density = data_->rock_density.value(elem.centre(),elem);
-    double por_m = data_->porosity.value(elem.centre(),elem);
-    double por_imm = immob_porosity_.value(elem.centre(),elem);
-    double phi = por_m/(por_m + por_imm);
-    
-    this->common_ele_data.scale_aqua = por_m;
-    this->common_ele_data.scale_sorbed = phi * (1 - por_m - por_imm) * rock_density;
-    this->common_ele_data.no_sorbing_surface_cond = 1-por_m-por_imm;
+    eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_mob_scale_aqua(), eq_fields_->porosity), 0.0);
+    eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_mob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->no_sorbing_surface_cond,
+	        eq_fields_->rock_density), 0.0);
+    eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_mob_surface_cond(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_), 0.0);
 }
 
 
 /***********************************                   *****************************************************/
 /*********************************** SORPTION_IMMOBILE *****************************************************/
 /***********************************                   *****************************************************/
+
+// Functors for computing models
+struct fn_immob_scale_aqua {
+    inline double operator() (double por_imm) {
+        return por_imm;
+    }
+};
+
+struct fn_immob_scale_sorbed {
+    inline double operator() (double por_m, double por_imm, double surface_cond, double rock_density) {
+        double phi = por_m/(por_m + por_imm);
+    	return (1 - phi) * surface_cond * rock_density;
+    }
+};
+
+struct fn_immob_surface_cond {
+    inline double operator() (double por_m, double por_imm) {
+        return 1 - por_m - por_imm;
+    }
+};
+
 
 const IT::Record & SorptionImmob::get_input_type() {
 	return IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
@@ -157,14 +224,12 @@ SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 SorptionImmob::~SorptionImmob(void)
 {}
 
-void SorptionImmob::compute_common_ele_data(const ElementAccessor<3> &elem)
+void SorptionImmob::init_field_models()
 {
-    double rock_density = data_->rock_density.value(elem.centre(),elem);
-    double por_m = data_->porosity.value(elem.centre(),elem);
-    double por_imm = immob_porosity_.value(elem.centre(),elem);
-    double phi = por_m/(por_m + por_imm);
-    
-    this->common_ele_data.scale_aqua = por_m;
-    this->common_ele_data.scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density;
-    this->common_ele_data.no_sorbing_surface_cond = 1-por_m-por_imm;
+    eq_fields_->scale_aqua.set(Model<3, FieldValue<3>::Scalar>::create(fn_immob_scale_aqua(), eq_fields_dual_->immob_porosity_), 0.0);
+    eq_fields_->scale_sorbed.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_immob_scale_sorbed(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_, eq_fields_->no_sorbing_surface_cond,
+	        eq_fields_->rock_density), 0.0);
+    eq_fields_->no_sorbing_surface_cond.set(Model<3, FieldValue<3>::Scalar>::create(
+            fn_immob_surface_cond(), eq_fields_->porosity, eq_fields_dual_->immob_porosity_), 0.0);
 }

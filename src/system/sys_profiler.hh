@@ -671,13 +671,17 @@ public:
      * Public getter to memory monitoring
      * @return memory monitoring status
      */
-    bool static get_global_memory_monitoring();
+    inline bool static get_global_memory_monitoring() {
+    	return global_monitor_memory;
+    }
     
     /**
      * Public getter to petsc memory monitoring
      * @return memory monitoring status
      */
-    bool static get_petsc_memory_monitoring();
+    inline bool static get_petsc_memory_monitoring() {
+    	return petsc_monitor_memory;
+    }
 
     /**
      * Run calibration frame "UNIT PAYLOAD".
@@ -884,6 +888,8 @@ public:
     void output(MPI_Comm, ostream &)
     {}
     void output(MPI_Comm, string)
+    {}
+    void output(std::ostream &)
     {}
     void output(string)
     {}

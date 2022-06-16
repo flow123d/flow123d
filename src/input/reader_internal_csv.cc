@@ -205,7 +205,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
     		if ( max_column_index > (i_col-1) ) {
     			this->generate_input_error(p, array, "Count of columns in CSV file is less than expected index, defined on input.", false);
     		}
-			ASSERT_PTR_DBG(item_storage);
+			ASSERT_PTR(item_storage);
             storage_array->new_item(arr_item, item_storage->deep_copy() );
         }
 

@@ -27,16 +27,24 @@
 #include "coupling/equation.hh"
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
+#include "system/exceptions.hh"
 
 class Mesh;
 class FieldCommon;
-class RichardsLMH;
+class DarcyLMH;
+
+template<unsigned int dim> class FlowPotentialAssemblyHM;
+template<unsigned int dim> class ResidualAssemblyHM;
 
 namespace it = Input::Type;
 
 
 class IterativeCoupling {
 public:
+    TYPEDEF_ERR_INFO( EI_Reason, string);
+    DECLARE_EXCEPTION(ExcSolverDiverge,
+            << "Nonlinear solver did not converge. Reason: " << EI_Reason::val
+             );
 
     static const Input::Type::Record &record_template() {
         return it::Record("Coupling_Iterative_AUX",
@@ -125,12 +133,26 @@ private:
 class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
     
-    class EqData : public FieldSet
+    class EqData
     {
     public:
-        EqData();
+        /// steady or unsteady water flow simulator based on MH scheme
+        std::shared_ptr<DarcyLMH> flow_;
+
+        /// solute transport with chemistry through operator splitting
+        std::shared_ptr<Elasticity> mechanics_;
+
+        double p_dif2; ///< Squared norm of pressure difference in two subsequent iterations.
+        double p_norm2; ///< Squared pressure norm in the last iteration.
+    };
+
+
+    class EqFields : public FieldSet
+    {
+    public:
+        EqFields();
         
-        void initialize(Mesh &mesh);
+        void initialize(Mesh &mesh, HM_Iterative::EqData &eq_data, const TimeGovernor *time_, double beta_);
         
         Field<3, FieldValue<3>::Scalar> alpha;   ///< Biot coefficient.
         Field<3, FieldValue<3>::Scalar> density; ///< Density of fluid.
@@ -141,15 +163,13 @@ public:
         Field<3, FieldValue<3>::Scalar> pressure_potential;
         Field<3, FieldValue<3>::Scalar> ref_pressure_potential; ///< Potential of reference (prescribed) pressure from flow b.c. TODO: Swith to BCField when possible.
         Field<3, FieldValue<3>::Scalar> flow_source;
+        Field<3, FieldValue<3>::Scalar> old_pressure;
+        Field<3, FieldValue<3>::Scalar> old_iter_pressure;
+        Field<3, FieldValue<3>::Scalar> old_div_u;
         
         /// FieldFE for pressure_potential field.
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > beta_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > flow_source_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > div_u_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
     
@@ -178,17 +198,13 @@ private:
     
     static const int registrar;
 
-    /// steady or unsteady water flow simulator based on MH scheme
-    std::shared_ptr<RichardsLMH> flow_;
-
-    /// solute transport with chemistry through operator splitting
-    std::shared_ptr<Elasticity> mechanics_;
+    GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
+    GenericAssembly<ResidualAssemblyHM> *residual_assembly_;
     
-    EqData data_;
+    EqFields eq_fields_;
 
-    /// Tuning parameter for iterative splitting.
-    double beta_;
-    
+    EqData eq_data_;
+
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */

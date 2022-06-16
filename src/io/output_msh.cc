@@ -80,16 +80,7 @@ void OutputMSH::write_msh_geometry(void)
     file << "$Nodes" << endl;
     file << this->nodes_->n_values() << endl;
     auto permutation_vec = output_mesh_->orig_mesh_->node_permutations();
-    bool is_corner_output = (this->nodes_->n_values() != permutation_vec.size());
-    unsigned int i_gmsh_node;
-    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
-        if (is_corner_output) i_gmsh_node = i_node;
-        else i_gmsh_node = permutation_vec[i_node];
-        file << id_node_vec[i_gmsh_node] << " ";
-        this->nodes_->print_ascii(file, i_gmsh_node);
-        file << endl;
-    }
+    this->write_msh_ascii_data(this->node_ids_, this->nodes_, permutation_vec);
     file << "$EndNodes" << endl;
 }
 
@@ -97,20 +88,24 @@ void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
-    auto &id_elem_vec = *( this->elem_ids_->get_component_data(0).get() );
-    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
-    auto &connectivity_vec = *( this->connectivity_->get_component_data(0).get() );
-    auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
-    auto &regions_vec = *( this->region_ids_->get_component_data(0).get() );
-    auto &partition_vec = *( this->partitions_->get_component_data(0).get() );
+    auto &id_elem_vec = *( this->elem_ids_->get_data().get() );
+    auto &id_node_vec = *( this->node_ids_->get_data().get() );
+    auto &connectivity_vec = *( this->connectivity_->get_data().get() );
+    auto &offsets_vec = *( this->offsets_->get_data().get() );
+    auto &regions_vec = *( this->region_ids_->get_data().get() );
+    auto &partition_vec = *( this->partitions_->get_data().get() );
 
     unsigned int n_nodes, i_node=0;
 
     std::vector<unsigned int> gmsh_connectivity(4*id_elem_vec.size(), 0);
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
         n_nodes = offsets_vec[i_elm+1]-offsets_vec[i_elm];
-        for(unsigned int i=4*i_elm; i<4*i_elm+n_nodes; i++, i_node++) {
-            gmsh_connectivity[i] = connectivity_vec[i_node];
+        auto &new_to_old_node = output_mesh_->orig_mesh_->element_accessor(i_elm).orig_nodes_order();
+        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
+        	// permute element nodes to the order of the input mesh
+        	// works only for GMSH, serial output
+        	uint old_i = new_to_old_node[i];
+            gmsh_connectivity[4*i_elm+old_i] = connectivity_vec[i_node];
         }
     }
 
@@ -120,14 +115,15 @@ void OutputMSH::write_msh_topology(void)
     file << this->offsets_->n_values()-1 << endl;
     ElementAccessor<OutputElement::spacedim> elm;
     bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutations().size());
-    unsigned int gmsh_id;
+    unsigned int i_gmsh_elm, gmsh_id;
     auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
     for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
-        unsigned int i_gmsh_elm = permutation_vec[i_elm];
+        i_gmsh_elm = permutation_vec[i_elm];
+        if (is_corner_output) gmsh_id = id_elem_vec[i_elm];
+    	else gmsh_id = id_elem_vec[i_gmsh_elm];
+
     	n_nodes = offsets_vec[i_gmsh_elm+1]-offsets_vec[i_gmsh_elm];
         // element_id element_type 3_other_tags material region partition
-    	if (is_corner_output) gmsh_id = i_elm;
-    	else gmsh_id = id_elem_vec[i_gmsh_elm];
         file << gmsh_id
              << " " << gmsh_simplex_types_[ n_nodes-1 ]
              << " 3 " << regions_vec[i_gmsh_elm] << " " << regions_vec[i_gmsh_elm] << " " << partition_vec[i_gmsh_elm];
@@ -146,10 +142,14 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
 {
     unsigned int i_gmsh;
 	ofstream &file = this->_base_file;
-    auto &id_vec = *( id_cache->get_component_data(0).get() );
+    auto &id_vec = *( id_cache->get_data().get() );
 
+    bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutations().size());
     for(unsigned int i=0; i < output_data->n_values(); ++i) {
-        i_gmsh = permutations[i];
+
+        if (is_corner_output) i_gmsh = i;
+    	else i_gmsh = permutations[i];
+
         file << id_vec[i_gmsh] << " ";
         output_data->print_ascii(file, i_gmsh);
         file << std::endl;
@@ -178,14 +178,6 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 
     auto permutation_vec = output_mesh_->orig_mesh_->node_permutations();
     this->write_msh_ascii_data(this->node_ids_, output_data, permutation_vec);
-    /*unsigned int i_gmsh;
-    auto &id_vec = *( this->node_ids_->get_component_data(0).get() );
-    for(unsigned int i=0; i < output_data->n_values(); ++i) {
-        i_gmsh = permutation_vec[i];
-        file << id_vec[i_gmsh] << " ";
-        output_data->print_ascii(file, i_gmsh);
-        file << std::endl;
-    }*/
 
     file << "$EndNodeData" << endl;
 }
@@ -210,8 +202,8 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << this->offsets_->n_values()-1 << endl; // number of values
 
     //this->write_msh_ascii_data(this->elem_ids_, output_data, true);
-    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
-	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    auto &id_vec = *( this->elem_ids_->get_data().get() );
+	auto &offsets_vec = *( this->offsets_->get_data().get() );
 	unsigned int n_nodes, i_corner;
 	auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
     for(unsigned int i=0; i < id_vec.size(); ++i) {
@@ -247,14 +239,6 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
 
     auto permutation_vec = output_mesh_->orig_mesh_->element_permutations();
     this->write_msh_ascii_data(this->elem_ids_, output_data, permutation_vec);
-    /*unsigned int i_gmsh;
-    auto &id_vec = *( this->elem_ids_->get_component_data(0).get() );
-    for(unsigned int i=0; i < output_data->n_values(); ++i) {
-        i_gmsh = permutation_vec[i];
-        file << id_vec[i_gmsh] << " ";
-        output_data->print_ascii(file, i_gmsh);
-        file << std::endl;
-    }*/
 
     file << "$EndElementData" << endl;
 }

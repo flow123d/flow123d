@@ -12,7 +12,7 @@ public:
 	ApplicationBaseTest() : testing::Test(), ApplicationBase() {}
 protected:
 	void run() {
-		ASSERT(false).error("testing error...\n");
+		ASSERT_PERMANENT(false).error("testing error...\n");
 	}
 
     void parse_cmd_line(const int, char **) override 

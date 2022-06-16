@@ -144,7 +144,7 @@ void Logger::set_mask()
         else
             streams_mask_ = StreamMask::cout;
         break;
-#ifdef FLOW123D_DEBUG
+#ifdef FLOW123D_DEBUG_ASSERTS
     case MsgType::debug: // for debug build
         if (no_log)
             streams_mask_ = StreamMask();
@@ -160,7 +160,7 @@ void Logger::set_mask()
 
 #endif
 	default:
-	    ASSERT(false);
+	    ASSERT_PERMANENT(false);
 	}
 
 	full_streams_mask_ = full_streams_mask_ | streams_mask_;

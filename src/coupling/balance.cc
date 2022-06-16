@@ -40,6 +40,9 @@ using namespace Input::Type;
 bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
+	// TODO: keep just YAML and txt, adapt tests (version 4.0)
+	// TODO: keep just YAML output, move conversions to Python postprocessing
+
 	return Selection("Balance_output_format", "Format of output file for balance.")
 		.add_value(Balance::legacy, "legacy", "Legacy format used by previous program versions.")
 		.add_value(Balance::txt, "txt", "Excel format with tab delimiter.")
@@ -95,7 +98,7 @@ Balance::Balance(const std::string &file_prefix, const Mesh *mesh)
 
 {
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank_);
-    ASSERT_PTR(mesh_);
+    ASSERT_PERMANENT_PTR(mesh_);
 }
 
 
@@ -130,7 +133,7 @@ void Balance::init_from_input(
         const Input::Record &in_rec,
         TimeGovernor &tg)
 {
-    ASSERT(! allocation_done_);
+    ASSERT_PERMANENT(! allocation_done_);
 
     time_ = &tg;
     
@@ -448,7 +451,7 @@ void Balance::add_mass_values(unsigned int quantity_idx,
 		const std::vector<double> &mat_values,
 		double vec_value)
 {
-	ASSERT_DBG(allocation_done_);
+	ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	// map local dof indices to global
@@ -479,7 +482,7 @@ void Balance::add_flux_values(unsigned int quantity_idx,
 		const std::vector<double> &mat_values,
 		double vec_value)
 {
-	ASSERT_DBG(allocation_done_);
+	ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	// filling row elements corresponding to a boundary edge
@@ -513,7 +516,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 		const vector<double> &mult_mat_values,
         const vector<double> &add_mat_values)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
 	PetscInt reg_array[1] = { (int)region_idx };
@@ -538,7 +541,7 @@ void Balance::add_source_values(unsigned int quantity_idx,
 
 void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (!cumulative_) return;
 
     if (rank_ == 0)
@@ -549,7 +552,7 @@ void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 void Balance::calculate_cumulative(unsigned int quantity_idx,
 		const Vec &solution)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
 	if (!cumulative_) return;
     if (time_->tlevel() <= 0) return;
 
@@ -571,7 +574,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
         chkerr(MatGetRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat));
         chkerr(MatGetRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs));
         
-        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        ASSERT(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
             temp_source += vals_mat[j]*sol_array[i] + vals_rhs[j];
@@ -609,7 +612,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 		const Vec &solution,
 		vector<double> &output_array)
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
 
     Vec bulk_vec;
@@ -660,7 +663,7 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
         chkerr(MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat));
         chkerr(MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, NULL, &vals_rhs));
         
-        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        ASSERT(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
         {
@@ -709,7 +712,7 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 
 void Balance::output()
 {
-    ASSERT_DBG(allocation_done_);
+    ASSERT(allocation_done_);
     if (! balance_on_) return;
     if (! is_current() ) return;
     
@@ -1063,6 +1066,11 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
+
+            // error makes trouble in ndiff due to cancellation - difference of two similar numbers
+            // DebugOut().fmt("error_[qi]={:.15e} sum_masses_[qi]={:.15e}, initial_mass_[qi]={:.15e}, integrated_sources_[qi]={:.15e}, integrated_fluxes_[qi]={:.15e}",
+                // error, sum_masses_[qi], initial_mass_[qi], integrated_sources_[qi], integrated_fluxes_[qi]);
+
 			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)

@@ -133,7 +133,7 @@ public:
      */
     template< template<IntDim...> class TParent, typename std::enable_if<std::is_convertible<TParent<0>, T<0>>::value, T<0> >::type >
     operator Mixed<TParent> () const {
-    	//ASSERT(std::is_base_of<TParent, T>::value);
+    	//ASSERT_PERMANENT(std::is_base_of<TParent, T>::value);
         return Mixed<TParent>(
         		TParent<0>(this->operator[](0_d)),
 				TParent<1>(this->operator[](1_d)),
@@ -199,7 +199,7 @@ public:
 
     template< template<IntDim...> class TParent, typename std::enable_if<std::is_convertible<TParent<1>, T<1>>::value, T<1> >::type >
     operator Mixed<TParent> () const {
-        //ASSERT(std::is_base_of<TParent, T>::value);
+        //ASSERT_PERMANENT(std::is_base_of<TParent, T>::value);
         return Mixed<TParent>(
                 TParent<1>(this->operator[](1_d)),
                 TParent<2>(this->operator[](2_d)),

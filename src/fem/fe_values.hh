@@ -148,8 +148,8 @@ public:
      */
     inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
     {
-        ASSERT_LT_DBG(function_no, n_dofs_);
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(function_no, n_dofs_);
+        ASSERT_LT(point_no, n_points_);
         return shape_values[point_no][function_no];
     }
 
@@ -163,8 +163,8 @@ public:
      */
     inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
 	{
-        ASSERT_LT_DBG(function_no, n_dofs_);
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(function_no, n_dofs_);
+        ASSERT_LT(point_no, n_points_);
         return shape_gradients[point_no][function_no];
     }
 
@@ -181,9 +181,9 @@ public:
                                         const unsigned int point_no, 
                                         const unsigned int comp) const
     {
-        ASSERT_LT_DBG(function_no, n_dofs_);
-        ASSERT_LT_DBG(point_no, n_points_);
-        ASSERT_LT_DBG(comp, n_components_);
+        ASSERT_LT(function_no, n_dofs_);
+        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(comp, n_components_);
         return shape_values[point_no][function_no*n_components_+comp];
     }
 
@@ -210,7 +210,7 @@ public:
      */
     inline double determinant(const unsigned int point_no)
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return elm_values->determinant(point_no);
     }
 
@@ -222,7 +222,7 @@ public:
      */
     inline double JxW(const unsigned int point_no)
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         // TODO: This is temporary solution to distinguish JxW on element and side_JxW on side.
         // In future we should call the appropriate method in elm_values.
         return (elm_values->cell().is_valid()) ? elm_values->JxW(point_no) : elm_values->side_JxW(point_no);
@@ -235,7 +235,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
         return elm_values->point(point_no);
     }
 
@@ -256,7 +256,7 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
-        ASSERT_LT_DBG(point_no, n_points_);
+        ASSERT_LT(point_no, n_points_);
 	    return elm_values->normal_vector(point_no);
 	}
 	
@@ -266,7 +266,7 @@ public:
      */
 	const FEValuesViews::Scalar<spacedim> &scalar_view(unsigned int i) const
 	{
-      ASSERT_LT_DBG(i, views_cache_.scalars.size());
+      ASSERT_LT(i, views_cache_.scalars.size());
       return views_cache_.scalars[i];
     }
     
@@ -276,7 +276,7 @@ public:
      */
     const FEValuesViews::Vector<spacedim> &vector_view(unsigned int i) const
     {
-      ASSERT_LT_DBG(i, views_cache_.vectors.size());
+      ASSERT_LT(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
     }
     
@@ -286,7 +286,7 @@ public:
      */
     const FEValuesViews::Tensor<spacedim> &tensor_view(unsigned int i) const
     {
-      ASSERT_LT_DBG(i, views_cache_.tensors.size());
+      ASSERT_LT(i, views_cache_.tensors.size());
       return views_cache_.tensors[i];
     }
 

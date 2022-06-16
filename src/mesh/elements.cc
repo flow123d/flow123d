@@ -59,12 +59,10 @@ void Element::init(unsigned int dim, RegionIdx reg) {
     region_idx_=reg;
 
     edge_idx_.resize( n_sides() );
-    permutation_idx_.resize( n_sides() );
     boundary_idx_ = NULL;
 
     for (unsigned int si=0; si<this->n_sides(); si++) {
         edge_idx_[ si ]=undef_idx;
-        permutation_idx_[si] = undef_idx;
     }
 }
 

@@ -151,6 +151,9 @@ TEST(LinSys_PETSC, set_local_system_mm) {
     
     // 'local system' to be added
     LocalSystem loc(m,m);
+    arma::umat sp;
+    sp.ones(m,m);
+    loc.set_sparsity(sp);
     for(int i = 0; i<m; i++){
         loc.row_dofs[i] = offset + i;
         loc.col_dofs[i] = offset + i;

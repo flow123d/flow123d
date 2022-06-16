@@ -186,7 +186,7 @@ public:
 
 
 		inline void set_time_governor(TimeGovernor *time) {
-		    ASSERT_PTR_DBG(time);
+		    ASSERT_PTR(time);
 		    this->time_ = time;
 		}
 
@@ -308,10 +308,6 @@ public:
 	void compute_p0_interpolation();
 
 	void update_after_reactions(bool solution_changed);
-
-    void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds);
-
-    LongIdx *get_row_4_el();
 
     /// Access to balance object of Model
     inline std::shared_ptr<Balance> balance() const {

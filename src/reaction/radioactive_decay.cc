@@ -117,7 +117,7 @@ void RadioactiveDecay::initialize_from_input()
         {   
             string product_name = prod_it->val<string>("name");
             idx = find_subst_name(product_name);
-            if (idx < substances_.size())
+            if (idx < eq_data_base_->substances_.size())
                 substance_ids_[i_decay][i_product+1] = idx;
             else THROW(ReactionTerm::ExcUnknownSubstance() 
                        << ReactionTerm::EI_Substance(product_name) 
@@ -128,7 +128,7 @@ void RadioactiveDecay::initialize_from_input()
         
         // set radionuclide substance index
         idx = find_subst_name(radionuclide);
-        if (idx < substances_.size())    
+        if (idx < eq_data_base_->substances_.size())
             substance_ids_[i_decay][0] = idx;
         else THROW(ReactionTerm::ExcUnknownSubstance() 
                     << ReactionTerm::EI_Substance(radionuclide) 

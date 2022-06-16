@@ -33,7 +33,7 @@
 using namespace std;
 
 
-#ifdef FLOW123D_DEBUG
+#ifdef FLOW123D_DEBUG_ASSERTS
 // Use smaller number of meshes  in debug (slow) mode
 static const unsigned int n_meshes = 500;
 #else
@@ -140,8 +140,8 @@ template<unsigned int dimA, unsigned int dimB>
 void generate_meshes(unsigned int N,
                      vector<Mesh*>& meshes)
 {
-    ASSERT(dimA <= dimB).error("Unsupported dimensions.");
-    ASSERT(dimA != 3).error("Unsupported dimensions.");
+    ASSERT_PERMANENT(dimA <= dimB).error("Unsupported dimensions.");
+    ASSERT_PERMANENT(dimA != 3).error("Unsupported dimensions.");
     
     unsigned int nA = RefElement<dimA>::n_nodes, 
                  nB = RefElement<dimB>::n_nodes,
@@ -188,13 +188,13 @@ void generate_meshes(unsigned int N,
         switch(dimA){
             case 1: mesh->side_nodes[0] = {{0},{1}}; break;
             case 2: mesh->side_nodes[1] = {{0,1},{0,2},{2,1}}; break;
-            default: ASSERT(0)(dimA).error("Unsupported dimA");
+            default: ASSERT_PERMANENT(0)(dimA).error("Unsupported dimA");
         }
         switch(dimB){
             case 1: mesh->side_nodes[0] = {{nA+0},{nA+1}}; break;
             case 2: mesh->side_nodes[1] = {{nA+0, nA+1},{nA+0, nA+2},{nA+2, nA+1}}; break;
             case 3: mesh->side_nodes[2] = {{nA+0, nA+1, nA+2 }, { nA+0, nA+1, nA+3 }, { nA+0, nA+2, nA+3 }, { nA+1, nA+2, nA+3 }}; break;
-            default: ASSERT(0)(dimA).error("Unsupported dimA");
+            default: ASSERT_PERMANENT(0)(dimA).error("Unsupported dimA");
         }
         
         meshes.push_back(mesh);
@@ -210,8 +210,8 @@ void compute_intersection<1,2>(Mesh* mesh)
 {
 	ElementAccessor<3> eleA = mesh->element_accessor(0);
 	ElementAccessor<3> eleB = mesh->element_accessor(1);
-    ASSERT_EQ(1, eleA->dim());
-    ASSERT_EQ(2, eleB->dim());
+    ASSERT_PERMANENT_EQ(1, eleA->dim());
+    ASSERT_PERMANENT_EQ(2, eleB->dim());
     
     // compute intersection
     START_TIMER("Compute intersection");
@@ -228,7 +228,7 @@ void compute_intersection<1,2>(Mesh* mesh)
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<1,2> is(0, 1); //component_ele_idx, bulk_ele_idx
-        ComputeIntersection<1,2> CI(eleA, eleB, mesh);
+        ComputeIntersection<1,2> CI(eleA, eleB);
         END_TIMER("CI create");
         START_TIMER("CI compute");
         CI.compute_final(is.points());
@@ -245,8 +245,8 @@ void compute_intersection(Mesh* mesh)
 {
 	ElementAccessor<3> eleA = mesh->element_accessor(0);
 	ElementAccessor<3> eleB = mesh->element_accessor(1);
-    ASSERT_EQ(dimA, eleA->dim());
-    ASSERT_EQ(dimB, eleB->dim());
+    ASSERT_PERMANENT_EQ(dimA, eleA->dim());
+    ASSERT_PERMANENT_EQ(dimB, eleB->dim());
     // compute intersection
     START_TIMER("Compute intersection");
    
@@ -262,7 +262,7 @@ void compute_intersection(Mesh* mesh)
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<dimA,dimB> is(0, 1); //component_ele_idx, bulk_ele_idx
-        ComputeIntersection<dimA, dimB> CI(eleA, eleB, mesh);
+        ComputeIntersection<dimA, dimB> CI(eleA, eleB);
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");

@@ -52,6 +52,10 @@ namespace Input {
 	}
 }
 template <int spacedim> class ElementAccessor;
+template<unsigned int dim> class InitConditionAssemblySorp;
+template<unsigned int dim> class ReactionAssemblySorp;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
+
 
 
 
@@ -73,10 +77,10 @@ public:
 
   static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name, const string &output_field_desc )
   {
-      return EqData(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
+      return EqFields(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
   }
 
-  class EqData : public FieldSet
+  class EqFields : public ReactionTerm::EqFields
   {
   public:
     /**
@@ -85,7 +89,7 @@ public:
     static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
-    EqData(const string &output_field_name, const string &output_field_desc);
+    EqFields(const string &output_field_name, const string &output_field_desc);
 
     MultiField<3, FieldValue<3>::Enum > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
@@ -103,12 +107,58 @@ public:
     FieldFEScalarVec conc_solid_fe;                     ///< Underlaying FieldFE for each substance of conc_solid.
 
     /// Input data set - fields in this set are read from the input file.
-    FieldSet input_data_set_;
+    FieldSet input_field_set_;
 
     /// Fields indended for output, i.e. all input fields plus those representing solution.
     EquationOutput output_fields;
 
+    /// Instances of FieldModel used in assembly methods
+    Field<3, FieldValue<3>::Scalar > scale_aqua;
+    Field<3, FieldValue<3>::Scalar > scale_sorbed;
+    Field<3, FieldValue<3>::Scalar > no_sorbing_surface_cond;
+
   };
+
+
+  /// DualPorosity data
+  class EqData : public ReactionTerm::EqData
+  {
+  public:
+
+    /// Collect all fields
+    EqData();
+
+    /// Mapping from local indexing of substances to global.
+    std::vector<unsigned int> substance_global_idx_;
+
+    unsigned int n_substances_;   ///< number of substances that take part in the sorption mode
+    /**
+     * Density of the solvent.
+     *  TODO: Could be done region dependent, easily.
+     */
+    double solvent_density_;
+    /**
+     * Critical concentrations of species dissolved in water.
+     */
+    std::vector<double> solubility_vec_;
+    /**
+     * Concentration table limits of species dissolved in water.
+     */
+    std::vector<double> table_limit_;
+    /**
+     * Maximum concentration per region.
+     * It is used for optimization of interpolation table.
+     */
+    std::vector<std::vector<double>> max_conc;
+    /**
+     * Three dimensional array contains intersections between isotherms and mass balance lines.
+     * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
+     * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step
+     * lenght in cocidered system of coordinates, just function values are stored.
+     */
+    std::vector<std::vector<Isotherm> > isotherms;
+  };
+
 
   /**
    *  Constructor with parameter for initialization of a new declared class member
@@ -162,22 +212,17 @@ protected:
   /// Initializes field sets.
   void initialize_fields();
 
-  ///Reads and sets initial condition for concentration in solid.
-  void set_initial_condition();
-    
   /// Compute reaction on a single element.
   void compute_reaction(const DHCellAccessor& dh_cell) override;
   
-  /// Reinitializes the isotherm.
-  /**
-   * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   * NOTE: Be sure to update common element data (porosity, rock density etc.)
-   *       by @p compute_common_ele_data(), before calling reinitialization!
-   */
-  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
-  
-  /// Calls @p isotherm_reinit for all isotherms.
-  void isotherm_reinit_all(const ElementAccessor<3> &elm);
+//  /// Reinitializes the isotherm.
+//  /**
+//   * On data change the isotherm is recomputed, possibly new interpolation table is made.
+//   */
+//  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
+//
+//  /// Calls @p isotherm_reinit for all isotherms.
+//  void isotherm_reinit_all(const ElementAccessor<3> &elm);
   
     /**
    * Creates interpolation table for isotherms.
@@ -190,65 +235,28 @@ protected:
   /// Sets max conc to zeros on all regins.
   void clear_max_conc();
 
-  /// Pointer to equation data. The object is constructed in descendants.
-  EqData *data_;
+  /// Initialize FieldModels, method is implemented in descendants.
+  virtual void init_field_models() = 0;
+
+  std::shared_ptr<EqFields> eq_fields_;  ///< Pointer to equation fields. The object is constructed in descendants.
+  std::shared_ptr<EqData> eq_data_;      ///< Equation data
 
   /**
    * Temporary nr_of_points can be computed using step_length. Should be |nr_of_region x nr_of_substances| matrix later.
    */
   unsigned int n_interpolation_steps_;
-  /**
-   * Density of the solvent. 
-   *  TODO: Could be done region dependent, easily.
-   */
-  double solvent_density_;
-  /**
-   * Critical concentrations of species dissolved in water.
-   */
-  std::vector<double> solubility_vec_;
-  /**
-   * Concentration table limits of species dissolved in water.
-   */
-  std::vector<double> table_limit_;
-  /**
-   * Maximum concentration per region.
-   * It is used for optimization of interpolation table.
-   */
-  std::vector<std::vector<double>> max_conc;
-  /**
-   * Three dimensional array contains intersections between isotherms and mass balance lines. 
-   * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
-   * Up to |nr_of_region x nr_of_substances x n_points| doubles. Because of equidistant step 
-   * lenght in cocidered system of coordinates, just function values are stored.
-   */
-  std::vector<std::vector<Isotherm> > isotherms;
   
-  unsigned int n_substances_;   //< number of substances that take part in the sorption mode
-  
-  /// Mapping from local indexing of substances to global.
-  std::vector<unsigned int> substance_global_idx_;
-
   /**
    * Reaction model that follows the sorption.
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
   
+  /// general assembly objects, hold assembly objects of appropriate dimension
+  GenericAssembly< InitConditionAssemblySorp > * init_condition_assembly_;
+  GenericAssembly< ReactionAssemblySorp > * reaction_assembly_;
 
-  /** Structure for data respectful to element, but indepedent of actual isotherm.
-   * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
-   * Is kind of optimization, so that these data are computed only when necessary.
-   */
-  struct CommonElementData{
-    double scale_aqua;
-    double scale_sorbed;
-    double no_sorbing_surface_cond;
-  } common_ele_data;
-  
-  /** Computes @p CommonElementData.
-   * Is pure virtual, implemented differently for simple/mobile/immobile sorption class.
-   */
-  virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
+
 };
 
 #endif  //SORPTION_BASE_H

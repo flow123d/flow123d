@@ -46,18 +46,14 @@
 #include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
 #include "system/asserts.hh"                           // for Assert, ASSERT
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
-#include "system/global_defs.h"                        // for OLD_ASSERT, msg
 #include "tools/time_governor.hh"                      // for TimeStep
 
 class Mesh;
 class Observe;
 class EvalPoints;
 class BulkPoint;
-class EdgePoint;
-class CouplingPoint;
-class BoundaryPoint;
+class SidePoint;
 class FieldSet;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
@@ -178,15 +174,7 @@ public:
 
 
     /// Return appropriate value to EdgePoint in FieldValueCache
-    typename Value::return_type operator() (EdgePoint &p);
-
-
-    /// Return appropriate value to CouplingPoint in FieldValueCache
-    typename Value::return_type operator() (CouplingPoint &p);
-
-
-    /// Return appropriate value to BoundaryPoint in FieldValueCache
-    typename Value::return_type operator() (BoundaryPoint &p);
+    typename Value::return_type operator() (SidePoint &p);
 
 
     /**
@@ -261,7 +249,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type) override;
+    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -332,10 +320,16 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /**
+     * Create and return shared_ptr to ElementDataCache appropriate to Field. Data cache is given by discrete @p space_type
+     * and is stored into data structures of output time @p stream for postponed output too.
+     */
+    void set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) override;
+
+    /**
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
-    void compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream);
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
@@ -354,6 +348,9 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
 
+    /// Implements FieldCommon::fill_data_value
+    void fill_data_value(const std::vector<int> &offsets) override;
+
 protected:
 
     /// Return item of @p value_cache_ given by i_cache_point.
@@ -364,11 +361,6 @@ protected:
      * history queue to keep its size less then @p history_length_limit_.
      */
     void update_history(const TimeStep &time);
-
-    /// Fills acutally the data cache with field values, used in @p compute_field_data
-    void fill_data_cache(OutputTime::DiscreteSpace space_type,
-                         std::shared_ptr<OutputTime> stream,
-                         std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache);
 
     /**
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
@@ -428,6 +420,9 @@ protected:
      */
     mutable FieldValueCache<typename Value::element_type> value_cache_;
 
+    /// ElementDataCache used during field output, object is shared with OutputTime
+    std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
+
 
 
     template<int dim, class Val>
@@ -453,10 +448,9 @@ inline typename Value::return_type const & Field<spacedim,Value>::value(const Po
 {
 
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
-    		"Null field ptr on region id: %d, idx: %d, field: %s\n", elm.region().id(), elm.region_idx().idx(), name().c_str());
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    		.error("Null field ptr on region\n");
     return region_fields_[elm.region_idx().idx()]->value(p,elm);
 }
 
@@ -467,11 +461,10 @@ inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, co
                    std::vector<typename Value::return_type>  &value_list) const
 {
     ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	OLD_ASSERT(elm.region_idx().idx() < region_fields_.size(), "Region idx %u out of range %lu, field: %s\n",
-           elm.region_idx().idx(), (unsigned long int) region_fields_.size(), name().c_str());
-	OLD_ASSERT( region_fields_[elm.region_idx().idx()] ,
-    		"Null field ptr on region id: %d, field: %s\n", elm.region().id(), name().c_str());
-    ASSERT_DBG(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
+	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
+	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
+    		.error("Null field ptr on region\n");
+    ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
 
     region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
 }

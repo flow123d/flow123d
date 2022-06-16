@@ -1,0 +1,35 @@
+# ---------------------------------------------------------------------------- #
+# ---------- CHARON-SERVICE ---------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+# Schedule benchmark taks on charon and start the service for their evaluation.
+name: Flow123d-charon-service
+description: 'Poke charon benchmark service.'
+node: ci2runner
+workspace: F123-ci2runner
+wrappers:
+  - build-name:
+      name:  "charon-service #${BUILD_NUMBER}"
+      
+triggers:
+  - timed: "H */6 * * *" # run this job every 6 hours
+builders:
+  - ssh-builder:
+      ssh-user-ip: jan_brezina@charon23.nti.tul.cz:22 
+      command: | 
+        workdir=/storage/liberec3-tul/home/jan_brezina/ci-hpc-app
+        
+        # possibly clone
+        if [ ! -d "$workdir" ];
+        then
+            git clone https://github.com/flow123d/ci-hpc-app.git
+        fi
+        
+        # checkout latest
+        cd "$workdir"
+        git pull
+
+        # start build service if not running
+        cd "$workdir/projects/flow123d"
+        bash cihpc.sh schedule
+        bash cihpc.sh check
+        bash cihpc.sh log -n 300

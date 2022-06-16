@@ -59,15 +59,14 @@ const int LinSys_PERMON::registrar = LinSys_PERMON::get_input_type().size();
 
 
 LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &params)
-        : LinSys_PETSC( rows_ds ),
-          params_(params)
+        : LinSys_PETSC( rows_ds, params )
 {
     matrix_ineq_ = NULL;
     ineq_ = NULL;
 }
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
-	: LinSys_PETSC(other), params_(other.params_)
+	: LinSys_PETSC(other)
 {
 	MatCopy(other.matrix_ineq_, matrix_ineq_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.ineq_, ineq_);
@@ -232,17 +231,6 @@ LinSys_PERMON::~LinSys_PERMON( )
 }
 
 
-
-void LinSys_PERMON::set_from_input(const Input::Record in_rec)
-{
-	LinSys::set_from_input( in_rec );
-
-	// PETSC specific parameters
-    // If parameters are specified in input file, they are used,
-    // otherwise keep settings provided in constructor of LinSys_PERMON.
-    std::string user_params = in_rec.val<string>("options");
-	if (user_params != "") params_ = user_params;
-}
 
 
 double LinSys_PERMON::get_solution_precision()

@@ -159,21 +159,7 @@ typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
 
 
 template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (EdgePoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (CouplingPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
-}
-
-
-
-template<int spacedim, class Value>
-typename Value::return_type Field<spacedim,Value>::operator() (BoundaryPoint &p) {
+typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
     return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
 }
 
@@ -197,7 +183,7 @@ it::Instance Field<spacedim,Value>::get_input_type() {
 
 template<int spacedim, class Value>
 it::Array Field<spacedim,Value>::get_multifield_input_type() {
-	ASSERT(false).error("This method can't be used for Field");
+	ASSERT_PERMANENT(false).error("This method can't be used for Field");
 
 	it::Array arr = it::Array( it::Integer() );
 	return arr;
@@ -239,7 +225,7 @@ template<int spacedim, class Value>
 std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
-    ASSERT_LT(reg.idx(), this->region_fields_.size());
+    ASSERT_PERMANENT_LT(reg.idx(), this->region_fields_.size());
     return this->region_fields_[reg.idx()];
 }
 */
@@ -318,8 +304,11 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     if (no_check_control_field_) {
             no_check_control_field_->set_time(time_step, limit_side);
     }
-        
-    set_time_result_ = TimeStatus::constant;
+    
+    if(set_time_result_ == TimeStatus::changed_forced)
+        set_time_result_ = TimeStatus::changed;
+    else
+        set_time_result_ = TimeStatus::constant;
     
     // read all descriptors satisfying time.ge(input_time)
     update_history(time_step);
@@ -376,7 +365,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+	ASSERT( flags().match(FieldFlag::equation_input))(other.name())(this->name())
 	        .error("Can not copy to the non-input field.");
 
 	// do not use copy if the field have its own input
@@ -392,11 +381,11 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpaceFlags type)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-	    ASSERT( OutputTime::discrete_flags_defined(type) ).error();
+	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 	    this->compute_field_data( type, stream);
 	}
 }
@@ -649,104 +638,59 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeG
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpaceFlags space_type, std::shared_ptr<OutputTime> stream) {
-	typedef typename Value::element_type ElemType;
-    for (uint i=0; i<OutputTime::N_DISCRETE_SPACES; ++i)
-        if (space_type[i]) {
-	    	OutputTime::DiscreteSpace type = OutputTime::DiscreteSpace(i);
+void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+    typedef typename Value::element_type ElemType;
 
-            OutputTime::OutputDataPtr output_data_base = stream->prepare_compute_data<ElemType>(this->name(), type,
-            		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    auto output_cache_base = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    output_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+}
 
-            try{
-                // try casting actual ElementDataCache
-                if( ! output_data_base->is_dummy()){
-                    auto output_data = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_data_base);
-                    fill_data_cache(type, stream, output_data);
-                }
 
-            } catch(const std::bad_cast& e){
-                // skip
-            }
-        }
+template<int spacedim, class Value>
+void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+    ASSERT(output_mesh);
+
+    ASSERT_EQ(space_type, OutputTime::NATIVE_DATA);
+
+    /* Copy data to array */
+    std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+    if (field_fe_ptr) {
+        auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_,
+                typeid(field_fe_ptr->get_dofhandler()->ds()->fe()[0_d].get()).name(),  // should be used better solution of fe_type setting
+                                                                                       // e.g. method 'name()' of FiniteElement and descendants
+                field_fe_ptr->get_dofhandler()->max_elem_dofs());
+        // try casting actual ElementDataCache
+        auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
+        field_fe_ptr->native_data_to_cache(*native_output_data);
+    } else {
+        WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+    }
 
     /* Set the last time */
     stream->update_time(this->time());
 
 }
 
+
 template<int spacedim, class Value>
-void Field<spacedim,Value>::fill_data_cache(OutputTime::DiscreteSpace space_type,
-                                            std::shared_ptr<OutputTime> stream,
-                                            std::shared_ptr<ElementDataCache<typename Value::element_type>> data_cache)
+void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 {
-    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
-    ASSERT(output_mesh);
-
-    /* Copy data to array */
-    switch(space_type) {
-        case OutputTime::NODE_DATA:
-        case OutputTime::CORNER_DATA: {
-            unsigned int node_index = 0;
-            for(const auto & ele : *output_mesh )
-            {
-                std::vector<Space<3>::Point> vertices = ele.vertex_list();
-                for(unsigned int i=0; i < ele.n_nodes(); i++)
-                {
-                    const Value &node_value =
-                            Value( const_cast<typename Value::return_type &>(
-                                    this->value(vertices[i],
-                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                                );
-                    ASSERT_EQ(data_cache->n_comp(), node_value.n_rows()*node_value.n_cols()).error();
-                    data_cache->store_value(node_index, node_value.mem_ptr() );
-                    ++node_index;
-                }
-            }
-        }
-        break;
-        case OutputTime::ELEM_DATA: {
-            for(const auto & ele : *output_mesh )
-            {
-                unsigned int ele_index = ele.idx();
-                const Value &ele_value =
-                            Value( const_cast<typename Value::return_type &>(
-                                    this->value(ele.centre(),
-                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
-                                                                            )
-                                );
-                ASSERT_EQ(data_cache->n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
-                data_cache->store_value(ele_index, ele_value.mem_ptr() );
-            }
-        }
-        break;
-        case OutputTime::NATIVE_DATA: {
-            std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
-
-            if (field_fe_ptr) {
-                auto native_output_data_base = stream->prepare_compute_data<double>(this->name(), space_type,
-                        (unsigned int)Value::NRows_, (unsigned int)Value::NCols_,
-                        typeid(field_fe_ptr->get_dofhandler()->ds()->fe()[0_d].get()).name(),  // should be used better solution of fe_type setting
-                                                                                               // e.g. method 'name()' of FiniteElement and descendants
-				        field_fe_ptr->get_dofhandler()->max_elem_dofs());
-                // try casting actual ElementDataCache
-                auto native_output_data = std::dynamic_pointer_cast<ElementDataCache<double>>(native_output_data_base);
-                field_fe_ptr->native_data_to_cache(*native_output_data);
-            } else {
-                WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
-            }
-        }
-        break;
-        case OutputTime::MESH_DEFINITION:
-        case OutputTime::UNDEFINED:
-            //should not happen
-        break;
+    for (unsigned int i=0; i<offsets.size(); ++i) {
+        if (offsets[i] == -1) continue; // skip empty value
+        auto ret_value = Value::get_from_array(this->value_cache_, i);
+        const Value &ele_value = Value( ret_value );
+        output_data_cache_->store_value(offsets[i], ele_value.mem_ptr() );
     }
 }
 
+
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
-	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT_EQ(this->mesh()->region_db().size(), region_fields_.size()).error();
 	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
 
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;

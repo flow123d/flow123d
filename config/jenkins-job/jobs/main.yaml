@@ -20,7 +20,7 @@
 
 
 # --------------------------------------------------------------- DAILY UPDATE
-- job:          !include: misc/daily-update.yaml
+- job:          !include: misc/charon-service.yaml
 # --------------------------------------------------------------- COVERAGE
 - job:          !include: misc/coverage.yaml
 

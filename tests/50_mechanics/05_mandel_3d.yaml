@@ -19,7 +19,7 @@ problem: !Coupling_Sequential
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
     a_tol: 0
     r_tol: 1e-12
-    flow_equation: !Flow_Richards_LMH
+    flow_equation: !Flow_Darcy_LMH
         gravity: [0,0,0]
         nonlinear_solver:
           linear_solver: !Petsc

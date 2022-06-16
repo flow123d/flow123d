@@ -39,7 +39,9 @@ problem: !Coupling_Sequential
         bc_pressure: 0
     output:
       fields:
-        - { field: pressure_p0, interpolation: D1_value }
+        #- { field: pressure_p0, interpolation: D1_value }
+        - { field: pressure_p0, interpolation: P0_value }
+        - { field: piezo_head_p0, interpolation: P1_average }
         #- { field: pressure_p2_disc, interpolation: D1_value }
         - { field: velocity_p0, interpolation: D1_value }
     output_stream:

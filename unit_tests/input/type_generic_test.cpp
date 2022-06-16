@@ -504,7 +504,7 @@ TEST(GenericType, parameter_not_used) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( { record.finish(); }, "must be used");
+	EXPECT_ASSERT_DEATH( { record.finish(); }, "map_it != created_instance_.second.end()");
 }
 
 
@@ -513,9 +513,9 @@ TEST(GenericType, parameter_not_used) {
 #define INSTANCE_TEST_CONSTRUCT(TYPE) \
 		template class InstanceTest< TYPE >;
 
-INSTANCE_TEST_CONSTRUCT(Integer);
-INSTANCE_TEST_CONSTRUCT(Double);
-INSTANCE_TEST_CONSTRUCT(String);
+INSTANCE_TEST_CONSTRUCT(Integer)
+INSTANCE_TEST_CONSTRUCT(Double)
+INSTANCE_TEST_CONSTRUCT(String)
 
 
 TEST(Instances, unused_subtree) {

@@ -1,20 +1,28 @@
+# Test goal: Transport 1D-2D (convection, dual porosity, sorption).
+# Author: Pavel Exner
+# Source for reference:
+#   only qualitative check in Paraview
+#
+# Features:
+#   - dual porosity including sorption (substances A,B)
+#   - dual porosity initial concentration (substance C)
+#   - substance C is only diffunding to mobile pores and convected away
+#   - different dual porosity parameters
+
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test2 - Transport 1D-2D (convection, dual porosity, sorption)
+  description: Transport 1D-2D (convection, dual porosity, sorption)
   mesh:
     mesh_file: ../00_mesh/rectangle_12.8x8_frac.msh
     regions:
       - !Union
         name: subset
-        regions:
-          - 2d
-          - 1d
+        regions: [1d, 2d]
       - !Union
         name: .sides
-        regions:
-          - .2d
-          - .1d
-  flow_equation: !Flow_Darcy_MH
+        regions: [.1d, .2d]
+
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -31,21 +39,13 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    output:
-      fields:
-        - pressure_p0
-        - velocity_p0
-        - region_id
-    output_stream:
-      file: ./test2.pvd
-      format: !vtk
-        variant: ascii
+
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
         - region: .sides
           bc_conc: !FieldFormula
-            value: x/12.75
+            value: [x/12.75, x/12.75, 0]
         - region: subset
           init_conc: 0
           porosity: 0.25
@@ -54,16 +54,14 @@ problem: !Coupling_Sequential
           - conc
           - region_id
     output_stream:
-      file: ./transport.pvd
-      format: !vtk
-        variant: ascii
       times:
-        - step: 0.5
+        - step: 0.25
     substances:
       - A
       - B
+      - C
     time:
-      end_time: 5.0
+      end_time: 1
     balance:
       cumulative: true
     reaction_term: !DualPorosity
@@ -72,12 +70,14 @@ problem: !Coupling_Sequential
           diffusion_rate_immobile:
             - 0.01
             - 0.01
-          porosity_immobile: 0.25
+            - 0.03
+          porosity_immobile: 0.15
           init_conc_immobile:
             - 0.0
             - 0.0
+            - 0.8
       reaction_mobile: !SorptionMobile
-        solvent_density: 1.0
+        solvent_density: 0.9
         substances:
           - A
           - B
@@ -86,7 +86,7 @@ problem: !Coupling_Sequential
           - 1.0
         input_fields:
           - region: subset
-            rock_density: 1.0
+            rock_density: 1.2
             sorption_type:
               - linear
               - freundlich
@@ -94,10 +94,8 @@ problem: !Coupling_Sequential
             isotherm_other:
               - 0
               - 0.5
-        output:
-          fields: []
       reaction_immobile: !SorptionImmobile
-        solvent_density: 1.0
+        solvent_density: 0.9
         substances:
           - A
           - B
@@ -106,7 +104,7 @@ problem: !Coupling_Sequential
           - 1.0
         input_fields:
           - region: subset
-            rock_density: 1.0
+            rock_density: 1.2
             sorption_type:
               - linear
               - freundlich
@@ -114,7 +112,3 @@ problem: !Coupling_Sequential
             isotherm_other:
               - 0
               - 0.5
-        output:
-          fields: []
-      output:
-        fields: []
