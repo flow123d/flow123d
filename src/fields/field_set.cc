@@ -294,6 +294,12 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
 	    std::string field_name = it->val<std::string>("name");
     	bool is_bdr = it->val<bool>("is_boundary");
 
+    	// check if field of same name doesn't exist in FieldSet
+    	auto * exist_field = this->field(field_name);
+    	if (exist_field!=nullptr) {
+    	    THROW(ExcFieldExists() << FieldCommon::EI_Field(field_name));
+    	}
+
     	Input::Iterator<Input::AbstractRecord> scalar_it = it->find<Input::AbstractRecord>("scalar_field");
         if (scalar_it) {
             Field<3, FieldValue<3>::Scalar> * scalar_field;
@@ -304,7 +310,8 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
             *this+=scalar_field
                     ->name(field_name)
                     .description("")
-                    .units( UnitSI::dimensionless() );
+                    .units( UnitSI::dimensionless() )
+					.flags(equation_result);
             scalar_field->set_mesh(*mesh_);
             scalar_field->set( *scalar_it, time.end());
         } else {
@@ -318,7 +325,8 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
                 *this+=vector_field
                         ->name(field_name)
                         .description("")
-                        .units( UnitSI::dimensionless() );
+                        .units( UnitSI::dimensionless() )
+						.flags(equation_result);
                 vector_field->set_mesh(*mesh_);
                 vector_field->set( *vector_it, time.end());
             } else {
@@ -332,7 +340,8 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
                     *this+=tensor_field
                             ->name(field_name)
                             .description("")
-                            .units( UnitSI::dimensionless() );
+                            .units( UnitSI::dimensionless() )
+							.flags(equation_result);
                     tensor_field->set_mesh(*mesh_);
                     tensor_field->set( *tensor_it, time.end());
 	            } else {
