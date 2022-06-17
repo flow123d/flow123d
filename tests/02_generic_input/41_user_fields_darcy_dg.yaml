@@ -1,5 +1,5 @@
 #################
-# Test goal: Test time steps function defined in main YAML file.
+# Test goal: Definition of user fields in Darcy_LMH and Transport_DG equations
 # Author: David Flanderka
 # Source for reference: qualitative
 
@@ -34,6 +34,7 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
+        #- user_cond
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       user_fields:
@@ -73,6 +74,9 @@ problem: !Coupling_Sequential
           init_conc: 0
           cross_section: 1
           porosity: 1
+      output:
+        fields:
+          - conc
     output_stream:      
       times:
         - step: 0.5
