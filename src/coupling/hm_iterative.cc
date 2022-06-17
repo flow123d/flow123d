@@ -72,6 +72,7 @@ private:
 
 
 const it::Record & HM_Iterative::get_input_type() {
+    std::string equation_name = "Coupling_Iterative";
     return it::Record("Coupling_Iterative",
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
@@ -83,9 +84,14 @@ const it::Record & HM_Iterative::get_input_type() {
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
 				it::Default::obligatory(),
 				"Mechanics, provides the displacement field.")
+        .declare_key("user_fields", it::Array(
+        		HM_Iterative::EqFields()
+                    .make_user_field_type(equation_name)),
+                IT::Default::optional(),
+                "Input fields of the equation defined by user.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqFields()
-		            .make_field_descriptor_type("Coupling_Iterative")),
+		            .make_field_descriptor_type(equation_name)),
 		        IT::Default::obligatory(),
 		        "Input fields of the HM coupling.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
@@ -262,6 +268,11 @@ void HM_Iterative::initialize()
 {
     flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(&eq_fields_, &eq_data_);
     residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(&eq_fields_, &eq_data_);
+
+    Input::Array user_fields_arr;
+    if (input_record_.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_.init_user_fields(user_fields_arr, time().step());
+    }
 }
 
 

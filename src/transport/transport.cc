@@ -75,6 +75,10 @@ const IT::Record &ConvectionTransport::get_input_type()
 {
 	return IT::Record(_equation_name, "Finite volume method, explicit in time, for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
+	        .declare_key("user_fields", IT::Array(
+	                    EqFields().make_user_field_type(_equation_name)),
+	                IT::Default::optional(),
+	                "Input fields of the equation defined by user.")
 			.declare_key("input_fields", IT::Array(
 			        EqFields().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
@@ -186,6 +190,11 @@ void ConvectionTransport::initialize()
     conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvection >(eq_fields_.get(), eq_data_.get());
     matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvection >(eq_fields_.get(), eq_data_.get());
     matrix_mpi_assembly_->set_min_edge_sides(1);
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->init_user_fields(user_fields_arr, time().step());
+    }
 }
 
 
