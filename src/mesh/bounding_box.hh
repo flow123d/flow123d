@@ -28,7 +28,6 @@
 #include <vector>                                      // for vector
 #include <armadillo>
 #include "mesh/point.hh"                               // for Space, Space<>...
-#include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcStream, ope...
 #include "system/global_defs.h"                        // for msg, rank, ss
 
@@ -172,7 +171,7 @@ public:
      * Axis coding is: 0 - axis x, 1 - axis y, 2 - axis z.
      */
     double projection_center(unsigned int axis) const {
-    	ASSERT_LT(axis, dimension);
+    	ASSERT_LT(axis, dimension).error("Invalid axis!\n");
     	return (max_vertex_[axis] + min_vertex_[axis])/2;
     }
 

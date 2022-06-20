@@ -193,6 +193,7 @@ TEST_F(FieldModelTest, create_multi_scalar) {
     // initialize field caches
     this->init_field_caches();
     f_scal.name("field_scalar");
+    f_scal.set_components(component_names);
     f_multi.name("field_multi");
     f_multi.set_components(component_names);
     f_multi.set_mesh( *mesh );
@@ -270,6 +271,7 @@ TEST_F(FieldModelTest, create_multi_vector) {
     // initialize field caches
     this->init_field_caches();
     f_scal.name("field_scalar");
+    f_scal.set_components(component_names);
     f_multi.name("field_multi");
     f_multi.set_components(component_names);
     f_multi.set_mesh( *mesh );

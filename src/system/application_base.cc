@@ -29,6 +29,10 @@
 #include <petsc/private/petscimpl.h> /* to gain access to the private PetscVFPrintf */
 #endif
 
+#ifdef FLOW123D_HAVE_PERMON
+#include <permonsys.h>
+#endif
+
 #include <string.h>                                    // for strsignal
 
 #include <iostream>                                    // for cout
@@ -74,6 +78,7 @@ ApplicationBase::ApplicationBase()
 { }
 
 bool ApplicationBase::petsc_initialized = false;
+bool ApplicationBase::permon_initialized = false;
 
 
 void ApplicationBase::system_init( MPI_Comm comm, const string &log_filename ) {
@@ -182,6 +187,30 @@ int ApplicationBase::petcs_finalize() {
 }
 
 
+void ApplicationBase::permon_initialize(int argc, char ** argv) {
+#ifdef FLOW123D_HAVE_PERMON
+    PermonInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+#endif
+}
+
+int ApplicationBase::permon_finalize() {
+#ifdef FLOW123D_HAVE_PERMON
+	if ( permon_initialized )
+	{
+		PetscErrorCode ierr=0;
+
+		ierr = PermonFinalize(); CHKERRQ(ierr);
+
+		permon_initialized = false;
+
+		return ierr;
+	}
+#endif
+
+	return 0;
+}
+
+
 void ApplicationBase::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
@@ -192,11 +221,15 @@ void ApplicationBase::init(int argc, char ** argv) {
 	this->petsc_initialize(argc, argv);
 	petsc_initialized = true;
 
+	this->permon_initialize(argc, argv);
+	permon_initialized = true;
+
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
 }
 
 
 ApplicationBase::~ApplicationBase() {
 	//if (sys_info.log) xfclose(sys_info.log);
+	permon_finalize();
 	petcs_finalize();
 }

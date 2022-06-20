@@ -7,10 +7,11 @@
 
 Deformation of the porous media is modelled by the stationary linear elasticity equation:
 \eq{\label{eq:lin_el} -\div(\delta\tn \sigma(\uu)) = \delta\vc f + \vc f_C + \vc f_H. }
-Here $\uu$ \units{}{1}{} is the displacement vector field with 3 components, the stress tensor is given by the Hooke law
-\eq{ \tn\sigma(\uu) = \tn C\widetilde\ee(\uu) = 2\mu\widetilde\ee(\uu) + \lambda(\tn I:\widetilde\ee(\uu))\tn I, }
-and the Lam\'e parameters are determined in terms of the \hyperA{Mechanics-LinearElasticity-FE-Data::young-modulus}{Young modulus} $E$ [$\mathrm{Pa}$] and \hyperA{Mechanics-LinearElasticity-FE-Data::poisson-ratio}{Poisson's ratio} $\nu$ \units{}{}{}:
-\eq{ \mu = \frac{E}{2(1+\nu)},\quad \lambda = \frac{E\nu}{(1+\nu)(1-2\nu)}. }
+Here $\uu$ \units{}{1}{} is the unknown displacement vector field with 3 components. The stress tensor is given by the Hooke law
+\eq{ \tn\sigma(\uu) - \tn\sigma_0 = \tn C\widetilde\ee(\uu) = 2\mu\widetilde\ee(\uu) + \lambda(\tn I:\widetilde\ee(\uu))\tn I }
+in terms of the \hyperA{Mechanics-LinearElasticity-FE-Data::initial-stress}{initial stress} $\tn\sigma_0$ [$\mathrm{Pa}$], and the Lam\'e parameters
+\eq{ \mu = \frac{E}{2(1+\nu)},\quad \lambda = \frac{E\nu}{(1+\nu)(1-2\nu)}, }
+where $E$ [$\mathrm{Pa}$] is the \hyperA{Mechanics-LinearElasticity-FE-Data::young-modulus}{Young modulus} and  $\nu$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::poisson-ratio}{Poisson's ratio}.
 The strain tensor in $\Omega_d$ is defined as follows:
 \eq{ \widetilde\ee(\uu) = \frac12(\nabla\uu_d+\nabla\uu_d^\top) + \begin{cases}0&\mbox{ if }d=3,\\\frac1\delta\sum_{i=1}^n\uu_{d+1}^i\otimes_s\nn_{d+1}^i & \mbox{ else}.\end{cases} }
 Here $\vc a\otimes_s\vc b:=\frac12(\vc a\otimes\vc b+\vc b\otimes\vc a)$.
@@ -59,6 +60,15 @@ and $\sigma^U_{d+1,d}$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE
 The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
 \eq{ \vc f_{Cd} = \begin{cases}\vc 0 & \mbox{ if }d=3,\\\sum_{i=1}^n\vc t^i_{d+1,d} & \mbox{ else}.\end{cases} }
 
+\paragraph{Fracture contact mechanics.}
+The linear elastic model does not prevent the self-penetration of the deformed porous material.
+To avoid this unphysical behaviour, the user has to switch on the \hyperA{Mechanics-LinearElasticity-FE::contact}{contact} parameter.
+Then the following contact condition is applied to all fracture elements:
+\eq{ \delta_d-\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\cdot\nn_{d+1}^i \ge \delta_{min}, }
+where $\delta_{min}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::cross-section-min}{minimal cross-section} of the fracture.
+In the case $d=2$, the minimal cross-section is just the contact distance.
+For $1d$ fractures/channels $\delta_{min}$ corresponds to the minimal contact area.
+When contact conditions are active, the mechanical model is solved as a quadratic programming problem with linear constraints.
 
 \paragraph{Output fields.}
 The mechanics equation provides several fields for output:

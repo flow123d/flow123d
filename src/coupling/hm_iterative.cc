@@ -44,9 +44,9 @@ struct fn_hm_coupling_beta {
     fn_hm_coupling_beta(double beta_f) : beta_factor(beta_f) {}
 
 
-    inline double operator() (double alpha, double lame_mu, double lame_lambda)
+    inline double operator() (double alpha, double lame_mu, double lame_lambda, double density, double gravity)
     {
-        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda);
+        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda)*density*gravity;
     }
 
 private:
@@ -81,6 +81,7 @@ const it::Record & HM_Iterative::get_input_type() {
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
+				it::Default::obligatory(),
 				"Mechanics, provides the displacement field.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqFields()
@@ -183,7 +184,9 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
         fn_hm_coupling_beta(beta_),
         alpha,
         eq_data.mechanics_->eq_fields().lame_mu,
-        eq_data.mechanics_->eq_fields().lame_lambda
+        eq_data.mechanics_->eq_fields().lame_lambda,
+        density,
+        gravity
         ), 0.0);
 
     auto old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
@@ -250,6 +253,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     eq_fields_.initialize(*mesh_, eq_data_, time_, input_record_.val<double>("iteration_parameter"));
     eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
+
+    eq_fields_.add_coords_field();
 }
 
 

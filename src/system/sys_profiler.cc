@@ -425,7 +425,7 @@ int Profiler::find_child(const CodePoint &cp) {
 
 
 void Profiler::stop_timer(const CodePoint &cp) {
-#ifdef FLOW123D_DEBUG
+#ifdef FLOW123D_DEBUG_ASSERTS
     // check that all childrens are closed
     Timer &timer=timers_[actual_node];
     for(unsigned int i=0; i < Timer::max_n_childs; i++)

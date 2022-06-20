@@ -309,7 +309,7 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;
 
-    /// Maps element indices between source (data) and target (computational) mesh if data interpolation is set to equivalent_msh
+    /// Maps element indices from computational mesh to the  source (data).
     std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
 
     /// Holds specific data of field evaluation over all dimensions.

@@ -73,7 +73,7 @@ public:
 
 /** Auxiliary structure that keeps the separate
  * element maps (bulk and boundary) for reading mesh and elementwise data.
- * The mapping is considered from the source mesh (reading) to the target mesh (computation).
+ * The mappings are form computational mesh to the other (field fe data) mesh.
  * Used by @p check_compatible_mesh().
  */
 struct EquivalentMeshMap{
@@ -219,7 +219,9 @@ public:
     void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
-    inline int elem_index(int elem_id) const;
+    inline int elem_index(int elem_id) const {
+  	    return element_ids_.get_position(elem_id);
+    }
 
         /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
     void init_element_vector(unsigned int size);
@@ -486,7 +488,8 @@ public:
      *             If element doesn't exist in input mesh value is set to undef_idx.
      *             If meshes are not compatible returns empty vector.
      */
-    virtual std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh);
+    std::shared_ptr<EquivalentMeshMap> check_compatible_mesh(Mesh & input_mesh) override;
+
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file

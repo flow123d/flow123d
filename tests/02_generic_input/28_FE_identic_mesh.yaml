@@ -22,6 +22,11 @@ problem: !Coupling_Sequential
           field_name: sigma
           interpolation: identic_mesh
           default_value: 0.05
+        anisotropy: !FieldFE
+          mesh_data_file: ./28_mesh_data.msh
+          field_name: anisotropy
+          interpolation: identic_mesh
+          default_value: 1.0
       - region: .1d
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -32,6 +37,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - velocity_p0
         - sigma
+        - anisotropy
     output_stream:
       file: ./flow.vtk
       format: !vtk

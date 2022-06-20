@@ -63,10 +63,10 @@ using namespace Input::Type;
    // errors during declaration
 #ifdef FLOW123D_DEBUG_ASSERTS
    Record rec_empty;
-   EXPECT_THROW( {rec_empty.declare_key("xx", Integer(), "");}, feal::Exc_assert);
+   EXPECT_ASSERT_DEATH( {rec_empty.declare_key("xx", Integer(), "");}, "key : 'xx'");
 
    Record rec_fin = Record("xx","").close();
-   EXPECT_THROW( {rec_fin.declare_key("xx", String(),"");}, feal::Exc_assert);
+   EXPECT_ASSERT_DEATH( {rec_fin.declare_key("xx", String(),"");}, "key : 'xx'");
 #endif
 
 
