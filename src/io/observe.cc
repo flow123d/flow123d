@@ -401,8 +401,7 @@ Observe::~Observe() {
 
 
 template <typename T>
-Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
-		unsigned int n_cols)
+Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_shape)
 {
     double time_unit_seconds = time_unit_conversion_->get_coef();
     if ( std::isnan(observe_values_time_[observe_time_idx_]) )
@@ -414,7 +413,7 @@ Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, dou
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
         observe_field_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(field_name, n_rows * n_cols, point_ds_->lsize());
+					= std::make_shared< ElementDataCache<T> >(field_name, n_shape, point_ds_->lsize());
         it=observe_field_values_.find(field_name);
     }
     return it->second;
@@ -423,7 +422,7 @@ Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, dou
 // explicit instantiation of template method
 #define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
 template Observe::OutputDataPtr Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
-		unsigned int n_rows, unsigned int n_cols)
+		unsigned int n_shape)
 
 OBSERVE_PREPARE_COMPUTE_DATA(int);
 OBSERVE_PREPARE_COMPUTE_DATA(unsigned int);

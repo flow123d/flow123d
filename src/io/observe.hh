@@ -288,11 +288,10 @@ public:
      *
      * @param field_name Quantity name of founding ElementDataCache
      * @param field_time Actual computing time
-     * @param n_rows     Count of rows of data cache (used only if new cache is created)
-     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     * @param n_shape    Count of rows * cols of data cache (used only if new cache is created)
      */
     template <typename T>
-    OutputDataPtr prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, double field_time, unsigned int n_shape);
 
     /// Getter of patch_point_data.
     inline PatchPointVec &patch_point_data() {

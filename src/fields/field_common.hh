@@ -530,6 +530,12 @@ public:
      */
     virtual ~FieldCommon();
 
+    /// Return number of shape components
+    inline uint n_shape() const {
+        if (shape_.size() == 1) return shape_[0];
+        else return shape_[0] * shape_[1];
+    }
+
     /**
      * Hold shape of Field.
      *

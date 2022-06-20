@@ -627,8 +627,7 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::set_observe_data_cache(std::shared_ptr<Observe> observe) {
     typedef typename Value::element_type ElemType;
 
-    auto output_cache_base = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
-            (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+    auto output_cache_base = observe->prepare_compute_data<ElemType>(this->name(), this->time(), this->n_shape());
     observe_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
 }
 
