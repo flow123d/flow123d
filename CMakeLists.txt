@@ -881,7 +881,7 @@ add_subdirectory(third_party/bparser)
 # add pybind11 sources
 message(STATUS "add subdir pybind11")
 add_subdirectory(third_party/pybind11-2.9.2)
-pybind11_add_module("flow123d" "src/fields/python_field_base.cc")
+pybind11_add_module("flowpy" SHARED "src/fields/python_field_base.cc")
 
 # add tbb sources
 #message(STATUS "add subdir TBB")

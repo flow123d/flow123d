@@ -311,13 +311,13 @@ add_library(coupling_lib
     fields/eval_points.cc
     fields/field_value_cache.cc
     fields/surface_depth.cc
-    fields/python_field_base.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
+    flowpy
     fparser   
     bparser  
     armadillo
