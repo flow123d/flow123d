@@ -624,15 +624,6 @@ void Field<spacedim,Value>::set_output_data_cache(OutputTime::DiscreteSpace spac
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::set_observe_data_cache(std::shared_ptr<Observe> observe) {
-    typedef typename Value::element_type ElemType;
-
-    auto output_cache_base = observe->prepare_compute_data(this->name(), this->time(), this->n_shape());
-    observe_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
-}
-
-
-template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
     std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
     ASSERT(output_mesh);

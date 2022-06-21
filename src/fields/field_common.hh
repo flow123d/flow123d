@@ -499,12 +499,6 @@ public:
         ASSERT_PERMANENT(false);
     }
 
-    /// Create and set shared_ptr to ElementDataCache. Used only in descendant Field<>.
-    virtual void set_observe_data_cache(FMT_UNUSED std::shared_ptr<Observe> observe)
-    {
-        ASSERT_PERMANENT(false);
-    }
-
     /// Fill data to ElementDataCache on given patch.
     virtual void fill_data_value(FMT_UNUSED const std::vector<int> &offsets)
     {

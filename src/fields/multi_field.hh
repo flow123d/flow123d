@@ -290,15 +290,6 @@ public:
         return nullptr;
     }
 
-
-    /**
-     * Create and return shared_ptr to ElementDataCache appropriate to Field observe. Data is stored into data structures
-     * of @p observe for postponed output too.
-     */
-    void set_observe_data_cache(std::shared_ptr<Observe> observe) override {
-        for(auto &field : sub_fields_) field.set_observe_data_cache(observe);
-    }
-
 private:
     /// Subfields (items) of MultiField
     std::vector< SubFieldType > sub_fields_;

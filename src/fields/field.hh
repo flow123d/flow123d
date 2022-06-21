@@ -322,12 +322,6 @@ public:
     void set_output_data_cache(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) override;
 
     /**
-     * Create and return shared_ptr to ElementDataCache appropriate to Field observe. Data is stored into data structures
-     * of @p observe for postponed output too.
-     */
-    void set_observe_data_cache(std::shared_ptr<Observe> observe) override;
-
-    /**
      * Interpolate given field into output discrete @p space_type and store the values
      * into storage of output time @p stream for postponed output.
      */
@@ -427,9 +421,6 @@ protected:
 
     /// ElementDataCache used during field output, object is shared with OutputTime
     std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
-
-    /// Same as previous but used during observe output, object is shared with Observe
-    std::shared_ptr<ElementDataCache<typename Value::element_type>> observe_data_cache_;
 
 
 

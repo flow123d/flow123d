@@ -106,8 +106,9 @@ public:
     void check(Mesh &mesh, string local_str, string global_point_str, unsigned int i_elm) {
         find_observe_point(mesh);
         EXPECT_EQ(i_elm, observe_data_.element_idx_);
-        if (local_str != "")
+        if (local_str != "") {
             EXPECT_ARMA_EQ( arma::vec(local_str), observe_data_.local_coords_);
+        }
         EXPECT_ARMA_EQ( arma::vec3(global_point_str), observe_data_.global_coords_);
     }
 
@@ -268,7 +269,7 @@ TEST(Observe, all) {
     observe_fields_list.insert("scalar_field");
     observe_fields_list.insert("vector_field");
     observe_fields_list.insert("tensor_field");
-    observe_fields_list.insert("enum_field");
+    //observe_fields_list.insert("enum_field");
     GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly;
     observe_output_assembly = new GenericAssemblyObserve< AssemblyObserveOutput >( field_set.get(), observe_fields_list, std::dynamic_pointer_cast<Observe>(obs) );
 
@@ -279,7 +280,7 @@ TEST(Observe, all) {
 
     for(auto field_name : observe_fields_list) {
         auto &field = (*field_set)[field_name];
-        field.set_observe_data_cache( obs );
+        obs->prepare_compute_data(field.name(), field.time(), field.n_shape());
     }
 
     observe_output_assembly->assemble(dh);
