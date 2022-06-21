@@ -90,6 +90,7 @@ public:
         multidim_assembly_[2_d]->assemble_cell_integrals(bulk_integral_data_);
         multidim_assembly_[3_d]->assemble_cell_integrals(bulk_integral_data_);
         bulk_integral_data_.reset();
+        element_cache_map_.clear_element_eval_points_map();
         END_TIMER( DimAssembly<1>::name() );
     }
 
