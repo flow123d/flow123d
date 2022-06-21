@@ -627,7 +627,7 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::set_observe_data_cache(std::shared_ptr<Observe> observe) {
     typedef typename Value::element_type ElemType;
 
-    auto output_cache_base = observe->prepare_compute_data<ElemType>(this->name(), this->time(), this->n_shape());
+    auto output_cache_base = observe->prepare_compute_data(this->name(), this->time(), this->n_shape());
     observe_data_cache_ = std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
 }
 
@@ -674,13 +674,18 @@ void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::fill_observe_value(const std::vector<int> &offsets)
+void Field<spacedim,Value>::fill_observe_value(std::shared_ptr<ElementDataCacheBase> output_cache_base, const std::vector<int> &offsets)
 {
+    typedef typename Value::element_type ElemType;
+
+    std::shared_ptr<ElementDataCache<ElemType>> observe_data_cache =
+            std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+
     for (unsigned int i=0; i<offsets.size(); ++i) {
         if (offsets[i] == -1) continue; // skip empty value
         auto ret_value = Value::get_from_array(this->value_cache_, i);
         const Value &ele_value = Value( ret_value );
-        observe_data_cache_->store_value(offsets[i], ele_value.mem_ptr() );
+        observe_data_cache->store_value(offsets[i], ele_value.mem_ptr() );
     }
 }
 

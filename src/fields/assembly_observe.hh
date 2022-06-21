@@ -148,7 +148,7 @@ public:
             this->offsets_[field_value_cache_position] = val_idx;
         }
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
-            f_acc->fill_observe_value(this->offsets_);
+            f_acc->fill_observe_value(observe_->get_output_cache(f_acc->name()), this->offsets_);
         }
     }
 

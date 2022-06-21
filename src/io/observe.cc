@@ -400,7 +400,6 @@ Observe::~Observe() {
 }
 
 
-template <typename T>
 Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_shape)
 {
     double time_unit_seconds = time_unit_conversion_->get_coef();
@@ -413,20 +412,11 @@ Observe::OutputDataPtr Observe::prepare_compute_data(std::string field_name, dou
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
         observe_field_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(field_name, n_shape, point_ds_->lsize());
+					= std::make_shared< ElementDataCache<double> >(field_name, n_shape, point_ds_->lsize());
         it=observe_field_values_.find(field_name);
     }
     return it->second;
 }
-
-// explicit instantiation of template method
-#define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
-template Observe::OutputDataPtr Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
-		unsigned int n_shape)
-
-OBSERVE_PREPARE_COMPUTE_DATA(int);
-OBSERVE_PREPARE_COMPUTE_DATA(unsigned int);
-OBSERVE_PREPARE_COMPUTE_DATA(double);
 
 
 void Observe::output_header() {

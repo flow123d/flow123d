@@ -50,6 +50,7 @@ class EvalPoints;
 class ElementCacheMap;
 class FieldSet;
 class BulkPoint;
+class ElementDataCacheBase;
 
 
 using namespace std;
@@ -512,7 +513,7 @@ public:
 
 
     /// Fill data to ElementDataCache on given patch.
-    virtual void fill_observe_value(FMT_UNUSED const std::vector<int> &offsets)
+    virtual void fill_observe_value(FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_cache_base, FMT_UNUSED const std::vector<int> &offsets)
     {
         ASSERT_PERMANENT(false);
     }

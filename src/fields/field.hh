@@ -55,6 +55,7 @@ class EvalPoints;
 class BulkPoint;
 class SidePoint;
 class FieldSet;
+class ElementDataCacheBase;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -353,7 +354,7 @@ public:
     void fill_data_value(const std::vector<int> &offsets) override;
 
     /// Implements FieldCommon::fill_observe_value
-    void fill_observe_value(const std::vector<int> &offsets) override;
+    void fill_observe_value(std::shared_ptr<ElementDataCacheBase> output_cache_base, const std::vector<int> &offsets) override;
 
 protected:
 

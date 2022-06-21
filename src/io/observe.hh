@@ -290,8 +290,18 @@ public:
      * @param field_time Actual computing time
      * @param n_shape    Count of rows * cols of data cache (used only if new cache is created)
      */
-    template <typename T>
     OutputDataPtr prepare_compute_data(std::string field_name, double field_time, unsigned int n_shape);
+
+    /**
+     * Return pointer to ElementDataCache of given field.
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     */
+    inline OutputDataPtr get_output_cache(std::string field_name) {
+        OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
+        ASSERT(it != observe_field_values_.end())(field_name).error("Element data cache of given field doesn't exist. Did you call prepare_compute_data?\n");
+        return it->second;
+    }
 
     /// Getter of patch_point_data.
     inline PatchPointVec &patch_point_data() {

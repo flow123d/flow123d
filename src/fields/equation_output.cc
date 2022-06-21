@@ -323,20 +323,20 @@ void EquationOutput::output(TimeStep step)
     }
 
     // observe output
-    {
-        FieldSet used_fields;
-        uint n_fields = 0;
-        for(FieldCommon * f_acc : this->field_list) {
-            if ( f_acc->flags().match( FieldFlag::allow_output) ) {
-                if (observe_fields_.find(f_acc->name()) != observe_fields_.end()) {
-                    f_acc->set_observe_data_cache( observe_ptr );
-                    n_fields++;
+    if (observe_fields_.size() > 0) {
+        for (auto observe_field : this->observe_fields_) {
+            auto *field_ptr = this->field(observe_field);
+            if ( field_ptr->flags().match( FieldFlag::allow_output) ) {
+                if (field_ptr->is_multifield()) {
+                    for (uint i_comp=0; i_comp<field_ptr->n_comp(); ++i_comp) {
+                        observe_ptr->prepare_compute_data(field_ptr->full_comp_name(i_comp), step.end(), field_ptr->n_shape());
+                    }
+                } else {
+                    observe_ptr->prepare_compute_data(field_ptr->name(), field_ptr->time(), field_ptr->n_shape());
                 }
             }
         }
-        if (n_fields>0) {
-            observe_output_assembly_->assemble(this->dh_);
-        }
+        observe_output_assembly_->assemble(this->dh_);
     }
 }
 
