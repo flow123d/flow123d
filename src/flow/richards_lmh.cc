@@ -128,6 +128,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGoverno
     init_cond_postprocess_assembly_(nullptr)
 {
     eq_fields_ = make_shared<EqFields>();
+    eq_fields_->set_default_fieldset();
     eq_data_ = make_shared<EqData>();
     DarcyLMH::eq_data_ = eq_data_;
     DarcyLMH::eq_fields_ = eq_fields_;

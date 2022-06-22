@@ -227,6 +227,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
+    eq_fields_.set_default_fieldset();
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
     
     // setup flow equation

@@ -218,6 +218,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
     eq_fields_->add_coords_field();
+    eq_fields_->set_default_fieldset();
     this->eq_fieldset_ = eq_fields_.get();
     Model::init_balance(in_rec);
 

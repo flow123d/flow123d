@@ -130,6 +130,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
     eq_fields_->add_coords_field();
+    eq_fields_->set_default_fieldset();
 	this->eq_fieldset_ = eq_fields_.get();
 
 	eq_data_->transport_matrix_time = -1.0; // or -infty

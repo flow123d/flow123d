@@ -450,7 +450,7 @@ public:
     /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
-    virtual std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const =0;
+    virtual std::vector<const FieldCommon *> set_dependency(unsigned int i_reg) const =0;
 
     /**
      * Sets @p component_index_
@@ -518,6 +518,13 @@ public:
      * Return true if messages_data_ vector is nonempty and clear its.
      */
     static bool print_message_table(ostream& stream, std::string equation_name);
+
+    /**
+     * Setter of @p shared_->default_fieldset_
+     */
+    inline void set_default_fieldset(FieldSet &default_fs) {
+        shared_->default_fieldset_ = &default_fs;
+    }
 
     /**
      * Virtual destructor.
@@ -641,6 +648,14 @@ protected:
          * Allow set minimal and maximal limit value of Field.
          */
         std::pair<double, double> limits_;
+
+        /**
+         * Holds FieldSet which is default owner of Field.
+         *
+         * This data member is set in method FieldSet::make_field_descriptor_type and it is used during evaluation
+         * of user field in FieldFormula.
+         */
+        FieldSet *default_fieldset_;
 
 
     };

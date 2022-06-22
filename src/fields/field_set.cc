@@ -237,7 +237,7 @@ void FieldSet::set_dependency(FieldSet &used_fieldset) {
 void FieldSet::topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields) {
     if (used_fields.find(f) != used_fields.end() ) return; // field processed
     used_fields.insert(f);
-    auto dep_vec = f->set_dependency(*this, i_reg); // vector of dependent fields
+    auto dep_vec = f->set_dependency(i_reg); // vector of dependent fields
     for (auto f_dep : dep_vec) {
         topological_sort(f_dep, i_reg, used_fields);
     }
@@ -314,6 +314,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
 					.flags(equation_result);
             scalar_field->set_mesh(*mesh_);
             scalar_field->set( *scalar_it, time.end());
+            scalar_field->set_default_fieldset(*this);
         } else {
             Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
             if (vector_it) {
@@ -329,6 +330,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
 						.flags(equation_result);
                 vector_field->set_mesh(*mesh_);
                 vector_field->set( *vector_it, time.end());
+                vector_field->set_default_fieldset(*this);
             } else {
                 Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
                 if (tensor_it) {
@@ -344,6 +346,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
 							.flags(equation_result);
                     tensor_field->set_mesh(*mesh_);
                     tensor_field->set( *tensor_it, time.end());
+                    tensor_field->set_default_fieldset(*this);
 	            } else {
 	                THROW(ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
 	            }

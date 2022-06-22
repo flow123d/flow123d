@@ -161,7 +161,7 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED unsigned int i_reg) const override {
         return std::vector<const FieldCommon *>();
     }
 

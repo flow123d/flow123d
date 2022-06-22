@@ -388,6 +388,13 @@ public:
     /// Return order of evaluated fields by dependency and region_idx.
     std::string print_dependency() const;
 
+    /**
+     * Collective interface to @p FieldCommon::set_default_fieldset().
+     */
+    inline void set_default_fieldset() {
+    	for(auto field : field_list) field->set_default_fieldset(*this);
+    }
+
 
 protected:
 
