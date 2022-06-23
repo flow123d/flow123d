@@ -115,6 +115,7 @@ public:
 
         data_ = std::make_shared<EqData>();
         data_->add_coords_field();
+        data_->set_default_fieldset();
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
@@ -305,6 +306,7 @@ public:
 
         data_ = std::make_shared<EqData>();
         data_->add_coords_field();
+        data_->set_default_fieldset();
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/test_27936_elem.msh\", optimize_mesh=false }");
     	MixedPtr<FE_RT0> fe_rt0;
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
