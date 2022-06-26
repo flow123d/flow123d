@@ -34,7 +34,9 @@ namespace Input {
 }
 template<unsigned int dim> class AssemblyOutputElemData;
 template<unsigned int dim> class AssemblyOutputNodeData;
+template<unsigned int dim> class AssemblyObserveOutput;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
+template< template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
 
 
 /**
@@ -162,6 +164,7 @@ private:
     GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
     GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
     GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
+    GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly_;
 
 };
 

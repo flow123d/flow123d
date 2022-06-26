@@ -50,7 +50,7 @@ ElementCacheMap::~ElementCacheMap() {
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     this->eval_points_ = eval_points;
     unsigned int ep_data_size = std::max(1.1, (double)eval_points_->max_size()) * CacheMapElementNumber::get();
-    eval_point_data_.resize(ep_data_size);
+    if (eval_point_data_.reserved_size() < ep_data_size) eval_point_data_.resize(ep_data_size);
     element_eval_points_map_ = new int [ep_data_size];
     for (unsigned int i=0; i<ep_data_size; ++i)
     	element_eval_points_map_[i] = ElementCacheMap::unused_point;
