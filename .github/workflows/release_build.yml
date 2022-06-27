@@ -82,7 +82,7 @@ jobs:
         docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
         docker exec ${build_container} make -C ${FLOW} html-doc
         docker exec ${build_container} make -C ${FLOW} doxy-doc
-data_type
+        
     - name: package
       run: |        
         echo "Processing IP address"
