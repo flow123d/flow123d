@@ -123,17 +123,17 @@ jobs:
         password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
-        source: "publish_${environment}/doxygen, 
-                 publish_${environment}/flow123d_3.9.0_doc.pdf,
-                 publish_${environment}/flow123d_3.9.0_linux_install.json,
-                 publish_${environment}/flow123d_3.9.0_linux_install.tar.gz,
-                 publish_${environment}/flow123d_3.9.0_windows_install.exe,
-                 publish_${environment}/flow123d_3.9.0_windows_install.json,
-                 publish_${environment}/htmldoc,
-                 publish_${environment}/imagename"
-                 
-        target: packages/${release_version}
-        strip_components: 1
+        #source: "publish_${environment}/doxygen, 
+                 #publish_${environment}/flow123d_3.9.0_doc.pdf,
+                 #publish_${environment}/flow123d_3.9.0_linux_install.json,
+                 #publish_${environment}/flow123d_3.9.0_linux_install.tar.gz,
+                 #publish_${environment}/flow123d_3.9.0_windows_install.exe,
+                 #publish_${environment}/flow123d_3.9.0_windows_install.json,
+                 #publish_${environment}/htmldoc,
+                 #publish_${environment}/imagename"
+        source: "publish_gnu/flow123d_3.9.0_windows_install.exe"
+        target: "~/packages/${release_version}"
+        #strip_components: 1
         
         
       #ls -la $destination
