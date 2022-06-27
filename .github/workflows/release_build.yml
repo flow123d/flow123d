@@ -122,7 +122,7 @@ jobs:
         password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
-        source: publish_${environment}/*
+        source: "publish_${environment}/*"
         target: packages/${release_version}
         strip_components: 1
         
