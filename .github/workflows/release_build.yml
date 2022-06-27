@@ -40,6 +40,11 @@ jobs:
       # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+        echo "Variables summary"
+        echo build_container: \"${build_container}\"
+        echo release_verion: \"${release_version}\"
+        echo environment: \"${environment}\"
+
     - name: Build
       run: |
         # docker rm -f  || echo "container not running"
@@ -68,15 +73,17 @@ jobs:
 
     - name: package
       run: |        
-        destination=$(pwd)/publish_{environment}
+        echo "Processing IP address"
+        curl http://ifconfig.me
+
+        destination=$(pwd)/publish_${environment}
         imagesversion=$(cat $(pwd)/config/docker/image_tag)
         release_version=$(cat $(pwd)/version)      
-        git clone https://github.com/flow123d/docker-config.git
+        git clone https://github.com/flow123d/docker-config.git@v${imagesversion}
         make -C docker-config/package \
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
               target_image=flow123d-${environment} \
-              image_tag=${release_version} \
               image_tag=${release_version} \
               destination=${destination} \
               all
@@ -91,7 +98,10 @@ jobs:
               target_image=flow123d-${environment} \
               destination=${destination} \
               push-to-hub
-        curl http://ifconfig.me
+        
+        ls -l publish_${environment}
+        
+        
               
 #    - name: Release
 #      uses: softprops/action-gh-release@v1
@@ -110,8 +120,8 @@ jobs:
         password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
-        source: publish_{environment}/*
-        target: 'packages/${release_version}'
+        source: publish_${environment}/*
+        target: packages/${release_version}
         strip_components: 1
         
         
