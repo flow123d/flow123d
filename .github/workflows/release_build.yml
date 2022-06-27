@@ -123,7 +123,7 @@ jobs:
 #            flow123d_${release_version}_linux_install.tar.gz
 #            flow123d_${release_version}_windows_install.exe
  #         name: release_${release_version}
-    - name: Get variables
+
     - name: SSH
       uses: appleboy/scp-action@master
       with:
