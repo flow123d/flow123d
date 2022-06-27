@@ -207,7 +207,8 @@ template<typename Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
           input_rec(in_rec),
-          allocation_done(false)
+          allocation_done(false),
+          mass_assembly_(nullptr)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
@@ -262,6 +263,11 @@ void TransportDG<Model>::initialize()
     eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(eq_data_->n_substances());
     ret_sources_prev.resize(eq_data_->n_substances());
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->init_user_fields(user_fields_arr, Model::time_->step(), eq_fields_->output_fields);
+    }
 
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
@@ -346,11 +352,6 @@ void TransportDG<Model>::initialize()
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
     }
-
-    Input::Array user_fields_arr;
-    if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->init_user_fields(user_fields_arr, Model::time_->step());
-    }
 }
 
 
@@ -364,34 +365,44 @@ TransportDG<Model>::~TransportDG()
 
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            delete eq_data_->ls[i];
-            delete eq_data_->ls_dt[i];
+            if (eq_data_->ls != nullptr) {
+                delete eq_data_->ls[i];
+                delete eq_data_->ls_dt[i];
+            }
 
-            if (stiffness_matrix[i])
-                chkerr(MatDestroy(&stiffness_matrix[i]));
-            if (mass_matrix[i])
-                chkerr(MatDestroy(&mass_matrix[i]));
-            if (rhs[i])
-            	chkerr(VecDestroy(&rhs[i]));
-            if (mass_vec[i])
-            	chkerr(VecDestroy(&mass_vec[i]));
-            if (eq_data_->ret_vec[i])
-            	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
+            if (stiffness_matrix.size() > 0) {
+                if (stiffness_matrix[i])
+                    chkerr(MatDestroy(&stiffness_matrix[i]));
+                if (mass_matrix[i])
+                    chkerr(MatDestroy(&mass_matrix[i]));
+                if (rhs[i])
+                	chkerr(VecDestroy(&rhs[i]));
+                if (mass_vec[i])
+                	chkerr(VecDestroy(&mass_vec[i]));
+                if (eq_data_->ret_vec[i])
+                	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
+            }
         }
-        delete[] eq_data_->ls;
-        delete[] eq_data_->ls_dt;
+        if (eq_data_->ls != nullptr) {
+            delete[] eq_data_->ls;
+            delete[] eq_data_->ls_dt;
+            eq_data_->ls = nullptr;
+        }
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
         //delete[] rhs;
         //delete[] mass_vec;
         //delete[] ret_vec;
 
-        delete mass_assembly_;
-        delete stiffness_assembly_;
-        delete sources_assembly_;
-        delete bdr_cond_assembly_;
-        delete init_assembly_;
+        if (mass_assembly_ != nullptr) {
+            delete mass_assembly_;
+            delete stiffness_assembly_;
+            delete sources_assembly_;
+            delete bdr_cond_assembly_;
+            delete init_assembly_;
+        }
     }
+
 
 }
 

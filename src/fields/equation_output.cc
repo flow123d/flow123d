@@ -36,8 +36,8 @@ IT::Record &EquationOutput::get_input_type() {
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
             .allow_auto_conversion("field")
-            .declare_key("field", IT::Parameter("output_field_selection"), IT::Default::obligatory(),
-                    "The field name (from selection).")
+            .declare_key("field", IT::String(), IT::Default::obligatory(),
+                    "The field name (of equation field or user field).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
             .declare_key("interpolation", IT::Array( interpolation_sel ), IT::Default::read_time("Interpolation type of output data."),
@@ -191,8 +191,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 }
 
 void EquationOutput::init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg) {
-    string field_name = it -> val< Input::FullEnum >("field");
+    string field_name = it -> val< std::string >("field");
     FieldCommon *found_field = field(field_name);
+    ASSERT_PERMANENT_PTR(found_field)(field_name).error("Field doesn't exist in equation!\n"); // TODO: Change to exception.
 
     Input::Array interpolations;
     OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();

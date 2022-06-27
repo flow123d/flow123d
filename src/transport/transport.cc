@@ -194,7 +194,7 @@ void ConvectionTransport::initialize()
 
     Input::Array user_fields_arr;
     if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->init_user_fields(user_fields_arr, time().step());
+       	eq_fields_->init_user_fields(user_fields_arr, time().step(), eq_fields_->output_fields);
     }
 }
 

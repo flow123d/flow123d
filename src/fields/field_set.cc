@@ -287,7 +287,7 @@ std::string FieldSet::print_dependency() const {
 }
 
 
-void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
+void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time, FieldSet &output_fields) {
 	for (Input::Iterator<Input::Record> it = input_list.begin<Input::Record>();
                     it != input_list.end();
                     ++it) {
@@ -315,6 +315,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
             scalar_field->set_mesh(*mesh_);
             scalar_field->set( *scalar_it, time.end());
             scalar_field->set_default_fieldset(*this);
+            output_fields+=*scalar_field;
         } else {
             Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
             if (vector_it) {
@@ -331,6 +332,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
                 vector_field->set_mesh(*mesh_);
                 vector_field->set( *vector_it, time.end());
                 vector_field->set_default_fieldset(*this);
+                output_fields+=*vector_field;
             } else {
                 Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
                 if (tensor_it) {
@@ -347,6 +349,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time) {
                     tensor_field->set_mesh(*mesh_);
                     tensor_field->set( *tensor_it, time.end());
                     tensor_field->set_default_fieldset(*this);
+                    output_fields+=*tensor_field;
 	            } else {
 	                THROW(ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
 	            }

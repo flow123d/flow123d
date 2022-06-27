@@ -295,7 +295,7 @@ public:
    /**
     * Create user defined fields, store them to field_list.
     */
-   void init_user_fields(Input::Array input_list, const TimeStep &time);
+   void init_user_fields(Input::Array input_list, const TimeStep &time, FieldSet &output_fields);
 
     /**
      * Collective interface to @p FieldCommonBase::flags_add().
