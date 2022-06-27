@@ -44,6 +44,8 @@ jobs:
         echo build_container: \"${build_container}\"
         echo release_verion: \"${release_version}\"
         echo environment: \"${environment}\"
+        echo imagesversion: \"${imagesversion}\"
+        
 
     - name: Build
       run: |
@@ -79,7 +81,8 @@ jobs:
         destination=$(pwd)/publish_${environment}
         imagesversion=$(cat $(pwd)/config/docker/image_tag)
         release_version=$(cat $(pwd)/version)      
-        git clone https://github.com/flow123d/docker-config.git@v${imagesversion}
+        git clone https://github.com/flow123d/docker-config.git
+        git checkout v${imagesversion}
         make -C docker-config/package \
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
