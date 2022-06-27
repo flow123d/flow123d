@@ -41,10 +41,14 @@ jobs:
       # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-        
-        echo "destination=$(pwd)/publish_${environment}" >> $GITHUB_ENV
-        echo "imagesversion=$(cat $(pwd)/config/docker/image_tag)" >> $GITHUB_ENV
-        echo "release_version=$(cat $(pwd)/version)" >> $GITHUB_ENV      
+
+        destination="$(pwd)/publish_${environment}"
+        imagesversion="$(cat $(pwd)/config/docker/image_tag)"
+        release_version="$(cat $(pwd)/version)"      
+
+        echo "destination=${destination}" >> $GITHUB_ENV
+        echo "imagesversion=${imagesversion}" >> $GITHUB_ENV
+        echo "release_version=${release_version}" >> $GITHUB_ENV      
 
         echo "Variables summary"
         echo build_container: \"${build_container}\"
