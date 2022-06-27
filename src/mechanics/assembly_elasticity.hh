@@ -565,6 +565,107 @@ private:
 };
 
 template <unsigned int dim>
+class CrossSectionAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqFields EqFields;
+    typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "CrossSectionAssemblyElasticity"; }
+
+    /// Constructor.
+    CrossSectionAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
+        this->used_fields_ += eq_fields_->cross_section;
+    }
+
+    /// Destructor.
+    ~CrossSectionAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        //this->balance_ = eq_data_->balance_;
+        this->element_cache_map_ = element_cache_map;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fsv_.initialize(*this->quad_low_, *fe_,
+        		update_values | update_normal_vectors | update_quadrature_points);
+        n_dofs_ = fe_->n_dofs();
+        vec_view_side_ = &fsv_.vector_view(0);
+
+        output_vec_ = eq_fields_->output_field_ptr->vec();
+        output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        if (cell.dim() != dim) return;
+        if (!cell.is_own()) return;
+
+        DHCellAccessor cell_scalar = cell.cell_with_other_dh(eq_data_->dh_scalar_.get());
+        dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+
+        output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
+    }
+
+
+    /// Assembles between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+        if (dim == 1) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+
+        normal_displacement_ = 0;
+
+        DHCellAccessor cell_higher_dim = neighb_side.cell();
+        DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
+        fsv_.reinit(neighb_side.side());
+
+        dof_indices_ = cell_higher_dim.get_loc_dof_indices();
+
+        for (unsigned int i=0; i<n_dofs_; i++)
+            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
+
+        dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
+        output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
+    }
+
+
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    FEValues<3> fsv_;                                         ///< FEValues of side (neighbour integral) object
+
+    LocDofVec dof_indices_;                                   ///< Vector of local DOF indices of vector fields
+    LocDofVec dof_indices_scalar_;                            ///< Vector of local DOF indices of scalar fields
+    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in neighbour calculation.
+
+    double normal_displacement_;                              ///< Holds constributions of normal displacement.
+
+    /// Data vectors of output fields (FieldFE).
+    VectorMPI output_vec_;
+    VectorMPI output_cross_sec_vec_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
 class OutpuFieldsAssemblyElasticity : public AssemblyBase<dim>
 {
 public:
@@ -577,7 +678,7 @@ public:
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
-        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->output_cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
         this->used_fields_ += eq_fields_->initial_stress;
@@ -606,7 +707,6 @@ public:
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
         output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
         output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
-        output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
     }
 
@@ -647,8 +747,6 @@ public:
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
         output_von_mises_stress_vec_.set( dof_indices_scalar_[0], von_mises_stress );
         output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
-
-        output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
     }
 
 
@@ -676,13 +774,12 @@ public:
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
         }
 
-        LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
-        LocDofVec dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
+        dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
+        dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<3; j++)
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], normal_stress_(i,j) );
-        output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
-        output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
+        output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->output_cross_section(p_low) );
     }
 
 
@@ -715,7 +812,6 @@ private:
     VectorMPI output_stress_vec_;
     VectorMPI output_von_mises_stress_vec_;
     VectorMPI output_mean_stress_vec_;
-    VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
 
     template < template<IntDim...> class DimAssembly>

@@ -271,7 +271,7 @@ public:
             {
                 // compute lumped source
                 DHCellAccessor cell = edge_side.cell();
-                coef_ = (1.0 / cell.elm()->n_sides()) * cell.elm().measure() * eq_fields_->cross_section(p);
+                coef_ = (1.0 / cell.elm()->n_sides()) * cell.elm().measure() * eq_fields_->cross_section_updated(p);
                 double extra_source_term_ = coef_*eq_fields_->extra_source(p);
 
                 eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],

@@ -160,7 +160,7 @@ DarcyLMH::EqFields::EqFields()
         .name("cross_section_updated")
         .description("Cross-section after deformation - output.")
         .units( UnitSI().m() )
-        .flags(input_copy);
+        .flags(input_copy & equation_external_output);
 }
 
 

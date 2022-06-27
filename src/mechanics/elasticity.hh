@@ -39,6 +39,7 @@ class Elasticity;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
+template<unsigned int dim> class CrossSectionAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -261,6 +262,7 @@ private:
     GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
+    GenericAssembly< CrossSectionAssemblyElasticity > * cs_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 
 };

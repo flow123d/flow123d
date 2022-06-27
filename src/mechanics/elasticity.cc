@@ -306,6 +306,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
+          cs_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -435,6 +436,7 @@ void Elasticity::initialize()
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    cs_assembly_ = new GenericAssembly< CrossSectionAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
@@ -451,6 +453,7 @@ Elasticity::~Elasticity()
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
+    if (cs_assembly_!=nullptr) delete cs_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -471,6 +474,7 @@ void Elasticity::update_output_fields()
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
+    cs_assembly_->assemble(eq_data_->dh_);
     output_fields_assembly_->assemble(eq_data_->dh_);
 
     // update ghost values of computed fields
