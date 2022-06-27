@@ -148,7 +148,7 @@ jobs:
                  #publish_${environment}/imagename"
         source: "${{ steps.vars.outputs.pubdir }}/*"
         target: "~/packages/${{ steps.vars.outputs.relver }}"
-        #strip_components: 1
+        strip_components: 1
         
         
       #ls -la $destination
