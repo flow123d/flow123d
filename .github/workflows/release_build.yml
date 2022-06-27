@@ -81,8 +81,7 @@ jobs:
         destination=$(pwd)/publish_${environment}
         imagesversion=$(cat $(pwd)/config/docker/image_tag)
         release_version=$(cat $(pwd)/version)      
-        git clone https://github.com/flow123d/docker-config.git
-        git checkout v${imagesversion}
+        git clone -b v${imagesversion} https://github.com/flow123d/docker-config.git
         make -C docker-config/package \
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
