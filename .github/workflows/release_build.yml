@@ -41,6 +41,11 @@ jobs:
       # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+        
+        echo "destination=$(pwd)/publish_${environment}" >> $GITHUB_ENV
+        echo "imagesversion=$(cat $(pwd)/config/docker/image_tag)" >> $GITHUB_ENV
+        echo "release_version=$(cat $(pwd)/version)" >> $GITHUB_ENV      
+
         echo "Variables summary"
         echo build_container: \"${build_container}\"
         echo release_version: \"${release_version}\"
@@ -77,15 +82,15 @@ jobs:
         docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
         docker exec ${build_container} make -C ${FLOW} html-doc
         docker exec ${build_container} make -C ${FLOW} doxy-doc
-
+data_type
     - name: package
       run: |        
         echo "Processing IP address"
         curl http://ifconfig.me
 
-        destination=$(pwd)/publish_${environment}
-        imagesversion=$(cat $(pwd)/config/docker/image_tag)
-        release_version=$(cat $(pwd)/version)      
+        #destination=$(pwd)/publish_${environment}
+        #imagesversion=$(cat $(pwd)/config/docker/image_tag)
+        #release_version=$(cat $(pwd)/version)      
         git clone -b v${imagesversion} https://github.com/flow123d/docker-config.git
         make -C docker-config/package \
               container_name=${build_container} \
@@ -141,7 +146,7 @@ jobs:
                  #publish_${environment}/flow123d_3.9.0_windows_install.json,
                  #publish_${environment}/htmldoc,
                  #publish_${environment}/imagename"
-        source: "${{ steps.vars.outputs.pubdir }}/flow123d_3.9.0_windows_install.exe"
+        source: "${{ steps.vars.outputs.pubdir }}/*"
         target: "~/packages/${{ steps.vars.outputs.relver }}"
         #strip_components: 1
         
