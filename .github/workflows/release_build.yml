@@ -154,88 +154,19 @@ jobs:
         target: "~/packages/${{ steps.vars.outputs.relver }}"
         strip_components: 1
         
+
+    - name: Release add assets
+      # Whole action triggered by release change.
+      # We add created assets: PDF, and installation packages
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe
         
-      #ls -la $destination
-
-#publishers:
-  #- cifs:
-      #site: 'flow123d.at.public'
-      #target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
-      #source: publish_{environment}/**/*
-      #remove-prefix: publish_{environment}/
-
-#Jenkins prop.file
-  #- inject:
-      #script-content: |
-        #rm -f prop.file && touch prop.file
-        #echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
-        #echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
-        #echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
-#Jenkins Build
-  #- inject:
-      #properties-file: prop.file
-  #- shell: |
-      #start image
-      #docker rm -f cont{environment}{build_type} || echo "container not running"
-      #flow123d/bin/fterm update
-      #flow123d/bin/fterm rel_{environment} -- \
-          #--privileged -di \
-          #--name cont{environment}{build_type} \
-          #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
-          #--volume ${{WORKSPACE}}/docker:${{FLOW}}
-
-      #delete old build
-      #docker exec cont{environment}{build_type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
-
-      # setup local reference repository for faster cloning
-      #docker exec cont{environment}{build_type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
-      #copy config
-      #docker exec cont{environment}{build_type} cp ${{FLOW}}/config/config-jenkins-docker-{build_type}.cmake ${{FLOW}}/config.cmake
-
-      #configure and compile
-      #docker exec cont{environment}{build_type} make -C ${{FLOW}} -j4 all
-      #docker exec cont{environment}{build_type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj
-#Jenkins make doc
-  #- shell: |
-      #docker exec cont{environment}{build_type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
-      #docker exec cont{environment}{build_type} make -C ${{FLOW}} html-doc
-      #docker exec cont{environment}{build_type} make -C ${{FLOW}} doxy-doc
-
-#Jenkins package and upload
-  #- inject:
-      #properties-file: prop.file
-  #- shell: |
-      #destination=$(pwd)/publish_{environment}
-      
-      #imagesversion=$(cat flow123d/config/docker/image_tag)
-      
-      #rm -rf $destination && mkdir -p $destination
-      #rm -rf docker-config
-      #git clone https://github.com/flow123d/docker-config.git
-
-      #make -C docker-config/package \
-              #container_name=cont{environment}{build_type} \
-              #install_image="install-{environment}:$imagesversion" \
-              #target_image=ci-{environment} \
-              #destination=$destination \
-              #all
-
-      #make -C docker-config/package \
-              #container_name=cont{environment}{build_type} \
-              #target_image=ci-{environment} \
-              #destination=$destination \
-              #remove-unwanted
-
-      #make -C docker-config/package \
-              #container_name=cont{environment}{build_type} \
-              #target_image=ci-{environment} \
-              #push-to-hub
-
-      #ls -la $destination
-
-#publishers:
-  #- cifs:
-      #site: 'flow123d.at.public'
-      #target: '/docker-images/${{DOCKER_IMAGE_NAME}}_{environment}/'
-      #source: publish_{environment}/**/*
-      #remove-prefix: publish_{environment}/
+          #tag_name: v${{ steps.getversion.outputs.version }}
+          #release_name: release_${{ steps.getversion.outputs.version }}
+        #env:
+          #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
