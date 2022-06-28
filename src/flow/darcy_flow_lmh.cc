@@ -307,11 +307,6 @@ void DarcyLMH::init_eq_data()
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
-    // read optional user fields
-    Input::Array user_fields_arr;
-    if (input_record_.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->init_user_fields(user_fields_arr, time_->step(), this->output_object->get_output_fields());
-    }
 
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
@@ -350,8 +345,14 @@ void DarcyLMH::initialize() {
 		eq_data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 		eq_data_->dh_->distribute_dofs(ds);
     }
-
     output_object = new DarcyFlowMHOutput(this, input_record_);
+
+//    // read optional user fields
+//    Input::Array user_fields_arr;
+//    if (input_record_.opt_val("user_fields", user_fields_arr)) {
+//       	eq_fields_->init_user_fields(user_fields_arr, time_->step(), this->output_object->get_output_fields());
+//    }
+
     init_eq_data();
 
     eq_fields_->add_coords_field();

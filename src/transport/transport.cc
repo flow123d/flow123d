@@ -161,6 +161,11 @@ void ConvectionTransport::initialize()
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
 
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->init_user_fields(user_fields_arr, time().step(), eq_fields_->output_fields);
+    }
+
 	// register output vectors
     eq_fields_->output_fields.set_components(eq_data_->substances_.names());
     eq_fields_->output_fields.set_mesh(*mesh_);
@@ -191,11 +196,6 @@ void ConvectionTransport::initialize()
     conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvection >(eq_fields_.get(), eq_data_.get());
     matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvection >(eq_fields_.get(), eq_data_.get());
     matrix_mpi_assembly_->set_min_edge_sides(1);
-
-    Input::Array user_fields_arr;
-    if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->init_user_fields(user_fields_arr, time().step(), eq_fields_->output_fields);
-    }
 }
 
 

@@ -130,12 +130,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
   compute_errors_(false),
   is_output_specific_fields(false)
 {
-    Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
-    
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
                                                      darcy_flow->time().get_unit_conversion());
-    prepare_output(in_rec_output);
+    prepare_output(main_mh_in_rec);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
     if (in_rec_specific) {
@@ -174,18 +172,29 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record mai
     }
 }
 
-void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
+void DarcyFlowMHOutput::prepare_output(Input::Record main_mh_in_rec)
 {
   	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->eq_fieldset();
-	output_fields.set_mesh(*mesh_);
+
+    // read optional user fields
+	// TODO: check of DarcyLMH type is temporary, remove condition at the same time as removal DarcyMH
+	if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow)) {
+        Input::Array user_fields_arr;
+        if (main_mh_in_rec.opt_val("user_fields", user_fields_arr)) {
+            d->eq_fieldset().init_user_fields(user_fields_arr, d->time().step(), this->output_fields);
+        }
+	}
+
+    output_fields.set_mesh(*mesh_);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
+	Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
+    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
 }
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)

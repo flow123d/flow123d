@@ -387,6 +387,12 @@ void Elasticity::initialize()
     // setup output divergence
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
+
+    // read optional user fields
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	eq_fields_->init_user_fields(user_fields_arr, time_->step(), eq_fields_->output_fields);
+    }
     
     eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
@@ -398,12 +404,6 @@ void Elasticity::initialize()
     eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
-
-    // read optional user fields
-    Input::Array user_fields_arr;
-    if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->init_user_fields(user_fields_arr, time_->step(), eq_fields_->output_fields);
-    }
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
