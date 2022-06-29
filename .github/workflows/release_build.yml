@@ -103,15 +103,11 @@ jobs:
               image_tag=${release_version} \
               destination=${destination} \
               all
+
         make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
               image_tag=${release_version} \
-              destination=${destination} \
-              remove-unwanted
-        make -C docker-config/package \
-              container_name=${build_container} \
-              target_image=flow123d-${environment} \
               destination=${destination} \
               push-to-hub
         
