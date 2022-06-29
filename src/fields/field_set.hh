@@ -390,6 +390,11 @@ public:
 
     /**
      * Collective interface to @p FieldCommon::set_default_fieldset().
+     *
+     * Set data member default_fieldset_ to all fields of FieldSet. This data member holds pointer to primary FieldSet (equation)
+     * where field is defined and it is used during evaluation of field dependency in FieldSet (see method set_dependency).
+     * The goal is to allow the user to specify a dependency on other input fields or user defined fields in same equation where
+     * field is defined.
      */
     inline void set_default_fieldset() {
     	for(auto field : field_list) field->set_default_fieldset(*this);

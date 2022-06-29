@@ -521,6 +521,8 @@ public:
 
     /**
      * Setter of @p shared_->default_fieldset_
+     *
+     * See method FieldSet::set_default_fieldset to detailed description.
      */
     inline void set_default_fieldset(FieldSet &default_fs) {
         shared_->default_fieldset_ = &default_fs;
