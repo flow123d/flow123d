@@ -182,7 +182,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record main_mh_in_rec)
 	if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow)) {
         Input::Array user_fields_arr;
         if (main_mh_in_rec.opt_val("user_fields", user_fields_arr)) {
-            d->eq_fieldset().init_user_fields(user_fields_arr, d->time().step(), this->output_fields);
+            d->eq_fieldset().init_user_fields(user_fields_arr, d->time().step().end(), this->output_fields);
         }
 	}
 

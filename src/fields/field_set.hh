@@ -293,9 +293,13 @@ public:
     }
 
    /**
-    * Create user defined fields, store them to field_list.
+    * Create user defined fields, store them to field_list and to output FieldSet.
+    *
+    * @param input_list    List of Input::Records defined by user on input.
+    * @param time          Start time of simulation (necessary for Field<>::set).
+    * @param output_fields Output FieldSet.
     */
-   void init_user_fields(Input::Array input_list, const TimeStep &time, FieldSet &output_fields);
+   void init_user_fields(Input::Array input_list, double time, FieldSet &output_fields);
 
     /**
      * Collective interface to @p FieldCommonBase::flags_add().

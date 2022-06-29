@@ -287,7 +287,7 @@ std::string FieldSet::print_dependency() const {
 }
 
 
-void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time, FieldSet &output_fields) {
+void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &output_fields) {
 	for (Input::Iterator<Input::Record> it = input_list.begin<Input::Record>();
                     it != input_list.end();
                     ++it) {
@@ -313,7 +313,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time, F
                     .units( UnitSI::dimensionless() )
 					.flags(equation_result);
             scalar_field->set_mesh(*mesh_);
-            scalar_field->set( *scalar_it, time.end());
+            scalar_field->set( *scalar_it, time);
             scalar_field->set_default_fieldset(*this);
             output_fields+=*scalar_field;
         } else {
@@ -330,7 +330,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time, F
                         .units( UnitSI::dimensionless() )
 						.flags(equation_result);
                 vector_field->set_mesh(*mesh_);
-                vector_field->set( *vector_it, time.end());
+                vector_field->set( *vector_it, time);
                 vector_field->set_default_fieldset(*this);
                 output_fields+=*vector_field;
             } else {
@@ -347,7 +347,7 @@ void FieldSet::init_user_fields(Input::Array input_list, const TimeStep &time, F
                             .units( UnitSI::dimensionless() )
 							.flags(equation_result);
                     tensor_field->set_mesh(*mesh_);
-                    tensor_field->set( *tensor_it, time.end());
+                    tensor_field->set( *tensor_it, time);
                     tensor_field->set_default_fieldset(*this);
                     output_fields+=*tensor_field;
 	            } else {
