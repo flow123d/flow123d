@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
     performed in time step when is expected only one.
   mesh:
     mesh_file: ../00_mesh/square_1x1_str.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
