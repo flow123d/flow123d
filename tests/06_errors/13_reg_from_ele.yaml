@@ -22,7 +22,7 @@ problem: !Coupling_Sequential
           - 873
           - 1006
           - 1113
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc

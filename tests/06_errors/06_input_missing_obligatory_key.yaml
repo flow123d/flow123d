@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: 'Missing obligatory key mesh_file at address: /problem/mesh'
   mesh:
 ### ERROR missing obligatory key mesh_file
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     time:
       end_time: 0.5
       max_dt: 0.01
