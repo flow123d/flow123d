@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
   description: Test variable sorption parameters with simple 2D transport.
   mesh:
     mesh_file: ../00_mesh/rectangle_5x1.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

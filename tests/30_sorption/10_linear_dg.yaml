@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
   description: TOS combining DG and sorption.
   mesh:
     mesh_file: ../00_mesh/rectangle_5x1.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: rectangle
         conductivity: 0.125
