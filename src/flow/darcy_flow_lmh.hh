@@ -56,7 +56,6 @@
 #include "tools/time_governor.hh"               // for TimeGovernor
 #include "la/vector_mpi.hh"                     // for VectorMPI
 
-#include "flow/darcy_flow_mh.hh"                // for DarcyMH::EqData
 
 class Balance;
 class DarcyFlowMHOutput;

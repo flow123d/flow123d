@@ -1530,6 +1530,21 @@ DarcyLMH::~DarcyLMH() {
 }
 
 
+/// Helper method fills range (min and max) of given component
+void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
+    if (component==0) {
+        min = 0;
+        max = n_dofs/2;
+    } else if (component==1) {
+        min = n_dofs/2;
+        max = (n_dofs+1)/2;
+    } else {
+        min = (n_dofs+1)/2;
+        max = n_dofs;
+    }
+}
+
+
 std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) const {
 	ASSERT_LT(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
@@ -1553,22 +1568,6 @@ void DarcyLMH::initialize_asm() {
 
 void DarcyLMH::read_init_cond_asm() {
     this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
-}
-
-
-
-/// Helper method fills range (min and max) of given component
-void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
-    if (component==0) {
-        min = 0;
-        max = n_dofs/2;
-    } else if (component==1) {
-        min = n_dofs/2;
-        max = (n_dofs+1)/2;
-    } else {
-        min = (n_dofs+1)/2;
-        max = n_dofs;
-    }
 }
 
 

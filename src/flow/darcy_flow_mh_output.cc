@@ -24,9 +24,7 @@
 
 #include <system/global_defs.h>
 
-#include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_lmh.hh"
-#include "flow/assembly_mh_old.hh"
 #include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
 
@@ -205,7 +203,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     }
 
     // mask 2d elements crossing 1d
-    if (diff_data.eq_data_->mortar_method_ != DarcyMH::NoMortar) {
+    if (diff_data.eq_data_->mortar_method_ != DarcyLMH::NoMortar) {
         diff_data.velocity_mask.resize(mesh_->n_elements(),0);
         for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
             diff_data.velocity_mask[ isec.bulk_ele_idx() ]++;
