@@ -207,7 +207,7 @@ public:
 
         precompute_boundary_side(cell_side, p_side, p_bdr);
 
-    	if (type_==DarcyMH::EqFields::seepage) {
+    	if (type_==DarcyLMH::EqFields::seepage) {
     	    this->use_dirichlet_switch(cell_side, b_ele, p_bdr);
     	}
 
@@ -451,14 +451,14 @@ protected:
                 time_term_diag_ = time_term_ / eq_data_->time_step_;
                 time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
 
-                eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
+                eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, cell,
                                   {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {time_term_}, 0);
             }
             else
             {
                 // Add zeros explicitely to keep the sparsity pattern.
                 // Otherwise Petsc would compress out the zeros in FinishAssembly.
-                eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell,
+                eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, cell,
                                   {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, 0);
             }
 
@@ -466,7 +466,7 @@ protected:
                             -time_term_diag_,
                             -source_term_ - time_term_rhs_);
 
-            eq_data_->balance->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
+            eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
                             {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
         }
     }
@@ -477,7 +477,7 @@ protected:
         bulk_local_idx_ = cell_side.cell().local_idx();
 
         cross_section_ = eq_fields_->cross_section(p_side);
-        type_ = (DarcyMH::EqFields::BC_Type)eq_fields_->bc_type(p_bdr);
+        type_ = (DarcyLMH::EqFields::BC_Type)eq_fields_->bc_type(p_bdr);
 
         sidx_ = cell_side.side_idx();
         side_row_ = eq_data_->loc_side_dofs[dim-1][sidx_];    //local
@@ -529,17 +529,17 @@ protected:
      */
     inline void boundary_side_integral_in(DHCellSide cell_side, const ElementAccessor<3> &b_ele, BulkPoint &p_bdr)
     {
-        if ( type_ == DarcyMH::EqFields::none) {
+        if ( type_ == DarcyLMH::EqFields::none) {
             // homogeneous neumann
-        } else if ( type_ == DarcyMH::EqFields::dirichlet ) {
+        } else if ( type_ == DarcyLMH::EqFields::dirichlet ) {
             eq_data_->loc_constraint_.emplace_back( bulk_local_idx_, sidx_, eq_fields_->bc_pressure(p_bdr) );
 
-        } else if ( type_ == DarcyMH::EqFields::total_flux) {
+        } else if ( type_ == DarcyLMH::EqFields::total_flux) {
             // internally we work with outward flux
             eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, edge_row_,
                     -b_ele.measure() * eq_fields_->bc_robin_sigma(p_bdr) * cross_section_,
                     (-eq_fields_->bc_flux(p_bdr) - eq_fields_->bc_robin_sigma(p_bdr) * eq_fields_->bc_pressure(p_bdr)) * b_ele.measure() * cross_section_);
-        } else if (type_==DarcyMH::EqFields::seepage) {
+        } else if (type_==DarcyLMH::EqFields::seepage) {
             eq_data_->is_linear=false;
 
             double bc_pressure = eq_fields_->bc_switch_pressure(p_bdr);
@@ -557,7 +557,7 @@ protected:
                 eq_data_->loc_system_[bulk_local_idx_].add_value(edge_row_, side_flux);
             }
 
-        } else if (type_==DarcyMH::EqFields::river) {
+        } else if (type_==DarcyLMH::EqFields::river) {
             eq_data_->is_linear=false;
 
             double bc_pressure = eq_fields_->bc_pressure(p_bdr);
@@ -588,7 +588,7 @@ protected:
             THROW( ExcBCNotSupported() );
         }
 
-        eq_data_->balance->add_flux_values(eq_data_->water_balance_idx, cell_side,
+        eq_data_->balance_->add_flux_values(eq_data_->water_balance_idx, cell_side,
                                       {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_side_dofs[dim-1][sidx_]]},
                                       {1}, 0);
     }
@@ -778,7 +778,7 @@ protected:
     double cross_section_;                                 ///< Precomputed cross-section value
     unsigned int bulk_local_idx_;                          ///< Local idx of bulk element
     unsigned int sidx_, side_row_, edge_row_;              ///< Helper indices in boundary assembly
-    DarcyMH::EqFields::BC_Type type_;                      ///< Type of boundary condition
+    DarcyLMH::EqFields::BC_Type type_;                     ///< Type of boundary condition
     arma::vec3 nv_;                                        ///< Normal vector
     double ngh_value_;                                     ///< Precomputed ngh value
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity

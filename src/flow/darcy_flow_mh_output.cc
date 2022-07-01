@@ -192,12 +192,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
     diff_data.eq_fields_ = nullptr;
     diff_data.eq_data_ = nullptr;
-    if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
-    {
-        diff_data.eq_fields_ = d->eq_fields_.get();
-        diff_data.eq_data_ = d->eq_data_.get();
-    }
-    else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
+    if (DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
         diff_data.eq_fields_ = d->eq_fields_.get();
         diff_data.eq_data_ = d->eq_data_.get();
@@ -297,14 +292,9 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     
-    DarcyMH::EqFields* eq_fields = nullptr;
-    DarcyMH::EqData* eq_data = nullptr;
-    if(DarcyMH* d = dynamic_cast<DarcyMH*>(darcy_flow))
-    {
-        eq_fields = d->eq_fields_.get();
-        eq_data = d->eq_data_.get();
-    }
-    else if(DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
+    DarcyLMH::EqFields* eq_fields = nullptr;
+    DarcyLMH::EqData* eq_data = nullptr;
+    if (DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
         eq_fields = d->eq_fields_.get();
         eq_data = d->eq_data_.get();
