@@ -135,7 +135,7 @@ ci_docker_file_path=./dockerfile
 $(destination)/$(docker_arch_name): $(destination)/$(cmake_package_name)
 	-@docker rmi -f $(target_tagged) 
 	docker commit $(container_name) flow123d/temporary_build
-	docker pull flow123d/$(install_image)
+	docker pull "flow123d/$(install_image)"
 	#cp $(destination)/$(cmake_package_name) project/src/docker/create/default/$(cmake_package_name)
 	# 'docker build' build an image from a Dockerfile
 	docker build \
