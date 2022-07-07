@@ -18,7 +18,7 @@
 #include <include/pybind11/pybind11.h>
 #include <include/pybind11/embed.h>    // everything needed for embedding
 #include <include/pybind11/stl.h>      // type conversion
-#include "fields/python_field_base.hh"
+#include "pyapi/python_field_base.hh"
 
 //int add(int i, int j) {
 //    return i + j;
