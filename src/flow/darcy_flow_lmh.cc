@@ -966,23 +966,23 @@ void DarcyLMH::allocate_mh_matrix()
         lin_sys_schur().mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
 
         tmp_rows.clear();
-        if (eq_data_->mortar_method_ != NoMortar) {
-            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
-            for(auto &isec : isec_list ) {
-                IntersectionLocalBase *local = isec.second;
-                DHCellAccessor dh_cell_slave = eq_data_->dh_cr_->cell_accessor_from_element(local->bulk_ele_idx());
-                
-                const uint ndofs_slave = dh_cell_slave.n_dofs();
-                dofs_ngh.resize(ndofs_slave);
-                dh_cell_slave.get_dof_indices(dofs_ngh);
-            
-                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
-                    tmp_rows.push_back( dofs_ngh[i_side] );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
-                }
-            }
-        }
+//        if (eq_data_->mortar_method_ != NoMortar) {
+//            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
+//            for(auto &isec : isec_list ) {
+//                IntersectionLocalBase *local = isec.second;
+//                DHCellAccessor dh_cell_slave = eq_data_->dh_cr_->cell_accessor_from_element(local->bulk_ele_idx());
+//
+//                const uint ndofs_slave = dh_cell_slave.n_dofs();
+//                dofs_ngh.resize(ndofs_slave);
+//                dh_cell_slave.get_dof_indices(dofs_ngh);
+//
+//                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
+//                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
+//                    tmp_rows.push_back( dofs_ngh[i_side] );
+//                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
+//                }
+//            }
+//        }
 
         lin_sys_schur().mat_set_values(ndofs, dofs_ptr, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x slave edges
         lin_sys_schur().mat_set_values(tmp_rows.size(), tmp_rows.data(), ndofs, dofs_ptr, zeros);   // slave edges  x master edges
