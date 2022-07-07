@@ -882,6 +882,10 @@ add_subdirectory(third_party/bparser)
 message(STATUS "add subdir pybind11")
 add_subdirectory(third_party/pybind11-2.9.2)
 pybind11_add_module("flowpy" SHARED "src/fields/python_field_base.cc")
+#pybind11_add_module("flowpy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_base.cc")
+
+#add_executable(flow123dpy src/fields/python_field_base.cc)
+#target_link_libraries(flowpy PRIVATE pybind11::embed)
 
 # add tbb sources
 #message(STATUS "add subdir TBB")
