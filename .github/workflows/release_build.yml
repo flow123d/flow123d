@@ -13,11 +13,7 @@ name: Build release package
 on:
   push
 
-# TODO: add to manual reference to web generated doc and mention that one should trust the generated part 
-
-# článek Martin
-
-# 
+# TODO: add to the User guidel reference to the HTML generated doc and mention that one should trust the generated part 
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -89,14 +85,7 @@ jobs:
         
     - name: package
       run: |        
-        echo "Processing IP address"
-        curl http://ifconfig.me
-
-        #destination=$(pwd)/publish_${environment}
-        #imagesversion=$(cat $(pwd)/config/docker/image_tag)
-        #release_version=$(cat $(pwd)/version)      
-        git clone -b v${imagesversion} https://github.com/flow123d/docker-config.git
-        make -C docker-config/package \
+        cd config/package && make -C docker-config/package \
               container_name=${build_container} \
               install_image="install-${environment}:${imagesversion}" \
               target_image=flow123d-${environment} \
@@ -104,7 +93,7 @@ jobs:
               destination=${destination} \
               all
 
-        make -C docker-config/package \
+        cd config/package && make -C docker-config/package \
               container_name=${build_container} \
               target_image=flow123d-${environment} \
               image_tag=${release_version} \
