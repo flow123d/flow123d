@@ -60,11 +60,17 @@ jobs:
         #echo imagesversion: \"${imagesversion}\"
         
         # can not use environment variables in github actions
-        echo ::set-output name=pubdir:"publish_${environment}"
-        echo ::set-output name=relver:"${release_version}"
+        echo ::set-output name=pubdir:publish_${environment}
+        echo ::set-output name=relver:${release_version}
         
 
-    #- name: Build
+    - name: Check vars
+      run: |
+          echo ${{ steps.vars.outputs.pubdir }}    
+          echo ${{ steps.vars.outputs.relver }}    
+ 
+s.pubdir }}
+      
       #run: |
         #docker rm -f  || echo "container not running"
         #bin/fterm update
@@ -135,15 +141,15 @@ jobs:
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
         source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_doc.pdf,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.json,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.tar.gz,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.exe,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.json,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json,
                  ${{ steps.vars.outputs.pubdir }}/htmldoc,
                  ${{ steps.vars.outputs.pubdir }}/imagename"
         #source: "${{ steps.vars.outputs.pubdir }}/*"
-        target: "~/packages/${{ steps.vars.outputs.relvar }}"
+        target: "~/packages/${{ steps.vars.outputs.relver }}"
         strip_components: 1
         
 
@@ -154,9 +160,9 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.exe
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe
         
           #tag_name: v${{ steps.getversion.outputs.version }}
           #release_name: release_${{ steps.getversion.outputs.version }}
