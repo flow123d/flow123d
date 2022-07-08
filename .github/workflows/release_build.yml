@@ -38,73 +38,80 @@ jobs:
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
 
-        destination="$(pwd)/publish_${environment}"
-        imagesversion="$(cat $(pwd)/config/docker/image_tag)"
-        release_version="$(cat $(pwd)/version)"      
-
-        echo "destination=${destination}" >> $GITHUB_ENV
-        echo "imagesversion=${imagesversion}" >> $GITHUB_ENV
-        echo "release_version=${release_version}" >> $GITHUB_ENV      
-
-        echo "Variables summary"
-        echo build_container: \"${build_container}\"
-        echo release_version: \"${release_version}\"
-        echo environment: \"${environment}\"
-        echo imagesversion: \"${imagesversion}\"
-        
-        echo "::set-output name=pubdir::publish_${environment}"    
-        echo "::set-output name=relver::${release_version}"    
-
-        
-
-    - name: Build
+    - name: Make packages
       run: |
-        # docker rm -f  || echo "container not running"
-        bin/fterm update
-        bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $(pwd):$FLOW
-        #  --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
-        
-        # copy config
-        docker exec ${build_container} ls $FLOW
-        docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
+          # make_packages <environment> <image_name_base> [push]  
+          config/package/make_packages.sh gnu flow123d push
+          # config/package/make_packages.sh gnu ci push
+      
+      
+        #destination="$(pwd)/publish_${environment}"
+        #imagesversion="$(cat $(pwd)/config/docker/image_tag)"
+        #release_version="$(cat $(pwd)/version)"      
 
-        # configure and compile
-        docker exec ${build_container} git config --global --add safe.directory $FLOW
-        docker exec ${build_container} git config --global --add safe.directory $FLOW/bin/yaml_converter
-        docker exec ${build_container} git config --global --add safe.directory $FLOW/src/dealii
-        
-        docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/bparser
-        docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/json-3.10.5
-        docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/gtest-1.10.0
-        docker exec ${build_container} make -C $FLOW -j4 all
-    - name: make doc
-      run: |
-        docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
-        docker exec ${build_container} make -C ${FLOW} html-doc
-        docker exec ${build_container} make -C ${FLOW} doxy-doc
-        
-    - name: package
-      run: |        
-        make -C config/package \
-              container_name=${build_container} \
-              install_image="install-${environment}:${imagesversion}" \
-              target_image=flow123d-${environment} \
-              image_tag=${release_version} \
-              destination=${destination} \
-              all
+        #echo "destination=${destination}" >> $GITHUB_ENV
+        #echo "imagesversion=${imagesversion}" >> $GITHUB_ENV
+        #echo "release_version=${release_version}" >> $GITHUB_ENV      
 
-        make -C config/package \
-              container_name=${build_container} \
-              target_image=flow123d-${environment} \
-              image_tag=${release_version} \
-              destination=${destination} \
-              push-to-hub
+        #echo "Variables summary"
+        #echo build_container: \"${build_container}\"
+        #echo release_version: \"${release_version}\"
+        #echo environment: \"${environment}\"
+        #echo imagesversion: \"${imagesversion}\"
         
-        ls -l
-        ls -l publish_${environment}
+        #echo "::set-output name=pubdir::publish_${environment}"    
+        #echo "::set-output name=relver::${release_version}"    
 
-        echo ${{ steps.vars.outputs.pubdir }}    
-        echo ${{ steps.vars.outputs.relver }}    
+        
+
+    #- name: Build
+      #run: |
+        #docker rm -f  || echo "container not running"
+        #bin/fterm update
+        #bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $(pwd):$FLOW
+         #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+        
+        #copy config
+        #docker exec ${build_container} ls $FLOW
+        #docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
+
+        #configure and compile
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/bin/yaml_converter
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/src/dealii
+        
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/bparser
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/json-3.10.5
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/gtest-1.10.0
+        #docker exec ${build_container} make -C $FLOW -j4 all
+    #- name: make doc
+      #run: |
+        #docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
+        #docker exec ${build_container} make -C ${FLOW} html-doc
+        #docker exec ${build_container} make -C ${FLOW} doxy-doc
+        
+    #- name: package
+      #run: |        
+        #make -C config/package \
+              #container_name=${build_container} \
+              #install_image="install-${environment}:${imagesversion}" \
+              #target_image=flow123d-${environment} \
+              #image_tag=${release_version} \
+              #destination=${destination} \
+              #all
+
+        #make -C config/package \
+              #container_name=${build_container} \
+              #target_image=flow123d-${environment} \
+              #image_tag=${release_version} \
+              #destination=${destination} \
+              #push-to-hub
+
+        #ls -l
+        #ls -l publish_${environment}
+
+        #echo ${{ steps.vars.outputs.pubdir }}    
+        #echo ${{ steps.vars.outputs.relver }}    
 
 
         
