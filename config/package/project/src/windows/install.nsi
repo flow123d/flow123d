@@ -171,6 +171,13 @@ Function CHECK_DOCKER
     ExecWait '"$INSTDIR\win\dfw.exe"'
     # load the reg value
     ReadRegStr $DOCKER_EXE HKLM "${DOCKER_HK}" "AppPath"
+    DetailPrint "DOCKER_EXE $DOCKER_EXE"
+
+    # check if installation was succesfull
+    ${If} $DOCKER_EXE == ""
+      MessageBox MB_OK|MB_ICONSTOP "Docker not found, installation failed.$\r$\nPlease try installing Docker manually (https://hub.docker.com/)."
+      Abort
+    ${Endif}
   ${Endif}
 FunctionEnd
 
@@ -189,14 +196,14 @@ Function START_DOCKER_DEAMON
     DetailPrint "Starting Docker deamon, this'll take about a minute for the first time."
     Exec '"$DOCKER_EXE\Docker for Windows.exe"'
     Sleep 5000
-    MessageBox MB_OK "The Docker is now starting, wait until it's ready before pressing OK$\r$\nYou should see a notification at the bottom right."
+    MessageBox MB_OK "Docker is now starting, wait until it's ready before pressing OK$\r$\nYou should see a notification at the bottom right."
   ${EndIf}
 FunctionEnd
 
 
 Function PULL_IMAGE
   # pull image
-  DetailPrint "Pulling docker image"
+  DetailPrint "Pulling Docker image"
   nsExec::Exec 'docker pull flow123d/${IMAGE}'
 FunctionEnd
 
