@@ -1,0 +1,42 @@
+column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  source_increment,  flux_cumulative,  source_cumulative,  error ]
+data:
+  - time: 0
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.1, 24, 24, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .boundary
+    quantity: water_volume
+    data: [ 1.06685e-15, 2.88138e-15, -1.81452e-15, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 900
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.12932, 45.6, 45.6, 0, 0, 0, 0, 0, 0 ]
+  - time: 900
+    region: .boundary
+    quantity: water_volume
+    data: [ -45.6, 0.51974, -46.1197, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1800
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.352464, 105.6, 105.6, 0, 0, 0, 0, 0, 0 ]
+  - time: 1800
+    region: .boundary
+    quantity: water_volume
+    data: [ -105.6, 0, -105.6, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2700
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.400527, 120, 120, 0, 0, 0, 0, 0, 0 ]
+  - time: 2700
+    region: .boundary
+    quantity: water_volume
+    data: [ -120, 0, -120, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 3000
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.400527, 120, 120, 0, 0, 0, 0, 0, 0 ]
+  - time: 3000
+    region: .boundary
+    quantity: water_volume
+    data: [ -120, 0, -120, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
