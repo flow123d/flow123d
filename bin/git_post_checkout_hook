@@ -21,6 +21,10 @@ fi
 NEW_BRANCH=`git rev-parse --abbrev-ref HEAD`
 BUILD_DIR=${FLOW123D_BUILD_DIR:-`pwd`/build-${NEW_BRANCH}}
 
+if [ ! -d build_tree ]
+then
+    ln -s ${BUILD_DIR} build_tree
+fi
 LS=`ls -l build_tree`
 BUILD_TREE=${LS##* -> }
 OLD_BRANCH=${BUILD_TREE##*/build-}
@@ -45,19 +49,17 @@ then
 fi
 
 # check that we have correct link
-#if [ ! "${OLD_BRANCH}" == "${NEW_BRANCH}" ]
-#then 
-
-# TODO: If this does not work uncomment the the stuff around
-echo "setting build_tree -> ${BUILD_DIR}"
-rm -f build_tree
-ln -s ${BUILD_DIR} build_tree
-  
-#  if [ ! -n CALLED_AS_HOOK ]
-#  then
-#      echo "Updating build_tree link stops the build. Please, run it again."
-#      exit 1
-#  fi
-#fi  
+if [ ! "${OLD_BRANCH}" == "${NEW_BRANCH}" ]
+then 
+    echo "setting build_tree -> ${BUILD_DIR}"
+    rm -f build_tree
+    ln -s ${BUILD_DIR} build_tree
+    
+    if [ ! -n CALLED_AS_HOOK ]
+    then
+        echo "Updating build_tree link stops the build. Please, run it again."
+        exit 1
+    fi
+fi  
 
 exit 0

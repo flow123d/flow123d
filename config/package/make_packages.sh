@@ -188,13 +188,13 @@ ${dexec} cp -r ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/Flow12
 
 mkdir -p install-linux
 #  mkdir -p make parent directories as needed
-cmake --build install-linux \
+cmake \
     -DFLOW_VERSION="${release_version}" \
     -DFLOW123D_ROOT="${flow_repo_location}" \
     -DIMAGE_TAG="${target_tagged}" \
     -DIMAGE_NAME="${docker_arch_name}" \
     -DDEST="${destination}" \
-    ${flow_repo_host}/config/package/project
+    -S ${flow_repo_host}/config/package/project -B install-linux
 
 make -C install-linux package
 mv install-linux/${base_name}.tar.gz ${destination}/${lin_arch_name}

@@ -41,13 +41,13 @@ jobs:
     - name: Make packages
       run: |
           # make_packages <environment> <image_name_base> [push]  
-          config/package/make_packages.sh gnu flow123d push
-          # config/package/make_packages.sh gnu ci push
+          config/package/make_packages.sh ${environment} flow123d push
+          # config/package/make_packages.sh ${environment} ci push
       
       
         #destination="$(pwd)/publish_${environment}"
         #imagesversion="$(cat $(pwd)/config/docker/image_tag)"
-        #release_version="$(cat $(pwd)/version)"      
+        release_version="$(cat $(pwd)/version)"      
 
         #echo "destination=${destination}" >> $GITHUB_ENV
         #echo "imagesversion=${imagesversion}" >> $GITHUB_ENV
@@ -59,9 +59,8 @@ jobs:
         #echo environment: \"${environment}\"
         #echo imagesversion: \"${imagesversion}\"
         
-        #echo "::set-output name=pubdir::publish_${environment}"    
-        #echo "::set-output name=relver::${release_version}"    
-
+        echo "pubdir=publish_${environment}" >> $GITHUB_ENV
+        echo "relver=${release_version}" >> $GITHUB_ENV
         
 
     #- name: Build
@@ -142,8 +141,8 @@ jobs:
                  #publish_${environment}/flow123d_3.9.0_windows_install.json,
                  #publish_${environment}/htmldoc,
                  #publish_${environment}/imagename"
-        source: "${{ steps.vars.outputs.pubdir }}/*"
-        target: "~/packages/${{ steps.vars.outputs.relver }}"
+        source: "${pubdir}/*"
+        target: "~/packages/${relver}"
         strip_components: 1
         
 
@@ -154,9 +153,9 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe
+          ${pubdir}/flow123d_${relver}_doc.pdf
+          ${pubdir}/flow123d_${relver}_linux_install.tar.gz
+          ${pubdir}/flow123d_${relver}_windows_install.exe
         
           #tag_name: v${{ steps.getversion.outputs.version }}
           #release_name: release_${{ steps.getversion.outputs.version }}
