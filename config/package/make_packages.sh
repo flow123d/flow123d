@@ -15,16 +15,43 @@ else
     docker_push="echo docker push"
 fi
 
-###############################
-# Conatiners and images names and tags
+#######################################
+# Paths on host
+# TODO: move both version and image_tag to the same location in package
+flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+destination="`pwd`/publish_${environment}"
+
+################################
+# paths inside docker container
+flow_install_location=/opt/flow123d
+flow_repo_location=/opt/flow123d/flow123d
+
+
+#####################
+# Docker calls
 build_type=release
 build_container=contgnurelease
+
+
+dexec="docker exec ${build_container}"      # execute command which will follow
+dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
+
+function dexec_setvars_make {
+    # dexec_setvars_make  <make parameters>
+    ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
+}
+
+
+###############################
+# Conatiners and images names and tags
+imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
+release_version=`cat ${flow_repo_host}/version`      
+
 install_image="install-${environment}:${imagesversion}"
 
 git_hash=`${dexec} git rev-parse --short HEAD`
 git_branch=`${dexec} git rev-parse --abbrev-ref HEAD`
-imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
-release_version=`cat ${flow_repo_host}/version`      
+
 
 
 if [ "${image_name_base}" == "flow123d" ];
@@ -38,26 +65,7 @@ else
     image_tag=${git_branch}_${git_hash}
 fi
 
-#######################################
-# Paths on host
-# TODO: move both version and image_tag to the same location in package
-flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
-destination="`pwd`/publish_${environment}"
 
-################################
-# paths inside docker container
-flow_install_location=/opt/flow123d
-flow_repo_location=/opt/flow123d/flow123d
-
-#####################
-# Docker calls
-dexec="docker exec ${build_container}"      # execute command which will follow
-dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
-
-function dexec_setvars_make {
-    # dexec_setvars_make  <make parameters>
-    ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
-}
 
 
 
