@@ -40,9 +40,9 @@ jobs:
 
     - name: Make packages
       run: |
-          # make_packages <environment> <image_name_base> [push]  
-          config/package/make_packages.sh ${environment} flow123d push
-          # config/package/make_packages.sh ${environment} ci push
+        # make_packages <environment> <image_name_base> [push]  
+        config/package/make_packages.sh ${environment} flow123d push
+        # config/package/make_packages.sh ${environment} ci push
       
       
         #destination="$(pwd)/publish_${environment}"
