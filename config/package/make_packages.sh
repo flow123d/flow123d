@@ -23,6 +23,8 @@ install_image="install-${environment}:${imagesversion}"
 
 git_hash=`${dexec} git rev-parse --short HEAD`
 git_branch=`${dexec} git rev-parse --abbrev-ref HEAD`
+imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
+release_version=`cat ${flow_repo_host}/version`      
 
 
 if [ "${image_name_base}" == "flow123d" ];
@@ -41,8 +43,6 @@ fi
 # TODO: move both version and image_tag to the same location in package
 flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 destination="`pwd`/publish_${environment}"
-imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
-release_version=`cat ${flow_repo_host}/version`      
 
 ################################
 # paths inside docker container

@@ -133,15 +133,15 @@ jobs:
         password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
-        #source: "publish_${environment}/doxygen, 
-                 #publish_${environment}/flow123d_3.9.0_doc.pdf,
-                 #publish_${environment}/flow123d_3.9.0_linux_install.json,
-                 #publish_${environment}/flow123d_3.9.0_linux_install.tar.gz,
-                 #publish_${environment}/flow123d_3.9.0_windows_install.exe,
-                 #publish_${environment}/flow123d_3.9.0_windows_install.json,
-                 #publish_${environment}/htmldoc,
-                 #publish_${environment}/imagename"
-        source: "${pubdir}/*"
+        source: "${pubdir}/doxygen, 
+                 ${pubdir}/flow123d_${relver}_doc.pdf,
+                 ${pubdir}/flow123d_${relver}_linux_install.json,
+                 ${pubdir}/flow123d_${relver}_linux_install.tar.gz,
+                 ${pubdir}/flow123d_${relver}_windows_install.exe,
+                 ${pubdir}/flow123d_${relver}_windows_install.json,
+                 ${pubdir}/htmldoc,
+                 ${pubdir}/imagename"
+        #source: "${pubdir}/*"
         target: "~/packages/${relver}"
         strip_components: 1
         
