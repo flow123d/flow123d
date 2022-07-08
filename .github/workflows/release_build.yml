@@ -68,8 +68,7 @@ jobs:
       run: |
           echo ${{ steps.vars.outputs.pubdir }}    
           echo ${{ steps.vars.outputs.relver }}    
- 
-s.pubdir }}
+
       
       #run: |
         #docker rm -f  || echo "container not running"
