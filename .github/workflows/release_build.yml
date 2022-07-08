@@ -36,8 +36,8 @@ jobs:
       run: |
         release_version=`cat version`
         # can not use environment variables in github actions
-        echo ::set-output name=pubdir:publish_${environment}
-        echo ::set-output name=relver:${release_version}
+        echo ::set-output name=pubdir::publish_${environment}
+        echo ::set-output name=relver::${release_version}
         
         #echo "release_version=${release_version}" >> $GITHUB_ENV
 
