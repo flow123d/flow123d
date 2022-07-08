@@ -30,47 +30,34 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-      
-    - name: Docker Hub login      
-      #uses: docker/login-action@v1  
-      # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
-      run: |
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
 
     - name: Set variables
       id: vars
       run: |
-        # make_packages <environment> <image_name_base> [push]  
-        config/package/make_packages.sh ${environment} flow123d push
-        # config/package/make_packages.sh ${environment} ci push
-      
-      
-        #destination="$(pwd)/publish_${environment}"
-        #imagesversion="$(cat $(pwd)/config/docker/image_tag)"
-        release_version="$(cat $(pwd)/version)"      
-
-        #echo "destination=${destination}" >> $GITHUB_ENV
-        #echo "imagesversion=${imagesversion}" >> $GITHUB_ENV
-        #echo "release_version=${release_version}" >> $GITHUB_ENV      
-
-        #echo "Variables summary"
-        #echo build_container: \"${build_container}\"
-        #echo release_version: \"${release_version}\"
-        #echo environment: \"${environment}\"
-        #echo imagesversion: \"${imagesversion}\"
-        
+        release_version=`cat version`
         # can not use environment variables in github actions
         echo ::set-output name=pubdir:publish_${environment}
         echo ::set-output name=relver:${release_version}
         
+        #echo "release_version=${release_version}" >> $GITHUB_ENV
 
     - name: Check vars
       run: |
           echo ${{ steps.vars.outputs.pubdir }}    
           echo ${{ steps.vars.outputs.relver }}    
- 
-s.pubdir }}
-      
+
+    - name: Docker Hub login
+      #uses: docker/login-action@v1
+      # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
+      run: |
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+
+    - name: Build packages
+      run: |
+        # make_packages <environment> <image_name_base> [push]
+        config/package/make_packages.sh ${environment} flow123d push
+        # config/package/make_packages.sh ${environment} ci push
+
       #run: |
         #docker rm -f  || echo "container not running"
         #bin/fterm update
