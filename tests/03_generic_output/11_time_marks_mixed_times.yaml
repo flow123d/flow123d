@@ -12,8 +12,8 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
+        a_tol: 1.0e-15    # 1.0e-12
+        r_tol: 1.0e-15    # 1.0e-12
     input_fields:
       - region: .BOUNDARY
         time: 0.0
