@@ -31,14 +31,14 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
       
-    - name: Docker Hub login
-      id: vars
+    - name: Docker Hub login      
       #uses: docker/login-action@v1  
       # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
       run: |
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
 
-    - name: Make packages
+    - name: Set variables
+      id: vars
       run: |
         # make_packages <environment> <image_name_base> [push]  
         config/package/make_packages.sh ${environment} flow123d push
@@ -59,8 +59,9 @@ jobs:
         #echo environment: \"${environment}\"
         #echo imagesversion: \"${imagesversion}\"
         
-        echo "pubdir=publish_${environment}" >> $GITHUB_ENV
-        echo "relver=${release_version}" >> $GITHUB_ENV
+        # can not use environment variables in github actions
+        echo ::set-output name=pubdir:"publish_${environment}"
+        echo ::set-output name=relver:"${release_version}"
         
 
     #- name: Build
@@ -133,16 +134,16 @@ jobs:
         password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
         port: 22
-        source: "${pubdir}/doxygen, 
-                 ${pubdir}/flow123d_${relver}_doc.pdf,
-                 ${pubdir}/flow123d_${relver}_linux_install.json,
-                 ${pubdir}/flow123d_${relver}_linux_install.tar.gz,
-                 ${pubdir}/flow123d_${relver}_windows_install.exe,
-                 ${pubdir}/flow123d_${relver}_windows_install.json,
-                 ${pubdir}/htmldoc,
-                 ${pubdir}/imagename"
-        #source: "${pubdir}/*"
-        target: "~/packages/${relver}"
+        source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_doc.pdf,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.json,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.tar.gz,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.exe,
+                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.json,
+                 ${{ steps.vars.outputs.pubdir }}/htmldoc,
+                 ${{ steps.vars.outputs.pubdir }}/imagename"
+        #source: "${{ steps.vars.outputs.pubdir }}/*"
+        target: "~/packages/${{ steps.vars.outputs.relvar }}"
         strip_components: 1
         
 
@@ -153,9 +154,9 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ${pubdir}/flow123d_${relver}_doc.pdf
-          ${pubdir}/flow123d_${relver}_linux_install.tar.gz
-          ${pubdir}/flow123d_${relver}_windows_install.exe
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relvar }}_windows_install.exe
         
           #tag_name: v${{ steps.getversion.outputs.version }}
           #release_name: release_${{ steps.getversion.outputs.version }}
