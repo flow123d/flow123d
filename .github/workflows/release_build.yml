@@ -130,28 +130,53 @@ s.pubdir }}
 #            flow123d_${release_version}_linux_install.tar.gz
 #            flow123d_${release_version}_windows_install.exe
  #         name: release_${release_version}
+    - name: upload artifacts
+      uses: actions/upload-artifact@v3
+      with:       
+        path: |
+            flow123d_${{ steps.vars.outputs.relver }}_doc.pdf 
+            flow123d_${{ steps.vars.outputs.relver }}_linux_install.json 
+            flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz 
+            flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe 
+            flow123d_${{ steps.vars.outputs.relver }}_windows_install.json 
+      
 
-    - name: SSH
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.PUBLISH_HOST }}
-        username: ${{ secrets.PUBLISH_USER }}
+    - name: SCP upload to Share
+      run: |
+          cd ${{ steps.vars.outputs.pubdir }}
+          relver=${{ steps.vars.outputs.relver }}
+          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -r  \
+            doxygen \
+            flow123d_${relver}_doc.pdf \
+            flow123d_${relver}_linux_install.json \
+            flow123d_${relver}_linux_install.tar.gz \
+            flow123d_${relver}_windows_install.exe \
+            flow123d_${relver}_windows_install.json \
+            htmldoc \
+            imagename \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
+    
+    #Unreliable    
+    #- name: SSH
+      #uses: appleboy/scp-action@master
+      #with:
+        #host: ${{ secrets.PUBLISH_HOST }}
+        #username: ${{ secrets.PUBLISH_USER }}
         #key: ${{ secrets.PUBLISH_KEY }}
-        password: ${{ secrets.PUBLISH_PASS }}
+        #password: ${{ secrets.PUBLISH_PASS }}
         #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
-        port: 22
-        source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe,
-                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json,
-                 ${{ steps.vars.outputs.pubdir }}/htmldoc,
-                 ${{ steps.vars.outputs.pubdir }}/imagename"
+        #port: 22
+        #source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
+                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf,
+                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json,
+                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz,
+                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe,
+                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json,
+                 #${{ steps.vars.outputs.pubdir }}/htmldoc,
+                 #${{ steps.vars.outputs.pubdir }}/imagename"
         #source: "${{ steps.vars.outputs.pubdir }}/*"
-        target: "~/packages/${{ steps.vars.outputs.relver }}"
-        strip_components: 1
-        
+        #target: "~/packages/${{ steps.vars.outputs.relver }}"
+        #strip_components: 0 
 
     - name: Release add assets
       # Whole action triggered by release change.
