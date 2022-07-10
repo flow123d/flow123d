@@ -206,7 +206,7 @@ cmake \
 
 make -C install-linux package
 mv install-linux/${base_name}.tar.gz ${destination}/${lin_arch_name}
-echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destination}/${lin_arch_name:.tar.gz=.json}
+echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destination}/flow123d_${release_version}_linux_install.json
 
 ############################################################################################## Windows package
 	
