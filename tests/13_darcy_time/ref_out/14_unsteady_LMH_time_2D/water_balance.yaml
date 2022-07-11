@@ -7,35 +7,51 @@ data:
   - time: 0
     region: .boundary
     quantity: water_volume
-    data: [ 1.06685e-15, 2.88138e-15, -1.81452e-15, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-  - time: 900
+    data: [ -2.67723, 0, -2.67723, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 500
     region: plane
     quantity: water_volume
-    data: [ 0, 0, 0, 0.12932, 45.6, 45.6, 0, 0, 0, 0, 0, 0 ]
-  - time: 900
+    data: [ 0, 0, 0, 0.205325, 36, 36, 0, 0, 0, 0, 0, 0 ]
+  - time: 500
     region: .boundary
     quantity: water_volume
-    data: [ -45.6, 0.51974, -46.1197, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-  - time: 1800
+    data: [ -36, 0, -36, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1000
     region: plane
     quantity: water_volume
-    data: [ 0, 0, 0, 0.352464, 105.6, 105.6, 0, 0, 0, 0, 0, 0 ]
-  - time: 1800
+    data: [ 0, 0, 0, 0.273766, 48, 48, 0, 0, 0, 0, 0, 0 ]
+  - time: 1000
     region: .boundary
     quantity: water_volume
-    data: [ -105.6, 0, -105.6, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
-  - time: 2700
+    data: [ -48, 0, -48, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1500
     region: plane
     quantity: water_volume
-    data: [ 0, 0, 0, 0.400527, 120, 120, 0, 0, 0, 0, 0, 0 ]
-  - time: 2700
+    data: [ 0, 0, 0, 0.479091, 84, 84, 0, 0, 0, 0, 0, 0 ]
+  - time: 1500
+    region: .boundary
+    quantity: water_volume
+    data: [ -84, 0, -84, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2000
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.684415, 120, 120, 0, 0, 0, 0, 0, 0 ]
+  - time: 2000
+    region: .boundary
+    quantity: water_volume
+    data: [ -120, 0, -120, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 2500
+    region: plane
+    quantity: water_volume
+    data: [ 0, 0, 0, 0.684415, 120, 120, 0, 0, 0, 0, 0, 0 ]
+  - time: 2500
     region: .boundary
     quantity: water_volume
     data: [ -120, 0, -120, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
   - time: 3000
     region: plane
     quantity: water_volume
-    data: [ 0, 0, 0, 0.400527, 120, 120, 0, 0, 0, 0, 0, 0 ]
+    data: [ 0, 0, 0, 0.684415, 120, 120, 0, 0, 0, 0, 0, 0 ]
   - time: 3000
     region: .boundary
     quantity: water_volume
