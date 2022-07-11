@@ -8,7 +8,7 @@ set -x
 
 environment=$1
 image_name_base=$2
-if [ -n "$3"]
+if [ "$3" == "push"]
 then
     docker_push="docker push"
 else
