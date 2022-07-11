@@ -163,21 +163,37 @@ Function CHECK_DOCKER
   DetailPrint "DOCKER_EXE $DOCKER_EXE"
 
   ${If} $DOCKER_EXE == ""
+    DetailPrint "Docker not found. Install?"
+
+    # ask whether install Docker automatically
+    MessageBox MB_YESNO|MB_ICONQUESTION "Docker not found.$\r$\nDo you want Flow123d to try installing Docker now?" IDYES docker_install_true IDNO docker_install_false
+    docker_install_true:
+        DetailPrint "[yes] Try installing Docker now."
+        MessageBox MB_OK|MB_ICONINFORMATION "Docker installation will require logout or restart.$\r$\nPlease run Flow123d installator once again afterwards."
+        Goto docker_install
+    docker_install_false:
+        DetailPrint "[no] Do not install Docker now."
+        MessageBox MB_OK|MB_ICONINFORMATION "Please install Docker manually (https://hub.docker.com/) and run Flow123d installator again."
+        Abort
+
+    # try installing Docker
+    docker_install:
     DetailPrint "Downloading Docker for Windows installer"
     # download the file
     SetOutPath "$INSTDIR\win"
     ExecWait '"powershell" -ExecutionPolicy RemoteSigned -File "$INSTDIR\win\download-dfw.ps1"'
     # run the installer
     ExecWait '"$INSTDIR\win\dfw.exe"'
-    # load the reg value
+
+    # check whether the installation was succesfull
     ReadRegStr $DOCKER_EXE HKLM "${DOCKER_HK}" "AppPath"
     DetailPrint "DOCKER_EXE $DOCKER_EXE"
 
-    # check if installation was succesfull
     ${If} $DOCKER_EXE == ""
       MessageBox MB_OK|MB_ICONSTOP "Docker not found, installation failed.$\r$\nPlease try installing Docker manually (https://hub.docker.com/)."
-      Abort
     ${Endif}
+
+    Abort
   ${Endif}
 FunctionEnd
 
@@ -242,8 +258,8 @@ Section
 
   RMDir /r $INSTDIR
   Call REMOVE_OLD
-  Call COPY_FILES
   Call CHECK_DOCKER
+  Call COPY_FILES
   Call START_DOCKER_DEAMON
   Call PULL_IMAGE
   Call MAKE_DOCKERD
