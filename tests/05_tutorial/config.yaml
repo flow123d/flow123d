@@ -25,10 +25,13 @@ test_cases:
       - ndiff:
           files: [energy_balance.txt]
           r_tol: 1e-3
-          a_tol: 1e5
+          a_tol: 1e12
       - ndiff:
         # default tolerance for all except energy, usage of wild chars 
         # files: ["(?!^energy_balance.txt$)*"] 
           files: ['*.msh', water_balance.txt]
           r_tol: 1e-3
           a_tol: 1e-6
+         # heat.msh a_tol : 1
+         # flow.msh a_tol : 0.1
+         # water_balance.txt : 1e-4
