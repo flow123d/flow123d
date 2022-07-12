@@ -104,7 +104,7 @@ Function COPY_FILES
     FileWrite $0 '@echo off$\r$\n'
     FileWrite $0 'SET cdir=\%CD:~0,1%\%CD:~3,256%$\r$\n'
     FileWrite $0 'SET L=%CD:~0,1%$\r$\n'
-    FileWrite $0 'docker run -ti --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" flow123d/${IMAGE} %*$\r$\n'
+    FileWrite $0 'docker run -ti --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" ${IMAGE} %*$\r$\n'
     FileWrite $0 'pause$\r$\n'
   FileClose $0
 
@@ -115,7 +115,7 @@ Function COPY_FILES
     FileWrite $0 '@echo off$\r$\n'
     FileWrite $0 'SET cdir=\%CD:~0,1%\%CD:~3,256%$\r$\n'
     FileWrite $0 'SET L=%CD:~0,1%$\r$\n'
-    FileWrite $0 'docker run -ti --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" flow123d/${IMAGE} flow123d %*$\r$\n'
+    FileWrite $0 'docker run -ti --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" ${IMAGE} flow123d %*$\r$\n'
   FileClose $0
 
   # In some cases when executing flow123d from other process we need to start docker without terminal in non-interactive mode.
@@ -124,7 +124,7 @@ Function COPY_FILES
     FileWrite $0 '@echo off$\r$\n'
     FileWrite $0 'SET cdir=\%CD:~0,1%\%CD:~3,256%$\r$\n'
     FileWrite $0 'SET L=%CD:~0,1%$\r$\n'
-    FileWrite $0 'docker run --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" flow123d/${IMAGE} flow123d %*$\r$\n'
+    FileWrite $0 'docker run --rm -v "%L%:\:/%L%/" -v "c:\:/c/" -w "%cdir:\=/%" ${IMAGE} flow123d %*$\r$\n'
   FileClose $0
 
   # fterm and flow123d with version
@@ -221,7 +221,7 @@ FunctionEnd
 Function PULL_IMAGE
   # pull image
   DetailPrint "Pulling Docker image"
-  nsExec::Exec 'docker pull flow123d/${IMAGE}'
+  nsExec::Exec 'docker pull ${IMAGE}'
 FunctionEnd
 
 
@@ -289,7 +289,7 @@ Section "Uninstall"
   ${un.EnvVarUpdate} $0 "FLOW123D" "R" "HKCU" "${VERSION}"
 
   # Remove docker image
-  ExecWait 'docker rmi -f flow123d/${IMAGE}'
+  ExecWait 'docker rmi -f ${IMAGE}'
   # Remove Flow123d installation directory and all files within.
   RMDir /r "$INSTDIR"
 
