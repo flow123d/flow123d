@@ -25,7 +25,7 @@ LABEL org.label-schema.build-date="$build_date" \
       org.label-schema.schema-version="1.0"
       
       
-COPY --from=source_image /${source_location} ${flow_install_location} 
+COPY --from=source_image ${source_location} ${flow_install_location} 
 
 # update PATH
 ENV PATH="${flow_install_location}/bin:${PATH}"
