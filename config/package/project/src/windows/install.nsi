@@ -51,6 +51,7 @@ Var DOCKER_EXE
   !include x64.nsh
   !include FileFunc.nsh
   !include nsis\EnvVarUpdate.nsh
+  !include nsis\dumplog.nsi
   !insertmacro GetDrives
   # !include MultiUser.nsh
 
@@ -270,6 +271,8 @@ Section
   #----------------------------------------------------------
 
   WriteUninstaller "uninstall.exe"
+
+  Call DumpLog
 
 SectionEnd
 
