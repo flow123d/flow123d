@@ -142,7 +142,7 @@ jobs:
             imagename \
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
             
-          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -r -o StrictHostKeyChecking=no \
+          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o StrictHostKeyChecking=no \
             doxygen \
             flow123d_${{ steps.vars.outputs.relver }}_doc.pdf \
             flow123d_${{ steps.vars.outputs.relver }}_linux_install.json \

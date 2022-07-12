@@ -8,7 +8,7 @@ set -x
 
 environment=$1
 image_name_base=$2
-if [ "$3" == "push"]
+if [ "$3" == "push" ]
 then
     docker_push="docker push"
 else
@@ -184,6 +184,9 @@ docker build \
      --tag ${target_tagged} \
      ${ci_docker_file_path}
 
+# Push only if $3 == push
+${docker_push} ${target_tagged}
+     
 ############################################################################################## Linux package
 
 # TODO: simplify creation of the linux package to single command and run it inside the docker
@@ -246,5 +249,3 @@ echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destinati
 # list build packages
 ls -l ${destination}
 
-# Push only if $3 == push
-${docker_push} ${target_tagged}
