@@ -48,8 +48,8 @@ jobs:
 
     - name: Build packages
       run: |
-      #uses: docker/login-action@v1
-      # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
+        #uses: docker/login-action@v1
+        # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
         # Login for finall push to docker hub
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
         
