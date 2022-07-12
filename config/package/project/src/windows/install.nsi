@@ -58,6 +58,7 @@ Var DOCKER_EXE
   !define MUI_ICON "nsis\logo.ico"
   !define MULTIUSER_EXECUTIONLEVEL Standard
   !define MULTIUSER_INSTALLMODE_INSTDIR   "Flow123d"
+  !define MUI_FINISHPAGE_NOAUTOCLOSE
 
   !define MUI_WELCOMEFINISHPAGE_BITMAP    "nsis\back.bmp" # 170x320
   !define MUI_UNWELCOMEFINISHPAGE_BITMAP  "nsis\back.bmp" # 170x320
@@ -220,7 +221,8 @@ FunctionEnd
 
 Function PULL_IMAGE
   # pull image
-  DetailPrint "Pulling Docker image"
+  DetailPrint "Pulling Docker image: ${IMAGE}"
+  MessageBox MB_OK "Docker will now pull the Flow123d image from internet.$\r$\nThis might take some time depending on your connection."
   nsExec::Exec 'docker pull ${IMAGE}'
 FunctionEnd
 
@@ -252,10 +254,24 @@ Function REGISTER_APP
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flow123d-${VERSION}" "NoRepair" 1
 FunctionEnd
 
+Function .onUserAbort
+   MessageBox MB_YESNO "Abort install?" IDYES NoCancelAbort
+     Call DumpLog
+     Abort
+   NoCancelAbort:
+FunctionEnd
+
+Function .onInstFailed
+  MessageBox MB_OK "Installation failed."
+  Call DumpLog
+FunctionEnd
+
 #----------------------------------------------------------
 # Section
 #----------------------------------------------------------
 Section
+
+  SetDetailsView show
 
   RMDir /r $INSTDIR
   Call REMOVE_OLD
@@ -280,6 +296,8 @@ SectionEnd
 
 # Uninstaller
 Section "Uninstall"
+
+  SetDetailsView show
 
   DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flow123d-${VERSION}"
   DeleteRegKey HKCU "SOFTWARE\Flow123d-${VERSION}"
