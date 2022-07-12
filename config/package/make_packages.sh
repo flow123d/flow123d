@@ -33,13 +33,6 @@ build_type=release
 build_container=contgnurelease
 
 
-dexec="docker exec ${build_container}"      # execute command which will follow
-dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
-
-function dexec_setvars_make {
-    # dexec_setvars_make  <make parameters>
-    ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
-}
 
 
 ###############################
@@ -49,21 +42,6 @@ release_version=`cat ${flow_repo_host}/version`
 
 install_image="install-${environment}:${imagesversion}"
 
-git_hash=`${dexec} git rev-parse --short HEAD`
-git_branch=`${dexec} git rev-parse --abbrev-ref HEAD`
-
-
-
-if [ "${image_name_base}" == "flow123d" ];
-then
-    # Relase image
-    target_image="flow123d-${environment}"
-    image_tag=${release_version}
-else
-    # CI image
-    target_image=${image_name_base}-${environment}  # ci-${environment}
-    image_tag=${git_branch}_${git_hash}
-fi
 
 
 
@@ -84,7 +62,31 @@ echo "target_image: '${target_image}'"
 # docker rm -f  || echo "container not running"
 bin/fterm update
 bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
-        
+
+dexec="docker exec ${build_container}"      # execute command which will follow
+dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
+
+function dexec_setvars_make {
+    # dexec_setvars_make  <make parameters>
+    ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
+}
+
+git_hash=`${dexec} git rev-parse --short HEAD`
+git_branch=`${dexec} git rev-parse --abbrev-ref HEAD`
+
+
+
+if [ "${image_name_base}" == "flow123d" ];
+then
+    # Relase image
+    target_image="flow123d-${environment}"
+    image_tag=${release_version}
+else
+    # CI image
+    target_image=${image_name_base}-${environment}  # ci-${environment}
+    image_tag=${git_branch}_${git_hash}
+fi
+
 # copy config
 #${dexec} ls ${flow_repo_location}
 ${dexec} cp ${flow_repo_location}/config/config-jenkins-docker-${build_type}.cmake ${flow_repo_location}/config.cmake
