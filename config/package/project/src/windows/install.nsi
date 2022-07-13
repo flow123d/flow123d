@@ -34,11 +34,6 @@
   #   lzma:           28 MB in 5 min
   SetCompressor /SOLID zlib
 
-Var DOCKER_EXE
-!define DOCKER_PATH "C:\Program Files\Docker\Docker"
-!define DOCKER_HK   "Software\Docker Inc.\Docker\1.0"
-
-
 #----------------------------------------------------------
 # Interface Settings
 #----------------------------------------------------------
@@ -52,16 +47,18 @@ Var DOCKER_EXE
   !include FileFunc.nsh
   !include nsis\EnvVarUpdate.nsh
   !include nsis\dumplog.nsi
+  !include nsis\docker_install.nsi
   !insertmacro GetDrives
   # !include MultiUser.nsh
 
-  !define MUI_ICON "nsis\logo.ico"
+  !define MUI_ICON "win\logo.ico"
   !define MULTIUSER_EXECUTIONLEVEL Standard
   !define MULTIUSER_INSTALLMODE_INSTDIR   "Flow123d"
   !define MUI_FINISHPAGE_NOAUTOCLOSE
+  !define MUI_CUSTOMFUNCTION_ABORT CustomOnUserAbort
 
-  !define MUI_WELCOMEFINISHPAGE_BITMAP    "nsis\back.bmp" # 170x320
-  !define MUI_UNWELCOMEFINISHPAGE_BITMAP  "nsis\back.bmp" # 170x320
+  !define MUI_WELCOMEFINISHPAGE_BITMAP    "win\back.bmp" # 170x320
+  !define MUI_UNWELCOMEFINISHPAGE_BITMAP  "win\back.bmp" # 170x320
 
 #----------------------------------------------------------
 # PAGES
@@ -71,6 +68,7 @@ Var DOCKER_EXE
   !insertmacro MUI_PAGE_LICENSE     "LICENSE.txt"
   #!insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
+  Page custom DockerPage DockerPageLeave
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   # uninstall
@@ -81,15 +79,14 @@ Var DOCKER_EXE
 #----------------------------------------------------------
 # Functions
 #----------------------------------------------------------
+
 Function COPY_FILES
   SetOutPath $INSTDIR
   File "version"
   File "license.txt"
   File "readme.txt"
 
-  File /r "win"
   File /r "tests"
-  File /r "nsis"
 
   SetOutPath "$INSTDIR\doc"
   File /r "htmldoc"
@@ -136,69 +133,6 @@ Function COPY_FILES
   CopyFiles "flow-noterm.bat"  "flow-noterm-${VERSION}.bat"
 
 FunctionEnd
-
-
-Function REMOVE_OLD
-  # detect previous installation and warn user
-  ClearErrors
-  ReadRegStr $0 HKCU "Environment" "DOCKER_CERT_PATH"
-  ${If} ${Errors}
-    # MessageBox MB_OK "no Docker Toolbox found"
-  ${Else}
-    # Docker Toolbox found
-    MessageBox MB_OK "Detected previous installation of Docker Toolbox, you may need to restart your PC later on"
-    # do not set the flag for now
-    # SetRebootFlag true
-  ${EndIf}
-
-  # remove Docker Toolbox env variables
-  DeleteRegValue HKCU "Environment" "DOCKER_CERT_PATH"
-  DeleteRegValue HKCU "Environment" "DOCKER_HOST"
-  DeleteRegValue HKCU "Environment" "DOCKER_MACHINE_NAME"
-  DeleteRegValue HKCU "Environment" "DOCKER_TLS_VERIFY"
-  DeleteRegValue HKCU "Environment" "DOCKER_TOOLBOX_INSTALL_PATH"
-FunctionEnd
-
-Function CHECK_DOCKER
-  SetRegView 64
-  ReadRegStr $DOCKER_EXE HKLM "${DOCKER_HK}" "AppPath"
-  DetailPrint "DOCKER_EXE $DOCKER_EXE"
-
-  ${If} $DOCKER_EXE == ""
-    DetailPrint "Docker not found. Install?"
-
-    # ask whether install Docker automatically
-    MessageBox MB_YESNO|MB_ICONQUESTION "Docker not found.$\r$\nDo you want Flow123d to try installing Docker now?" IDYES docker_install_true IDNO docker_install_false
-    docker_install_true:
-        DetailPrint "[yes] Try installing Docker now."
-        MessageBox MB_OK|MB_ICONINFORMATION "Docker installation will require logout or restart.$\r$\nPlease run Flow123d installator once again afterwards."
-        Goto docker_install
-    docker_install_false:
-        DetailPrint "[no] Do not install Docker now."
-        MessageBox MB_OK|MB_ICONINFORMATION "Please install Docker manually (https://hub.docker.com/) and run Flow123d installator again."
-        Abort
-
-    # try installing Docker
-    docker_install:
-    DetailPrint "Downloading Docker for Windows installer"
-    # download the file
-    SetOutPath "$INSTDIR\win"
-    ExecWait '"powershell" -ExecutionPolicy RemoteSigned -File "$INSTDIR\win\download-dfw.ps1"'
-    # run the installer
-    ExecWait '"$INSTDIR\win\dfw.exe"'
-
-    # check whether the installation was succesfull
-    ReadRegStr $DOCKER_EXE HKLM "${DOCKER_HK}" "AppPath"
-    DetailPrint "DOCKER_EXE $DOCKER_EXE"
-
-    ${If} $DOCKER_EXE == ""
-      MessageBox MB_OK|MB_ICONSTOP "Docker not found, installation failed.$\r$\nPlease try installing Docker manually (https://hub.docker.com/)."
-    ${Endif}
-
-    Abort
-  ${Endif}
-FunctionEnd
-
 
 Function START_DOCKER_DEAMON
   # try to run docker ps to determine whther deamon is running
@@ -254,16 +188,22 @@ Function REGISTER_APP
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Flow123d-${VERSION}" "NoRepair" 1
 FunctionEnd
 
-Function .onUserAbort
+Function DumpLogToFile
+  StrCpy $0 "$INSTDIR\install.log"
+	Push $0
+  Call DumpLog
+FunctionEnd
+
+Function CustomOnUserAbort
    MessageBox MB_YESNO "Abort install?" IDYES NoCancelAbort
-     Call DumpLog
+     Call DumpLogToFile
      Abort
    NoCancelAbort:
 FunctionEnd
 
 Function .onInstFailed
   MessageBox MB_OK "Installation failed."
-  Call DumpLog
+  Call DumpLogToFile
 FunctionEnd
 
 #----------------------------------------------------------
@@ -275,20 +215,20 @@ Section
 
   RMDir /r $INSTDIR
   Call REMOVE_OLD
-  Call CHECK_DOCKER
+  ; Call CHECK_DOCKER
   Call COPY_FILES
   Call START_DOCKER_DEAMON
   Call PULL_IMAGE
   Call MAKE_DOCKERD
   Call REGISTER_APP
 
-  CreateShortcut "$DESKTOP\Flow-${VERSION}.lnk" "$INSTDIR\bin\fterm.bat" "" "$INSTDIR\nsis\logo-64.ico"
+  CreateShortcut "$DESKTOP\Flow-${VERSION}.lnk" "$INSTDIR\bin\fterm.bat" "" "$INSTDIR\win\logo-64.ico"
 
   #----------------------------------------------------------
 
   WriteUninstaller "uninstall.exe"
 
-  Call DumpLog
+  Call DumpLogToFile
 
 SectionEnd
 
