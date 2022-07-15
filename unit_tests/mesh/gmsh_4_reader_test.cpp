@@ -48,6 +48,8 @@ public:
     void read_nodes(Mesh * mesh) {
         ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
 
+        MessageOut() << "- Reading nodes...";
+
         std::vector<std::size_t> node_tags;
         std::vector<double> coord;
         std::vector<double> parametric_coord;
@@ -55,6 +57,7 @@ public:
 
         unsigned int n_nodes = node_tags.size();
         mesh->init_node_vector( n_nodes );
+        //if (n_nodes == 0) THROW( ExcZeroNodes() << EI_Position(tok_.position_msg()) ); // TODO fix exception
 
         for (uint i=0; i<n_nodes; i++) {
             unsigned int node_id = (unsigned int)(node_tags[i]);
@@ -65,10 +68,14 @@ public:
             coords(2) = coord[offset + 2];
             mesh->add_node(node_id, coords);
         }
+
+        MessageOut().fmt("... {} nodes read. \n", n_nodes);
     }
 
     void read_elements(Mesh * mesh) {
         ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
+
+        MessageOut() << "- Reading elements...";
 
         gmsh::vectorpair dim_tags;
         gmsh::model::getEntities(dim_tags);
@@ -124,6 +131,8 @@ public:
                 }
             }
         }
+
+        MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->bc_mesh()->n_elements());
     }
 };
 
