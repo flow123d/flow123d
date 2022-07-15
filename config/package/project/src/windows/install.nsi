@@ -174,7 +174,7 @@ Function MAKE_DOCKERD
     SetOutPath "$INSTDIR\bin"
     FileOpen $0 "dockerd.bat" w
       FileWrite $0 '@echo off$\r$\n'
-      FileWrite $0 'Start "" $DOCKER_EXE$\r$\n'
+      FileWrite $0 'Start "" "$DOCKER_EXE$\r$\n"'
     FileClose $0
 FunctionEnd
 

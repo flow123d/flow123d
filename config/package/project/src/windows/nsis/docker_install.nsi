@@ -112,6 +112,8 @@ Function DockerInstall
   ;   MessageBox MB_OK|MB_ICONSTOP "Docker not found, installation failed.$\r$\nPlease try installing Docker manually (https://hub.docker.com/)."
   ; ${Endif}
   ; Sleep 2222
+  SetOutPath $INSTDIR
+  RMDir /r "$INSTDIR"
   Quit
 FunctionEnd
 
