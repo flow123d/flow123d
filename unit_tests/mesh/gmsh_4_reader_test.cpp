@@ -161,3 +161,28 @@ TEST(GMSHReader, read_mesh_from_file) {
 
     delete mesh;
 }
+
+TEST(GMSHReader, read_old_msh) {
+    Profiler::instance();
+
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    std::string mesh_in_string = "{mesh_file=\"mesh/square_2frac.msh\"}";
+    FilePath mesh_file("mesh/square_2frac.msh", FilePath::FileType::input_file);
+    Mesh * mesh = mesh_constructor(mesh_in_string);
+    Gmsh4MeshReader reader(mesh_file);
+    reader.read_physical_names(mesh);
+//    reader->read_raw_mesh(mesh);
+    reader.read_nodes(mesh);
+    reader.read_elements(mesh);
+//    mesh->setup_topology();
+//    mesh->check_and_finish();
+
+//    EXPECT_EQ(9, mesh->region_db().size());
+//    EXPECT_EQ(3, mesh->region_db().bulk_size());
+    EXPECT_EQ(148, mesh->n_nodes());
+    EXPECT_EQ(264, mesh->n_elements()); // 264 bulk + 42 boundary elements = 306 elements total
+
+    delete mesh;
+}
