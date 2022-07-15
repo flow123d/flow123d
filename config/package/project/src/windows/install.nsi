@@ -68,7 +68,10 @@
   !insertmacro MUI_PAGE_LICENSE     "LICENSE.txt"
   #!insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
+  ; custom Docker page
   Page custom DockerPage DockerPageLeave
+  ; for enabling cancel button during installation
+  !define MUI_PAGE_CUSTOMFUNCTION_SHOW InstFilesShow
   !insertmacro MUI_PAGE_INSTFILES
   !insertmacro MUI_PAGE_FINISH
   # uninstall
@@ -79,6 +82,11 @@
 #----------------------------------------------------------
 # Functions
 #----------------------------------------------------------
+Function InstFilesShow
+  ; see https://nsis.sourceforge.io/InstFiles_Cancel_-_Allowing_a_user_to_cancel_installation_during_InstFiles
+  GetDlgItem $0 $HWNDPARENT 2
+  EnableWindow $0 1
+FunctionEnd
 
 Function COPY_FILES
   SetOutPath $INSTDIR
@@ -136,7 +144,7 @@ FunctionEnd
 
 Function START_DOCKER_DEAMON
   # try to run docker ps to determine whther deamon is running
-  DetailPrint "Docker installed in $DOCKER_EXE"
+  DetailPrint "Docker installed in $DOCKER_PATH"
   nsExec::Exec 'docker ps'
   Pop $0
 
@@ -146,9 +154,9 @@ Function START_DOCKER_DEAMON
   # otherwise lanch the deamon
   ${Else}
     DetailPrint "Starting Docker deamon, this'll take about a minute for the first time."
-    Exec '"$DOCKER_EXE\Docker for Windows.exe"'
-    Sleep 5000
-    MessageBox MB_OK "Docker is now starting, wait until it's ready before pressing OK$\r$\nYou should see a notification at the bottom right."
+    Exec '$DOCKER_EXE'
+    Sleep 10000
+    MessageBox MB_OK "Docker Desktop is now starting, wait until it's ready before pressing OK$\r$\nYou should see a notification at the bottom right."
   ${EndIf}
 FunctionEnd
 
@@ -166,7 +174,7 @@ Function MAKE_DOCKERD
     SetOutPath "$INSTDIR\bin"
     FileOpen $0 "dockerd.bat" w
       FileWrite $0 '@echo off$\r$\n'
-      FileWrite $0 'Start "" "$DOCKER_EXE\Docker for Windows.exe"$\r$\n'
+      FileWrite $0 'Start "" $DOCKER_EXE$\r$\n'
     FileClose $0
 FunctionEnd
 

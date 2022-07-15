@@ -1,6 +1,6 @@
 
+Var DOCKER_PATH
 Var DOCKER_EXE
-!define DOCKER_PATH "C:\Program Files\Docker\Docker"
 !define DOCKER_HK   "Software\Docker Inc.\Docker\1.0"
 
 Var DockerDialog
@@ -16,10 +16,15 @@ Function DockerPage
   File /r "win"
 
   SetRegView 64
-  ReadRegStr $DOCKER_EXE HKLM "${DOCKER_HK}" "AppPath"
-  DetailPrint "DOCKER_EXE $DOCKER_EXE"
+  ReadRegStr $DOCKER_PATH HKLM "${DOCKER_HK}" "AppPath"
+  DetailPrint "DOCKER_PATH $DOCKER_PATH"
+  ${If} $DOCKER_PATH != ""
+    StrCpy $DOCKER_EXE "$DOCKER_PATH\Docker Desktop.exe"
+    DetailPrint "DOCKER_EXE $DOCKER_EXE"
+  ${Endif}
+  
 
-  !insertmacro MUI_HEADER_TEXT "Docker Desktop" "Docker not found on your system."
+  !insertmacro MUI_HEADER_TEXT "Docker Desktop" "Docker Desktop not found on your system."
   
   nsDialogs::Create 1018
   Pop $DockerDialog
@@ -33,10 +38,10 @@ Function DockerPage
 	${NSD_SetBitmap} $ImageCtrl $INSTDIR\win\docker.bmp $DockerBmpHandle
 
   # if Docker not found, show Docker page
-  ${If} $DOCKER_EXE == ""
-      DetailPrint "Docker not found. Install?"
+  ${If} $DOCKER_PATH == ""
+      DetailPrint "Docker Desktop not found. Install?"
 
-      ${NSD_CreateLabel} 0 0 100% 25u "Docker not found. Flow123d is run inside container, Docker is therefore necessary.$\r$\nDo you want Flow123d to try installing Docker now?"
+      ${NSD_CreateLabel} 0 0 100% 25u "Docker Desktop not found. Flow123d is run inside container, Docker is therefore necessary.$\r$\nDo you want Flow123d to try installing Docker Desktop now?"
       Pop $DockerLabel
 
       ; ${NSD_CreateButton} 0 60u 100% 25u "Install now."
@@ -55,8 +60,8 @@ Function DockerPage
       ; GetDlgItem $1 $HWNDPARENT 1 
       ; EnableWindow $1 0
   ${Else}
-      DetailPrint "Docker found."
-      !insertmacro MUI_HEADER_TEXT "Docker Desktop" "Docker is already present on your system."
+      DetailPrint "Docker Desktop found."
+      !insertmacro MUI_HEADER_TEXT "Docker Desktop" "Docker Desktop is already present on your system."
 
       ${NSD_CreateLabel} 0 0 100% 25u "The installator will try to pull the Flow123d image in next step. Make sure you have a proper internet connection."
       Pop $DockerLabel
@@ -67,18 +72,22 @@ Function DockerPage
 FunctionEnd
 
 Function DockerPageLeave
-  ${If} $DOCKER_EXE == ""
+  ${If} $DOCKER_PATH == ""
     ${NSD_GetState} $DockerCheckBox $DockerCheckBox_State
 
     ${If} $DockerCheckBox_State == 0
-      MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "Flow123d cannot be installed without Docker. Please install Docker manually and repeat. Installator will now exit." IDCANCEL MB_Cancel
+      MessageBox MB_ABORTRETRYIGNORE|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "Flow123d cannot be used without Docker. If you installed Docker engine manually (without Docker Desktop), you can still proceed by 'Ignore', just make sure Docker deamon is running. Otherwise 'Abort' the installation or return to previous page by 'Retry'" IDRETRY  MB_retry IDIGNORE MB_ignore
     ${Else}
       Call DockerInstall  
     ${EndIf}
     
+    ; quit on Abort button
     Quit
-    MB_Cancel:
+    ; return to page on Retry button
+    MB_retry:
       Abort
+    ; proceed with the installation on Ignore button
+    MB_ignore:
   ${EndIf}
 FunctionEnd
 
@@ -166,3 +175,8 @@ FunctionEnd
 ;     Abort
 ;   ${Endif}
 ; FunctionEnd
+
+
+; install Docker engine without Docker Desktop on Windows
+; Docker engine itself does not require license
+; https://betterprogramming.pub/how-to-install-docker-without-docker-desktop-on-windows-a2bbb65638a1
