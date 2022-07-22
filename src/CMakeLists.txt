@@ -113,7 +113,7 @@ add_library(system_lib
     system/fmt/ostream.cc
     system/fmt/posix.cc
 )
-target_link_libraries(system_lib 
+target_link_libraries(system_lib PUBLIC pybind11::embed 
     ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
     ${PETSC_EXTERNAL_LIB} 
