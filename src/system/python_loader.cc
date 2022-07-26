@@ -28,8 +28,11 @@
 //#include <iostream>
 #include <fstream>
 //#include <sstream>
+#include <include/pybind11/pybind11.h>
+#include <include/pybind11/embed.h> // everything needed for embedding
 
 using namespace std;
+namespace py = pybind11;
 
 string python_sys_path = R"CODE(
 
@@ -225,15 +228,18 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-    PyObject *moduleMain = PyImport_ImportModule("__main__");
-    PyRun_SimpleString(python_sys_path.c_str());
-    PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
-    PyObject *args = PyTuple_New (0);
-    PyObject *result = PyObject_CallObject(func, args);
-    PythonLoader::check_error();
-    
-    // save value so we dont have to call python again
-    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
+    //PyObject *moduleMain = PyImport_ImportModule("__main__");
+//    py::module_ moduleMain = py::module_::import("__main__");
+//    PyRun_SimpleString(python_sys_path.c_str());
+//    //PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
+//    PyObject *func = moduleMain.attr("get_paths").cast<py::object>().release().ptr();
+//    PyObject *args = PyTuple_New (0);
+//    //PyObject *args = py::make_tuple(0, py::none(), "").cast<py::object>().release().ptr(); //py::tuple args
+//    PyObject *result = PyObject_CallObject(func, args);
+//    PythonLoader::check_error();
+//
+//    // save value so we dont have to call python again
+//    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
 }
 
 
