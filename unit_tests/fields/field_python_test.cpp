@@ -27,6 +27,9 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
+#include <include/pybind11/pybind11.h>
+#include <include/pybind11/embed.h> // everything needed for embedding
+
 using namespace std;
 
 
@@ -34,9 +37,17 @@ string python_code = R"CODE(
 def testFunc():
     print ("Python hallo.")
 
+def multiFunc(x):
+    return 2*x
+
 class testClass:
     def testMethod(self):
         print ("eggs!")
+)CODE";
+
+string test_pybind = R"CODE(
+test = testClass()
+test.testMethod()
 )CODE";
 
 string python_function = R"CODE(
@@ -78,6 +89,20 @@ string input = R"INPUT(
 }
 )INPUT";
 
+
+TEST(PythonLoader, pybind11) {
+    namespace py = pybind11;
+
+    PythonLoader::initialize();
+    py::exec(python_code.c_str());
+    py::eval("testFunc()"); // this should print out 'Python hallo.'
+
+    py::tuple args = py::make_tuple(5, py::none(), "x");
+    int ret = py::eval("multiFunc(5)").cast<int>();
+    EXPECT_EQ(ret, 10);
+
+    py::exec(test_pybind.c_str()); // this should print out 'eggs!'
+}
 
 TEST(PythonLoader, all) {
     PyObject * module = PythonLoader::load_module_from_string("my_module", python_code);
