@@ -177,6 +177,8 @@ elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
 else()
 endif()
 
+set(FLOW_CC_FLAGS  "${FLOW_CC_FLAGS} -fPIC")
+
 if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
@@ -360,7 +362,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.7.1")
 message(STATUS "=======================================================")
 message(STATUS "====== BOOST ==========================================")
 message(STATUS "=======================================================")
-set(Boost_USE_STATIC_LIBS       ON)
+#set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
