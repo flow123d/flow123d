@@ -93,11 +93,11 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     return result;
 }
 
-PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {
     initialize();
 
     // import module by dot separated path and its name
-    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
+    py::module_ module_object = py::module_::import (module_name.c_str());
     PythonLoader::check_error();
 
     return module_object;
@@ -216,6 +216,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
     // initialize the Python interpreter.
     Py_Initialize();
+    //py::scoped_interpreter guard{}; // start the interpreter and keep it alive
 
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
     // update module path, first get current system path (Py_GetPath)

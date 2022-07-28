@@ -26,6 +26,7 @@
 #ifdef FLOW123D_HAVE_PYTHON
 
 #include <string>
+#include <include/pybind11/pybind11.h>
 
 /*
  * Notes on Python 3 API
@@ -117,7 +118,7 @@ public:
      *
      * will import module 'profiler_formatter_module' from package 'profiler'
      */
-    static PyObject * load_module_by_name(const std::string& module_name);
+    static pybind11::module_ load_module_by_name(const std::string& module_name);
     /**
      * Tests whether the error indicator is set, if yes formats and throws exception.
      */

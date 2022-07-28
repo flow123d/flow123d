@@ -26,6 +26,7 @@
 
 #ifdef FLOW123D_HAVE_PYTHON
     #include "Python.h"
+    #include <include/pybind11/pybind11.h>
 #endif // FLOW123D_HAVE_PYTHON
 
 #include "sys_profiler.hh"
@@ -846,7 +847,8 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
 
 #ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    
+	namespace py = pybind11;
+
     if (json_filepath == "") return;
 
     // error under CYGWIN environment : more details in this repo 
@@ -858,31 +860,32 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
     #ifndef FLOW123D_HAVE_CYGWIN
     // grab module and function by importing module profiler_formatter_module.py
-    PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //
-    PyObject * convert_method  = PythonLoader::get_callable (python_module, "convert" );
+    PyObject * convert_method  = python_module.attr("convert").cast<py::object>().release().ptr();
 
-    int argument_index = 0;
-    PyObject * arguments = PyTuple_New (3);
+    int arg_index = 0;
+    py::tuple args = py::make_tuple(3);
 
     // set json path location as first argument
-    PyObject * tmp = PyUnicode_FromString (json_filepath.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+    py::object tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( json_filepath.c_str() ));
+    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
 
     // set output path location as second argument
-    tmp = PyUnicode_FromString ((json_filepath + output_file_suffix).c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+    tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( (json_filepath + output_file_suffix).c_str() ));
+    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
 
     // set Formatter class as third value
-    tmp = PyUnicode_FromString (formatter.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
+    tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( formatter.c_str() ));
+    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
 
     // execute method with arguments
-    PyObject_CallObject (convert_method, arguments);
+    //PyObject_CallObject (convert_method, arguments);
+    PyObject_CallObject (convert_method, args.ptr());
 
-    PythonLoader::check_error();
+    //PythonLoader::check_error();
 
     #else
 
