@@ -28,6 +28,7 @@
 //#include <iostream>
 #include <fstream>
 //#include <sstream>
+#include <boost/algorithm/string.hpp>
 #include <include/pybind11/pybind11.h>
 #include <include/pybind11/embed.h> // everything needed for embedding
 
@@ -54,29 +55,11 @@ void PythonLoader::initialize(const std::string &python_home)
 }
 
 
-PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
+py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
     initialize();
 
-    // don't know direct way how to load module form file, so we read it into string and use load_module_from_string
-    std::ifstream file_stream;
-    // check correct openning
-    FilePath(fname, FilePath::input_file).open_stream(file_stream);
-    file_stream.exceptions ( ifstream::failbit | ifstream::badbit );
-
-    std::stringstream buffer;
-    buffer << file_stream.rdbuf();
-
-    string module_name;
-    std::size_t pos = fname.rfind("/");
-    if (pos != string::npos)
-        module_name = fname.substr(pos+1);
-    else
-        module_name = fname;
-
-    // cout << "python module: " << module_name <<endl;
-    // DebugOut() << buffer.str() << "\n";
-    // TODO: use exceptions and catch it here to produce shorter and more precise error message
-    return load_module_from_string(module_name, buffer.str() );
+    py::module_ module = py::module_::import(fname.c_str());
+    return module;
 }
 
 
@@ -217,19 +200,24 @@ PythonRunning::PythonRunning(const std::string& program_name)
     // initialize the Python interpreter.
     Py_Initialize();
     //py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+    py::initialize_interpreter();
 
+    // update module path, first get current system path
+    py::module_ sys = py::module_::import("sys");
+    sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
+    std::string unit_tests_path = std::string(FLOW123D_SOURCE_DIR) + "/unit_tests";
+    sys.attr("path").attr("append")( unit_tests_path.c_str() );
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
-    // update module path, first get current system path (Py_GetPath)
     // than append flow123d Python modules path to sys.path
-    wstring path = Py_GetPath();
-    path = path + to_py_string(":") + to_py_string(string(FLOW123D_PYTHON_EXTRA_MODULES_PATH));
-    PySys_SetPath (path.c_str());
-    
-    
+    std::string extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    std::vector<std::string> extra_path_vec;
+    boost::split(extra_path_vec, extra_paths, boost::is_any_of(":"));
+    for (auto path : extra_path_vec)
+        sys.attr("path").attr("append")(path.c_str());
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-    //PyObject *moduleMain = PyImport_ImportModule("__main__");
+//    //PyObject *moduleMain = PyImport_ImportModule("__main__");
 //    py::module_ moduleMain = py::module_::import("__main__");
 //    PyRun_SimpleString(python_sys_path.c_str());
 //    //PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
@@ -246,7 +234,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
 
 
 PythonRunning::~PythonRunning() {
-    Py_Finalize();
+    py::finalize_interpreter();
 }
 
 } // close namespace internal

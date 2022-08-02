@@ -21,6 +21,9 @@
 
 #include <type_traits>
 #include "fields/field_python.hh"
+#include <include/pybind11/pybind11.h>
+
+namespace py = pybind11;
 
 /// Implementation.
 
@@ -38,8 +41,8 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
 		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given. "),
 				"Python script given as in place string")
-		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given. "),
-				"Python script given as external file")
+		.declare_key("script_file", it::String(), it::Default::read_time("Obligatory if 'script_striong' is not given. "),
+				"Python script given as external file in format 'dir'.'file_name' without .py extension")
 		.declare_key("function", it::String(), it::Default::obligatory(),
 				"Function in the given script that returns tuple containing components of the return type.\n"
 				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
@@ -95,7 +98,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
     if (it) {
         set_python_field_from_string( *it, rec.val<string>("function") );
     } else {
-        Input::Iterator<FilePath> it = rec.find<FilePath>("script_file");
+        it = rec.find<string>("script_file");
         if (! it) THROW( ExcNoPythonInit() );
         try {
             set_python_field_from_file( *it, rec.val<string>("function") );
@@ -106,10 +109,11 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const FilePath &file_name, FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const string &file_name, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    p_module_ = PythonLoader::load_module_from_file( string(file_name) );
+    auto module = PythonLoader::load_module_from_file( string(file_name) );
+    p_module_ = module.cast<py::object>().release().ptr();
     set_func(func_name);
 #endif // FLOW123D_HAVE_PYTHON
 }

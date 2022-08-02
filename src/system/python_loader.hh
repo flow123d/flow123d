@@ -103,7 +103,7 @@ public:
      * This function loads a module from the given file.
      * Resulting module has to be deallocated by Py_DECREF() macro.
      */
-    static PyObject * load_module_from_file(const std::string& fname);
+    static pybind11::module_ load_module_from_file(const std::string& fname);
     /**
      * This function compile code in the given string and creates a module with name @p module_name.
      * Resulting module has to be deallocated by Py_DECREF() macro.

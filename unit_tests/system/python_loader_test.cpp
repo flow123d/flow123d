@@ -22,6 +22,7 @@
 #include "system/file_path.hh"
 
 using namespace std;
+namespace py = pybind11;
 
 
 string python_function = R"CODE(
@@ -155,19 +156,23 @@ TEST(PythonLoader, test_embedded_python) {
         FAIL() << "Returned value from module is not type of string. Embedded Python is not working properly!";
     }
 }
-#endif // FLOW123D_HAVE_PYTHON
+#endif // FLOW123D_PYTHON_COPY
 
 TEST(PythonLoader, function_error) {
 	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
 }
 
 
-TEST(PythonLoader, file_error) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+TEST(PythonLoader, from_file) {
+    py::module_ module = PythonLoader::load_module_from_file("fields.field_python_script");
+    py::object result = module.attr("func_multi")(2, 3, 4);
+    EXPECT_EQ(result.cast<int>(), 24);
+}
 
-    EXPECT_THROW( { PythonLoader::load_module_from_file(FilePath::get_absolute_working_dir() + "/python_loader_script.py"); },
-    		PythonLoader::ExcPythonError);
+
+TEST(PythonLoader, file_error) {
+    EXPECT_THROW_WHAT( { PythonLoader::load_module_from_file("python_loader_script"); },
+            std::exception, "(python_loader_script.py, line 4)");
 }
 
 

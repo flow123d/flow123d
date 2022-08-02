@@ -84,7 +84,7 @@ string input = R"INPUT(
    field_file={
        TYPE="FieldPython",
        function="func_xyz",
-       script_file="fields/field_python_script.py"
+       script_file="fields.field_python_script"
    }
 }
 )INPUT";
@@ -93,7 +93,7 @@ string input = R"INPUT(
 TEST(PythonLoader, pybind11) {
     namespace py = pybind11;
 
-    PythonLoader::initialize();
+    py::scoped_interpreter guard{}; // start the interpreter and keep it alive
     py::exec(python_code.c_str());
     py::eval("testFunc()"); // this should print out 'Python hallo.'
 
@@ -102,6 +102,16 @@ TEST(PythonLoader, pybind11) {
     EXPECT_EQ(ret, 10);
 
     py::exec(test_pybind.c_str()); // this should print out 'eggs!'
+
+    py::module_ sys = py::module_::import("sys");
+    sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
+    std::string unit_tests_path = std::string(FLOW123D_SOURCE_DIR) + "/unit_tests";
+    sys.attr("path").attr("append")( unit_tests_path.c_str() );
+
+    py::module_ calc = py::module_::import("fields.field_python_script");
+    py::object result = calc.attr("func_multi")(2, 3, 4);
+    int n = result.cast<int>();
+    EXPECT_EQ(n, 24);
 }
 
 TEST(PythonLoader, all) {
