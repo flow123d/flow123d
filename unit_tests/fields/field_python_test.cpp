@@ -97,7 +97,6 @@ TEST(PythonLoader, pybind11) {
     py::exec(python_code.c_str());
     py::eval("testFunc()"); // this should print out 'Python hallo.'
 
-    py::tuple args = py::make_tuple(5, py::none(), "x");
     int ret = py::eval("multiFunc(5)").cast<int>();
     EXPECT_EQ(ret, 10);
 

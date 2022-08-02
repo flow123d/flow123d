@@ -198,8 +198,6 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_PREFIX 
 
     // initialize the Python interpreter.
-    Py_Initialize();
-    //py::scoped_interpreter guard{}; // start the interpreter and keep it alive
     py::initialize_interpreter();
 
     // update module path, first get current system path
