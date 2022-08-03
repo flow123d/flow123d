@@ -94,13 +94,6 @@ TEST(PythonLoader, pybind11) {
     namespace py = pybind11;
 
     py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-    py::exec(python_code.c_str());
-    py::eval("testFunc()"); // this should print out 'Python hallo.'
-
-    int ret = py::eval("multiFunc(5)").cast<int>();
-    EXPECT_EQ(ret, 10);
-
-    py::exec(test_pybind.c_str()); // this should print out 'eggs!'
 
     py::module_ sys = py::module_::import("sys");
     sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
@@ -111,6 +104,13 @@ TEST(PythonLoader, pybind11) {
     py::object result = calc.attr("func_multi")(2, 3, 4);
     int n = result.cast<int>();
     EXPECT_EQ(n, 24);
+
+    py::dict globals = py::globals();
+    py::exec(python_code.c_str(), globals, globals);
+    globals["testFunc"]();   // this should print out 'Python hallo.'
+    auto obj = globals["multiFunc"](5);
+    int ret = obj.cast<int>();
+    EXPECT_EQ(ret, 10);
 }
 
 TEST(PythonLoader, all) {
