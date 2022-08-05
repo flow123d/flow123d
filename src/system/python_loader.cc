@@ -64,16 +64,15 @@ py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
 
 
 
-PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
+py::module_ PythonLoader::load_module_from_string(const std::string& module_name, const std::string& func_name, const std::string& source_string) {
     initialize();
-    // compile string and check for errors
-    PyObject * compiled_string = Py_CompileString(source_string.c_str(), module_name.c_str(), Py_file_input);
-    PythonLoader::check_error();
-    
-    // import modle and check for error
-    PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
-    PythonLoader::check_error();
-    return result;
+
+    py::dict globals = py::globals();
+    py::exec(source_string.c_str(), globals, globals);
+
+    py::module_ user_module = py::module::create_extension_module(module_name.c_str(), "", new PyModuleDef());
+    user_module.add_object(func_name.c_str(), globals[func_name.c_str()]);
+    return user_module;
 }
 
 py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {

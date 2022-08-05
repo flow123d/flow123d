@@ -80,9 +80,9 @@ def division_by_zero_origin():
  */
 TEST(PythonLoader, print_error) {
     EXPECT_THROW_WHAT(
-        { PythonLoader::load_module_from_string("func_xyz", python_print); },
-        PythonLoader::ExcPythonError,
-        "Message: name 'a' is not defined\nTraceback"
+        { PythonLoader::load_module_from_string("test1", "func_xyz", python_print); },
+        std::exception, //PythonLoader::ExcPythonError,
+        "NameError: name 'a' is not defined" //"Message: name 'a' is not defined\nTraceback"
     );
 }
 
@@ -93,13 +93,13 @@ TEST(PythonLoader, print_error) {
  */
 TEST(PythonLoader, compilation_error) {
     EXPECT_THROW_WHAT(
-        { PythonLoader::load_module_from_string("func_xyz", invalid_code); },
-        PythonLoader::ExcPythonError,
+        { PythonLoader::load_module_from_string("test2", "func_xyz", invalid_code); },
+        std::exception, //PythonLoader::ExcPythonError,
         "invalid syntax"
     );
     EXPECT_THROW_WHAT(
-        { PythonLoader::load_module_from_string("func_xyz", invalid_code2); },
-        PythonLoader::ExcPythonError,
+        { PythonLoader::load_module_from_string("test3", "func_xyz", invalid_code2); },
+        std::exception, //PythonLoader::ExcPythonError,
         "invalid syntax"
     );
 }
@@ -110,7 +110,7 @@ TEST(PythonLoader, compilation_error) {
  * will fail, causing traceback to be displayed
  */
 TEST(PythonLoader, traceback_error) {
-    PyObject * module = PythonLoader::load_module_from_string("func_xyz", produce_error);
+    PyObject * module = PythonLoader::load_module_from_string("test4", "func_xyz", produce_error).cast<py::object>().release().ptr();
     PyObject * func = PyObject_GetAttrString(module, "func_xyz");
     PyObject_CallFunction(func, NULL);
     EXPECT_THROW_WHAT(
@@ -159,7 +159,7 @@ TEST(PythonLoader, test_embedded_python) {
 #endif // FLOW123D_PYTHON_COPY
 
 TEST(PythonLoader, function_error) {
-	EXPECT_THROW( { PythonLoader::load_module_from_string("func_xyz", python_function); }, PythonLoader::ExcPythonError);
+	EXPECT_THROW( { PythonLoader::load_module_from_string("test5", "func_xyz", python_function); }, std::exception); //PythonLoader::ExcPythonError);
 }
 
 

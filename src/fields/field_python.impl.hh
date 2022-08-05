@@ -81,7 +81,9 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, python_source);
+    auto module = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
+    p_module_ = module.cast<py::object>().release().ptr();
+    p_func_ = PythonLoader::get_callable(p_module_, func_name);
     set_func(func_name);
 #endif // FLOW123D_HAVE_PYTHON
 }
@@ -113,7 +115,9 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const s
 {
 #ifdef FLOW123D_HAVE_PYTHON
     auto module = PythonLoader::load_module_from_file( string(file_name) );
+    auto func = module.attr(func_name.c_str());
     p_module_ = module.cast<py::object>().release().ptr();
+    p_func_ = func.cast<py::object>().release().ptr();
     set_func(func_name);
 #endif // FLOW123D_HAVE_PYTHON
 }
@@ -125,8 +129,6 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-	p_func_ = PythonLoader::get_callable(p_module_, func_name);
-
     p_args_ = PyTuple_New( spacedim );
 
     // try field call

@@ -106,9 +106,10 @@ public:
     static pybind11::module_ load_module_from_file(const std::string& fname);
     /**
      * This function compile code in the given string and creates a module with name @p module_name.
+     * Module contains one function with name @p func_name. Function must be defined in @p source_strimg.
      * Resulting module has to be deallocated by Py_DECREF() macro.
      */
-    static PyObject * load_module_from_string(const std::string& module_name, const std::string& source_string);
+    static pybind11::module_ load_module_from_string(const std::string& module_name, const std::string& func_name, const std::string& source_string);
     /**
      * Method which loads module by given module_name
      * module_name can (and probably will) contain packages path (will contain dots '.' which detonates package)
