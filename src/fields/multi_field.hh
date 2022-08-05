@@ -174,11 +174,6 @@ public:
     void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
-     * Implementation of FieldCommonBase::observe_output().
-     */
-    void observe_output(std::shared_ptr<Observe> observe) override;
-
-    /**
      * Implementation of @p FieldCommonBase::is_constant().
      */
     bool is_constant(Region reg) override;
@@ -294,7 +289,6 @@ public:
     const FieldValueCache<double> * value_cache() const override {
         return nullptr;
     }
-
 
 private:
     /// Subfields (items) of MultiField

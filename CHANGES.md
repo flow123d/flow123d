@@ -1,6 +1,27 @@
 List of all changes in user interface and major internal changes.
 
 ***********************************************
+# Flow123d version 4.0.0 
+(in progress)
+
+## User interface
+* Support of user defined fields and their output in all equations.
+
+## New features
+* Implementation of new assembly algorithm of observe output.
+
+<!--
+## Bug fixes
+* ...
+-->
+
+<!--
+## Internals
+* ...
+-->
+
+
+***********************************************
 # Flow123d version 3.9.0 
 (2022-03-05)
 Alpha version of 4.x major release, with mostly backward compatible input.

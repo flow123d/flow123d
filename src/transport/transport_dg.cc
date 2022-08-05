@@ -207,7 +207,8 @@ template<typename Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
           input_rec(in_rec),
-          allocation_done(false)
+          allocation_done(false),
+          mass_assembly_(nullptr)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
@@ -363,33 +364,42 @@ TransportDG<Model>::~TransportDG()
 
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
-            delete eq_data_->ls[i];
-            delete eq_data_->ls_dt[i];
+            if (eq_data_->ls != nullptr) {
+                delete eq_data_->ls[i];
+                delete eq_data_->ls_dt[i];
+            }
 
-            if (stiffness_matrix[i])
-                chkerr(MatDestroy(&stiffness_matrix[i]));
-            if (mass_matrix[i])
-                chkerr(MatDestroy(&mass_matrix[i]));
-            if (rhs[i])
-            	chkerr(VecDestroy(&rhs[i]));
-            if (mass_vec[i])
-            	chkerr(VecDestroy(&mass_vec[i]));
-            if (eq_data_->ret_vec[i])
-            	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
+            if (stiffness_matrix.size() > 0) {
+                if (stiffness_matrix[i])
+                    chkerr(MatDestroy(&stiffness_matrix[i]));
+                if (mass_matrix[i])
+                    chkerr(MatDestroy(&mass_matrix[i]));
+                if (rhs[i])
+                	chkerr(VecDestroy(&rhs[i]));
+                if (mass_vec[i])
+                	chkerr(VecDestroy(&mass_vec[i]));
+                if (eq_data_->ret_vec[i])
+                	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
+            }
         }
-        delete[] eq_data_->ls;
-        delete[] eq_data_->ls_dt;
+        if (eq_data_->ls != nullptr) {
+            delete[] eq_data_->ls;
+            delete[] eq_data_->ls_dt;
+            eq_data_->ls = nullptr;
+        }
         //delete[] stiffness_matrix;
         //delete[] mass_matrix;
         //delete[] rhs;
         //delete[] mass_vec;
         //delete[] ret_vec;
 
-        delete mass_assembly_;
-        delete stiffness_assembly_;
-        delete sources_assembly_;
-        delete bdr_cond_assembly_;
-        delete init_assembly_;
+        if (mass_assembly_ != nullptr) {
+            delete mass_assembly_;
+            delete stiffness_assembly_;
+            delete sources_assembly_;
+            delete bdr_cond_assembly_;
+            delete init_assembly_;
+        }
     }
 
 }

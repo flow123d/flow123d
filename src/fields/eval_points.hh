@@ -110,6 +110,11 @@ public:
         return max_size_;
     }
 
+    inline void clear() {
+        for (uint i=0; i<4; ++i)
+            dim_eval_points_[i].clear();
+    }
+
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
@@ -159,6 +164,11 @@ private:
 
         /// Adds new subset and its end size to subset_starts_ array.
         uint add_subset();
+
+        inline void clear() {
+            local_points_.resize(0);
+            n_subsets_ = 0;
+        }
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
