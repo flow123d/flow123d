@@ -144,6 +144,11 @@ public:
     GenericAssemblyBase(){}
     virtual ~GenericAssemblyBase(){}
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
+
+protected:
+    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
+    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 };
 
 
@@ -408,10 +413,6 @@ private:
 
     /// Holds mask of active integrals.
     int active_integrals_;
-
-    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
-    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
-    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 
     /**
      * Minimal number of sides on edge.
