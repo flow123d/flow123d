@@ -65,12 +65,7 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 {
 	this->is_constant_in_space_ = false;
 
-#ifdef FLOW123D_HAVE_PYTHON
-    p_func_=NULL;
-    p_module_=NULL;
-    p_args_=NULL;
-    p_value_=NULL;
-#else
+#ifndef FLOW123D_HAVE_PYTHON
     THROW( ExcNoPythonSupport() );
 #endif // FLOW123D_HAVE_PYTHON
 }
@@ -81,10 +76,8 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    auto module = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
-    p_module_ = module.cast<py::object>().release().ptr();
-    p_func_ = PythonLoader::get_callable(p_module_, func_name);
-    set_func(func_name);
+    p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
+    set_func("python_field_"+func_name, func_name);
 #endif // FLOW123D_HAVE_PYTHON
 }
 
@@ -114,11 +107,8 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const string &file_name, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    auto module = PythonLoader::load_module_from_file( string(file_name) );
-    auto func = module.attr(func_name.c_str());
-    p_module_ = module.cast<py::object>().release().ptr();
-    p_func_ = func.cast<py::object>().release().ptr();
-    set_func(func_name);
+    p_module_ = PythonLoader::load_module_from_file( string(file_name) );
+    set_func(file_name, func_name);
 #endif // FLOW123D_HAVE_PYTHON
 }
 
@@ -126,30 +116,27 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const s
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &module_name, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    p_args_ = PyTuple_New( spacedim );
+    p_func_ = p_module_.attr(func_name.c_str());
 
     // try field call
-    for(unsigned int i = 0; i < spacedim; i++) {
-        p_value_ = PyFloat_FromDouble( double(i) );
-        PyTuple_SetItem(p_args_, i, p_value_);
-    }
-    p_value_ = PyObject_CallObject(p_func_, p_args_);
-    PythonLoader::check_error();
-
-    if ( ! PyTuple_Check( p_value_)) {
-    	stringstream ss;
-    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " doesn't return Tuple." << endl;
+    ASSERT_PERMANENT_EQ(spacedim, 3);
+    double x=1.0, y=2.0, z=3.0;
+    try {
+        p_value_ = p_func_(x, y, z);
+    } catch (std::exception e) {
+        stringstream ss;
+        ss << "Field '" << func_name << "' from the python module: " << module_name << " doesn't return Tuple." << endl;
         THROW( ExcMessage() << EI_Message( ss.str() ));
     }
 
-    unsigned int size = PyTuple_Size( p_value_);
+    unsigned int size = p_value_.size();
 
     unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
     if ( size !=  value_size) {
-        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(PyModule_GetName(p_module_)) << EI_Size(size) << EI_ValueSize(value_size) );
+        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(module_name) << EI_Size(size) << EI_ValueSize(value_size) );
     }
 
 #endif // FLOW123D_HAVE_PYTHON
@@ -193,19 +180,13 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, FMT_UNUSED Value &value)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    for(unsigned int i = 0; i < spacedim; i++) {
-        p_value_ = PyFloat_FromDouble( p[i] );
-        PyTuple_SetItem(p_args_, i, p_value_);
-    }
-    p_value_ = PyObject_CallObject(p_func_, p_args_);
-    PythonLoader::check_error();
+    p_value_ = p_func_(p[0], p[1], p[2]);
 
     unsigned int pos =0;
     for(unsigned int row=0; row < value.n_rows(); row++)
         for(unsigned int col=0; col < value.n_cols(); col++, pos++)
-            if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
-            else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
-
+            if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = p_value_[pos].cast<int>();
+            else value(row,col) = p_value_[pos].cast<double>();
 #endif // FLOW123D_HAVE_PYTHON
 }
 
@@ -239,14 +220,7 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 
 
 template <int spacedim, class Value>
-FieldPython<spacedim, Value>::~FieldPython() {
-#ifdef FLOW123D_HAVE_PYTHON
-    Py_CLEAR(p_module_);
-    Py_CLEAR(p_func_);
-    Py_CLEAR(p_value_);
-    Py_CLEAR(p_args_);
-#endif // FLOW123D_HAVE_PYTHON
-}
+FieldPython<spacedim, Value>::~FieldPython() {}
 
 
 #endif /* FIELD_PYTHON_IMPL_HH_ */

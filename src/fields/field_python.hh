@@ -28,7 +28,10 @@
 #include "input/factory.hh"
 
 #include <string>
+#include <include/pybind11/pybind11.h>
+
 using namespace std;
+namespace py = pybind11;
 
 /**
  *
@@ -111,7 +114,7 @@ private:
     /**
      * Common part of set_python_field_from_* methods
      */
-    void set_func(const string &func_name);
+    void set_func(const string &module_name, const string &func_name);
 
     /**
      * Implementation.
@@ -119,10 +122,9 @@ private:
     inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
 
 #ifdef FLOW123D_HAVE_PYTHON
-    PyObject *p_func_;
-    PyObject *p_module_;
-    mutable PyObject *p_args_;
-    mutable PyObject *p_value_;
+    py::object        p_func_;
+    py::module_       p_module_;
+    mutable py::tuple p_value_;
 #endif // FLOW123D_HAVE_PYTHON
 
 };

@@ -133,8 +133,8 @@ if(FLOW_BUILD_TYPE STREQUAL "debug")
   # debug mode
   # set(CMAKE_CXX_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
   # set(CMAKE_C_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer -fvisibility=hidden")
+  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer -fvisibility=hidden")
   set(CMAKE_EXE_LINKER_FLAGS "-g ")
   set(CMAKE_BUILD_TYPE Debug)
   
