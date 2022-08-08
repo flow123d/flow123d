@@ -288,7 +288,6 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-    ASSERT( !boundary_dofs_ ).error("boundary field NOT supported!!\n");
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
@@ -399,33 +398,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             else this->make_dof_handler( mesh );
         }
 	}
-}
-
-
-
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::fill_boundary_dofs() {
-	ASSERT(this->boundary_domain_);
-
-	auto bc_mesh = dh_->mesh()->bc_mesh();
-	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
-	boundary_dofs_ = std::make_shared< std::vector<IntIdx> >( n_comp * bc_mesh->n_elements() );
-	std::vector<IntIdx> &in_vec = *( boundary_dofs_.get() );
-	unsigned int j = 0; // actual index to boundary_dofs_ vector
-
-	for (auto ele : bc_mesh->elements_range()) {
-		IntIdx elm_shift = n_comp * ele.idx();
-		for (unsigned int i=0; i<n_comp; ++i, ++j) {
-			in_vec[j] = elm_shift + i;
-		}
-	}
-
-	value_handler0_.set_boundary_dofs_vector(boundary_dofs_);
-	value_handler1_.set_boundary_dofs_vector(boundary_dofs_);
-	value_handler2_.set_boundary_dofs_vector(boundary_dofs_);
-	value_handler3_.set_boundary_dofs_vector(boundary_dofs_);
-
-	data_vec_.resize(boundary_dofs_->size());
 }
 
 
