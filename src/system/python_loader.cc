@@ -80,7 +80,7 @@ py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {
 
     // import module by dot separated path and its name
     py::module_ module_object = py::module_::import (module_name.c_str());
-    PythonLoader::check_error();
+    //PythonLoader::check_error();
 
     return module_object;
 }
@@ -171,30 +171,30 @@ namespace internal {
 
 PythonRunning::PythonRunning(const std::string& program_name)
 {
-#ifdef FLOW123D_PYTHON_PREFIX
-        static wstring _python_program_name = to_py_string(program_name);
-        Py_SetProgramName( &(_python_program_name[0]) );
-        wstring full_program_name = Py_GetProgramFullPath();
-        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
-
-        // try to find string "flow123d" from right side of program_name
-        // if such a string is not present, we are most likely unit-testing
-        // in that case, full_flow_prefix is current dir '.'
-        size_t pos = full_program_name.rfind( to_py_string("flow123d") );
-        wstring full_flow_prefix = ".";
-        if (pos != wstring::npos) {
-            full_flow_prefix = full_program_name.substr(0,pos-string("/bin/").size() );
-        }
-        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-        wstring default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
-        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
-
-        static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
-        Py_SetPythonHome( &(our_py_home[0]) );
-
-#else
+//#ifdef FLOW123D_PYTHON_PREFIX
+//        static wstring _python_program_name = to_py_string(program_name);
+//        Py_SetProgramName( &(_python_program_name[0]) );
+//        wstring full_program_name = Py_GetProgramFullPath();
+//        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
+//
+//        // try to find string "flow123d" from right side of program_name
+//        // if such a string is not present, we are most likely unit-testing
+//        // in that case, full_flow_prefix is current dir '.'
+//        size_t pos = full_program_name.rfind( to_py_string("flow123d") );
+//        wstring full_flow_prefix = ".";
+//        if (pos != wstring::npos) {
+//            full_flow_prefix = full_program_name.substr(0,pos-string("/bin/").size() );
+//        }
+//        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
+//        wstring default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
+//        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
+//
+//        static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
+//        Py_SetPythonHome( &(our_py_home[0]) );
+//
+//#else
     (void)program_name; // not used
-#endif //FLOW123D_PYTHON_PREFIX 
+//#endif //FLOW123D_PYTHON_PREFIX
 
     // initialize the Python interpreter.
     py::initialize_interpreter();
