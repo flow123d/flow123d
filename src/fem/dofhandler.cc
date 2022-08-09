@@ -591,7 +591,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     {
         bool is_edge_local = false;
         for (uint sid=0; sid<edge.n_sides(); sid++)
-        	if ( el_is_local(edge.side(sid)->element().idx()) )
+        	if ( mesh_->is_local(edge.side(sid)->element().idx()) )
         	{
         		is_edge_local = true;
         		break;
@@ -604,8 +604,8 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
 		const Neighbour *nb = &mesh_->vb_neighbour(inb);
-		if ( el_is_local(nb->element().idx())
-				|| el_is_local(nb->side()->element().idx()) )
+		if ( mesh_->is_local(nb->element().idx())
+				|| mesh_->is_local(nb->side()->element().idx()) )
 			nb_4_loc.push_back(inb);
 	}
 	
@@ -647,7 +647,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     for (auto nb : nb_4_loc)
     {
         auto cell = mesh_->vb_neighbour(nb).element();
-        if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
+        if (!mesh_->is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
@@ -655,7 +655,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
         cell = mesh_->vb_neighbour(nb).side()->element();
-        if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
+        if (!mesh_->is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
         {
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
@@ -663,12 +663,6 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
     }
-}
-
-
-bool DOFHandlerMultiDim::el_is_local(int index) const
-{
-	return el_ds_->is_local(mesh_->get_row_4_el()[index]);
 }
 
 

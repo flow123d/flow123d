@@ -270,12 +270,6 @@ public:
 protected:
 
     /**
-     * Returns true if element is on local process.
-     * @param index Global element index.
-     */
-    bool el_is_local(int index) const;
-
-    /**
      * @brief Prepare parallel distribution of elements, edges and neighbours.
      */
     void make_elem_partitioning();

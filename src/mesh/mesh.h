@@ -33,6 +33,7 @@
 #include "mesh/bounding_box.hh"              // for BoundingBox
 #include "mesh/range_wrapper.hh"
 #include "mesh/mesh_data.hh"
+#include "la/distribution.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
 #include "system/index_types.hh"             // for LongIdx
@@ -42,7 +43,6 @@
 
 
 class BIHTree;
-class Distribution;
 class Partitioning;
 class MixedMeshIntersections;
 class Neighbour;
@@ -236,6 +236,13 @@ public:
     /// Return permutation vector of elements
     inline const std::vector<unsigned int> &element_permutations() const
     { return elem_permutation_; }
+
+    /// Return true if element of given @p index is local.
+    inline bool is_local(int index) const
+    {
+    	return el_ds->is_local(row_4_el[index]);
+    }
+
 
 
     /// For each node the vector contains a list of elements that use this node
