@@ -22,6 +22,7 @@ test_cases:
   - 25_square_frac_contact.yaml
   - 26_2d_bc_stress.yaml
   - 28_square_frac_x_contact.yaml
+  - 29_square_frac_shear_dilation.yaml
   - 30_3d_block_load.yaml
   - 31_3d_block_initial_stress.yaml
 - files:

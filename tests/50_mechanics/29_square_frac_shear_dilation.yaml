@@ -1,0 +1,69 @@
+# Test goal: Shear dilation effect
+# Author: Jan Stebel
+# Description: The left and right blocks are forced to contact with tangential displacement.
+#              One fracture branch has nonzero roughness which causes increase of cross-section.
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: 2D elastic model with a branching fracture, test of contact mechanics with shear dilation effect
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+    regions:
+      - !Union
+        name: fracture
+        regions: [ 1d_upper, 1d_lower, 1d_left_branch ]
+  flow_equation: !Coupling_Iterative
+    input_fields:
+    time:
+      end_time: 1
+
+    flow_equation: !Flow_Darcy_LMH
+        input_fields:
+          - region: BULK
+            conductivity: 1
+            init_pressure: 0
+          - region: fracture
+            cross_section: 1e-3
+          - region: .BOUNDARY
+            bc_type: dirichlet
+            bc_pressure: 0
+        output:
+          fields: []
+
+    mechanics_equation:
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+        output:
+          times:
+            - step: 0.1
+          fields:
+            - displacement
+            - stress
+            - cross_section_updated
+            - region_id
+        solver: !Petsc
+        contact: true
+        input_fields:
+          - region: 2d
+            young_modulus: 1e9
+            poisson_ratio: 0.25
+          - region: fracture
+            young_modulus: 1e3
+            poisson_ratio: 0.25
+            cross_section_min: 1e-3
+
+          - region: [ 1d_upper, 1d_lower ]
+          - region: 1d_left_branch
+            roughness_angle: 0.2
+            roughness_height: 9e-3
+
+          - region: .2d_right
+            bc_type: displacement
+            bc_displacement: 0
+          - region: .2d_top
+            bc_type: traction
+            bc_traction: !FieldFormula
+              value: [ 0, '-2e7*t*if(x<0.75,1,0)', 0 ]
+          - region: .2d_left
+            bc_type: displacement_n
+            bc_displacement: 0
