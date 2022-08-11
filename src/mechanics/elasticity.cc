@@ -574,6 +574,10 @@ void Elasticity::update_solution()
 	START_TIMER("DG-ONE STEP");
 
     next_time();
+    
+    if (has_contact_)
+        assemble_constraint_matrix();
+
 	solve_linear_system();
 
     calculate_cumulative_balance();
@@ -598,8 +602,6 @@ void Elasticity::solve_linear_system()
     eq_fields_->set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
 
-    assemble_constraint_matrix();
-    
     // assemble stiffness matrix
     if (eq_data_->ls->get_matrix() == NULL
         || eq_fields_->subset(FieldFlag::in_main_matrix).changed())

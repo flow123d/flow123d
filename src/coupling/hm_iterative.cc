@@ -332,6 +332,7 @@ void HM_Iterative::update_after_converged()
     eq_data_.flow_->accept_time_step();
     eq_data_.flow_->output_data();
     eq_data_.mechanics_->output_data();
+    eq_data_.mechanics_->assemble_constraint_matrix();
     
     copy_field(eq_data_.mechanics_->eq_fields().output_divergence, *eq_fields_.old_div_u_ptr_);
 }

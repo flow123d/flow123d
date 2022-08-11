@@ -213,7 +213,8 @@ public:
 
 	inline EqData &eq_data() { return *eq_data_; }
 
-    
+    void assemble_constraint_matrix();
+
     
     typedef Elasticity FactoryBaseType;
 
@@ -225,9 +226,6 @@ private:
     static const int registrar;
 
 	void preallocate();
-
-
-	void assemble_constraint_matrix();
 
 
 	/// @name Physical parameters
