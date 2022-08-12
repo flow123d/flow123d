@@ -49,7 +49,7 @@ std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath 
 	return reader_ptr;
 }
 
-Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
+Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec, bool raw_mesh) {
     START_TIMER("BaseMeshReader - mesh factory");
 
 	Input::Array region_list;
@@ -65,8 +65,10 @@ Mesh * BaseMeshReader::mesh_factory(const Input::Record &input_mesh_rec) {
 		reader->read_raw_mesh(mesh);
     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_mesh_rec)
 
-    mesh->setup_topology();
-    mesh->check_and_finish();
+    if (!raw_mesh) {
+        mesh->setup_topology();
+        mesh->check_and_finish();
+    }
     return mesh;
 
 }
