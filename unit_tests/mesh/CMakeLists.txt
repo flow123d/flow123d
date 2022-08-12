@@ -40,6 +40,8 @@ add_test_directory("${libs}")
     define_test(region)
     define_mpi_test(mesh 1)
     define_mpi_test(mesh 2)
+    define_mpi_test(raw_mesh 1)
+    define_mpi_test(raw_mesh 2)
     define_test(range)
     define_mpi_test(mesh_optimization 1)
 

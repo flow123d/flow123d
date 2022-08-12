@@ -31,6 +31,7 @@
 
 class Mesh;
 class Neighbour;
+class RawMesh;
 
 
 
@@ -110,6 +111,7 @@ protected:
     friend class MeshBase;
     friend class Mesh;
     friend class BCMesh;
+    friend class RawMesh;
 
     template<int spacedim, class Value>
     friend class Field;

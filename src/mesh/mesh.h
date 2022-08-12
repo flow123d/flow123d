@@ -50,6 +50,7 @@ class SideIter;
 class Boundary;
 class Edge;
 class BCMesh;
+class RawMesh;
 class DuplicateNodes;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
@@ -356,6 +357,7 @@ protected:
     // friend class BIHTree;
     // friend class Boundary;
     // friend class BCMesh;
+    friend class RawMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
 
@@ -697,6 +699,7 @@ protected:
     friend class BIHTree;
     friend class Boundary;
     friend class BCMesh;
+    friend class RawMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
 
