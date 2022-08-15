@@ -66,18 +66,18 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(MeshBase& _mesh, bool make_elem_part)
 }
 
 
-std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sequential()
-{
-    create_sequential();
-    return dh_seq_;
-}
-
-
-std::shared_ptr<VecScatter> DOFHandlerMultiDim::sequential_scatter()
-{
-    create_sequential();
-    return scatter_to_seq_;
-}
+//std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sequential()
+//{
+//    create_sequential();
+//    return dh_seq_;
+//}
+//
+//
+//std::shared_ptr<VecScatter> DOFHandlerMultiDim::sequential_scatter()
+//{
+//    create_sequential();
+//    return scatter_to_seq_;
+//}
 
 
 void DOFHandlerMultiDim::init_cell_starts()
@@ -461,93 +461,93 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
 }
 
 
-void DOFHandlerMultiDim::create_sequential()
-{
-  if (dh_seq_ != nullptr) return;
-  
-  if ( !is_parallel_ )
-  {
-      dh_seq_ = std::make_shared<DOFHandlerMultiDim>(*this);
-      return;
-  }
-  
-  dh_seq_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-  
-  dh_seq_->n_global_dofs_ = n_global_dofs_;
-  dh_seq_->lsize_ = n_global_dofs_;
-  dh_seq_->loffset_ = 0;
-  dh_seq_->mesh_ = mesh_;
-  dh_seq_->dof_ds_ = dof_ds_;  // should be sequential distribution
-  dh_seq_->ds_ = ds_;
-  dh_seq_->is_parallel_ = false;
-  for (unsigned int i=0; i<n_global_dofs_; i++) dh_seq_->local_to_global_dof_idx_.push_back(i);
-  
-  MPI_Allreduce(
-    &max_elem_dofs_,
-    &dh_seq_->max_elem_dofs_,
-    1,
-    MPI_UNSIGNED,
-    MPI_MAX,
-    MPI_COMM_WORLD);
-
-  for (unsigned int i=0; i<mesh_->n_elements(); i++) dh_seq_->global_to_local_el_idx_[i] = mesh_->get_row_4_el()[i];
-  
-  // Auxiliary vectors cell_starts_loc and dof_indices_loc contain
-  // only local element data (without ghost elements).
-  // Then it is possible to create sequential vectors by simple reduce/gather operation.
-  vector<LongIdx> cell_starts_loc(mesh_->n_elements()+1, 0);
-  vector<LongIdx> dof_indices_loc;
-  
-  // construct cell_starts_loc
-  for (auto cell : this->own_range())
-  {
-    cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]+1] = cell.n_dofs();
-  }
-  for (unsigned int i=0; i<mesh_->n_elements(); ++i)
-    cell_starts_loc[i+1] += cell_starts_loc[i];
-
-  // construct dof_indices_loc
-  dof_indices_loc.resize(cell_starts_loc[mesh_->n_elements()]);
-  for (auto cell : this->own_range())
-  {
-    for (unsigned int idof=0; idof<cell.n_dofs(); idof++)
-        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+idof]];
-  }
-  
-  Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
-  dh_seq_->cell_starts.resize(mesh_->n_elements()+1);
-  dh_seq_->dof_indices.resize(distr.size());
-  
-  MPI_Allreduce( cell_starts_loc.data(),
-                 dh_seq_->cell_starts.data(),
-                 cell_starts_loc.size(),
-                 MPI_LONG_IDX,
-                 MPI_SUM,
-                 MPI_COMM_WORLD );
-  
-  MPI_Allgatherv( dof_indices_loc.data(),
-                  dof_indices_loc.size(),
-                  MPI_LONG_IDX,
-                  dh_seq_->dof_indices.data(),
-                  (const int *)distr.get_lsizes_array(),
-                  (const int *)distr.get_starts_array(),
-                  MPI_LONG_IDX,
-                  MPI_COMM_WORLD );
-  
-  // create scatter from parallel to sequential vector
-  Vec v_from;
-  VecCreateMPI(PETSC_COMM_WORLD, lsize_, PETSC_DETERMINE, &v_from);
-  scatter_to_seq_ = std::make_shared<VecScatter>();
-  VecScatterCreateToAll(v_from, scatter_to_seq_.get(), NULL);
-  VecDestroy(&v_from);
-  
-  // create scatter for sequential dof handler (Warning: not tested)
-  Vec v_seq;
-  VecCreateSeq(PETSC_COMM_SELF, n_global_dofs_, &v_seq);
-  dh_seq_->scatter_to_seq_ = std::make_shared<VecScatter>();
-  VecScatterCreateToAll(v_seq, dh_seq_->scatter_to_seq_.get(), NULL);
-  VecDestroy(&v_seq);
-}
+//void DOFHandlerMultiDim::create_sequential()
+//{
+//  if (dh_seq_ != nullptr) return;
+//
+//  if ( !is_parallel_ )
+//  {
+//      dh_seq_ = std::make_shared<DOFHandlerMultiDim>(*this);
+//      return;
+//  }
+//
+//  dh_seq_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+//
+//  dh_seq_->n_global_dofs_ = n_global_dofs_;
+//  dh_seq_->lsize_ = n_global_dofs_;
+//  dh_seq_->loffset_ = 0;
+//  dh_seq_->mesh_ = mesh_;
+//  dh_seq_->dof_ds_ = dof_ds_;  // should be sequential distribution
+//  dh_seq_->ds_ = ds_;
+//  dh_seq_->is_parallel_ = false;
+//  for (unsigned int i=0; i<n_global_dofs_; i++) dh_seq_->local_to_global_dof_idx_.push_back(i);
+//
+//  MPI_Allreduce(
+//    &max_elem_dofs_,
+//    &dh_seq_->max_elem_dofs_,
+//    1,
+//    MPI_UNSIGNED,
+//    MPI_MAX,
+//    MPI_COMM_WORLD);
+//
+//  for (unsigned int i=0; i<mesh_->n_elements(); i++) dh_seq_->global_to_local_el_idx_[i] = mesh_->get_row_4_el()[i];
+//
+//  // Auxiliary vectors cell_starts_loc and dof_indices_loc contain
+//  // only local element data (without ghost elements).
+//  // Then it is possible to create sequential vectors by simple reduce/gather operation.
+//  vector<LongIdx> cell_starts_loc(mesh_->n_elements()+1, 0);
+//  vector<LongIdx> dof_indices_loc;
+//
+//  // construct cell_starts_loc
+//  for (auto cell : this->own_range())
+//  {
+//    cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]+1] = cell.n_dofs();
+//  }
+//  for (unsigned int i=0; i<mesh_->n_elements(); ++i)
+//    cell_starts_loc[i+1] += cell_starts_loc[i];
+//
+//  // construct dof_indices_loc
+//  dof_indices_loc.resize(cell_starts_loc[mesh_->n_elements()]);
+//  for (auto cell : this->own_range())
+//  {
+//    for (unsigned int idof=0; idof<cell.n_dofs(); idof++)
+//        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+idof]];
+//  }
+//
+//  Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
+//  dh_seq_->cell_starts.resize(mesh_->n_elements()+1);
+//  dh_seq_->dof_indices.resize(distr.size());
+//
+//  MPI_Allreduce( cell_starts_loc.data(),
+//                 dh_seq_->cell_starts.data(),
+//                 cell_starts_loc.size(),
+//                 MPI_LONG_IDX,
+//                 MPI_SUM,
+//                 MPI_COMM_WORLD );
+//
+//  MPI_Allgatherv( dof_indices_loc.data(),
+//                  dof_indices_loc.size(),
+//                  MPI_LONG_IDX,
+//                  dh_seq_->dof_indices.data(),
+//                  (const int *)distr.get_lsizes_array(),
+//                  (const int *)distr.get_starts_array(),
+//                  MPI_LONG_IDX,
+//                  MPI_COMM_WORLD );
+//
+//  // create scatter from parallel to sequential vector
+//  Vec v_from;
+//  VecCreateMPI(PETSC_COMM_WORLD, lsize_, PETSC_DETERMINE, &v_from);
+//  scatter_to_seq_ = std::make_shared<VecScatter>();
+//  VecScatterCreateToAll(v_from, scatter_to_seq_.get(), NULL);
+//  VecDestroy(&v_from);
+//
+//  // create scatter for sequential dof handler (Warning: not tested)
+//  Vec v_seq;
+//  VecCreateSeq(PETSC_COMM_SELF, n_global_dofs_, &v_seq);
+//  dh_seq_->scatter_to_seq_ = std::make_shared<VecScatter>();
+//  VecScatterCreateToAll(v_seq, dh_seq_->scatter_to_seq_.get(), NULL);
+//  VecDestroy(&v_seq);
+//}
 
 
 VectorMPI DOFHandlerMultiDim::create_vector()

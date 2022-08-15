@@ -173,19 +173,19 @@ public:
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds);
 
-    /** @brief Returns sequential version of the current dof handler.
-     * 
-     * Collective on all processors.
-     */
-    std::shared_ptr<DOFHandlerMultiDim> sequential();
-    
-    /**
-     * @brief Returns scatter context from parallel to sequential vectors.
-     * 
-     * For sequential dof handler it returns null pointer.
-     * Collective on all processors.
-     */
-    std::shared_ptr<VecScatter> sequential_scatter();
+//    /** @brief Returns sequential version of the current dof handler.
+//     *
+//     * Collective on all processors.
+//     */
+//    std::shared_ptr<DOFHandlerMultiDim> sequential();
+//
+//    /**
+//     * @brief Returns scatter context from parallel to sequential vectors.
+//     *
+//     * For sequential dof handler it returns null pointer.
+//     * Collective on all processors.
+//     */
+//    std::shared_ptr<VecScatter> sequential_scatter();
     
     /**
      * @brief Allocates PETSc vector according to the dof distribution.
@@ -334,12 +334,12 @@ protected:
                            const std::vector<LongIdx> &edge_dof_starts,
                            std::vector<LongIdx> &edge_dofs);
     
-    /**
-     * @brief Communicate local dof indices to all processors and create new sequential dof handler.
-     *
-     * Collective on all processors.
-     */
-    void create_sequential();
+//    /**
+//     * @brief Communicate local dof indices to all processors and create new sequential dof handler.
+//     *
+//     * Collective on all processors.
+//     */
+//    void create_sequential();
     
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
