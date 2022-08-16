@@ -5,15 +5,15 @@ name: Build release package
   #release:
     #types: [created, published, edited, released]
 
-#on:
-#  push:
-#    tags:
-#    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
 on:
-  push
+ push:
+   tags:
+   - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
-# TODO: add to the User guidel reference to the HTML generated doc and mention that one should trust the generated part 
+#on:
+#  push
+
+# TODO: add to the User guide reference to the HTML generated doc and mention that one should trust the generated part 
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
