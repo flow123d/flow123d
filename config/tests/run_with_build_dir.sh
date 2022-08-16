@@ -26,7 +26,7 @@ ln -s ${build_dir_host} build_tree
 cp ${build_dir_host}/_config.cmake config.cmake
 
 # run the command
-bin/fterm dbg_${env} exec ${command_with_args}
+bin/fterm dbg_${env} --no-term  exec ${command_with_args}
 
 
 
