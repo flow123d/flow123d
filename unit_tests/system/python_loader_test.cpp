@@ -71,6 +71,8 @@ def b():
     
 def division_by_zero_origin():
     return 1/0
+
+func_xyz()
 )CODE";
 
 
@@ -81,8 +83,8 @@ def division_by_zero_origin():
 TEST(PythonLoader, print_error) {
     EXPECT_THROW_WHAT(
         { PythonLoader::load_module_from_string("test1", "func_xyz", python_print); },
-        std::exception, //PythonLoader::ExcPythonError,
-        "NameError: name 'a' is not defined" //"Message: name 'a' is not defined\nTraceback"
+        PythonLoader::ExcPythonError,
+        "name 'a' is not defined"
     );
 }
 
@@ -94,30 +96,14 @@ TEST(PythonLoader, print_error) {
 TEST(PythonLoader, compilation_error) {
     EXPECT_THROW_WHAT(
         { PythonLoader::load_module_from_string("test2", "func_xyz", invalid_code); },
-        std::exception, //PythonLoader::ExcPythonError,
+        PythonLoader::ExcPythonError,
         "invalid syntax"
     );
     EXPECT_THROW_WHAT(
         { PythonLoader::load_module_from_string("test3", "func_xyz", invalid_code2); },
-        std::exception, //PythonLoader::ExcPythonError,
+        PythonLoader::ExcPythonError,
         "invalid syntax"
     );
-}
-
-
-/**
- * We are testing that compilation here will succeed but execution of this code
- * will fail, causing traceback to be displayed
- */
-TEST(PythonLoader, traceback_error) {
-//    PyObject * module = PythonLoader::load_module_from_string("test4", "func_xyz", produce_error).cast<py::object>().release().ptr();
-//    PyObject * func = PyObject_GetAttrString(module, "func_xyz");
-//    PyObject_CallFunction(func, NULL);
-//    EXPECT_THROW_WHAT(
-//        { PythonLoader::check_error(); },
-//        PythonLoader::ExcPythonError,
-//        "division_by_zero_origin"
-//    );
 }
 
 
@@ -159,7 +145,18 @@ TEST(PythonLoader, traceback_error) {
 //#endif // FLOW123D_PYTHON_COPY
 
 TEST(PythonLoader, function_error) {
-	EXPECT_THROW( { PythonLoader::load_module_from_string("test5", "func_xyz", python_function); }, std::exception); //PythonLoader::ExcPythonError);
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("test5", "func_xyz", python_function); },
+	        PythonLoader::ExcPythonError,
+	        "invalid syntax");
+    /**
+     * We are testing that compilation here will succeed but execution of this code
+     * will fail, causing traceback to be displayed
+     */
+    EXPECT_THROW_WHAT(
+        { PythonLoader::load_module_from_string("test4", "func_xyz", produce_error); },
+        PythonLoader::ExcPythonError,
+        "division by zero"  // it should be "division_by_zero_origin"
+    );
 }
 
 

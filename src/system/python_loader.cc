@@ -76,11 +76,16 @@ py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
 py::module_ PythonLoader::load_module_from_string(const std::string& module_name, const std::string& func_name, const std::string& source_string) {
     initialize();
 
+    py::module_ user_module;
     py::dict globals = py::globals();
-    py::exec(source_string.c_str(), globals, globals);
 
-    py::module_ user_module = py::module::create_extension_module(module_name.c_str(), "", new PyModuleDef());
-    user_module.add_object(func_name.c_str(), globals[func_name.c_str()]);
+    try {
+        py::exec(source_string.c_str(), globals, globals);
+        user_module = py::module::create_extension_module(module_name.c_str(), "", new PyModuleDef());
+        user_module.add_object(func_name.c_str(), globals[func_name.c_str()]);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
     return user_module;
 }
 
@@ -88,8 +93,12 @@ py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {
     initialize();
 
     // import module by dot separated path and its name
-    py::module_ module_object = py::module_::import (module_name.c_str());
-    //PythonLoader::check_error();
+    py::module_ module_object;
+    try {
+        module_object = py::module_::import (module_name.c_str());
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 
     return module_object;
 }
