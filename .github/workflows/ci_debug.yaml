@@ -6,116 +6,147 @@ env:
   autopull:  0
 
 jobs:
-    flow123d:
+    build:
         runs-on: ubuntu-latest
-        name: Flow123d debug
+        name: Flow123d debug main build
      
         steps:
         - uses: actions/checkout@v1
-        - name: Configure
-          run: bin/fterm --no-term exec make -j2
-           
-        - name: Verify compilation
-          run: bin/fterm --no-term run --version
+        - name: Build flow123d, verify, tarball.
+          run: config/tests/make_build_dir.sh gnu
+        - uses: actions/upload-artifact@v3
+          with:         
+            path: build_dir.tar
+    
+    integration-tests:
+        runs-on: ubuntu-latest
+        name: Integration Test 
+        strategy:
+          matrix:
+            test_dir:
+            - 02_generic_input
+            - 03_generic_output
+            - 04_generic_mesh
+        steps:  
+        - uses: actions/checkout@v1
+        - uses: actions/download-artifact@v3
+          with:
+            path: build_dir.tar
+        - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}
+        
+    unit-tests:
+        runs-on: ubuntu-latest
+        name: Integration Test 
+        strategy:
+          matrix:
+            test_dir:
+            - la
+            - fields
+        steps:  
+        - uses: actions/checkout@v1
+        - uses: actions/download-artifact@v3
+          with:
+            path: build_dir.tar
+        - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} all-test
+        
+        #- name: Test - 01_cmd_line
+          #run: bin/fterm --no-term exec tests/runtest tests/01_cmd_line
+          #continue-on-error: True
 
-        - name: Test - 01_cmd_line
-          run: bin/fterm --no-term exec tests/runtest tests/01_cmd_line
-          continue-on-error: True
+        #- name: Test - 02_generic_input
+          #run: bin/fterm --no-term exec tests/runtest tests/02_generic_input
+          #continue-on-error: True
 
-        - name: Test - 02_generic_input
-          run: bin/fterm --no-term exec tests/runtest tests/02_generic_input
-          continue-on-error: True
+        #- name: Test - 03_generic_output
+          #run: bin/fterm --no-term exec tests/runtest tests/03_generic_output
+          #continue-on-error: True
 
-        - name: Test - 03_generic_output
-          run: bin/fterm --no-term exec tests/runtest tests/03_generic_output
-          continue-on-error: True
+        #- name: Test - 04_generic_mesh
+          #run: bin/fterm --no-term exec tests/runtest tests/04_generic_mesh
+          #continue-on-error: True
 
-        - name: Test - 04_generic_mesh
-          run: bin/fterm --no-term exec tests/runtest tests/04_generic_mesh
-          continue-on-error: True
+        #- name: Test - 05_tutorial
+          #run: bin/fterm --no-term exec tests/runtest tests/05_tutorial
+          #continue-on-error: True
 
-        - name: Test - 05_tutorial
-          run: bin/fterm --no-term exec tests/runtest tests/05_tutorial
-          continue-on-error: True
+        #- name: Test - 06_errors
+          #run: bin/fterm --no-term exec tests/runtest tests/06_errors
+          #continue-on-error: True
 
-        - name: Test - 06_errors
-          run: bin/fterm --no-term exec tests/runtest tests/06_errors
-          continue-on-error: True
+        #- name: Test - 10_darcy
+          #run: bin/fterm --no-term exec tests/runtest tests/10_darcy
+          #continue-on-error: True
 
-        - name: Test - 10_darcy
-          run: bin/fterm --no-term exec tests/runtest tests/10_darcy
-          continue-on-error: True
+        #- name: Test - 11_darcy_bc
+          #run: bin/fterm --no-term exec tests/runtest tests/11_darcy_bc
+          #continue-on-error: True
 
-        - name: Test - 11_darcy_bc
-          run: bin/fterm --no-term exec tests/runtest tests/11_darcy_bc
-          continue-on-error: True
+        #- name: Test - 12_darcy_frac
+          #run: bin/fterm --no-term exec tests/runtest tests/12_darcy_frac
+          #continue-on-error: True
 
-        - name: Test - 12_darcy_frac
-          run: bin/fterm --no-term exec tests/runtest tests/12_darcy_frac
-          continue-on-error: True
+        #- name: Test - 13_darcy_time
+          #run: bin/fterm --no-term exec tests/runtest tests/13_darcy_time
+          #continue-on-error: True
 
-        - name: Test - 13_darcy_time
-          run: bin/fterm --no-term exec tests/runtest tests/13_darcy_time
-          continue-on-error: True
+        #- name: Test - 14_darcy_richards
+          #run: bin/fterm --no-term exec tests/runtest tests/14_darcy_richards
+          #continue-on-error: True
 
-        - name: Test - 14_darcy_richards
-          run: bin/fterm --no-term exec tests/runtest tests/14_darcy_richards
-          continue-on-error: True
+        #- name: Test - 20_solute_fv
+          #run: bin/fterm --no-term exec tests/runtest tests/20_solute_fv
+          #continue-on-error: True
 
-        - name: Test - 20_solute_fv
-          run: bin/fterm --no-term exec tests/runtest tests/20_solute_fv
-          continue-on-error: True
+        #- name: Test - 21_solute_fv_frac
+          #run: bin/fterm --no-term exec tests/runtest tests/21_solute_fv_frac
+          #continue-on-error: True
 
-        - name: Test - 21_solute_fv_frac
-          run: bin/fterm --no-term exec tests/runtest tests/21_solute_fv_frac
-          continue-on-error: True
+        #- name: Test - 22_solute_fv_time
+          #run: bin/fterm --no-term exec tests/runtest tests/22_solute_fv_time
+          #continue-on-error: True
 
-        - name: Test - 22_solute_fv_time
-          run: bin/fterm --no-term exec tests/runtest tests/22_solute_fv_time
-          continue-on-error: True
-
-        - name: Test - 24_solute_dg
-          run: bin/fterm --no-term exec tests/runtest tests/24_solute_dg
-          continue-on-error: True
+        #- name: Test - 24_solute_dg
+          #run: bin/fterm --no-term exec tests/runtest tests/24_solute_dg
+          #continue-on-error: True
  
-        - name: Test - 25_solute_dg_bc
-          run: bin/fterm --no-term exec tests/runtest tests/25_solute_dg_bc
-          continue-on-error: True
+        #- name: Test - 25_solute_dg_bc
+          #run: bin/fterm --no-term exec tests/runtest tests/25_solute_dg_bc
+          #continue-on-error: True
 
-        - name: Test - 26_solute_dg_frac
-          run: bin/fterm --no-term exec tests/runtest tests/26_solute_dg_frac
-          continue-on-error: True
+        #- name: Test - 26_solute_dg_frac
+          #run: bin/fterm --no-term exec tests/runtest tests/26_solute_dg_frac
+          #continue-on-error: True
 
-        - name: Test - 27_solute_dg_time
-          run: bin/fterm --no-term exec tests/runtest tests/27_solute_dg_time
-          continue-on-error: True
+        #- name: Test - 27_solute_dg_time
+          #run: bin/fterm --no-term exec tests/runtest tests/27_solute_dg_time
+          #continue-on-error: True
 
-        - name: Test - 30_sorption
-          run: bin/fterm --no-term exec tests/runtest tests/30_sorption
-          continue-on-error: True
+        #- name: Test - 30_sorption
+          #run: bin/fterm --no-term exec tests/runtest tests/30_sorption
+          #continue-on-error: True
 
-        - name: Test - 31_dual_por
-          run: bin/fterm --no-term exec tests/runtest tests/31_dual_por
-          continue-on-error: True
+        #- name: Test - 31_dual_por
+          #run: bin/fterm --no-term exec tests/runtest tests/31_dual_por
+          #continue-on-error: True
 
-        - name: Test - 32_decay
-          run: bin/fterm --no-term exec tests/runtest tests/32_decay
-          continue-on-error: True
+        #- name: Test - 32_decay
+          #run: bin/fterm --no-term exec tests/runtest tests/32_decay
+          #continue-on-error: True
 
-        - name: Test - 33_reaction
-          run: bin/fterm --no-term exec tests/runtest tests/33_reaction
-          continue-on-error: True
+        #- name: Test - 33_reaction
+          #run: bin/fterm --no-term exec tests/runtest tests/33_reaction
+          #continue-on-error: True
  
-        - name: Test - 34_sorption_dg
-          run: bin/fterm --no-term exec tests/runtest tests/34_sorption_dg
-          continue-on-error: True
+        #- name: Test - 34_sorption_dg
+          #run: bin/fterm --no-term exec tests/runtest tests/34_sorption_dg
+          #continue-on-error: True
 
-        - name: Test - 40_heat
-          run: bin/fterm --no-term exec tests/runtest tests/40_heat
-          continue-on-error: True
+        #- name: Test - 40_heat
+          #run: bin/fterm --no-term exec tests/runtest tests/40_heat
+          #continue-on-error: True
 
-        - name: Test - 50_mechanics
-          run: bin/fterm --no-term exec tests/runtest tests/50_mechanics
-          continue-on-error: True
+        #- name: Test - 50_mechanics
+          #run: bin/fterm --no-term exec tests/runtest tests/50_mechanics
+          #continue-on-error: True
 
           
