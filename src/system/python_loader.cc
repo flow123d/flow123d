@@ -162,20 +162,20 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
 
 
 
-wstring to_py_string(const string &str) {
-    wchar_t wbuff[ str.size() ];
-    size_t wstr_size = mbstowcs( wbuff, str.c_str(), str.size() );
-    return wstring( wbuff, wstr_size );
-}
-
-string from_py_string(const wstring &wstr) {
-    char buff[ wstr.size() ];
-    size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
-    return string( buff, str_size );
-}
-
-#define STR_EXPAND(tok) #tok
-#define STR(tok) string(STR_EXPAND(tok))
+//wstring to_py_string(const string &str) {
+//    wchar_t wbuff[ str.size() ];
+//    size_t wstr_size = mbstowcs( wbuff, str.c_str(), str.size() );
+//    return wstring( wbuff, wstr_size );
+//}
+//
+//string from_py_string(const wstring &wstr) {
+//    char buff[ wstr.size() ];
+//    size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
+//    return string( buff, str_size );
+//}
+//
+//#define STR_EXPAND(tok) #tok
+//#define STR(tok) string(STR_EXPAND(tok))
 
 namespace internal {
 
@@ -224,10 +224,8 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-    //PyObject *moduleMain = PyImport_ImportModule("__main__");
     py::module_ moduleMain = py::module_::import("__main__");
     PyRun_SimpleString(python_sys_path.c_str());
-    //PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
     PyObject *func = moduleMain.attr("get_paths").cast<py::object>().release().ptr();
     PyObject *args = PyTuple_New (0);
     //PyObject *args = py::make_tuple(0, py::none(), "").cast<py::object>().release().ptr(); //py::tuple args
