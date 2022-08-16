@@ -11,10 +11,15 @@ test_cases:
   - files: 02_aniso_diff.yaml
 
 # long running test
-  - files: 01_sources.yaml
+  - files: 
+    - 01_sources.yaml
+    - 
     time_limit: 55
 
+    
 # parallel test
   - files: 03_dg_parallel_output.yaml
-    time_limit: 40
+    time_limit: 120
     proc: [3]
+
+    
