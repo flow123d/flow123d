@@ -121,9 +121,9 @@ public:
      */
     static pybind11::module_ load_module_by_name(const std::string& module_name);
     /**
-     * Tests whether the error indicator is set, if yes formats and throws exception.
+     * Formats and throws ExcPythonError exception.
      */
-    static void check_error();
+    static void throw_error(const pybind11::error_already_set &ex);
 //    /**
 //     * Check if python function is callable, if not throws exception.
 //     */

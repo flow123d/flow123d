@@ -58,7 +58,16 @@ void PythonLoader::initialize(const std::string &python_home)
 py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
     initialize();
 
-    py::module_ module = py::module_::import(fname.c_str());
+    py::module_ module;
+    try {
+    	module = py::module_::import(fname.c_str());
+    } catch (const py::error_already_set &ex) {
+        if (ex.matches(PyExc_ImportError)) {
+        	THROW(FilePath::ExcFileOpen() << FilePath::EI_Path(fname));
+        } else {
+            PythonLoader::throw_error(ex);
+        }
+    }
     return module;
 }
 
@@ -86,51 +95,52 @@ py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {
 }
 
 
-void PythonLoader::check_error() {
-    if (PyErr_Occurred()) {
-        PyObject *ptype, *pvalue, *ptraceback;
-        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-        string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
-        
-        // clear error indicator
-        PyErr_Clear();
-    
-        /* See if we can get a full traceback */
-        PyObject *traceback_module = PyImport_ImportModule("traceback");
-    
-        string str_traceback;
-        if (traceback_module && ptraceback) {
-            PyObject *format_tb_method = PyObject_GetAttrString(traceback_module, "format_tb");
-            if (format_tb_method) {
-                PyObject * traceback_lines = PyObject_CallFunctionObjArgs(format_tb_method, ptraceback, NULL);
-                if (traceback_lines) {
-                    PyObject * join_str = PyUnicode_FromString("");
-                    PyObject * join = PyObject_GetAttrString(join_str, "join");
-                    PyObject * message = PyObject_CallFunctionObjArgs(join, traceback_lines, NULL);
-                    if (message) {
-                        str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(message)));
-                    }
-                    Py_DECREF(traceback_lines);
-                    Py_DECREF(join_str);
-                    Py_DECREF(join);
-                    Py_DECREF(message);
+void PythonLoader::throw_error(const py::error_already_set &ex) {
+    PyObject *ptype = ex.type().ptr();
+    PyObject *pvalue = ex.value().ptr();
+    PyObject *ptraceback = ex.trace().ptr();
+
+    PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+    string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
+
+    // clear error indicator
+    PyErr_Clear();
+
+    /* See if we can get a full traceback */
+    PyObject *traceback_module = PyImport_ImportModule("traceback");
+
+    string str_traceback;
+    if (traceback_module && ptraceback) {
+        PyObject *format_tb_method = PyObject_GetAttrString(traceback_module, "format_tb");
+        if (format_tb_method) {
+            PyObject * traceback_lines = PyObject_CallFunctionObjArgs(format_tb_method, ptraceback, NULL);
+            if (traceback_lines) {
+                PyObject * join_str = PyUnicode_FromString("");
+                PyObject * join = PyObject_GetAttrString(join_str, "join");
+                PyObject * message = PyObject_CallFunctionObjArgs(join, traceback_lines, NULL);
+                if (message) {
+                    str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(message)));
                 }
+                Py_DECREF(traceback_lines);
+                Py_DECREF(join_str);
+                Py_DECREF(join);
+                Py_DECREF(message);
             }
         }
-        
-        // get value of python's "sys.path"
-        string python_path = PythonLoader::sys_path;
-        replace(python_path.begin(), python_path.end(), ':', '\n');
-        
-        // construct error message
-        string py_message =
-                   "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str(ptype))) + "\n"
-                 + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str(pvalue))) + "\n"
-                 + "Traceback: \n" + str_traceback + "\n"
-                 + "Paths: " + "\n" + python_path + "\n";
-    
-        THROW(ExcPythonError() << EI_PythonMessage( py_message ));
     }
+
+    // get value of python's "sys.path"
+    string python_path = PythonLoader::sys_path;
+    replace(python_path.begin(), python_path.end(), ':', '\n');
+
+    // construct error message
+    string py_message =
+               "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.type().ptr() ))) + "\n"
+             + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.value().attr("args").ptr() ))) + "\n"
+             + "Traceback: \n" + str_traceback + "\n"
+             + "Paths: " + "\n" + python_path + "\n";
+    
+    THROW(ExcPythonError() << EI_PythonMessage( py_message ));
 }
 
 
@@ -214,18 +224,18 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-//    //PyObject *moduleMain = PyImport_ImportModule("__main__");
-//    py::module_ moduleMain = py::module_::import("__main__");
-//    PyRun_SimpleString(python_sys_path.c_str());
-//    //PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
-//    PyObject *func = moduleMain.attr("get_paths").cast<py::object>().release().ptr();
-//    PyObject *args = PyTuple_New (0);
-//    //PyObject *args = py::make_tuple(0, py::none(), "").cast<py::object>().release().ptr(); //py::tuple args
-//    PyObject *result = PyObject_CallObject(func, args);
+    //PyObject *moduleMain = PyImport_ImportModule("__main__");
+    py::module_ moduleMain = py::module_::import("__main__");
+    PyRun_SimpleString(python_sys_path.c_str());
+    //PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
+    PyObject *func = moduleMain.attr("get_paths").cast<py::object>().release().ptr();
+    PyObject *args = PyTuple_New (0);
+    //PyObject *args = py::make_tuple(0, py::none(), "").cast<py::object>().release().ptr(); //py::tuple args
+    PyObject *result = PyObject_CallObject(func, args);
 //    PythonLoader::check_error();
-//
-//    // save value so we dont have to call python again
-//    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
+
+    // save value so we dont have to call python again
+    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
 }
 
 
