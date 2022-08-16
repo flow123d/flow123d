@@ -26,9 +26,32 @@ jobs:
         strategy:
           matrix:
             test_dir:
+            - 01_cmd_line
             - 02_generic_input
             - 03_generic_output
             - 04_generic_mesh
+            - 05_tutorial
+            - 06_errors
+            - 10_darcy
+            - 11_darcy_bc
+            - 12_darcy_frac
+            - 13_darcy_time
+            - 14_darcy_richards
+            - 20_solute_fv
+            - 21_solute_fv_frac
+            - 22_solute_fv_time
+            - 24_solute_dg
+            - 25_solute_dg_bc
+            - 26_solute_dg_frac
+            - 27_solute_dg_time
+            - 30_sorption
+            - 31_dual_por
+            - 32_decay
+            - 33_reaction
+            - 34_sorption_dg
+            - 40_heat
+            - 50_mechanics
+            
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
@@ -43,8 +66,19 @@ jobs:
         strategy:
           matrix:
             test_dir:
-            - la
+            - coupling
+            - fem
             - fields
+            - flow
+            - input
+            - intersection
+            - la
+            - mesh
+            - output
+            - scripts
+            - system
+            - test_scripts
+            - tools
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
