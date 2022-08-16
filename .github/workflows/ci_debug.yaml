@@ -11,7 +11,7 @@ jobs:
         name: Flow123d debug main build
      
         steps:
-        - uses: actions/checkout@v1
+        - uses: actions/checkout@v3
         - name: Build flow123d, verify, tarball.
           run: config/tests/make_build_dir.sh gnu
         - uses: actions/upload-artifact@v3
@@ -28,7 +28,7 @@ jobs:
             - 03_generic_output
             - 04_generic_mesh
         steps:  
-        - uses: actions/checkout@v1
+        - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
           with:
             path: build_dir.tar
@@ -43,7 +43,7 @@ jobs:
             - la
             - fields
         steps:  
-        - uses: actions/checkout@v1
+        - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
           with:
             path: build_dir.tar
