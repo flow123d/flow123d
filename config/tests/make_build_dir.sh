@@ -58,12 +58,13 @@ bin/fterm update
 
 # Build flow123d binary (and flow123d libraries)
 cp config/config-jenkins-docker-${build_type}.cmake config.cmake
-bin/fterm dbg_${environment} exec make -j4 all
+bin/fterm dbg_${environment}  --no-term exec make -j4 all
 
 # Basic test of working binary.
 bin/fterm --no-term run --version
 
 # Tarball the build dir for reuse.
 cp config/config-jenkins-docker-${build_type}.cmake build_tree/_config.cmake
+ls 
 tar -cvf build_dir.tar ${build_dir_host}/* 
 
