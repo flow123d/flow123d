@@ -34,12 +34,12 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}
+        - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
         
     unit-tests:
         needs: [build]
         runs-on: ubuntu-latest
-        name: Integration Test 
+        name: Unit Test 
         strategy:
           matrix:
             test_dir:
@@ -50,7 +50,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} all-test
+        - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
     build-doc:
         needs: [build]
@@ -61,7 +61,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh make -C build_tree ref-doc
+        - run: config/tests/run_with_build_dir.sh make ref-doc
 
         #- name: Test - 01_cmd_line
           #run: bin/fterm --no-term exec tests/runtest tests/01_cmd_line
