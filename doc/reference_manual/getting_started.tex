@@ -18,37 +18,43 @@
 
 \section{Introduction}
 Flow123d is a~software for simulating water flow, reactionary solute transport, heat transfer, and mechanics in a~heterogeneous
-porous and fractured medium. In particular, it is well-suited for simulations of underground processes in a~granite rock.
+porous and fractured medium. In particular, it is well-suited for simulations of underground processes in a~crystalline rock.
 The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
 domains of different dimensions. Therefore, the computational mesh is a~collection of tetrahedra, triangles, and line segments.
 
 Two water flow models are available: a model for a~saturated medium based on the Darcy law
 and a~model for a~partially saturated medium described by Richards' equation.
-Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization.
-Both models can also switch between a~transient case and a~sequence of steady states within a~single simulation. The model for unsaturated medium uses
-a lumped variant of the mixed-hybrid method to satisfy the maximum principle and to guarantee stability for short time steps.
+Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time 
+discretization.
+Both models can also switch between a~transient case and a~sequence of steady states within a~single simulation. The model for 
+unsaturated medium uses a lumped variant of the mixed-hybrid method to satisfy the maximum principle and to guarantee stability 
+for short time steps.
 
 In the current version,  only the model for saturated media can be sequentially coupled  with the transport models, including
 two models for the solute transport and one model for the heat transfer.
 
-The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses
-the explicit Euler method for the time discretization and the finite volume method for the space discretization.
-The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances.
+The finite volume solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. 
+It uses the explicit Euler method for the time discretization.
+The discontinuou Galerkin  (DG) solute transport model describes a~general advection with hydrodynamic dispersion for several substances.
 It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
-the first, second, or third order for the discretization in space.
-The operator splitting method can be used to couple any of these two solute transport models with  
- various processes described by the reaction term. The reaction term can treat any meaningful combination of the dual porosity,
-equilibrium sorptions, decays, and linear reactions.
+the variable order for the discretization in space. The operator splitting method can be used to couple any of these two solute 
+transport models with various processes described by the reaction term. The reaction term can treat any meaningful combination 
+of the dual porosity, equilibrium sorptions, decays, and linear reactions.
 
-The heat transfer model assumes equilibrium between the temperature of the rock and of the fluid phase. It uses the same numerical scheme as the second transport model, i.e., the DG method with the implicit time discretization.
+The heat transfer model assumes equilibrium between the temperature of the rock and of the fluid phase. It uses the same 
+numerical scheme as the second transport model, i.e., the DG method with the implicit time discretization.
 
 The mechanical model computes linear elastic problems, taking into account the reduced dimension approach.
-It can be coupled with the flow model and solve linear poroelastic problems. This coupling is realized by an iterative scheme. Nonlinear dependency between strain and hydraulic conductivity and nonlinearity due to contacts and shear stress effects is the focus of ongoing development.
+It can be coupled with the flow model to solve poroelastic problems. This coupling is realized by an iterative scheme. 
+Nonlinear dependency between strain and hydraulic conductivity and nonlinearity due to contacts are supported. 
+The shear stress effects and friction model on the fractures is under development.
 
-The program supports the output of all input and output fields into two file formats. One can use the GMSH mesh generator and post-processor file format or the output into widely supported VTK format. In particular, we recommend Paraview software for the visualization and post-processing of the VTK data.
+The program supports the output of all input and output fields into two file formats. One can use the GMSH mesh generator and 
+post-processor file format or the output into widely supported VTK format. In particular, we recommend Paraview software for 
+the visualization and post-processing of the VTK data. Both formats can be used for input as well.
 
-The program is implemented in C/C++ using the PETSc library for linear algebra. All models can run in parallel using the MPI environment; however, the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
-
+The program is implemented in C/C++ using the PETSc library for linear algebra. All models can run in parallel using the MPI 
+environment; however, the scalability of the whole program is limited due to serial mesh data structures.
 
 The program is distributed under GNU GPL v. 3 license and is available on the project web page:
 \url{http://flow123d.github.io}
@@ -142,7 +148,10 @@ Make sure your system fullfills following requirements in order to support \verb
 \subsubsection{Installation}
 
 To install Flow123d on Windows, download installer from \href{http://flow123d.github.io/}{Official pages}, execute it and follow instructions
-on your screen. To make things easier, you can also \href{https://www.youtube.com/watch?v=xDR2vU-1IhM}{watch a installation video}.
+on your screen.
+
+%To make things easier, you can also \href{https://www.youtube.com/watch?v=xDR2vU-1IhM}{watch a installation video}.
+% TODO: video is for docker for windows, update for Docker under Windows 11 (for version 4.0)
 
 If for some reason the installation failed, make sure everything below is in order:
 
@@ -296,7 +305,7 @@ The main Flow123d binary is located in \verb'bin/flow123d' and accepts the follo
         For debugging purpose.
 \end{description}
 
-The {\tt -s} identifier can be skipped:
+The {\tt -s} identifier can be ommited:
 \begin{verbatim}
   flow123d <main_input>.yaml <options> <PETSC options>
 \end{verbatim}

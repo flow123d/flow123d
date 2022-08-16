@@ -23,7 +23,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 # Flow123d version 3.9.0 
-(2022-03-05)
+(2022-06-06)
 Alpha version of 4.x major release, with mostly backward compatible input.
 
 ## User interface
@@ -36,10 +36,11 @@ Alpha version of 4.x major release, with mostly backward compatible input.
 * Implementation of Native VTK output
 * Implementation of GMSH and VTK readers, compatible writers and readers allowing passing outputs as initiali conditions.
 * Support for "native" output of presure edge DOFs
-* Poroelasticity model with nonlinear effects: ??
+* Poroelasticity model with conductivity dependent on the stress tensor.
 * Allowed output of a field in several "interpolations", e.g. CellData together with NodeData and NativeData
 * FieldFormula can depend on other field within the equation FieldSet
 * user fields (test 02/16) 
+* Contact non-penetration condition for fractures in the mechanics module.
 
 ## Bug fixes
 * Poroelasticity bug fixes, extended test suite.
@@ -62,6 +63,12 @@ Alpha version of 4.x major release, with mostly backward compatible input.
 * new scheme for building docker images, own build of MPICH with Intel Omnipath support
 * Intel and GNU based images, consistent image naming scheme
 * VecMPI improved and used in FV transport
+* Fixed memory deallocation error in the profiler.
+* Use version 4.0.0 of the development images (PETSC 3.17, PERMON 3.17, Armadillo 10.5.2, BDDCML 2.6)
+* Fixed default IDs for MSH output format starting now from 1.
+
+
+
 
 
 ***********************************************
