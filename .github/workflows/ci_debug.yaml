@@ -34,7 +34,6 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-            path: build_dir.tar
         - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}
         
     unit-tests:
@@ -51,7 +50,6 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-            path: build_dir.tar
         - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} all-test
 
     build-doc:
@@ -63,7 +61,6 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-            path: build_dir.tar
         - run: config/tests/run_with_build_dir.sh make -C build_tree ref-doc
 
         #- name: Test - 01_cmd_line
