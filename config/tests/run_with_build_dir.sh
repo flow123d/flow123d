@@ -22,7 +22,7 @@ build_dir_host=build-${git_branch}
 # Recreate build files and dirs
 rm -rf ${build_dir_host}
 ls
-mkdir ${build_dir_host} && tar xf build_tree.tar -C ${build_dir_host} --strip-components 1
+mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
 ln -s ${build_dir_host} build_tree
 cp ${build_dir_host}/_config.cmake config.cmake
 
