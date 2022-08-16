@@ -23,6 +23,7 @@ jobs:
         needs: [build]
         runs-on: ubuntu-latest
         name: Integration Test 
+        continue-on-error: True
         strategy:
           matrix:
             test_dir:
@@ -63,6 +64,7 @@ jobs:
         needs: [build]
         runs-on: ubuntu-latest
         name: Unit Test 
+        continue-on-error: True
         strategy:
           matrix:
             test_dir:
@@ -90,6 +92,7 @@ jobs:
         needs: [build]
         runs-on: ubuntu-latest
         name: Test build doc
+        continue-on-error: True
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
