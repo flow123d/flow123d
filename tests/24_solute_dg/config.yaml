@@ -11,9 +11,7 @@ test_cases:
   - files: 02_aniso_diff.yaml
 
 # long running test
-  - files: 
-    - 01_sources.yaml
-    - 
+  - files: 01_sources.yaml
     time_limit: 55
 
     
