@@ -88,6 +88,16 @@ macro(define_test class_name)
   set(test_valgrind "${class_name}-valgrind")
   #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
 
+  set (extra_args ${ARGN})
+  # Did we get any optional args?
+  list(LENGTH extra_args extra_count)
+  if (${extra_count} GREATER 0)
+      list(GET extra_args 0 test_timeout)
+  else () 
+      set(test_timeout ${TEST_TIMEOUT})
+  endif ()
+  math(EXPR valgrind_timeout "${test_timeout} * 1000")
+  
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
@@ -98,13 +108,13 @@ macro(define_test class_name)
 
   # rule to run the test
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -131,6 +141,16 @@ macro(define_mpi_test class_name n_proc)
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
 
+  set (extra_args ${ARGN})
+  # Did we get any optional args?
+  list(LENGTH extra_args extra_count)
+  if (${extra_count} GREATER 0)
+      list(GET extra_args 0 test_timeout)
+  else () 
+      set(test_timeout ${TEST_TIMEOUT})
+  endif ()
+  math(EXPR valgrind_timeout "${test_timeout} * 1000")
+
   # executable rule
   if(TARGET ${test_binary})
   else()
@@ -144,14 +164,14 @@ macro(define_mpi_test class_name n_proc)
   # set(RUN_COMMAND ulimit -t 300\; )
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${TEST_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${VALGRIND_TIMEOUT} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
