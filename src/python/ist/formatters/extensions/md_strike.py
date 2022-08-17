@@ -11,7 +11,7 @@ Converts ~~expression~~ to line-through text <del /> tag is used
 
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
-from markdown.util import etree
+import xml.etree.ElementTree as etree
 
 
 class StrikeThroughExtension(Extension):
@@ -26,7 +26,7 @@ class StrikeThroughExtension(Extension):
 
         super(StrikeThroughExtension, self).__init__(*args, **kwargs)
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         self.md = md
 
         # append to end of inline patterns
@@ -34,7 +34,7 @@ class StrikeThroughExtension(Extension):
         WIKILINK_RE = r'~~([\w0-9_#-]+)~~'
         wikilinkPattern = StrikeThroughPattern(WIKILINK_RE, {})
         wikilinkPattern.md = md
-        md.inlinePatterns.add('mdstrikethrough', wikilinkPattern, "<not_strong")
+        md.inlinePatterns.register(wikilinkPattern, 'mdstrikethrough', 175)
 
 
 class StrikeThroughPattern(Pattern):
