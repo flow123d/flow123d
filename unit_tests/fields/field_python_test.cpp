@@ -244,16 +244,16 @@ TEST(FieldPython, read_from_input) {
 
 TEST(FieldPython, python_exception) {
     FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-	EXPECT_THROW( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, std::exception); //PythonLoader::ExcPythonError,
-        //"func_xxx)");
+	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
+        "func_xxx");
 
 }
 
 
 TEST(FieldPython, call_object_error) {
     FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-	EXPECT_THROW( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, std::exception); //PythonLoader::ExcPythonError);
-        //"Program Error: Python Error: func_xyz() takes exactly 4 arguments (3 given)"
+	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError,
+        "missing 1 required positional argument: 'a'");
 
 }
 

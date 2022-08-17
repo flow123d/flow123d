@@ -119,14 +119,22 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &module_name, FMT_UNUSED const string &func_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
-    p_func_ = p_module_.attr(func_name.c_str());
+    try {
+        p_func_ = p_module_.attr(func_name.c_str());
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 
     // try field call
     ASSERT_PERMANENT_EQ(spacedim, 3);
     double x=1.0, y=2.0, z=3.0;
     try {
         p_value_ = p_func_(x, y, z);
-    } catch (std::exception e) {
+    } catch (const py::error_already_set &e) {
+        PythonLoader::throw_error(e);
+    }
+
+    if ( ! PyTuple_Check( p_value_.ptr()) ) {
         stringstream ss;
         ss << "Field '" << func_name << "' from the python module: " << module_name << " doesn't return Tuple." << endl;
         THROW( ExcMessage() << EI_Message( ss.str() ));
