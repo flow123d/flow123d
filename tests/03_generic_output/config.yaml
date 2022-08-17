@@ -55,6 +55,7 @@ test_cases:
     - 34_parallel_vtk_node_interp.yaml
     - 35_parallel_vtk_elem_interp.yaml
     - 36_parallel_vtk_corn_interp.yaml
+  time_limit: 60  
   proc: [3]
 
   
