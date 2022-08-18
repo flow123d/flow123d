@@ -26,14 +26,14 @@ class MdLatexExtension (Extension):
 
         super(MdLatexExtension, self).__init__(*args, **kwargs)
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         self.md = md
 
         # append to end of inline patterns
         MD_LATEX_RE = r'\(\((.*?)\)\)'  # match anything in (( ))
         md_latex_pattern = MdLatex(MD_LATEX_RE, self.getConfigs())
         md_latex_pattern.md = md
-        md.inlinePatterns.add('mdlatex', md_latex_pattern, "_begin")
+        md.inlinePatterns.register(md_latex_pattern, 'mdlatex', 0)
 
         # md.treeprocessors.add(
         # "footnote", FootnoteTreeprocessor(), "_begin"
