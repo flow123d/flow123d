@@ -27,9 +27,9 @@ builders:
         fi
 
         # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
-        if [[ "$RUN_SERIAL_ONLY" = true ]] || [[ -f ${{FLOW}}/tests/run_serial_only ]]; then
+        if [[ "$RUN_SERIAL_ONLY" = true ]] || [[ -f /opt/flow_build/tests/run_serial_only ]]; then
           echo "Running serial tests only"
-          docker exec cont{environment}{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch $FLAGS
+          docker exec cont{environment}{build-type} /opt/flow_build/tests/runtest /opt/flow_build/tests/{test-dir} -n 1 --keep-going --batch $FLAGS
         else
-          docker exec cont{environment}{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch $FLAGS
+          docker exec cont{environment}{build-type} /opt/flow_build/tests/runtest /opt/flow_build/tests/{test-dir} --keep-going --batch $FLAGS
         fi
