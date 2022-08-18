@@ -64,10 +64,28 @@ The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
 The linear elastic model does not prevent the self-penetration of the deformed porous material.
 To avoid this unphysical behaviour, the user has to switch on the \hyperA{Mechanics-LinearElasticity-FE::contact}{contact} parameter.
 Then the following contact condition is applied to all fracture elements:
-\eq{ \delta_d-\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\cdot\nn_{d+1}^i \ge \delta_{min}, }
-where $\delta_{min}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::cross-section-min}{minimal cross-section} of the fracture.
+\eq{ \delta_d-\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\cdot\nn_{d+1}^i \ge \delta_{contact}, }
+where $\delta_{contact}$ is the minimal cross-section of the fracture.
 In the case $d=2$, the minimal cross-section is just the contact distance.
 For $1d$ fractures/channels $\delta_{min}$ corresponds to the minimal contact area.
+
+The real fracture surface is never flat. To simulate the roughness of the fracture, we use the following shear dilation model.
+If the rock surfaces adjacent to the fracture move in tangential direction, then the minimal contact distance increases according to the formula:
+\eq{ \delta_{contact} = \delta_{min} + \min\{\tan(\alpha_{rough}) j_\tau,\delta_{rough}\}, }
+where $\delta_{min}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::cross-section-min}{minimal cross-section},
+$\alpha_{rough}$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::roughness-angle}{roughness angle} (in radians),
+$\delta_{rough}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::roughness-height}{roughness height}
+and $j_\tau$ \units{}{3-d}{} is the jump of tangential displacements of adjacent rock blocks (see Figure \ref{fig:shear_dilation} for illustration).
+\begin{figure}
+\centering
+\includegraphics{figures/shear_dilation}
+\caption{Ilustration of shear dilation effect: The contact distance increases with tangential displacement.}
+\label{fig:shear_dilation}
+\end{figure}
+For the case of 1d intersections of three or more 2d fractures, $j_\tau$ is generalized to the following formula:
+\eq{ j_\tau = \sqrt{ \sum_{i,j=1}^n \delta^i\delta^j(\uu^i_{\tau}\cdot\uu^j_{\tau}) (\nn^i\cdot\nn^j), } }
+where $\uu_{i\tau}$ is the tangential displacement on $i$-th branch.
+
 When contact conditions are active, the mechanical model is solved as a quadratic programming problem with linear constraints.
 
 \paragraph{Output fields.}
@@ -81,6 +99,8 @@ The mechanics equation provides several fields for output:
     \[ \sigma_{VM} = \sqrt{\frac12\left((\sigma_1-\sigma_2)^2+(\sigma_1-\sigma_3)^2+(\sigma_2-\sigma_3)^2\right)}, \]
     where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}{cross\_section\_updated}: This field expresses the cross-section of fractures after deformation and is defined as $\delta_d-\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}{displacement\_divergence}: $\widetilde\div\uu_d$.
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}{displacement\_divergence}: $\widetilde\div\uu_d$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::normal-displacement-jump}{normal\_displacement\_jump}: Displacement jump in normal direction: $\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::tangential-displacement-jump}{tangential\_displacement\_jump}: Displacement jump in tangential direction ($j_\tau$).
 \end{itemize}
 
