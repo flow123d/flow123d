@@ -40,6 +40,8 @@ problem: !Coupling_Sequential
             - displacement
             - stress
             - cross_section_updated
+            - normal_displacement_jump
+            - tangential_displacement_jump
             - region_id
         solver: !Petsc
         contact: true
@@ -52,9 +54,8 @@ problem: !Coupling_Sequential
             poisson_ratio: 0.25
             cross_section_min: 1e-3
 
-          - region: [ 1d_upper, 1d_lower ]
-          - region: 1d_left_branch
-            roughness_angle: 0.2
+          - region: fracture
+            roughness_angle: 0.46
             roughness_height: 9e-3
 
           - region: .2d_right
