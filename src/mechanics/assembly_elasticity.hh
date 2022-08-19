@@ -608,7 +608,21 @@ public:
         output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
-        output_displ_jump_vec_ = eq_fields_->output_displ_jump_ptr->vec();
+        output_n_displ_jump_vec_ = eq_fields_->output_n_displ_jump_ptr->vec();
+        output_t_displ_jump_vec_ = eq_fields_->output_t_displ_jump_ptr->vec();
+    }
+
+
+    inline void begin() override
+    {
+        std::fill(eq_data_->aux_t_displacement_tensor_vec_.begin(), eq_data_->aux_t_displacement_tensor_vec_.end(), arma::zeros(3,3));
+    }
+
+
+    inline void end() override
+    {
+        for (unsigned int i=0; i<eq_data_->aux_t_displacement_tensor_vec_.size(); i++)
+            output_t_displ_jump_vec_.set( i, arma::norm(eq_data_->aux_t_displacement_tensor_vec_[i], "fro") );
     }
 
 
@@ -657,19 +671,22 @@ public:
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (!cell_lower_dim.is_own()) return;
 
         normal_displacement_ = 0;
         normal_stress_.zeros();
-        displ_jump_.zeros();
+        t_displ_jump_.zeros();
 
-        fsv_.reinit(*neighb_side.side().edge().side(0));
-        arma::vec3 normal_vector_ref = fsv_.normal_vector(0);
+        // fsv_.reinit(*neighb_side.side().edge().side(0));
+        // arma::vec3 normal_vector_ref = fsv_.normal_vector(0);
 
         DHCellAccessor cell_higher_dim = neighb_side.cell();
         DHCellAccessor cell_tensor = cell_lower_dim.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_vector = cell_lower_dim.cell_with_other_dh(eq_data_->dh_vector_.get());
         DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
         fsv_.reinit(neighb_side.side());
+
+        arma::mat33 projection_t = arma::eye(3,3) - arma::kron(fsv_.normal_vector(0), fsv_.normal_vector(0).t());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
         auto p_high = *( this->coupling_points(neighb_side).begin() );
@@ -680,7 +697,7 @@ public:
             normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
             arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t()) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
-            displ_jump_ += vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]) * arma::dot(fsv_.normal_vector(0), normal_vector_ref);
+            t_displ_jump_ += projection_t*arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t());
         }
 
         LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
@@ -692,8 +709,8 @@ public:
         output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
         output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
 
-        for (unsigned int i=0; i<3; i++)
-            output_displ_jump_vec_.add(dof_indices_vector_[i], displ_jump_(i));
+        output_n_displ_jump_vec_.add(dof_indices_scalar_[0], normal_displacement_);
+        eq_data_->aux_t_displacement_tensor_vec_[dof_indices_scalar_[0]] += t_displ_jump_;
     }
 
 
@@ -721,7 +738,7 @@ private:
 
     double normal_displacement_;                              ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                               ///< Holds constributions of normal stress.
-    arma::vec3 displ_jump_;                                   ///< Holds contributions of displacement jump.
+    arma::mat33 t_displ_jump_;                                ///< Holds contributions of displacement jump.
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
@@ -730,7 +747,8 @@ private:
     VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
-    VectorMPI output_displ_jump_vec_;
+    VectorMPI output_n_displ_jump_vec_;
+    VectorMPI output_t_displ_jump_vec_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -757,7 +775,7 @@ public:
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
-        this->used_fields_ += eq_fields_->output_displacement_jump;
+        this->used_fields_ += eq_fields_->output_tangential_displacement_jump;
         this->used_fields_ += eq_fields_->roughness_angle;
         this->used_fields_ += eq_fields_->roughness_height;
     }
@@ -791,8 +809,8 @@ public:
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(dof_indices_);
 
-        fe_values_side_.reinit(*neighb_side.side().edge().side(0));
-        arma::vec3 normal_vector_ref = fe_values_side_.normal_vector(0);
+        // fe_values_side_.reinit(*neighb_side.side().edge().side(0));
+        // arma::vec3 normal_vector_ref = fe_values_side_.normal_vector(0);
 
 		fe_values_side_.reinit(neighb_side.side());
 
@@ -809,10 +827,9 @@ public:
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = fe_values_side_.normal_vector(k);
 
-            arma::vec3 u = eq_fields_->output_displacement_jump(p_low);
-            arma::vec3 ut = u-arma::dot(u,normal_vector_ref)*normal_vector_ref;
+            double utnorm = eq_fields_->output_tangential_displacement_jump(p_low);
             double contact_distance = eq_fields_->cross_section_min(p_low)
-                                    + std::min(eq_fields_->roughness_height(p_low), tan(eq_fields_->roughness_angle(p_low))*arma::norm(ut,2));
+                                    + eq_fields_->cross_section(p_high)*std::min(eq_fields_->roughness_height(p_low), tan(eq_fields_->roughness_angle(p_low))*utnorm);
             local_vector += (eq_fields_->cross_section(p_low) - contact_distance)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)

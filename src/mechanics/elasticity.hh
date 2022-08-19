@@ -89,7 +89,8 @@ public:
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
-        Field<3, FieldValue<3>::VectorFixed> output_displacement_jump;
+        Field<3, FieldValue<3>::Scalar> output_normal_displacement_jump;
+        Field<3, FieldValue<3>::Scalar> output_tangential_displacement_jump;
         
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
@@ -106,7 +107,8 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_displ_jump_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_n_displ_jump_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_t_displ_jump_ptr;
 
         EquationOutput output_fields;
 
@@ -149,6 +151,9 @@ public:
 
     	/// Shared Balance object
     	std::shared_ptr<Balance> balance_;
+
+        /// Auxiliary object to precompute tangential displacement jumps.
+        std::vector<arma::mat33> aux_t_displacement_tensor_vec_;
 
 	};
 

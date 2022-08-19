@@ -104,7 +104,7 @@ struct fn_lame_lambda {
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
 	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e4 * (2 * lame_mu + lame_lambda);
+        return 1e3 * (2 * lame_mu + lame_lambda);
     }
 };
 
@@ -269,8 +269,14 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
     
-    *this += output_displacement_jump
-            .name("displacement_jump")
+    *this += output_normal_displacement_jump
+            .name("normal_displacement_jump")
+            .description("Displacement jump in normal direction.")
+            .units( UnitSI().m() )
+            .flags(equation_result);
+    
+    *this += output_tangential_displacement_jump
+            .name("tangential_displacement_jump")
             .description("Displacement jump output.")
             .units( UnitSI().m() )
             .flags(equation_result);
@@ -323,6 +329,8 @@ void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);
+
+    aux_t_displacement_tensor_vec_.resize(dh_scalar_->lsize());
 }
 
 
@@ -411,8 +419,11 @@ void Elasticity::initialize()
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
 
     // setup output displacement jump
-    eq_fields_->output_displ_jump_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_vector_);
-    eq_fields_->output_displacement_jump.set(eq_fields_->output_displ_jump_ptr, 0.);
+    eq_fields_->output_n_displ_jump_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_normal_displacement_jump.set(eq_fields_->output_n_displ_jump_ptr, 0.);
+
+    eq_fields_->output_t_displ_jump_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_tangential_displacement_jump.set(eq_fields_->output_t_displ_jump_ptr, 0.);
     
     eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
@@ -498,7 +509,8 @@ void Elasticity::update_output_fields()
     eq_fields_->output_stress_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
-    eq_fields_->output_displ_jump_ptr->vec().zero_entries();
+    eq_fields_->output_n_displ_jump_ptr->vec().zero_entries();
+    eq_fields_->output_t_displ_jump_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
@@ -515,8 +527,10 @@ void Elasticity::update_output_fields()
     eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
-    eq_fields_->output_displ_jump_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_displ_jump_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_n_displ_jump_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_n_displ_jump_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_t_displ_jump_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_t_displ_jump_ptr->vec().local_to_ghost_end();
 }
 
 
@@ -562,8 +576,7 @@ void Elasticity::preallocate()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
 
-    if (has_contact_)
-        assemble_constraint_matrix();
+    assemble_constraint_matrix();
 }
 
 
@@ -575,8 +588,7 @@ void Elasticity::update_solution()
 
     next_time();
     
-    if (has_contact_)
-        assemble_constraint_matrix();
+    assemble_constraint_matrix();
 
 	solve_linear_system();
 
@@ -668,6 +680,8 @@ void Elasticity::calculate_cumulative_balance()
 
 void Elasticity::assemble_constraint_matrix()
 {
+    if (!has_contact_) return;
+
     MatZeroEntries(eq_data_->constraint_matrix);
     VecZeroEntries(eq_data_->constraint_vec);
     constraint_assembly_->assemble(eq_data_->dh_);
