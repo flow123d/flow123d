@@ -766,15 +766,8 @@ set_source_files_properties(${CONFIG_FILE_HEADER}
     HEADER_FILE_ONLY TRUE)
 
 
-# get git information also through configure phase
-set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
-include(Flow123d_git_info)
 
 
-# version in reference manual
-STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/doc/reference_manual/flow_version.tex)    
-    
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
 #
