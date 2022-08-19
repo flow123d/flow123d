@@ -5,7 +5,17 @@
 project(Flow123d_Latex_doc)
 cmake_minimum_required(VERSION 2.8)
 
+  # get git information also through configure phase
+  set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR}/../..)
+  
   set(doc_name "flow123d_doc")
+  include(${CMAKE_SOURCE_DIR}/../../CMake/Modules/Flow123d_git_info.cmake)
+
+
+  # version in reference manual
+  STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
+  configure_file(${CMAKE_SOURCE_DIR}/../../CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/flow_version.tex)    
+    
 
   # assume the TUTORIALS variable with list of tutorial tex files.
   # call e.g.: cmake -D TUTORIALS="1.tex 2.tex" . 
