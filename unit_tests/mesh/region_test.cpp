@@ -412,7 +412,7 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
 // Use less number of loops in debug (slow) mode
 #ifdef FLOW123D_DEBUG_ASSERTS
 // Just to check that it works.
-#define STEPS (10*1000)
+#define STEPS (100*1000)
 #else
 #define STEPS (10*1000*1000)
 #endif
