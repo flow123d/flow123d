@@ -194,6 +194,21 @@ public:
         return eval_points_;
     }
 
+    /** Adds EvalPointData using emplace_back.
+     *  Arguments correspond to constructor of EvalPointData.
+     */
+    inline void add_eval_point(unsigned int i_reg, unsigned int i_ele, unsigned int i_eval_point, unsigned int dh_loc_idx)
+    {
+        eval_point_data_.emplace_back(i_reg, i_ele, i_eval_point, dh_loc_idx);
+        set_of_regions_.insert(i_reg);
+    }
+
+    /// Returns number of eval. points with addition of max simd duplicates due to regions. 
+    inline unsigned int get_simd_rounded_size()
+    {
+        return eval_point_data_.temporary_size() + (simd_size_double - 1)*set_of_regions_.size();
+    }
+
     /*
      * Access to item of \p element_eval_points_map_ like to two-dimensional array.
      *
@@ -345,6 +360,9 @@ protected:
     std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
 
     // @}
+
+    /// Keeps set of unique region indices of added eval. points.
+    std::unordered_set<unsigned int> set_of_regions_;
 
     // TODO: remove friend class
     template < template<IntDim...> class DimAssembly>

@@ -49,7 +49,9 @@ ElementCacheMap::~ElementCacheMap() {
 
 void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points) {
     this->eval_points_ = eval_points;
-    unsigned int ep_data_size = std::max(1.1, (double)eval_points_->max_size()) * CacheMapElementNumber::get();
+    // unsigned int ep_data_size = std::max(1.1, (double)eval_points_->max_size()) * CacheMapElementNumber::get();
+    // DebugOut() << "ep_data_size: " << ep_data_size << "\n";
+    unsigned int ep_data_size = 1.1*CacheMapElementNumber::get();
     eval_point_data_.resize(ep_data_size);
     element_eval_points_map_ = new int [ep_data_size];
     for (unsigned int i=0; i<ep_data_size; ++i)
@@ -111,6 +113,7 @@ void ElementCacheMap::create_patch() {
     regions_starts_.make_permanent();
     element_starts_.make_permanent();
     eval_point_data_.make_permanent();
+    set_of_regions_.clear();
 }
 
 
