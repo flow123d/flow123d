@@ -23,6 +23,7 @@
 # if the flow is not in a $HOME dir, will return parent directory
 #    of the flow123d repo root direcotry (the one containing build-master etc)
 
+set -x
 
 # bin/fterm -- -di --name contrelease -euid=$(id -u) -v /opt/flow123d:/opt/flow123d
 
@@ -182,6 +183,11 @@ function update_image() {
 # Detects exited containers  and prompt user to delete them
 # Detects untagged images and prompt user to delete them
 function remove_old() {
+  if [ "$docker_terminal" == "" ]
+  then
+        YES_TO_ALL=1
+  fi
+  
   # ------------------------------------------------------------------------------
   EXITED=$(docker ps -q -f status=exited)
   if [[ -n $EXITED ]]; then
