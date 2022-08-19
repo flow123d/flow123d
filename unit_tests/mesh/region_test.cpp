@@ -409,7 +409,13 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
  * O3       100     add_region_consistancy_check && using iterators  446
  */
 
+// Use less number of loops in debug (slow) mode
+#ifdef FLOW123D_DEBUG_ASSERTS
+// Just to check that it works.
+#define STEPS (10*1000)
+#else
 #define STEPS (10*1000*1000)
+#endif
 
 // RegionDB add_item(id, dim) overhead.
 TEST(RegionDB, speed_get_region_id) {
