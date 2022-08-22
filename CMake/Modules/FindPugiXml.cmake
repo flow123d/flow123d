@@ -15,7 +15,7 @@
 # currently force static library
 
 #if(PugiXml_STATIC_LIBRARY)
-    set(PugiXml_STATIC libpugixml.a)
+    set(PugiXml_STATIC libpugixml.so.1.10)
 #endif()
 
 # find the pugi-xml include directory

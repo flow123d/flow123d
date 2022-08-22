@@ -177,6 +177,8 @@ elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
 else()
 endif()
 
+set(FLOW_CC_FLAGS  "${FLOW_CC_FLAGS} -fPIC")
+
 if(FLOW_CC_FLAGS)
   # user given flags overrides everything  
   message(STATUS "Using user specified compiler options: ${FLOW_CC_FLAGS}")
@@ -360,7 +362,7 @@ add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.7.1")
 message(STATUS "=======================================================")
 message(STATUS "====== BOOST ==========================================")
 message(STATUS "=======================================================")
-set(Boost_USE_STATIC_LIBS       ON)
+#set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
@@ -766,15 +768,8 @@ set_source_files_properties(${CONFIG_FILE_HEADER}
     HEADER_FILE_ONLY TRUE)
 
 
-# get git information also through configure phase
-set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
-include(Flow123d_git_info)
 
 
-# version in reference manual
-STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/doc/reference_manual/flow_version.tex)    
-    
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
 #

@@ -8,5 +8,5 @@ problem: !Coupling_Sequential
   description: Check correct includes of other YAML files to main input file.
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy_28el.msh
-  flow_equation: !include:Flow_Darcy_MH
+  flow_equation: !include:Flow_Darcy_LMH
     file: ./includes/include_flow.yaml

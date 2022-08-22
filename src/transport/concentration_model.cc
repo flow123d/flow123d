@@ -19,7 +19,6 @@
 #include "input/input_type.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-//#include "flow/darcy_flow_mh.hh"
 
 #include "transport/transport_operator_splitting.hh"
 #include "concentration_model.hh"

@@ -4,7 +4,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
     raw_ngh_output: ./raw_ngh_output.txt 
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet

@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy_28el.msh
     #mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet

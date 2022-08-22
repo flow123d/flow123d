@@ -76,20 +76,6 @@ public:
     /// Destructor.
 	~FEValueHandler();
 
-	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
-		this->boundary_dofs_ = boundary_dofs;
-	}
-
-	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
-    {
-        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-        // create armadillo vector on top of existing array
-        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
-        return LocDofVec(mem_ptr, ndofs, false, false);
-    }
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -104,13 +90,6 @@ private:
     unsigned int range_end_;
     /// Pointer to FiniteElement object used to computing values
     std::shared_ptr<FiniteElement<elemdim>> fe_;
-
-    /**
-     * Hold dofs of boundary elements.
-     *
-     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-     */
-    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 
@@ -147,21 +126,6 @@ public:
     /// Destructor.
 	~FEValueHandler() {}
 
-	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<IntIdx> > boundary_dofs) {
-		this->boundary_dofs_ = boundary_dofs;
-	}
-
-	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-    inline LocDofVec get_loc_dof_indices(unsigned int cell_idx) const
-    {
-        unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
-        // create armadillo vector on top of existing array
-        // vec(ptr_aux_mem, number_of_elements, copy_aux_mem = true, strict = false)
-        IntIdx* mem_ptr = const_cast<IntIdx*>(&((*boundary_dofs_)[ndofs*cell_idx]));
-        return LocDofVec(mem_ptr, ndofs, false, false);
-    }
-
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -174,13 +138,6 @@ private:
     unsigned int range_begin_;
     /// End of dof range of actual component
     unsigned int range_end_;
-
-    /**
-     * Hold dofs of boundary elements.
-     *
-     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-     */
-    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 };
 
 

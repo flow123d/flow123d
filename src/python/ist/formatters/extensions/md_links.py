@@ -13,7 +13,8 @@ Converts [[type_value]] to relative links.
 import re
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
-from markdown.util import etree
+#from lxml import etree
+import xml.etree.ElementTree as etree
 from ist.globals import Globals
 from utils.logger import Logger
 
@@ -36,7 +37,7 @@ class MdLinkExtension(Extension):
 
         super(MdLinkExtension, self).__init__(*args, **kwargs)
 
-    def extendMarkdown(self, md, md_globals):
+    def extendMarkdown(self, md):
         self.md = md
 
         # append to end of inline patterns
@@ -44,7 +45,7 @@ class MdLinkExtension(Extension):
         WIKILINK_RE = r'\[\[([\w0-9_#:-]+)\]\]'
         wikilinkPattern = MdLinks(WIKILINK_RE, {})
         wikilinkPattern.md = md
-        md.inlinePatterns.add('mdlinks', wikilinkPattern, "<not_strong")
+        md.inlinePatterns.register(wikilinkPattern, 'mdlinks', 175)
 
 
 class MdLinks(Pattern):

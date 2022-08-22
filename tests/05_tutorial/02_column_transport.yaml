@@ -82,7 +82,7 @@ problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model with transport
   mesh:
     mesh_file: 01_mesh.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: rock
         conductivity: 1e-8

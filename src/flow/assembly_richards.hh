@@ -210,7 +210,7 @@ public:
 
         this->precompute_boundary_side(cell_side, p_side, p_bdr);
 
-    	if (this->type_==DarcyMH::EqFields::seepage) {
+    	if (this->type_==DarcyLMH::EqFields::seepage) {
     	    this->use_dirichlet_switch(cell_side, b_ele, p_bdr);
     	}
 
@@ -283,9 +283,9 @@ protected:
                                             -source_diagonal_ - mass_rhs_);
             }
 
-            eq_data_->balance->add_mass_values(eq_data_->water_balance_idx, cell, {local_side},
+            eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, cell, {local_side},
                                                {0.0}, diagonal_coef_*water_content_vec.get(local_side));
-            eq_data_->balance->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
+            eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
                                                 {this->eq_data_->loc_system_[cell.local_idx()].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]},
                                                 {0},{source_diagonal_});
         }
