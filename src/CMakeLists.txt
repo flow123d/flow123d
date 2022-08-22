@@ -144,6 +144,7 @@ add_library(input_lib
 target_link_libraries(input_lib 
     system_lib json_spirit
     ${YamlCpp_LIBRARY})
+#    -Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive)
 
 
 # la_lib
@@ -327,13 +328,13 @@ target_link_libraries(coupling_lib
 set(sources_lib_non_system
 )
 # all remaining sources 
-add_library(flow123d_lib 
+add_library(flow123d_lib SHARED 
     flow/darcy_flow_mh_output.cc
-    flow/darcy_flow_mh.cc
+    # flow/darcy_flow_mh.cc
     flow/darcy_flow_lmh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
-    flow/mortar_assembly.cc
+    # flow/mortar_assembly.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc
@@ -375,6 +376,7 @@ target_link_libraries(flow123d_lib
 )
 set_target_properties(flow123d_lib 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+#    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )
 #add_dependencies(flow123d_lib tbb)
 

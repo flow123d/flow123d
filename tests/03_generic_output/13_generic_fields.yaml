@@ -11,7 +11,7 @@ problem: !Coupling_Sequential
   description: Output of generic fields - region_id and subdomain
   mesh:
     mesh_file: ../00_mesh/rectangle_12.8x8_frac.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet

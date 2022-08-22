@@ -8,12 +8,11 @@ problem: !Coupling_Sequential
   description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    n_schurs: 2
     input_fields:
       - region: ALL
         conductivity: 1.0e-10

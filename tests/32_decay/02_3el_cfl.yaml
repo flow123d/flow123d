@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test12 - demonstration of unstability of reaction solver without CFL condition (exact solution (50+5*exp(-55*t))/55)
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - rid: 1
         anisotropy: 1

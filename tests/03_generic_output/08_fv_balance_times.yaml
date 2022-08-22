@@ -17,7 +17,7 @@ problem: !Coupling_Sequential
           - 1d_lower
           - 1d_left_branch
   # mesh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

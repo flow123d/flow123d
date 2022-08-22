@@ -39,7 +39,7 @@ define_test(field_const)
 define_test(field_formula)
 define_test(field_python)
 define_mpi_test(field_fe 1)
-define_mpi_test(field_speed 1)
+define_mpi_test(field_speed 1 30)
 define_mpi_test(multi_field 1)
 define_test(field_time_function)
 

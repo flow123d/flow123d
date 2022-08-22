@@ -1,0 +1,75 @@
+#################
+# Test goal: Time dependent bulk fields in Darcy LMH flow.
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test unsteady LMH with time dependent data.
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_40el.msh
+    global_snap_radius: 0.1
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: plane
+        time: 0.0
+        conductivity: 1
+        cross_section: !FieldTimeFunction
+          time_function:
+            - - 0.0
+              - 1.0
+            - - 1000.0
+              - 2.0
+            - - 2000.0
+              - 5.0
+        sigma: 0.4
+        anisotropy: 10
+        water_source_density: 24
+        init_pressure: 0.1
+        storativity: 1.0
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0.1*x
+    n_schurs: 2
+    output:
+      times:
+        step: 500
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - conductivity
+        - cross_section
+        - sigma
+        - anisotropy
+        - water_source_density
+        - field: init_pressure
+          times: 
+            - 0.0
+        - field: storativity
+          times:
+            - 0.0
+            - 1500.0
+      observe_fields: [pressure_p0, velocity_p0]
+    time:
+      end_time: 3000
+      init_dt: 1.0
+      max_dt: 300
+      min_dt: 0.1
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - 100
+      observe_points:
+        - [0.25, 0.25, 0]
+        - [0.2, 0, 0]
+        - [0, 0.15, 0]
+        - [0.1, 0.05, 0]
+        - [0.05, 0.1, 0]
+        - [0.45, 0.55, 0]

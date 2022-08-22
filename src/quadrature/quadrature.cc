@@ -67,6 +67,12 @@ Quadrature Quadrature::make_from_side(unsigned int sid) const
     return q;
 }
 
+template<> Quadrature Quadrature::make_from_side<0>(FMT_UNUSED unsigned int sid) const
+{
+    ASSERT(false); // 0-dim elements have no sides.
+    return Quadrature(0, 0);
+}
+
 // Specialized subquadrature consructor for dim=1.
 template<> Quadrature Quadrature::make_from_side<1>(unsigned int sid) const
 {

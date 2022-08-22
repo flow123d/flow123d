@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Invalid YAML format - missing bracket of balance record
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
