@@ -104,6 +104,10 @@ RefElementData *ElementValues<spacedim>::init_ref_data(const Quadrature &q)
     {
         switch (q.dim())
         {
+        	case 0:
+                ref_data->bar_coords[i] = arma::vec( "0" );
+                //ref_data->bar_coords[i] = RefElement<0>::local_to_bary(q.point<0>(i));
+                break;
             case 1:
                 ref_data->bar_coords[i] = RefElement<1>::local_to_bary(q.point<1>(i));
                 break;
@@ -163,7 +167,7 @@ ElementValues<spacedim>::ElementValues(
   side_ref_data(n_sides_),
   data(n_points_, update_each(_flags), dim)
 {
-    if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
+    //if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     if ( _quadrature.dim() == dim )
     {
         // precompute element data
@@ -216,6 +220,10 @@ void ElementValues<spacedim>::reinit(const ElementAccessor<spacedim> & cell)
     // calculate Jacobian of mapping, JxW, inverse Jacobian
     switch (dim_)
     {
+    	case 0:
+    		if (cell.is_valid() && data.update_flags & update_quadrature_points)
+    		    data.points.set(0) = Armor::vec<spacedim>( MappingP1<0, spacedim>::element_map(cell) );
+    		break;
         case 1:
             fill_data<1>();
             break;

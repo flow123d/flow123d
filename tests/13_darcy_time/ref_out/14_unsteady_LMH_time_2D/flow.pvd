@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" group="" part="0" file="flow/flow-000000.vtu"/>
+<DataSet timestep="500" group="" part="0" file="flow/flow-000001.vtu"/>
+<DataSet timestep="1000" group="" part="0" file="flow/flow-000002.vtu"/>
+<DataSet timestep="1500" group="" part="0" file="flow/flow-000003.vtu"/>
+<DataSet timestep="2000" group="" part="0" file="flow/flow-000004.vtu"/>
+<DataSet timestep="2500" group="" part="0" file="flow/flow-000005.vtu"/>
+<DataSet timestep="3000" group="" part="0" file="flow/flow-000006.vtu"/>
+</Collection>
+</VTKFile>

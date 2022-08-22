@@ -83,10 +83,6 @@ public:
         ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 
-    void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
-        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
-    }
-
     FieldResult field_result(FMT_UNUSED RegionSet region_set) const override {
         return result_none;
     }

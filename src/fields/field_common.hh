@@ -50,6 +50,7 @@ class EvalPoints;
 class ElementCacheMap;
 class FieldSet;
 class BulkPoint;
+class ElementDataCacheBase;
 
 
 using namespace std;
@@ -441,13 +442,6 @@ public:
     virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) =0;
 
     /**
-     * Perform the observe output of the field.
-     * The Observe object passed by the parameter is called with the particular Field<> as the parameter
-     * to evaluate the field in observation points and store the values in the OutputData arrays.
-     */
-    virtual void observe_output(std::shared_ptr<Observe> observe) =0;
-
-    /**
      * Set reference of FieldSet to all instances of FieldFormula.
      */
     virtual std::vector<const FieldCommon *> set_dependency(unsigned int i_reg) const =0;
@@ -512,6 +506,13 @@ public:
     }
 
 
+    /// Fill data to ElementDataCache on given patch.
+    virtual void fill_observe_value(FMT_UNUSED std::shared_ptr<ElementDataCacheBase> output_cache_base, FMT_UNUSED const std::vector<int> &offsets)
+    {
+        ASSERT_PERMANENT(false);
+    }
+
+
     /**
      * Print stored messages to table.
      *
@@ -532,6 +533,12 @@ public:
      * Virtual destructor.
      */
     virtual ~FieldCommon();
+
+    /// Return number of shape components
+    inline uint n_shape() const {
+        if (shape_.size() == 1) return shape_[0];
+        else return shape_[0] * shape_[1];
+    }
 
     /**
      * Hold shape of Field.

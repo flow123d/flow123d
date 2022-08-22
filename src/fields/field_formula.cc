@@ -307,13 +307,6 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 	}
 }
 
-uint n_shape(std::vector<uint> shape) {
-    uint r = 1;
-    for (auto i : shape) r *= i;
-    return r;
-}
-
-
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
     required_fields_.clear(); // returned value
@@ -397,7 +390,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
 
-            sum_shape_sizes_ += n_shape( field_ptr->shape_ );
+            sum_shape_sizes_ += field_ptr->n_shape();
             if (var == "d") {
                 field_set.set_surface_depth(this->surface_depth_);
             }
@@ -424,7 +417,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     res_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : required_fields_) {
         std::string field_name = field->name();
-        eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
+        eval_field_data_[field] = arena_alloc_->create_array<double>(field->n_shape() * vec_size);
         if (field_name == "X") {
             x_ = eval_field_data_[field] + 0;
             y_ = eval_field_data_[field] + vec_size;

@@ -11,7 +11,9 @@
 #include "fields/equation_output.hh"
 #include "fields/field.hh"
 #include "fields/assembly_output.hh"
+#include "fields/assembly_observe.hh"
 #include "io/output_time_set.hh"
+#include "io/observe.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/dofhandler.hh"
 #include "fem/discrete_space.hh"
@@ -66,9 +68,9 @@ IT::Record &EquationOutput::get_input_type() {
 }
 
 
-
 EquationOutput::EquationOutput()
-: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr) {
+: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr),
+  observe_output_assembly_(nullptr) {
     this->add_coords_field();
 }
 
@@ -76,6 +78,7 @@ EquationOutput::~EquationOutput() {
     if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
     if (output_node_data_assembly_ != nullptr) delete output_node_data_assembly_;
     if (output_corner_data_assembly_ != nullptr) delete output_corner_data_assembly_;
+    if (observe_output_assembly_ != nullptr) delete observe_output_assembly_;
 }
 
 
@@ -145,9 +148,10 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	    dh_node_->distribute_dofs(ds);
     }
 
-	output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
-	output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
-	output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
+    output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this->observe_fields_, stream_->observe( mesh_ ));
 }
 
 
@@ -319,12 +323,20 @@ void EquationOutput::output(TimeStep step)
     }
 
     // observe output
-    for(FieldCommon * field : this->field_list) {
-        if ( field->flags().match( FieldFlag::allow_output) ) {
-            if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-                field->observe_output( observe_ptr );
+    if (observe_fields_.size() > 0) {
+        for (auto observe_field : this->observe_fields_) {
+            auto *field_ptr = this->field(observe_field);
+            if ( field_ptr->flags().match( FieldFlag::allow_output) ) {
+                if (field_ptr->is_multifield()) {
+                    for (uint i_comp=0; i_comp<field_ptr->n_comp(); ++i_comp) {
+                        observe_ptr->prepare_compute_data(field_ptr->full_comp_name(i_comp), step.end(), field_ptr->n_shape());
+                    }
+                } else {
+                    observe_ptr->prepare_compute_data(field_ptr->name(), field_ptr->time(), field_ptr->n_shape());
+                }
             }
         }
+        observe_output_assembly_->assemble(this->dh_);
     }
 }
 

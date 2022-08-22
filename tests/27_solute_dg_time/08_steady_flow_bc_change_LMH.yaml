@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
       - !From_Elements
         name: source_reg
         element_list: [579, 565, 898, 606, 931, 673]
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: BULK
 

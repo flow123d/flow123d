@@ -1,7 +1,6 @@
 nonlinear_solver:
   linear_solver: !Petsc
     a_tol: 1.0e-07
-n_schurs: 2
 input_fields: !include
   ./includes/include_array.yaml
 output:

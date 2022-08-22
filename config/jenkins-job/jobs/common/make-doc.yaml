@@ -6,6 +6,6 @@ display-name: "{build-type} / Flow123d make doc"
 defaults: flow123d-build
 builders:
   - shell: |
-      docker exec cont{environment}{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
-      docker exec cont{environment}{build-type} make -C ${{FLOW}} html-doc
-      docker exec cont{environment}{build-type} make -C ${{FLOW}} doxy-doc
+      docker exec cont{environment}{build-type} make -C /opt/flow_build FORCE_DOC_UPDATE=1 ref-doc
+      docker exec cont{environment}{build-type} make -C /opt/flow_build html-doc
+      docker exec cont{environment}{build-type} make -C /opt/flow_build doxy-doc

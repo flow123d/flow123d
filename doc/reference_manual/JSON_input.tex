@@ -1,6 +1,9 @@
 
 In this chapter, we shall describe structure of the main input file and data formats of other input files.
-In particular we briefly describe the GMSH file format used for both the computational mesh as well as for the input of general spatial data.
+In particular, we briefly describe the GMSH file format used for both the computational mesh as well as for the input of general spatial data.
+We only discuss some of the constructs used in the main input file. For details see Chapter \ref{chapter:input-tree-reference} with the reference 
+documentation generated from the source files. Alternatively the interactive HTML variant of the reference is in the directory \verb|doc/htmldoc| of 
+the installation or at the simulator \href{https://flow.nti.tul.cz/packages/3.9.0_release/htmldoc/}{web page}.
 
 
 \section{Main Input File}
@@ -296,7 +299,7 @@ The tag is followed by a~Record with several keys to specify format of the data:
   backslash can be used to escaping any character with special meaning. Consecutive row of separators is interpreted as a~single separator. 
   \item {\bf\verb'n_head_lines'}\\ Skip given number of lines at the beginning.
   \item {\bf\verb'format'}\\ An input structure of a~single element in the resulting array. Type of Abstracts must be same through 
-  the whole resulting Array. String scalar values with a~placeholder \verb"'$<column>'" will be replaced by the value 
+  the whole resulting Array. String scalar values with a~placeholder \verb|'$<column>'| will be replaced by the value 
   at corresponding column in the input file.
 \end{description}
 
@@ -477,7 +480,8 @@ input_fields:
       field_name: conductivity
 \end{verbatim}
 
-
+% TODO: describe automatic conversions in a separate paragraph havin an overview of these structural exceptions
+% and can refer to the section. 
 
 \subsubsection{Field Algorithms}
 \label{sec:Fields}\hypertarget{sec:Fields}{}
@@ -499,31 +503,73 @@ the scalar type $T$ can be one of
 Each of these abstract records have the same set of descendants which implement various evaluation algorithms of the fields. These are
 \begin{description}
  \item[FieldConstant] --- field that is constant both in space and time
- \item[TimeFunction] --- field that is constant in space and continuous in time. Values are interpolated (currently only linear interpolation) from 
+ \item[FieldTimeFunction] --- field that is constant in space and continuous in time. Values are interpolated (currently only linear interpolation) from 
  the sequence of time-value pairs provided on input.
  %
  \item[FieldFormula] --- field that is given by a runtime parsed formula. % with a simplified Python and Numpy syntax. 
-Since version 3.1.0 we use our own library \href{https://github.com/flow123d/bparser}{BParser} in the equations SoluteAdvectionDiffusionDG
- and Elasticity. while the SoluteConvectionFV and DarcyFlowMH still use \href{http://warp.povusers.org/FunctionParser/fparser.html}{FParser}.
- Formulas are converted from the FParser syntax to that of BParser for the sake of backward compatibility,
- however, we can not rule out minor incompatibilities. The BParser will be used exclusively from version
- 4.0.0 with its Python and Numpy syntax, support for vector and tensor valued expressions and use SIMD
- operations to achieve nearly peak CPU performance. 
+Since version 3.9.0 we use our own library \href{https://github.com/flow123d/bparser}{BParser} however 
+we preserve the formular syntax according to the \href{http://warp.povusers.org/FunctionParser/fparser.html}{FParser}.
+Formulas are converted from the FParser syntax to that of BParser for the sake of backward compatibility,
+however, we can not rule out minor incompatibilities. The BParser will be used exclusively from the version
+4.0.0 with its Python and Numpy syntax, support for vector and tensor valued expressions and use SIMD
+operations to achieve nearly peak CPU performance. 
  
- The formula can contain following literals: constants {\tt E} and {\tt Pi}, names of other fields of the same equation, and coordinates: {\tt t}, {\tt x}, {\tt y}, {\tt z}, {\tt d}. First is the 
- simulation time, the coordinate $d$ is a spefial field that evaluates to the depth from the surface. This is defined as a distance to the intersection of the vertical (Z axis) line with the outer boundary that has smallest Z coordinate greater then the evaluation point.
+The formula can contain following literals: constants {\tt E} and {\tt Pi}, names of other fields of the same equation, 
+and coordinates: {\tt t}, {\tt x}, {\tt y}, {\tt z}, {\tt d}. First is the 
+simulation time, the coordinate $d$ is a special field that evaluates to the depth from the surface. This is 
+defined as a distance to the intersection of the vertical (Z axis) line with the outer boundary that has smallest 
+Z coordinate greater then the evaluation point. Any other field of the same equation can be used 
+in the formula as long as the cyclic dependencies are avoided. 
 
- \item[FieldPython] --- field can be implemented by Python script either specified by string (key \hyperA{FieldPython::script-string}{{\tt script\_string}}) 
- or in external file (key \hyperA{FieldPython::script-file}{{\tt script\_file}}. 
- \item[FieldElementwise] --- discrete field, currently only piecewise constant field on elements is supported, the field can given by 
- the \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII} file specified in key \hyperA{FieldElementwise::gmsh-file}{{\tt gmsh\_file}} and field name in the file given 
- by key \hyperA{FieldElementwise::field-name}{{\tt field\_name}}. The file must contain same mesh as is used for computation.
- \item[FieldInterpolated] --- allows interpolation between different meshes. Not yet fully supported.
-\end{description}
+ \item[FieldPython] --- out of order in version 3.9.0, will be improved for the version 4.0.0.
+ \item[FieldFE] --- discretized fully heterogeneous field \hyperA{FieldFE::field-name}{{\tt field\_name}} read from a file in GMSH or VTK format with path given by 
+ the key \hyperA{FieldFE::mesh-data-file}{{\tt mesh\_data\_file}}. Two regimes selected by the key 
+ \hyperA{FieldFE::input-discretization}{{\tt input\_discretization}} are currently supported: 
+ the default value \hyperA{FE-discretization::element-data}{{\tt element\_data}} 
+ for the elementwise constant (P0) discretization and 
+ \hyperA{FE-discretization::native-data}{{\tt native\_data}}
+ for the internal discretization. 
+ 
+ The element data are provided by the file in GMSH or VTK format. The key 
+ \hyperA{FieldFE::interpolation}{{\tt interpolation}}
+ indicates interpretetion of the
+ input data. The value \hyperA{interpolation::identic-mesh}{{\tt identic\_mesh}}
+ can be used only with the GMSH format if the values are given for the 
+ same element IDs as used in the file of the common computational mesh. It is sufficient to have 
+ data file with only the \verb|$ElementData| 
+ sections, see Section \ref{mesh_file} for the complete format overview. The default value 
+ \hyperA{interpolation::equivalent-mesh}{{\tt equivalent\_mesh}} assumes the data mesh same as the computational mesh, 
+ but possibly with different 
+ numbering of the elements. The mapping between meshes is determined by the node coordinates, so 
+ the complete mesh information must be provided with the data. Finaly there are two options for the case of different data mesh. 
+ For the case \hyperA{interpolation::P0-gauss}{{\tt P0\_gauss}}, the value on an element of the computational mesh is given as an integral average approximated by the Gauss quadrature of 
+ the order 4. The values at the quadrature points are determined by the values on the data mesh. 
+ The case \hyperA{interpolation::P0-intersection}{{\tt P0\_intersection}} works only for the boundary fields. The boundary of the computational mesh is intersected
+ with the data mesh, a single boundary element is decomposed into its intersection $S_i$ with the elements of the data mesh, and 
+ the field value $f$ is determined as a weighted average of the data elements values $v_i$:
+ \[
+    v = \frac{\sum_i |S_i| v_i}{\sum_i |S_i|}
+ \]
 
-Several automatic conversions are implemented. Scalar values can be used to set constant vectors or tensors. Vector value of size $d$ can be used to set diagonal tensor $d\times d$.
-Vector value of size $d(d-1)/2$, e.g. $6$ for $d=3$, can be used to set symmetric tensor. These rules apply only for FieldConstant and FieldFormula.
-Moreover, all Field abstract types have default value \verb'TYPE=FieldConstant'. Thus you can just use the constant value instead of the whole record.
+ The case of native data, is only available for the VTK file produced by the Flow123d. It can be used to pass data between 
+calls of the Flow123d on the same mesh using the original discretization. This is particularly usefull for the mixed-hybrid 
+ finite elements used by the Darcy flow model. 
+ 
+ The key \hyperA{FieldFE::default-value}{{\tt default\_value}} provides to the computational elements not found in the data file.
+The input data formats can contain field values for a sequence of discrete times, the key 
+\hyperA{FieldFE::read-time-shift}{{\tt read\_time\_shift}} together with the 
+\hyperA{FieldFE::time-unit}{{\tt time\_unit}} can be used to add given period to the data times in order to match time 
+frame of the simulation.  
+ \end{description}
+
+\subsubsection{Field automatic conversions} 
+Several automatic conversions are implemented to simplify field specifications. 
+Scalar values can be used to set constant vectors or tensors. 
+Vector value of size $d$ can be used to set diagonal tensor $d\times d$.
+Vector value of size $d(d-1)/2$, e.g. $6$ for $d=3$, can be used to set symmetric tensor. 
+These rules apply only for \verb|FieldConstant|. Still supported, but deprecated for \verb|FieldFormula|.
+Moreover, all Field abstract types have default value \verb'TYPE=FieldConstant'. 
+Thus you can just use the constant value instead of the whole record.
 
 Examples:
 \begin{verbatim}
@@ -552,7 +598,7 @@ input fields:
 Every field (e.g. conductivity or storativity) have specified unit in terms of powers of the base SI units. 
 The user, however, may set input in different units specified by the key \verb'unit' 
 supported by every field algorithm. The key have type \hyperA{IT::Unit}{\tt Unit} record, auto convertible from its only key 
-\verb'unit_formula' of the string type. Effectively the \hyperA{IT::Unit}{\tt Unit} is a string with particular syntax. 
+\verb'unit' of the string type. Effectively the \hyperA{IT::Unit}{\tt Unit} is a string with particular syntax. 
 The unit formula is evaluated  into a~coefficient and an SI unit. The resulting SI unit 
 must match expected SI unit of the field, while the input value 
 of the field (including values from external files or returned by Python functions)  

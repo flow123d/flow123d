@@ -391,30 +391,6 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, Ou
 }
 
 
-template<int spacedim, class Value>
-void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
-{
-	typedef typename Value::element_type ElemType;
-
-    if (observe->point_ds()->size() == 0) return;
-
-    ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
-    						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-
-    unsigned int loc_point_time_index, ele_index;
-    for(ObservePointAccessor op_acc : observe->local_range()) {
-        loc_point_time_index = op_acc.loc_point_time_index();
-		ele_index = op_acc.observe_point().element_idx();
-        const Value &obs_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                this->value(op_acc.observe_point().global_coords(),
-                                        ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
-        ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
-        output_data.store_value(loc_point_time_index, obs_value.mem_ptr());
-    }
-}
-
-
 
 template<int spacedim, class Value>
 FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
@@ -684,6 +660,23 @@ void Field<spacedim,Value>::fill_data_value(const std::vector<int> &offsets)
         auto ret_value = Value::get_from_array(this->value_cache_, i);
         const Value &ele_value = Value( ret_value );
         output_data_cache_->store_value(offsets[i], ele_value.mem_ptr() );
+    }
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::fill_observe_value(std::shared_ptr<ElementDataCacheBase> output_cache_base, const std::vector<int> &offsets)
+{
+    typedef typename Value::element_type ElemType;
+
+    std::shared_ptr<ElementDataCache<ElemType>> observe_data_cache =
+            std::dynamic_pointer_cast<ElementDataCache<ElemType>>(output_cache_base);
+
+    for (unsigned int i=0; i<offsets.size(); ++i) {
+        if (offsets[i] == -1) continue; // skip empty value
+        auto ret_value = Value::get_from_array(this->value_cache_, i);
+        const Value &ele_value = Value( ret_value );
+        observe_data_cache->store_value(offsets[i], ele_value.mem_ptr() );
     }
 }
 

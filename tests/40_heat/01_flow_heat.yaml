@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
         regions:
           - .fracture_top
           - .rock_top
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-09    # 1.0e-07

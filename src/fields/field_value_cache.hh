@@ -35,6 +35,7 @@ class ElementCacheMap;
 class DHCellAccessor;
 class DHCellSide;
 template < template<IntDim...> class DimAssembly> class GenericAssembly;
+template < template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
 
 
 /**
@@ -349,6 +350,8 @@ protected:
     // TODO: remove friend class
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssemblyObserve;
 };
 
 

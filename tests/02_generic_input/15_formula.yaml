@@ -23,7 +23,6 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 1
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

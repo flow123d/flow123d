@@ -55,6 +55,7 @@ class EvalPoints;
 class BulkPoint;
 class SidePoint;
 class FieldSet;
+class ElementDataCacheBase;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -252,11 +253,6 @@ public:
     void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type) override;
 
     /**
-     * Implementation of FieldCommonBase::observe_output().
-     */
-    void observe_output(std::shared_ptr<Observe> observe) override;
-
-    /**
      * Returns true, if field is currently set to a time in which it is discontinuous.
      */
     //bool is_jump_time();
@@ -350,6 +346,9 @@ public:
 
     /// Implements FieldCommon::fill_data_value
     void fill_data_value(const std::vector<int> &offsets) override;
+
+    /// Implements FieldCommon::fill_observe_value
+    void fill_observe_value(std::shared_ptr<ElementDataCacheBase> output_cache_base, const std::vector<int> &offsets) override;
 
 protected:
 
