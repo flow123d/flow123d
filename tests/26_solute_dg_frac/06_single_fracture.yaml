@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test of different porosity in fractures for solute and heat transport
   mesh:
     mesh_file: ../00_mesh/square_2frac.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1e-20

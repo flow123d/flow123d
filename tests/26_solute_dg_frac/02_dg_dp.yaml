@@ -10,7 +10,7 @@ problem: !Coupling_Sequential
       - !Union
         name: .sides
         regions: [.1d, .2d]
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: 1d
         anisotropy: 10

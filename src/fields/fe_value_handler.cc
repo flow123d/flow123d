@@ -124,9 +124,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &p
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-	LocDofVec loc_dofs;
-	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
-	else loc_dofs = cell.get_loc_dof_indices();
+	LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
 	// map points to reference cell, create quadrature and FEValues object
     arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
@@ -187,9 +185,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const Armor::array &point_li
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-	LocDofVec loc_dofs;
-	if (boundary_dofs_) loc_dofs = this->get_loc_dof_indices(elm.idx());
-	else loc_dofs = cell.get_loc_dof_indices();
+	LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);

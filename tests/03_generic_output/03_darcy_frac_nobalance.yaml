@@ -8,12 +8,11 @@ problem: !Coupling_Sequential
   description: Steady flow with multidimensional connections 1D-2D-3D without balance output
   # test auto conversion for the Mesh record
   mesh: ../00_mesh/cube_1x1x1_frac21.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
         a_tol: 1.0e-10
-    n_schurs: 2
     input_fields:
       - region: 1d_channel
         anisotropy: 10

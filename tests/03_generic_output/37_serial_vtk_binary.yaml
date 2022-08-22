@@ -8,11 +8,10 @@ problem: !Coupling_Sequential
   description: Binary VTK output interpolated as node / element data.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    n_schurs: 2
     input_fields:
       - region: 2d_fraction
         anisotropy: 1.0

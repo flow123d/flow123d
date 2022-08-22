@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test of input placeholder in absolute path
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

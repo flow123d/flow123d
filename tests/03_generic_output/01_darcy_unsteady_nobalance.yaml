@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
   description: Unsteady flow in 2D, Mixed Hybrid method, without balance output.
   mesh:
     mesh_file: ../00_mesh/square_1x1_xy.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -29,7 +29,6 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    n_schurs: 2
     output:
       fields:
         - pressure_p0
