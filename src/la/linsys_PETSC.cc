@@ -23,6 +23,7 @@
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
+#include "fem/dofhandler.hh"
 
 
 //#include <boost/bind.hpp>
@@ -62,6 +63,28 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &par
         : LinSys( rows_ds ),
           params_(params),
           init_guess_nonzero(false),
+          l2g_(nullptr),
+          matrix_(0)
+{
+    // create PETSC vectors:
+    PetscErrorCode ierr;
+    // rhs
+    v_rhs_= new double[ rows_ds_->lsize() + 1 ];
+    ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
+    ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+    VecDuplicate(rhs_, &residual_);
+
+    matrix_ = NULL;
+    solution_precision_ = std::numeric_limits<double>::infinity();
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+}
+
+LinSys_PETSC::LinSys_PETSC( const DOFHandlerMultiDim &dh, const std::string &params)
+        : LinSys( dh.distr().get() ),
+          params_(params),
+          init_guess_nonzero(false),
+          l2g_(&dh.get_local_to_global_map()),
           matrix_(0)
 {
     // create PETSC vectors:
@@ -236,8 +259,19 @@ void LinSys_PETSC::preallocate_matrix()
     {
     	chkerr(MatDestroy(&matrix_));
     }
-    ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-                           0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
+    if (l2g_ == nullptr)
+    {
+        ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                                0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
+    }
+    else
+    {
+        ISLocalToGlobalMapping l2g_is;
+        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is);
+        ierr = MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                                  l2g_is, l2g_is, &matrix_); CHKERRV( ierr );
+        ierr = MatISSetPreallocation(matrix_, 0, on_nz, 0, off_nz);
+    }
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);

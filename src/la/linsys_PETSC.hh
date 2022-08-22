@@ -30,6 +30,7 @@
 #include "petscvec.h"    // for Vec, _p_Vec, VecCopy, VecSet
 
 class Distribution;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -49,6 +50,8 @@ public:
     static const Input::Type::Record & get_input_type();
 
     LinSys_PETSC(const  Distribution * rows_ds, const std::string &params = "");
+
+    LinSys_PETSC(const DOFHandlerMultiDim &dh, const std::string &params = "");
 
     /**
      * Copy constructor.
@@ -171,6 +174,10 @@ protected:
     std::string params_;		 //!< command-line-like options for the PETSc solver
 
     bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
+    
+    MatType mat_type_;
+
+    const std::vector<LongIdx> *l2g_;
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.

@@ -46,6 +46,8 @@ public:
 
     LinSys_PERMON(const  Distribution * rows_ds, const std::string &params = "");
 
+    LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &params = "");
+
     /**
      * Copy constructor.
      */

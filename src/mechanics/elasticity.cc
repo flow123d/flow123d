@@ -406,7 +406,7 @@ void Elasticity::initialize()
 #ifndef FLOW123D_HAVE_PERMON
         ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
 #endif //FLOW123D_HAVE_PERMON
-        ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ls = new LinSys_PERMON(*eq_data_->dh_, petsc_default_opts);
 
         // allocate constraint matrix and vector
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
@@ -426,7 +426,7 @@ void Elasticity::initialize()
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     } else {
-        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ls = new LinSys_PETSC(*eq_data_->dh_, petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
