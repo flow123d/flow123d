@@ -84,7 +84,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
     }
     b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
     for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
-        b_parser_.emplace_back( 1.1 * CacheMapElementNumber::get() );
+        b_parser_.emplace_back( CacheMapElementNumber::get() );
     }
 }
 
@@ -419,10 +419,10 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
         delete arena_alloc_;
     }
     eval_field_data_.clear();
-    uint vec_size = 1.1 * CacheMapElementNumber::get();
-    while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
+    uint vec_size = CacheMapElementNumber::get();
+
     // number of subset alignment to block size
-    uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
+    uint n_subsets = vec_size / ElementCacheMap::simd_size_double;
     uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
