@@ -107,6 +107,8 @@ jobs:
         runs-on: ubuntu-latest
         name: Test build doc
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
@@ -121,13 +123,16 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
         - run:
-            echo ${{jobs.integration_tests.status}}
-            echo ${{jobs.integration_tests.output}}
-            echo ${{jobs.unit_tests.status}}
-            echo ${{jobs.unit_tests.output}}
-            echo ${{jobs.build_doc.status}}
-            echo ${{jobs.build_doc.output}}
+            #echo ${{jobs.integration_tests.outcome}}
+            #echo ${{jobs.integration_tests.outputs}}
+            #echo ${{jobs.unit_tests.status}}
+            #echo ${{jobs.unit_tests.output}}
+            echo ${{jobs.build_doc.outcome}}
+            echo ${{jobs.build_doc.outputs.status}}
             #if 
             #    exit 1
             #fi
           
+# steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
+# steps.xyz.conclusion .. The result after continue-on-error is applied. Always success for continue-on-error.
+# "${{ job.status }}" ?? status of actual job 
