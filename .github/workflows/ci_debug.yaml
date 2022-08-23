@@ -118,6 +118,7 @@ jobs:
 
     conclusion:
         #needs: [integration_tests, unit_tests, build_doc]
+        needs: [build_doc]
         runs-on: ubuntu-latest
         name: Workflow conclusion from all job results 
         # continue-on-error jobs always reports sucess to the workflow
