@@ -113,7 +113,8 @@ public:
     template<class... Args>
     inline std::size_t emplace_back(Args&&... args)
     {
-        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
+        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size()))
+            (enlardeg_by_)(temporary_size_)(reserved_size()).error("Data array overflowed!\n");
         if (temporary_size_ == reserved_size()) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlardeg_by_ );
         }
