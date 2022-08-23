@@ -2,7 +2,8 @@ name: Flow123d debug CI
 
 on: 
     push:
-        branches: **
+        branches: 
+        - "**"
     
     workflow_dispatch:
         inputs:
