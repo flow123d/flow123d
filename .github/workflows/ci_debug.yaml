@@ -33,8 +33,7 @@ jobs:
             name: build_dir
             path: build_dir.tar
     
-    integration-tests:
-        id: integration_tests
+    integration_tests:
         needs: [build]
         runs-on: ubuntu-latest
         name: Integration Test 
@@ -75,8 +74,7 @@ jobs:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
         
-    unit-tests:
-        id: unit_tests
+    unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
         name: Unit Test 
@@ -104,8 +102,7 @@ jobs:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-    build-doc:
-        id: build_doc
+    build_doc:
         needs: [build]
         runs-on: ubuntu-latest
         name: Test build doc
@@ -118,7 +115,7 @@ jobs:
         - run: config/tests/run_with_build_dir.sh make ref-doc
 
     conclusion:
-        needs: [integration-tests, unit-tests, build-doc]
+        needs: [integration_tests, unit_tests, build_doc]
         runs-on: ubuntu-latest
         name: Workflow conclusion from all job results 
         # continue-on-error jobs always reports sucess to the workflow
