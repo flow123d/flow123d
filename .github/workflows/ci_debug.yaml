@@ -127,10 +127,10 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
         - run:
-            #echo ${{jobs.integration_tests.outcome}}
-            #echo ${{jobs.integration_tests.outputs}}
-            echo ${{jobs.unit_tests.result}}
-            echo ${{jobs.unit_tests.outputs.status}}
+            #echo ${{needs.integration_tests.outcome}}
+            #echo ${{needs.integration_tests.outputs}}
+            echo ${{needs.unit_tests.result}}
+            echo ${{needs.unit_tests.outputs.status}}
             echo ${{needs.build_doc.result}}
             echo ${{needs.build_doc.outputs.status}}
             #if 
