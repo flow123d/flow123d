@@ -58,15 +58,18 @@ void PythonLoader::initialize(const std::string &python_home)
 py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
     initialize();
 
+    std::ifstream file_stream;
+    FilePath f_path(fname, FilePath::input_file);
+    f_path.open_stream(file_stream); // checks if file exists
+    std::string parent_path = f_path.parent_path(); // add path to PythonPath
+    PythonLoader::add_sys_path(parent_path);
+
+    string module_name = f_path.stem();
     py::module_ module;
     try {
-    	module = py::module_::import(fname.c_str());
+    	module = py::module_::import(module_name.c_str());
     } catch (const py::error_already_set &ex) {
-        if (ex.matches(PyExc_ImportError)) {
-        	THROW(FilePath::ExcFileOpen() << FilePath::EI_Path(fname));
-        } else {
-            PythonLoader::throw_error(ex);
-        }
+        PythonLoader::throw_error(ex);
     }
     return module;
 }
@@ -154,6 +157,14 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
 
 
 
+void PythonLoader::add_sys_path(const std::string &path)
+{
+    py::module_ sys = py::module_::import("sys");
+    sys.attr("path").attr("append")(path);
+}
+
+
+
 //PyObject * PythonLoader::get_callable(PyObject *module, const std::string &func_name) {
 //    char func_char[func_name.size()+2];
 //    strcpy(func_char, func_name.c_str());
@@ -218,13 +229,9 @@ PythonRunning::PythonRunning(const std::string& program_name)
     // initialize the Python interpreter.
     py::initialize_interpreter();
 
-    // update module path, first get current system path
-    py::module_ sys = py::module_::import("sys");
-    sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
-    std::string unit_tests_path = std::string(FLOW123D_SOURCE_DIR) + "/unit_tests";
-    sys.attr("path").attr("append")( unit_tests_path.c_str() );
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
-    // than append flow123d Python modules path to sys.path
+    // update module path, append flow123d Python modules path to sys.path
+    py::module_ sys = py::module_::import("sys");
     std::string extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
     std::vector<std::string> extra_path_vec;
     boost::split(extra_path_vec, extra_paths, boost::is_any_of(":"));

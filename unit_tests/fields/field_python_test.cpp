@@ -84,7 +84,7 @@ string input = R"INPUT(
    field_file={
        TYPE="FieldPython",
        function="func_xyz",
-       script_file="fields.field_python_script"
+       script_file="fields/field_python_script.py"
    }
 }
 )INPUT";

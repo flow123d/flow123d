@@ -124,6 +124,10 @@ public:
      * Formats and throws ExcPythonError exception.
      */
     static void throw_error(const pybind11::error_already_set &ex);
+    /**
+     * Add path to python sys_path.
+     */
+    static void add_sys_path(const std::string &path);
 //    /**
 //     * Check if python function is callable, if not throws exception.
 //     */

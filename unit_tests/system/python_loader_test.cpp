@@ -161,7 +161,9 @@ TEST(PythonLoader, function_error) {
 
 
 TEST(PythonLoader, from_file) {
-    py::module_ module = PythonLoader::load_module_from_file("fields.field_python_script");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    py::module_ module = PythonLoader::load_module_from_file("fields/field_python_script.py");
     py::object result = module.attr("func_multi")(2, 3, 4);
     EXPECT_EQ(result.cast<int>(), 24);
 }
@@ -171,9 +173,9 @@ TEST(PythonLoader, file_error) {
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    EXPECT_THROW_WHAT( { PythonLoader::load_module_from_file("python_loader_script"); },
+    EXPECT_THROW_WHAT( { PythonLoader::load_module_from_file("system/python_loader_script.py"); },
             PythonLoader::ExcPythonError, "invalid syntax");
-    EXPECT_THROW_WHAT( { PythonLoader::load_module_from_file("field_python_script"); },
+    EXPECT_THROW_WHAT( { PythonLoader::load_module_from_file("system/field_python_script.py"); }, // file doesn't exist
             FilePath::ExcFileOpen, "Program Error: Can not open file");
 }
 
