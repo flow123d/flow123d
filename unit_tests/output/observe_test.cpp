@@ -241,6 +241,8 @@ TEST(Observe, all) {
     Profiler::instance();
     armadillo_setup();
     std::shared_ptr<EqData> field_set = std::make_shared<EqData>();
+    field_set->add_coords_field();
+    field_set->set_default_fieldset();
 
     auto output_type = Input::Type::Record("Output", "")
         .declare_key("observe_points", Input::Type::Array(ObservePoint::get_input_type()), Input::Type::Default::obligatory(), "")
