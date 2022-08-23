@@ -127,7 +127,7 @@ jobs:
             #echo ${{jobs.integration_tests.outputs}}
             #echo ${{jobs.unit_tests.status}}
             #echo ${{jobs.unit_tests.output}}
-            echo ${{jobs.build_doc.outcome}}
+            #echo ${{jobs.build_doc.outcome}}
             echo ${{jobs.build_doc.outputs.status}}
             #if 
             #    exit 1
