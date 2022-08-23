@@ -5,6 +5,7 @@ on:
         branches: 
         - "**"
     
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
         inputs:
             environment:
@@ -79,6 +80,8 @@ jobs:
         runs-on: ubuntu-latest
         name: Unit Test 
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
         strategy:
           matrix:
             test_dir:
@@ -126,8 +129,8 @@ jobs:
         - run:
             #echo ${{jobs.integration_tests.outcome}}
             #echo ${{jobs.integration_tests.outputs}}
-            #echo ${{jobs.unit_tests.status}}
-            #echo ${{jobs.unit_tests.output}}
+            echo ${{jobs.unit_tests.result}}
+            echo ${{jobs.unit_tests.outputs.status}}
             echo ${{needs.build_doc.result}}
             echo ${{needs.build_doc.outputs.status}}
             #if 
@@ -137,3 +140,5 @@ jobs:
 # steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
 # steps.xyz.conclusion .. The result after continue-on-error is applied. Always success for continue-on-error.
 # "${{ job.status }}" ?? status of actual job 
+# ${{needs.<job-id>.result}}
+# ${{needs.<job-id>.outpus.<output-id>}} ... does not add the job to needs list automatically !!
