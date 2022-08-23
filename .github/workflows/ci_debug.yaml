@@ -132,6 +132,7 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
         - name: List
+          run:
             echo ${{needs.integration_tests.result}}
             echo ${{needs.integration_tests.outputs.status}}
             echo ${{needs.unit_tests.result}}
