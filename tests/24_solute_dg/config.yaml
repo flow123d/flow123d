@@ -15,9 +15,9 @@ test_cases:
     time_limit: 55
 
     
-parallel test 
-  - files: 03_dg_parallel_output.yaml
-    time_limit: 60 # Github actions have just 2 concurent cores
-    proc: [3]   # Original test was for 3 processes, but GitHub Actions are limited to max. 2 processes per job
+#parallel test 
+#  - files: 03_dg_parallel_output.yaml
+#    time_limit: 120 # Github actions have just 2 concurent cores
+#    proc: [3]   # Original test was for 3 processes, but GitHub Actions are limited to max. 2 processes per job
 
     
