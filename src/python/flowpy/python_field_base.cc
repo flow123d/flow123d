@@ -18,7 +18,7 @@
 #include <include/pybind11/pybind11.h>
 #include <include/pybind11/embed.h>    // everything needed for embedding
 #include <include/pybind11/stl.h>      // type conversion
-#include "pyapi/python_field_base.hh"
+#include "python/flowpy/python_field_base.hh"
 
 //int add(int i, int j) {
 //    return i + j;
@@ -28,7 +28,7 @@ PYBIND11_MODULE(flowpy, m) {
     m.doc() = "pybind11 example plugin"; // optional module docstring
 //    m.def("add", &add, "A function that adds two numbers");
 
-    py::class_<PythonFieldBase>(m, "PythonFieldBase")
+    py::class_<PythonFieldBase>(m, "PythonFieldBaseCPP")
         .def(py::init<>())
         //.def(py::init<std::string, std::vector<ssize_t>, std::vector<double>>())
         .def("set_result", &PythonFieldBase::set_result)
