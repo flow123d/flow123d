@@ -141,6 +141,7 @@ jobs:
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}/package.tar
             
           sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
             tar -xf packages/${relver}/package.tar -C packages/${relver} --strip-components=1
             
     
