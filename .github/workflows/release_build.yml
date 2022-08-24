@@ -132,29 +132,17 @@ jobs:
 
     - name: SCP upload to Share
       run: |
-          cd ${{ steps.vars.outputs.pubdir }}          
+          set -x
+          tar -cvf package.tar ${{ steps.vars.outputs.pubdir }}          
           relver="${{ steps.vars.outputs.relver }}"
-          echo sshpass -p ${{ secrets.PUBLISH_PASS }} scp -r  \
-            doxygen \
-            flow123d_${relver}_doc.pdf \
-            flow123d_${relver}_linux_install.json \
-            flow123d_${relver}_linux_install.tar.gz \
-            flow123d_${relver}_windows_install.exe \
-            flow123d_${relver}_windows_install.json \
-            htmldoc \
-            imagename \
+            
+          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
+            package.tar \
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
             
-          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o StrictHostKeyChecking=no \
-            doxygen \
-            flow123d_${{ steps.vars.outputs.relver }}_doc.pdf \
-            flow123d_${{ steps.vars.outputs.relver }}_linux_install.json \
-            flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz \
-            flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe \
-            flow123d_${{ steps.vars.outputs.relver }}_windows_install.json \
-            htmldoc \
-            imagename \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
+          sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -vr -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
+            tar -xf packages/${relver}/package.tar -C packages/${relver} --strip-components=1
+            
     
     #Unreliable    
     #- name: SSH
