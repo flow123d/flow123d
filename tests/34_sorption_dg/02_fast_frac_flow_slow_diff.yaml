@@ -9,12 +9,11 @@ problem: !Coupling_Sequential
     of substance diffused into the rock.
   mesh:
     mesh_file: ../00_mesh/rectangle_refined_y.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-15
         a_tol: 1.0e-15
-    n_schurs: 2
     input_fields:
       - region: fracture
         conductivity: 1

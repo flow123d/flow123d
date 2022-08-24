@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - !Union
         name: .boundary
         regions: [.back, .front, .left, .up, .down]
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

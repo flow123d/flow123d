@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Error test - solubility vector has different dimension than the substances in reaction term.
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07

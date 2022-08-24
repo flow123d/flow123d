@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/test_3_elem.msh
     #mesh_file: ../00_mesh/square_4x_1x1_1080.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

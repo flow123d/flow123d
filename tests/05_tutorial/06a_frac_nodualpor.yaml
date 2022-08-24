@@ -25,7 +25,7 @@ problem: !Coupling_Sequential
         regions:
           - .left
           - .left_points
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-15

@@ -220,13 +220,6 @@ private:
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
 	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
-	/**
-	 * Fill data to boundary_dofs_ vector.
-	 *
-	 * TODO: Temporary solution. REMOVE this method and fix all places where is boundary_dofs_ vector used.
-	 */
-	void fill_boundary_dofs();
-
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
@@ -298,13 +291,6 @@ private:
 
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
-
-    /**
-     * Hold dofs of boundary elements.
-     *
-     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-     */
-    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;

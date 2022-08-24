@@ -92,7 +92,7 @@ problem: !Coupling_Sequential
   description: Example 2 inspirated of real locality - 2D model of the tunnel with transport
   mesh:
     mesh_file: 03_mesh.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-15

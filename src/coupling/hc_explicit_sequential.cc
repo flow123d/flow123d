@@ -18,7 +18,6 @@
 
 #include "hc_explicit_sequential.hh"
 #include "flow/darcy_flow_interface.hh"
-#include "flow/darcy_flow_mh.hh"
 // TODO:
 // After having general default values:
 // make TransportNoting default for AdvectionProcessBase abstract
@@ -42,7 +41,6 @@ FLOW123D_FORCE_LINK_IN_PARENT(concentrationTransportModel)
 FLOW123D_FORCE_LINK_IN_PARENT(convectionTransport)
 FLOW123D_FORCE_LINK_IN_PARENT(heatModel)
 
-FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_mh)
 FLOW123D_FORCE_LINK_IN_PARENT(darcy_flow_lmh)
 FLOW123D_FORCE_LINK_IN_PARENT(richards_lmh)
 FLOW123D_FORCE_LINK_IN_PARENT(coupling_iterative)

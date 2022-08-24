@@ -15,12 +15,11 @@ problem: !Coupling_Sequential
         id: 200
         element_list:
           - 721
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    n_schurs: 2
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet

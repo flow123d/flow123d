@@ -6,6 +6,7 @@ List of all changes in user interface and major internal changes.
 
 ## User interface
 * Support of user defined fields and their output in all equations.
+* Remove Darcy_MH flow equation.
 
 ## New features
 * Implementation of new assembly algorithm of observe output.
