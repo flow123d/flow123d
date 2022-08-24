@@ -31,15 +31,15 @@ PYBIND11_MODULE(flowpy, m) {
     py::class_<PythonFieldBase>(m, "PythonFieldBaseCPP")
         .def(py::init<>())
         //.def(py::init<std::string, std::vector<ssize_t>, std::vector<double>>())
-        .def("set_result", &PythonFieldBase::set_result)
-		.def("add_to_dict", &PythonFieldBase::add_to_dict)
-        .def("set_result_data", &PythonFieldBase::set_result_data)
-		.def("add_to_dict_data", &PythonFieldBase::add_to_dict_data)
-		.def("print_fields", &PythonFieldBase::print_fields)
-		.def("print_result", &PythonFieldBase::print_result)
+        .def("_set_result", &PythonFieldBase::set_result)
+        .def("_add_to_dict", &PythonFieldBase::add_to_dict)
+        .def("_set_result_data", &PythonFieldBase::set_result_data)
+        .def("_add_to_dict_data", &PythonFieldBase::add_to_dict_data)
+        .def("_print_fields", &PythonFieldBase::print_fields)
+        .def("_print_result", &PythonFieldBase::print_result)
         .def_property("t", &PythonFieldBase::get_time, &PythonFieldBase::set_time)
-	    .def_property("result", &PythonFieldBase::get_field_result, &PythonFieldBase::set_field_result)
-	    .def_property("f_dict", &PythonFieldBase::get_fields_dict, &PythonFieldBase::set_fields_dict);
+        .def_property("result", &PythonFieldBase::get_field_result, &PythonFieldBase::set_field_result)
+        .def_property("f_dict", &PythonFieldBase::get_fields_dict, &PythonFieldBase::set_fields_dict);
 
 }
 
