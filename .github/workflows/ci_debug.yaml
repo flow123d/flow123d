@@ -140,13 +140,13 @@ jobs:
             echo ${{needs.build_doc.result}}
             echo ${{needs.build_doc.outputs.status}}
         - name: Check unit tests 
-          if: ${{needs.unit_tests.result}}
+          if: needs.unit_tests.result != 'success'
           run: exit 1
         - name: Check integration tests 
-          if: ${{needs.integration_tests.result}}
+          if: needs.integration_tests.result != 'success'
           run: exit 1
         - name: Check build doc 
-          if: ${{needs.build_doc.result}}
+          if: needs.build_doc.result != 'success'
           run: exit 1
           
 # steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
