@@ -137,41 +137,10 @@ jobs:
 
     - name: SCP upload to Share
       run: |
-          set -x
-          tar -cvf package.tar ${{ steps.vars.outputs.pubdir }}          
           relver="${{ steps.vars.outputs.relver }}"
-            
-          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
-            package.tar \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}/package.tar
-            
-          sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
-            tar -xf packages/${relver}/package.tar -C packages/${relver} --strip-components=1
-            
-    
-    #Unreliable    
-    #- name: SSH
-      #uses: appleboy/scp-action@master
-      #with:
-        #host: ${{ secrets.PUBLISH_HOST }}
-        #username: ${{ secrets.PUBLISH_USER }}
-        #key: ${{ secrets.PUBLISH_KEY }}
-        #password: ${{ secrets.PUBLISH_PASS }}
-        #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
-        #port: 22
-        #source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json,
-                 #${{ steps.vars.outputs.pubdir }}/htmldoc,
-                 #${{ steps.vars.outputs.pubdir }}/imagename"
-        #source: "${{ steps.vars.outputs.pubdir }}/*"
-        #target: "~/packages/${{ steps.vars.outputs.relver }}"
-        #strip_components: 0 
+          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${relver} ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
+          
     - name: Release add assets
       # Whole action triggered by release change.
       # We add created assets: PDF, and installation packages

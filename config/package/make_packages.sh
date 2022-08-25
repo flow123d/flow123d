@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage:
 #  
-#     make_packages.sh <environment> [<target_image>]
+#     make_packages.sh <environment> <target_image> [push]
 # 
 
 set -x
@@ -19,6 +19,7 @@ fi
 # Paths on host
 # TODO: move both version and image_tag to the same location in package
 flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+cd ${flow_repo_host}
 destination="`pwd`/publish_${environment}"
 
 ################################
@@ -29,7 +30,7 @@ flow_repo_location=/opt/flow123d/flow123d
 
 #####################
 # Docker calls
-build_type=release
+build_type=rel # consistent for fterm and default config files
 build_container=contgnurelease
 
 
@@ -92,20 +93,8 @@ fi
 
 # copy config
 #${dexec} ls ${flow_repo_location}
-${dexec} cp ${flow_repo_location}/config/config-jenkins-docker-${build_type}.cmake ${flow_repo_location}/config.cmake
-
-# overload git protection
-set_safe_dir="${dexec} git config --global --add safe.directory"
-for d in \
-    ${flow_repo_location} \
-    ${flow_repo_location}/bin/yaml_converter \
-    ${flow_repo_location}/src/dealii \
-    ${flow_repo_location}/third_party/bparser \
-    ${flow_repo_location}/third_party/json-3.10.5 \
-    ${flow_repo_location}/third_party/gtest-1.10.0
-do
-    ${set_safe_dir} $d
-done
+cp config/config-jenkins-docker-${build_type}.cmake config.cmake
+${dexec} make -C ${flow_repo_location} set-safe-directory
 
 # compile
 ${dexec} make -C ${flow_repo_location} -j4 all
