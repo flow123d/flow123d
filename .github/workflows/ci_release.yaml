@@ -1,23 +1,27 @@
-name: Build and publish official release.
+name: CI build, tests and alpha release of images and packages
+# Build the ci-<env>:<version>_<commit> image and CI packages on SHARE/docker-images/<version>_<commit>
+# Triggered on push to specified branches.
 
-on:
+on: 
+    push:
+        branches:
+        - master
+        - 3.9.1
+    
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
+    # can also start manually on any branch
     workflow_dispatch:
         inputs:
             environment:
-                description: Create and publish a realease build.
+                description: Build environment [gnu, intel].
                 type: choice
                 options:
                     - gnu
                     - intel
-                required: true
+                required: false
                 default: gnu
 
-
-
-# TODO: 
-# - check agreement of version file and branch name
-# - try to create the tag and release on github
-# - try to add release to flow123d.github.io (with generic info)
+                
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -183,13 +187,3 @@ jobs:
           #release_name: release_${{ steps.getversion.outputs.version }}
         #env:
           #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          
-          
-# jobs:
-#     uses: org/reop/.github/workflows/xyz.yml@master
-#     with:
-#         <var>: ...
-#     secrets:
-#         <secret_var>: ${{secrets.XYZ}}
-#
-# reusable workflow can not be used from other reusable workfalow
