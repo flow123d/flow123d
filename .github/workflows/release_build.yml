@@ -134,12 +134,16 @@ jobs:
     - name: SCP upload to Share
       run: |
           set -x
-          tar -cvf package.tar ${{ steps.vars.outputs.pubdir }}          
           relver="${{ steps.vars.outputs.relver }}"
+          tar -cvf package.tar ${{ steps.vars.outputs.pubdir }}          
+          
+          sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
+            mkdir -P packages/${relver}          
             
           sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
             package.tar \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}/package.tar
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/package_${relver}.tar
             
           sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
