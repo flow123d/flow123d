@@ -9,7 +9,7 @@ set -x
 environment=$1
 image_name_base=$2
 release_tag=$3
-if [ "$3" == "push" ]
+if [ "$4" == "push" ]
 then
     docker_push="docker push"
 else
