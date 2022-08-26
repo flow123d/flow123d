@@ -31,4 +31,4 @@ COPY --from=source_image ${source_location} ${flow_install_location}
 ENV PATH="${flow_install_location}/bin:${PATH}"
 
 # save the image version
-RUN echo ${flow_version} > /.dockerversion
+#RUN echo ${flow_version} > /.dockerversion

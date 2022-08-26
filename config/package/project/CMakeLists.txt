@@ -7,16 +7,12 @@ cmake_minimum_required(VERSION 2.8.8)
 
 # configurable via makefile
 SET(IMAGE_TAG           "flow123d/v200" CACHE STRING "Docker image name (how it will be tagged)")
-SET(IMAGE_NAME          "filename" CACHE STRING "Filename of docker image archive")
 SET(DEST                "destination/folder" CACHE STRING "Destination folder, where tests and doc and images are stored")
-SET(IMAGE_PATH          "${DEST}/${IMAGE_NAME}" CACHE STRING "Location of docker image")
 SET(FLOW123D_ROOT       "/opt/flow123d/flow123d" CACHE STRING "Location of the Flow123d repository root")
 SET(FLOW_VERSION        "1.0.0" CACHE STRING "Dot separated")
 
 
 message(STATUS "Packaging Flow123d version ${FLOW_VERSION}")
-message(STATUS "Docker image tag name: '${IMAGE_NAME}'")
-message(STATUS "Docker image location: '${IMAGE_PATH}'")
 message(STATUS "Flow123d root: '${FLOW123D_ROOT}'")
 
 
@@ -29,12 +25,7 @@ message(STATUS "Flow123d root: '${FLOW123D_ROOT}'")
   configure_file(src/linux/fterm.sh       pack/fterm.sh       @ONLY)
   configure_file(src/linux/runtest.sh     pack/runtest.sh     @ONLY)
 
-
-  # no need to include docker file, it'll be downloaded during install
-    # install docker image
-    # INSTALL(PROGRAMS ${IMAGE_PATH}                            DESTINATION data/
-    #                                                           RENAME ${IMAGE_NAME})
-
+ 
   # install tests and docs
   INSTALL(DIRECTORY ${DEST}/htmldoc/                          DESTINATION doc/htmldoc/)
   INSTALL(FILES     ${DEST}/flow123d_${FLOW_VERSION}_doc.pdf  DESTINATION doc/)
