@@ -42,17 +42,17 @@ jobs:
     - name: Set variables
       id: vars
       run: |
-        release_version=`cat version`
+        release_tag=`cat version`_`rev-parse --short HEAD`
+        echo ${release_tag}
+
         # can not use environment variables in github actions
         echo ::set-output name=pubdir::publish_${environment}
-        echo ::set-output name=relver::${release_version}
-        
-        #echo "release_version=${release_version}" >> $GITHUB_ENV
+        echo ::set-output name=reltag::${release_tag}
 
     - name: Check vars
       run: |
           echo ${{ steps.vars.outputs.pubdir }}    
-          echo ${{ steps.vars.outputs.relver }}    
+          echo ${{ steps.vars.outputs.reltag }}    
 
     - name: Build packages
       run: |
@@ -61,9 +61,9 @@ jobs:
         # Login for finall push to docker hub
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
         
+        
         # make_packages <environment> <image_name_base> [push]
-        config/package/make_packages.sh ${environment} flow123d push
-        # config/package/make_packages.sh ${environment} ci push
+        config/package/make_packages.sh ${environment} ci ${release_tag} push
 
       #run: |
         #docker rm -f  || echo "container not running"
@@ -111,7 +111,7 @@ jobs:
         #ls -l publish_${environment}
 
         #echo ${{ steps.vars.outputs.pubdir }}    
-        #echo ${{ steps.vars.outputs.relver }}    
+        #echo ${{ steps.vars.outputs.reltag }}    
 
 
         
@@ -128,17 +128,17 @@ jobs:
       uses: actions/upload-artifact@v3
       with:       
         path: |
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
       
 
     - name: SCP upload to Share
       run: |
-          relver="${{ steps.vars.outputs.relver }}"
-          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${relver} ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+          release_tag="${{ steps.vars.outputs.reltag }}"
+          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
           
     - name: Release add assets
@@ -148,9 +148,9 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe
         
           #tag_name: v${{ steps.getversion.outputs.version }}
           #release_name: release_${{ steps.getversion.outputs.version }}
