@@ -42,7 +42,8 @@ jobs:
     - name: Set variables
       id: vars
       run: |
-        release_tag=`cat version`_`rev-parse --short HEAD`
+        git_commit=`git rev-parse --short=6 HEAD`
+        release_tag=`cat version`_${git_commit}
         echo ${release_tag}
 
         # can not use environment variables in github actions
