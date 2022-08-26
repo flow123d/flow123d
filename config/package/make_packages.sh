@@ -44,7 +44,7 @@ release_version=`cat ${flow_repo_host}/version`
 
 
 
-git_hash=`rev-parse --short HEAD`
+git_hash=`git rev-parse --short=6 HEAD`
 #git_branch=`${dexec} cd ${flow_repo_location} && git rev-parse --abbrev-ref HEAD`
 
 
