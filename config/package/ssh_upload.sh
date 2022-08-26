@@ -3,12 +3,11 @@ target_dir=$2   # target image on the remote, will be created
 ssh_remote=$3   # user@host
 ssh_pass=$4     # password
 
-set -x
-relver="${{ steps.vars.outputs.relver }}"
-tar -cvf package.tar ${source_dir}
+#set -x
+tar -cf package.tar ${source_dir}
 
-pass_cmd=sshpass -p ${ssh_pass}
-opt=-o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no
+pass_cmd="sshpass -p ${ssh_pass}"
+opt="-o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no"
 
 # Make directory with parents (-p also does not complain if the directory exists)
 ${pass_cmd} ssh ${opt} ${ssh_remote} mkdir -p ${target_dir}
