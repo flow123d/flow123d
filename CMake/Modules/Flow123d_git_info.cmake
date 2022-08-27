@@ -78,9 +78,12 @@ if (GIT_FOUND)
   #message(STATUS "GIT_URL_TMP: ${GIT_URL_TMP}")
   #message(STATUS "GIT_URL: ${GIT_URL}")
   
-  # first try to read version from file
-  FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
-  
+  # Allow providing the version when calling the cmake or in cmake.config
+  # Version is used in package builds.
+  if( NOT ${FLOW_MANUAL_VERSION})
+        # first try to read version from file
+        FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
+  endif()
 
   if(${FLOW_MANUAL_VERSION} MATCHES ".*([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*).*")
     # version stored in file is in correct format 
