@@ -156,8 +156,7 @@ cmake_package_name=Flow123d-${release_tag}-Linux.tar.gz
 base_name=flow123d_${release_tag}
 #docker_arch_name=${base_name}_docker_image.tar.gz
 lin_arch_name=${base_name}_linux_install.tar.gz
-win_arch_name=${base_name}_windows_install.zip
-win_geomop_arch_name=${base_name}_windows_geomop_install.zip
+win_arch_name=${base_name}_windows_install.exe
 
 # current date in two forms
 current_date=`date +"%d-%m-%Y %T"`
@@ -189,7 +188,7 @@ dexec_setvars_make doxy-doc                     # generate source doc
 
 mkdir -p ${destination}/htmldoc
 mkdir -p ${destination}/doxygen
-mkdir -p ${destination}/config/docker/
+#mkdir -p ${destination}/config/docker/
 mkdir -p ${destination}/bin/
 
 ${dcp}:${flow_repo_location}/build_tree/${pdf_location}             ${destination}/flow123d_${release_tag}_doc.pdf
@@ -197,6 +196,9 @@ ${dcp}:${flow_repo_location}/build_tree/htmldoc/html/src/.          ${destinatio
 ${dcp}:${flow_repo_location}/build_tree/doc/online-doc/flow123d/.   ${destination}/doxygen
 ${dcp}:${flow_repo_location}/${ist_location}                        ${destination}/input_reference.json
 ${dcp}:${flow_repo_location}/bin/fterm                              ${destination}/bin/fterm
+
+echo "${release_tag}" > ${destination}/version
+echo "${target_tagged}" > ${destination}/imagename
 
 ############################################################################################## Linux package
 
@@ -218,13 +220,22 @@ mv install-linux/${base_name}.tar.gz ${destination}/${lin_arch_name}
 echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destination}/flow123d_${release_tag}_linux_install.json
 
 ############################################################################################## Windows package
-	
-cp -r ${flow_repo_host}/config/package/project/src/windows/* ${destination}/
-echo "${release_tag}" > ${destination}/version
-echo "${target_tagged}" > ${destination}/imagename
+
+mkdir -p install-win
+cp -r ${flow_repo_host}/config/package/project/src/windows/* install-win
+cp -r ${flow_repo_host}/tests install-win
+${dcp}:${flow_repo_location}/build_tree/htmldoc/html/src/.  install-win/htmldoc
+${dcp}:${flow_repo_location}/build_tree/${pdf_location}     install-win/flow123d_${release_tag}_doc.pdf
+
+
+echo "${release_tag}" > install-win/version
+echo "${target_tagged}" > install-win/imagename
+
 
 # The 'docker run' command first creates a writeable container layer over the specified image, and then starts it using the specified command
-docker run -i --rm -u ${uid}:${gid} -v ${destination}:/nsis-project hp41/nsis /nsis-project/install.nsi
+docker run -i --rm --user ${uid}:${gid} -v `pwd`/install-win:/nsis-project hp41/nsis /nsis-project/install.nsi
+
+mv install-win/${win_arch_name} ${destination}/${win_arch_name}
 echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destination}/flow123d_${release_tag}_windows_install.json
 	
 
