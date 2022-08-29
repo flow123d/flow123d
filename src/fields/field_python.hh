@@ -61,6 +61,11 @@ public:
     DECLARE_EXCEPTION( ExcInvalidCompNumber, << "Field " << EI_FuncName::qval << " from the python module: " << EI_PModule::val
             << " returns " << EI_Size::val << " components but should return " << EI_ValueSize::val << " components.\n" );
 
+    TYPEDEF_ERR_INFO(EI_Field, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
+            << "Unknown field " << EI_Field::qval << " in the python declaration: \n");
+
+
     FieldPython(unsigned int n_comp=0);
 
     virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
@@ -120,6 +125,9 @@ private:
      * Implementation.
      */
     inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 
 #ifdef FLOW123D_HAVE_PYTHON
     py::object        p_func_;

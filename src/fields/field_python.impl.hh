@@ -21,6 +21,7 @@
 
 #include <type_traits>
 #include "fields/field_python.hh"
+#include "fields/field_set.hh"
 #include <include/pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -99,6 +100,8 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
             set_python_field_from_file( *it, rec.val<string>("function") );
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
     }
+
+    in_rec_ = rec;
 }
 
 
@@ -202,8 +205,21 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
 
 
 template <int spacedim, class Value>
-std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set) {
-    return std::vector<const FieldCommon *>();
+std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
+	std::vector<const FieldCommon *> required_fields;
+
+    auto field_list = p_func_();
+    std::vector<string> field_names = field_list.cast< std::vector<string> >();
+    for (auto var : field_names) {
+        auto field_ptr = field_set.field(var);
+        if (field_ptr != nullptr) required_fields.push_back( field_ptr );
+        else {
+            field_ptr = field_set.user_field(var, this->time_);
+            if (field_ptr != nullptr) required_fields.push_back( field_ptr );
+            else THROW( ExcUnknownField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
+        }
+    }
+    return required_fields;
 }
 
 
