@@ -133,20 +133,20 @@ jobs:
         steps:
         - name: List
           run:
-            echo ${{needs.integration_tests.result}}
-            echo ${{needs.integration_tests.outputs.status}}
-            echo ${{needs.unit_tests.result}}
-            echo ${{needs.unit_tests.outputs.status}}
-            echo ${{needs.build_doc.result}}
-            echo ${{needs.build_doc.outputs.status}}
+            echo "Integration result: ${{needs.integration_tests.result}}"
+            echo "Integration status: ${{needs.integration_tests.outputs.status}}"
+            echo "Integration status: ${{needs.unit_tests.result}}"
+            echo "Integration status: ${{needs.unit_tests.outputs.status}}"
+            echo "Integration status: ${{needs.build_doc.result}}"
+            echo "Integration status: ${{needs.build_doc.outputs.status}}"
         - name: Check unit tests 
-          if: needs.unit_tests.result != 'success'
+          if: needs.unit_tests.outputs.status != 'success'
           run: exit 1
         - name: Check integration tests 
-          if: needs.integration_tests.result != 'success'
+          if: needs.integration_tests.outputs.status != 'success'
           run: exit 1
         - name: Check build doc 
-          if: needs.build_doc.result != 'success'
+          if: needs.build_doc.outputs.status != 'success'
           run: exit 1
           
 # steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
