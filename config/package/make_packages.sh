@@ -4,7 +4,10 @@
 #     make_packages.sh <environment> <target_image> [push]
 # 
 
+# Stop on first error.
+set -e
 set -x
+
 
 environment=$1
 image_name_base=$2
@@ -100,6 +103,7 @@ ${dexec} make -C ${flow_repo_location} set-safe-directory
 
 # compile
 ${dexec} make -C ${flow_repo_location} -j4 all
+echo "Exit: $?"
 dexec_setvars_make package
 
 ${dexec} ls ${flow_repo_location}/build_tree/

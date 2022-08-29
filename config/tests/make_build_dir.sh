@@ -4,6 +4,7 @@
 #     make_packages.sh <environment> <target_image>]
 # 
 
+set -e
 set -x
 
 environment=$1

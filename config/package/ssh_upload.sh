@@ -1,9 +1,12 @@
+#!/bin/bash
+set -e
+#set -x
+
 source_dir=$1   # local source dir which contents will be uploaded
 target_dir=$2   # target image on the remote, will be created
 ssh_remote=$3   # user@host
 ssh_pass=$4     # password
 
-#set -x
 tar -cf package.tar ${source_dir}
 
 pass_cmd="sshpass -p ${ssh_pass}"
