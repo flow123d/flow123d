@@ -126,7 +126,7 @@ public:
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary | ActiveIntegrals::edge);
+        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -254,34 +254,6 @@ public:
 //                // there is -value on diagonal in block C!
 //                static_cast<LinSys_BDDC*>(eq_data_->lin_sys)->diagonal_weights_set_value( ind, -value );
 //             }
-    }
-
-
-    /// Add extra source due to coupling with other equation(s).
-    inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range)
-    {
-        ASSERT_EQ(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
-
-        for (DHCellSide edge_side : edge_side_range)
-        {
-            bulk_local_idx_ = edge_side.cell().local_idx();
-            unsigned int i = edge_side.side_idx();
-            
-            for (auto p : this->edge_points(edge_side))
-            {
-                // compute lumped source
-                DHCellAccessor cell = edge_side.cell();
-                coef_ = (1.0 / cell.elm()->n_sides()) * cell.elm().measure() * eq_fields_->cross_section(p);
-                double extra_source_term_ = coef_*eq_fields_->extra_source(p);
-
-                eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                                0,
-                                -extra_source_term_);
-
-                // eq_data_->balance->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                                // {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {extra_source_term_});
-            }
-        }
     }
 
 
@@ -457,7 +429,7 @@ protected:
         // compute lumped source
         uint n_sides = cell.elm()->n_sides();
         coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section(p);
-        source_term_ = coef_ * eq_fields_->water_source_density(p);
+        source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
 
         // in unsteady, compute time term
         time_term_diag_ = 0.0;
@@ -467,7 +439,6 @@ protected:
         if(! eq_data_->use_steady_assembly_)
         {
             time_term_ = coef_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p));
-            time_term_diag_ = time_term_ / eq_data_->time_step_;
         }
 
         const DHCellAccessor cr_cell = cell.cell_with_other_dh(eq_data_->dh_cr_.get());
@@ -477,6 +448,7 @@ protected:
         {
             if(! eq_data_->use_steady_assembly_)
             {
+                time_term_diag_ = time_term_ / eq_data_->time_step_;
                 time_term_rhs_ = time_term_diag_ * eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
 
                 eq_data_->balance_->add_mass_values(eq_data_->water_balance_idx, cell,
