@@ -132,13 +132,13 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
         - name: List
-          run:
+          run: |
             echo "Integration result: ${{needs.integration_tests.result}}"
             echo "Integration status: ${{needs.integration_tests.outputs.status}}"
-            echo "Integration status: ${{needs.unit_tests.result}}"
+            echo "Unit result: ${{needs.unit_tests.result}}"
             echo "Integration status: ${{needs.unit_tests.outputs.status}}"
-            echo "Integration status: ${{needs.build_doc.result}}"
-            echo "Integration status: ${{needs.build_doc.outputs.status}}"
+            echo "Doc result: ${{needs.build_doc.result}}"
+            echo "Doc status: ${{needs.build_doc.outputs.status}}"
         - name: Check unit tests 
           if: needs.unit_tests.outputs.status != 'success'
           run: exit 1
