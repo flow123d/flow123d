@@ -1,6 +1,6 @@
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
+  description: Usage of empty region.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
     regions:
