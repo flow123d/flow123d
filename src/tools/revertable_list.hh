@@ -44,14 +44,14 @@ struct RevertableList {
 public:
     /// Constructor, create new instance with reserved size
 	RevertableList(std::size_t reserved_size, std::size_t enlarged_by = 0)
-    : temporary_size_(0), permanent_size_(0), enlardeg_by_(enlarged_by)
+    : temporary_size_(0), permanent_size_(0), enlarged_by_(enlarged_by)
     {
         data_.reserve(reserved_size);
     }
 
     /// Copy constructor
 	RevertableList(const RevertableList& other)
-    : data_(other.data_), temporary_size_(other.temporary_size_), permanent_size_(other.permanent_size_), enlardeg_by_(other.enlardeg_by_)
+    : data_(other.data_), temporary_size_(other.temporary_size_), permanent_size_(other.permanent_size_), enlarged_by_(other.enlarged_by_)
     {
 		data_.reserve( other.data_.capacity() );
     }
@@ -63,7 +63,7 @@ public:
      */
     void resize(std::size_t new_size)
     {
-    	ASSERT_GT(new_size, reserved_size());
+    	ASSERT_GE(new_size, reserved_size());
     	data_.reserve(new_size);
     }
 
@@ -94,9 +94,9 @@ public:
      */
     inline std::size_t push_back(const Type &t)
     {
-        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size())).error("Data array overflowed!\n");
         if (temporary_size_ == reserved_size()) { // enlarge reserved size
-        	this->resize( this->reserved_size() + enlardeg_by_ );
+        	ASSERT_PERMANENT((enlarged_by_ > 0)).error("Revertable list overflow!\n");
+        	this->resize( this->reserved_size() + enlarged_by_ );
         }
         data_.push_back(t);
         temporary_size_++;
@@ -113,10 +113,10 @@ public:
     template<class... Args>
     inline std::size_t emplace_back(Args&&... args)
     {
-        ASSERT((enlardeg_by_ > 0) || (temporary_size_ < reserved_size()))
-            (enlardeg_by_)(temporary_size_)(reserved_size()).error("Data array overflowed!\n");
+        ASSERT((enlarged_by_ > 0) || (temporary_size_ < reserved_size()))
+            (enlarged_by_)(temporary_size_)(reserved_size()).error("Data array overflowed!\n");
         if (temporary_size_ == reserved_size()) { // enlarge reserved size
-        	this->resize( this->reserved_size() + enlardeg_by_ );
+        	this->resize( this->reserved_size() + enlarged_by_ );
         }
         data_.emplace_back( std::forward<Args>(args)... );
         temporary_size_++;
@@ -166,7 +166,7 @@ private:
     std::vector<Type> data_;      ///< Vector of items.
     std::size_t temporary_size_;  ///< Temporary size (full size of used data).
     std::size_t permanent_size_;  ///< Final size of data (part of finalize data).
-    std::size_t enlardeg_by_;     ///< Allow to enlarge list dynamically during call push_back if reserved size is full
+    std::size_t enlarged_by_;     ///< Allow to enlarge list dynamically during call push_back if reserved size is full
 };
 
 #endif /* REVARTABLE_LIST_HH_ */

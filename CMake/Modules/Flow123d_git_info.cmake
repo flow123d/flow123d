@@ -2,6 +2,7 @@
 # Detect Git executable and retrieve some information from the repository.
 # 
 # Use variable: FLOW123D_SOURCE_DIR as working directory when calling git 
+#               FLOW_MANUAL_VERSION 
 #
 # Module set (not cached) these variables:
 # GIT_BRANCH - current git branch
@@ -78,15 +79,23 @@ if (GIT_FOUND)
   #message(STATUS "GIT_URL_TMP: ${GIT_URL_TMP}")
   #message(STATUS "GIT_URL: ${GIT_URL}")
   
-  # first try to read version from file
-  FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
+  # Allow providing the version when calling the cmake or in cmake.config
+  # Version is used in package builds.
+  #message(STATUS "MANUAL VER: ${FLOW_MANUAL_VERSION}")
+  if( NOT DEFINED FLOW_MANUAL_VERSION)
+        # first try to read version from file
+        FILE(READ ${FLOW123D_SOURCE_DIR}/version FLOW_MANUAL_VERSION)
+  endif()
   
-
+  #message(STATUS "MANUAL VER: ${FLOW_MANUAL_VERSION}")
+  
   if(${FLOW_MANUAL_VERSION} MATCHES ".*([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*).*")
     # version stored in file is in correct format 
     # so we extract version components into list
     STRING(REGEX REPLACE "([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)"
            "\\1;\\2;\\3" BRANCH_VERSION_LIST ${FLOW_MANUAL_VERSION})
+    #message(STATUS "BRANCH VER LIST: ${BRANCH_VERSION_LIST}")
+  
   elseif(${GIT_BRANCH} MATCHES "([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)\\.([A-Za-z0-9_]*)")
     # git branch is in correct format 
     # so we extract version components into list

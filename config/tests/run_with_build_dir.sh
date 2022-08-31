@@ -3,6 +3,8 @@
 # Assumes coloned repository set to correct branch. 
 # Extract the build_dir tar ball.
 # Run the <command> within the build container with the extracted build dir.
+
+set -e
 set -x
 
 env=$1
