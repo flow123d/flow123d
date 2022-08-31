@@ -160,7 +160,18 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
 void PythonLoader::add_sys_path(const std::string &path)
 {
     py::module_ sys = py::module_::import("sys");
-    sys.attr("path").attr("append")(path);
+    auto sys_paths = sys.attr("path");
+    // Checks if path exists
+    for (auto sp : sys_paths) {
+        std::string sys_path = sp.cast<std::string>();
+        if (sys_path == path) {
+            WarningOut() << "Path '" << sys_path << "' already exists in Python sys path and cannot be added repeatedly!";
+            return;
+        }
+    }
+
+    // Adds only one time
+    sys_paths.attr("append")(path);
 }
 
 
