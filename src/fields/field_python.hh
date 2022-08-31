@@ -56,10 +56,14 @@ public:
     TYPEDEF_ERR_INFO( EI_PModule, std::string);
     TYPEDEF_ERR_INFO( EI_Size, unsigned int);
     TYPEDEF_ERR_INFO( EI_ValueSize, unsigned int);
+    TYPEDEF_ERR_INFO( EI_FoundKey, std::string);
+    TYPEDEF_ERR_INFO( EI_NeedsObligatory, std::string);
     DECLARE_EXCEPTION( ExcNoPythonSupport, << "Flow123d compiled without support for Python, FieldPython can not be used.\n" );
     DECLARE_EXCEPTION( ExcNoPythonInit, << "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.\n" );
     DECLARE_EXCEPTION( ExcInvalidCompNumber, << "Field " << EI_FuncName::qval << " from the python module: " << EI_PModule::val
             << " returns " << EI_Size::val << " components but should return " << EI_ValueSize::val << " components.\n" );
+    DECLARE_EXCEPTION( ExcMissingKey, << "If you define FieldPython by key " << EI_FoundKey::qval << " you must define key " << EI_NeedsObligatory::qval
+            << " obligatory.\n" );
 
     TYPEDEF_ERR_INFO(EI_Field, std::string);
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
@@ -82,6 +86,11 @@ public:
      * Set the source in a string and name of the field to be called.
      */
     void set_python_field_from_string( const string &python_source, const string &func_name);
+
+    /**
+     * Set the source in a string and name of the field to be called.
+     */
+    void set_python_field_from_class(const string &file_name, const string &class_name);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -131,6 +140,7 @@ private:
 
 #ifdef FLOW123D_HAVE_PYTHON
     py::object        p_func_;
+    py::object        p_class_;
     py::module_       p_module_;
     mutable py::tuple p_value_;
 #endif // FLOW123D_HAVE_PYTHON
