@@ -249,6 +249,8 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 	std::vector<const FieldCommon *> required_fields;
 #ifdef FLOW123D_HAVE_PYTHON
 	py::list field_list;
+	// TODO add required fields to dictionary: key = field_name, value = reference to FieldValueCache
+	//      add this as result field
 
     try {
         p_func_ = p_class_.attr("used_fields");
@@ -275,7 +277,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
 {
-    // implement
+    // implement, we don't need this method probably, empty cache_reinit method is defined in parent class
 }
 
 
