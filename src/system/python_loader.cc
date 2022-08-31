@@ -229,14 +229,17 @@ PythonRunning::PythonRunning(const std::string& program_name)
     // initialize the Python interpreter.
     py::initialize_interpreter();
 
+    py::module_ sys = py::module_::import("sys");
+    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
+    sys.attr("path").attr("append")(flowpy_path.c_str()); // adds path to flowpy library to PYTHONPATH
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
     // update module path, append flow123d Python modules path to sys.path
-    py::module_ sys = py::module_::import("sys");
     std::string extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
     std::vector<std::string> extra_path_vec;
     boost::split(extra_path_vec, extra_paths, boost::is_any_of(":"));
-    for (auto path : extra_path_vec)
+    for (auto path : extra_path_vec) {
         sys.attr("path").attr("append")(path.c_str());
+    }
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
