@@ -766,15 +766,8 @@ set_source_files_properties(${CONFIG_FILE_HEADER}
     HEADER_FILE_ONLY TRUE)
 
 
-# get git information also through configure phase
-set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
-include(Flow123d_git_info)
 
 
-# version in reference manual
-STRING(REGEX REPLACE "_" "\\\\_" GIT_VERSION_FULL_LATEX ${GIT_VERSION_FULL})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/flow_version_tex_template ${CMAKE_SOURCE_DIR}/doc/reference_manual/flow_version.tex)    
-    
 #### make a script which call correct mpiexec (taken from PETSC)
 # we can not use link, since mpiexec can be sript which reads its location from calling sequence
 #
@@ -1029,6 +1022,8 @@ install(FILES     config/host_table.yaml    DESTINATION config/)
 
 # To install MSVC runtime libraries ... ?
 INCLUDE(InstallRequiredSystemLibraries)
+set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
+include(Flow123d_git_info)
 
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
 SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
@@ -1045,6 +1040,8 @@ add_custom_target(package_debug
               COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake
               COMMENTS "Build package with debug and verbose output")
 
+message(STATUS "Package version: " ${GIT_VERSION_MAJOR} ${GIT_VERSION_MINOR} ${GIT_VERSION_PATCH})
+              
 INCLUDE(CPack)
 
 FILE(APPEND ${CMAKE_BINARY_DIR}/CPackConfig.cmake "set(CPACK_WIN_BINARY_DIRECTORY \"${WIN_CMAKE_CURRENT_BINARY_DIR}\")")
