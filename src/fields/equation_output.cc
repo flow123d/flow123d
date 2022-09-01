@@ -27,10 +27,21 @@ IT::Record &EquationOutput::get_input_type() {
 
     static const IT::Selection &interpolation_sel =
         IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
-            .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
-			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
-			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / cell data.")
-			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
+            .add_value(OutputTime::NODE_DATA,   "P1_average",
+                "Continuous linear interpolation. Evaluates average of FE basis functions at nodes."
+                "Continuous mesh: NodeData (GMSH) / PointData(VTK)."
+                "Discontinuous mesh: ElementNodeData (GMSH) / PointData(VTK)")
+			.add_value(OutputTime::CORNER_DATA, "D1_value",
+                "Piecewise linear interpolation (discontinuous between elements)."
+                "Continuous mesh: NodeData (GMSH) / PointData(VTK)."
+                "Discontinuous mesh: ElementNodeData (GMSH) / PointData(VTK)")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",
+                "Piecewise constant interpolation."
+                "Continuous mesh: ElementData (GMSH) / CellData(VTK)."
+                "Discontinuous mesh: ElementData (GMSH) / CellData(VTK)")
+			.add_value(OutputTime::NATIVE_DATA, "Native",
+                "Native data (Flow123d data). Corresponds to degrees of freedom of the internal FE approximation."
+                "Its main purpose is to read/write results repeatedly with minimal loss of accuracy.")
 			.close();
 
     static const IT::Record &field_output_setting =
