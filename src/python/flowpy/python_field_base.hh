@@ -22,6 +22,7 @@
 #include <include/pybind11/stl.h>
 #include <include/pybind11/numpy.h>
 #include <include/pybind11/detail/common.h>
+#include "fields/field_value_cache.hh"
 #include "system/asserts.hh"
 
 namespace py = pybind11;
@@ -32,7 +33,7 @@ class FieldCacheProxy
 {
 public:
     /// Constructor
-    FieldCacheProxy(std::string field_name, std::vector<ssize_t> shape, std::vector<double> field_cache_ptr)
+    FieldCacheProxy(std::string field_name, std::vector<ssize_t> shape, double *field_cache_ptr)
     : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr)
     {
         ASSERT_EQ(shape.size(), 2);
@@ -42,11 +43,11 @@ public:
     const std::string &field_name() const { return field_name_; }
     ssize_t n_rows() const { return shape_[0]; }
     ssize_t n_cols() const { return shape_[1]; }
-    std::vector<double> &field_cache_ptr() { return field_cache_ptr_; }
+    double *field_cache_ptr() { return field_cache_ptr_; }
 private:
     std::string field_name_;
     std::vector<ssize_t> shape_;
-    std::vector<double> field_cache_ptr_;
+    double *field_cache_ptr_;
 };
 
 
@@ -98,18 +99,21 @@ public:
     PythonFieldBase(std::vector<FieldCacheProxy> &data, FieldCacheProxy &result)
     {
         py::dtype d_type("float64");
+        set_dict(data, result);
+    }
 
+    void set_dict(std::vector<FieldCacheProxy> &data, FieldCacheProxy &result)
+    {
         // Fill dictionary of input fields
+    	fields_dict_.clear();
         for (uint i=0; i<data.size(); ++i) {
-            ssize_t size = data[i].field_cache_ptr().size() / (data[i].n_rows() * data[i].n_cols());
             fields_dict_[data[i].field_name().c_str()] =
-                    create_array_with_data(&(data[i].field_cache_ptr()[0]), data[i].n_rows(), data[i].n_cols(), size);
+                    create_array_with_data(data[i].field_cache_ptr(), data[i].n_rows(), data[i].n_cols(), CacheMapElementNumber::get());
         }
         // Fill array of result field
         {
-            ssize_t size = result.field_cache_ptr().size() / (result.n_rows() * result.n_cols());
             fields_dict_[result.field_name().c_str()] =
-                    create_array_with_data(&(result.field_cache_ptr()[0]), result.n_rows(), result.n_cols(), size);
+                    create_array_with_data(result.field_cache_ptr(), result.n_rows(), result.n_cols(), CacheMapElementNumber::get());
             field_result_ = result.field_name();
         }
     }
