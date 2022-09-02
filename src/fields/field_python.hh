@@ -138,6 +138,9 @@ private:
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
+    /// Field name is necessary for set result
+    std::string field_name_;
+
 #ifdef FLOW123D_HAVE_PYTHON
     py::object        p_func_;
     py::object        p_class_;

@@ -22,6 +22,7 @@
 #include <type_traits>
 #include "fields/field_python.hh"
 #include "fields/field_set.hh"
+#include "python/flowpy/python_field_base.hh"
 #include <include/pybind11/pybind11.h>
 #include <include/pybind11/eval.h>
 
@@ -95,6 +96,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->field_name_ = init_data.field_name_;
 
     Input::Iterator<string> it = rec.find<string>("script_string");
     if (it) {
@@ -250,8 +252,6 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 	std::vector<const FieldCommon *> required_fields;
 #ifdef FLOW123D_HAVE_PYTHON
     py::list field_list;
-    // TODO add required fields to dictionary: key = field_name, value = reference to FieldValueCache
-    //      add this as result field
 
     try {
         p_func_ = p_class_.attr("used_fields");
@@ -259,6 +259,9 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
+
+    std::vector<FieldCacheProxy> field_data;
+    std::vector<ssize_t> field_shape(2);
 
     for (auto f : field_list) {
         std::string field_name = f.cast<std::string>();
@@ -269,7 +272,16 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
             if (field_ptr != nullptr) required_fields.push_back( field_ptr );
             else THROW( ExcUnknownField() << EI_Field(field_name) << Input::EI_Address( in_rec_.address_string() ) );
         }
+        field_shape[0] = ssize_t(field_ptr->shape_[0]);
+        field_shape[1] = ssize_t(field_ptr->shape_[1]);
+        field_data.emplace_back(field_name, field_shape, field_ptr->value_cache()->data_);
     }
+
+    auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
+    std::vector<ssize_t> result_shape = { Value::NRows_, Value::NCols_ };
+    FieldCacheProxy result_data(this->field_name_, result_shape, self_ptr->value_cache()->data_);
+    p_func_ = p_class_.attr("set_result_data");
+    p_func_(field_data, result_data);
 #endif // FLOW123D_HAVE_PYTHON
     return required_fields;
 }
