@@ -145,9 +145,10 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const string &file_name, FMT_UNUSED const string &class_name)
 {
 #ifdef FLOW123D_HAVE_PYTHON
+    internal::PythonWrapper::initialize();
+
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        py::dict globals = py::globals();
         p_class_ = p_module_.attr(class_name.c_str());
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
@@ -248,9 +249,9 @@ template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set) {
 	std::vector<const FieldCommon *> required_fields;
 #ifdef FLOW123D_HAVE_PYTHON
-	py::list field_list;
-	// TODO add required fields to dictionary: key = field_name, value = reference to FieldValueCache
-	//      add this as result field
+    py::list field_list;
+    // TODO add required fields to dictionary: key = field_name, value = reference to FieldValueCache
+    //      add this as result field
 
     try {
         p_func_ = p_class_.attr("used_fields");
@@ -296,6 +297,26 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {}
+
+
+namespace internal {
+
+PythonWrapper::PythonWrapper() {
+    std::string fname = std::string(FLOW123D_SOURCE_DIR) + "/src/python/flowpy/python_field_base.py";
+    FilePath flowpy_path(fname, FilePath::input_file);
+    std::string parent_path = flowpy_path.parent_path(); // add path to PythonPath
+    PythonLoader::add_sys_path(parent_path);
+    py::module_ flowpy_module = py::module_::import("flowpy");
+    py::module_ pyfield_module = py::module_::import("python_field_base");
+    flowpy_module.add_object("PythonFieldBase", pyfield_module.attr("PythonFieldBase"));
+}
+
+PythonWrapper &PythonWrapper::initialize() {
+    static PythonWrapper python_wrapper;
+    return python_wrapper;
+}
+
+}
 
 
 #endif /* FIELD_PYTHON_IMPL_HH_ */
