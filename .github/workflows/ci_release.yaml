@@ -52,8 +52,8 @@ jobs:
 
     - name: Check vars
       run: |
-          echo ${{ steps.vars.outputs.pubdir }}    
-          echo ${{ steps.vars.outputs.reltag }}    
+          echo pubdir="${{ steps.vars.outputs.pubdir }}"    
+          echo reltag="${{ steps.vars.outputs.reltag }}"
 
     - name: Build packages
       run: |
@@ -144,18 +144,3 @@ jobs:
           ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
           
-    - name: Release add assets
-      # Whole action triggered by release change.
-      # We add created assets: PDF, and installation packages
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe
-        
-          #tag_name: v${{ steps.getversion.outputs.version }}
-          #release_name: release_${{ steps.getversion.outputs.version }}
-        #env:
-          #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
