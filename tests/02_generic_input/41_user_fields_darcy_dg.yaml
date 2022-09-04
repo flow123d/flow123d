@@ -1,11 +1,11 @@
 #################
-# Test goal: Definition of user fields in Darcy_LMH and Transport_DG equations
-# Author: David Flanderka
+# Test goal: Test usage of user fields.
+# Author: Jan Brezina, David Flanderka
 # Source for reference: qualitative
 
 flow123d_version: 3.1.0
 problem: !Coupling_Sequential
-  description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
+  description: Test usage of user fields.
   mesh:
     mesh_file: ../00_mesh/rectangle_0.2x1_frac.msh
   flow_equation: !Flow_Darcy_LMH
@@ -37,16 +37,18 @@ problem: !Coupling_Sequential
         #- user_cond
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
+      # Create auxiliary user fields.
       user_fields:
         - name: bc_flux_x
           is_boundary: true
           scalar_field: !FieldFormula
             value: if(y < 0.75, if(1 & 1,1,0), 0)
+            # future Python-like syntax with BParser
             #value: 1 if (0.5 < y < 0.75) else 0
         - name: bc_flux_t
           is_boundary: true
           scalar_field: !FieldTimeFunction
-            time_function: 
+            time_function:
               values: !include_csv
                 file: ./includes/bc_time_function.csv
                 separator: " "
@@ -58,30 +60,19 @@ problem: !Coupling_Sequential
       input_fields:
         - region: .left
           bc_conc: !FieldFormula
+            # Using user fields.
             value: bc_flux_x * bc_flux_t
-#          bc_conc: 
-#            - !FieldTimeFunction
-#              time_function: 
-#                values: !include_csv
-#                  file: ./includes/bc_time_function.csv
-#                  separator: " "
-#                  n_head_lines: 1
-#                  format:
-#                    t: 
-#                       time: $0
-#                    value: $1 
         - region: BULK
           init_conc: 0
-          cross_section: 1
           porosity: 1
       output:
         fields:
           - conc
-    output_stream:      
+    output_stream:
       times:
         - step: 0.5
     substances:
       - A
     time:
-      end_time: 1.0
+      end_time: 1
       init_dt: 0.1

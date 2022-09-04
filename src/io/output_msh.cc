@@ -141,17 +141,22 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
         const std::vector<unsigned int> &permutations)
 {
     unsigned int i_gmsh;
+    unsigned int perm_idx;
 	ofstream &file = this->_base_file;
     auto &id_vec = *( id_cache->get_data().get() );
 
     bool is_corner_output = (this->nodes_->n_values() != output_mesh_->orig_mesh_->node_permutations().size());
+    bool permute_data = output_data->n_values() == permutations.size();
     for(unsigned int i=0; i < output_data->n_values(); ++i) {
 
         if (is_corner_output) i_gmsh = i;
     	else i_gmsh = permutations[i];
 
+        if (permute_data) perm_idx = permutations[i];
+        else perm_idx = i;
+
         file << id_vec[i_gmsh] << " ";
-        output_data->print_ascii(file, i_gmsh);
+        output_data->print_ascii(file, perm_idx);
         file << std::endl;
     }
 }

@@ -1,23 +1,27 @@
-name: Build and publish official release.
+name: CI build, tests and alpha release of images and packages
+# Build the ci-<env>:<version>_<commit> image and CI packages on SHARE/docker-images/<version>_<commit>
+# Triggered on push to specified branches.
 
-on:
+on: 
+    push:
+        branches:
+        - master
+        - 3.9.1
+    
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
+    # can also start manually on any branch
     workflow_dispatch:
         inputs:
             environment:
-                description: Create and publish a realease build.
+                description: Build environment [gnu, intel].
                 type: choice
                 options:
                     - gnu
                     - intel
-                required: true
+                required: false
                 default: gnu
 
-
-
-# TODO: 
-# - check agreement of version file and branch name
-# - try to create the tag and release on github
-# - try to add release to flow123d.github.io (with generic info)
+                
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -39,7 +43,7 @@ jobs:
       id: vars
       run: |
         git_commit=`git rev-parse --short=6 HEAD`
-        release_tag=`cat version`
+        release_tag=`cat version`_${git_commit}
         echo ${release_tag}
 
         # can not use environment variables in github actions
@@ -48,8 +52,8 @@ jobs:
 
     - name: Check vars
       run: |
-          echo ${{ steps.vars.outputs.pubdir }}    
-          echo ${{ steps.vars.outputs.reltag }}    
+          echo pubdir="${{ steps.vars.outputs.pubdir }}"    
+          echo reltag="${{ steps.vars.outputs.reltag }}"
 
     - name: Build packages
       run: |
@@ -61,7 +65,7 @@ jobs:
         
         # make_packages <environment> <image_name_base> [push]
         release_tag="${{ steps.vars.outputs.reltag }}"
-        config/package/make_packages.sh ${environment} flow123d ${release_tag} push
+        config/package/make_packages.sh ${environment} ci ${release_tag} push
 
       #run: |
         #docker rm -f  || echo "container not running"
@@ -138,33 +142,5 @@ jobs:
           release_tag="${{ steps.vars.outputs.reltag }}"
           config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
           ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
-          sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
-            tar -xf packages/${relver}/package.tar -C packages/${relver} --strip-components=1
 
           
-    - name: Release add assets
-      # Whole action triggered by release change.
-      # We add created assets: PDF, and installation packages
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe
-        
-          #tag_name: v${{ steps.getversion.outputs.version }}
-          #release_name: release_${{ steps.getversion.outputs.version }}
-        #env:
-          #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          
-          
-# jobs:
-#     uses: org/reop/.github/workflows/xyz.yml@master
-#     with:
-#         <var>: ...
-#     secrets:
-#         <secret_var>: ${{secrets.XYZ}}
-#
-# reusable workflow can not be used from other reusable workfalow

@@ -1,0 +1,98 @@
+column_names: [ flux,  flux_in,  flux_out,  mass,  source,  source_in,  source_out,  flux_increment,  source_increment,  flux_cumulative,  source_cumulative,  error ]
+data:
+  - time: 0
+    region: fracture
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: rock
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .fracture_bottom
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .fracture_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .left
+    quantity: A
+    data: [ 5.31009e-12, 5.31009e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .right
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .rock_bottom
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0
+    region: .rock_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: fracture
+    quantity: A
+    data: [ 0, 0, 0, -1.34061e-26, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: rock
+    quantity: A
+    data: [ 0, 0, 0, 2.31609e-12, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .fracture_bottom
+    quantity: A
+    data: [ 2.57633e-26, 2.57633e-26, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .fracture_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .left
+    quantity: A
+    data: [ 7.96514e-12, 7.96514e-12, -2.07748e-21, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .right
+    quantity: A
+    data: [ -5.21894e-56, 1.48257e-58, -5.23376e-56, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .rock_bottom
+    quantity: A
+    data: [ -3.71321e-12, 3.55787e-13, -4.069e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 0.5
+    region: .rock_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: fracture
+    quantity: A
+    data: [ 0, 0, 0, -4.54424e-26, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: rock
+    quantity: A
+    data: [ 0, 0, 0, 3.89334e-12, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .fracture_bottom
+    quantity: A
+    data: [ 1.65627e-25, 1.65627e-25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .fracture_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .left
+    quantity: A
+    data: [ 1.06202e-11, 1.06202e-11, -3.91134e-21, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .right
+    quantity: A
+    data: [ -7.60673e-55, 1.0475e-59, -7.60683e-55, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .rock_bottom
+    quantity: A
+    data: [ -7.44682e-12, 1.04589e-12, -8.49271e-12, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
+  - time: 1
+    region: .rock_top
+    quantity: A
+    data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]
