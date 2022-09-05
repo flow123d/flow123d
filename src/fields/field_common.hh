@@ -523,7 +523,8 @@ public:
     /**
      * Setter of @p shared_->default_fieldset_
      *
-     * See method FieldSet::set_default_fieldset to detailed description.
+     * Sets FieldSet which is default owner of Field. This FieldSet is used during evaluation
+     * of user field in FieldFormula.
      */
     inline void set_default_fieldset(FieldSet &default_fs) {
         shared_->default_fieldset_ = &default_fs;

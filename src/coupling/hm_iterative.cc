@@ -73,7 +73,7 @@ private:
 
 const it::Record & HM_Iterative::get_input_type() {
     std::string equation_name = "Coupling_Iterative";
-    return it::Record("Coupling_Iterative",
+    return it::Record(equation_name,
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
