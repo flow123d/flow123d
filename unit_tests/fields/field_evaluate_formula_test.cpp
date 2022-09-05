@@ -72,6 +72,9 @@ public:
             side_eval = eval_points_->add_edge<3>(*q_side );
             // ngh_side_eval = ...
             this->init(eval_points_);
+
+            this->add_coords_field();
+            this->set_default_fieldset();
         }
 
         void register_eval_points() {
@@ -122,8 +125,6 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
         data_ = std::make_shared<EqData>();
-        data_->add_coords_field();
-        data_->set_default_fieldset();
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }

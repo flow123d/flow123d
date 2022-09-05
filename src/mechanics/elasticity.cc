@@ -276,6 +276,9 @@ Elasticity::EqFields::EqFields()
     // add all input fields to the output list
     output_fields += *this;
 
+    this->add_coords_field();
+    this->set_default_fieldset();
+
 }
 
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
@@ -317,8 +320,6 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
     eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
-    eq_fields_->add_coords_field();
-    eq_fields_->set_default_fieldset();
     this->eq_fieldset_ = eq_fields_.get();
     
     auto time_rec = in_rec.val<Input::Record>("time");

@@ -293,6 +293,7 @@ DarcyLMH::EqFields::EqFields()
              .input_default("0.0")
              .description("Boundary switch piezo head.");
 
+    this->set_default_fieldset();
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
@@ -400,7 +401,6 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 
     eq_fields_ = make_shared<EqFields>();
     eq_data_ = make_shared<EqData>();
-    eq_fields_->set_default_fieldset();
     this->eq_fieldset_ = eq_fields_.get();
     
     eq_fields_->set_mesh(*mesh_);

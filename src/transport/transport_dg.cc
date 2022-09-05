@@ -146,6 +146,8 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
     // add all input fields to the output list
     output_fields += *this;
 
+    this->add_coords_field();
+    this->set_default_fieldset();
 }
 
 
@@ -218,8 +220,6 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
-    eq_fields_->add_coords_field();
-    eq_fields_->set_default_fieldset();
     this->eq_fieldset_ = eq_fields_.get();
     Model::init_balance(in_rec);
 
