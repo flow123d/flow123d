@@ -51,15 +51,13 @@ const Record & Elasticity::get_input_type() {
                 std::string(equation_name),
                 "FEM for linear elasticity.")
            .copy_keys(EquationBase::record_template())
+		   .copy_keys(EquationBase::user_fields_template(equation_name))
            .declare_key("balance", Balance::get_input_type(), Default("{}"),
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
                     "Parameters of output stream.")
            .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
-           .declare_key("user_fields", Array(Elasticity::EqFields().make_user_field_type(equation_name)),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
 		   .declare_key("input_fields", Array(
 		        Elasticity::EqFields()
 		            .make_field_descriptor_type(equation_name)),

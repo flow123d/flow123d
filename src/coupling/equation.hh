@@ -59,6 +59,9 @@ public:
     /// Template Record with common keys for derived equations.
     static Input::Type::Record & record_template();
 
+    /// Template Record with common key user_fields for derived equations.
+    static Input::Type::Record & user_fields_template(std::string equation_name);
+
     /**
      * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
      * TODO:

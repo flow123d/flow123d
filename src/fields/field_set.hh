@@ -170,7 +170,7 @@ public:
     /**
      * @brief Declare input record type of field defined by user.
      */
-    const Input::Type::Record & make_user_field_type(const std::string &equation_name);
+	static const Input::Type::Record & make_user_field_type(const std::string &equation_name);
 
     /**
 	 * Add an existing Field to the list. It stores just pointer to the field.

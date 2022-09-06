@@ -77,6 +77,7 @@ const it::Record & HM_Iterative::get_input_type() {
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
+		.copy_keys(EquationBase::user_fields_template(equation_name))
         .copy_keys(IterativeCoupling::record_template())
 		.declare_key("flow_equation", DarcyLMH::get_input_type(),
 		        it::Default::obligatory(),
@@ -84,11 +85,6 @@ const it::Record & HM_Iterative::get_input_type() {
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
 				it::Default::obligatory(),
 				"Mechanics, provides the displacement field.")
-        .declare_key("user_fields", it::Array(
-        		HM_Iterative::EqFields()
-                    .make_user_field_type(equation_name)),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqFields()
 		            .make_field_descriptor_type(equation_name)),

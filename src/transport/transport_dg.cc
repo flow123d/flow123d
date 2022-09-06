@@ -79,13 +79,9 @@ template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
     std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
     return Model::get_input_type("DG", "Discontinuous Galerkin (DG) solver")
+        .copy_keys(EquationBase::user_fields_template(equation_name))
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Solver for the linear system.")
-        .declare_key("user_fields", Array(
-                TransportDG<Model>::EqFields()
-                    .make_user_field_type(equation_name)),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqFields()
                     .make_field_descriptor_type(equation_name)),

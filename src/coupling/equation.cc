@@ -39,6 +39,15 @@ Input::Type::Record & EquationBase::record_template() {
 		    .close();
 }
 
+Input::Type::Record & EquationBase::user_fields_template(std::string equation_name) {
+    return Input::Type::Record("EquationBase_user_field_AUX", "Auxiliary record with common key user_field. Should not be used.")
+        .declare_key("user_fields", Input::Type::Array(
+                    FieldSet::make_user_field_type(equation_name)),
+                    Input::Type::Default::optional(),
+                    "Input fields of the equation defined by user.")
+	    .close();
+}
+
 EquationBase::EquationBase()
 : equation_empty_(true),
   mesh_(NULL),

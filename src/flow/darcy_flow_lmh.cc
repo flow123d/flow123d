@@ -124,11 +124,9 @@ const it::Record & DarcyLMH::get_input_type() {
     return it::Record(equation_name(), "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(EquationBase::record_template())
+		.copy_keys(EquationBase::user_fields_template(equation_name()))
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
-        .declare_key("user_fields", it::Array(DarcyLMH::EqFields().make_user_field_type(equation_name())),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default("{}"),

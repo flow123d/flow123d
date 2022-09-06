@@ -75,10 +75,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 {
 	return IT::Record(_equation_name, "Finite volume method, explicit in time, for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
-	        .declare_key("user_fields", IT::Array(
-	                    EqFields().make_user_field_type(_equation_name)),
-	                IT::Default::optional(),
-	                "Input fields of the equation defined by user.")
+			.copy_keys(EquationBase::user_fields_template(_equation_name))
 			.declare_key("input_fields", IT::Array(
 			        EqFields().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
