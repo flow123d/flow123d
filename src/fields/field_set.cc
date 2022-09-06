@@ -22,6 +22,7 @@
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
 #include "tools/bidirectional_map.hh"
+#include "tools/unit_converter.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <queue>
 
@@ -47,6 +48,9 @@ const Input::Type::Record & FieldSet::make_user_field_type(const std::string &eq
                      "Instance of FieldAlgoBase VectorField descendant. See above for details.")
         .declare_key("tensor_field", tensor_field.get_input_type(),
                      "Instance of FieldAlgoBase TensorField descendant. See above for details.")
+        .declare_key("unit", UnitConverter::get_input_type(), Input::Type::Default::optional(),
+                     "Unit of the field values provided in the main input file, in the external file, or "
+                     "by a function (FieldPython).")
 		.close();
 }
 
@@ -300,6 +304,21 @@ void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &
     	    THROW(ExcFieldExists() << FieldCommon::EI_Field(field_name));
     	}
 
+    	UnitSI units = UnitSI::dimensionless();
+    	Input::Record unit_record;
+        if ( it->opt_val("unit", unit_record) ) {
+            std::string unit_str = unit_record.val<std::string>("unit_formula");
+        	try {
+        		units.convert_unit_from(unit_str);
+        	} catch (ExcInvalidUnit &e) {
+        		e << it->ei_address();
+        		throw;
+        	} catch (ExcNoncorrespondingUnit &e) {
+        		e << it->ei_address();
+        		throw;
+        	}
+        }
+
     	Input::Iterator<Input::AbstractRecord> scalar_it = it->find<Input::AbstractRecord>("scalar_field");
         if (scalar_it) {
             Field<3, FieldValue<3>::Scalar> * scalar_field;
@@ -310,7 +329,7 @@ void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &
             *this+=scalar_field
                     ->name(field_name)
                     .description("")
-                    .units( UnitSI::dimensionless() )
+                    .units( units )
 					.flags(equation_result);
             scalar_field->set_mesh(*mesh_);
             scalar_field->set( *scalar_it, time);
@@ -327,7 +346,7 @@ void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &
                 *this+=vector_field
                         ->name(field_name)
                         .description("")
-                        .units( UnitSI::dimensionless() )
+                        .units( units )
 						.flags(equation_result);
                 vector_field->set_mesh(*mesh_);
                 vector_field->set( *vector_it, time);
@@ -344,7 +363,7 @@ void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &
                     *this+=tensor_field
                             ->name(field_name)
                             .description("")
-                            .units( UnitSI::dimensionless() )
+                            .units( units )
 							.flags(equation_result);
                     tensor_field->set_mesh(*mesh_);
                     tensor_field->set( *tensor_it, time);
