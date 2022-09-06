@@ -291,9 +291,9 @@ std::string FieldSet::print_dependency() const {
 }
 
 
-void FieldSet::init_user_fields(Input::Array input_list, double time, FieldSet &output_fields) {
-	for (Input::Iterator<Input::Record> it = input_list.begin<Input::Record>();
-                    it != input_list.end();
+void FieldSet::init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields) {
+	for (Input::Iterator<Input::Record> it = user_fields.begin<Input::Record>();
+                    it != user_fields.end();
                     ++it) {
 	    std::string field_name = it->val<std::string>("name");
     	bool is_bdr = it->val<bool>("is_boundary");

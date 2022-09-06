@@ -217,6 +217,15 @@ public:
       else DebugOut().fmt("Method 'output_data' of '{}' is not implemented.\n", typeid(*this).name());
     }
 
+    /**
+     * Create user defined fields, store them to equation FieldSet and to output FieldSet.
+     *
+     * @param user_fields   List of Input::Records defined by user on input.
+     * @param time          Start time of simulation (necessary for Field<>::set).
+     * @param output_fields Output FieldSet.
+     */
+    void init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields);
+
 protected:
     bool equation_empty_;       ///< flag is true if only default constructor was called
     Mesh * mesh_;

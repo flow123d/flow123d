@@ -76,3 +76,7 @@ double EquationBase::solved_time()
 {
     return time_->t();
 }
+
+void EquationBase::init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields) {
+    this->eq_fieldset_->init_user_fields(user_fields, time, output_fields);
+}

@@ -270,7 +270,7 @@ void HM_Iterative::initialize()
     Input::Array user_fields_arr;
     if (input_record_.opt_val("user_fields", user_fields_arr)) {
         FieldSet sham_eq_output; // only for correct call of init_user_fields method
-       	eq_fields_.init_user_fields(user_fields_arr, time().step().end(), sham_eq_output);
+       	this->init_user_fields(user_fields_arr, time().step().end(), sham_eq_output);
     }
 }
 
