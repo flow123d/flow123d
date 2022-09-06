@@ -24,6 +24,10 @@
 #include "system/system.hh"
 #include "input/accessors.hh"
 #include "fields/field_set.hh"
+#include "fields/field_common.hh"
+#include "fields/bc_field.hh"
+#include "tools/unit_converter.hh"
+#include "tools/unit_si.hh"
 
 
 
@@ -77,6 +81,88 @@ double EquationBase::solved_time()
     return time_->t();
 }
 
-void EquationBase::init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields) {
-    this->eq_fieldset_->init_user_fields(user_fields, time, output_fields);
+void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_fields) {
+	for (Input::Iterator<Input::Record> it = user_fields.begin<Input::Record>();
+                    it != user_fields.end();
+                    ++it) {
+	    std::string field_name = it->val<std::string>("name");
+    	bool is_bdr = it->val<bool>("is_boundary");
+
+    	// check if field of same name doesn't exist in FieldSet
+    	auto * exist_field = eq_fieldset_->field(field_name);
+    	if (exist_field!=nullptr) {
+    	    THROW(FieldSet::ExcFieldExists() << FieldCommon::EI_Field(field_name));
+    	}
+
+    	UnitSI units = UnitSI::dimensionless();
+    	Input::Record unit_record;
+        if ( it->opt_val("unit", unit_record) ) {
+            std::string unit_str = unit_record.val<std::string>("unit_formula");
+        	try {
+        		units.convert_unit_from(unit_str);
+        	} catch (ExcInvalidUnit &e) {
+        		e << it->ei_address();
+        		throw;
+        	} catch (ExcNoncorrespondingUnit &e) {
+        		e << it->ei_address();
+        		throw;
+        	}
+        }
+
+    	Input::Iterator<Input::AbstractRecord> scalar_it = it->find<Input::AbstractRecord>("scalar_field");
+        if (scalar_it) {
+            Field<3, FieldValue<3>::Scalar> * scalar_field;
+            if (is_bdr)
+                scalar_field = new BCField<3, FieldValue<3>::Scalar>();
+            else
+                scalar_field = new Field<3, FieldValue<3>::Scalar>();
+            *eq_fieldset_+=scalar_field
+                    ->name(field_name)
+                    .description("")
+                    .units( units )
+					.flags(FieldFlag::equation_result);
+            scalar_field->set_mesh(*mesh_);
+            scalar_field->set( *scalar_it, time_->t());
+            scalar_field->set_default_fieldset(*eq_fieldset_);
+            output_fields+=*scalar_field;
+        } else {
+            Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
+            if (vector_it) {
+                Field<3, FieldValue<3>::VectorFixed> * vector_field;
+                if (is_bdr)
+                    vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
+                else
+                    vector_field = new Field<3, FieldValue<3>::VectorFixed>();
+                *eq_fieldset_+=vector_field
+                        ->name(field_name)
+                        .description("")
+                        .units( units )
+						.flags(FieldFlag::equation_result);
+                vector_field->set_mesh(*mesh_);
+                vector_field->set( *vector_it, time_->t());
+                vector_field->set_default_fieldset(*eq_fieldset_);
+                output_fields+=*vector_field;
+            } else {
+                Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
+                if (tensor_it) {
+                    Field<3, FieldValue<3>::TensorFixed> * tensor_field;
+                    if (is_bdr)
+                        tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
+                    else
+                        tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
+                    *eq_fieldset_+=tensor_field
+                            ->name(field_name)
+                            .description("")
+                            .units( units )
+							.flags(FieldFlag::equation_result);
+                    tensor_field->set_mesh(*mesh_);
+                    tensor_field->set( *tensor_it, time_->t());
+                    tensor_field->set_default_fieldset(*eq_fieldset_);
+                    output_fields+=*tensor_field;
+	            } else {
+	                THROW(FieldSet::ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
+	            }
+            }
+	    }
+	}
 }

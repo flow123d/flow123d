@@ -292,15 +292,6 @@ public:
         for(FieldCommon *field : field_list) field->set_input_list(input_list, tg);
     }
 
-   /**
-    * Create user defined fields, store them to field_list and to output FieldSet.
-    *
-    * @param user_fields   List of Input::Records defined by user on input.
-    * @param time          Start time of simulation (necessary for Field<>::set).
-    * @param output_fields Output FieldSet.
-    */
-   void init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields);
-
     /**
      * Collective interface to @p FieldCommonBase::flags_add().
      * @param mask   mask to set for all fields in the field set.

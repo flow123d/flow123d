@@ -224,7 +224,7 @@ public:
      * @param time          Start time of simulation (necessary for Field<>::set).
      * @param output_fields Output FieldSet.
      */
-    void init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields);
+    void init_user_fields(Input::Array user_fields, FieldSet &output_fields);
 
 protected:
     bool equation_empty_;       ///< flag is true if only default constructor was called

@@ -16,7 +16,6 @@
  */
 
 #include "fields/field_set.hh"
-#include "fields/bc_field.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/mapping_p1.hh"
@@ -288,93 +287,6 @@ std::string FieldSet::print_dependency() const {
         }
     }
     return s.str();
-}
-
-
-void FieldSet::init_user_fields(Input::Array user_fields, double time, FieldSet &output_fields) {
-	for (Input::Iterator<Input::Record> it = user_fields.begin<Input::Record>();
-                    it != user_fields.end();
-                    ++it) {
-	    std::string field_name = it->val<std::string>("name");
-    	bool is_bdr = it->val<bool>("is_boundary");
-
-    	// check if field of same name doesn't exist in FieldSet
-    	auto * exist_field = this->field(field_name);
-    	if (exist_field!=nullptr) {
-    	    THROW(ExcFieldExists() << FieldCommon::EI_Field(field_name));
-    	}
-
-    	UnitSI units = UnitSI::dimensionless();
-    	Input::Record unit_record;
-        if ( it->opt_val("unit", unit_record) ) {
-            std::string unit_str = unit_record.val<std::string>("unit_formula");
-        	try {
-        		units.convert_unit_from(unit_str);
-        	} catch (ExcInvalidUnit &e) {
-        		e << it->ei_address();
-        		throw;
-        	} catch (ExcNoncorrespondingUnit &e) {
-        		e << it->ei_address();
-        		throw;
-        	}
-        }
-
-    	Input::Iterator<Input::AbstractRecord> scalar_it = it->find<Input::AbstractRecord>("scalar_field");
-        if (scalar_it) {
-            Field<3, FieldValue<3>::Scalar> * scalar_field;
-            if (is_bdr)
-                scalar_field = new BCField<3, FieldValue<3>::Scalar>();
-            else
-                scalar_field = new Field<3, FieldValue<3>::Scalar>();
-            *this+=scalar_field
-                    ->name(field_name)
-                    .description("")
-                    .units( units )
-					.flags(equation_result);
-            scalar_field->set_mesh(*mesh_);
-            scalar_field->set( *scalar_it, time);
-            scalar_field->set_default_fieldset(*this);
-            output_fields+=*scalar_field;
-        } else {
-            Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
-            if (vector_it) {
-                Field<3, FieldValue<3>::VectorFixed> * vector_field;
-                if (is_bdr)
-                    vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
-                else
-                    vector_field = new Field<3, FieldValue<3>::VectorFixed>();
-                *this+=vector_field
-                        ->name(field_name)
-                        .description("")
-                        .units( units )
-						.flags(equation_result);
-                vector_field->set_mesh(*mesh_);
-                vector_field->set( *vector_it, time);
-                vector_field->set_default_fieldset(*this);
-                output_fields+=*vector_field;
-            } else {
-                Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
-                if (tensor_it) {
-                    Field<3, FieldValue<3>::TensorFixed> * tensor_field;
-                    if (is_bdr)
-                        tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
-                    else
-                        tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
-                    *this+=tensor_field
-                            ->name(field_name)
-                            .description("")
-                            .units( units )
-							.flags(equation_result);
-                    tensor_field->set_mesh(*mesh_);
-                    tensor_field->set( *tensor_it, time);
-                    tensor_field->set_default_fieldset(*this);
-                    output_fields+=*tensor_field;
-	            } else {
-	                THROW(ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
-	            }
-            }
-	    }
-	}
 }
 
 
