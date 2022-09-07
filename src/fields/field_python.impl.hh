@@ -70,7 +70,7 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_string(const string &python_source, const string &func_name)
 {
     p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
     set_func("python_field_"+func_name, func_name);
@@ -97,7 +97,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const string &file_name, FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_file(const string &file_name, const string &func_name)
 {
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     set_func(file_name, func_name);
@@ -107,7 +107,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const s
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const string &file_name, FMT_UNUSED const string &class_name)
+void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
 {
     internal::PythonWrapper::initialize();
 
@@ -123,7 +123,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const 
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &module_name, FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_func(const string &module_name, const string &func_name)
 {
     try {
         p_func_ = p_module_.attr(func_name.c_str());
@@ -204,7 +204,7 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
 
 
 template <int spacedim, class Value>
-std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set) {
+std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
 	std::vector<const FieldCommon *> required_fields;
     py::list field_list;
 
