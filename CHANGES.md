@@ -10,6 +10,7 @@ List of all changes in user interface and major internal changes.
 
 ## New features
 * Implementation of new assembly algorithm of observe output.
+* Implementation of new assembly of FieldPython
 
 
 <!--
