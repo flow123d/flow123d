@@ -42,16 +42,9 @@ const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
 		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
 		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' or 'source_file' are not given. "),
-				"Python script given as in place string")
-		.declare_key("script_file", it::String(), it::Default::read_time("Obligatory if 'script_striong' or 'source_file' are not given. "),
+		.declare_key("source_file", it::String(), it::Default::obligatory(),
 				"Python script given as external file in format 'dir'.'file_name' without .py extension")
-		.declare_key("source_file", it::String(), it::Default::read_time("Obligatory if 'script_striong' or 'script_file' are not given. "),
-				"Python script given as external file in format 'dir'.'file_name' without .py extension")
-		.declare_key("function", it::String(), it::Default::read_time("Obligatory if 'script_striong' or 'script_file' is given. "),
-				"Function in the given script that returns tuple containing components of the return type.\n"
-				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
-		.declare_key("class", it::String(), it::Default::read_time("Obligatory if 'source_file' is given. "),
+		.declare_key("class", it::String(), it::Default::obligatory(),
 				"Function in the given script that returns tuple containing components of the return type.\n"
 				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
 		//.declare_key("units", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
@@ -98,33 +91,11 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 	this->init_unit_conversion_coefficient(rec, init_data);
 	this->field_name_ = init_data.field_name_;
 
-    Input::Iterator<string> it = rec.find<string>("script_string");
-    if (it) {
-        Input::Iterator<string> it_func = rec.find<string>("function");
-        if (it_func)
-            set_python_field_from_string( *it, *it_func );
-        else
-            THROW( ExcMissingKey() << EI_FoundKey("script_string") << EI_NeedsObligatory("function") );
-
-    } else if ( it = rec.find<string>("script_file") ) {
-        Input::Iterator<string> it_func = rec.find<string>("function");
-        if (it_func) {
-            try {
-                set_python_field_from_file( *it, *it_func );
-            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
-        } else
-            THROW( ExcMissingKey() << EI_FoundKey("script_file") << EI_NeedsObligatory("function") );
-    } else {
-        it = rec.find<string>("source_file");
-        if (! it) THROW( ExcNoPythonInit() );
-        Input::Iterator<string> it_class = rec.find<string>("class");
-        if (it_class) {
-            try {
-                set_python_field_from_class( *it, *it_class );
-            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
-        } else
-            THROW( ExcMissingKey() << EI_FoundKey("source_file") << EI_NeedsObligatory("class") );
-    }
+    std::string source_file = rec.val<string>("source_file");
+    std::string source_class = rec.val<string>("class");
+    try {
+        set_python_field_from_class( source_file, source_class );
+    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
 
     in_rec_ = rec;
 }
