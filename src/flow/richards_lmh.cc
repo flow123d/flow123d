@@ -133,7 +133,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGoverno
     eq_data_ = make_shared<EqData>();
     DarcyLMH::eq_data_ = eq_data_;
     DarcyLMH::eq_fields_ = eq_fields_;
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     //eq_data_->edge_new_local_4_mesh_idx_ = &(this->edge_new_local_4_mesh_idx_);
 
     eq_fields_->set_mesh(*mesh_);

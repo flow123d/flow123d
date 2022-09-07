@@ -210,6 +210,15 @@ public:
     }
 
     /**
+     * Same as previous but return shared_ptr.
+     */
+    std::shared_ptr<FieldSet> eq_fieldset_ptr()
+    {
+    	ASSERT_PTR(eq_fieldset_)(input_record_.address_string()).error("The equation did not set eq_fieldset_ pointer.\n");
+    	return eq_fieldset_;
+    }
+
+    /**
      * @brief Write computed fields.
      */
     virtual void output_data() {
@@ -237,7 +246,7 @@ protected:
      * to set the pointer in its constructor. This is used by the general method
      * EqData::data(). This approach is simpler than making EqData::data() a virtual method.
      */
-    FieldSet *eq_fieldset_;
+    std::shared_ptr<FieldSet> eq_fieldset_;
     
     /// object for calculation and writing the mass balance to file.
     std::shared_ptr<Balance> balance_;

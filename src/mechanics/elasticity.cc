@@ -318,7 +318,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
     eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)

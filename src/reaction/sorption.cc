@@ -69,7 +69,7 @@ SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
 {
     eq_fields_ = std::make_shared<EqFields>("conc_solid", "Concentration solution in the solid phase.");
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 }
 
@@ -108,7 +108,7 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
     : SorptionBase(init_mesh, in_rec)
 {
     eq_fields_dual_ = std::make_shared<EqFields>(output_conc_name, output_conc_desc);
-    this->eq_fieldset_ = eq_fields_dual_.get();
+    this->eq_fieldset_ = eq_fields_dual_;
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_dual_);
     this->eq_fields_ = std::static_pointer_cast<SorptionBase::EqFields>(eq_fields_dual_);
 }

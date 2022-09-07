@@ -253,7 +253,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     *eq_fields_ += *eq_data_->flow_->eq_fields().field("pressure_edge");
 
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     
     // setup input fields
     eq_fields_->set_input_list( in_record.val<Input::Array>("input_fields"), time() );

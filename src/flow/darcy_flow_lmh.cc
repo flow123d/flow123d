@@ -399,7 +399,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 
     eq_fields_ = make_shared<EqFields>();
     eq_data_ = make_shared<EqData>();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     
     eq_fields_->set_mesh(*mesh_);
     

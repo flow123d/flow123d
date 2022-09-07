@@ -216,7 +216,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     Model::init_balance(in_rec);
 
 
