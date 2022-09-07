@@ -457,7 +457,6 @@ TYPED_TEST(FieldSpeed, field_formula_depth) {
 }
 
 
-#ifdef FLOW123D_HAVE_PYTHON
 TYPED_TEST(FieldSpeed, field_python) {
 	this->set_values();
 	string key_name = "python_" + this->input_type_name_;
@@ -475,7 +474,6 @@ TYPED_TEST(FieldSpeed, field_python) {
 	this->test_result( this->expect_const_val_, 2*list_size + 1 );
 	this->profiler_output();
 }
-#endif // FLOW123D_HAVE_PYTHON
 
 
 // PE:

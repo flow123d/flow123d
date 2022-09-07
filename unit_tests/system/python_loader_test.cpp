@@ -13,8 +13,6 @@
 #include "system/global_defs.h"
 
 
-#ifdef FLOW123D_HAVE_PYTHON
-
 #include <string>
 #include <cmath>
 
@@ -179,5 +177,3 @@ TEST(PythonLoader, file_error) {
             FilePath::ExcFileOpen, "Program Error: Can not open file");
 }
 
-
-#endif // FLOW123D_HAVE_PYTHON

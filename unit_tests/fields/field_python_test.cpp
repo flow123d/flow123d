@@ -18,7 +18,6 @@
 #include "system/global_defs.h"
 
 
-#ifdef FLOW123D_HAVE_PYTHON
 
 #include "system/python_loader.hh"
 #include "fields/field_python.hh"
@@ -265,10 +264,4 @@ TEST(FieldPython, new_assembly) {
     FieldPython<3, FieldValue<3>::Vector> vec_func;
     vec_func.set_python_field_from_class("fields/field_python_class.py", "PythonAsm");
 }
-
-#else
-TEST(FieldPython, python_not_supported) {
-
-}
-#endif // FLOW123D_HAVE_PYTHON
 

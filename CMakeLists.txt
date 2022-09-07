@@ -641,9 +641,9 @@ else()
 endif()
 
 # use python on demand
-if(USE_PYTHON)
-    flow_define(HAVE_PYTHON)
-endif()
+#if(USE_PYTHON)
+#    flow_define(HAVE_PYTHON)
+#endif()
 
 # find python 
 set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8

@@ -59,7 +59,6 @@ public:
     TYPEDEF_ERR_INFO( EI_ValueSize, unsigned int);
     TYPEDEF_ERR_INFO( EI_FoundKey, std::string);
     TYPEDEF_ERR_INFO( EI_NeedsObligatory, std::string);
-    DECLARE_EXCEPTION( ExcNoPythonSupport, << "Flow123d compiled without support for Python, FieldPython can not be used.\n" );
     DECLARE_EXCEPTION( ExcNoPythonInit, << "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.\n" );
     DECLARE_EXCEPTION( ExcInvalidCompNumber, << "Field " << EI_FuncName::qval << " from the python module: " << EI_PModule::val
             << " returns " << EI_Size::val << " components but should return " << EI_ValueSize::val << " components.\n" );
@@ -135,12 +134,10 @@ private:
     /// Field name is necessary for set result
     std::string field_name_;
 
-#ifdef FLOW123D_HAVE_PYTHON
     py::object        p_func_;
     py::object        p_class_;
     py::module_       p_module_;
     mutable py::tuple p_value_;
-#endif // FLOW123D_HAVE_PYTHON
 
 };
 

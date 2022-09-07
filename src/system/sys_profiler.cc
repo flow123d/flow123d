@@ -24,10 +24,8 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#ifdef FLOW123D_HAVE_PYTHON
-    #include "Python.h"
-    #include <include/pybind11/pybind11.h>
-#endif // FLOW123D_HAVE_PYTHON
+#include "Python.h"
+#include <include/pybind11/pybind11.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
@@ -845,7 +843,6 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["run-finished-at"] =     end_time_string;
 }
 
-#ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
 	namespace py = pybind11;
 
@@ -898,11 +895,6 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
                  << "\" --output \"profiler.txt\"" << std::endl;
     #endif // FLOW123D_HAVE_CYGWIN
 }
-#else
-void Profiler::transform_profiler_data (const string &, const string &) {
-}
-
-#endif // FLOW123D_HAVE_PYTHON
 
 
 void Profiler::uninitialize() {

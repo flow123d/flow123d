@@ -19,11 +19,9 @@
 #define PYTHON_UTILS_HH_
 
 
-#include "global_defs.h"             // for FLOW123D_HAVE_PYTHON
+#include "global_defs.h"
 #include "Python.h"                  // for PyObject
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
-
-#ifdef FLOW123D_HAVE_PYTHON
 
 #include <string>
 #include <include/pybind11/pybind11.h>
@@ -141,7 +139,5 @@ public:
 };
 
 
-
-#endif // FLOW123D_HAVE_PYTHON
 
 #endif /* PYTHON_UTILS_HH_ */

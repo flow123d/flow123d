@@ -65,10 +65,6 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
 	this->is_constant_in_space_ = false;
-
-#ifndef FLOW123D_HAVE_PYTHON
-    THROW( ExcNoPythonSupport() );
-#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -76,10 +72,8 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
 {
-#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
     set_func("python_field_"+func_name, func_name);
-#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -105,10 +99,8 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const string &file_name, FMT_UNUSED const string &func_name)
 {
-#ifdef FLOW123D_HAVE_PYTHON
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     set_func(file_name, func_name);
-#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -117,7 +109,6 @@ void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const s
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const string &file_name, FMT_UNUSED const string &class_name)
 {
-#ifdef FLOW123D_HAVE_PYTHON
     internal::PythonWrapper::initialize();
 
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
@@ -126,7 +117,6 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const 
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
-#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -135,7 +125,6 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(FMT_UNUSED const 
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &module_name, FMT_UNUSED const string &func_name)
 {
-#ifdef FLOW123D_HAVE_PYTHON
     try {
         p_func_ = p_module_.attr(func_name.c_str());
     } catch (const py::error_already_set &ex) {
@@ -163,8 +152,6 @@ void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &module_name
     if ( size !=  value_size) {
         THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(module_name) << EI_Size(size) << EI_ValueSize(value_size) );
     }
-
-#endif // FLOW123D_HAVE_PYTHON
 
 }
 
@@ -204,7 +191,6 @@ void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, c
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, FMT_UNUSED Value &value)
 {
-#ifdef FLOW123D_HAVE_PYTHON
     p_value_ = p_func_(p[0], p[1], p[2]);
 
     unsigned int pos =0;
@@ -212,7 +198,6 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
         for(unsigned int col=0; col < value.n_cols(); col++, pos++)
             if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = p_value_[pos].cast<int>();
             else value(row,col) = p_value_[pos].cast<double>();
-#endif // FLOW123D_HAVE_PYTHON
 }
 
 
@@ -221,7 +206,6 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set) {
 	std::vector<const FieldCommon *> required_fields;
-#ifdef FLOW123D_HAVE_PYTHON
     py::list field_list;
 
     try {
@@ -253,7 +237,6 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     FieldCacheProxy result_data(this->field_name_, result_shape, self_ptr->value_cache()->data_);
     p_func_ = p_class_.attr("set_result_data");
     p_func_(field_data, result_data);
-#endif // FLOW123D_HAVE_PYTHON
     return required_fields;
 }
 
