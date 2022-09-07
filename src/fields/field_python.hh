@@ -32,6 +32,7 @@
 
 using namespace std;
 namespace py = pybind11;
+#pragma GCC visibility push(hidden)
 
 /**
  *
@@ -112,13 +113,6 @@ public:
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
 
-    /**
-     * Overload @p FieldAlgorithmBase::cache_reinit
-     *
-     * Reinit arena data member.
-     */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
-
     virtual ~FieldPython();
 
 private:
@@ -166,5 +160,7 @@ public:
 };
 } // close namespace internal
 
+
+#pragma GCC visibility pop
 
 #endif /* FUNCTION_PYTHON_HH_ */

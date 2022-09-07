@@ -287,13 +287,6 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 }
 
 
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
-{
-    // implement, we don't need this method probably, empty cache_reinit method is defined in parent class
-}
-
-
 
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
