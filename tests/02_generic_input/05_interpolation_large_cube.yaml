@@ -8,7 +8,7 @@ problem: !Coupling_Sequential
   description: Interpolated boundary condition - big cube
   mesh:
     mesh_file: ../00_mesh/cube_20x20x20.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12     # 1.0e-7

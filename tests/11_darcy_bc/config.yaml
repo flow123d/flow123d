@@ -11,13 +11,6 @@ common_config:
 
 test_cases:
   - files:
-      - 01_dirichlet.yaml
-      - 02_neumann.yaml
-      - 03_robin.yaml
-      - 05_seepage.yaml
-      - 06_river_square.yaml
-      - 07_river_slope.yaml
-      - 09_seepage_stagnation.yaml
       - 10_dirichlet_LMH.yaml
       - 12_neumann_LMH.yaml
       - 13_robin_LMH.yaml

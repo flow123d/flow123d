@@ -1,0 +1,160 @@
+name: Flow123d debug CI
+
+on: 
+    push:
+        branches: 
+        - "**"
+    
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Build environment [gnu, intel].
+                type: choice
+                options:
+                    - gnu
+                    - intel
+                required: false
+                default: gnu
+
+env:
+  autopull:  0
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        name: Flow123d debug main build
+     
+        steps:
+        - uses: actions/checkout@v3
+        - name: Build flow123d, verify, tarball.
+          run: config/tests/make_build_dir.sh gnu
+        - uses: actions/upload-artifact@v3
+          with:         
+            name: build_dir
+            path: build_dir.tar
+    
+    integration_tests:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Integration Test ${{matrix.test_dir}}
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        strategy:
+          matrix:
+            test_dir:
+            - 01_cmd_line
+            - 02_generic_input
+            - 03_generic_output
+            - 04_generic_mesh
+            - 05_tutorial
+            - 06_errors
+            - 10_darcy
+            - 11_darcy_bc
+            - 12_darcy_frac
+            - 13_darcy_time
+            - 14_darcy_richards
+            - 20_solute_fv
+            - 21_solute_fv_frac
+            - 22_solute_fv_time
+            - 24_solute_dg
+            - 25_solute_dg_bc
+            - 26_solute_dg_frac
+            - 27_solute_dg_time
+            - 30_sorption
+            - 31_dual_por
+            - 32_decay
+            - 33_reaction
+            - 34_sorption_dg
+            - 40_heat
+            - 50_mechanics
+            
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        
+    unit_tests:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Unit Test 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test_dir:
+            - coupling
+            - fem
+            - fields
+            - flow
+            - input
+            - intersection
+            - la
+            - mesh
+            - output
+            - scripts
+            - system
+            - test_scripts
+            - tools
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+    build_doc:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Test build doc
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: config/tests/run_with_build_dir.sh make ref-doc
+
+    conclusion:
+        if: ${{always()}}
+        runs-on: ubuntu-latest
+        name: Workflow conclusion from all job results 
+        
+        #needs: [integration_tests, unit_tests, build_doc]        
+        needs: [build_doc, unit_tests, integration_tests]
+        
+        # continue-on-error jobs always reports sucess to the workflow
+        steps:
+        - name: List
+          run:
+            echo ${{needs.integration_tests.result}}
+            echo ${{needs.integration_tests.outputs.status}}
+            echo ${{needs.unit_tests.result}}
+            echo ${{needs.unit_tests.outputs.status}}
+            echo ${{needs.build_doc.result}}
+            echo ${{needs.build_doc.outputs.status}}
+        - name: Check unit tests 
+          if: needs.unit_tests.result != 'success'
+          run: exit 1
+        - name: Check integration tests 
+          if: needs.integration_tests.result != 'success'
+          run: exit 1
+        - name: Check build doc 
+          if: needs.build_doc.result != 'success'
+          run: exit 1
+          
+# steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
+# steps.xyz.conclusion .. The result after continue-on-error is applied. Always success for continue-on-error.
+# "${{ job.status }}" ?? status of actual job 
+# ${{needs.<job-id>.result}}
+# ${{needs.<job-id>.outpus.<output-id>}} ... does not add the job to needs list automatically !!
+
+# problem is how to integrate the result over the whole job matrix
+# proposed solution: https://github.com/orgs/community/discussions/26822
+# uses `if: ${{always()}}` for the conclusion job which should run the job multiple times

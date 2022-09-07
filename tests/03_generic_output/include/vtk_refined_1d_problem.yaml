@@ -1,7 +1,7 @@
 description: Output mesh test 1d. Darcy flow- adaptive refinement, transport - adaptive refinement.
 mesh:
   mesh_file: ../00_mesh/line_x_20el.msh
-flow_equation: !Flow_Darcy_MH
+flow_equation: !Flow_Darcy_LMH
   input_fields:
     - region: plane
       water_source_density: !FieldFormula
@@ -13,7 +13,6 @@ flow_equation: !Flow_Darcy_MH
   nonlinear_solver:
     linear_solver: !Petsc
       a_tol: 1.0e-07
-  n_schurs: 2
   output:
     fields:
       - water_source_density

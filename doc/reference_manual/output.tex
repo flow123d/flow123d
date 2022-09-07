@@ -39,8 +39,6 @@ We mention the most important output fields of all equations and link to the com
     \hline
     \tt pressure\_p0 & Pressure head \units{}{1}{}, piecewise constant on every element. This field is directly produced by the MH method and thus contains no postprocessing error. \\
     \hline
-    \tt pressure\_p1 & Same pressure head field, but interpolated into $P1$ continuous scalar field. Namely you lost discontinuities on fractures.\\
-    \hline
     \tt velocity\_p0 & Vector field of water flux \units{}{3}{-1}. For every element we evaluate discrete flux field at barycenter.\\
     \hline
     \tt piezo\_head\_p0 & Piezometric head \units{}{1}{}, piecewise constant on every element. This is just pressure on element  plus z-coordinate of the barycenter. This field is produced only on demand

@@ -1,0 +1,161 @@
+name: CI build, tests and alpha release of images and packages
+# Build the ci-<env>:<version>_<commit> image and CI packages on SHARE/docker-images/<version>_<commit>
+# Triggered on push to specified branches.
+
+on: 
+    push:
+        branches:
+        - master
+        - 3.9.1
+    
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
+    # can also start manually on any branch
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Build environment [gnu, intel].
+                type: choice
+                options:
+                    - gnu
+                    - intel
+                required: false
+                default: gnu
+
+                
+
+env:
+  DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
+  DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
+  environment: gnu
+  build_type: release
+  build_container: contgnurelease
+  FLOW: /opt/flow123d/flow123d
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Set variables
+      id: vars
+      run: |
+        git_commit=`git rev-parse --short=6 HEAD`
+        release_tag=`cat version`_${git_commit}
+        echo ${release_tag}
+
+        # can not use environment variables in github actions
+        echo ::set-output name=pubdir::publish_${environment}
+        echo ::set-output name=reltag::${release_tag}
+
+    - name: Check vars
+      run: |
+          echo ${{ steps.vars.outputs.pubdir }}    
+          echo ${{ steps.vars.outputs.reltag }}    
+
+    - name: Build packages
+      run: |
+        #uses: docker/login-action@v1
+        # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
+        # Login for finall push to docker hub
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+        
+        
+        # make_packages <environment> <image_name_base> [push]
+        release_tag="${{ steps.vars.outputs.reltag }}"
+        config/package/make_packages.sh ${environment} ci ${release_tag} push
+
+      #run: |
+        #docker rm -f  || echo "container not running"
+        #bin/fterm update
+        #bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $(pwd):$FLOW
+         #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+        
+        #copy config
+        #docker exec ${build_container} ls $FLOW
+        #docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
+
+        #configure and compile
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/bin/yaml_converter
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/src/dealii
+        
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/bparser
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/json-3.10.5
+        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/gtest-1.10.0
+        #docker exec ${build_container} make -C $FLOW -j4 all
+    #- name: make doc
+      #run: |
+        #docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
+        #docker exec ${build_container} make -C ${FLOW} html-doc
+        #docker exec ${build_container} make -C ${FLOW} doxy-doc
+        
+    #- name: package
+      #run: |        
+        #make -C config/package \
+              #container_name=${build_container} \
+              #install_image="install-${environment}:${imagesversion}" \
+              #target_image=flow123d-${environment} \
+              #image_tag=${release_version} \
+              #destination=${destination} \
+              #all
+
+        #make -C config/package \
+              #container_name=${build_container} \
+              #target_image=flow123d-${environment} \
+              #image_tag=${release_version} \
+              #destination=${destination} \
+              #push-to-hub
+
+        #ls -l
+        #ls -l publish_${environment}
+
+        #echo ${{ steps.vars.outputs.pubdir }}    
+        #echo ${{ steps.vars.outputs.reltag }}    
+
+
+        
+              
+#    - name: Release
+#      uses: softprops/action-gh-release@v1
+#      with:
+#          files: |
+#            flow123d_${release_version}_doc.pdf
+#            flow123d_${release_version}_linux_install.tar.gz
+#            flow123d_${release_version}_windows_install.exe
+ #         name: release_${release_version}
+    - name: upload artifacts
+      uses: actions/upload-artifact@v3
+      with:       
+        path: |
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
+      
+
+    - name: SCP upload to Share
+      run: |
+          release_tag="${{ steps.vars.outputs.reltag }}"
+          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
+          ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+
+          
+    - name: Release add assets
+      # Whole action triggered by release change.
+      # We add created assets: PDF, and installation packages
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe
+        
+          #tag_name: v${{ steps.getversion.outputs.version }}
+          #release_name: release_${{ steps.getversion.outputs.version }}
+        #env:
+          #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}

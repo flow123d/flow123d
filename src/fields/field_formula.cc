@@ -84,7 +84,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
     }
     b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
     for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
-        b_parser_.emplace_back( 1.1 * CacheMapElementNumber::get() );
+        b_parser_.emplace_back( CacheMapElementNumber::get() );
     }
 }
 
@@ -307,13 +307,6 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 	}
 }
 
-uint n_shape(std::vector<uint> shape) {
-    uint r = 1;
-    for (auto i : shape) r *= i;
-    return r;
-}
-
-
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(FieldSet &field_set) {
     required_fields_.clear(); // returned value
@@ -401,7 +394,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
 
-            sum_shape_sizes_ += n_shape( field_ptr->shape_ );
+            sum_shape_sizes_ += field_ptr->n_shape();
             if (var == "d") {
                 field_set.set_surface_depth(this->surface_depth_);
             }
@@ -419,16 +412,16 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
         delete arena_alloc_;
     }
     eval_field_data_.clear();
-    uint vec_size = 1.1 * CacheMapElementNumber::get();
-    while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
+    uint vec_size = CacheMapElementNumber::get();
+
     // number of subset alignment to block size
-    uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
+    uint n_subsets = vec_size / ElementCacheMap::simd_size_double;
     uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : required_fields_) {
         std::string field_name = field->name();
-        eval_field_data_[field] = arena_alloc_->create_array<double>(n_shape( field->shape_ ) * vec_size);
+        eval_field_data_[field] = arena_alloc_->create_array<double>(field->n_shape() * vec_size);
         if (field_name == "X") {
             x_ = eval_field_data_[field] + 0;
             y_ = eval_field_data_[field] + vec_size;

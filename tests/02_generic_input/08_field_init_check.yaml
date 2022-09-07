@@ -8,7 +8,7 @@ problem: !Coupling_Sequential
   description: Test that all fields are checked when they are needed not only at time zero.
   mesh:
     mesh_file: ../00_mesh/line_x_20el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -48,7 +48,6 @@ problem: !Coupling_Sequential
         time: 4
         conductivity: 1
 
-    n_schurs: 2
     output:
       times:
         - step: 0.5

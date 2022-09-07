@@ -139,7 +139,8 @@ void FEValues<spacedim>::initialize(
          FiniteElement<DIM> &_fe,
          UpdateFlags _flags)
 {
-    if (DIM == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
+    if (DIM == 0) //return; // avoid unnecessary allocation of dummy 0 dimensional objects
+    	ASSERT(q.size() == 1);
 
     allocate( q.size(), _fe, _flags);
     elm_values = std::make_shared<ElementValues<spacedim> >(q, update_flags, DIM);

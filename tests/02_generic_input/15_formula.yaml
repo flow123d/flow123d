@@ -9,7 +9,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/big_cube_nc.msh
   # steady velocity field, with velocity v:0.1
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -23,7 +23,6 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 1
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

@@ -42,7 +42,7 @@ public:
       : value_cache_( FieldValueCache<double>(3, 1) )
     {
         this->multifield_ = false;
-    	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+    	unsigned int cache_size = CacheMapElementNumber::get();
     	value_cache_.reinit(cache_size);
     	value_cache_.resize(cache_size);
     	this->set_shape(3, 1);
@@ -80,10 +80,6 @@ public:
     }
 
     void field_output(FMT_UNUSED std::shared_ptr<OutputTime> stream, FMT_UNUSED OutputTime::DiscreteSpace type) override {
-        ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
-    }
-
-    void observe_output(FMT_UNUSED std::shared_ptr<Observe> observe) override {
         ASSERT_PERMANENT(false).error("Forbidden method for FieldCoords!");
     }
 

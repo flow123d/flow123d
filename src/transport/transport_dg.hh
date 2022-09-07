@@ -161,7 +161,7 @@ public:
    	class EqData : public Model::ModelEqData {
    	public:
 
-        EqData() {}
+        EqData() : ls(nullptr) {}
 
 		/**
 		 * @brief Sets up parameters of the DG method on a given boundary edge.

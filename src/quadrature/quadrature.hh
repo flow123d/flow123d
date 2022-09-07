@@ -88,11 +88,7 @@ public:
 
     /// Returns the <tt>i</tt>th quadrature point.
     template<unsigned int point_dim>
-    inline Armor::ArmaVec<double, point_dim> point(unsigned int i) const
-    {
-        ASSERT_EQ(point_dim, dim_);
-        return quadrature_points.vec<point_dim>(i);
-    }
+    inline Armor::ArmaVec<double, point_dim> point(unsigned int i) const;
 
     inline Armor::Array<double>::ArrayMatSet set(uint i)
     {
@@ -147,5 +143,23 @@ protected:
     std::vector<double> weights;
 
 };
+
+
+
+
+template<unsigned int point_dim>
+inline Armor::ArmaVec<double, point_dim> Quadrature::point(unsigned int i) const
+{
+    ASSERT_EQ(point_dim, dim_);
+    return quadrature_points.vec<point_dim>(i);
+}
+
+template<>
+inline Armor::ArmaVec<double, 0> Quadrature::point<0>(unsigned int i) const
+{
+    ASSERT_EQ(0, dim_);
+    ASSERT_EQ(i, 0);
+    return Armor::ArmaVec<double, 0>();
+}
 
 #endif /* QUADRATURE_HH_ */

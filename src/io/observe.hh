@@ -33,6 +33,30 @@ template <typename T> class ElementDataCache;
 
 
 
+/// Holds data of one eval point on patch (index of element and local coordinations).
+struct PatchPointData {
+    /// Default constructor
+    PatchPointData() {}
+
+    /// Constructor with data mebers initialization
+    PatchPointData(unsigned int elm_idx, arma::vec loc_coords)
+    : elem_idx(elm_idx), local_coords(loc_coords), i_quad(0), i_quad_point(0) {}
+
+    /// Copy constructor
+    PatchPointData(const PatchPointData &other)
+    : elem_idx(other.elem_idx), local_coords(other.local_coords),
+      i_quad(other.i_quad), i_quad_point(other.i_quad_point) {}
+
+    unsigned int elem_idx;        ///< Index of element
+    arma::vec local_coords;       ///< Local coords of point
+    unsigned int i_reg;           ///< Index of region (use during patch creating)
+    unsigned int i_quad;          ///< Index of quadrature (use during patch creating), i_quad = dim-1
+    unsigned int i_quad_point;    ///< Index of point in quadrature (use during patch creating)
+};
+typedef std::vector<PatchPointData> PatchPointVec;
+
+
+
 /**
  * Helper class stores base data of ObservePoint and allows to evaluate
  * the nearest point to input_point_.
@@ -102,6 +126,12 @@ public:
      */
     inline unsigned int element_idx() const
     { return observe_data_.element_idx_; }
+
+    /**
+     * Return Local coordinates of the observation point.
+     */
+    inline arma::vec local_coords() const
+    { return observe_data_.local_coords_; }
 
     /**
      * Return global coordinates of the observation point.
@@ -258,11 +288,25 @@ public:
      *
      * @param field_name Quantity name of founding ElementDataCache
      * @param field_time Actual computing time
-     * @param n_rows     Count of rows of data cache (used only if new cache is created)
-     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     * @param n_shape    Count of rows * cols of data cache (used only if new cache is created)
      */
-    template <typename T>
-    ElementDataCache<T> & prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+    OutputDataPtr prepare_compute_data(std::string field_name, double field_time, unsigned int n_shape);
+
+    /**
+     * Return pointer to ElementDataCache of given field.
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     */
+    inline OutputDataPtr get_output_cache(std::string field_name) {
+        OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
+        ASSERT(it != observe_field_values_.end())(field_name).error("Element data cache of given field doesn't exist. Did you call prepare_compute_data?\n");
+        return it->second;
+    }
+
+    /// Getter of patch_point_data.
+    inline PatchPointVec &patch_point_data() {
+	    return patch_point_data_;
+    }
 
 
 
@@ -310,6 +354,9 @@ protected:
 
 	/// Index of actual (last) time in \p observe_values_time_ vector
 	unsigned int observe_time_idx_;
+
+    /// Holds observe data of eval points on patch
+    PatchPointVec patch_point_data_;
 
 	friend class ObservePointAccessor;
 };

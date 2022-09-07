@@ -14,11 +14,10 @@ problem: !Coupling_Sequential
         regions:
           - 2d_fracture_1
           - 2d_fracture_2
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    n_schurs: 2
     input_fields:
       # creating the input field for anisotropy
       #- region: 3d_cube
