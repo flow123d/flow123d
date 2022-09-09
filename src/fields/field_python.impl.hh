@@ -210,7 +210,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 
     try {
         p_func_ = p_class_.attr("used_fields");
-        field_list = p_func_();
+        field_list = p_func_(p_class_);
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -235,8 +235,9 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
     std::vector<ssize_t> result_shape = { Value::NRows_, Value::NCols_ };
     FieldCacheProxy result_data(this->field_name_, result_shape, self_ptr->value_cache()->data_);
-    p_func_ = p_class_.attr("set_result_data");
-    p_func_(field_data, result_data);
+    p_func_ = p_class_.attr("set_dict");
+    py::list field_data_list = py::cast(field_data);
+    p_func_(p_class_, field_data_list, result_data);
     return required_fields;
 }
 
