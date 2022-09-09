@@ -23,7 +23,6 @@
 #include <include/pybind11/numpy.h>
 #include <include/pybind11/detail/common.h>
 #include "fields/field_value_cache.hh"
-#include "system/asserts.hh"
 
 namespace py = pybind11;
 #pragma GCC visibility push(hidden)
@@ -36,7 +35,7 @@ public:
     FieldCacheProxy(std::string field_name, std::vector<ssize_t> shape, double *field_cache_ptr)
     : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr)
     {
-        ASSERT_EQ(shape.size(), 2);
+        //ASSERT_EQ(shape.size(), 2);
     }
 
     /// Getters
