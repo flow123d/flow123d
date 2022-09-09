@@ -244,12 +244,12 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
-        FMT_UNUSED ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_patch_idx)
+        ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-    // implement
-//    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
-//    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+    p_func_ = p_class_.attr("cache_update");
+    p_func_(p_class_, reg_chunk_begin, reg_chunk_end);
 }
 
 
