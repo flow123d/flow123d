@@ -4,9 +4,14 @@
 #     make_packages.sh <environment> <target_image>]
 # 
 
+set -e
 set -x
 
 environment=$1
+if [ -z $environment ]
+    then exit 1
+fi	    
+
 
 #######################################
 # Paths on host
@@ -34,7 +39,7 @@ build_type=dbg
 build_image="flow-dev-${environment}-${build_type}:${imagesversion}"
 
 
-git_hash=`rev-parse --short HEAD`
+git_hash=`git rev-parse --short=6 HEAD`
 git_branch=`git rev-parse --abbrev-ref HEAD`
 build_dir_host=build-${git_branch}
 
@@ -61,6 +66,9 @@ bin/fterm update
 # more over resulting files have wrong permissions
 
 # Build flow123d binary (and flow123d libraries)
+if [ -L build_tree ]
+then rm build_tree
+fi
 cp config/config-jenkins-docker-${build_type}.cmake config.cmake
 bin/fterm dbg_${environment}  --no-term exec make -j4 all
 
