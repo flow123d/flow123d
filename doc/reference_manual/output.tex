@@ -27,7 +27,13 @@ In {\tt output\_stream}, the name and type of the output file is specified.
 Further, in {\tt output}, one determines the list of fields intended for output.
 The available output fields include input data as well as the simulation results.
 
-We mention the most important output fields of all equations and link to the complete lists in Table \ref{tab:output_fields}.
+We mention the most important output fields of all equations and links to the complete lists in Table \ref{tab:output_fields}.
+For each output field the user can select the type of \hyperA{IT::Discrete-output}{{\tt Discrete\_output}} which determines the ouput interpolation. By default, each output field sets its discrete type as the closest one to the underlying FE discretization, e.g., piecewise constant for pressure in flow model or piecewise linear for concentration in advection-diffusion model.
+The discrete output type then translates to corresponding data type by selected output format, see Table \ref{tab:output_types}.
+
+The output mesh can be continuous (neighboring elements share nodes) or discontinuous (nodes at same coordinates are duplicated). The only discrete type that requires discontinuous output mesh is currently {\tt D1\_value}.
+If at least one of the output fields is of discrete type {\tt D1\_value}, then the output mesh is automatically made
+discontinuous.
 
 \begin{table}[!h]
     \centering
@@ -95,6 +101,26 @@ We mention the most important output fields of all equations and link to the com
     \end{tabular}
 \end{table}
 
+\begin{table}[!h]
+    \centering
+    \caption{Discrete output types.}
+    \label{tab:output_types}
+    \begin{tabular}{l|l|l|l|l}
+    \toprule
+      {\bf Mesh} & \hyperA{IT::Discrete-output}{{\tt Discrete\_output}} & {\bf GMSH} & {\bf VTK} & {\bf Flow123d}\\
+    \toprule
+      cont.    & \multirow{2}{*}{\tt P1\_average} & NodeData & \multirow{2}{*}{PointData} & \multirow{2}{*}{NODE\_DATA} \\
+      discont. & & ElementNodeData & & \\
+    \midrule
+      cont.    & \multirow{2}{*}{\tt D1\_value} & NodeData & \multirow{2}{*}{PointData} & \multirow{2}{*}{CORNER\_DATA} \\
+      discont. & & ElementNodeData & & \\
+    \midrule
+      both & {\tt P0\_value} & ElementData & CellData & ELEM\_DATA \\
+    \midrule
+      both & {\tt Native} & --- & Flow123dData & NATIVE\_DATA \\
+    \bottomrule
+    \end{tabular}
+\end{table}
 
 
 % \subsection{Output data fields of water flow module}
