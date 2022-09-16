@@ -116,6 +116,12 @@ public:
 
     void preallocate_values(int nrow,int *rows,int ncol,int *cols);
 
+    void mat_set_values_local( int nrow, int *rows, int ncol, int *cols, double *vals ) override;
+
+    void rhs_set_values_local( int nrow, int *rows, double *vals ) override;
+
+    void preallocate_values_local(int nrow,int *rows,int ncol,int *cols);
+
     void preallocate_matrix();
 
     void finish_assembly() override;
@@ -177,7 +183,7 @@ protected:
     
     MatType mat_type_;
 
-    const std::vector<LongIdx> *l2g_;
+    std::shared_ptr<const std::vector<LongIdx>> l2g_;
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
