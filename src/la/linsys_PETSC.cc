@@ -84,7 +84,7 @@ LinSys_PETSC::LinSys_PETSC( const DOFHandlerMultiDim &dh, const std::string &par
         : LinSys( dh.distr().get() ),
           params_(params),
           init_guess_nonzero(false),
-          l2g_(&dh.get_local_to_global_map()),
+          l2g_(std::make_shared<const std::vector<LongIdx>>(dh.get_local_to_global_map())),
           matrix_(0)
 {
     // create PETSC vectors:
@@ -102,7 +102,7 @@ LinSys_PETSC::LinSys_PETSC( const DOFHandlerMultiDim &dh, const std::string &par
 }
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
-	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
+	: LinSys(other), params_(other.params_), l2g_(other.l2g_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
 {
 	MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -130,8 +130,19 @@ void LinSys_PETSC::start_allocation( )
 {
     PetscErrorCode ierr;
 
-    ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
-    ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
+    if (l2g_ == nullptr)
+    {
+        ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
+        ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
+    }
+    else
+    {
+        ISLocalToGlobalMapping l2g_is;
+        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is);
+        ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
+        ierr = VecSetLocalToGlobalMapping( on_vec_, l2g_is ); CHKERRV( ierr );
+        ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
+    }
     status_ = ALLOCATE;
 }
 
@@ -221,6 +232,46 @@ void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
                 VecSetValue(off_vec_,row,1.0,ADD_VALUES);
         }
     }
+}
+
+void LinSys_PETSC::mat_set_values_local( int nrow, int *rows, int ncol, int *cols, double *vals )
+{
+    // here vals would need to be converted from double to PetscScalar if it was ever something else than double :-)
+    switch (status_) {
+        case INSERT:
+        case ADD:
+            chkerr(MatSetValuesLocal(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
+            break;
+        case ALLOCATE:
+            this->preallocate_values_local(nrow,rows,ncol,cols); 
+            break;
+        default: DebugOut() << "LS SetValues with non allowed insert mode.\n";
+    }
+
+    matrix_changed_ = true;
+}
+
+void LinSys_PETSC::rhs_set_values_local( int nrow, int *rows, double *vals )
+{
+    PetscErrorCode ierr;
+
+    switch (status_) {
+        case INSERT:
+        case ADD:
+            ierr = VecSetValuesLocal(rhs_,nrow,rows,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            break;
+        case ALLOCATE: 
+            break;
+        default: ASSERT_PERMANENT(false).error("LinSys's status disallow set values.\n");
+    }
+
+    rhs_changed_ = true;
+}
+
+void LinSys_PETSC::preallocate_values_local(int nrow,int *rows,int ncol,int *)
+{
+    for (int i=0; i<nrow; i++)
+        VecSetValueLocal(on_vec_,rows[i],(double)ncol,ADD_VALUES);
 }
 
 void LinSys_PETSC::preallocate_matrix()

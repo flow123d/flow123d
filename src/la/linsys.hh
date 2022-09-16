@@ -362,6 +362,11 @@ public:
     virtual void mat_set_values(int nrow,int *rows,int ncol,int *cols,double *vals)=0;
 
     /**
+     * Assembly submatrix into local part of the system matrix. 
+     */
+    virtual void mat_set_values_local(int nrow,int *rows,int ncol,int *cols,double *vals)=0;
+
+    /**
      * Shortcut for assembling just one element into the matrix.
      * Similarly we can provide method accepting armadillo matrices.
      */
@@ -373,6 +378,11 @@ public:
      *  Should be virtual, implemented differently in  particular solvers.
      */
     virtual void rhs_set_values(int nrow,int *rows,double *vals)=0;
+
+    /**
+     * Set local values of the system right-hand side. 
+     */
+    virtual void rhs_set_values_local(int nrow,int *rows,double *vals)=0;
 
     /**
      * Shorcut for assembling just one element into RHS vector.

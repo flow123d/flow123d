@@ -99,7 +99,7 @@ public:
         ElementAccessor<3> elm_acc = cell.elm();
 
         fe_values_.reinit(elm_acc);
-        cell.get_dof_indices(dof_indices_);
+        dof_indices_ = cell.get_loc_dof_indices();
 
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -119,18 +119,17 @@ public:
             }
             k++;
         }
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
-        dh_cell.get_dof_indices(dof_indices_);
+        dof_indices_ = dh_cell.get_loc_dof_indices();
         fe_values_side_.reinit(side);
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -165,7 +164,7 @@ public:
             }
         }
 
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
 
@@ -174,12 +173,12 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
+		side_dof_indices_[0] = cell_lower_dim.get_loc_dof_indices();
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
 		fe_values_sub_.reinit(cell_sub);
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+		side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
 		// Element id's for testing if they belong to local partition.
@@ -235,7 +234,7 @@ public:
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
-                eq_data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
+                eq_data_->ls->mat_set_values_local(n_dofs_ngh_[n], side_dof_indices_[n].memptr(), n_dofs_ngh_[m], side_dof_indices_[m].memptr(), &(local_matrix_ngh_[n][m][0]));
     }
 
 
@@ -266,8 +265,8 @@ private:
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
     FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    vector<LocDofVec > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;    ///< Auxiliary vectors for assemble ngh integral
     const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
@@ -347,7 +346,6 @@ public:
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
-        if (!cell.is_own()) return;
 
         ElementAccessor<3> elm_acc = cell.elm();
 
@@ -388,7 +386,6 @@ public:
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
