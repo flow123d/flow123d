@@ -285,6 +285,7 @@ void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
 	dh_->distribute_dofs(ds);
+    dh_->print();
 
 
     MixedPtr<FE_P_disc> fe_p_disc(0);
@@ -514,6 +515,7 @@ void Elasticity::zero_time_step()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
     eq_data_->ls->finish_assembly();
+    MatView(*eq_data_->ls->get_matrix(), PETSC_VIEWER_STDOUT_WORLD);
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());

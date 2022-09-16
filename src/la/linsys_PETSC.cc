@@ -319,6 +319,7 @@ void LinSys_PETSC::preallocate_matrix()
     {
         ISLocalToGlobalMapping l2g_is;
         ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is);
+        ISLocalToGlobalMappingView( l2g_is, PETSC_VIEWER_STDOUT_WORLD );
         ierr = MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                                   l2g_is, l2g_is, &matrix_); CHKERRV( ierr );
         ierr = MatISSetPreallocation(matrix_, 0, on_nz, 0, off_nz);
