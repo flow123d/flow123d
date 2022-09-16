@@ -720,15 +720,27 @@ void DOFHandlerMultiDim::print() const {
     for (auto cell : own_range())
     {
         auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().idx() << ": ";
-        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+        s << "-- cell " << cell.elm().input_id() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++)
+        {
+            s << dofs[idof] << " ";
+            if (cell.cell_dof(idof).dim == 0) s << "(node " << cell.elm().node(cell.cell_dof(idof).n_face_idx).index() << ")";
+            s << ", ";
+        }
+        s << endl;
     }
     s << "- dofs on ghost cells:" << endl;
     for (auto cell : ghost_range())
     {
         auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().idx() << ": ";
-        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+        s << "-- cell " << cell.elm().input_id() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++)
+        {
+            s << dofs[idof] << " ";
+            if (cell.cell_dof(idof).dim == 0) s << "(node " << cell.elm().node(cell.cell_dof(idof).n_face_idx).index() << ")";
+            s << ", ";
+        }
+        s << endl;
     }
     s << "- locally owned dofs (" << lsize_ << "): ";
     for (unsigned int i=0; i<lsize_; i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
