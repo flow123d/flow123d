@@ -127,7 +127,18 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
     chkerr(QPCreate(comm_, &system));
-    chkerr(QPSetOperator(system, matrix_));
+    chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
+    // if (l2g_) {
+    //     Mat Ais;
+    //     ISLocalToGlobalMapping l2g_is;
+    //     chkerr(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is));
+    //     chkerr(MatSetLocalToGlobalMapping(matrix_, l2g_is, l2g_is));
+    //     chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Ais));
+    //     chkerr(QPSetOperator(system, Ais));
+    //     chkerr(MatDestroy(&Ais));
+    // } else {
+      chkerr(QPSetOperator(system, matrix_));
+//    }
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
     if (ineq_) {
@@ -136,11 +147,24 @@ LinSys::SolveInfo LinSys_PERMON::solve()
       // Bx<=c
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
+    }
+    if (l2g_) { // FETI
+      chkerr(QPTMatISToBlockDiag(system));
+      chkerr(QPGetChild(system, &system));
+      chkerr(QPFetiSetUp(system));
+      chkerr(PetscOptionsInsertString(NULL, "-feti"));
+    } else if (ineq_) { // dualization without FETI
       chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
     }
+      
+    // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
+    chkerr(QPTFromOptions(system));
+    if (l2g_) {
+      chkerr(QPGetParent(system, &system));
+    }
+
     // Set runtime options, e.g -qp_chain_view_kkt
     chkerr(QPSetFromOptions(system));
-      
     
     chkerr(QPSCreate(comm_, &solver));
     chkerr(QPSSetQP(solver, system));
