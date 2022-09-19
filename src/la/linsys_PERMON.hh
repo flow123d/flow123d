@@ -24,6 +24,7 @@
 #include <vector>              // for vector
 #include "la/linsys_PETSC.hh"  // for LinSys
 #include "permonqps.h"         // for QPS and whole PERMON/PETSc stack
+#include "permonqpfeti.h"      // ^except for FETI implementation
 
 class Distribution;
 namespace Input {
