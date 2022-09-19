@@ -4,7 +4,7 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: 1D linear elastic problem.
   mesh:
-    mesh_file: ../00_mesh/line_x_20el.msh
+    mesh_file: ../00_mesh/line_x_4el.msh
   flow_equation: !Coupling_Iterative
     input_fields:
       - region: BULK
@@ -40,7 +40,7 @@ problem: !Coupling_Sequential
         solver: !Petsc
           a_tol: 1e-20
           r_tol: 1e-15
-        contact: false
+#        contact: true
         input_fields:
           - region: BULK
             young_modulus: 1
