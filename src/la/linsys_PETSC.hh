@@ -183,7 +183,7 @@ protected:
     
     MatType mat_type_;
 
-    std::shared_ptr<const std::vector<LongIdx>> l2g_;
+    ISLocalToGlobalMapping l2g_;
 
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
