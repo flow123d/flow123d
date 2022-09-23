@@ -84,7 +84,6 @@ LinSys_PETSC::LinSys_PETSC( const DOFHandlerMultiDim &dh, const std::string &par
         : LinSys( dh.distr().get() ),
           params_(params),
           init_guess_nonzero(false),
-          l2g_(std::make_shared<const std::vector<LongIdx>>(dh.get_local_to_global_map())),
           matrix_(0)
 {
     // create PETSC vectors:
@@ -94,6 +93,8 @@ LinSys_PETSC::LinSys_PETSC( const DOFHandlerMultiDim &dh, const std::string &par
     ierr = VecCreateMPIWithArray( comm_, 1, rows_ds_->lsize(), PETSC_DECIDE, v_rhs_, &rhs_ ); CHKERRV( ierr );
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
     VecDuplicate(rhs_, &residual_);
+
+    ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, dh.get_local_to_global_map().size(), dh.get_local_to_global_map().data(), PETSC_USE_POINTER, &l2g_); CHKERRV(ierr);
 
     matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
@@ -137,10 +138,8 @@ void LinSys_PETSC::start_allocation( )
     }
     else
     {
-        ISLocalToGlobalMapping l2g_is;
-        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is);
         ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
-        ierr = VecSetLocalToGlobalMapping( on_vec_, l2g_is ); CHKERRV( ierr );
+        ierr = VecSetLocalToGlobalMapping( on_vec_, l2g_ ); CHKERRV( ierr );
         ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
     }
     status_ = ALLOCATE;
@@ -317,11 +316,9 @@ void LinSys_PETSC::preallocate_matrix()
     }
     else
     {
-        ISLocalToGlobalMapping l2g_is;
-        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is);
-        ISLocalToGlobalMappingView( l2g_is, PETSC_VIEWER_STDOUT_WORLD );
+        ISLocalToGlobalMappingView( l2g_, PETSC_VIEWER_STDOUT_WORLD );
         ierr = MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-                                  l2g_is, l2g_is, &matrix_); CHKERRV( ierr );
+                                  l2g_, l2g_, &matrix_); CHKERRV( ierr );
         ierr = MatISSetPreallocation(matrix_, 0, on_nz, 0, off_nz);
     }
 
@@ -364,6 +361,13 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     //MatView(matrix_, PETSC_VIEWER_STDOUT_SELF);
     //VecView(rhs_, PETSC_VIEWER_STDOUT_SELF);
     //this->view();
+
+    if (l2g_) {
+        MatISFixLocalEmpty(matrix_, PETSC_TRUE);
+        MatISGetLocalToGlobalMapping(matrix_, &l2g_, &l2g_);
+        // ISLocalToGlobalMappingView( l2g_, PETSC_VIEWER_STDOUT_WORLD );
+        // MatView(matrix_, PETSC_VIEWER_STDOUT_WORLD);
+    }
 
     matrix_changed_ = true;
     rhs_changed_ = true;
