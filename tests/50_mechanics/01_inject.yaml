@@ -61,7 +61,7 @@ problem: !Coupling_Sequential
             bc_displacement: 0
         solver: !Petsc
           a_tol: 0
-          r_tol: 1e-9
+          r_tol: 1e-12
         output_stream:
           file: mechanics.pvd
           format: !vtk

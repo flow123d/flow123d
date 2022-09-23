@@ -38,8 +38,8 @@ problem: !Coupling_Sequential
             - displacement_divergence
             - subdomain
         solver: !Petsc
-          a_tol: 1e-20
-          r_tol: 1e-15
+          a_tol: 0
+          r_tol: 1e-12
 #        contact: true
         input_fields:
           - region: BULK
