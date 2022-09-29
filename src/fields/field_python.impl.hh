@@ -234,7 +234,9 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 
     auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
     std::vector<ssize_t> result_shape = { Value::NRows_, Value::NCols_ };
-    FieldCacheProxy result_data(this->field_name_, result_shape, self_ptr->value_cache()->data_);
+    double * cache_data = self_ptr->value_cache()->data_;
+    std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get());
+    FieldCacheProxy result_data(this->field_name_, result_shape, cache_vec);
     p_func_ = p_class_.attr("set_dict");
     py::list field_data_list = py::cast(field_data);
     p_func_(p_class_, field_data_list, result_data);

@@ -28,8 +28,8 @@ PYBIND11_MODULE(flowpy, m) {
         .def("set_dict", &PythonFieldBase::set_dict)
         .def("_set_result", &PythonFieldBase::set_result)
         .def("_add_to_dict", &PythonFieldBase::add_to_dict)
-        .def("_set_result_data", &PythonFieldBase::set_result_data)
-        .def("_add_to_dict_data", &PythonFieldBase::add_to_dict_data)
+//        .def("_set_result_data", &PythonFieldBase::set_result_data)
+//        .def("_add_to_dict_data", &PythonFieldBase::add_to_dict_data)
         .def("_print_fields", &PythonFieldBase::print_fields)
         .def("_print_result", &PythonFieldBase::print_result)
         .def_property("t", &PythonFieldBase::get_time, &PythonFieldBase::set_time)
@@ -37,7 +37,7 @@ PYBIND11_MODULE(flowpy, m) {
         .def_property("f_dict", &PythonFieldBase::get_fields_dict, &PythonFieldBase::set_fields_dict);
 
     py::class_<FieldCacheProxy>(m, "FieldCacheProxy")
-        .def(py::init<std::string, std::vector<ssize_t>, double *>())
+        .def(py::init<std::string, std::vector<ssize_t>, std::vector<double> >())
         .def("field_name", &FieldCacheProxy::field_name)
         .def("n_rows", &FieldCacheProxy::n_rows)
         .def("n_cols", &FieldCacheProxy::n_cols)
