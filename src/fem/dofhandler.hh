@@ -497,7 +497,7 @@ public:
 private:
 
     /// Get global dof indices of ghost dofs for sub-handler.
-    void receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs);
+    void receive_sub_ghost_dofs(unsigned int proc, vector<unsigned int> &ghost_dof_proc, map<LongIdx,LongIdx> &global_to_local_dof_idx);
     
     /// Send global indices of dofs that are ghost on other processors.
     void send_sub_ghost_dofs(unsigned int proc, const map<LongIdx,LongIdx> &global_to_local_dof_idx);
