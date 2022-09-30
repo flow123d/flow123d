@@ -808,6 +808,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     // sub_local_indices maps local dofs of parent handler to local dofs of sub-handler
     vector<LongIdx> sub_local_indices(dh->local_to_global_dof_idx_.size(), INVALID_DOF);
     map<LongIdx,LongIdx> global_to_local_dof_idx;
+    vector<unsigned int> ghost_dof_proc;
     // first add owned dofs to local_to_global_dof_idx_ and sub_local_indices
     for (auto cell : dh->local_range())
     {
@@ -825,11 +826,10 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
         }
     }
     lsize_ = local_to_global_dof_idx_.size();
-    // then do the same for ghost dofs and set dof_indices
-    for (auto cell : dh->local_range())
+    // then do the same for ghost dofs
+    for (auto cell : dh->ghost_range())
     {
         LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
-        unsigned int idof = 0;
         for (auto sub_dof : sub_fe_dofs[cell.dim()])
         {
             if (sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
@@ -837,10 +837,19 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
                 parent_dof_idx_.push_back(cell_dof_indices[sub_dof]);
                 // temporarily we keep the global dof idx of parent dh, we replace it later from the owning processor
+                global_to_local_dof_idx[parent_->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]] = local_to_global_dof_idx_.size();
                 local_to_global_dof_idx_.push_back(parent_->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
+                ghost_dof_proc.push_back(cell.elm().proc());
             }
-            dof_indices[cell_starts[cell.local_idx()]+idof++] = sub_local_indices[cell_dof_indices[sub_dof]];
         }
+    }
+    // set dof_indices
+    for (auto cell : dh->local_range())
+    {
+        LocDofVec cell_dof_indices = cell.get_loc_dof_indices();
+        unsigned int idof = 0;
+        for (auto sub_dof : sub_fe_dofs[cell.dim()])
+            dof_indices[cell_starts[cell.local_idx()]+idof++] = sub_local_indices[cell_dof_indices[sub_dof]];
     }
     
     dof_ds_ = std::make_shared<Distribution>(lsize_, PETSC_COMM_WORLD);
@@ -849,8 +858,8 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     
     // shift dof indices
     if (loffset_ > 0)
-      for (unsigned int i=0; i<lsize_; i++)
-          local_to_global_dof_idx_[i] += loffset_;
+        for (unsigned int i=0; i<lsize_; i++)
+            local_to_global_dof_idx_[i] += loffset_;
     
     // communicate ghost values
     // first propagate from lower procs to higher procs and then vice versa
@@ -860,8 +869,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
         {
             if ((proc > el_ds_->myp()) == from_higher)
             { // receive dofs from master processor
-                vector<LongIdx> dofs;
-                receive_sub_ghost_dofs(proc, dofs);
+                receive_sub_ghost_dofs(proc, ghost_dof_proc, global_to_local_dof_idx);
             }
             else
                 send_sub_ghost_dofs(proc, global_to_local_dof_idx);
@@ -870,12 +878,13 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
 }
 
 
-void SubDOFHandlerMultiDim::receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs)
+void SubDOFHandlerMultiDim::receive_sub_ghost_dofs(unsigned int proc, vector<unsigned int> &ghost_dof_proc, map<LongIdx,LongIdx> &global_to_local_dof_idx)
 {
     // send number of ghost dofs required from the other processor
     vector<LongIdx> dof_indices;
+    vector<LongIdx> dofs;
     for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++)
-        if (parent_->dof_ds_->get_proc(parent_->local_to_global_dof_idx_[parent_dof_idx_[i]]) == proc)
+        if (ghost_dof_proc[i-lsize_] == proc)
             dof_indices.push_back(parent_->local_to_global_dof_idx_[parent_dof_idx_[i]]);
     unsigned int n_ghosts = dof_indices.size();
     MPI_Send(&n_ghosts, 1, MPI_UNSIGNED, proc, 0, MPI_COMM_WORLD);
@@ -890,8 +899,12 @@ void SubDOFHandlerMultiDim::receive_sub_ghost_dofs(unsigned int proc, vector<Lon
     // update ghost dofs
     unsigned int idof = 0;
     for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++)
-        if (parent_->dof_ds_->get_proc(parent_->local_to_global_dof_idx_[parent_dof_idx_[i]]) == proc)
-            local_to_global_dof_idx_[i] = dofs[idof++];
+        if (ghost_dof_proc[i-lsize_] == proc)
+        {
+            local_to_global_dof_idx_[i] = dofs[idof];
+            global_to_local_dof_idx[parent_->local_to_global_dof_idx_[parent_dof_idx_[i]]] = dofs[idof] - loffset_;
+            idof++;
+        }
 }
 
 
