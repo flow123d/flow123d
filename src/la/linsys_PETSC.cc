@@ -285,8 +285,14 @@ void LinSys_PETSC::preallocate_matrix()
     VecAssemblyBegin(on_vec_);
     VecAssemblyBegin(off_vec_);
 
-    on_nz  = new PetscInt[ rows_ds_->lsize() ];
-    off_nz = new PetscInt[ rows_ds_->lsize() ];
+    unsigned int lsize;
+    if (l2g_)
+        ISLocalToGlobalMappingGetSize(l2g_, (int*)(&lsize));
+    else
+        lsize = rows_ds_->lsize();
+
+    on_nz  = new PetscInt[ lsize ];
+    off_nz = new PetscInt[ lsize ];
 
     VecAssemblyEnd(on_vec_);
     VecAssemblyEnd(off_vec_);
@@ -294,9 +300,9 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( on_vec_,  &on_array );
     VecGetArray( off_vec_, &off_array );
 
-    for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
-        on_nz[i]  = std::min( rows_ds_->lsize(), static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
-        off_nz[i] = std::min( rows_ds_->size() - rows_ds_->lsize(), static_cast<uint>( off_array[i]+0.1 ) );
+    for ( unsigned int i=0; i<lsize; i++ ) {
+        on_nz[i]  = std::min( lsize, static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - lsize, static_cast<uint>( off_array[i]+0.1 ) );
     }
 
     VecRestoreArray(on_vec_,&on_array);
