@@ -229,7 +229,9 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
         }
         field_shape[0] = ssize_t(field_ptr->shape_[0]);
         field_shape[1] = ssize_t(field_ptr->shape_[1]);
-        field_data.emplace_back(field_name, field_shape, field_ptr->value_cache()->data_);
+        double * cache_data = field_ptr->value_cache()->data_;
+        std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get());
+        field_data.emplace_back(field_name, field_shape, cache_vec);
     }
 
     auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
