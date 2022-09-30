@@ -362,13 +362,6 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     //VecView(rhs_, PETSC_VIEWER_STDOUT_SELF);
     //this->view();
 
-    if (l2g_) {
-        MatISFixLocalEmpty(matrix_, PETSC_TRUE);
-        MatISGetLocalToGlobalMapping(matrix_, &l2g_, &l2g_);
-        // ISLocalToGlobalMappingView( l2g_, PETSC_VIEWER_STDOUT_WORLD );
-        // MatView(matrix_, PETSC_VIEWER_STDOUT_WORLD);
-    }
-
     matrix_changed_ = true;
     rhs_changed_ = true;
 }
