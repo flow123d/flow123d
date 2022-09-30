@@ -128,7 +128,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
-    // if (l2g_) {
+    if (l2g_) {
     //     Mat Ais;
     //     ISLocalToGlobalMapping l2g_is;
     //     chkerr(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is));
@@ -136,9 +136,14 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     //     chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Ais));
     //     chkerr(QPSetOperator(system, Ais));
     //     chkerr(MatDestroy(&Ais));
-    // } else {
+        Mat Afixed;
+        chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Afixed));
+        MatISFixLocalEmpty(Afixed, PETSC_TRUE);
+        chkerr(QPSetOperator(system, Afixed));
+        chkerr(MatDestroy(&Afixed));
+    } else {
       chkerr(QPSetOperator(system, matrix_));
-//    }
+   }
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
     if (ineq_) {
