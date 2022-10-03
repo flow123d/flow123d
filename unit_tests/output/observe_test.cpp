@@ -211,6 +211,9 @@ public:
         *this += vector_field.name("vector_field").units(UnitSI::one());
         *this += tensor_field.name("tensor_field").units(UnitSI::one());
         *this += enum_field.name("enum_field").units(UnitSI::one()).input_selection(selection);
+
+        this->add_coords_field();
+        this->set_default_fieldset();
     }
 
     ScalarField scalar_field;

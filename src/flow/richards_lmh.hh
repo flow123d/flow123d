@@ -131,6 +131,9 @@ private:
     /// general assembly object, hold assembly objects of appropriate dimension
     GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
 
+    static std::string equation_name()
+    { return "Flow_Richards_LMH";}
+
 };
 
 

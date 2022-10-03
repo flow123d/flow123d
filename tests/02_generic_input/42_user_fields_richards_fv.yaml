@@ -1,0 +1,118 @@
+# Test goal: Definition of user fields in Richards and ConvectionTransport equations
+# Author: Pavel Exner, David Flanderka
+# Source for reference:
+#   only qualitative check in Paraview
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Transport 1D-2D (convection, dual porosity, sorption)
+  mesh:
+    mesh_file: ../00_mesh/rectangle_12.8x8_frac.msh
+    regions:
+      - !Union
+        name: subset
+        regions: [1d, 2d]
+      - !Union
+        name: .sides
+        regions: [.1d, .2d]
+
+  flow_equation: !Flow_Richards_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    user_fields:
+      - name: user_pressure
+        is_boundary: true
+        scalar_field: !FieldFormula
+          value: x
+    input_fields:
+      - region: 1d
+        anisotropy: 10
+        cross_section: 1
+        sigma: 0.05
+      - region: 2d
+        anisotropy: 1
+        cross_section: 1
+      - region: .sides
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: user_pressure + 1
+
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      user_fields:
+        - name: user_conc
+          is_boundary: true
+          scalar_field: !FieldFormula
+            value: x
+      input_fields:
+        - region: .sides
+          bc_conc: !FieldFormula
+            value: [user_conc/12.75, user_conc/12.75, 0]
+        - region: subset
+          init_conc: 0
+          porosity: 0.25
+      output:
+        fields:
+          - conc
+          - region_id
+    output_stream:
+      times:
+        - step: 0.25
+    substances:
+      - A
+      - B
+      - C
+    time:
+      end_time: 1
+    balance:
+      cumulative: true
+    reaction_term: !DualPorosity
+      input_fields:
+        - region: subset
+          diffusion_rate_immobile:
+            - 0.01
+            - 0.01
+            - 0.03
+          porosity_immobile: 0.15
+          init_conc_immobile:
+            - 0.0
+            - 0.0
+            - 0.8
+      reaction_mobile: !SorptionMobile
+        solvent_density: 0.9
+        substances:
+          - A
+          - B
+        solubility:
+          - 1.0
+          - 1.0
+        input_fields:
+          - region: subset
+            rock_density: 1.2
+            sorption_type:
+              - linear
+              - freundlich
+            distribution_coefficient: 0.02
+            isotherm_other:
+              - 0
+              - 0.5
+      reaction_immobile: !SorptionImmobile
+        solvent_density: 0.9
+        substances:
+          - A
+          - B
+        solubility:
+          - 1.0
+          - 1.0
+        input_fields:
+          - region: subset
+            rock_density: 1.2
+            sorption_type:
+              - linear
+              - freundlich
+            distribution_coefficient: 0.02
+            isotherm_other:
+              - 0
+              - 0.5

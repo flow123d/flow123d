@@ -79,13 +79,9 @@ template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
     std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
     return Model::get_input_type("DG", "Discontinuous Galerkin (DG) solver")
+        .copy_keys(EquationBase::user_fields_template(equation_name))
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Solver for the linear system.")
-        .declare_key("user_fields", Array(
-                TransportDG<Model>::EqFields()
-                    .get_user_field(equation_name)),
-                IT::Default::optional(),
-                "Input fields of the equation defined by user.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqFields()
                     .make_field_descriptor_type(equation_name)),
@@ -146,6 +142,8 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
     // add all input fields to the output list
     output_fields += *this;
 
+    this->add_coords_field();
+    this->set_default_fieldset();
 }
 
 
@@ -218,8 +216,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
-    eq_fields_->add_coords_field();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     Model::init_balance(in_rec);
 
 
@@ -262,6 +259,11 @@ void TransportDG<Model>::initialize()
     eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     ret_sources.resize(eq_data_->n_substances());
     ret_sources_prev.resize(eq_data_->n_substances());
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	this->init_user_fields(user_fields_arr, eq_fields_->output_fields);
+    }
 
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
@@ -346,11 +348,6 @@ void TransportDG<Model>::initialize()
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
     }
-
-    Input::Array user_fields_arr;
-    if (input_rec.opt_val("user_fields", user_fields_arr)) {
-       	eq_fields_->set_user_fields_map(user_fields_arr);
-    }
 }
 
 
@@ -401,6 +398,7 @@ TransportDG<Model>::~TransportDG()
             delete init_assembly_;
         }
     }
+
 
 }
 

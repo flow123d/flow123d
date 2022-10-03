@@ -17,10 +17,12 @@ test_cases:
   - 12_time_unit_nested_equation.yaml
   - 13_time_steps_func.yaml
   - 14_time_steps_func_include.yaml
-  - 16_user_fields.yaml
   - 17_tg_global_time_unit.yaml
   - 27_FE_equivalent_mesh.yaml
   - 28_FE_identic_mesh.yaml
+  - 41_user_fields_darcy_dg.yaml
+  - 42_user_fields_richards_fv.yaml
+  - 43_user_fields_coupling.yaml
   proc: [1]
   
   
