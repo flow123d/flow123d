@@ -227,13 +227,14 @@ update-build-tree:
 # This rule can be invoked manually to set appropriate exceptions to the main repository as well as to the submodules.
 .PHONY: set-safe-directory
 set-safe-directory:
+	export HOME=/home/flow/; \
 	for d in \
 	    `pwd` \
 	    `pwd`/bin/yaml_converter \
 	    `pwd`/src/dealii \
 	    `pwd`/third_party/bparser \
 	    `pwd`/third_party/json-3.10.5 \
-	    `pwd`/third_party/gtest-1.10.0; \
+	    `pwd`/third_party/gtest-1.10.0 \
 	    `pwd`/third_party/pybind11-2.9.2; \
 	do git config --global --add safe.directory $$d; \
 	done
