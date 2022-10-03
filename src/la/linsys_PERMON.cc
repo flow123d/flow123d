@@ -138,8 +138,56 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     //     chkerr(MatDestroy(&Ais));
         Mat Afixed;
         chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Afixed));
-        MatISFixLocalEmpty(Afixed, PETSC_TRUE);
+        // // This does not work since the local sizes of the new matrix Afixed are incompatible with rhs_.
+        // MatISFixLocalEmpty(Afixed, PETSC_TRUE);
+        // MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY);
+        // MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY);
+
+        Mat Aloc, Aloc_feti;
+        IS isnz;
+        ISLocalToGlobalMapping l2g, mapping;
+        const PetscInt *l2g_arr, *nz_arr;
+        PetscInt *l2g_feti_arr;
+        PetscInt nmap, nrows, i, j, k;
+
+        chkerr(MatISGetLocalMat(Afixed, &Aloc));
+        chkerr(MatFindNonzeroRows(Aloc, &isnz));
+        chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
+        chkerr(MatISRestoreLocalMat(Afixed, &Aloc));
+
+        chkerr(ISGetIndices(isnz, &nz_arr));
+        chkerr(ISGetLocalSize(isnz, &nrows));
+        chkerr(MatISGetLocalToGlobalMapping(Afixed, &l2g, NULL));
+        chkerr(ISLocalToGlobalMappingGetIndices(l2g, &l2g_arr));
+        chkerr(ISLocalToGlobalMappingGetSize(l2g, &nmap));
+        chkerr(PetscMalloc1(nrows, &l2g_feti_arr));
+        k = 0;
+        for (i=0; i<=nmap; i++) {
+            for (j=0; j<=nrows; j++) {
+                if (i == nz_arr[j]) {
+                    l2g_feti_arr[k] = l2g_arr[i];
+                    k++;
+                    break;
+                }
+            }
+        }
+        chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
+        chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
+        chkerr(ISRestoreIndices(isnz, &nz_arr));
+        chkerr(ISDestroy(&isnz));
+
+        chkerr(MatDestroy(&Afixed));
+        chkerr(MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                            mapping, mapping, &Afixed));
+        chkerr(MatISSetLocalMat(Afixed, Aloc_feti));
+        chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
+        chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
+        chkerr(MatDestroy(&Aloc_feti));
+        chkerr(ISLocalToGlobalMappingDestroy(&mapping));
+
         chkerr(QPSetOperator(system, Afixed));
+        MatView(Afixed, PETSC_VIEWER_STDOUT_WORLD);
+        VecView(rhs_, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatDestroy(&Afixed));
     } else {
       chkerr(QPSetOperator(system, matrix_));
