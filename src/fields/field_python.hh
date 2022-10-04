@@ -85,11 +85,6 @@ public:
     /**
      * Set the source in a string and name of the field to be called.
      */
-    void set_python_field_from_string( const string &python_source, const string &func_name);
-
-    /**
-     * Set the source in a string and name of the field to be called.
-     */
     void set_python_field_from_class(const string &file_name, const string &class_name);
 
     /**

@@ -122,49 +122,49 @@ TEST(PythonLoader, all) {
     my_module.attr("testFunc")();
 }
 
-TEST(FieldPython, vector_3D) {
-
-    double pi = 4.0 * atan(1);
-
-    Space<3>::Point point_1, point_2;
-    point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
-    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
-
-    FieldPython<3, FieldValue<3>::VectorFixed > vec_func;
-    vec_func.set_python_field_from_string(python_function, "func_circle");
-    ElementAccessor<3> elm;
-
-    arma::vec3 result;
-    {
-    result = vec_func.value( point_1, elm);
-    EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
-    EXPECT_DOUBLE_EQ( 1, result[1]);
-    EXPECT_DOUBLE_EQ( 1, result[2]);
-    }
-
-    {
-    result = vec_func.value( point_2, elm);
-    EXPECT_DOUBLE_EQ( -1, result[0]);
-    EXPECT_DOUBLE_EQ( 1, result[1]);
-    EXPECT_DOUBLE_EQ( 1, result[2]);
-    }
-}
-
-
-TEST(FieldPython, double_3D) {
-    Space<3>::Point point_1, point_2;
-    point_1(0)=1; point_1(1)=0; point_1(2)=0;
-    point_2(0)=1; point_2(1)=2; point_2(2)=3;
-
-    ElementAccessor<3> elm;
-    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-    scalar_func.set_python_field_from_string(python_function, "func_xyz");
-
-    EXPECT_EQ( 0, scalar_func.value(point_1, elm));
-    EXPECT_EQ( 6, scalar_func.value(point_2, elm));
+//TEST(FieldPython, vector_3D) {
+//
+//    double pi = 4.0 * atan(1);
+//
+//    Space<3>::Point point_1, point_2;
+//    point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
+//    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
+//
+//    FieldPython<3, FieldValue<3>::VectorFixed > vec_func;
+//    vec_func.set_python_field_from_string(python_function, "func_circle");
+//    ElementAccessor<3> elm;
+//
+//    arma::vec3 result;
+//    {
+//    result = vec_func.value( point_1, elm);
+//    EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
+//    EXPECT_DOUBLE_EQ( 1, result[1]);
+//    EXPECT_DOUBLE_EQ( 1, result[2]);
+//    }
+//
+//    {
+//    result = vec_func.value( point_2, elm);
+//    EXPECT_DOUBLE_EQ( -1, result[0]);
+//    EXPECT_DOUBLE_EQ( 1, result[1]);
+//    EXPECT_DOUBLE_EQ( 1, result[2]);
+//    }
+//}
 
 
-}
+//TEST(FieldPython, double_3D) {
+//    Space<3>::Point point_1, point_2;
+//    point_1(0)=1; point_1(1)=0; point_1(2)=0;
+//    point_2(0)=1; point_2(1)=2; point_2(2)=3;
+//
+//    ElementAccessor<3> elm;
+//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+//    scalar_func.set_python_field_from_string(python_function, "func_xyz");
+//
+//    EXPECT_EQ( 0, scalar_func.value(point_1, elm));
+//    EXPECT_EQ( 6, scalar_func.value(point_2, elm));
+//
+//
+//}
 
 
 // TODO Fix test
@@ -242,20 +242,20 @@ TEST(FieldPython, double_3D) {
 //
 //}
 
-TEST(FieldPython, python_exception) {
-    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
-        "func_xxx");
+//TEST(FieldPython, python_exception) {
+//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+//	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
+//        "func_xxx");
+//
+//}
 
-}
 
-
-TEST(FieldPython, call_object_error) {
-    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError,
-        "missing 1 required positional argument: 'a'");
-
-}
+//TEST(FieldPython, call_object_error) {
+//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
+//	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError,
+//        "missing 1 required positional argument: 'a'");
+//
+//}
 
 
 TEST(FieldPython, new_assembly) {

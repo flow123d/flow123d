@@ -69,16 +69,6 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 
 
 
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_string(const string &python_source, const string &func_name)
-{
-    p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, func_name, python_source);
-    set_func("python_field_"+func_name, func_name);
-}
-
-
-
-
 
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
