@@ -20,6 +20,6 @@ class PyFieldWaterSourceDensity(flowpy.PythonFieldBase):
         return field_list
     
     def __call__(self):
-        x = X[0]
-        y = X[1]
+        x = self.X[0]
+        y = self.X[1]
         return ( 2*(1-x**2)+2*(1-y**2), )

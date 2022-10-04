@@ -25,7 +25,7 @@ PYBIND11_MODULE(flowpy, m) {
 
     py::class_<PythonFieldBase>(m, "PythonFieldBaseCPP")
         .def(py::init<>())
-        .def("set_dict", &PythonFieldBase::set_dict)
+        .def("_set_dict", &PythonFieldBase::set_dict)
         .def("_set_result", &PythonFieldBase::set_result)
         .def("_add_to_dict", &PythonFieldBase::add_to_dict)
 //        .def("_set_result_data", &PythonFieldBase::set_result_data)
