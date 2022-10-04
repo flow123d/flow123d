@@ -135,7 +135,7 @@ private:
     std::string field_name_;
 
     py::object        p_func_;
-    py::object        p_class_;
+    py::object        p_obj_;
     py::module_       p_module_;
     mutable py::tuple p_value_;
 

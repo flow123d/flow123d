@@ -113,7 +113,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
 
     p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        p_class_ = p_module_.attr(class_name.c_str());
+        p_obj_ = p_module_.attr(class_name.c_str())();
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -209,8 +209,8 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     py::list field_list;
 
     try {
-        p_func_ = p_class_.attr("used_fields");
-        field_list = p_func_(p_class_);
+        p_func_ = p_obj_.attr("used_fields");
+        field_list = p_func_();
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -239,9 +239,10 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     double * cache_data = self_ptr->value_cache()->data_;
     std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get());
     FieldCacheProxy result_data(this->field_name_, result_shape, cache_vec);
-    p_func_ = p_class_.attr("set_dict");
+
+    p_func_ = p_obj_.attr("set_dict");
     py::list field_data_list = py::cast(field_data);
-    p_func_(p_class_, field_data_list, result_data);
+    p_func_(field_data_list, result_data);
     return required_fields;
 }
 
@@ -253,8 +254,8 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    p_func_ = p_class_.attr("cache_update");
-    p_func_(p_class_, reg_chunk_begin, reg_chunk_end);
+    p_func_ = p_obj_.attr("cache_update");
+    p_func_(reg_chunk_begin, reg_chunk_end);
 }
 
 
