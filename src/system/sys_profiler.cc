@@ -24,7 +24,6 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#include "Python.h"
 #include <pybind11.h>
 
 #include "sys_profiler.hh"
@@ -861,28 +860,9 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     //
     // def convert (json_location, output_file, formatter):
     //
-    PyObject * convert_method  = python_module.attr("convert").cast<py::object>().release().ptr();
-
-    int arg_index = 0;
-    py::tuple args = py::make_tuple(3);
-
-    // set json path location as first argument
-    py::object tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( json_filepath.c_str() ));
-    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
-
-    // set output path location as second argument
-    tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( (json_filepath + output_file_suffix).c_str() ));
-    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
-
-    // set Formatter class as third value
-    tmp = py::reinterpret_steal<py::object>(PyUnicode_FromString( formatter.c_str() ));
-    PyTuple_SET_ITEM(args.ptr(), arg_index++, tmp.ptr());
-
+    auto convert_method = python_module.attr("convert");
     // execute method with arguments
-    //PyObject_CallObject (convert_method, arguments);
-    PyObject_CallObject (convert_method, args.ptr());
-
-    //PythonLoader::check_error();
+    convert_method(json_filepath, (json_filepath + output_fiel_suffix), formatter);
 
     #else
 
