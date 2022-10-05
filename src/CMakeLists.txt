@@ -72,9 +72,9 @@ endif()
 # patched json_spirit lib
 add_subdirectory("input/json_spirit")
 
-pybind11_add_module("flowpy" SHARED "python/flowpy/python_field_base.cc")
-#pybind11_add_module("flowpy" MODULE "${CMAKE_SOURCE_DIR}/src/python/flowpy/python_field_base.cc")
-#add_executable(flow123dpy python/flowpy/python_field_base.cc)
+pybind11_add_module("flowpy" SHARED "fields/python_field_base.cc")
+#pybind11_add_module("flowpy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_base.cc")
+#add_executable(flow123dpy fields/python_field_base.cc)
 #target_link_libraries(flowpy PRIVATE pybind11::embed)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -323,7 +323,6 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
-    flowpy
     fparser   
     bparser  
     armadillo

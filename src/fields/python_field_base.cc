@@ -18,7 +18,7 @@
 #include <pybind11.h>
 #include <embed.h>    // everything needed for embedding
 #include <stl.h>      // type conversion
-#include "python/flowpy/python_field_base.hh"
+#include "fields/python_field_base.hh"
 
 PYBIND11_MODULE(flowpy, m) {
     m.doc() = "pybind11 Flow123D plugin"; // optional module docstring

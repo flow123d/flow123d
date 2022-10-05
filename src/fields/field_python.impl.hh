@@ -22,7 +22,7 @@
 #include <type_traits>
 #include "fields/field_python.hh"
 #include "fields/field_set.hh"
-#include "python/flowpy/python_field_base.hh"
+#include "fields/python_field_base.hh"
 #include <pybind11.h>
 #include <eval.h>
 
