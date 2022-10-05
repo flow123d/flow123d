@@ -26,8 +26,8 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 
-#include <include/pybind11/pybind11.h>
-#include <include/pybind11/embed.h> // everything needed for embedding
+#include <pybind11.h>
+#include <embed.h> // everything needed for embedding
 
 using namespace std;
 

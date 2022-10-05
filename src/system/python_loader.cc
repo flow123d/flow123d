@@ -27,8 +27,8 @@
 #include <fstream>
 //#include <sstream>
 #include <boost/algorithm/string.hpp>
-#include <include/pybind11/pybind11.h>
-#include <include/pybind11/embed.h> // everything needed for embedding
+#include <pybind11.h>
+#include <embed.h> // everything needed for embedding
 
 using namespace std;
 namespace py = pybind11;

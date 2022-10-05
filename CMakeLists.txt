@@ -640,11 +640,6 @@ else()
 	)
 endif()
 
-# use python on demand
-#if(USE_PYTHON)
-#    flow_define(HAVE_PYTHON)
-#endif()
-
 # find python 
 set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8
 find_package(PythonInterp 3.4 REQUIRED)
@@ -716,7 +711,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
-    ${CMAKE_SOURCE_DIR}/third_party/pybind11-2.9.2
+    ${CMAKE_SOURCE_DIR}/third_party/pybind11-2.9.2/include/pybind11
     ${PERMON_INCLUDES}
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}

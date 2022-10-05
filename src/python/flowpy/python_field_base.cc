@@ -15,9 +15,9 @@
  * @brief
  */
 
-#include <include/pybind11/pybind11.h>
-#include <include/pybind11/embed.h>    // everything needed for embedding
-#include <include/pybind11/stl.h>      // type conversion
+#include <pybind11.h>
+#include <embed.h>    // everything needed for embedding
+#include <stl.h>      // type conversion
 #include "python/flowpy/python_field_base.hh"
 
 PYBIND11_MODULE(flowpy, m) {

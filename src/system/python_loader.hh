@@ -24,7 +24,7 @@
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
 
 #include <string>
-#include <include/pybind11/pybind11.h>
+#include <pybind11.h>
 
 /*
  * Notes on Python 3 API

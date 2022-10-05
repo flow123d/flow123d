@@ -23,8 +23,8 @@
 #include "fields/field_python.hh"
 #include "fields/field_set.hh"
 #include "python/flowpy/python_field_base.hh"
-#include <include/pybind11/pybind11.h>
-#include <include/pybind11/eval.h>
+#include <pybind11.h>
+#include <eval.h>
 
 namespace py = pybind11;
 
