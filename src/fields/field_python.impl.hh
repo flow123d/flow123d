@@ -89,34 +89,10 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_file(const string &file_name, const string &func_name)
 {
-    p_module_ = PythonLoader::load_module_from_file( string(file_name) );
-    set_func(file_name, func_name);
-}
+	py::module_ p_module = PythonLoader::load_module_from_file( string(file_name) );
 
-
-
-
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
-{
-    internal::PythonWrapper::initialize();
-
-    p_module_ = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        p_obj_ = p_module_.attr(class_name.c_str())();
-    } catch (const py::error_already_set &ex) {
-        PythonLoader::throw_error(ex);
-    }
-}
-
-
-
-
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_func(const string &module_name, const string &func_name)
-{
-    try {
-        p_func_ = p_module_.attr(func_name.c_str());
+        p_func_ = p_module.attr(func_name.c_str());
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -132,7 +108,7 @@ void FieldPython<spacedim, Value>::set_func(const string &module_name, const str
 
     if ( ! PyTuple_Check( p_value_.ptr()) ) {
         stringstream ss;
-        ss << "Field '" << func_name << "' from the python module: " << module_name << " doesn't return Tuple." << endl;
+        ss << "Field '" << func_name << "' from the python module: " << file_name << " doesn't return Tuple." << endl;
         THROW( ExcMessage() << EI_Message( ss.str() ));
     }
 
@@ -140,10 +116,27 @@ void FieldPython<spacedim, Value>::set_func(const string &module_name, const str
 
     unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
     if ( size !=  value_size) {
-        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(module_name) << EI_Size(size) << EI_ValueSize(value_size) );
+        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(file_name) << EI_Size(size) << EI_ValueSize(value_size) );
     }
-
 }
+
+
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
+{
+    internal::PythonWrapper::initialize();
+
+    py::module_ p_module = PythonLoader::load_module_from_file( string(file_name) );
+    try {
+        p_obj_ = p_module.attr(class_name.c_str())();
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
+}
+
+
 
 /**
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

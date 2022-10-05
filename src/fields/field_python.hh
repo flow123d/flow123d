@@ -114,11 +114,6 @@ private:
     static const int registrar;
 
     /**
-     * Common part of set_python_field_from_* methods
-     */
-    void set_func(const string &module_name, const string &func_name);
-
-    /**
      * Implementation.
      */
     inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
@@ -131,7 +126,6 @@ private:
 
     py::object        p_func_;
     py::object        p_obj_;
-    py::module_       p_module_;
     mutable py::tuple p_value_;
 
 };
