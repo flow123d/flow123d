@@ -20,7 +20,6 @@
 
 
 #include "global_defs.h"
-#include "Python.h"                  // for PyObject
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
 
 #include <string>

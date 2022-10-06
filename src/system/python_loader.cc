@@ -17,7 +17,6 @@
 
 #include "global_defs.h"
 
-#include "Python.h"
 #include "system/python_loader.hh"
 
 //#include "system/system.hh"
@@ -254,14 +253,9 @@ PythonRunning::PythonRunning(const std::string& program_name)
     // call python and get paths available
     py::module_ moduleMain = py::module_::import("__main__");
     PyRun_SimpleString(python_sys_path.c_str());
-    PyObject *func = moduleMain.attr("get_paths").cast<py::object>().release().ptr();
-    PyObject *args = PyTuple_New (0);
-    //PyObject *args = py::make_tuple(0, py::none(), "").cast<py::object>().release().ptr(); //py::tuple args
-    PyObject *result = PyObject_CallObject(func, args);
-//    PythonLoader::check_error();
-
-    // save value so we dont have to call python again
-    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
+    py::object func = moduleMain.attr("get_paths");
+    std::string result = func().cast<std::string>();
+    PythonLoader::sys_path = result;
 }
 
 
