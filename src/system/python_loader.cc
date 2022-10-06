@@ -25,7 +25,6 @@
 //#include <iostream>
 #include <fstream>
 //#include <sstream>
-#include <boost/algorithm/string.hpp>
 #include <pybind11.h>
 #include <embed.h> // everything needed for embedding
 
@@ -173,35 +172,6 @@ void PythonLoader::add_sys_path(const std::string &path)
 
 
 
-//PyObject * PythonLoader::get_callable(PyObject *module, const std::string &func_name) {
-//    char func_char[func_name.size()+2];
-//    strcpy(func_char, func_name.c_str());
-//    PyObject * func = PyObject_GetAttrString(module, func_char );
-//    PythonLoader::check_error();
-//
-//    if (! PyCallable_Check(func)) {
-//    	stringstream ss;
-//    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
-//    	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
-//    }
-//
-//    return func;
-//}
-
-
-
-//wstring to_py_string(const string &str) {
-//    wchar_t wbuff[ str.size() ];
-//    size_t wstr_size = mbstowcs( wbuff, str.c_str(), str.size() );
-//    return wstring( wbuff, wstr_size );
-//}
-//
-//string from_py_string(const wstring &wstr) {
-//    char buff[ wstr.size() ];
-//    size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
-//    return string( buff, str_size );
-//}
-//
 //#define STR_EXPAND(tok) #tok
 //#define STR(tok) string(STR_EXPAND(tok))
 
@@ -242,11 +212,11 @@ PythonRunning::PythonRunning(const std::string& program_name)
     sys.attr("path").attr("append")(flowpy_path.c_str()); // adds path to flowpy library to PYTHONPATH
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
     // update module path, append flow123d Python modules path to sys.path
-    std::string extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
-    std::vector<std::string> extra_path_vec;
-    boost::split(extra_path_vec, extra_paths, boost::is_any_of(":"));
-    for (auto path : extra_path_vec) {
-        sys.attr("path").attr("append")(path.c_str());
+    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    std::string extra_path;
+    while ( std::getline(extra_paths, extra_path, ':') )
+    {
+       sys.attr("path").attr("append")(extra_path.c_str());
     }
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
