@@ -32,6 +32,8 @@
 
 using namespace std;
 namespace py = pybind11;
+
+// Pybind11 needs set visibility to hidden (see https://pybind11.readthedocs.io/en/stable/faq.html).
 #pragma GCC visibility push(hidden)
 
 /**

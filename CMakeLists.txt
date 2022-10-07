@@ -131,6 +131,8 @@ include (Flow123d_config_header)
 message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
 if(FLOW_BUILD_TYPE STREQUAL "debug")
   # debug mode
+  # Use of fvisibility=hidden flag is necessary for correct compilation of Pybind11 included headers
+  # (see https://pybind11.readthedocs.io/en/stable/faq.html).
   # set(CMAKE_CXX_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
   # set(CMAKE_C_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer -fvisibility=hidden")
@@ -639,13 +641,6 @@ else()
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
 endif()
-
-# find python 
-set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8
-find_package(PythonInterp 3.4 REQUIRED)
-find_package(PythonLibs   3.4 REQUIRED)
-# TODO: remove dependency on python
-include_directories(${PYTHON_INCLUDE_DIRS})
 
 # create shortcuts for runtest
 
