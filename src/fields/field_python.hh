@@ -79,12 +79,6 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /**
-     * Set the file and field to be called.
-     * TODO: use FilePath
-     */
-    void set_python_field_from_file( const string &file_name, const string &func_name);
-
-    /**
      * Set the source in a string and name of the field to be called.
      */
     void set_python_field_from_class(const string &file_name, const string &class_name);

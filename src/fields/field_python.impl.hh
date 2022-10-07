@@ -87,43 +87,6 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_file(const string &file_name, const string &func_name)
-{
-	py::module_ p_module = PythonLoader::load_module_from_file( string(file_name) );
-
-    try {
-        p_func_ = p_module.attr(func_name.c_str());
-    } catch (const py::error_already_set &ex) {
-        PythonLoader::throw_error(ex);
-    }
-
-    // try field call
-    ASSERT_PERMANENT_EQ(spacedim, 3);
-    double x=1.0, y=2.0, z=3.0;
-    try {
-        p_value_ = p_func_(x, y, z);
-    } catch (const py::error_already_set &e) {
-        PythonLoader::throw_error(e);
-    }
-
-    if ( ! PyTuple_Check( p_value_.ptr()) ) {
-        stringstream ss;
-        ss << "Field '" << func_name << "' from the python module: " << file_name << " doesn't return Tuple." << endl;
-        THROW( ExcMessage() << EI_Message( ss.str() ));
-    }
-
-    unsigned int size = p_value_.size();
-
-    unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
-    if ( size !=  value_size) {
-        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(file_name) << EI_Size(size) << EI_ValueSize(value_size) );
-    }
-}
-
-
-
-
-template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
 {
     internal::PythonWrapper::initialize();
