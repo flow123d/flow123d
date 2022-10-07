@@ -398,6 +398,9 @@ protected:
 private:
   /// Registrar of class to factory
   static const int registrar;
+
+  static std::string equation_name()
+  { return "Flow_Darcy_MH";}
 };
 
 

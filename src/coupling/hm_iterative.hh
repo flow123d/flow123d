@@ -201,9 +201,9 @@ private:
     GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
     GenericAssembly<ResidualAssemblyHM> *residual_assembly_;
     
-    EqFields eq_fields_;
+    std::shared_ptr<EqFields> eq_fields_;
 
-    EqData eq_data_;
+    std::shared_ptr<EqData> eq_data_;
 
 };
 

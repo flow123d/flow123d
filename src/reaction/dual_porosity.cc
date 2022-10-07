@@ -119,7 +119,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
     //set pointer to equation data fieldset
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 
     eq_data_ = std::make_shared<EqData>();

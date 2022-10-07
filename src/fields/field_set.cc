@@ -16,12 +16,12 @@
  */
 
 #include "fields/field_set.hh"
-#include "fields/bc_field.hh"
 #include "system/sys_profiler.hh"
 #include "input/flow_attribute_lib.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
 #include "tools/bidirectional_map.hh"
+#include "tools/unit_converter.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <queue>
 
@@ -30,7 +30,7 @@ FieldSet::FieldSet()
 : mesh_(nullptr) {}
 
 
-const Input::Type::Record & FieldSet::get_user_field(const std::string &equation_name) {
+const Input::Type::Record & FieldSet::make_user_field_type(const std::string &equation_name) {
     static Field<3, FieldValue<3>::Scalar> scalar_field;
     static Field<3, FieldValue<3>::VectorFixed> vector_field;
     static Field<3, FieldValue<3>::TensorFixed> tensor_field;
@@ -39,7 +39,7 @@ const Input::Type::Record & FieldSet::get_user_field(const std::string &equation
                      "Name of user defined field.")
         .declare_key("is_boundary", Input::Type::Bool(), Input::Type::Default("false"),
                      "Type of field: boundary or bulk.")
-        .declare_key("scalar_field", scalar_field.get_input_type(), Input::Type::Default::obligatory(),
+        .declare_key("scalar_field", scalar_field.get_input_type(),
                      "Instance of FieldAlgoBase ScalarField descendant.\n"
         		     "One of keys 'scalar_field', 'vector_field', 'tensor_field' must be set.\n"
         		     "If you set more than one of these keys, only first key is accepted.")
@@ -47,13 +47,16 @@ const Input::Type::Record & FieldSet::get_user_field(const std::string &equation
                      "Instance of FieldAlgoBase VectorField descendant. See above for details.")
         .declare_key("tensor_field", tensor_field.get_input_type(),
                      "Instance of FieldAlgoBase TensorField descendant. See above for details.")
+        .declare_key("unit", UnitConverter::get_input_type(), Input::Type::Default::optional(),
+                     "Unit of the field values provided in the main input file, in the external file, or "
+                     "by a function (FieldPython).")
 		.close();
 }
 
 FieldSet &FieldSet::operator +=(FieldCommon &add_field) {
     FieldCommon *found_field = field(add_field.name());
     if (found_field) {
-    	ASSERT(&add_field==found_field)(add_field.name()).error("Another field of the same name exists when adding field\n");
+    	ASSERT_PERMANENT(&add_field==found_field)(add_field.name()).error("You cannot add field of the same name that exists in FieldSet!\n");
     } else {
         field_list.push_back(&add_field);
     }
@@ -173,65 +176,6 @@ FieldCommon *FieldSet::field(const std::string &field_name) const {
 
 
 
-FieldCommon *FieldSet::user_field(const std::string &field_name, const TimeStep &time) {
-    auto it = user_fields_input_.find(field_name);
-    if (it != user_fields_input_.end()) {
-    	uint new_index = user_field_list_.size();
-    	bool is_bdr = it->second.val<bool>("is_boundary");
-
-    	Input::AbstractRecord field_arec;
-		if (it->second.opt_val("scalar_field", field_arec)) {
-            Field<3, FieldValue<3>::Scalar> * scalar_field;
-		    if (is_bdr)
-		        scalar_field = new BCField<3, FieldValue<3>::Scalar>();
-            else
-                scalar_field = new Field<3, FieldValue<3>::Scalar>();
-            *this+=scalar_field
-                    ->name(field_name)
-                    .description("")
-                    .units( UnitSI::dimensionless() );
-            scalar_field->set_mesh(*mesh_);
-            scalar_field->set( it->second.val<Input::AbstractRecord>("scalar_field"), time.end());
-    	    user_field_list_.push_back( scalar_field );
-		} else if (it->second.opt_val("vector_field", field_arec)) {
-            Field<3, FieldValue<3>::VectorFixed> * vector_field;
-		    if (is_bdr)
-		        vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
-            else
-                vector_field = new Field<3, FieldValue<3>::VectorFixed>();
-            *this+=vector_field
-                    ->name(field_name)
-                    .description("")
-                    .units( UnitSI::dimensionless() );
-            vector_field->set_mesh(*mesh_);
-            vector_field->set( it->second.val<Input::AbstractRecord>("scalar_field"), time.end());
-    	    user_field_list_.push_back( vector_field );
-		} else if (it->second.opt_val("tensor_field", field_arec)) {
-            Field<3, FieldValue<3>::TensorFixed> * tensor_field;
-		    if (is_bdr)
-		        tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
-            else
-                tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
-            *this+=tensor_field
-                    ->name(field_name)
-                    .description("")
-                    .units( UnitSI::dimensionless() );
-            tensor_field->set_mesh(*mesh_);
-            tensor_field->set( it->second.val<Input::AbstractRecord>("scalar_field"), time.end());
-    	    user_field_list_.push_back( tensor_field );
-		} else {
-		    THROW(ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
-		}
-
-    	FieldCommon &user_field = *user_field_list_[new_index];
-        user_field.set_time(time, LimitSide::left);
-    	return &user_field;
-    } else
-        return nullptr;
-}
-
-
-
 FieldCommon &FieldSet::operator[](const std::string &field_name) const {
     FieldCommon *found_field=field(field_name);
     if (found_field) return *found_field;
@@ -296,7 +240,7 @@ void FieldSet::set_dependency(FieldSet &used_fieldset) {
 void FieldSet::topological_sort(const FieldCommon *f, unsigned int i_reg, std::unordered_set<const FieldCommon *> &used_fields) {
     if (used_fields.find(f) != used_fields.end() ) return; // field processed
     used_fields.insert(f);
-    auto dep_vec = f->set_dependency(*this, i_reg); // vector of dependent fields
+    auto dep_vec = f->set_dependency(i_reg); // vector of dependent fields
     for (auto f_dep : dep_vec) {
         topological_sort(f_dep, i_reg, used_fields);
     }
@@ -343,17 +287,6 @@ std::string FieldSet::print_dependency() const {
         }
     }
     return s.str();
-}
-
-
-void FieldSet::set_user_fields_map(Input::Array input_list) {
-    this->user_fields_input_.clear();
-	for (Input::Iterator<Input::Record> it = input_list.begin<Input::Record>();
-                    it != input_list.end();
-                    ++it) {
-	    std::string name = it->val<std::string>("name");
-	    user_fields_input_[name] = *it;
-	}
 }
 
 

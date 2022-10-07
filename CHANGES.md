@@ -5,7 +5,7 @@ List of all changes in user interface and major internal changes.
 (in progress)
 
 ## User interface
-* Support of user defined fields and their output in all equations.
+* Introduction of user defined fields and their output in all equations.
 * Remove Darcy_MH flow equation.
 
 ## New features
@@ -20,6 +20,7 @@ List of all changes in user interface and major internal changes.
 
 ## Internals
 * Flow123d shared library.
+* Output field name is changed from selection to string (check of output names made dynamically)
 
 
 ***********************************************

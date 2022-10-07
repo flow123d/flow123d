@@ -113,7 +113,7 @@ TEST_F(SomeEquation, add_operator_death) {
     EXPECT_ASSERT_DEATH({
         data+=pressure
              .name("init_pressure");},
-          "Another field of the same name exists");
+          "field of the same name");
 
 }
 

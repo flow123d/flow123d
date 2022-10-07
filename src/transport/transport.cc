@@ -75,6 +75,7 @@ const IT::Record &ConvectionTransport::get_input_type()
 {
 	return IT::Record(_equation_name, "Finite volume method, explicit in time, for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
+			.copy_keys(EquationBase::user_fields_template(_equation_name))
 			.declare_key("input_fields", IT::Array(
 			        EqFields().make_field_descriptor_type(_equation_name)),
 			        IT::Default::obligatory(),
@@ -112,6 +113,9 @@ ConvectionTransport::EqFields::EqFields() : TransportEqFields()
             .units( UnitSI::dimensionless() )
             .flags(FieldFlag::equation_external_output)
             .description("Subdomain ids of the domain decomposition.");
+
+    this->add_coords_field();
+    this->set_default_fieldset();
 }
 
 
@@ -125,8 +129,7 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
 	START_TIMER("ConvectionTransport");
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
-    eq_fields_->add_coords_field();
-	this->eq_fieldset_ = eq_fields_.get();
+	this->eq_fieldset_ = eq_fields_;
 
 	eq_data_->transport_matrix_time = -1.0; // or -infty
     eq_data_->transport_bc_time = -1.0;
@@ -155,6 +158,11 @@ void ConvectionTransport::initialize()
 
     alloc_transport_vectors();
     alloc_transport_structs_mpi();
+
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	this->init_user_fields(user_fields_arr, eq_fields_->output_fields);
+    }
 
 	// register output vectors
     eq_fields_->output_fields.set_components(eq_data_->substances_.names());
