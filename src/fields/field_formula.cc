@@ -385,7 +385,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         else {
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-            else THROW( ExcUnknownField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
+            else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(var) << FieldSet::EI_FieldType("formula") << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.

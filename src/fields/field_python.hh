@@ -59,17 +59,8 @@ public:
     TYPEDEF_ERR_INFO( EI_PModule, std::string);
     TYPEDEF_ERR_INFO( EI_Size, unsigned int);
     TYPEDEF_ERR_INFO( EI_ValueSize, unsigned int);
-    TYPEDEF_ERR_INFO( EI_FoundKey, std::string);
-    TYPEDEF_ERR_INFO( EI_NeedsObligatory, std::string);
-    DECLARE_EXCEPTION( ExcNoPythonInit, << "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.\n" );
     DECLARE_EXCEPTION( ExcInvalidCompNumber, << "Field " << EI_FuncName::qval << " from the python module: " << EI_PModule::val
             << " returns " << EI_Size::val << " components but should return " << EI_ValueSize::val << " components.\n" );
-    DECLARE_EXCEPTION( ExcMissingKey, << "If you define FieldPython by key " << EI_FoundKey::qval << " you must define key " << EI_NeedsObligatory::qval
-            << " obligatory.\n" );
-
-    TYPEDEF_ERR_INFO(EI_Field, std::string);
-    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
-            << "Unknown field " << EI_Field::qval << " in the python declaration: \n");
 
 
     FieldPython(unsigned int n_comp=0);

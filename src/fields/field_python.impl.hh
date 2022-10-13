@@ -168,7 +168,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
         std::string field_name = f.cast<std::string>();
         auto field_ptr = field_set.field(field_name);
         if (field_ptr != nullptr) required_fields.push_back( field_ptr );
-        else THROW( ExcUnknownField() << EI_Field(field_name) << Input::EI_Address( in_rec_.address_string() ) );
+        else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(field_name) << FieldSet::EI_FieldType("python declaration") << Input::EI_Address( in_rec_.address_string() ) );
         field_shape[0] = ssize_t(field_ptr->shape_[0]);
         field_shape[1] = ssize_t(field_ptr->shape_[1]);
         double * cache_data = field_ptr->value_cache()->data_;
