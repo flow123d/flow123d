@@ -323,6 +323,7 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
+    flowpy
     fparser   
     bparser  
     armadillo
