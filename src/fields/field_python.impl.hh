@@ -25,6 +25,7 @@
 #include "fields/python_field_base.hh" // TODO check if include is necessary
 #include <pybind11.h>
 #include <eval.h>
+#include <stl.h>
 
 namespace py = pybind11;
 
@@ -162,29 +163,26 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     }
 
     std::vector<FieldCacheProxy> field_data;
-    std::vector<ssize_t> field_shape(2);
-
+    uint n_shape;
     for (auto f : field_list) {
         std::string field_name = f.cast<std::string>();
         auto field_ptr = field_set.field(field_name);
         if (field_ptr != nullptr) required_fields.push_back( field_ptr );
         else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(field_name) << FieldSet::EI_FieldType("python declaration") << Input::EI_Address( in_rec_.address_string() ) );
-        field_shape[0] = ssize_t(field_ptr->shape_[0]);
-        field_shape[1] = ssize_t(field_ptr->shape_[1]);
         double * cache_data = field_ptr->value_cache()->data_;
-        std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get());
-        field_data.emplace_back(field_name, field_shape, cache_vec);
+        n_shape = field_ptr->n_shape();
+        std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
+        field_data.emplace_back(field_name, n_shape, cache_vec);
     }
 
     auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
-    std::vector<ssize_t> result_shape = { Value::NRows_, Value::NCols_ };
+    n_shape = self_ptr->n_shape();
     double * cache_data = self_ptr->value_cache()->data_;
-    std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get());
-    FieldCacheProxy result_data(this->field_name_, result_shape, cache_vec);
+    std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
+    FieldCacheProxy result_data(this->field_name_, n_shape, cache_vec);
 
     p_func_ = p_obj_.attr("set_dict");
-    py::list field_data_list = py::cast(field_data);
-    p_func_(field_data_list, result_data);
+    p_func_(field_data, result_data);
     return required_fields;
 }
 
