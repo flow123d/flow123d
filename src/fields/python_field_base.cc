@@ -23,21 +23,10 @@
 PYBIND11_MODULE(flowpy, m) {
     m.doc() = "pybind11 Flow123D plugin"; // optional module docstring
 
-    py::class_<PythonFieldBase>(m, "PythonFieldBaseCPP")
-        .def(py::init<>())
-        .def("_set_dict", &PythonFieldBase::set_dict)
-//        .def("_set_result_data", &PythonFieldBase::set_result_data)
-//        .def("_add_to_dict_data", &PythonFieldBase::add_to_dict_data)
-        .def("_print_fields", &PythonFieldBase::print_fields)
-        .def("_print_result", &PythonFieldBase::print_result)
-        .def_property("t", &PythonFieldBase::get_time, &PythonFieldBase::set_time)
-        .def_property("result", &PythonFieldBase::get_field_result, &PythonFieldBase::set_field_result)
-        .def_property("f_dict", &PythonFieldBase::get_fields_dict, &PythonFieldBase::set_fields_dict);
-
     py::class_<FieldCacheProxy>(m, "FieldCacheProxy")
         .def(py::init<std::string, ssize_t, std::vector<double> >())
+        //.def_property("field_name", &FieldCacheProxy::get_field_name, &FieldCacheProxy::set_field_name)
         .def("field_name", &FieldCacheProxy::field_name)
-        .def("n_comp", &FieldCacheProxy::n_comp)
-        .def("field_cache_ptr", &FieldCacheProxy::field_cache_ptr);
+        .def("field_cache_array", &FieldCacheProxy::field_cache_array);
 
 }
