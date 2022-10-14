@@ -181,7 +181,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
     FieldCacheProxy result_data(this->field_name_, n_shape, cache_vec);
 
-    p_func_ = p_obj_.attr("set_dict");
+    p_func_ = p_obj_.attr("_set_dict");
     p_func_(field_data, result_data);
     return required_fields;
 }
