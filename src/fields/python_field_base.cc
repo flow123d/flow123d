@@ -27,6 +27,6 @@ PYBIND11_MODULE(flowpy, m) {
         .def(py::init<std::string, ssize_t, std::vector<double> >())
         //.def_property("field_name", &FieldCacheProxy::get_field_name, &FieldCacheProxy::set_field_name)
         .def("field_name", &FieldCacheProxy::field_name)
-        .def("field_cache_array", &FieldCacheProxy::field_cache_array);
+        .def("field_cache_array", &FieldCacheProxy::field_cache_array, py::return_value_policy::move);
 
 }
