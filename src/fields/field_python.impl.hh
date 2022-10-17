@@ -207,7 +207,7 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    p_func_ = p_obj_.attr("cache_update");
+    p_func_ = p_obj_.attr("_cache_update");
     p_func_(reg_chunk_begin, reg_chunk_end);
 }
 
