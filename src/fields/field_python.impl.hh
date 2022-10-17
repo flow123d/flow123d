@@ -152,38 +152,51 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
 
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
-	std::vector<const FieldCommon *> required_fields;
-    py::list field_list;
+    required_fields_.clear();
+    py::list used_fields_list;
 
     try {
         p_func_ = p_obj_.attr("used_fields");
-        field_list = p_func_();
+        used_fields_list = p_func_();
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
 
-    std::vector<FieldCacheProxy> field_data;
-    uint n_shape;
-    for (auto f : field_list) {
+    for (auto f : used_fields_list) {
         std::string field_name = f.cast<std::string>();
         auto field_ptr = field_set.field(field_name);
-        if (field_ptr != nullptr) required_fields.push_back( field_ptr );
+        if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
         else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(field_name) << FieldSet::EI_FieldType("python declaration") << Input::EI_Address( in_rec_.address_string() ) );
+    }
+
+    // instance of FieldCommon of this field (see cache_reinit method)
+    self_field_ptr_ = field_set.field(this->field_name_);
+
+    return required_fields_;
+}
+
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{
+    std::vector<FieldCacheProxy> field_data;
+    uint n_shape;
+    for (auto field_ptr : required_fields_) {
+        std::string field_name = field_ptr->name();
         double * cache_data = field_ptr->value_cache()->data_;
         n_shape = field_ptr->n_shape();
         std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
         field_data.emplace_back(field_name, n_shape, cache_vec);
     }
 
-    auto self_ptr = field_set.field(this->field_name_); // instance of FieldCommon of this field
-    n_shape = self_ptr->n_shape();
-    double * cache_data = self_ptr->value_cache()->data_;
+    n_shape = self_field_ptr_->n_shape();
+    double * cache_data = self_field_ptr_->value_cache()->data_;
     std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
     FieldCacheProxy result_data(this->field_name_, n_shape, cache_vec);
 
-    p_func_ = p_obj_.attr("_set_dict");
+    p_func_ = p_obj_.attr("_cache_reinit");
     p_func_(field_data, result_data);
-    return required_fields;
 }
 
 

@@ -86,11 +86,18 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 
+    /**
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit dictionary of used fields and update result field to dictionary of resul fields.
+     */
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
-     * Set reference of FieldSet.
+     * Returns list of fields on which this field depends.
      */
     std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
 
@@ -114,6 +121,12 @@ private:
     py::object        p_func_;
     py::object        p_obj_;
     mutable py::tuple p_value_;
+
+    /// List of fields on which this field depends
+	std::vector<const FieldCommon * > required_fields_;
+
+    /// Pointer to FieldCommon that holds this fields (stores in set_dependency and uses in cache_reinit)
+	const FieldCommon * self_field_ptr_;
 
 };
 

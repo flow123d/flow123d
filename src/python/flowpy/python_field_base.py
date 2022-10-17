@@ -24,7 +24,7 @@ class PythonFieldBase():
         return cache_data[:, self.region_chunk_begin:self.region_chunk_end]
         
 
-    def _set_dict(self, data, result):
+    def _cache_reinit(self, data, result):
         """ Fill dictionary of input fields and result field """
         self.f_dict.clear()
         for in_field in data:
