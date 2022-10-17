@@ -11,14 +11,14 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    python_field_base.cc
+ * @file    python_field_proxy.cc
  * @brief
  */
 
 #include <pybind11.h>
 #include <embed.h>    // everything needed for embedding
 #include <stl.h>      // type conversion
-#include "fields/python_field_base.hh"
+#include "fields/python_field_proxy.hh"
 
 PYBIND11_MODULE(flowpy, m) {
     m.doc() = "pybind11 Flow123D plugin"; // optional module docstring

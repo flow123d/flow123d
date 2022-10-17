@@ -72,9 +72,9 @@ endif()
 # patched json_spirit lib
 add_subdirectory("input/json_spirit")
 
-pybind11_add_module("flowpy" SHARED "fields/python_field_base.cc")
-#pybind11_add_module("flowpy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_base.cc")
-#add_executable(flow123dpy fields/python_field_base.cc)
+pybind11_add_module("flowpy" SHARED "fields/python_field_proxy.cc")
+#pybind11_add_module("flowpy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
+#add_executable(flow123dpy fields/python_field_proxy.cc)
 #target_link_libraries(flowpy PRIVATE pybind11::embed)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

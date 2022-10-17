@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    python_field_base.hh
+ * @file    python_field_proxy.hh
  * @brief
  */
 
