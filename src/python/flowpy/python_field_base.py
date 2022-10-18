@@ -22,7 +22,7 @@ class PythonFieldBase():
             Example: use 'self.field_name' instead of 'self.used_fields_dict["field_name"]' """
         # print(attr)
         cache_data = self.used_fields_dict.get(attr, None)
-        return cache_data[:, self.region_chunk_begin:self.region_chunk_end]
+        return cache_data[..., self.region_chunk_begin:self.region_chunk_end]
         
 
     def used_fields(self):
@@ -34,7 +34,6 @@ class PythonFieldBase():
 
     def repl(self, x):
         """ Method replicates scalar/vector/tensor field value to output vector. """
-        print("repl 1")
         return x[..., None]
         
 
@@ -54,6 +53,7 @@ class PythonFieldBase():
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
         self.__call__()
+
 
     def _print_fields(self):
         """ Temporary method for development """
