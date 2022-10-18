@@ -32,41 +32,53 @@ class FieldCacheProxy
 {
 public:
     /// Constructor
-    FieldCacheProxy(std::string field_name, ssize_t n_comp, std::vector<double> field_cache_ptr)
-    : field_name_(field_name)
-    {
-        field_cache_array_ = this->create_array_from_vec(field_cache_ptr, n_comp);
-    }
+    FieldCacheProxy(std::string field_name, std::vector<uint> shape, std::vector<double> field_cache_ptr, bool writeable=false)
+    : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr), writeable_(writeable)
+    {}
 
     /// Copy constructor
     FieldCacheProxy(const FieldCacheProxy &other)
-    : field_name_(other.field_name_), field_cache_array_(other.field_cache_array_)
+    : field_name_(other.field_name_), shape_(other.shape_), field_cache_ptr_(other.field_cache_ptr_), writeable_(other.writeable_)
     {}
 
     /// Getters
     const std::string &field_name() const { return field_name_; }
-    py::array &field_cache_array() { return field_cache_array_; }
-private:
-    py::array create_array_from_vec(std::vector<double> &data, ssize_t n_comp)
+    py::array field_cache_array()
     {
-        ssize_t              size    = data.size() / n_comp;
-        ssize_t              ndim    = 2;
-        std::vector<ssize_t> shape   = { n_comp , size };
-        std::vector<ssize_t> strides = { (long int)(sizeof(double)*size) , sizeof(double) };
+        ssize_t              n_comp  = ( (shape_.size()==1) ? shape_[0] : shape_[0]*shape_[1]);
+        ssize_t              size    = field_cache_ptr_.size() / n_comp;
+        std::vector<ssize_t> shape;
+        std::vector<ssize_t> strides; // { (long int)(sizeof(double)*size) , sizeof(double) };
 
-        // create 2-D NumPy array
+        if (shape_[0] > 1) { // add dimensions only for vector and tensor
+            shape.push_back(shape_[0]);
+            if (shape_.size() == 2) shape.push_back(shape_[1]);
+        }
+        shape.push_back(size);
+
+        ssize_t n_dim = shape.size();
+        strides.resize(n_dim);
+        strides[n_dim-1] = sizeof(double);
+        for(uint i=n_dim-1; i>0; i--) {
+            strides[i-1] = strides[i] * shape[i];
+        }
+
+        // create n_dim NumPy array
         return  py::array(py::buffer_info(
-            &data[0],                                /* data as contiguous array  */
+            &field_cache_ptr_[0],                    /* data as contiguous array  */
             sizeof(double),                          /* size of one scalar        */
             py::format_descriptor<double>::format(), /* data type                 */
-            ndim,                                    /* number of dimensions      */
+			n_dim,                                   /* number of dimensions      */
             shape,                                   /* shape of the matrix       */
-            strides                                  /* strides for each axis     */
+            strides,                                 /* strides for each axis     */
+			writeable_                               /* readonly or writeable     */
         ));
     }
-
+private:
     std::string field_name_;
-    py::array field_cache_array_;
+    std::vector<uint> shape_;
+    std::vector<double> field_cache_ptr_;
+    bool writeable_;
 };
 
 

@@ -181,19 +181,16 @@ template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
 {
     std::vector<FieldCacheProxy> field_data;
-    uint n_shape;
     for (auto field_ptr : required_fields_) {
         std::string field_name = field_ptr->name();
         double * cache_data = field_ptr->value_cache()->data_;
-        n_shape = field_ptr->n_shape();
-        std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
-        field_data.emplace_back(field_name, n_shape, cache_vec);
+        std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*field_ptr->n_shape());
+        field_data.emplace_back(field_name, field_ptr->shape_, cache_vec, false);
     }
 
-    n_shape = self_field_ptr_->n_shape();
     double * cache_data = self_field_ptr_->value_cache()->data_;
-    std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*n_shape);
-    FieldCacheProxy result_data(this->field_name_, n_shape, cache_vec);
+    std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*self_field_ptr_->n_shape());
+    FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_vec, true);
 
     p_func_ = p_obj_.attr("_cache_reinit");
     p_func_(field_data, result_data);
