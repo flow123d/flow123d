@@ -8,8 +8,9 @@ class PyFieldAnisotropy(flowpy.PythonFieldBase):
         return field_list
     
     def __call__(self):
-        diag = (0.5+2*z if (z < 0.25) else 1)
-        return ( diag, 0, 0, 0, diag, 0, 0, 0, diag )
+        z = self.X[2]
+        diag = np.where( z < 0.25, 0.5+2*z, 1)
+        return self.repl(np.eye(3)) * diag
 
 
 class PyFieldWaterSourceDensity(flowpy.PythonFieldBase):
@@ -20,6 +21,6 @@ class PyFieldWaterSourceDensity(flowpy.PythonFieldBase):
         return field_list
     
     def __call__(self):
-        x = self.X[0]
-        y = self.X[1]
-        return ( 2*(1-x**2)+2*(1-y**2), )
+        XY = self.X[0:2]
+        AB = 2*(1-XY**2)
+        return AB[0] + AB[1]   # or np.sum(AB, axis=0)

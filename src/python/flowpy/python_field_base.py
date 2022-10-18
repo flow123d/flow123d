@@ -25,6 +25,19 @@ class PythonFieldBase():
         return cache_data[:, self.region_chunk_begin:self.region_chunk_end]
         
 
+    def used_fields(self):
+        """ Method allows to define list of fields used in evaluation. This is the default defintion
+            that returns coords field and should be overwrite in descendant class. """
+        field_list = ["X"]
+        return field_list
+        
+
+    def repl(self, x):
+        """ Method replicates scalar/vector/tensor field value to output vector. """
+        print("repl 1")
+        return x[..., None]
+        
+
     def _cache_reinit(self, data, result):
         """ Fill dictionary of input fields and result field """
         self.used_fields_dict.clear()
@@ -34,13 +47,6 @@ class PythonFieldBase():
         self.result = result.field_name()
         self.result_fields_dict[self.result] = result.field_cache_array()
 
-
-    def used_fields(self):
-        """ Method allows to define list of fields used in evaluation. This is the default defintion
-            that returns coords field and should be overwrite in descendant class. """
-        field_list = ["X"]
-        return field_list
-        
 
     def _cache_update(self, reg_chunk_begin, reg_chunk_end):
         """ Method called from cache_update in C++ code
