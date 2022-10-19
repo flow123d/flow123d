@@ -60,12 +60,12 @@ class PythonFieldBase():
         self.t = time
 
 
-    def _cache_update(self, reg_chunk_begin, reg_chunk_end):
+    def _cache_update(self, field_name, reg_chunk_begin, reg_chunk_end):
         """ Method called from cache_update in C++ code
             Needs to define __call__ method in descendant that executes evaluation """
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
-        self.__call__()
+        getattr(self, field_name)()
 
 
     def _print_fields(self):
