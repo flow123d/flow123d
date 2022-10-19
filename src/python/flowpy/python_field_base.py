@@ -6,6 +6,17 @@ import sys
 import numpy as np
 
 class PythonFieldBase():
+    _instances = dict()
+
+    @staticmethod
+    def create(module, class_name):
+        """ Creates instance of class_name if doesn't exist. Stores its to _instances and returns. """
+        if class_name not in PythonFieldBase._instances:
+            # module = __import__(module_name)
+            class_ = getattr(module, class_name)
+            PythonFieldBase._instances[class_name] = class_()
+        return PythonFieldBase._instances.get(class_name, None)
+
 
     def __init__(self):
         """ Initialize object and its data members """
