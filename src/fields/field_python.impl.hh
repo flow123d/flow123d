@@ -95,7 +95,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
     py::module_ flowpy_module = py::module_::import("flowpy");
     py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        p_obj_ = flowpy_module.attr("PythonFieldBase").attr("create")(class_module, class_name.c_str());
+        instance_ = flowpy_module.attr("PythonFieldBase").attr("create")(class_module, class_name.c_str());
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -107,10 +107,9 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldPython<spacedim, Value>::value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm)
 {
-    set_value(p,elm, this->value_);
-    this->value_.scale(this->unit_conversion_coefficient_);
+    ASSERT(false).warning("Method FieldPython::value is obsolete. DO not use it!\n");
     return this->r_value_;
 }
 
@@ -119,35 +118,11 @@ typename Value::return_type const & FieldPython<spacedim, Value>::value(const Po
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
+void FieldPython<spacedim, Value>::value_list (FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
+                   FMT_UNUSED std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
-    for(unsigned int i=0; i< point_list.size(); i++) {
-        Value envelope(value_list[i]);
-        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)
-                .error("value_list[i] has wrong number of rows\n");
-        set_value(point_list.vec<spacedim>(i), elm, envelope );
-        envelope.scale(this->unit_conversion_coefficient_);
-    }
+    ASSERT(false).warning("Method FieldPython::value_list is obsolete. DO not use it!\n");
 }
-
-/**
-* Returns one vector value in one given point.
-*/
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, FMT_UNUSED Value &value)
-{
-    p_value_ = p_func_(p[0], p[1], p[2]);
-
-    unsigned int pos =0;
-    for(unsigned int row=0; row < value.n_rows(); row++)
-        for(unsigned int col=0; col < value.n_cols(); col++, pos++)
-            if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = p_value_[pos].cast<int>();
-            else value(row,col) = p_value_[pos].cast<double>();
-}
-
 
 
 
@@ -157,8 +132,8 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     py::list used_fields_list;
 
     try {
-        p_func_ = p_obj_.attr("used_fields");
-        used_fields_list = p_func_();
+    	py::object p_func = instance_.attr("used_fields");
+        used_fields_list = p_func();
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -193,8 +168,8 @@ void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap
     std::vector<double> cache_vec(cache_data, cache_data+CacheMapElementNumber::get()*self_field_ptr_->n_shape());
     FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_vec, true);
 
-    p_func_ = p_obj_.attr("_cache_reinit");
-    p_func_(field_data, result_data);
+    py::object p_func = instance_.attr("_cache_reinit");
+    p_func(field_data, result_data);
 }
 
 
@@ -205,8 +180,8 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    p_func_ = p_obj_.attr("_cache_update");
-    p_func_(reg_chunk_begin, reg_chunk_end);
+    py::object p_func = instance_.attr("_cache_update");
+    p_func(reg_chunk_begin, reg_chunk_end);
 }
 
 

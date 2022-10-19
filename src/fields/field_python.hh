@@ -107,20 +107,14 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
-     * Implementation.
-     */
-    inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
-
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
     /// Field name is necessary for set result
     std::string field_name_;
 
-    py::object        p_func_;
-    py::object        p_obj_;
-    mutable py::tuple p_value_;
+    /// Holds python instance of user class.
+    py::object        instance_;
 
     /// List of fields on which this field depends
 	std::vector<const FieldCommon * > required_fields_;
