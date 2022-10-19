@@ -169,7 +169,7 @@ void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap
     FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_vec, true);
 
     py::object p_func = instance_.attr("_cache_reinit");
-    p_func(field_data, result_data);
+    p_func(this->time_.end(), field_data, result_data);
 }
 
 

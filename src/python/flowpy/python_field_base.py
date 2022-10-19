@@ -48,14 +48,16 @@ class PythonFieldBase():
         return x[..., None]
         
 
-    def _cache_reinit(self, data, result):
-        """ Fill dictionary of input fields and result field """
+    def _cache_reinit(self, time, data, result):
+        """ Fill dictionary of input fields and result field, set time """
         self.used_fields_dict.clear()
         for in_field in data:
             self.used_fields_dict[in_field.field_name()] = in_field.field_cache_array()
         
         self.result = result.field_name()
         self.result_fields_dict[self.result] = result.field_cache_array()
+        
+        self.t = time
 
 
     def _cache_update(self, reg_chunk_begin, reg_chunk_end):
