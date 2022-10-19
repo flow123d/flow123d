@@ -193,12 +193,8 @@ FieldPython<spacedim, Value>::~FieldPython() {}
 namespace internal {
 
 PythonWrapper::PythonWrapper() {
-    std::string fname = std::string(FLOW123D_SOURCE_DIR) + "/src/python/flowpy/python_field_base.py";
-    FilePath flowpy_path(fname, FilePath::input_file);
-    std::string parent_path = flowpy_path.parent_path(); // add path to PythonPath
-    PythonLoader::add_sys_path(parent_path);
     py::module_ flowpy_module = py::module_::import("flowpy");
-    py::module_ pyfield_module = py::module_::import("python_field_base");
+    py::module_ pyfield_module = PythonLoader::load_module_from_file(std::string(FLOW123D_SOURCE_DIR) + "/src/python/flowpy/python_field_base.py");
     flowpy_module.add_object("PythonFieldBase", pyfield_module.attr("PythonFieldBase"));
 }
 
