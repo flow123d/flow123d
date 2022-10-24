@@ -95,7 +95,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
     py::module_ flowpy_module = py::module_::import("flowpy");
     py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        instance_ = flowpy_module.attr("PythonFieldBase").attr("create")(class_module, class_name.c_str());
+        user_class_instance_ = flowpy_module.attr("PythonFieldBase").attr("create")(class_module, class_name.c_str());
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
@@ -132,7 +132,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
     py::list used_fields_list;
 
     try {
-    	py::object p_func = instance_.attr("used_fields");
+    	py::object p_func = user_class_instance_.attr("used_fields");
         used_fields_list = p_func();
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
@@ -166,7 +166,7 @@ void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap
     double * cache_data = self_field_ptr_->value_cache()->data_;
     FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_data, (CacheMapElementNumber::get()*self_field_ptr_->n_shape()));
 
-    py::object p_func = instance_.attr("_cache_reinit");
+    py::object p_func = user_class_instance_.attr("_cache_reinit");
     p_func(this->time_.end(), field_data, result_data);
 }
 
@@ -178,7 +178,7 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    py::object p_func = instance_.attr("_cache_update");
+    py::object p_func = user_class_instance_.attr("_cache_update");
     p_func(this->field_name_, reg_chunk_begin, reg_chunk_end);
 }
 

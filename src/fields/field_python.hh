@@ -114,7 +114,7 @@ private:
     std::string field_name_;
 
     /// Holds python instance of user class.
-    py::object        instance_;
+    py::object user_class_instance_;
 
     /// List of fields on which this field depends
 	std::vector<const FieldCommon * > required_fields_;
