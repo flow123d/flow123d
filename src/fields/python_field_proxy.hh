@@ -31,62 +31,61 @@ namespace py = pybind11;
 class FieldCacheProxy
 {
 public:
+	/**
+	 * Method encapsulates FieldValueCache data array for usage in Python.
+	 * Allows to create C++ and Python objects above shared block of memory.
+	 */
+	static py::buffer_info field_proxy_get_buffer(FieldCacheProxy &proxy)
+	{
+	    ssize_t              n_comp  = ( (proxy.shape_.size()==1) ? proxy.shape_[0] : proxy.shape_[0]*proxy.shape_[1]);
+	    ssize_t              size    = proxy.data_size_ / n_comp;
+	    std::vector<ssize_t> shape;
+	    std::vector<ssize_t> strides;
+
+	    if (proxy.shape_[0] > 1) { // add dimensions only for vector and tensor
+	        shape.push_back(proxy.shape_[0]);
+	        if (proxy.shape_.size() == 2) shape.push_back(proxy.shape_[1]);
+	    }
+	    shape.push_back(size);
+
+	    ssize_t n_dim = shape.size();
+	    strides.resize(n_dim);
+	    strides[n_dim-1] = sizeof(double);
+	    for(uint i=n_dim-1; i>0; i--) {
+	        strides[i-1] = strides[i] * shape[i];
+	    }
+
+	    // create n_dim NumPy array
+	    return  py::buffer_info(
+	    	proxy.field_cache_data_,                 /* data as contiguous array  */
+	        sizeof(double),                          /* size of one scalar        */
+	        py::format_descriptor<double>::format(), /* data type                 */
+			n_dim,                                   /* number of dimensions      */
+	        shape,                                   /* shape of the matrix       */
+	        strides                                  /* strides for each axis     */
+	    );
+	}
+
     /// Constructor
-    FieldCacheProxy(std::string field_name, std::vector<uint> shape, double * field_cache_data, uint data_size, bool writeable=false)
-    : field_name_(field_name), shape_(shape), field_cache_data_(field_cache_data), data_size_(data_size), writeable_(writeable)
+    FieldCacheProxy(std::string field_name, std::vector<uint> shape, double * field_cache_data, uint data_size)
+    : field_name_(field_name), shape_(shape), field_cache_data_(field_cache_data), data_size_(data_size)
     {}
 
-//    /// Constructor
-//    FieldCacheProxy(std::string field_name, std::vector<uint> shape, std::vector<double> field_cache_ptr, bool writeable=false)
-//    : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr), writeable_(writeable)
-//    {}
-//
     /// Copy constructor
     FieldCacheProxy(const FieldCacheProxy &other)
-    : field_name_(other.field_name_), shape_(other.shape_), field_cache_data_(other.field_cache_data_), data_size_(other.data_size_), writeable_(other.writeable_)
+    : field_name_(other.field_name_), shape_(other.shape_), field_cache_data_(other.field_cache_data_), data_size_(other.data_size_)
     {}
 
-    /// Getters
+    /// Getter returns field name
     const std::string &field_name() const { return field_name_; }
-    py::array field_cache_array()
-    {
-        ssize_t              n_comp  = ( (shape_.size()==1) ? shape_[0] : shape_[0]*shape_[1]);
-        ssize_t              size    = data_size_ / n_comp;
-        std::vector<ssize_t> shape;
-        std::vector<ssize_t> strides; // { (long int)(sizeof(double)*size) , sizeof(double) };
 
-        if (shape_[0] > 1) { // add dimensions only for vector and tensor
-            shape.push_back(shape_[0]);
-            if (shape_.size() == 2) shape.push_back(shape_[1]);
-        }
-        shape.push_back(size);
 
-        ssize_t n_dim = shape.size();
-        strides.resize(n_dim);
-        strides[n_dim-1] = sizeof(double);
-        for(uint i=n_dim-1; i>0; i--) {
-            strides[i-1] = strides[i] * shape[i];
-        }
-
-        // create n_dim NumPy array
-        return  py::array(py::buffer_info(
-            field_cache_data_,                       /* data as contiguous array  */
-            sizeof(double),                          /* size of one scalar        */
-            py::format_descriptor<double>::format(), /* data type                 */
-			n_dim,                                   /* number of dimensions      */
-            shape,                                   /* shape of the matrix       */
-            strides,                                 /* strides for each axis     */
-			writeable_                               /* readonly or writeable     */
-        ));
-    }
 private:
     std::string field_name_;
     std::vector<uint> shape_;
     double *field_cache_data_;
     uint data_size_;
-    bool writeable_;
 };
-
 
 #pragma GCC visibility pop
 

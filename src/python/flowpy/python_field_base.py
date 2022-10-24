@@ -51,8 +51,10 @@ class PythonFieldBase():
         """ Fill dictionary of input fields and result field, set time """
         self.used_fields_dict.clear()
         for in_field in data:
-            self.used_fields_dict[in_field.field_name()] = in_field.field_cache_array()
-        self.result_fields_dict[result.field_name()] = result.field_cache_array()
+            in_array = np.array(in_field, copy=False)
+            in_array.flags.writeable = False
+            self.used_fields_dict[in_field.field_name()] = in_array
+        self.result_fields_dict[result.field_name()] = np.array(result, copy=False)
         
         self.t = time
 
@@ -63,6 +65,8 @@ class PythonFieldBase():
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
         res_array = getattr(self, field_name)()
+        #print("Result: ", res_array.shape)
+        #print("Result field: ", self.result_fields_dict[field_name].shape)     
         self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end] = res_array
 
 

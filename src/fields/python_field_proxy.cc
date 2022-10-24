@@ -23,9 +23,8 @@
 PYBIND11_MODULE(flowpy, m) {
     m.doc() = "pybind11 Flow123D plugin"; // optional module docstring
 
-    py::class_<FieldCacheProxy>(m, "FieldCacheProxy")
+    py::class_<FieldCacheProxy>(m, "FieldCacheProxy", py::buffer_protocol())
         //.def_property("field_name", &FieldCacheProxy::get_field_name, &FieldCacheProxy::set_field_name)
         .def("field_name", &FieldCacheProxy::field_name)
-        .def("field_cache_array", &FieldCacheProxy::field_cache_array, py::return_value_policy::move);
-
+		.def_buffer(&FieldCacheProxy::field_proxy_get_buffer);
 }
