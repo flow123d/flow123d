@@ -23,7 +23,6 @@ class PythonFieldBase():
         self.region_chunk_begin = 0
         self.region_chunk_end = 300
         self.t = 0.0
-        self.result = ""
         self.used_fields_dict = dict()
         self.result_fields_dict = dict()
 
@@ -53,9 +52,7 @@ class PythonFieldBase():
         self.used_fields_dict.clear()
         for in_field in data:
             self.used_fields_dict[in_field.field_name()] = in_field.field_cache_array()
-        
-        self.result = result.field_name()
-        self.result_fields_dict[self.result] = result.field_cache_array()
+        self.result_fields_dict[result.field_name()] = result.field_cache_array()
         
         self.t = time
 
@@ -65,7 +62,8 @@ class PythonFieldBase():
             Needs to define __call__ method in descendant that executes evaluation """
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
-        getattr(self, field_name)()
+        res_array = getattr(self, field_name)()
+        self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end] = res_array
 
 
     def _print_fields(self):

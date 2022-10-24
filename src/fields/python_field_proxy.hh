@@ -32,13 +32,18 @@ class FieldCacheProxy
 {
 public:
     /// Constructor
-    FieldCacheProxy(std::string field_name, std::vector<uint> shape, std::vector<double> field_cache_ptr, bool writeable=false)
-    : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr), writeable_(writeable)
+    FieldCacheProxy(std::string field_name, std::vector<uint> shape, double * field_cache_data, uint data_size, bool writeable=false)
+    : field_name_(field_name), shape_(shape), field_cache_data_(field_cache_data), data_size_(data_size), writeable_(writeable)
     {}
 
+//    /// Constructor
+//    FieldCacheProxy(std::string field_name, std::vector<uint> shape, std::vector<double> field_cache_ptr, bool writeable=false)
+//    : field_name_(field_name), shape_(shape), field_cache_ptr_(field_cache_ptr), writeable_(writeable)
+//    {}
+//
     /// Copy constructor
     FieldCacheProxy(const FieldCacheProxy &other)
-    : field_name_(other.field_name_), shape_(other.shape_), field_cache_ptr_(other.field_cache_ptr_), writeable_(other.writeable_)
+    : field_name_(other.field_name_), shape_(other.shape_), field_cache_data_(other.field_cache_data_), data_size_(other.data_size_), writeable_(other.writeable_)
     {}
 
     /// Getters
@@ -46,7 +51,7 @@ public:
     py::array field_cache_array()
     {
         ssize_t              n_comp  = ( (shape_.size()==1) ? shape_[0] : shape_[0]*shape_[1]);
-        ssize_t              size    = field_cache_ptr_.size() / n_comp;
+        ssize_t              size    = data_size_ / n_comp;
         std::vector<ssize_t> shape;
         std::vector<ssize_t> strides; // { (long int)(sizeof(double)*size) , sizeof(double) };
 
@@ -65,7 +70,7 @@ public:
 
         // create n_dim NumPy array
         return  py::array(py::buffer_info(
-            &field_cache_ptr_[0],                    /* data as contiguous array  */
+            field_cache_data_,                       /* data as contiguous array  */
             sizeof(double),                          /* size of one scalar        */
             py::format_descriptor<double>::format(), /* data type                 */
 			n_dim,                                   /* number of dimensions      */
@@ -77,7 +82,8 @@ public:
 private:
     std::string field_name_;
     std::vector<uint> shape_;
-    std::vector<double> field_cache_ptr_;
+    double *field_cache_data_;
+    uint data_size_;
     bool writeable_;
 };
 
