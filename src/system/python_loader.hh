@@ -54,7 +54,7 @@ namespace internal {
  */
 class PythonRunning {
 public:
-    PythonRunning(const std::string &python_home);
+    PythonRunning();
     ~PythonRunning();
 };
 } // close namespace internal
@@ -94,7 +94,7 @@ public:
      * for the python executable.
      */
 
-    static void initialize(const std::string &python_home="");
+    static void initialize();
 
     /**
      * This function loads a module from the given file.
@@ -125,6 +125,10 @@ public:
      * Add path to python sys_path.
      */
     static void add_sys_path(const std::string &path);
+    /**
+     * Gets all Python paths and stores them into PythonLoader::sys_path
+     */
+    static void get_python_path();
     /**
      * all paths which are set in every python call (sys.path) value. Values are
      * separated by path separator(colon on unix, semicolono on windows). This 

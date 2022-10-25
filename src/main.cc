@@ -89,7 +89,7 @@ Application::Application(FMT_UNUSED const std::string &python_path)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
-    PythonLoader::initialize(python_path);
+    PythonLoader::initialize();
 
 }
 

@@ -31,23 +31,13 @@
 using namespace std;
 namespace py = pybind11;
 
-string python_sys_path = R"CODE(
-
-def get_paths():
-    import sys
-    import os
-    # print('\n'.join(sys.path))
-    return os.pathsep.join(sys.path)
-
-)CODE";
-
 // default value
 string PythonLoader::sys_path = "";
 
 
-void PythonLoader::initialize(const std::string &python_home)
+void PythonLoader::initialize()
 {
-    static internal::PythonRunning _running(python_home);
+    static internal::PythonRunning _running;
 }
 
 
@@ -138,6 +128,7 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
     }
 
     // get value of python's "sys.path"
+    PythonLoader::get_python_path();
     string python_path = PythonLoader::sys_path;
     replace(python_path.begin(), python_path.end(), ':', '\n');
 
@@ -170,46 +161,9 @@ void PythonLoader::add_sys_path(const std::string &path)
     sys_paths.attr("append")(path);
 }
 
-
-
-//#define STR_EXPAND(tok) #tok
-//#define STR(tok) string(STR_EXPAND(tok))
-
-namespace internal {
-
-PythonRunning::PythonRunning(const std::string& program_name)
+void PythonLoader::get_python_path()
 {
-//#ifdef FLOW123D_PYTHON_PREFIX
-//        static wstring _python_program_name = to_py_string(program_name);
-//        Py_SetProgramName( &(_python_program_name[0]) );
-//        wstring full_program_name = Py_GetProgramFullPath();
-//        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
-//
-//        // try to find string "flow123d" from right side of program_name
-//        // if such a string is not present, we are most likely unit-testing
-//        // in that case, full_flow_prefix is current dir '.'
-//        size_t pos = full_program_name.rfind( to_py_string("flow123d") );
-//        wstring full_flow_prefix = ".";
-//        if (pos != wstring::npos) {
-//            full_flow_prefix = full_program_name.substr(0,pos-string("/bin/").size() );
-//        }
-//        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-//        wstring default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
-//        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
-//
-//        static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
-//        Py_SetPythonHome( &(our_py_home[0]) );
-//
-//#else
-    (void)program_name; // not used
-//#endif //FLOW123D_PYTHON_PREFIX
-
-    // initialize the Python interpreter.
-    py::initialize_interpreter();
-
     py::module_ sys = py::module_::import("sys");
-    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
-    sys.attr("path").attr("append")(flowpy_path.c_str()); // adds path to flowpy library to PYTHONPATH
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
     // update module path, append flow123d Python modules path to sys.path
     std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
@@ -221,12 +175,22 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-    py::module_ moduleMain = py::module_::import("__main__");
-    PyRun_SimpleString(python_sys_path.c_str());
-    py::object func = moduleMain.attr("get_paths");
-    std::string result = func().cast<std::string>();
+    py::module_ os = py::module_::import("os");
+    py::object func = os.attr("pathsep").attr("join");
+    std::string result = func(sys.attr("path")).cast<std::string>();
     PythonLoader::sys_path = result;
 }
+
+
+
+namespace internal {
+
+PythonRunning::PythonRunning()
+{
+    // initialize the Python interpreter.
+    py::initialize_interpreter();
+}
+
 
 
 
