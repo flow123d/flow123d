@@ -1,4 +1,5 @@
 import flowpy
+import numpy as np
 
 class FieldPythonTest(flowpy.PythonFieldBase):
     pass
@@ -6,7 +7,8 @@ class FieldPythonTest(flowpy.PythonFieldBase):
     def water_source_density(self):
         XY = self.X[0:2]
         AB = 2*(1-XY**2)
-        return AB[0] + AB[1]   # or np.sum(AB, axis=0)
+        return AB[0] + AB[1] + self.cross_section   
+            # or np.sum(AB, axis=0) + self.cross_section
 
     def anisotropy(self):
         z = self.X[2]
