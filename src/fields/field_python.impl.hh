@@ -41,13 +41,15 @@ template <int spacedim, class Value>
 const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
-		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-		.declare_key("source_file", it::String(), it::Default::obligatory(),
-				"Python script given as external file in format 'dir'.'file_name' without .py extension")
-		.declare_key("class", it::String(), it::Default::obligatory(),
-				"Function in the given script that returns tuple containing components of the return type.\n"
-				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
+        .declare_key("source_file", it::String(), it::Default::obligatory(),
+                "Python script given as external file in format 'dir'.'file_name' without .py extension")
+        .declare_key("class", it::String(), it::Default::obligatory(),
+                "Function in the given script that returns tuple containing components of the return type.\n"
+                "For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+        .declare_key("used_fields", it::Array(it::String()), it::Default("[]"),
+				"Defines list of fields necessary in evaluation of actual field.")
 		//.declare_key("units", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
 		//		"Definition of unit.")
 		.close();
@@ -129,17 +131,11 @@ void FieldPython<spacedim, Value>::value_list (FMT_UNUSED const Armor::array &po
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
     required_fields_.clear();
-    py::list used_fields_list;
 
-    try {
-    	py::object p_func = user_class_instance_.attr("used_fields");
-        used_fields_list = p_func();
-    } catch (const py::error_already_set &ex) {
-        PythonLoader::throw_error(ex);
-    }
-
-    for (auto f : used_fields_list) {
-        std::string field_name = f.cast<std::string>();
+    auto used_fields_array = in_rec_.val<Input::Array>("used_fields");
+    std::vector<std::string> used_fields_vec;
+    used_fields_array.copy_to(used_fields_vec);
+    for(auto field_name : used_fields_vec) {
         auto field_ptr = field_set.field(field_name);
         if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
         else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(field_name) << FieldSet::EI_FieldType("python declaration") << Input::EI_Address( in_rec_.address_string() ) );

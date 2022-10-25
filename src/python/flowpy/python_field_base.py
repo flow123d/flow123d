@@ -30,16 +30,8 @@ class PythonFieldBase():
     def __getattr__(self, attr):
         """ Allows direct access to items in 'used_fields_dict' field data dictionary.
             Example: use 'self.field_name' instead of 'self.used_fields_dict["field_name"]' """
-        # print(attr)
         cache_data = self.used_fields_dict.get(attr, None)
         return cache_data[..., self.region_chunk_begin:self.region_chunk_end]
-        
-
-    def used_fields(self):
-        """ Method allows to define list of fields used in evaluation. This is the default defintion
-            that returns coords field and should be overwrite in descendant class. """
-        field_list = ["X"]
-        return field_list
         
 
     def repl(self, x):

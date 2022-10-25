@@ -3,10 +3,6 @@ import flowpy
 class FieldPythonTest(flowpy.PythonFieldBase):
     pass
 
-    def used_fields(self):
-        field_list = ["X"]
-        return field_list
-    
     def water_source_density(self):
         XY = self.X[0:2]
         AB = 2*(1-XY**2)
