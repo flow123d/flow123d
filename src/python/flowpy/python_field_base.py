@@ -35,7 +35,14 @@ class PythonFieldBase():
         
 
     def repl(self, x):
-        """ Method replicates scalar/vector/tensor field value to output vector. """
+        """ Method replicates x value to size of evaluated vector. 
+            Example, use this method for fill result:
+             > y = self.X[1]
+             > return self.repl( np.eye(3) ) * y
+            In this example, method creates vector of identity matrices. Size of vector 
+            is same as size of field result. This fact is ensured by this method. Then 
+            vector of identity matrices id multiplicated by values on y-coord.
+            """
         return x[..., None]
         
 
@@ -52,8 +59,9 @@ class PythonFieldBase():
 
 
     def _cache_update(self, field_name, reg_chunk_begin, reg_chunk_end):
-        """ Method called from cache_update in C++ code
-            Needs to define __call__ method in descendant that executes evaluation """
+        """ Method called from cache_update in C++ code.
+            Needs to define the method with same name as name of evaluated field in descendant 
+            that executes evaluation. """
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
         res_array = getattr(self, field_name)()
