@@ -43,4 +43,3 @@ class FieldPythonTest(flowpy.PythonFieldBase):
         """
         A = np.array([[0.2, 0, 0], [0, 0.3, 0], [0, 0, 0.5]])
         return np.linalg.norm(A @ self.X, axis = 0)
-        #return self.repl(np.eye(3)) * diag
