@@ -36,3 +36,11 @@ class FieldPythonTest(flowpy.PythonFieldBase):
         z = self.X[2]
         diag = np.where( z < 0.25, 0.5+2*z, 1)
         return self.repl(np.eye(3)) * diag
+
+    def conductivity(self):
+        """ Evaluates expression: if(z < 0.25, 0.5+2*z, 1)
+            List of used_fields is: ["X"]
+        """
+        A = np.array([[0.2, 0, 0], [0, 0.3, 0], [0, 0, 0.5]])
+        return np.linalg.norm(A @ self.X, axis = 0)
+        #return self.repl(np.eye(3)) * diag

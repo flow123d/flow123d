@@ -27,6 +27,10 @@ problem: !Coupling_Sequential
           source_file: field_python_test.py
           class: FieldPythonTest
           used_fields: ["X", "cross_section"]
+        conductivity: !FieldPython
+          source_file: field_python_test.py
+          class: FieldPythonTest
+          used_fields: ["X"]
       - region: .plane_boundary
         bc_type: dirichlet
         bc_pressure: 0
