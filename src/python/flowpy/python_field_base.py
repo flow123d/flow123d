@@ -65,8 +65,13 @@ class PythonFieldBase():
         self.region_chunk_begin = reg_chunk_begin
         self.region_chunk_end = reg_chunk_end
         res_array = getattr(self, field_name)()
-        #print("Result: ", res_array.shape)
-        #print("Result field: ", self.result_fields_dict[field_name].shape)     
+        
+        # Check number of dimensions and shape of result array
+        result_shape = res_array.shape
+        expect_shape = self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end].shape
+        if result_shape!=expect_shape:
+            raise ValueError(f"Invalid shape of '{field_name}' method result. Must be {expect_shape}.")
+        
         self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end] = res_array
 
 

@@ -162,8 +162,12 @@ void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap
     double * cache_data = self_field_ptr_->value_cache()->data_;
     FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_data, (CacheMapElementNumber::get()*self_field_ptr_->n_shape()));
 
-    py::object p_func = user_class_instance_.attr("_cache_reinit");
-    p_func(this->time_.end(), field_data, result_data);
+    try {
+        py::object p_func = user_class_instance_.attr("_cache_reinit");
+        p_func(this->time_.end(), field_data, result_data);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 }
 
 
@@ -174,8 +178,12 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 {
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    py::object p_func = user_class_instance_.attr("_cache_update");
-    p_func(this->field_name_, reg_chunk_begin, reg_chunk_end);
+    try {
+        py::object p_func = user_class_instance_.attr("_cache_update");
+        p_func(this->field_name_, reg_chunk_begin, reg_chunk_end);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 }
 
 
