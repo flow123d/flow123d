@@ -2,14 +2,15 @@
 # author: David Flanderka
 
 import sys
-#import flowpy
 import numpy as np
+from typing import *
+
 
 class PythonFieldBase():
     _instances = dict()
 
     @staticmethod
-    def create(module, class_name):
+    def _create(module, class_name):
         """ Creates instance of class_name if doesn't exist. Stores its to _instances and returns. """
         if class_name not in PythonFieldBase._instances:
             # module = __import__(module_name)
@@ -46,7 +47,7 @@ class PythonFieldBase():
         return x[..., None]
         
 
-    def _cache_reinit(self, time, data, result):
+    def _cache_reinit(self, time: float, data: List['FieldCacheProxy'], result: 'FieldCacheProxy') -> None:
         """ Fill dictionary of input fields and result field, set time """
         self.used_fields_dict.clear()
         for in_field in data:
@@ -58,7 +59,7 @@ class PythonFieldBase():
         self.t = time
 
 
-    def _cache_update(self, field_name, reg_chunk_begin, reg_chunk_end):
+    def _cache_update(self, field_name: str, reg_chunk_begin: int, reg_chunk_end: int):
         """ Method called from cache_update in C++ code.
             Needs to define the method with same name as name of evaluated field in descendant 
             that executes evaluation. """

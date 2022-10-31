@@ -97,7 +97,7 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
     py::module_ flowpy_module = py::module_::import("flowpy");
     py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
     try {
-        user_class_instance_ = flowpy_module.attr("PythonFieldBase").attr("create")(class_module, class_name.c_str());
+        user_class_instance_ = flowpy_module.attr("PythonFieldBase").attr("_create")(class_module, class_name.c_str());
     } catch (const py::error_already_set &ex) {
         PythonLoader::throw_error(ex);
     }
