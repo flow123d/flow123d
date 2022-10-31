@@ -854,7 +854,6 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     // Windows users will have to use a python script located in bin folder
     // 
 
-    #ifndef FLOW123D_HAVE_CYGWIN
     // grab module and function by importing module profiler_formatter_module.py
     auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
@@ -864,16 +863,6 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     // execute method with arguments
     convert_method(json_filepath, (json_filepath + output_fiel_suffix), formatter);
 
-    #else
-
-    // print information about windows-cygwin issue and offer manual solution
-    MessageOut() << "# Note: converting json profiler reports is not"
-                 << " supported under Windows or Cygwin environment for now.\n"
-                 << "# You can use python script located in bin/python folder"
-                 << " in order to convert json report to txt or csv format.\n"
-                 << "python profiler_formatter_script.py --input \"" << json_filepath
-                 << "\" --output \"profiler.txt\"" << std::endl;
-    #endif // FLOW123D_HAVE_CYGWIN
 }
 
 
