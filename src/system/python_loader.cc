@@ -31,9 +31,6 @@
 using namespace std;
 namespace py = pybind11;
 
-// default value
-string PythonLoader::sys_path = "";
-
 
 void PythonLoader::initialize()
 {
@@ -128,9 +125,11 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
     }
 
     // get value of python's "sys.path"
-    PythonLoader::get_python_path();
-    string python_path = PythonLoader::sys_path;
-    replace(python_path.begin(), python_path.end(), ':', '\n');
+    auto path_vec = PythonLoader::get_python_path();
+    string python_path;
+    for (auto p : path_vec) {
+        python_path += p + "\n";
+    }
 
     // construct error message
     string py_message =
@@ -161,24 +160,17 @@ void PythonLoader::add_sys_path(const std::string &path)
     sys_paths.attr("append")(path);
 }
 
-void PythonLoader::get_python_path()
+std::vector<std::string> PythonLoader::get_python_path()
 {
     py::module_ sys = py::module_::import("sys");
-#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
-    // update module path, append flow123d Python modules path to sys.path
-    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
-    std::string extra_path;
-    while ( std::getline(extra_paths, extra_path, ':') )
-    {
-       sys.attr("path").attr("append")(extra_path.c_str());
+    auto sys_paths = sys.attr("path");
+    std::vector<std::string> path_vec;
+    for (auto sp : sys_paths) {
+        std::string sys_path = sp.cast<std::string>();
+        path_vec.push_back(sys_path);
     }
-#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
-    // call python and get paths available
-    py::module_ os = py::module_::import("os");
-    py::object func = os.attr("pathsep").attr("join");
-    std::string result = func(sys.attr("path")).cast<std::string>();
-    PythonLoader::sys_path = result;
+    return path_vec;
 }
 
 
@@ -189,6 +181,18 @@ PythonRunning::PythonRunning()
 {
     // initialize the Python interpreter.
     py::initialize_interpreter();
+    py::module_ sys = py::module_::import("sys");
+    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
+    sys.attr("path").attr("append")(flowpy_path.c_str()); // adds path to flowpy library to PYTHONPATH
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, append flow123d Python modules path to sys.path
+    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    std::string extra_path;
+    while ( std::getline(extra_paths, extra_path, ':') )
+    {
+       sys.attr("path").attr("append")(extra_path.c_str());
+    }
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 

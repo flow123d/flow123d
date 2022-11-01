@@ -126,15 +126,9 @@ public:
      */
     static void add_sys_path(const std::string &path);
     /**
-     * Gets all Python paths and stores them into PythonLoader::sys_path
+     * Returns vector of Python paths.
      */
-    static void get_python_path();
-    /**
-     * all paths which are set in every python call (sys.path) value. Values are
-     * separated by path separator(colon on unix, semicolono on windows). This 
-     * value is generated 
-     */
-    static std::string sys_path;
+    static std::vector<std::string> get_python_path();
 };
 
 
