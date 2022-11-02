@@ -19,8 +19,24 @@
 #include "system/python_loader.hh"
 #include "system/file_path.hh"
 
+#include <pybind11.h>
+#include <embed.h> // everything needed for embedding
+
 using namespace std;
 namespace py = pybind11;
+
+
+string python_code = R"CODE(
+def testFunc():
+    print ("Python hallo.")
+
+def multiFunc(x):
+    return 2*x
+
+class testClass:
+    def testMethod(self):
+        print ("eggs!")
+)CODE";
 
 
 string python_function = R"CODE(
@@ -72,6 +88,43 @@ def division_by_zero_origin():
 
 func_xyz()
 )CODE";
+
+
+/**
+ * Test presents base methods of Pybind11.
+ * How to load module, call function, ...
+ */
+//TEST(PythonLoader, pybind11) {
+//    py::scoped_interpreter guard{}; // start the interpreter and keep it alive
+//
+//    // set paths that are need for import in following code
+//    py::module_ sys = py::module_::import("sys");
+//    sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
+//    std::string unit_tests_path = std::string(FLOW123D_SOURCE_DIR) + "/unit_tests";
+//    sys.attr("path").attr("append")( unit_tests_path.c_str() );
+//
+//    // loads and evaluates function from module
+//    py::module_ calc = py::module_::import("fields.field_python_script");
+//    py::object result = calc.attr("func_multi")(2, 3, 4);
+//    int n = result.cast<int>();
+//    EXPECT_EQ(n, 24);
+//
+//    // load and evaluate functions from string
+//    py::dict globals = py::globals();
+//    py::exec(python_code.c_str(), globals, globals);
+//    globals["testFunc"]();   // this should print out 'Python hallo.'
+//    auto obj = globals["multiFunc"](5);
+//    int ret = obj.cast<int>();
+//    EXPECT_EQ(ret, 10);
+//}
+
+
+TEST(PythonLoader, load_from_string) {
+    namespace py = pybind11;
+
+    py::module_ my_module = PythonLoader::load_module_from_string("my_module", "testFunc", python_code);
+    my_module.attr("testFunc")();
+}
 
 
 /**

@@ -32,18 +32,6 @@
 using namespace std;
 
 
-string python_code = R"CODE(
-def testFunc():
-    print ("Python hallo.")
-
-def multiFunc(x):
-    return 2*x
-
-class testClass:
-    def testMethod(self):
-        print ("eggs!")
-)CODE";
-
 string test_pybind = R"CODE(
 test = testClass()
 test.testMethod()
@@ -88,39 +76,6 @@ string input = R"INPUT(
 }
 )INPUT";
 
-
-TEST(PythonLoader, pybind11) {
-    namespace py = pybind11;
-
-    py::scoped_interpreter guard{}; // start the interpreter and keep it alive
-
-    // set paths that are need for import in following code
-    py::module_ sys = py::module_::import("sys");
-    sys.attr("path").attr("append")(FLOW123D_SOURCE_DIR);
-    std::string unit_tests_path = std::string(FLOW123D_SOURCE_DIR) + "/unit_tests";
-    sys.attr("path").attr("append")( unit_tests_path.c_str() );
-
-    // loads and evaluates function from module
-    py::module_ calc = py::module_::import("fields.field_python_script");
-    py::object result = calc.attr("func_multi")(2, 3, 4);
-    int n = result.cast<int>();
-    EXPECT_EQ(n, 24);
-
-    // load and evaluate functions from string
-    py::dict globals = py::globals();
-    py::exec(python_code.c_str(), globals, globals);
-    globals["testFunc"]();   // this should print out 'Python hallo.'
-    auto obj = globals["multiFunc"](5);
-    int ret = obj.cast<int>();
-    EXPECT_EQ(ret, 10);
-}
-
-TEST(PythonLoader, all) {
-    namespace py = pybind11;
-
-    py::module_ my_module = PythonLoader::load_module_from_string("my_module", "testFunc", python_code);
-    my_module.attr("testFunc")();
-}
 
 //TEST(FieldPython, vector_3D) {
 //
@@ -260,6 +215,7 @@ TEST(PythonLoader, all) {
 
 TEST(FieldPython, new_assembly) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    PythonLoader::initialize();
 
     FieldPython<3, FieldValue<3>::Vector> vec_func;
     vec_func.set_python_field_from_class("fields/field_python_class.py", "PythonAsm");
