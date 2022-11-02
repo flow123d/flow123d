@@ -374,7 +374,7 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 
 void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                    FEValues<3> &fe_values, FEValues<3> &fv_rt,
-                   ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
+                   ExactSolution &anal_sol) {
 
     ASSERT( fe_values.dim() == fv_rt.dim());
     unsigned int dim = fe_values.dim();
@@ -383,8 +383,8 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.eq_fields_->conductivity.value(ele.centre(), ele );
-    double cross = result.eq_fields_->cross_section.value(ele.centre(), ele );
+    double conductivity = diff_data.eq_fields_->conductivity.value(ele.centre(), ele );
+    double cross = diff_data.eq_fields_->cross_section.value(ele.centre(), ele );
 
 
     // get coefficients on the current element
@@ -393,7 +393,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
         fluxes[li] = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
-//         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
+//         pressure_traces[li] = diff_data.dh->side_scalar( *(ele->side( li ) ) );
     }
     const uint ndofs = dh_cell.n_dofs();
     // TODO: replace with DHCell getter when available for FESystem component
@@ -466,23 +466,23 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     }
 
     // DHCell constructed with diff fields DH, get DOF indices of actual element
-    DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(result.dh_.get());
+    DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(diff_data.dh_.get());
     IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
 
-    auto velocity_data = result.vel_diff_ptr->vec();
+    auto velocity_data = diff_data.vel_diff_ptr->vec();
     velocity_data.set( idx, sqrt(velocity_diff) );
-    result.velocity_error[dim-1] += velocity_diff;
-    if (dim == 2 && result.velocity_mask.size() != 0 ) {
-    	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
+    diff_data.velocity_error[dim-1] += velocity_diff;
+    if (dim == 2 && diff_data.velocity_mask.size() != 0 ) {
+        diff_data.mask_vel_error += (diff_data.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-    auto pressure_data = result.pressure_diff_ptr->vec();
+    auto pressure_data = diff_data.pressure_diff_ptr->vec();
     pressure_data.set( idx, sqrt(pressure_diff) );
-    result.pressure_error[dim-1] += pressure_diff;
+    diff_data.pressure_error[dim-1] += pressure_diff;
 
-    auto div_data = result.div_diff_ptr->vec();
+    auto div_data = diff_data.div_diff_ptr->vec();
     div_data.set( idx, sqrt(divergence_diff) );
-    result.div_error[dim-1] += divergence_diff;
+    diff_data.div_error[dim-1] += divergence_diff;
 
 }
 
@@ -525,13 +525,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d);
             break;
         case 2:
-            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d);
             break;
         case 3:
-            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d, diff_data);
+            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d);
             break;
         }
     }

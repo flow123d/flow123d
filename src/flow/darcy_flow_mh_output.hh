@@ -204,7 +204,7 @@ protected:
     /// Computes L2 error on an element.
     void l2_diff_local(DHCellAccessor dh_cell,
                       FEValues<3> &fe_values, FEValues<3> &fv_rt,
-                      FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
+                      FieldPython<3, FieldValue<3>::Vector > &anal_sol);
 };
 
 
