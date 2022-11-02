@@ -201,8 +201,8 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     diff_data.eq_data_ = nullptr;
     if (DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
     {
-        diff_data.eq_fields_ = d->eq_fields_.get();
-        diff_data.eq_data_ = d->eq_data_.get();
+        diff_data.eq_fields_ = d->eq_fields_;
+        diff_data.eq_data_ = d->eq_data_;
     }
     ASSERT_PTR(diff_data.eq_data_);
 
