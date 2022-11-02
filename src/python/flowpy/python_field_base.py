@@ -2,6 +2,7 @@
 # author: David Flanderka
 
 import sys
+import fieldproxypy
 import numpy as np
 from typing import *
 

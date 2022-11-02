@@ -20,7 +20,7 @@
 #include <stl.h>      // type conversion
 #include "fields/python_field_proxy.hh"
 
-PYBIND11_MODULE(flowpy, m) {
+PYBIND11_MODULE(fieldproxypy, m) {
     m.doc() = "pybind11 Flow123D plugin"; // optional module docstring
 
     py::class_<FieldCacheProxy>(m, "FieldCacheProxy", py::buffer_protocol())
