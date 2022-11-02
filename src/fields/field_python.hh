@@ -125,22 +125,6 @@ private:
 };
 
 
-namespace internal {
-/**
- * Class executes script src/python/flowpy/python_field_base.py
- */
-class PythonWrapper {
-private:
-    /// Constructor adds PythonFieldBase class defined in file src/python/flowpy/field_python_base.py to flowpy Python module
-	PythonWrapper();
-
-public:
-    /// Initialize method ensures singleton instance of PythonWrapper
-	static PythonWrapper &initialize();
-};
-} // close namespace internal
-
-
 #pragma GCC visibility pop
 
 #endif /* FUNCTION_PYTHON_HH_ */

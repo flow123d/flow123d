@@ -92,8 +92,6 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
 {
-    internal::PythonWrapper::initialize();
-
     py::module_ flowpy_module = py::module_::import("flowpy");
     py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
     try {
@@ -190,25 +188,6 @@ void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typen
 
 template <int spacedim, class Value>
 FieldPython<spacedim, Value>::~FieldPython() {}
-
-
-namespace internal {
-
-PythonWrapper::PythonWrapper() {
-//    py::module_ sys = py::module_::import("sys");
-//    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
-//    sys.attr("path").attr("append")(flowpy_path.c_str()); // adds path to flowpy library to PYTHONPATH
-    py::module_ flowpy_module = py::module_::import("flowpy");
-    py::module_ pyfield_module = PythonLoader::load_module_from_file(std::string(FLOW123D_SOURCE_DIR) + "/src/python/flowpy/python_field_base.py");
-    flowpy_module.add_object("PythonFieldBase", pyfield_module.attr("PythonFieldBase"));
-}
-
-PythonWrapper &PythonWrapper::initialize() {
-    static PythonWrapper python_wrapper;
-    return python_wrapper;
-}
-
-}
 
 
 #endif /* FIELD_PYTHON_IMPL_HH_ */
