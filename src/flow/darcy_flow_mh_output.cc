@@ -230,6 +230,55 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
+
+    if (compute_errors_)
+        set_specific_output_python_fields();
+}
+
+void DarcyFlowMHOutput::set_specific_output_python_fields()
+{
+	typedef FieldPython<3, FieldValue<3>::Scalar > ScalarSolution;
+	typedef FieldPython<3, FieldValue<3>::VectorFixed > VectorSolution;
+
+    // Create separate vectors of 1D, 2D, 3D regions
+    std::vector< std::vector<std::string> > reg_by_dim(3);
+    for (unsigned int i=1; i<2*mesh_->region_db().bulk_size(); i+=2) {
+        unsigned int dim = mesh_->region_db().get_dim(i);
+        ASSERT_GT(dim, 0).error("Bulk region with dim==0!\n");
+        reg_by_dim[dim-1].push_back( mesh_->region_db().get_label(i) );
+    }
+
+    // Create instances of FieldPython and set them to Field objects
+    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    double t = darcy_flow->time().t(); // initial time
+
+    std::shared_ptr< ScalarSolution > pressure_algo_1d = std::make_shared< ScalarSolution >();
+    pressure_algo_1d->set_python_field_from_file( source_file, "ref_pressure_1d");
+    diff_data.eq_fields_->ref_pressure.set(pressure_algo_1d, t, reg_by_dim[0]);
+    std::shared_ptr< ScalarSolution > pressure_algo_2d = std::make_shared< ScalarSolution >();
+    pressure_algo_2d->set_python_field_from_file( source_file, "ref_pressure_2d");
+    diff_data.eq_fields_->ref_pressure.set(pressure_algo_2d, t, reg_by_dim[1]);
+    std::shared_ptr< ScalarSolution > pressure_algo_3d = std::make_shared< ScalarSolution >();
+    pressure_algo_3d->set_python_field_from_file( source_file, "ref_pressure_3d");
+    diff_data.eq_fields_->ref_pressure.set(pressure_algo_3d, t, reg_by_dim[2]);
+    std::shared_ptr< VectorSolution > velocity_algo_1d = std::make_shared< VectorSolution >();
+    velocity_algo_1d->set_python_field_from_file( source_file, "ref_velocity_1d");
+    diff_data.eq_fields_->ref_velocity.set(velocity_algo_1d, t, reg_by_dim[0]);
+    std::shared_ptr< VectorSolution > velocity_algo_2d = std::make_shared< VectorSolution >();
+    velocity_algo_2d->set_python_field_from_file( source_file, "ref_velocity_2d");
+    diff_data.eq_fields_->ref_velocity.set(velocity_algo_2d, t, reg_by_dim[1]);
+    std::shared_ptr< VectorSolution > velocity_algo_3d = std::make_shared< VectorSolution >();
+    velocity_algo_3d->set_python_field_from_file( source_file, "ref_velocity_3d");
+    diff_data.eq_fields_->ref_velocity.set(velocity_algo_3d, t, reg_by_dim[2]);
+    std::shared_ptr< ScalarSolution > divergence_algo_1d = std::make_shared< ScalarSolution >();
+    divergence_algo_1d->set_python_field_from_file( source_file, "ref_divergence_1d");
+    diff_data.eq_fields_->ref_divergence.set(divergence_algo_1d, t, reg_by_dim[0]);
+    std::shared_ptr< ScalarSolution > divergence_algo_2d = std::make_shared< ScalarSolution >();
+    divergence_algo_2d->set_python_field_from_file( source_file, "ref_divergence_2d");
+    diff_data.eq_fields_->ref_divergence.set(divergence_algo_2d, t, reg_by_dim[1]);
+    std::shared_ptr< ScalarSolution > divergence_algo_3d = std::make_shared< ScalarSolution >();
+    divergence_algo_3d->set_python_field_from_file( source_file, "ref_divergence_3d");
+    diff_data.eq_fields_->ref_divergence.set(divergence_algo_3d, t, reg_by_dim[2]);
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
@@ -373,8 +422,7 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * */
 
 void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
-                   FEValues<3> &fe_values, FEValues<3> &fv_rt,
-                   ExactSolution &anal_sol) {
+                   FEValues<3> &fe_values, FEValues<3> &fv_rt) {
 
     ASSERT( fe_values.dim() == fv_rt.dim());
     unsigned int dim = fe_values.dim();
@@ -399,9 +447,9 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
     // TODO: replace with DHCell getter when available for FESystem component
     double pressure_mean = diff_data.eq_data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
 
-    arma::vec analytical(5);
     arma::vec3 flux_in_q_point;
-    arma::vec3 anal_flux;
+    arma::vec3 ref_flux;
+    double ref_pressure, ref_divergence;
 
     double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
 
@@ -419,8 +467,9 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         arma::vec3 q_point = fe_values.point(i_point);
 
 
-        analytical = anal_sol.value(q_point, ele );
-        for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
+        ref_pressure = diff_data.eq_fields_->ref_pressure.value(q_point, ele );
+        ref_flux = diff_data.eq_fields_->ref_velocity.value(q_point, ele );
+        ref_divergence = diff_data.eq_fields_->ref_divergence.value(q_point, ele );
 
         // compute postprocesed pressure
         diff = 0;
@@ -442,7 +491,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         }
 
         diff = - (1.0 / conductivity) * diff / dim / ele.measure() / cross + pressure_mean ;
-        diff = ( diff - analytical[0]);
+        diff = ( diff - ref_pressure);
         pressure_diff += diff * diff * fe_values.JxW(i_point);
 
 
@@ -454,13 +503,13 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
                               / cross;
         }
 
-        flux_in_q_point -= anal_flux;
+        flux_in_q_point -= ref_flux;
         velocity_diff += dot(flux_in_q_point, flux_in_q_point) * fe_values.JxW(i_point);
 
         // divergence diff
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
-        diff = ( diff / ele.measure() / cross - analytical[4]);
+        diff = ( diff / ele.measure() / cross - ref_divergence);
         divergence_diff += diff * diff * fe_values.JxW(i_point);
 
     }
@@ -502,16 +551,6 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
-    ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
-    anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
-
-    ExactSolution anal_sol_2d(5);
-    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
-
-    ExactSolution anal_sol_3d(5);
-    anal_sol_3d.set_python_field_from_file( source_file, "all_values_3d");
-
     diff_data.mask_vel_error=0;
     for(unsigned int j=0; j<3; j++){
         diff_data.pressure_error[j] = 0;
@@ -525,13 +564,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     	switch (dh_cell.dim()) {
         case 1:
-            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1], anal_sol_1d);
+            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1]);
             break;
         case 2:
-            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2], anal_sol_2d);
+            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2]);
             break;
         case 3:
-            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3], anal_sol_3d);
+            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3]);
             break;
         }
     }

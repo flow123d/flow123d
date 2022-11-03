@@ -111,7 +111,8 @@ protected:
     typedef const vector<unsigned int> & ElementSetRef;
 
     virtual void prepare_output(Input::Record in_rec);
-    virtual void prepare_specific_output(Input::Record in_rec);
+    void prepare_specific_output(Input::Record in_rec);
+    void set_specific_output_python_fields();
     
     void output_internal_flow_data();
 
@@ -203,8 +204,7 @@ protected:
     
     /// Computes L2 error on an element.
     void l2_diff_local(DHCellAccessor dh_cell,
-                      FEValues<3> &fe_values, FEValues<3> &fv_rt,
-                      FieldPython<3, FieldValue<3>::Vector > &anal_sol);
+                      FEValues<3> &fe_values, FEValues<3> &fv_rt);
 };
 
 
