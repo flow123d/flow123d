@@ -199,6 +199,10 @@ public:
         Field<3, FieldValue<3>::Scalar> init_piezo_head;
         BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
         BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;
+
+        Field<3, FieldValue<3>::Scalar> ref_pressure; /// Precompute l2 difference outputs
+        Field<3, FieldValue<3>::VectorFixed> ref_velocity;
+        Field<3, FieldValue<3>::Scalar> ref_divergence;
     };
 
     class EqData {
