@@ -172,6 +172,7 @@ params.precalculations()
 ########################
 # provided functions
 
+# OLD FUNCTIONS: all_values_<X>d 
 def all_values_1d( xx , yy, zz):
     tx=1-math.fabs( xx) * Parameters.x_scale
     p1 = params.p1_fce_value(tx , 0.0 )
@@ -189,6 +190,45 @@ def all_values_2d( xx, yy, zz ):
 def all_values_3d( xx , yy, zz):
     return (0.0, 0.0, 0.0, 0.0, 0.0)
       
+# NEW FUNCTIONS: <REF_FIELD>_<X>d 
+def ref_pressure_1d( xx , yy, zz):
+    tx=1-math.fabs( xx) * Parameters.x_scale
+    p1 = params.p1_fce_value(tx , 0.0 )
+    return (p1, )
+        
+def ref_velocity_1d( xx , yy, zz):
+    tx=1-math.fabs( xx) * Parameters.x_scale
+    vx1 = 2*Parameters.v1_fce_value(params,tx,0.0) * Parameters.x_scale * math.copysign(1,xx) *(-1)
+    return (vx1, 0.0, 0.0)
+        
+def ref_divergence_1d( xx , yy, zz):
+    return (1.0, )
+        
+def ref_pressure_2d( xx , yy, zz):
+    tx=1-math.fabs( xx ) * Parameters.x_scale
+    ty=math.fabs( yy ) * Parameters.y_scale
+    p2=Parameters.p2_fce_value(params, tx, ty )
+    return (p2, ) 
+        
+def ref_velocity_2d( xx , yy, zz):
+    tx=1-math.fabs( xx ) * Parameters.x_scale
+    ty=math.fabs( yy ) * Parameters.y_scale
+    vx2=Parameters.vx2_fce_value(params,tx,ty) * Parameters.x_scale * math.copysign(1,xx)  *(-1)
+    vy2=Parameters.vy2_fce_value(params,tx,ty) * Parameters.y_scale * math.copysign(1,yy)
+    return (vx2, vy2, 0.0) 
+        
+def ref_divergence_2d( xx , yy, zz):
+    return (1.0, )
+        
+def ref_pressure_3d( xx , yy, zz):
+    return (0.0, ) 
+        
+def ref_velocity_3d( xx , yy, zz):
+    return (0.0, 0.0, 0.0) 
+        
+def ref_divergence_3d( xx , yy, zz):
+    return (0.0, )
+        
       
 ################################################
 # the program ( Paraview ProgrammableFilter )
