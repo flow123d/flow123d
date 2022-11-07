@@ -502,15 +502,16 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    //FilePath source_file( "analytical_module.py", FilePath::input_file);
+    std::string source_file = "analytical_module.py";
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
-    anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
+    anal_sol_1d.set_python_field_from_class( source_file, "AllValues1D");
 
     ExactSolution anal_sol_2d(5);
-    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
+    anal_sol_2d.set_python_field_from_class( source_file, "AllValues2D");
 
     ExactSolution anal_sol_3d(5);
-    anal_sol_3d.set_python_field_from_file( source_file, "all_values_3d");
+    anal_sol_3d.set_python_field_from_class( source_file, "AllValues3D");
 
     diff_data.mask_vel_error=0;
     for(unsigned int j=0; j<3; j++){

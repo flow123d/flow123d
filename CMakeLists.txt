@@ -131,10 +131,12 @@ include (Flow123d_config_header)
 message(STATUS "Using build type: ${FLOW_BUILD_TYPE}")
 if(FLOW_BUILD_TYPE STREQUAL "debug")
   # debug mode
+  # Use of fvisibility=hidden flag is necessary for correct compilation of Pybind11 included headers
+  # (see https://pybind11.readthedocs.io/en/stable/faq.html).
   # set(CMAKE_CXX_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
   # set(CMAKE_C_FLAGS "-g -O0 -fsanitize=address -static-libasan -fno-omit-frame-pointer")
-  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer")
-  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer")
+  set(CMAKE_CXX_FLAGS "-g -O0 -fno-omit-frame-pointer -fvisibility=hidden")
+  set(CMAKE_C_FLAGS "-g -O0 -fno-omit-frame-pointer -fvisibility=hidden")
   set(CMAKE_EXE_LINKER_FLAGS "-g ")
   set(CMAKE_BUILD_TYPE Debug)
   
@@ -640,18 +642,6 @@ else()
 	)
 endif()
 
-# use python on demand
-if(USE_PYTHON)
-    flow_define(HAVE_PYTHON)
-endif()
-
-# find python 
-set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8
-find_package(PythonInterp 3.4 REQUIRED)
-find_package(PythonLibs   3.4 REQUIRED)
-# TODO: remove dependency on python
-include_directories(${PYTHON_INCLUDE_DIRS})
-
 # create shortcuts for runtest
 
 # use relative path
@@ -716,6 +706,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/bparser
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
+    ${CMAKE_SOURCE_DIR}/third_party/pybind11-2.9.2/include/pybind11
     ${PERMON_INCLUDES}
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
@@ -871,6 +862,10 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add bparser sources
 message(STATUS "add subdir BParser")
 add_subdirectory(third_party/bparser)
+
+# add pybind11 sources
+message(STATUS "add subdir pybind11")
+add_subdirectory(third_party/pybind11-2.9.2)
 
 # add tbb sources
 #message(STATUS "add subdir TBB")

@@ -18,6 +18,7 @@ test_cases:
   - 13_time_steps_func.yaml
   - 14_time_steps_func_include.yaml
   - 17_tg_global_time_unit.yaml
+  - 18_field_python.yaml
   - 27_FE_equivalent_mesh.yaml
   - 28_FE_identic_mesh.yaml
   - 41_user_fields_darcy_dg.yaml

@@ -21,6 +21,13 @@
 
 #include <type_traits>
 #include "fields/field_python.hh"
+#include "fields/field_set.hh"
+#include "fields/python_field_proxy.hh" // TODO check if include is necessary
+#include <pybind11.h>
+#include <eval.h>
+#include <stl.h>
+
+namespace py = pybind11;
 
 /// Implementation.
 
@@ -34,15 +41,15 @@ template <int spacedim, class Value>
 const Input::Type::Record & FieldPython<spacedim, Value>::get_input_type()
 {
     return it::Record("FieldPython", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by a Python script.")
-		.derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
-		.copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-		.declare_key("script_string", it::String(), it::Default::read_time("Obligatory if 'script_file' is not given. "),
-				"Python script given as in place string")
-		.declare_key("script_file", it::FileName::input(), it::Default::read_time("Obligatory if 'script_striong' is not given. "),
-				"Python script given as external file")
-		.declare_key("function", it::String(), it::Default::obligatory(),
-				"Function in the given script that returns tuple containing components of the return type.\n"
-				"For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
+        .declare_key("source_file", it::String(), it::Default::obligatory(),
+                "Python script given as external file in format 'dir'.'file_name' without .py extension")
+        .declare_key("class", it::String(), it::Default::obligatory(),
+                "Function in the given script that returns tuple containing components of the return type.\n"
+                "For NxM tensor values: tensor(row,col) = tuple( M*row + col ).")
+        .declare_key("used_fields", it::Array(it::String()), it::Default("[]"),
+				"Defines list of fields necessary in evaluation of actual field.")
 		//.declare_key("units", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
 		//		"Definition of unit.")
 		.close();
@@ -61,28 +68,7 @@ FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
 	this->is_constant_in_space_ = false;
-
-#ifdef FLOW123D_HAVE_PYTHON
-    p_func_=NULL;
-    p_module_=NULL;
-    p_args_=NULL;
-    p_value_=NULL;
-#else
-    THROW( ExcNoPythonSupport() );
-#endif // FLOW123D_HAVE_PYTHON
 }
-
-
-
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const string &python_source, FMT_UNUSED const string &func_name)
-{
-#ifdef FLOW123D_HAVE_PYTHON
-    p_module_ = PythonLoader::load_module_from_string("python_field_"+func_name, python_source);
-    set_func(func_name);
-#endif // FLOW123D_HAVE_PYTHON
-}
-
 
 
 
@@ -90,74 +76,40 @@ void FieldPython<spacedim, Value>::set_python_field_from_string(FMT_UNUSED const
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->field_name_ = init_data.field_name_;
 
-    Input::Iterator<string> it = rec.find<string>("script_string");
-    if (it) {
-        set_python_field_from_string( *it, rec.val<string>("function") );
-    } else {
-        Input::Iterator<FilePath> it = rec.find<FilePath>("script_file");
-        if (! it) THROW( ExcNoPythonInit() );
-        try {
-            set_python_field_from_file( *it, rec.val<string>("function") );
-        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
-    }
+    std::string source_file = rec.val<string>("source_file");
+    std::string source_class = rec.val<string>("class");
+    try {
+        set_python_field_from_class( source_file, source_class );
+    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, rec)
+
+    in_rec_ = rec;
 }
 
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_python_field_from_file(FMT_UNUSED const FilePath &file_name, FMT_UNUSED const string &func_name)
+void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
 {
-#ifdef FLOW123D_HAVE_PYTHON
-    p_module_ = PythonLoader::load_module_from_file( string(file_name) );
-    set_func(func_name);
-#endif // FLOW123D_HAVE_PYTHON
+    py::module_ flowpy_module = PythonLoader::load_module_by_name("flowpy");
+    py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
+    try {
+        user_class_instance_ = flowpy_module.attr("PythonFieldBase").attr("_create")(class_module, class_name.c_str());
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 }
 
 
-
-
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_func(FMT_UNUSED const string &func_name)
-{
-#ifdef FLOW123D_HAVE_PYTHON
-	p_func_ = PythonLoader::get_callable(p_module_, func_name);
-
-    p_args_ = PyTuple_New( spacedim );
-
-    // try field call
-    for(unsigned int i = 0; i < spacedim; i++) {
-        p_value_ = PyFloat_FromDouble( double(i) );
-        PyTuple_SetItem(p_args_, i, p_value_);
-    }
-    p_value_ = PyObject_CallObject(p_func_, p_args_);
-    PythonLoader::check_error();
-
-    if ( ! PyTuple_Check( p_value_)) {
-    	stringstream ss;
-    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(p_module_) << " doesn't return Tuple." << endl;
-        THROW( ExcMessage() << EI_Message( ss.str() ));
-    }
-
-    unsigned int size = PyTuple_Size( p_value_);
-
-    unsigned int value_size=this->value_.n_rows() * this->value_.n_cols();
-    if ( size !=  value_size) {
-        THROW( ExcInvalidCompNumber() << EI_FuncName(func_name) << EI_PModule(PyModule_GetName(p_module_)) << EI_Size(size) << EI_ValueSize(value_size) );
-    }
-
-#endif // FLOW123D_HAVE_PYTHON
-
-}
 
 /**
  * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
  */
 template <int spacedim, class Value>
-typename Value::return_type const & FieldPython<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
+typename Value::return_type const & FieldPython<spacedim, Value>::value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm)
 {
-    set_value(p,elm, this->value_);
-    this->value_.scale(this->unit_conversion_coefficient_);
+    ASSERT(false).warning("Method FieldPython::value is obsolete. DO not use it!\n");
     return this->r_value_;
 }
 
@@ -166,55 +118,76 @@ typename Value::return_type const & FieldPython<spacedim, Value>::value(const Po
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
+void FieldPython<spacedim, Value>::value_list (FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
+                   FMT_UNUSED std::vector<typename Value::return_type>  &value_list)
 {
-	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1 ).error("Invalid point size.\n");
-    for(unsigned int i=0; i< point_list.size(); i++) {
-        Value envelope(value_list[i]);
-        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)
-                .error("value_list[i] has wrong number of rows\n");
-        set_value(point_list.vec<spacedim>(i), elm, envelope );
-        envelope.scale(this->unit_conversion_coefficient_);
-    }
+    ASSERT(false).warning("Method FieldPython::value_list is obsolete. DO not use it!\n");
 }
-
-/**
-* Returns one vector value in one given point.
-*/
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm, FMT_UNUSED Value &value)
-{
-#ifdef FLOW123D_HAVE_PYTHON
-    for(unsigned int i = 0; i < spacedim; i++) {
-        p_value_ = PyFloat_FromDouble( p[i] );
-        PyTuple_SetItem(p_args_, i, p_value_);
-    }
-    p_value_ = PyObject_CallObject(p_func_, p_args_);
-    PythonLoader::check_error();
-
-    unsigned int pos =0;
-    for(unsigned int row=0; row < value.n_rows(); row++)
-        for(unsigned int col=0; col < value.n_cols(); col++, pos++)
-            if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
-            else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
-
-#endif // FLOW123D_HAVE_PYTHON
-}
-
 
 
 
 template <int spacedim, class Value>
-FieldPython<spacedim, Value>::~FieldPython() {
-#ifdef FLOW123D_HAVE_PYTHON
-    Py_CLEAR(p_module_);
-    Py_CLEAR(p_func_);
-    Py_CLEAR(p_value_);
-    Py_CLEAR(p_args_);
-#endif // FLOW123D_HAVE_PYTHON
+std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
+    required_fields_.clear();
+
+    auto used_fields_array = in_rec_.val<Input::Array>("used_fields");
+    std::vector<std::string> used_fields_vec;
+    used_fields_array.copy_to(used_fields_vec);
+    for(auto field_name : used_fields_vec) {
+        auto field_ptr = field_set.field(field_name);
+        if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
+        else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(field_name) << FieldSet::EI_FieldType("python declaration") << Input::EI_Address( in_rec_.address_string() ) );
+    }
+
+    // instance of FieldCommon of this field (see cache_reinit method)
+    self_field_ptr_ = field_set.field(this->field_name_);
+
+    return required_fields_;
 }
+
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+{
+    std::vector<FieldCacheProxy> field_data;
+    for (auto field_ptr : required_fields_) {
+        std::string field_name = field_ptr->name();
+        double * cache_data = field_ptr->value_cache()->data_;
+        field_data.emplace_back(field_name, field_ptr->shape_, cache_data, CacheMapElementNumber::get()*field_ptr->n_shape());
+    }
+
+    double * cache_data = self_field_ptr_->value_cache()->data_;
+    FieldCacheProxy result_data(this->field_name_, self_field_ptr_->shape_, cache_data, (CacheMapElementNumber::get()*self_field_ptr_->n_shape()));
+
+    try {
+        py::object p_func = user_class_instance_.attr("_cache_reinit");
+        p_func(this->time_.end(), field_data, result_data);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
+}
+
+
+
+template <int spacedim, class Value>
+void FieldPython<spacedim, Value>::cache_update(FMT_UNUSED FieldValueCache<typename Value::element_type> &data_cache,
+        ElementCacheMap &cache_map, unsigned int region_patch_idx)
+{
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+    try {
+        py::object p_func = user_class_instance_.attr("_cache_update");
+        p_func(this->field_name_, reg_chunk_begin, reg_chunk_end);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
+}
+
+
+
+template <int spacedim, class Value>
+FieldPython<spacedim, Value>::~FieldPython() {}
 
 
 #endif /* FIELD_PYTHON_IMPL_HH_ */

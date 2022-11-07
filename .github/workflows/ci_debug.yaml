@@ -76,7 +76,11 @@ jobs:
           with:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
-        
+        - name: Report
+          run: |
+            echo "Job result: ${{job.result}}"
+            echo "Job status: ${{job.status}}"
+ 
     unit_tests:
         needs: [build]
         runs-on: ubuntu-latest

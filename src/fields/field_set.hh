@@ -158,7 +158,9 @@ private:
  */
 class FieldSet : public FieldFlag {
 public:
-	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+    TYPEDEF_ERR_INFO( EI_FieldType, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
+            << "Unknown field " << FieldCommon::EI_Field::qval << " in the " << EI_FieldType::val << ": \n");
     DECLARE_INPUT_EXCEPTION(ExcFieldNotSet,
             << "Field " << FieldCommon::EI_Field::qval << " is not set. Please set key 'scalar_field', 'vector_field' or 'tensor_field' at: \n");
     DECLARE_INPUT_EXCEPTION(ExcFieldExists,

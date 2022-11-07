@@ -180,7 +180,7 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
     FieldCommon *found_field=field(field_name);
     if (found_field) return *found_field;
 
-    THROW(ExcUnknownField() << FieldCommon::EI_Field(field_name));
+    THROW(ExcUnknownField() << FieldCommon::EI_Field(field_name) << EI_FieldType("FieldSet"));
     return *field_list[0]; // formal to prevent compiler warning
 }
 

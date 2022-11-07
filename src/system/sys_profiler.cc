@@ -24,9 +24,7 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#ifdef FLOW123D_HAVE_PYTHON
-    #include "Python.h"
-#endif // FLOW123D_HAVE_PYTHON
+#include <pybind11.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
@@ -844,9 +842,9 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["run-finished-at"] =     end_time_string;
 }
 
-#ifdef FLOW123D_HAVE_PYTHON
 void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-    
+	namespace py = pybind11;
+
     if (json_filepath == "") return;
 
     // error under CYGWIN environment : more details in this repo 
@@ -856,50 +854,16 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     // Windows users will have to use a python script located in bin folder
     // 
 
-    #ifndef FLOW123D_HAVE_CYGWIN
     // grab module and function by importing module profiler_formatter_module.py
-    PyObject * python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //
-    PyObject * convert_method  = PythonLoader::get_callable (python_module, "convert" );
-
-    int argument_index = 0;
-    PyObject * arguments = PyTuple_New (3);
-
-    // set json path location as first argument
-    PyObject * tmp = PyUnicode_FromString (json_filepath.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
-
-    // set output path location as second argument
-    tmp = PyUnicode_FromString ((json_filepath + output_file_suffix).c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
-
-    // set Formatter class as third value
-    tmp = PyUnicode_FromString (formatter.c_str());
-    PyTuple_SetItem (arguments, argument_index++, tmp);
-
+    auto convert_method = python_module.attr("convert");
     // execute method with arguments
-    PyObject_CallObject (convert_method, arguments);
+    convert_method(json_filepath, (json_filepath + output_fiel_suffix), formatter);
 
-    PythonLoader::check_error();
-
-    #else
-
-    // print information about windows-cygwin issue and offer manual solution
-    MessageOut() << "# Note: converting json profiler reports is not"
-                 << " supported under Windows or Cygwin environment for now.\n"
-                 << "# You can use python script located in bin/python folder"
-                 << " in order to convert json report to txt or csv format.\n"
-                 << "python profiler_formatter_script.py --input \"" << json_filepath
-                 << "\" --output \"profiler.txt\"" << std::endl;
-    #endif // FLOW123D_HAVE_CYGWIN
 }
-#else
-void Profiler::transform_profiler_data (const string &, const string &) {
-}
-
-#endif // FLOW123D_HAVE_PYTHON
 
 
 void Profiler::uninitialize() {
