@@ -135,8 +135,10 @@ void PythonLoader::throw_error(const py::error_already_set &ex) {
     string py_message =
                "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.type().ptr() ))) + "\n"
              + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.value().attr("args").ptr() ))) + "\n"
-             + "Traceback: \n" + str_traceback + "\n"
-             + "Paths: " + "\n" + python_path + "\n";
+             + "Traceback: \n" + str_traceback
+			 + "--------------------------------------------------------\n\n"
+             + "Python sys.path: " + "\n" + python_path
+	         + "--------------------------------------------------------\n\n";
     
     THROW(ExcPythonError() << EI_PythonMessage( py_message ));
 }
