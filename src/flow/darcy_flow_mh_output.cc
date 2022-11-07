@@ -237,8 +237,8 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
 void DarcyFlowMHOutput::set_specific_output_python_fields()
 {
-	typedef FieldPython<3, FieldValue<3>::Scalar > ScalarSolution;
-	typedef FieldPython<3, FieldValue<3>::VectorFixed > VectorSolution;
+	typedef FieldValue<3>::Scalar ScalarSolution;
+	typedef FieldValue<3>::VectorFixed VectorSolution;
 
     // Create separate vectors of 1D, 2D, 3D regions
     std::vector< std::vector<std::string> > reg_by_dim(3);
@@ -250,36 +250,33 @@ void DarcyFlowMHOutput::set_specific_output_python_fields()
 
     // Create instances of FieldPython and set them to Field objects
     FilePath source_file( "analytical_module.py", FilePath::input_file);
-    double t = darcy_flow->time().t(); // initial time
 
-    std::shared_ptr< ScalarSolution > pressure_algo_1d = std::make_shared< ScalarSolution >();
-    pressure_algo_1d->set_python_field_from_file( source_file, "ref_pressure_1d");
-    diff_data.eq_fields_->ref_pressure.set(pressure_algo_1d, t, reg_by_dim[0]);
-    std::shared_ptr< ScalarSolution > pressure_algo_2d = std::make_shared< ScalarSolution >();
-    pressure_algo_2d->set_python_field_from_file( source_file, "ref_pressure_2d");
-    diff_data.eq_fields_->ref_pressure.set(pressure_algo_2d, t, reg_by_dim[1]);
-    std::shared_ptr< ScalarSolution > pressure_algo_3d = std::make_shared< ScalarSolution >();
-    pressure_algo_3d->set_python_field_from_file( source_file, "ref_pressure_3d");
-    diff_data.eq_fields_->ref_pressure.set(pressure_algo_3d, t, reg_by_dim[2]);
-    std::shared_ptr< VectorSolution > velocity_algo_1d = std::make_shared< VectorSolution >();
-    velocity_algo_1d->set_python_field_from_file( source_file, "ref_velocity_1d");
-    diff_data.eq_fields_->ref_velocity.set(velocity_algo_1d, t, reg_by_dim[0]);
-    std::shared_ptr< VectorSolution > velocity_algo_2d = std::make_shared< VectorSolution >();
-    velocity_algo_2d->set_python_field_from_file( source_file, "ref_velocity_2d");
-    diff_data.eq_fields_->ref_velocity.set(velocity_algo_2d, t, reg_by_dim[1]);
-    std::shared_ptr< VectorSolution > velocity_algo_3d = std::make_shared< VectorSolution >();
-    velocity_algo_3d->set_python_field_from_file( source_file, "ref_velocity_3d");
-    diff_data.eq_fields_->ref_velocity.set(velocity_algo_3d, t, reg_by_dim[2]);
-    std::shared_ptr< ScalarSolution > divergence_algo_1d = std::make_shared< ScalarSolution >();
-    divergence_algo_1d->set_python_field_from_file( source_file, "ref_divergence_1d");
-    diff_data.eq_fields_->ref_divergence.set(divergence_algo_1d, t, reg_by_dim[0]);
-    std::shared_ptr< ScalarSolution > divergence_algo_2d = std::make_shared< ScalarSolution >();
-    divergence_algo_2d->set_python_field_from_file( source_file, "ref_divergence_2d");
-    diff_data.eq_fields_->ref_divergence.set(divergence_algo_2d, t, reg_by_dim[1]);
-    std::shared_ptr< ScalarSolution > divergence_algo_3d = std::make_shared< ScalarSolution >();
-    divergence_algo_3d->set_python_field_from_file( source_file, "ref_divergence_3d");
-    diff_data.eq_fields_->ref_divergence.set(divergence_algo_3d, t, reg_by_dim[2]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_1d", diff_data.eq_fields_->ref_pressure, reg_by_dim[0]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_2d", diff_data.eq_fields_->ref_pressure, reg_by_dim[1]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_3d", diff_data.eq_fields_->ref_pressure, reg_by_dim[2]);
+    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_1d", diff_data.eq_fields_->ref_velocity, reg_by_dim[0]);
+    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_2d", diff_data.eq_fields_->ref_velocity, reg_by_dim[1]);
+    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_3d", diff_data.eq_fields_->ref_velocity, reg_by_dim[2]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_1d", diff_data.eq_fields_->ref_divergence, reg_by_dim[0]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_2d", diff_data.eq_fields_->ref_divergence, reg_by_dim[1]);
+    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_3d", diff_data.eq_fields_->ref_divergence, reg_by_dim[2]);
 }
+
+
+template <class FieldType>
+void DarcyFlowMHOutput::set_ref_solution(const FilePath &source_file, std::string python_method,
+        Field<3, FieldType> &output_field, std::vector<std::string> reg) {
+    std::shared_ptr< FieldPython<3, FieldType> > algo = std::make_shared< FieldPython<3, FieldType> >();
+    algo->set_python_field_from_file( source_file, python_method );
+    output_field.set(algo, darcy_flow->time().t(), reg);
+}
+
+#define DARCY_SET_REF_SOLUTION(FTYPE) \
+template void DarcyFlowMHOutput::set_ref_solution<FTYPE>(const FilePath &, std::string, Field<3, FTYPE> &, std::vector<std::string>)
+
+DARCY_SET_REF_SOLUTION(FieldValue<3>::Scalar);
+DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
+
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {}
