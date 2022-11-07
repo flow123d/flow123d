@@ -181,7 +181,7 @@ PythonRunning::PythonRunning()
 {
     // initialize the Python interpreter.
     py::initialize_interpreter();
-    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/src/python/flowpy";
+    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/src/python";
     std::string fieldproxypy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
     PythonLoader::add_sys_path(flowpy_path);
     PythonLoader::add_sys_path(fieldproxypy_path);
