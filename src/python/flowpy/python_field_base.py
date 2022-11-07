@@ -1,91 +1,152 @@
 #!/bin/python3
 # author: David Flanderka
 
-import sys
-import fieldproxypy
-import numpy as np
+import types
 from typing import *
+import numpy as np
 
 
-class PythonFieldBase():
+class PythonFieldBase:
+    """
+    Base class for user field evaluation classes. The user class defines the evaluation method
+    for every field to evaluate. This evaluation can depend on other fields specified by the key `used_fields` of
+    the `FieldPython` input record of Flow123d. The evaluation through cal of `_cache_update` evaluates many quadrature
+    points (n_points) at once. The field values are stored in the numpy arrays where the last dimension
+    corresponds to the quadrature points.
+    E.g.  scalar field values are stored in 1D array of shape (n_points)
+    3D vector field values are stored in array of shape (3, n_points)
+    tensor values are stored in array of shape (3, 3, n_points)
+
+
+
+    Usage:
+    YAMLFile:
+        water_source_density: !FieldPython
+          source_file: eval.py
+          class: Eval
+          used_fields: ["X", "cross_section"]
+        conductivity: !FieldPython
+          source_file: eval.py
+          class: Eval
+          used_fields: ["X"]
+
+    eval.py:
+
+    class UserEvaluation(PythonFieldBase):
+        # User class will be instantiated just once and shared for among all evaluated fields.
+        # That allows common precalculations.
+        # PythonFieldBase also allows dot acces to the input fields.
+        def water_source_density(self):
+            # evaluation of the `field_b` using self as dictionary of the input fields
+            # specified in the YAML file
+            return np.norm(self.X) * self.cross_section
+        
+        def conductivity(self):
+            # evaluation of
+            z = self.X[2]
+            return np.exp(-z)
+    """
+    
+    # Singleton like instances of the user field evaluation classes.
     _instances = dict()
 
     @staticmethod
-    def _create(module, class_name):
-        """ Creates instance of class_name if doesn't exist. Stores its to _instances and returns. """
-        if class_name not in PythonFieldBase._instances:
-            # module = __import__(module_name)
+    def _create(module: types.ModuleType, class_name: str) -> 'PythonFieldBase':
+        """ 
+        Create and return unique instance of the user field evaluation class of name `class_name` from `module`.
+        """
+        full_name = f"{module.__name__}.{class_name}"
+        try:
+            instance = PythonFieldBase._instances[full_name]
+        except KeyError:
             class_ = getattr(module, class_name)
-            PythonFieldBase._instances[class_name] = class_()
-        return PythonFieldBase._instances.get(class_name, None)
-
+            instance = class_()
+            PythonFieldBase._instances[full_name] = instance
+        return instance
 
     def __init__(self):
-        """ Initialize object and its data members """
-        self.region_chunk_begin = 0
-        self.region_chunk_end = 300
+        """ 
+        Constructor. Define all generic attributes.
+        """
+        # Slice of the quadrature points to evaluate, set by _cache_update.
+        self._region_chunk_begin = 0
+        self._region_chunk_end = 0
+        # Currently evaluated time.
         self.t = 0.0
-        self.used_fields_dict = dict()
-        self.result_fields_dict = dict()
-
+        # Dictionary of the input fields. Access through dot syntax:
+        # self.<input_field>
+        self._used_fields_dict = dict()
+        # Dictionary of the output fields. No direct access. Reuslts of the user methods are stored
+        # in `_cache_update`.
+        self._result_fields_dict = dict()
 
     def __getattr__(self, attr):
-        """ Allows direct access to items in 'used_fields_dict' field data dictionary.
-            Example: use 'self.field_name' instead of 'self.used_fields_dict["field_name"]' """
-        cache_data = self.used_fields_dict.get(attr, None)
-        return cache_data[..., self.region_chunk_begin:self.region_chunk_end]
+        """
+        Access to the input fields through th e"dot" sysntax.
+        Example: use 'self.field_name' id equal to 'self.used_fields_dict["field_name"]'
+        """
+        cache_data = self._used_fields_dict.get(attr, None)
+        return cache_data[..., self._region_chunk_begin:self._region_chunk_end]
         
-
-    def repl(self, x):
-        """ Method replicates x value to size of evaluated vector. 
-            Example, use this method for fill result:
-             > y = self.X[1]
-             > return self.repl( np.eye(3) ) * y
-            In this example, method creates vector of identity matrices. Size of vector 
-            is same as size of field result. This fact is ensured by this method. Then 
-            vector of identity matrices id multiplicated by values on y-coord.
-            """
+    @staticmethod
+    def repl(x):
+        """
+        Replicates the input array along the axis of the quadrature points (the last one).
+        Is necessary for the scalar arrays, e.g.
+        ```
+             y = self.X[1]
+             return self.repl( np.eye(3) ) * y
+        ```
+        Without repl, the expression `np.eye(3) * y` would fail as we try to multiply constant tensor of shape (3,3)
+        by the scalar field of the shape (n_points). Using `repl` we multiply shape (3,3,1) by shape
+        (n_points) which is broadcasted to common the shape (3,3,n_points).
+        """
         return x[..., None]
         
 
     def _cache_reinit(self, time: float, data: List['FieldCacheProxy'], result: 'FieldCacheProxy') -> None:
-        """ Fill dictionary of input fields and result field, set time """
-        self.used_fields_dict.clear()
+        """
+        Create arrays as wrappers to given C++ field value caches passed as FieldCacheProxy.
+        One reinit is called for every result field.
+        """
+        self._used_fields_dict.clear()
         for in_field in data:
             in_array = np.array(in_field, copy=False)
             in_array.flags.writeable = False
-            self.used_fields_dict[in_field.field_name()] = in_array
-        self.result_fields_dict[result.field_name()] = np.array(result, copy=False)
+            self._used_fields_dict[in_field.field_name()] = in_array
+        self._result_fields_dict[result.field_name()] = np.array(result, copy=False)
         
         self.t = time
 
 
     def _cache_update(self, field_name: str, reg_chunk_begin: int, reg_chunk_end: int):
-        """ Method called from cache_update in C++ code.
-            Needs to define the method with same name as name of evaluated field in descendant 
-            that executes evaluation. """
-        self.region_chunk_begin = reg_chunk_begin
-        self.region_chunk_end = reg_chunk_end
+        """
+        Method called from cache_update in C++ code.
+        Needs to define the method with same name as name of evaluated field in descendant
+        that executes evaluation.
+        """
+        self._region_chunk_begin = reg_chunk_begin
+        self._region_chunk_end = reg_chunk_end
         res_array = getattr(self, field_name)()
         
         # Check number of dimensions and shape of result array
         result_shape = res_array.shape
-        expect_shape = self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end].shape
-        if result_shape!=expect_shape:
+        expect_shape = self._result_fields_dict[field_name][..., self._region_chunk_begin:self._region_chunk_end].shape
+        if result_shape != expect_shape:
             raise ValueError(f"Invalid shape of '{field_name}' method result. Must be {expect_shape}.")
-        
-        self.result_fields_dict[field_name][..., self.region_chunk_begin:self.region_chunk_end] = res_array
+
+        self._result_fields_dict[field_name][..., self._region_chunk_begin:self._region_chunk_end] = res_array
 
 
     def _print_fields(self):
-        """ Temporary method for development """
+        """ Auxiliary method for development """
         print("Dictionary contains fields: ")
         print("1) Used fields: ")
-        for key, val in self.used_fields_dict.items():
+        for key, val in self._used_fields_dict.items():
             print(key, ":")
             print(val)
         print("2) Result fields: ")
-        for key, val in self.result_fields_dict.items():
+        for key, val in self._result_fields_dict.items():
             print(key, ":")
             print(val)
 
