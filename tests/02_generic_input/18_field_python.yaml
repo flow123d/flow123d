@@ -1,0 +1,44 @@
+#################
+# Test goal: Test of FieldPython assembly algorithm.
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of FieldPython used in anisotropy and water_source_density (check results by switching to FieldFormula).
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_shift.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    input_fields:
+      - region: plane
+#        anisotropy: !FieldFormula
+#          value: if(z < 0.25, 0.5+2*z, 1)
+        anisotropy: !FieldPython
+          source_file: field_python_test.py
+          class: FieldPythonTest
+          used_fields: ["X"]
+#        water_source_density: !FieldFormula
+#          value: 2*(1-x^2)+2*(1-y^2)+cross_section
+        water_source_density: !FieldPython
+          source_file: field_python_test.py
+          class: FieldPythonTest
+          used_fields: ["X", "cross_section"]
+        conductivity: !FieldPython
+          source_file: field_python_test.py
+          class: FieldPythonTest
+          used_fields: ["X"]
+      - region: .plane_boundary
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii

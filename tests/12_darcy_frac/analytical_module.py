@@ -6,6 +6,7 @@
 
 
 import math
+import flowpy
 
 class Parameters :
 
@@ -229,6 +230,51 @@ def ref_velocity_3d( xx , yy, zz):
 def ref_divergence_3d( xx , yy, zz):
     return (0.0, )
         
+# PYTHON CLASSES: AllValues<X>d 
+class AllValues1D(flowpy.PythonFieldBase):
+    pass
+
+    def used_fields(self):
+        field_list = ["X"]
+        return field_list
+    
+    def __call__(self):
+        xx = self.X[0]
+        yy = self.X[1]
+        zz = self.X[2]
+        tx=1-math.fabs( xx) * Parameters.x_scale
+        p1 = params.p1_fce_value(tx , 0.0 )
+        vx1 = 2*Parameters.v1_fce_value(params,tx,0.0) * Parameters.x_scale * math.copysign(1,xx) *(-1)
+        return (p1, vx1, 0.0, 0.0, 1.0)
+
+class AllValues2D(flowpy.PythonFieldBase):
+    pass
+
+    def used_fields(self):
+        field_list = ["X"]
+        return field_list
+    
+    def __call__(self):
+        xx = self.X[0]
+        yy = self.X[1]
+        zz = self.X[2]
+        tx=1-math.fabs( xx ) * Parameters.x_scale
+        ty=math.fabs( yy ) * Parameters.y_scale
+        p2=Parameters.p2_fce_value(params, tx, ty )
+        vx2=Parameters.vx2_fce_value(params,tx,ty) * Parameters.x_scale * math.copysign(1,xx)  *(-1)
+        vy2=Parameters.vy2_fce_value(params,tx,ty) * Parameters.y_scale * math.copysign(1,yy)
+        return (p2, vx2, vy2, 0.0, 1.0) 
+    
+class AllValues3D(flowpy.PythonFieldBase):
+    pass
+
+    def used_fields(self):
+        field_list = []
+        return field_list
+    
+    def __call__(self):
+        return (0.0, 0.0, 0.0, 0.0, 0.0)
+
       
 ################################################
 # the program ( Paraview ProgrammableFilter )

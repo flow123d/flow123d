@@ -19,13 +19,11 @@
 #define PYTHON_UTILS_HH_
 
 
-#include "global_defs.h"             // for FLOW123D_HAVE_PYTHON
-#include "Python.h"                  // for PyObject
+#include "global_defs.h"
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
 
-#ifdef FLOW123D_HAVE_PYTHON
-
 #include <string>
+#include <pybind11.h>
 
 /*
  * Notes on Python 3 API
@@ -56,7 +54,7 @@ namespace internal {
  */
 class PythonRunning {
 public:
-    PythonRunning(const std::string &python_home);
+    PythonRunning();
     ~PythonRunning();
 };
 } // close namespace internal
@@ -96,18 +94,19 @@ public:
      * for the python executable.
      */
 
-    static void initialize(const std::string &python_home="");
+    static void initialize();
 
     /**
      * This function loads a module from the given file.
      * Resulting module has to be deallocated by Py_DECREF() macro.
      */
-    static PyObject * load_module_from_file(const std::string& fname);
+    static pybind11::module_ load_module_from_file(const std::string& fname);
     /**
      * This function compile code in the given string and creates a module with name @p module_name.
+     * Module contains one function with name @p func_name. Function must be defined in @p source_strimg.
      * Resulting module has to be deallocated by Py_DECREF() macro.
      */
-    static PyObject * load_module_from_string(const std::string& module_name, const std::string& source_string);
+    static pybind11::module_ load_module_from_string(const std::string& module_name, const std::string& func_name, const std::string& source_string);
     /**
      * Method which loads module by given module_name
      * module_name can (and probably will) contain packages path (will contain dots '.' which detonates package)
@@ -117,25 +116,21 @@ public:
      *
      * will import module 'profiler_formatter_module' from package 'profiler'
      */
-    static PyObject * load_module_by_name(const std::string& module_name);
+    static pybind11::module_ load_module_by_name(const std::string& module_name);
     /**
-     * Tests whether the error indicator is set, if yes formats and throws exception.
+     * Formats and throws ExcPythonError exception.
      */
-    static void check_error();
+    static void throw_error(const pybind11::error_already_set &ex);
     /**
-     * Check if python function is callable, if not throws exception.
+     * Add path to python sys_path.
      */
-    static PyObject * get_callable(PyObject *module, const std::string &func_name);
+    static void add_sys_path(const std::string &path);
     /**
-     * all paths which are set in every python call (sys.path) value. Values are
-     * separated by path separator(colon on unix, semicolono on windows). This 
-     * value is generated 
+     * Returns vector of Python paths.
      */
-    static std::string sys_path;
+    static std::vector<std::string> get_python_path();
 };
 
 
-
-#endif // FLOW123D_HAVE_PYTHON
 
 #endif /* PYTHON_UTILS_HH_ */

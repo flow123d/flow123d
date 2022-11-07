@@ -267,7 +267,7 @@ template <class FieldType>
 void DarcyFlowMHOutput::set_ref_solution(const FilePath &source_file, std::string python_method,
         Field<3, FieldType> &output_field, std::vector<std::string> reg) {
     std::shared_ptr< FieldPython<3, FieldType> > algo = std::make_shared< FieldPython<3, FieldType> >();
-    algo->set_python_field_from_file( source_file, python_method );
+    algo->set_python_field_from_file( source_file, python_method ); // TODO use set_python_field_from_class method instead of ...from_file
     output_field.set(algo, darcy_flow->time().t(), reg);
 }
 

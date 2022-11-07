@@ -457,25 +457,24 @@ TYPED_TEST(FieldSpeed, field_formula_depth) {
 }
 
 
-#ifdef FLOW123D_HAVE_PYTHON
-TYPED_TEST(FieldSpeed, field_python) {
-	this->set_values();
-	string key_name = "python_" + this->input_type_name_;
-	this->read_input(key_name);
-
-	START_TIMER("field_python");
-    this->test_single();
-    EXPECT_TIMER_LE("single", 1.4);
-    this->test_many();
-    EXPECT_TIMER_LE("many", 1.4);
-    this->test_list();
-    EXPECT_TIMER_LE("list", 1.2);
-	END_TIMER("field_python");
-
-	this->test_result( this->expect_const_val_, 2*list_size + 1 );
-	this->profiler_output();
-}
-#endif // FLOW123D_HAVE_PYTHON
+// FieldPython doesn't support method value now.
+//TYPED_TEST(FieldSpeed, field_python) {
+//	this->set_values();
+//	string key_name = "python_" + this->input_type_name_;
+//	this->read_input(key_name);
+//
+//	START_TIMER("field_python");
+//    this->test_single();
+//    EXPECT_TIMER_LE("single", 1.4);
+//    this->test_many();
+//    EXPECT_TIMER_LE("many", 1.4);
+//    this->test_list();
+//    EXPECT_TIMER_LE("list", 1.2);
+//	END_TIMER("field_python");
+//
+//	this->test_result( this->expect_const_val_, 2*list_size + 1 );
+//	this->profiler_output();
+//}
 
 
 // PE:
