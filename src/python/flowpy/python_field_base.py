@@ -4,7 +4,7 @@
 import types
 from typing import *
 import numpy as np
-
+from fieldproxypy import FieldCacheProxy     # neccessary for conversion to numpy array
 
 class PythonFieldBase:
     """
@@ -104,7 +104,7 @@ class PythonFieldBase:
         return x[..., None]
         
 
-    def _cache_reinit(self, time: float, data: List['FieldCacheProxy'], result: 'FieldCacheProxy') -> None:
+    def _cache_reinit(self, time: float, data: List[FieldCacheProxy], result: FieldCacheProxy) -> None:
         """
         Create arrays as wrappers to given C++ field value caches passed as FieldCacheProxy.
         One reinit is called for every result field.
