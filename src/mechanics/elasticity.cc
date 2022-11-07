@@ -90,15 +90,27 @@ double lame_lambda(double young, double poisson)
 
 // Functor computing lame_mu
 struct fn_lame_mu {
-	inline double operator() (double young, double poisson) {
-        return young * 0.5 / (poisson+1.);
+    inline double operator() (double young, double poisson, double young_inf, double power, double stress_max, double strain) {
+        double mu0 = young * 0.5 / (poisson+1.);
+        double mu_inf = young_inf * 0.5 / (poisson+1.);
+        return mu_inf + (mu0-mu_inf) * pow( 1 + pow(young/stress_max*strain, 2), (power-1)/2 );
     }
 };
 
+/* Power-law generalization of Hookean linear elasticity
+ * young, young_inf...elastic modulus at low and high strain, respectively
+ * poisson............Poisson's number
+ * power..............polynomial power for smooth transition between the two linear regimes (usually between 0 (bounded stress) and 1 (linear stress))
+ * stress_max.........parameter affecting the transition rate (for power=0 it is the stress limit)
+ * strain.............symmetric gradient of displacement
+ */
+
 // Functor computing lame_lambda
 struct fn_lame_lambda {
-	inline double operator() (double young, double poisson) {
-        return young * poisson / ((poisson+1.)*(1.-2.*poisson));
+    inline double operator() (double young, double poisson, double young_inf, double power, double stress_max, double strain) {
+        double l0 = young * poisson / ((poisson+1.)*(1.-2.*poisson));
+        double l_inf = young_inf * poisson / ((poisson+1.)*(1.-2.*poisson));
+        return l_inf + (l0-l_inf) * pow( 1 + pow(young/stress_max*strain, 2), (power-1)/2 );
     }
 };
 
@@ -173,6 +185,27 @@ Elasticity::EqFields::EqFields()
         .units( UnitSI().Pa() )
          .input_default("0.0")
         .flags_add(in_main_matrix & in_rhs);
+
+    *this+=young_modulus_inf
+        .name("young_modulus_inf")
+        .description("Young's modulus at infinite strain.")
+        .units( UnitSI().Pa() )
+         .input_default("0.0")
+        .flags_add(in_main_matrix & in_rhs);
+
+    *this+=stress_max
+        .name("stress_max")
+        .description("Maximal stress.")
+        .units( UnitSI().Pa() )
+         .input_default("0.0")
+        .flags_add(in_main_matrix & in_rhs);
+    
+    *this+=power_law_index
+        .name("power_law_index")
+        .description("Power law index in stress-strain relation.")
+        .units( UnitSI().Pa() )
+         .input_default("1.0")
+        .flags_add(in_main_matrix & in_rhs);
     
     *this+=poisson_ratio
         .name("poisson_ratio")
@@ -229,6 +262,12 @@ Elasticity::EqFields::EqFields()
     *this += output_stress
             .name("stress")
             .description("Stress tensor output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
+    *this += output_strain
+            .name("strain")
+            .description("Strain tensor output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
@@ -370,6 +409,10 @@ void Elasticity::initialize()
     // setup output stress
     eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
+
+    // setup output strain
+    eq_fields_->output_strain_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_strain.set(eq_fields_->output_strain_ptr, 0.);
     
     // setup output von Mises stress
     eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
@@ -400,8 +443,22 @@ void Elasticity::initialize()
     eq_fields_->output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // set instances of FieldModel
-    eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
-    eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
+    eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(),
+                            eq_fields_->young_modulus,
+                            eq_fields_->poisson_ratio,
+                            eq_fields_->young_modulus_inf,
+                            eq_fields_->power_law_index,
+                            eq_fields_->stress_max,
+                            eq_fields_->output_strain
+                            ), 0.0);
+    eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(),
+                            eq_fields_->young_modulus,
+                            eq_fields_->poisson_ratio,
+                            eq_fields_->young_modulus_inf,
+                            eq_fields_->power_law_index,
+                            eq_fields_->stress_max,
+                            eq_fields_->output_strain
+                            ), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
 
     // equation default PETSc solver options
@@ -475,6 +532,7 @@ void Elasticity::update_output_fields()
     // update ghost values of solution vector and prepare dependent fields
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().zero_entries();
+    eq_fields_->output_strain_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
@@ -484,11 +542,13 @@ void Elasticity::update_output_fields()
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_strain_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_strain_ptr->vec().local_to_ghost_end();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();

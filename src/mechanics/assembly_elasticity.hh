@@ -47,6 +47,9 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->stress_max;
+        this->used_fields_ += eq_fields_->power_law_index;
+        this->used_fields_ += eq_fields_->output_strain;
         this->used_fields_ += eq_fields_->dirichlet_penalty;
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->fracture_sigma;
@@ -580,6 +583,9 @@ public:
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->stress_max;
+        this->used_fields_ += eq_fields_->output_strain;
+        this->used_fields_ += eq_fields_->power_law_index;
         this->used_fields_ += eq_fields_->initial_stress;
     }
 
@@ -604,6 +610,7 @@ public:
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
+        output_strain_vec_ = eq_fields_->output_strain_ptr->vec();
         output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
         output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
@@ -628,11 +635,30 @@ public:
 
         auto p = *( this->bulk_points(element_patch_idx).begin() );
 
+        strain_ = arma::zeros(3,3);
+        for (unsigned int i=0; i<n_dofs_; i++)
+            strain_ += vec_view_->sym_grad(i,0)*output_vec_.get(dof_indices_[i]);
+
+        double strain_norm = arma::norm(strain_);
+        output_strain_vec_.add( dof_indices_scalar_[0], strain_norm );
+
         arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            stress += (2*eq_fields_->lame_mu(p)*vec_view_->sym_grad(i,0) + eq_fields_->lame_lambda(p)*vec_view_->divergence(i,0)*arma::eye(3,3))
+            double mu = fn_lame_mu()(eq_fields_->young_modulus(p),
+                            eq_fields_->poisson_ratio(p),
+                            eq_fields_->young_modulus_inf(p),
+                            eq_fields_->power_law_index(p),
+                            eq_fields_->stress_max(p),
+                            strain_norm);
+            double lamb = fn_lame_lambda()(eq_fields_->young_modulus(p),
+                            eq_fields_->poisson_ratio(p),
+                            eq_fields_->young_modulus_inf(p),
+                            eq_fields_->power_law_index(p),
+                            eq_fields_->stress_max(p),
+                            strain_norm);
+            stress += (2*mu*vec_view_->sym_grad(i,0) + lamb*vec_view_->divergence(i,0)*arma::eye(3,3))
                     * output_vec_.get(dof_indices_[i]);
             div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
         }
@@ -669,11 +695,29 @@ public:
         auto p_high = *( this->coupling_points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
+        strain_ = arma::zeros(3,3);
+        for (unsigned int i=0; i<n_dofs_; i++)
+            strain_ += vec_view_->sym_grad(i,0)*output_vec_.get(dof_indices_[i]);
+        double strain_norm = arma::norm(strain_);
+
+        double mu = fn_lame_mu()(eq_fields_->young_modulus(p_low),
+                        eq_fields_->poisson_ratio(p_low),
+                        eq_fields_->young_modulus_inf(p_low),
+                        eq_fields_->power_law_index(p_low),
+                        eq_fields_->stress_max(p_low),
+                        strain_norm);
+        double lamb = fn_lame_lambda()(eq_fields_->young_modulus(p_low),
+                        eq_fields_->poisson_ratio(p_low),
+                        eq_fields_->young_modulus_inf(p_low),
+                        eq_fields_->power_law_index(p_low),
+                        eq_fields_->stress_max(p_low),
+                        strain_norm);
+
         for (unsigned int i=0; i<n_dofs_; i++)
         {
             normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
             arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t()) / eq_fields_->cross_section(p_low);
-            normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
+            normal_stress_ += mu*(grad+grad.t()) + lamb*arma::trace(grad)*arma::eye(3,3);
         }
 
         LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
@@ -709,10 +753,12 @@ private:
 
     double normal_displacement_;                              ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                               ///< Holds constributions of normal stress.
+    arma::mat33 strain_;
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
     VectorMPI output_stress_vec_;
+    VectorMPI output_strain_vec_;
     VectorMPI output_von_mises_stress_vec_;
     VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;

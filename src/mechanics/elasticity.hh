@@ -41,6 +41,8 @@ template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
+struct fn_lame_mu;
+struct fn_lame_lambda;
 
 
 
@@ -69,6 +71,9 @@ public:
 		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
+        Field<3, FieldValue<3>::Scalar> young_modulus_inf;
+        Field<3, FieldValue<3>::Scalar> stress_max;
+        Field<3, FieldValue<3>::Scalar> power_law_index;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
         Field<3, FieldValue<3>::TensorFixed> initial_stress;
@@ -83,6 +88,7 @@ public:
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::Scalar> output_strain;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
@@ -99,6 +105,7 @@ public:
 
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_strain_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
