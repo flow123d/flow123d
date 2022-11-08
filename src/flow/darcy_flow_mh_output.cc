@@ -123,7 +123,7 @@ DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
              .description("Error norm of the divergence of the velocity solution. [Experimental]");
 }
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record main_mh_in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
@@ -198,13 +198,8 @@ void DarcyFlowMHOutput::prepare_output(Input::Record main_mh_in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_data.eq_fields_ = nullptr;
-    diff_data.eq_data_ = nullptr;
-    if (DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
-    {
-        diff_data.eq_fields_ = d->eq_fields_;
-        diff_data.eq_data_ = d->eq_data_;
-    }
+    diff_data.eq_fields_ = darcy_flow->eq_fields_;
+    diff_data.eq_data_ = darcy_flow->eq_data_;
     ASSERT_PTR(diff_data.eq_data_);
 
     { // init DOF handlers represents element DOFs
@@ -488,6 +483,7 @@ void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
         ref_pressure = diff_data.eq_fields_->ref_pressure.value(q_point, ele );
         ref_flux = diff_data.eq_fields_->ref_velocity.value(q_point, ele );
         ref_divergence = diff_data.eq_fields_->ref_divergence.value(q_point, ele );
+
 
         // compute postprocesed pressure
         diff = 0;
