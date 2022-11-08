@@ -49,6 +49,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
+#include "input/reader_to_storage.hh"
 
 // #include "coupling/balance.hh"
 #include "intersection/mixed_mesh_intersections.hh"
@@ -235,10 +236,29 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
         set_specific_output_python_fields();
 }
 
+/*
+ * Input string of specific output python fields.
+ * Array of 3-items for 1D, 2D, 3D
+ */
+string spec_fields_input = R"YAML(
+  - source_file: analytical_module.py
+    class: AllValues1D
+    used_fields: ["X"]
+  - source_file: analytical_module.py
+    class: AllValues2D
+    used_fields: ["X"]
+  - source_file: analytical_module.py
+    class: AllValues3D
+    used_fields: ["X"]
+)YAML";
+
+
 void DarcyFlowMHOutput::set_specific_output_python_fields()
 {
 	typedef FieldValue<3>::Scalar ScalarSolution;
 	typedef FieldValue<3>::VectorFixed VectorSolution;
+
+    static Input::Type::Array arr = Input::Type::Array( FieldPython<3,ScalarSolution>::get_input_type(), 3, 3 );
 
     // Create separate vectors of 1D, 2D, 3D regions
     std::vector< std::vector<std::string> > reg_by_dim(3);
@@ -248,30 +268,32 @@ void DarcyFlowMHOutput::set_specific_output_python_fields()
         reg_by_dim[dim-1].push_back( mesh_->region_db().get_label(i) );
     }
 
+    Input::ReaderToStorage reader( spec_fields_input, arr, Input::FileFormat::format_YAML );
+    Input::Array in_arr=reader.get_root_interface<Input::Array>();
+    std::vector<Input::Record> in_recs;
+    in_arr.copy_to(in_recs);
+
     // Create instances of FieldPython and set them to Field objects
     std::string source_file = "analytical_module.py";
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_pressure, reg_by_dim[0]);
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_pressure, reg_by_dim[1]);
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_pressure, reg_by_dim[2]);
-    this->set_ref_solution<VectorSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_velocity, reg_by_dim[0]);
-    this->set_ref_solution<VectorSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_velocity, reg_by_dim[1]);
-    this->set_ref_solution<VectorSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_velocity, reg_by_dim[2]);
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_divergence, reg_by_dim[0]);
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_divergence, reg_by_dim[1]);
-    this->set_ref_solution<ScalarSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_divergence, reg_by_dim[2]);
+    for (uint i_dim=0; i_dim<3; ++i_dim) {
+        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], diff_data.eq_fields_->ref_pressure, reg_by_dim[i_dim]);
+        this->set_ref_solution<VectorSolution>(in_recs[i_dim], diff_data.eq_fields_->ref_velocity, reg_by_dim[i_dim]);
+        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], diff_data.eq_fields_->ref_divergence, reg_by_dim[i_dim]);
+    }
 }
 
 
 template <class FieldType>
-void DarcyFlowMHOutput::set_ref_solution(const string &file_name, const string &class_name,
-        Field<3, FieldType> &output_field, std::vector<std::string> reg) {
+void DarcyFlowMHOutput::set_ref_solution(const Input::Record &in_rec, Field<3, FieldType> &output_field, std::vector<std::string> reg) {
+    FieldAlgoBaseInitData init_data(output_field.input_name(), output_field.n_comp(), output_field.units(), output_field.limits(), output_field.flags());
+
     std::shared_ptr< FieldPython<3, FieldType> > algo = std::make_shared< FieldPython<3, FieldType> >();
-    algo->set_python_field_from_class( file_name, class_name );
+    algo->init_from_input( in_rec, init_data );
     output_field.set(algo, darcy_flow->time().t(), reg);
 }
 
 #define DARCY_SET_REF_SOLUTION(FTYPE) \
-template void DarcyFlowMHOutput::set_ref_solution<FTYPE>(const std::string &, const std::string &, Field<3, FTYPE> &, std::vector<std::string>)
+template void DarcyFlowMHOutput::set_ref_solution<FTYPE>(const Input::Record &, Field<3, FTYPE> &, std::vector<std::string>)
 
 DARCY_SET_REF_SOLUTION(FieldValue<3>::Scalar);
 DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
