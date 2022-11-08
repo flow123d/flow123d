@@ -94,6 +94,26 @@ public:
             Field<3, FieldValue<3>::Scalar> div_diff;
     };
 
+    /// Output specific field stuff
+    class DiffEqData {
+    public:
+        DiffEqData() {}
+
+        double pressure_error[3], velocity_error[3], div_error[3];
+        double mask_vel_error;
+
+        // Temporary objects holding pointers to appropriate FieldFE
+        // TODO remove after final fix of equations
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
+
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_;
+
+        std::vector<int> velocity_mask;
+        std::shared_ptr<DarcyLMH::EqData> flow_data_;
+    };
+
     DarcyFlowMHOutput(DarcyLMH *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
 
@@ -165,22 +185,8 @@ protected:
 
     /// Output specific field stuff
     bool is_output_specific_fields;
-    struct DiffData {
-        double pressure_error[3], velocity_error[3], div_error[3];
-        double mask_vel_error;
-
-        // Temporary objects holding pointers to appropriate FieldFE
-        // TODO remove after final fix of equations
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
-
-        std::shared_ptr<SubDOFHandlerMultiDim> dh_;
-
-        std::vector<int> velocity_mask;
-        std::shared_ptr<DarcyLMH::EqFields> eq_fields_;
-        std::shared_ptr<DarcyLMH::EqData> eq_data_;
-    } diff_data;
+    std::shared_ptr<DarcyLMH::EqFields> diff_eq_fields_;
+    std::shared_ptr<DiffEqData> diff_eq_data_;
     
     //MixedPtr<FE_P_disc> fe_p0;
     
