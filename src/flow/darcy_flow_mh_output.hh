@@ -115,7 +115,7 @@ protected:
     void set_specific_output_python_fields();
     
     template <class FieldType>
-    void set_ref_solution(const FilePath &source_file, std::string python_method,
+    void set_ref_solution(const string &file_name, const string &class_name,
             Field<3, FieldType> &output_field, std::vector<std::string> reg);
 
     void output_internal_flow_data();

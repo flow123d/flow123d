@@ -249,30 +249,29 @@ void DarcyFlowMHOutput::set_specific_output_python_fields()
     }
 
     // Create instances of FieldPython and set them to Field objects
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
-
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_1d", diff_data.eq_fields_->ref_pressure, reg_by_dim[0]);
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_2d", diff_data.eq_fields_->ref_pressure, reg_by_dim[1]);
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_pressure_3d", diff_data.eq_fields_->ref_pressure, reg_by_dim[2]);
-    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_1d", diff_data.eq_fields_->ref_velocity, reg_by_dim[0]);
-    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_2d", diff_data.eq_fields_->ref_velocity, reg_by_dim[1]);
-    this->set_ref_solution<VectorSolution>(source_file, "ref_velocity_3d", diff_data.eq_fields_->ref_velocity, reg_by_dim[2]);
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_1d", diff_data.eq_fields_->ref_divergence, reg_by_dim[0]);
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_2d", diff_data.eq_fields_->ref_divergence, reg_by_dim[1]);
-    this->set_ref_solution<ScalarSolution>(source_file, "ref_divergence_3d", diff_data.eq_fields_->ref_divergence, reg_by_dim[2]);
+    std::string source_file = "analytical_module.py";
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_pressure, reg_by_dim[0]);
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_pressure, reg_by_dim[1]);
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_pressure, reg_by_dim[2]);
+    this->set_ref_solution<VectorSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_velocity, reg_by_dim[0]);
+    this->set_ref_solution<VectorSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_velocity, reg_by_dim[1]);
+    this->set_ref_solution<VectorSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_velocity, reg_by_dim[2]);
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues1D", diff_data.eq_fields_->ref_divergence, reg_by_dim[0]);
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues2D", diff_data.eq_fields_->ref_divergence, reg_by_dim[1]);
+    this->set_ref_solution<ScalarSolution>(source_file, "AllValues3D", diff_data.eq_fields_->ref_divergence, reg_by_dim[2]);
 }
 
 
 template <class FieldType>
-void DarcyFlowMHOutput::set_ref_solution(const FilePath &source_file, std::string python_method,
+void DarcyFlowMHOutput::set_ref_solution(const string &file_name, const string &class_name,
         Field<3, FieldType> &output_field, std::vector<std::string> reg) {
     std::shared_ptr< FieldPython<3, FieldType> > algo = std::make_shared< FieldPython<3, FieldType> >();
-    algo->set_python_field_from_file( source_file, python_method ); // TODO use set_python_field_from_class method instead of ...from_file
+    algo->set_python_field_from_class( file_name, class_name );
     output_field.set(algo, darcy_flow->time().t(), reg);
 }
 
 #define DARCY_SET_REF_SOLUTION(FTYPE) \
-template void DarcyFlowMHOutput::set_ref_solution<FTYPE>(const FilePath &, std::string, Field<3, FTYPE> &, std::vector<std::string>)
+template void DarcyFlowMHOutput::set_ref_solution<FTYPE>(const std::string &, const std::string &, Field<3, FTYPE> &, std::vector<std::string>)
 
 DARCY_SET_REF_SOLUTION(FieldValue<3>::Scalar);
 DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
