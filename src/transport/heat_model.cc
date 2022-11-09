@@ -337,7 +337,7 @@ HeatTransferModel::ModelEqFields::ModelEqFields()
 }
 
 
-void HeatTransferModel::ModelEqFields::initialize()
+void HeatTransferModel::ModelEqFields::initialize(FMT_UNUSED Input::Record transport_rec)
 {
     // create FieldModels
     v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_heat_v_norm(), flow_flux), 0.0);

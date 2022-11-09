@@ -187,7 +187,7 @@ public:
 		/**
 		 * Initialize FieldModel instances.
 		 */
-		void initialize();
+		void initialize(FMT_UNUSED Input::Record transport_rec);
 
 	};
 

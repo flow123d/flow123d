@@ -353,7 +353,7 @@ public:
 
 
     template<typename Function, typename Tuple, size_t ... I>
-    static auto call_create(Function f, Tuple t, std::index_sequence<I ...>)
+    static auto call_create(Function f, FMT_UNUSED Tuple t, std::index_sequence<I ...>)
     {
         return create(f, std::get<I>(t) ...);
     }

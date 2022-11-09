@@ -11,9 +11,14 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    concentration_model.cc
+ * @file    conc_dispersion_model.cc
  * @brief   Discontinuous Galerkin method for equation of transport with dispersion.
- * @author  Jan Stebel
+ * @author  Jan Brezina
+ *
+ * Transport model with:
+ * - full dispersion tensor prescribed by 6 tensor fields (UGLY).
+ * - support for switching both time and convection term to zero (additional multiplicative factor)
+ * - meant for experimental homogenisation
  */
 
 #include "input/input_type.hh"
@@ -21,7 +26,7 @@
 #include "mesh/accessors.hh"
 
 #include "transport/transport_operator_splitting.hh"
-#include "concentration_model.hh"
+#include "conc_dispersion_model.hh"
 #include "tools/unit_si.hh"
 #include "coupling/balance.hh"
 #include "fields/field_model.hh"
@@ -53,11 +58,23 @@ struct fn_conc_mass_matrix {
     }
 };
 
+struct fn_conc_mass_matrix_static {
+	inline Sclr operator() () {
+        return 0;
+    }
+};
+
 // Functor computing retardation coefficients:
 // (1-porosity) * rock_density * sorption_coefficient * rock_density
 struct fn_conc_retardation {
     inline Sclr operator() (Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
         return (1.-por_m)*rho_s*sorp_mult*csec;
+    }
+};
+
+struct fn_conc_retardation_static {
+    inline Sclr operator() () {
+        return 0;
     }
 };
 
@@ -89,39 +106,24 @@ struct fn_conc_ad_coef {
     }
 };
 
-// Functor computing diffusion coefficient (see notes in function)
-struct fn_conc_diff_coef {
-    inline Tens operator() (Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+struct fn_conc_ad_coef_static {
+    inline Vect operator() () {
+        return arma::zeros(3);
+    }
+};
 
-        // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
-        // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-        double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+// Functor computing diffusion coefficient (see notes in function)
+
+// Fourth order tnesor in partially Voigt notation.
+// In particular we use is to specify full dispersion tensor.
+
+struct fn_conc_diff_coef_full {
+    inline Tens operator() (Tens duxx, Tens duyy, Tens duzz, Tens duyz, Tens duxz, Tens duxy, Vect velocity, Sclr v_norm) {
 
         // result
-        Tens K;
-
-        // Note that the velocity vector is in fact the Darcian flux,
-        // so we need not to multiply vnorm by water_content and cross_section.
-	    //K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
-
-        if (fabs(v_norm) > 0) {
-            /*
-            for (int i=0; i<3; i++)
-                for (int j=0; j<3; j++)
-                    K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
-            */
-            K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
-
-            //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
-            //double diff = arma::min( arma::min(abs_diff_mat) );
-            //ASSERT_PERMANENT(  diff < 1e-12 )(diff)(K)(kk);
-        } else
-            K.zeros();
-
-        // Note that the velocity vector is in fact the Darcian flux,
-        // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-        K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
-
+        auto v = velocity;
+        Tens K =   (duxx * v[0] * v[0] + duyy * v[1] * v[1] + duzz * v[2] * v[2]
+                 + 2 * ( duyz * v[1] * v[2] + duxz * v[0] * v[2] + duxy * v[0] * v[1])) / v_norm;
         return K;
     }
 };
@@ -130,7 +132,7 @@ struct fn_conc_diff_coef {
 
 
 
-ConcentrationTransportModel::ModelEqFields::ModelEqFields()
+ConcDispersionModel::ModelEqFields::ModelEqFields()
 : TransportEqFields()
 {
     *this+=bc_type
@@ -166,24 +168,43 @@ ConcentrationTransportModel::ModelEqFields::ModelEqFields()
             .units( UnitSI().kg().m(-3) )
             .description("Initial values for concentration of substances.")
             .input_default("0.0");
-    *this+=disp_l
-            .name("disp_l")
-            .description("Longitudinal dispersivity in the liquid (for each substance).")
-            .units( UnitSI().m() )
+    *this+=disp_uxx
+            .name("dispersion_uxx")
+            .description("Dispersion 4-th order tensor component ux D ux. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
+            .input_default("1.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_uyy
+            .name("dispersion_uyy")
+            .description("Dispersion 4-th order tensor component uy D uy. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
+            .input_default("1.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_uzz
+            .name("dispersion_uzz")
+            .description("Dispersion 4-th order tensor component uz D uz. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
+            .input_default("1.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_uyz
+            .name("dispersion_uyz")
+            .description("Dispersion 4-th order tensor component uy D uz. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
             .input_default("0.0")
-            .flags_add( in_main_matrix & in_rhs );
-    *this+=disp_t
-            .name("disp_t")
-            .description("Transverse dispersivity in the liquid (for each substance).")
-            .units( UnitSI().m() )
-            .input_default("0.0")
-            .flags_add( in_main_matrix & in_rhs );
-    *this+=diff_m
-            .name("diff_m")
-            .description("Molecular diffusivity in the liquid (for each substance).")
-            .units( UnitSI().m(2).s(-1) )
-            .input_default("0.0")
-            .flags_add( in_main_matrix & in_rhs );
+            .flags_add( in_main_matrix );
+    *this+=disp_uxz
+            .name("dispersion_uxz")
+            .description("Dispersion 4-th order tensor component ux D uz. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
+            .input_default("1.0")
+            .flags_add( in_main_matrix );
+    *this+=disp_uxy
+            .name("dispersion_uxy")
+            .description("Dispersion 4-th order tensor component ux D uy. Common for all substances right now.")
+            .units( UnitSI().m() )  // ??
+            .input_default("1.0")
+            .flags_add( in_main_matrix );
+
     *this+=rock_density
     		.name("rock_density")
 			.description("Rock matrix density.")
@@ -247,42 +268,50 @@ ConcentrationTransportModel::ModelEqFields::ModelEqFields()
 }
 
 
-void ConcentrationTransportModel::ModelEqFields::initialize(FMT_UNUSED Input::Record transport_rec)
+void ConcDispersionModel::ModelEqFields::initialize(FMT_UNUSED Input::Record transport_rec)
 {
-    // initialize multifield components
+	bool static_flag = transport_rec.val<bool>("static_model");
+
+	// initialize multifield components
 	sorption_coefficient.setup_components();
     sources_conc.setup_components();
     sources_density.setup_components();
     sources_sigma.setup_components();
-    diff_m.setup_components();
-    disp_l.setup_components();
-    disp_t.setup_components();
 
     // create FieldModels
-    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
-    mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix(), cross_section, water_content), 0.0);
-    retardation_coef.set(
-        Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient),
-		0.0
-    );
-    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
-    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
-    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
-    std::vector<typename Field<3, FieldValue<3>::Vector>::FieldBasePtr> ad_coef_ptr_vec;
-    for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
-        ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::Vector>::create(fn_conc_ad_coef(), flow_flux) );
-    advection_coef.set(ad_coef_ptr_vec, 0.0);
-    diffusion_coef.set(
-        Model<3, FieldValue<3>::Tensor>::create_multi(
-            fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
-        ),
-        0.0
-    );
+    v_norm.set(Model<3, FieldValue<3>::Scalar>::create(
+    		fn_conc_v_norm(), flow_flux), 0.0);
+    sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(
+    		fn_conc_sources_dens(), cross_section, sources_density), 0.0);
+    sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(
+    		fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
+    sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(
+    		fn_conc_sources_conc(), sources_conc), 0.0);
+
+    if (static_flag) {
+    	advection_coef.set(Model<3, FieldValue<3>::Vector>::create_multi(
+    		fn_conc_ad_coef_static()), 0.0);
+    	mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(
+    		fn_conc_mass_matrix_static()), 0.0);
+        retardation_coef.set(Model<3, FieldValue<3>::Scalar>::create_multi(
+        		fn_conc_retardation_static()), 0.0);
+
+    } else {
+    	advection_coef.set(Model<3, FieldValue<3>::Vector>::create_multi(
+    		fn_conc_ad_coef(), flow_flux), 0.0);
+    	mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(
+    		fn_conc_mass_matrix(), cross_section, water_content), 0.0);
+        retardation_coef.set(Model<3, FieldValue<3>::Scalar>::create_multi(
+        		fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient), 0.0);
+    }
+    diffusion_coef.set(Model<3, FieldValue<3>::Tensor>::create_multi(
+    		fn_conc_diff_coef_full(), disp_uxx, disp_uyy, disp_uzz, disp_uyz, disp_uxz, disp_uxy,
+			flow_flux, v_norm), 0.0);
 }
 
 
 
-const Selection & ConcentrationTransportModel::ModelEqFields::get_bc_type_selection() {
+const Selection & ConcDispersionModel::ModelEqFields::get_bc_type_selection() {
 	return Selection("Solute_AdvectionDiffusion_BC_Type", "Types of boundary conditions for advection-diffusion solute transport model.")
               .add_value(bc_inflow, "inflow",
             		  "Default transport boundary condition.\n"
@@ -310,7 +339,7 @@ const Selection & ConcentrationTransportModel::ModelEqFields::get_bc_type_select
 
 
 
-IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
+IT::Selection ConcDispersionModel::ModelEqData::get_output_selection()
 {
     // Return empty selection just to provide model specific selection name and description.
     // The fields are added by TransportDG using an auxiliary selection.
@@ -320,40 +349,42 @@ IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
 }
 
 
-IT::Record ConcentrationTransportModel::get_input_type(const string &implementation, const string &description)
+IT::Record ConcDispersionModel::get_input_type(const string &implementation, const string &description)
 {
 	return IT::Record(
 				std::string(ModelEqData::name()) + "_" + implementation,
 				description + " for solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
+			.declare_key("static_model", IT::Bool(), IT::Default("false"),
+					"Forces zero time and advection term.")
 			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
 					"Density of the solvent [ (($kg.m^{-3}$)) ].");
 }
 
 
-ConcentrationTransportModel::ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec) :
+ConcDispersionModel::ConcDispersionModel(Mesh &mesh, const Input::Record &in_rec) :
 		ConcentrationTransportBase(mesh, in_rec)
 {}
 
 
-void ConcentrationTransportModel::init_from_input(const Input::Record &in_rec)
+void ConcDispersionModel::init_from_input(const Input::Record &in_rec)
 {
 	solvent_density_ = in_rec.val<double>("solvent_density");
 }
 
 
-ConcentrationTransportModel::~ConcentrationTransportModel()
+ConcDispersionModel::~ConcDispersionModel()
 {}
 
 
-void ConcentrationTransportModel::set_balance_object(std::shared_ptr<Balance> balance)
+void ConcDispersionModel::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
 	eq_data().subst_idx_ = balance_->add_quantities(eq_data().substances_.names());
 }
 
 
-void ConcentrationTransportModel::init_balance(FMT_UNUSED const Input::Record &in_rec) {}
+void ConcDispersionModel::init_balance(FMT_UNUSED const Input::Record &in_rec) {}
 
 
 

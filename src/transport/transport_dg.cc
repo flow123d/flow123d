@@ -33,7 +33,7 @@
 #include "coupling/generic_assembly.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
-//#include "transport/conc_dispersion_model.hh"
+#include "transport/conc_dispersion_model.hh"
 #include "transport/heat_model.hh"
 #include "transport/assembly_dg.hh"
 
@@ -249,7 +249,7 @@ void TransportDG<Model>::initialize()
     eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
     eq_data_->set_time_governor(Model::time_);
     eq_data_->balance_ = this->balance();
-    eq_fields_->initialize();
+    eq_fields_->initialize(input_rec);
 
     // DG stabilization parameters on boundary edges
     eq_data_->gamma.resize(eq_data_->n_substances());
@@ -739,7 +739,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 
 
 template class TransportDG<ConcentrationTransportModel>;
-//template class TransportDG<ConcDispersionModel>;
+template class TransportDG<ConcDispersionModel>;
 template class TransportDG<HeatTransferModel>;
 
 

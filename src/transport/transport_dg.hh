@@ -48,10 +48,8 @@
 #include "petscmat.h"                          // for Mat, MatDestroy
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
 #include "coupling/balance.hh"
-
-//#include "transport/concentration_model.hh"    // for ConcentrationTransport...
-//#include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
 #include "tools/mixed.hh"
+
 class DiscreteSpace;
 class Distribution;
 class OutputTime;
