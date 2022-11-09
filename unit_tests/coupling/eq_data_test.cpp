@@ -112,12 +112,12 @@ protected:
                     .units( UnitSI().kg().m(-3) );
         }
 
-        Field<3, FieldValue<3>::TensorFixed > anisotropy;
+        Field<3, FieldValue<3>::Tensor > anisotropy;
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
         BCField<3, FieldValue<3>::Scalar > bc_pressure;
         BCField<3, FieldValue<3>::Scalar > bc_flux;
         BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
-        BCField<3, FieldValue<3>::VectorFixed > bc_conc;
+        BCField<3, FieldValue<3>::Vector > bc_conc;
 
     };
 
@@ -155,7 +155,7 @@ public:
         }
 
         Field<3, FieldValue<3>::Scalar > init_pressure;
-        Field<3, FieldValue<3>::VectorFixed > init_conc;
+        Field<3, FieldValue<3>::Vector > init_conc;
         Field<3, FieldValue<3>::Scalar > bulk_set_field;
         MultiField<3, FieldValue<3>::Scalar > conc_mobile;
     };
@@ -314,7 +314,7 @@ TEST_F(SomeEquation, values) {
         EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val );
     }
 
-    FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
+    FieldValue<3>::Tensor::return_type value = data.anisotropy.value(p, el_1d);
     EXPECT_DOUBLE_EQ( 1.0, value.at(0,0) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,1) );
     EXPECT_DOUBLE_EQ( 0.0, value.at(0,2) );
@@ -335,7 +335,7 @@ TEST_F(SomeEquation, values) {
     }
 
     // init_conc - fixed length vector
-    FieldValue<3>::VectorFixed::return_type conc = data.init_conc.value(p, el_1d);
+    FieldValue<3>::Vector::return_type conc = data.init_conc.value(p, el_1d);
     EXPECT_DOUBLE_EQ(1 ,conc[0]);
     EXPECT_DOUBLE_EQ(2 ,conc[1]);
     EXPECT_DOUBLE_EQ(3 ,conc[2]);

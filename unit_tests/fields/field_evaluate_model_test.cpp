@@ -124,8 +124,8 @@ public:
         /// Initialiye FieldModels
         void initialize() {
             scalar_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_model_scalar(), vector_const_field), 0.0);
-            vector_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_model_vector(), scalar_const_field, vector_const_field), 0.0);
-            tensor_field.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_model_tensor(), scalar_const_field, tensor_const_field), 0.0);
+            vector_field.set(Model<3, FieldValue<3>::Vector>::create(fn_model_vector(), scalar_const_field, vector_const_field), 0.0);
+            tensor_field.set(Model<3, FieldValue<3>::Tensor>::create(fn_model_tensor(), scalar_const_field, tensor_const_field), 0.0);
         }
 
     	/// Polynomial order of finite elements.
@@ -133,13 +133,13 @@ public:
 
     	// constant fields, we need these fields to create models
         Field<3, FieldValue<3>::Scalar > scalar_const_field;
-        Field<3, FieldValue<3>::VectorFixed > vector_const_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_const_field;
+        Field<3, FieldValue<3>::Vector > vector_const_field;
+        Field<3, FieldValue<3>::Tensor > tensor_const_field;
 
         // computing fields of FieldModels
         Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
     };
 
     FieldModelSpeedTest() : tg_(0.0, 1.0) {
@@ -164,11 +164,11 @@ public:
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldModelSpeedTest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_const_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("vector_const_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-                        .declare_key("tensor_const_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_const_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
+                        .declare_key("tensor_const_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
 //                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-//                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-//                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+//                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
+//                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();

@@ -144,7 +144,7 @@ private:
  *      }
  *
  *      Field<3, FieldValue<3>::Scalar> scalar_field;
- *      Field<3, FieldValue<3>::VectorFixed> vector_field;
+ *      Field<3, FieldValue<3>::Vector> vector_field;
  * };
  *
  * This way the fields are destructed just before their pointers stored in the FieldSet.

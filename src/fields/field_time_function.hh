@@ -26,7 +26,7 @@
 #include <armadillo>
 #include "fields/field_algo_base.hh"       // for FieldAlgorithmBase
 #include "fields/field_constant.hh"        // for FieldConstant
-#include "fields/field_values.hh"          // for FieldValue<>::TensorFixed
+#include "fields/field_values.hh"          // for FieldValue<>::Tensor
 #include "input/accessors.hh"              // for ExcAccessorForNullStorage
 #include "input/accessors_impl.hh"         // for Record::val
 #include "input/storage.hh"                // for ExcStorageTypeMismatch

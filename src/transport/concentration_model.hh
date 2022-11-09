@@ -66,7 +66,7 @@ public:
 		/// Transversal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_t;
 		/// Molecular diffusivity (for each substance).
-		MultiField<3, FieldValue<3>::TensorFixed> diff_m;
+		MultiField<3, FieldValue<3>::Tensor> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
 	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
@@ -89,9 +89,9 @@ public:
     	/// Concentration sources - concentration output
     	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
 		/// Advection coefficients.
-		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		MultiField<3, FieldValue<3>::Vector> advection_coef;
 		/// Diffusion coefficients.
-		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+		MultiField<3, FieldValue<3>::Tensor> diffusion_coef;
 		/// Velocity norm field.
         Field<3, FieldValue<3>::Scalar > v_norm;
 

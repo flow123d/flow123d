@@ -131,15 +131,15 @@ TEST(TestOutputMSH, write_data) {
 
 	output_msh->set_current_step(0);
 	output_msh->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
-	output_msh->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
-	output_msh->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
+	output_msh->set_field_data<3, FieldValue<3>::Vector> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_msh->set_field_data<3, FieldValue<3>::Tensor> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_msh->write_data();
 
 	output_msh->clear_data();
 	output_msh->set_current_step(1);
 	output_msh->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.75", "0.75");
-	output_msh->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.75, 1.5, 2.25]", "0.75 1.5 2.25");
-	output_msh->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 4, 7], [2, 5, 8], [3, 6, 9]]", "1 4 7; 2 5 8; 3 6 9");
+	output_msh->set_field_data<3, FieldValue<3>::Vector> ("vector_field", "[0.75, 1.5, 2.25]", "0.75 1.5 2.25");
+	output_msh->set_field_data<3, FieldValue<3>::Tensor> ("tensor_field", "[[1, 4, 7], [2, 5, 8], [3, 6, 9]]", "1 4 7; 2 5 8; 3 6 9");
 	output_msh->write_data();
 
     EXPECT_EQ("./test_output.msh", output_msh->base_filename());

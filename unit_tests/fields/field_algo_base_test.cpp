@@ -180,8 +180,8 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 	Field<Dim,FV<0>::Scalar> , \
     Field<Dim,FV<0>::Enum>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<Dim>::VectorFixed>, \
-	Field<Dim,FV<Dim>::TensorFixed>
+	Field<Dim,FV<Dim>::Vector>, \
+	Field<Dim,FV<Dim>::Tensor>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -605,9 +605,9 @@ TEST(Field, init_from_input) {
 	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
     Field<3, FieldValue<3>::Enum > sorption_type;
-    Field<3, FieldValue<3>::VectorFixed > init_conc;
-    Field<3, FieldValue<3>::TensorFixed > conductivity;
-    Field<3, FieldValue<3>::TensorFixed > conductivity_3d;
+    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::Tensor > conductivity;
+    Field<3, FieldValue<3>::Tensor > conductivity_3d;
 
 
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
@@ -737,8 +737,8 @@ public:
         *this += tensor.name("tensor").units(UnitSI::dimensionless());
     }
     Field<3, FieldValue<3>::Scalar > scalar;
-    Field<3, FieldValue<3>::VectorFixed > vector;
-    Field<3, FieldValue<3>::TensorFixed > tensor;
+    Field<3, FieldValue<3>::Vector > vector;
+    Field<3, FieldValue<3>::Tensor > tensor;
 };
 
 TEST(Field, field_result) {
@@ -991,8 +991,8 @@ TEST(Field, field_values) {
     Field<3, FieldValue<0>::Enum > color_field;
     Field<3, FieldValue<0>::Integer > int_field;
     Field<3, FieldValue<3>::Scalar > scalar_field;
-    Field<3, FieldValue<3>::VectorFixed > vector_field;
-    Field<3, FieldValue<3>::TensorFixed > tensor_field;
+    Field<3, FieldValue<3>::Vector > vector_field;
+    Field<3, FieldValue<3>::Tensor > tensor_field;
 
 
     //std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };

@@ -646,12 +646,11 @@ struct FieldValue {
     // typedefs for possible field values
     typedef FieldValue_<1,1,int>            Integer;
     typedef FieldValue_<1,1, FieldEnum>     Enum;
-    typedef FieldValue_<0,1, FieldEnum>     EnumVector;
+    typedef FieldValue_<spacedim,1, FieldEnum>     EnumVector;
     typedef FieldValue_<1,1,double>         Scalar;
-    typedef FieldValue_<spacedim,1,double>  VectorFixed;
-    typedef FieldValue_<0,1,double>         Vector;
-    typedef FieldValue_<0,1,int>            IntVector;
-    typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
+    typedef FieldValue_<spacedim,1,double>        Vector;
+    typedef FieldValue_<spacedim,1,int>           IntVector;
+    typedef FieldValue_<spacedim,spacedim,double> Tensor;
 };
 
 

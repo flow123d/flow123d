@@ -49,7 +49,7 @@ template <int spacedim, class Value>  // <3, FieldValue<3>::Scalar>
 class AddPotentialFactory : public Field<spacedim, Value>::FactoryBase {
 public:
     /// Constructor.
-    AddPotentialFactory( Field<3, FieldValue<3>::VectorFixed > &gravity, FieldCoords &coords, Field<3, FieldValue<3>::Scalar> &inner_field)
+    AddPotentialFactory( Field<3, FieldValue<3>::Vector > &gravity, FieldCoords &coords, Field<3, FieldValue<3>::Scalar> &inner_field)
     : gravity_(gravity),
 	  coords_(coords),
 	  inner_field_(inner_field),
@@ -70,7 +70,7 @@ public:
         return in_rec.find<Input::AbstractRecord>(field_name_);
     }
 
-    Field<3, FieldValue<3>::VectorFixed > &gravity_;
+    Field<3, FieldValue<3>::Vector > &gravity_;
     FieldCoords &coords_;
     Field<3, FieldValue<3>::Scalar> &inner_field_;
     std::string field_name_;

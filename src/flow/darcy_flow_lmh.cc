@@ -456,8 +456,8 @@ void DarcyLMH::init_eq_data()
     eq_data_->gravity_ =  arma::vec(gvec);
     eq_data_->gravity_vec_ = eq_data_->gravity_.subvec(0,2);
 
-    FieldValue<3>::VectorFixed gvalue(eq_data_->gravity_vec_);
-    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::VectorFixed>>();
+    FieldValue<3>::Vector gvalue(eq_data_->gravity_vec_);
+    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Vector>>();
     field_algo->set_value(gvalue);
     eq_fields_->gravity_field.set(field_algo, 0.0);
     eq_fields_->bc_gravity.set(field_algo, 0.0);
@@ -521,10 +521,10 @@ void DarcyLMH::initialize() {
     { // construct pressure, velocity and piezo head fields
 		uint rt_component = 0;
 		eq_data_->full_solution = eq_data_->dh_->create_vector();
-        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
+        auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::Vector>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::Vector>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);

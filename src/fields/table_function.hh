@@ -21,7 +21,7 @@
 #include <string.h>                        // for memcpy
 #include <vector>                          // for vector
 #include <armadillo>
-#include "fields/field_values.hh"          // for FieldValue<>::TensorFixed
+#include "fields/field_values.hh"          // for FieldValue<>::Tensor
 
 namespace Input {
 	class Record;

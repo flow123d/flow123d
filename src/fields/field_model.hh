@@ -45,7 +45,7 @@ template <int spacedim> class ElementAccessor;
  @code
    double product(double x, double y) {...}
    Vec product(double x, Vec y) {...}
-   Model<3, FieldValue<3>::VectorFixed>::create(wrapper_overload(product), f_scal, f_vec);
+   Model<3, FieldValue<3>::Vector>::create(wrapper_overload(product), f_scal, f_vec);
  @endcode
  *
  * Should automaticaly resolve the second model_cache_item::eval function.
@@ -256,12 +256,12 @@ namespace detail
 
     // Definition of fields
     Field<3, FieldValue<3>::Scalar > f_scal;
-    Field<3, FieldValue<3>::VectorFixed > f_vec;
-    Field<3, FieldValue<3>::VectorFixed > result;
+    Field<3, FieldValue<3>::Vector > f_vec;
+    Field<3, FieldValue<3>::Vector > result;
     ... // fill data to fields f_scal, f_vec
 
     // create instance FieldModel class, use helper method Model::create to simply passsing of parameters
-  	auto f_product = Model<3, FieldValue<3>::VectorFixed>::create(FnProduct(), f_scal, f_vec);
+  	auto f_product = Model<3, FieldValue<3>::Vector>::create(FnProduct(), f_scal, f_vec);
   	// set field on all regions
     result.set_mesh( *mesh );
   	result.set(f_product, time);

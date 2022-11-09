@@ -223,7 +223,7 @@ public:
     	value_list= std::vector<ReturnType>(list_size);
 	}
 
-	void set_data(FieldValue<3>::VectorFixed::return_type) {
+	void set_data(FieldValue<3>::Vector::return_type) {
 		data1_ = arma::vec3("1.75 3.75 5.75");
 		data2_ = arma::vec3("1.25 3.25 5.25");
 		expect_const_val_ = arma::vec3("13.75 31.75 49.75");
@@ -240,7 +240,7 @@ public:
 		EXPECT_DOUBLE_EQ( test_result_sum_, multiplicator * expected * current_n_loop );
 	}
 
-	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
+	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
 		for (int i=0; i<3; i++) {
 			EXPECT_DOUBLE_EQ( test_result_sum_[i], multiplicator * expected[i] * current_n_loop);
 		}
@@ -304,7 +304,7 @@ public:
 };
 
 
-typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::VectorFixed > TestedTypes;
+typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::Vector > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 TYPED_TEST(FieldSpeed, array) {

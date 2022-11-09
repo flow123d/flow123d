@@ -32,8 +32,8 @@ FieldSet::FieldSet()
 
 const Input::Type::Record & FieldSet::make_user_field_type(const std::string &equation_name) {
     static Field<3, FieldValue<3>::Scalar> scalar_field;
-    static Field<3, FieldValue<3>::VectorFixed> vector_field;
-    static Field<3, FieldValue<3>::TensorFixed> tensor_field;
+    static Field<3, FieldValue<3>::Vector> vector_field;
+    static Field<3, FieldValue<3>::Tensor> tensor_field;
     return Input::Type::Record( equation_name+":UserData", "Record to set fields of the equation: "+equation_name+".")
         .declare_key("name", Input::Type::String(), Input::Type::Default::obligatory(),
                      "Name of user defined field.")

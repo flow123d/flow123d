@@ -196,8 +196,8 @@ class EqData : public EquationOutput {
 public:
     typedef Field<3, FieldValue<3>::Scalar > ScalarField;
     typedef Field<3, FieldValue<3>::Enum > EnumField;
-    typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
-    typedef Field<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef Field<3, FieldValue<3>::Vector > VectorField;
+    typedef Field<3, FieldValue<3>::Tensor > TensorField;
 
     EqData() {
         static Input::Type::Selection  selection =

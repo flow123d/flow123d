@@ -364,11 +364,11 @@ void Elasticity::initialize()
 //     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
-    eq_fields_->output_field_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_);
+    eq_fields_->output_field_ptr = create_field_fe<3, FieldValue<3>::Vector>(eq_data_->dh_);
     eq_fields_->output_field.set(eq_fields_->output_field_ptr, 0.);
     
     // setup output stress
-    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
+    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::Tensor>(eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
     // setup output von Mises stress

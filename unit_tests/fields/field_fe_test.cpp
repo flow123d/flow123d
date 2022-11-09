@@ -41,7 +41,7 @@
 class FieldFETest : public testing::Test {
 public:
     typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
-    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
+    typedef FieldFE<3, FieldValue<3>::Vector > VecField;
 
     virtual void SetUp() {
     	this->mesh = nullptr;
@@ -287,8 +287,8 @@ class FieldFENewTest : public testing::Test {
 public:
     typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldFE<3, FieldValue<3>::Enum > EnumField;
-    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecFixField;
-    typedef FieldFE<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef FieldFE<3, FieldValue<3>::Vector > VecFixField;
+    typedef FieldFE<3, FieldValue<3>::Tensor > TensorField;
 
     virtual void SetUp() {
         // setup FilePath directories

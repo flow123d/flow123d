@@ -114,7 +114,7 @@ public:
 		/// Water content passed from Darcy flow model
 		Field<3, FieldValue<3>::Scalar> water_content;
 		/// Flow flux, can be result of water flow model.
-    	Field<3, FieldValue<3>::VectorFixed> flow_flux;
+    	Field<3, FieldValue<3>::Vector> flow_flux;
 		/// Density of fluid.
 		Field<3, FieldValue<3>::Scalar> fluid_density;
 		/// Heat capacity of fluid.
@@ -167,9 +167,9 @@ public:
     	/// Concentration sources - concentration output
     	MultiField<3, FieldValue<3>::Scalar> sources_conc_out;
 		/// Advection coefficients.
-		MultiField<3, FieldValue<3>::VectorFixed> advection_coef;
+		MultiField<3, FieldValue<3>::Vector> advection_coef;
 		/// Diffusion coefficients.
-		MultiField<3, FieldValue<3>::TensorFixed> diffusion_coef;
+		MultiField<3, FieldValue<3>::Tensor> diffusion_coef;
 
     	// @}
 

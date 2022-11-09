@@ -184,8 +184,8 @@ TEST(TestOutputVTK, write_data_ascii) {
 	output_vtk->init_mesh(test_output_time_ascii);
 	output_vtk->set_current_step(0);
 	output_vtk->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
-	output_vtk->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
-	output_vtk->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
+	output_vtk->set_field_data<3, FieldValue<3>::Vector> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_vtk->set_field_data<3, FieldValue<3>::Tensor> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	// output_vtk->write_data();
 	// output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_ascii_ref.vtu");
@@ -193,8 +193,8 @@ TEST(TestOutputVTK, write_data_ascii) {
 	output_vtk->clear_data();
 	output_vtk->set_current_step(1);
 	output_vtk->set_field_data<3, FieldValue<0>::Scalar> ("scalar_field", "0.5", "0.5");
-	output_vtk->set_field_data<3, FieldValue<3>::VectorFixed> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
-	output_vtk->set_field_data<3, FieldValue<3>::TensorFixed> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
+	output_vtk->set_field_data<3, FieldValue<3>::Vector> ("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+	output_vtk->set_field_data<3, FieldValue<3>::Tensor> ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
 	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
 	output_vtk->write_data();
 
@@ -211,8 +211,8 @@ TEST(TestOutputVTK, write_data_binary) {
 	output_vtk->init_mesh(test_output_time_binary);
     output_vtk->set_current_step(0);
     output_vtk->set_field_data<3, FieldValue<0>::Scalar>("scalar_field", "0.5", "0.5");
-    output_vtk->set_field_data<3, FieldValue<3>::VectorFixed>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
-    output_vtk->set_field_data<3, FieldValue<3>::TensorFixed>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
+    output_vtk->set_field_data<3, FieldValue<3>::Vector>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+    output_vtk->set_field_data<3, FieldValue<3>::Tensor>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
     output_vtk->write_data();
 
     output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
@@ -232,8 +232,8 @@ TEST(TestOutputVTK, write_data_compressed) {
 	output_vtk->init_mesh(test_output_time_compressed);
     output_vtk->set_current_step(0);
     output_vtk->set_field_data<3, FieldValue<0>::Scalar>("scalar_field", "0.5", "0.5");
-    output_vtk->set_field_data<3, FieldValue<3>::VectorFixed>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
-    output_vtk->set_field_data<3, FieldValue<3>::TensorFixed>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
+    output_vtk->set_field_data<3, FieldValue<3>::Vector>("vector_field", "[0.5, 1.0, 1.5]", "0.5 1.0 1.5");
+    output_vtk->set_field_data<3, FieldValue<3>::Tensor>("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3; 4 5 6; 7 8 9");
     output_vtk->write_data();
 
     output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");

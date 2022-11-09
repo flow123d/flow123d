@@ -354,6 +354,7 @@ add_library(flow123d_lib SHARED
     reaction/linear_ode_solver.cc
 
     transport/concentration_model.cc
+    #transport/conc_dispersion_model.cc
     transport/heat_model.cc
     transport/transport.cc
     transport/transport_operator_splitting.cc

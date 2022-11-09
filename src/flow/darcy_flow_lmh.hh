@@ -171,7 +171,7 @@ public:
         }
 
 
-        Field<3, FieldValue<3>::TensorFixed > anisotropy;
+        Field<3, FieldValue<3>::Tensor > anisotropy;
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
@@ -190,12 +190,12 @@ public:
 
 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
-        Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
-        Field<3, FieldValue<3>::VectorFixed > flux;
+        Field<3, FieldValue<3>::Vector > field_ele_velocity;
+        Field<3, FieldValue<3>::Vector > flux;
         Field<3, FieldValue<3>::Scalar> field_edge_pressure;
 
-        Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
-        BCField<3, FieldValue<3>::VectorFixed > bc_gravity; /// Same as previous but used in boundary fields
+        Field<3, FieldValue<3>::Vector > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        BCField<3, FieldValue<3>::Vector > bc_gravity; /// Same as previous but used in boundary fields
         Field<3, FieldValue<3>::Scalar> init_piezo_head;
         BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
         BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;

@@ -24,8 +24,8 @@
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_time_function)
 
-typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
-typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
+typedef FieldAlgorithmBase<3, FieldValue<3>::Tensor > TensorField;
+typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 typedef FieldAlgorithmBase<3, FieldValue<0>::Scalar > ScalarField;
 
 
@@ -111,7 +111,7 @@ TEST(FieldTableFunction, table_function) {
     {
         std::shared_ptr< VectorField > vector_base =
         		VectorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_vector"), get_field_init_data("table_function_vector", 2.5));
-        auto vector = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::VectorFixed> >(vector_base);
+        auto vector = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::Vector> >(vector_base);
     	arma::vec result;
 
     	vector->set_time(0.2);
@@ -143,7 +143,7 @@ TEST(FieldTableFunction, table_function) {
     {
         std::shared_ptr< TensorField > tensor_base =
         		TensorField::function_factory(in_rec.val<Input::AbstractRecord>("table_function_tensor"), get_field_init_data("table_function_tensor"));
-        auto tensor = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::TensorFixed> >(tensor_base);
+        auto tensor = std::static_pointer_cast< FieldTimeFunction<3, FieldValue<3>::Tensor> >(tensor_base);
     	arma::mat::fixed<3,3> result;
 
     	tensor->set_time(0.2);

@@ -150,7 +150,7 @@ public:
 	Field<3, FieldValue<3>::Scalar > cross_section;
 
     /// Flow flux, can be result of water flow model.
-    Field<3, FieldValue<3>::VectorFixed > flow_flux;
+    Field<3, FieldValue<3>::Vector > flow_flux;
 
 	/// Concentration sources - density of substance source, only positive part is used.
 	MultiField<3, FieldValue<3>::Scalar> sources_density;

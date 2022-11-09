@@ -112,21 +112,21 @@ Vector fn_other(Vector a, Scalar c, Vector b) {
 // Test of FieldModel - simple test without MultiFields (static method Model::create)
 TEST_F(FieldModelTest, create) {
     Field<3, FieldValue<3>::Scalar > f_scal;
-    Field<3, FieldValue<3>::VectorFixed > f_vec;
+    Field<3, FieldValue<3>::Vector > f_vec;
     TimeGovernor tg(0.0, 1.0);
 
     // initialize field caches
     this->init_field_caches();
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
-    auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_product, f_scal, f_vec);
-    Field<3, FieldValue<3>::VectorFixed > f_product;
+    auto f_product_ptr = Model<3, FieldValue<3>::Vector>::create(fn_product, f_scal, f_vec);
+    Field<3, FieldValue<3>::Vector > f_product;
     f_product.set_mesh( *mesh );
     f_product.set(f_product_ptr, 0.0);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
-    auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create(fn_other, f_vec, f_scal, f_vec);
-    Field<3, FieldValue<3>::VectorFixed > f_other;
+    auto f_other_ptr = Model<3, FieldValue<3>::Vector>::create(fn_other, f_vec, f_scal, f_vec);
+    Field<3, FieldValue<3>::Vector > f_other;
     f_other.set_mesh( *mesh );
     f_other.set(f_other_ptr, 0.0);
     f_other.set_time(tg.step(), LimitSide::right);
@@ -260,11 +260,11 @@ TEST_F(FieldModelTest, create_multi_scalar) {
 
 // Test of FieldModel - test of vector MultiFields (static method Model::create_multi)
 TEST_F(FieldModelTest, create_multi_vector) {
-    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed> FieldBaseType;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector> FieldBaseType;
     typedef std::shared_ptr< FieldBaseType > FieldBasePtr;
 
     Field<3, FieldValue<3>::Scalar> f_scal;
-    MultiField<3, FieldValue<3>::VectorFixed> f_multi;
+    MultiField<3, FieldValue<3>::Vector> f_multi;
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
     TimeGovernor tg(0.0, 1.0);
 
@@ -277,20 +277,20 @@ TEST_F(FieldModelTest, create_multi_vector) {
     f_multi.set_mesh( *mesh );
     std::vector<FieldBasePtr> field_vec;
     for (uint i=0; i<3; ++i) {
-        field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::VectorFixed> >() );
+        field_vec.push_back( std::make_shared< FieldConstant<3, FieldValue<3>::Vector> >() );
     }
     f_multi.set(field_vec, 0.0);
 
     // Create FieldModel (descendant of FieladAlgoBase) set to Field
-    auto f_product_ptr = Model<3, FieldValue<3>::VectorFixed>::create_multi(fn_product, f_scal, f_multi);
-    MultiField<3, FieldValue<3>::VectorFixed> f_product;
+    auto f_product_ptr = Model<3, FieldValue<3>::Vector>::create_multi(fn_product, f_scal, f_multi);
+    MultiField<3, FieldValue<3>::Vector> f_product;
     f_product.set_components(component_names);
     f_product.set_mesh( *mesh );
     f_product.set(f_product_ptr, 0.0);
     f_product.set_time(tg.step(), LimitSide::right);
     // Same as previous but with other functor
-    auto f_other_ptr = Model<3, FieldValue<3>::VectorFixed>::create_multi(fn_other, f_multi, f_scal, f_multi);
-    MultiField<3, FieldValue<3>::VectorFixed> f_other;
+    auto f_other_ptr = Model<3, FieldValue<3>::Vector>::create_multi(fn_other, f_multi, f_scal, f_multi);
+    MultiField<3, FieldValue<3>::Vector> f_other;
     f_other.set_components(component_names);
     f_other.set_mesh( *mesh );
     f_other.set(f_other_ptr, 0.0);

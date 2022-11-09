@@ -366,9 +366,9 @@ void HeatTransferModel::ModelEqFields::initialize()
         ),
         0.0
     );
-    advection_coef.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_heat_ad_coef(), fluid_density, fluid_heat_capacity, flow_flux), 0.0);
+    advection_coef.set(Model<3, FieldValue<3>::Vector>::create(fn_heat_ad_coef(), fluid_density, fluid_heat_capacity, flow_flux), 0.0);
     diffusion_coef.set(
-        Model<3, FieldValue<3>::TensorFixed>::create(
+        Model<3, FieldValue<3>::Tensor>::create(
             fn_heat_diff_coef(), flow_flux, v_norm, fluid_density, disp_l, disp_t, fluid_heat_conductivity, solid_heat_conductivity, cross_section, porosity
         ),
         0.0

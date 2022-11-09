@@ -63,7 +63,7 @@ protected:
         }
 
         Field<3, FieldValue<3>::Scalar > init_scalar;
-        Field<3, FieldValue<3>::VectorFixed > init_vector;
+        Field<3, FieldValue<3>::Vector > init_vector;
     };
 
     class OutputVTKTest : public OutputVTK {
@@ -107,7 +107,7 @@ protected:
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( TestParallelOutput::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("init_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("init_vector", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("init_vector", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
