@@ -55,6 +55,8 @@ namespace Input {
 
 template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
+template<unsigned int dim> class L2DifferenceAssembly;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -152,7 +154,7 @@ protected:
      * 3) implement pressure postprocessing (result is DG_P2 field)
      * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
      */
-    void compute_l2_difference();
+//    void compute_l2_difference();
 
 
     DarcyLMH *darcy_flow;
@@ -211,9 +213,12 @@ protected:
     
     FEData fe_data;
     
-    /// Computes L2 error on an element.
-    void l2_diff_local(DHCellAccessor dh_cell,
-                      FEValues<3> &fe_values, FEValues<3> &fv_rt);
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
+
+//    /// Computes L2 error on an element.
+//    void l2_diff_local(DHCellAccessor dh_cell,
+//                      FEValues<3> &fe_values, FEValues<3> &fv_rt);
 };
 
 

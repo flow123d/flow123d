@@ -27,6 +27,8 @@
 #include "flow/darcy_flow_lmh.hh"
 #include "flow/assembly_lmh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/assembly_flow_output.hh"
+#include "coupling/generic_assembly.hh"
 
 #include "io/output_time.hh"
 #include "io/observe.hh"
@@ -127,7 +129,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
-  is_output_specific_fields(false)
+  is_output_specific_fields(false),
+  l2_difference_assembly_(nullptr)
 {
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
@@ -228,8 +231,10 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 
-    if (compute_errors_)
+    if (compute_errors_) {
         set_specific_output_python_fields();
+        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(diff_eq_fields_.get(), diff_eq_data_.get());
+    }
 }
 
 /*
@@ -296,7 +301,9 @@ DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{}
+{
+    if (l2_difference_assembly_ != nullptr) delete l2_difference_assembly_;
+}
 
 
 
@@ -328,7 +335,8 @@ void DarcyFlowMHOutput::output()
     if (compute_errors_)
     {
         START_TIMER("compute specific output fields");
-        compute_l2_difference();
+        //compute_l2_difference();
+        l2_difference_assembly_->assemble(diff_eq_data_->flow_data_->dh_);
     }
     
     if(is_output_specific_fields)
@@ -435,120 +443,120 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * 3) difference of divergence
  * */
 
-void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
-                   FEValues<3> &fe_values, FEValues<3> &fv_rt) {
-
-    ASSERT( fe_values.dim() == fv_rt.dim());
-    unsigned int dim = fe_values.dim();
-
-    ElementAccessor<3> ele = dh_cell.elm();
-    fv_rt.reinit(ele);
-    fe_values.reinit(ele);
-    
-    double conductivity = diff_eq_fields_->conductivity.value(ele.centre(), ele );
-    double cross = diff_eq_fields_->cross_section.value(ele.centre(), ele );
-
-
-    // get coefficients on the current element
-    vector<double> fluxes(dim+1);
-//     vector<double> pressure_traces(dim+1);
-
-    for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = diff_eq_data_->flow_data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
-//         pressure_traces[li] = diff_eq_data_->dh->side_scalar( *(ele->side( li ) ) );
-    }
-    const uint ndofs = dh_cell.n_dofs();
-    // TODO: replace with DHCell getter when available for FESystem component
-    double pressure_mean = diff_eq_data_->flow_data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
-
-    arma::vec3 flux_in_q_point;
-    arma::vec3 ref_flux;
-    double ref_pressure, ref_divergence;
-
-    double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
-
-    // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
-    // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
-    double mean_x_squared=0;
-    for(unsigned int i_node=0; i_node < ele->n_nodes(); i_node++ )
-        for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
-        {
-            mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
-                    * arma::dot( *ele.node(i_node), *ele.node(j_node));
-        }
-
-    for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
-        arma::vec3 q_point = fe_values.point(i_point);
-
-
-        ref_pressure = diff_eq_fields_->ref_pressure.value(q_point, ele );
-        ref_flux = diff_eq_fields_->ref_velocity.value(q_point, ele );
-        ref_divergence = diff_eq_fields_->ref_divergence.value(q_point, ele );
-
-
-        // compute postprocesed pressure
-        diff = 0;
-        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            unsigned int oposite_node = 0;
-            switch (dim) {
-                case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
-                case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
-                case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
-                default: ASSERT_PERMANENT(false)(dim).error("Unsupported FE dimension."); break;
-            }
-
-            diff += fluxes[ i_shape ] *
-                               (  arma::dot( q_point, q_point )/ 2
-                                - mean_x_squared / 2
-                                - arma::dot( q_point, *ele.node(oposite_node) )
-                                + arma::dot( ele.centre(), *ele.node(oposite_node) )
-                               );
-        }
-
-        diff = - (1.0 / conductivity) * diff / dim / ele.measure() / cross + pressure_mean ;
-        diff = ( diff - ref_pressure);
-        pressure_diff += diff * diff * fe_values.JxW(i_point);
-
-
-        // velocity difference
-        flux_in_q_point.zeros();
-        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
-            flux_in_q_point += fluxes[ i_shape ]
-                              * fv_rt.vector_view(0).value(i_shape, i_point)
-                              / cross;
-        }
-
-        flux_in_q_point -= ref_flux;
-        velocity_diff += dot(flux_in_q_point, flux_in_q_point) * fe_values.JxW(i_point);
-
-        // divergence diff
-        diff = 0;
-        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
-        diff = ( diff / ele.measure() / cross - ref_divergence);
-        divergence_diff += diff * diff * fe_values.JxW(i_point);
-
-    }
-
-    // DHCell constructed with diff fields DH, get DOF indices of actual element
-    DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(diff_eq_data_->dh_.get());
-    IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
-
-    auto velocity_data = diff_eq_data_->vel_diff_ptr->vec();
-    velocity_data.set( idx, sqrt(velocity_diff) );
-    diff_eq_data_->velocity_error[dim-1] += velocity_diff;
-    if (dim == 2 && diff_eq_data_->velocity_mask.size() != 0 ) {
-        diff_eq_data_->mask_vel_error += (diff_eq_data_->velocity_mask[ ele.idx() ])? 0 : velocity_diff;
-    }
-
-    auto pressure_data = diff_eq_data_->pressure_diff_ptr->vec();
-    pressure_data.set( idx, sqrt(pressure_diff) );
-    diff_eq_data_->pressure_error[dim-1] += pressure_diff;
-
-    auto div_data = diff_eq_data_->div_diff_ptr->vec();
-    div_data.set( idx, sqrt(divergence_diff) );
-    diff_eq_data_->div_error[dim-1] += divergence_diff;
-
-}
+//void DarcyFlowMHOutput::l2_diff_local(DHCellAccessor dh_cell,
+//                   FEValues<3> &fe_values, FEValues<3> &fv_rt) {
+//
+//    ASSERT( fe_values.dim() == fv_rt.dim());
+//    unsigned int dim = fe_values.dim();
+//
+//    ElementAccessor<3> ele = dh_cell.elm();
+//    fv_rt.reinit(ele);
+//    fe_values.reinit(ele);
+//
+//    double conductivity = diff_eq_fields_->conductivity.value(ele.centre(), ele );
+//    double cross = diff_eq_fields_->cross_section.value(ele.centre(), ele );
+//
+//
+//    // get coefficients on the current element
+//    vector<double> fluxes(dim+1);
+////     vector<double> pressure_traces(dim+1);
+//
+//    for (unsigned int li = 0; li < ele->n_sides(); li++) {
+//        fluxes[li] = diff_eq_data_->flow_data_->full_solution.get( dh_cell.get_loc_dof_indices()[li] );
+////         pressure_traces[li] = diff_eq_data_->dh->side_scalar( *(ele->side( li ) ) );
+//    }
+//    const uint ndofs = dh_cell.n_dofs();
+//    // TODO: replace with DHCell getter when available for FESystem component
+//    double pressure_mean = diff_eq_data_->flow_data_->full_solution.get( dh_cell.get_loc_dof_indices()[ndofs/2] );
+//
+//    arma::vec3 flux_in_q_point;
+//    arma::vec3 ref_flux;
+//    double ref_pressure, ref_divergence;
+//
+//    double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
+//
+//    // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
+//    // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
+//    double mean_x_squared=0;
+//    for(unsigned int i_node=0; i_node < ele->n_nodes(); i_node++ )
+//        for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
+//        {
+//            mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
+//                    * arma::dot( *ele.node(i_node), *ele.node(j_node));
+//        }
+//
+//    for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
+//        arma::vec3 q_point = fe_values.point(i_point);
+//
+//
+//        ref_pressure = diff_eq_fields_->ref_pressure.value(q_point, ele );
+//        ref_flux = diff_eq_fields_->ref_velocity.value(q_point, ele );
+//        ref_divergence = diff_eq_fields_->ref_divergence.value(q_point, ele );
+//
+//
+//        // compute postprocesed pressure
+//        diff = 0;
+//        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
+//            unsigned int oposite_node = 0;
+//            switch (dim) {
+//                case 1: oposite_node =  RefElement<1>::oposite_node(i_shape); break;
+//                case 2: oposite_node =  RefElement<2>::oposite_node(i_shape); break;
+//                case 3: oposite_node =  RefElement<3>::oposite_node(i_shape); break;
+//                default: ASSERT_PERMANENT(false)(dim).error("Unsupported FE dimension."); break;
+//            }
+//
+//            diff += fluxes[ i_shape ] *
+//                               (  arma::dot( q_point, q_point )/ 2
+//                                - mean_x_squared / 2
+//                                - arma::dot( q_point, *ele.node(oposite_node) )
+//                                + arma::dot( ele.centre(), *ele.node(oposite_node) )
+//                               );
+//        }
+//
+//        diff = - (1.0 / conductivity) * diff / dim / ele.measure() / cross + pressure_mean ;
+//        diff = ( diff - ref_pressure);
+//        pressure_diff += diff * diff * fe_values.JxW(i_point);
+//
+//
+//        // velocity difference
+//        flux_in_q_point.zeros();
+//        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
+//            flux_in_q_point += fluxes[ i_shape ]
+//                              * fv_rt.vector_view(0).value(i_shape, i_point)
+//                              / cross;
+//        }
+//
+//        flux_in_q_point -= ref_flux;
+//        velocity_diff += dot(flux_in_q_point, flux_in_q_point) * fe_values.JxW(i_point);
+//
+//        // divergence diff
+//        diff = 0;
+//        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
+//        diff = ( diff / ele.measure() / cross - ref_divergence);
+//        divergence_diff += diff * diff * fe_values.JxW(i_point);
+//
+//    }
+//
+//    // DHCell constructed with diff fields DH, get DOF indices of actual element
+//    DHCellAccessor sub_dh_cell = dh_cell.cell_with_other_dh(diff_eq_data_->dh_.get());
+//    IntIdx idx = sub_dh_cell.get_loc_dof_indices()[0];
+//
+//    auto velocity_data = diff_eq_data_->vel_diff_ptr->vec();
+//    velocity_data.set( idx, sqrt(velocity_diff) );
+//    diff_eq_data_->velocity_error[dim-1] += velocity_diff;
+//    if (dim == 2 && diff_eq_data_->velocity_mask.size() != 0 ) {
+//        diff_eq_data_->mask_vel_error += (diff_eq_data_->velocity_mask[ ele.idx() ])? 0 : velocity_diff;
+//    }
+//
+//    auto pressure_data = diff_eq_data_->pressure_diff_ptr->vec();
+//    pressure_data.set( idx, sqrt(pressure_diff) );
+//    diff_eq_data_->pressure_error[dim-1] += pressure_diff;
+//
+//    auto div_data = diff_eq_data_->div_diff_ptr->vec();
+//    div_data.set( idx, sqrt(divergence_diff) );
+//    diff_eq_data_->div_error[dim-1] += divergence_diff;
+//
+//}
 
 DarcyFlowMHOutput::FEData::FEData()
 : order(4),
@@ -562,53 +570,53 @@ DarcyFlowMHOutput::FEData::FEData()
 }
 
 
-void DarcyFlowMHOutput::compute_l2_difference() {
-	DebugOut() << "l2 norm output\n";
-    ofstream os( FilePath("solution_error", FilePath::output_file) );
-
-    diff_eq_data_->mask_vel_error=0;
-    for(unsigned int j=0; j<3; j++){
-        diff_eq_data_->pressure_error[j] = 0;
-        diff_eq_data_->velocity_error[j] = 0;
-        diff_eq_data_->div_error[j] = 0;
-    }
-
-    //diff_eq_data_->ele_flux = &( ele_flux );
-
-    for (DHCellAccessor dh_cell : diff_eq_data_->flow_data_->dh_->own_range()) {
-
-    	switch (dh_cell.dim()) {
-        case 1:
-            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1]);
-            break;
-        case 2:
-            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2]);
-            break;
-        case 3:
-            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3]);
-            break;
-        }
-    }
-    
-    // square root for L2 norm
-    for(unsigned int j=0; j<3; j++){
-        diff_eq_data_->pressure_error[j] = sqrt(diff_eq_data_->pressure_error[j]);
-        diff_eq_data_->velocity_error[j] = sqrt(diff_eq_data_->velocity_error[j]);
-        diff_eq_data_->div_error[j] = sqrt(diff_eq_data_->div_error[j]);
-    }
-    diff_eq_data_->mask_vel_error = sqrt(diff_eq_data_->mask_vel_error);
-
-    os 	<< "l2 norm output\n\n"
-    	<< "pressure error 1d: " << diff_eq_data_->pressure_error[0] << endl
-    	<< "pressure error 2d: " << diff_eq_data_->pressure_error[1] << endl
-    	<< "pressure error 3d: " << diff_eq_data_->pressure_error[2] << endl
-    	<< "velocity error 1d: " << diff_eq_data_->velocity_error[0] << endl
-    	<< "velocity error 2d: " << diff_eq_data_->velocity_error[1] << endl
-    	<< "velocity error 3d: " << diff_eq_data_->velocity_error[2] << endl
-    	<< "masked velocity error 2d: " << diff_eq_data_->mask_vel_error <<endl
-    	<< "div error 1d: " << diff_eq_data_->div_error[0] << endl
-    	<< "div error 2d: " << diff_eq_data_->div_error[1] << endl
-        << "div error 3d: " << diff_eq_data_->div_error[2];
-}
+//void DarcyFlowMHOutput::compute_l2_difference() {
+//	DebugOut() << "l2 norm output\n";
+//    ofstream os( FilePath("solution_error", FilePath::output_file) );
+//
+//    diff_eq_data_->mask_vel_error=0;
+//    for(unsigned int j=0; j<3; j++){
+//        diff_eq_data_->pressure_error[j] = 0;
+//        diff_eq_data_->velocity_error[j] = 0;
+//        diff_eq_data_->div_error[j] = 0;
+//    }
+//
+//    //diff_eq_data_->ele_flux = &( ele_flux );
+//
+//    for (DHCellAccessor dh_cell : diff_eq_data_->flow_data_->dh_->own_range()) {
+//
+//    	switch (dh_cell.dim()) {
+//        case 1:
+//            l2_diff_local( dh_cell, fe_data.fe_values[1], fe_data.fv_rt[1]);
+//            break;
+//        case 2:
+//            l2_diff_local( dh_cell, fe_data.fe_values[2], fe_data.fv_rt[2]);
+//            break;
+//        case 3:
+//            l2_diff_local( dh_cell, fe_data.fe_values[3], fe_data.fv_rt[3]);
+//            break;
+//        }
+//    }
+//
+//    // square root for L2 norm
+//    for(unsigned int j=0; j<3; j++){
+//        diff_eq_data_->pressure_error[j] = sqrt(diff_eq_data_->pressure_error[j]);
+//        diff_eq_data_->velocity_error[j] = sqrt(diff_eq_data_->velocity_error[j]);
+//        diff_eq_data_->div_error[j] = sqrt(diff_eq_data_->div_error[j]);
+//    }
+//    diff_eq_data_->mask_vel_error = sqrt(diff_eq_data_->mask_vel_error);
+//
+//    os 	<< "l2 norm output\n\n"
+//    	<< "pressure error 1d: " << diff_eq_data_->pressure_error[0] << endl
+//    	<< "pressure error 2d: " << diff_eq_data_->pressure_error[1] << endl
+//    	<< "pressure error 3d: " << diff_eq_data_->pressure_error[2] << endl
+//    	<< "velocity error 1d: " << diff_eq_data_->velocity_error[0] << endl
+//    	<< "velocity error 2d: " << diff_eq_data_->velocity_error[1] << endl
+//    	<< "velocity error 3d: " << diff_eq_data_->velocity_error[2] << endl
+//    	<< "masked velocity error 2d: " << diff_eq_data_->mask_vel_error <<endl
+//    	<< "div error 1d: " << diff_eq_data_->div_error[0] << endl
+//    	<< "div error 2d: " << diff_eq_data_->div_error[1] << endl
+//        << "div error 3d: " << diff_eq_data_->div_error[2];
+//}
 
 

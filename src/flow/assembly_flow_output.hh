@@ -40,6 +40,13 @@
 #include "coupling/balance.hh"
 
 
+/**
+ * Calculate approximation of L2 norm for:
+ * 1) difference between regularized pressure and analytical solution (using FunctionPython)
+ * 2) difference between RT velocities and analytical solution
+ * 3) difference of divergence
+ *
+ */
 template <unsigned int dim>
 class L2DifferenceAssembly : public AssemblyBase<dim>
 {
