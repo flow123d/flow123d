@@ -91,10 +91,10 @@ class Parameters :
          return self.P2 - self.B0 + (self.B0 * y) - (2 * self.B0 * series_sum)
 
     # one term of series for 2D pressure value
-    def series_2d(self, n, tx, ty):    
+    def series_2d(self, n:int, tx:np.array, ty:np.array):    
         n_pi = (n+1)*math.pi
-        tmp1=math.cos(n_pi * tx)
-        tmp2=math.exp(-n_pi * ty) * ( 1 - math.exp( -2 * n_pi * (1-ty) ) )
+        tmp1=np.cos(n_pi * tx)
+        tmp2=np.exp(-n_pi * ty) * ( 1 - np.exp( -2 * n_pi * (1-ty) ) )
         return (self.alfa[n]*tmp1*tmp2)/2.0
         
     ############# 
@@ -142,22 +142,22 @@ class Parameters :
         return -(self.un[n]*math.pi*(n+1)*math.sin(math.pi*(n+1)*tx))
     
     # sum the series with terms given by function "series"
-    def summarize( self, series, x, y):
+    def summarize( self, series, x:np.array, y:np.array):
         local_sum=[]
             
         interval_begin=0        
         for interval_end in range (self.interval_size, self.N, self.interval_size):
             # sum over the interval backward  
-            interval_sum = 0.0
+            interval_sum = np.zeros_like(x)
             for n in range (interval_end-1,interval_begin-1,-1):
                 interval_sum += series( n, x, y)
                     
-            if (math.fabs(interval_sum) < self.tolerance) :
+            if (np.max(np.abs(interval_sum)) < self.tolerance) :
                 break    
             local_sum.append( interval_sum )
             interval_begin +=self.interval_size
      
-        total_sum = 0.0
+        total_sum =  np.zeros_like(x)
         for number in reversed(local_sum) :
             total_sum += number
         return total_sum    
