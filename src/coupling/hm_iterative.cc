@@ -196,7 +196,8 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
     auto old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
     old_pressure.set(old_pressure_ptr_, 0.0);
 
-    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
+    // TODO: implement a method of FieldFE to easily duplicate the field "field_ele_pressure" to "old_iter_pressure".
+    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_fields().field_ele_pressure.get_field_fe()->get_dofhandler(), nullptr, 1);
     old_iter_pressure.set(old_iter_pressure_ptr_, 0.0);
 
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.mechanics_->eq_fields().output_div_ptr->get_dofhandler());
@@ -279,15 +280,10 @@ void HM_Iterative::initialize()
 
 
 template<int dim, class Value>
-void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_field)
+void copy_field(const FieldFE<dim, Value> &from_field, FieldFE<dim, Value> &to_field)
 {
-    auto dh = to_field.get_dofhandler();
-    auto vec = to_field.vec();
-    Field<dim,Value> from_field;
-    from_field.copy_from(from_field_common);
-    
-    for ( auto cell : dh->own_range() )
-        vec.set( cell.local_idx(), from_field.value(cell.elm().centre(), cell.elm()) );
+    ASSERT( from_field.get_dofhandler() == to_field.get_dofhandler() );
+    to_field.vec().copy_from( from_field.vec() );
 }
 
 
@@ -304,8 +300,8 @@ void HM_Iterative::zero_time_step()
     update_potential();
     eq_data_->mechanics_->zero_time_step();
     
-    copy_field(*eq_data_->flow_->eq_fields().field("pressure_p0"), *eq_fields_->old_iter_pressure_ptr_);
-    copy_field(eq_data_->mechanics_->eq_fields().output_divergence, *eq_fields_->old_div_u_ptr_);
+    copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
     eq_fields_->old_iter_pressure.set_time_result_changed();
 }
 
@@ -335,7 +331,7 @@ void HM_Iterative::solve_iteration()
 void HM_Iterative::update_after_iteration()
 {
     eq_data_->mechanics_->update_output_fields();
-    copy_field(*eq_data_->flow_->eq_fields().field("pressure_p0"), *eq_fields_->old_iter_pressure_ptr_);
+    copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
     eq_fields_->old_iter_pressure.set_time_result_changed();
 }
 
@@ -346,7 +342,7 @@ void HM_Iterative::update_after_converged()
     eq_data_->flow_->output_data();
     eq_data_->mechanics_->output_data();
     
-    copy_field(eq_data_->mechanics_->eq_fields().output_divergence, *eq_fields_->old_div_u_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
 }
 
 
@@ -382,13 +378,13 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     eq_data_->p_norm2 = 0;
 
     residual_assembly_->assemble(dh);
-    
+
     double send_data[] = { eq_data_->p_dif2, eq_data_->p_norm2 };
     double recv_data[2];
     MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
     abs_error = sqrt(recv_data[0]);
     rel_error = abs_error / (sqrt(recv_data[1]) + std::numeric_limits<double>::min());
-    
+
     MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          iteration(), abs_error, rel_error);

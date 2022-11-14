@@ -100,7 +100,7 @@ void VectorMPI::swap(VectorMPI &other) {
 }
 
 
-void VectorMPI::copy_from(VectorMPI &other) {
+void VectorMPI::copy_from(const VectorMPI &other) {
     ASSERT_PERMANENT_EQ(this->communicator_, other.communicator_);
     ASSERT_PERMANENT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
     chkerr(VecCopy(other.data_petsc_, data_petsc_));
