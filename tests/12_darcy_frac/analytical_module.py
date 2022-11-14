@@ -99,47 +99,47 @@ class Parameters :
         
     ############# 
     # fuction value for p1 - 1D pressure
-    def p1_fce_value(self, x, y):
+    def p1_fce_value(self, x:np.array, y:np.array):
          series_sum = self.summarize(self.series_1d, x, y ) 
-         pa=self.u0*math.cosh((1-x)*math.sqrt(self.sigma/self.k1))
+         pa=self.u0*np.cosh((1-x)*np.sqrt(self.sigma/self.k1))
          return self.P2-self.B0-pa-2*self.B0*series_sum
     # one term of series for 1D pressure value 
-    def series_1d(self, n, tx, ty):     
-        return (self.un[n]*math.cos(math.pi*(n+1)*tx))
+    def series_1d(self, n:int, tx:np.array, ty:np.array):     
+        return (self.un[n]*np.cos(np.pi*(n+1)*tx))
         
     # fuction value for vx2 - x component of 2D velocity 
-    def vx2_fce_value(self,x, y):
+    def vx2_fce_value(self,x:np.array, y:np.array):
          series_sum = self.summarize(self.series_vx_2d, x, y ) 
          dp_dx= - (2 * self.B0 * series_sum)
          return -self.k2*dp_dx
     # one term of series for 2D vx value
-    def series_vx_2d(self, n, tx, ty):    
+    def series_vx_2d(self, n:int, tx:np.array, ty:np.array):    
         n_pi = (n+1)*math.pi
-        tmp1=-n_pi*math.sin(n_pi * tx)
-        tmp2=math.exp(-n_pi * ty) * ( 1 - math.exp( -2 * n_pi * (1-ty) ) )
+        tmp1=-n_pi*np.sin(n_pi * tx)
+        tmp2=np.exp(-n_pi * ty) * ( 1 - np.exp( -2 * n_pi * (1-ty) ) )
         return (self.alfa[n]*tmp1*tmp2)/2.0
 
     # fuction value for vy2 - y component of 2D velocity 
-    def vy2_fce_value(self,x, y):
+    def vy2_fce_value(self,x:np.array, y:np.array):
          series_sum = self.summarize(self.series_vy_2d, x, y ) 
          dp_dy=self.B0  - (2 * self.B0 * series_sum)
          return -self.k2*dp_dy
     # one term of series for 2D value
-    def series_vy_2d(self, n, tx, ty):    
+    def series_vy_2d(self, n:int, tx:np.array, ty:np.array):    
         n_pi = (n+1)*math.pi
-        tmp1=math.cos(n_pi * tx)
-        tmp2=-n_pi*math.exp(-n_pi * ty) * ( 1 + math.exp( -2 * n_pi * (1-ty) ) )
+        tmp1=np.cos(n_pi * tx)
+        tmp2=-n_pi*np.exp(-n_pi * ty) * ( 1 + np.exp( -2 * n_pi * (1-ty) ) )
         return (self.alfa[n]*tmp1*tmp2)/2.0
 
     # fuction value for v1 - 1D velocity
-    def v1_fce_value(self, x, y):
+    def v1_fce_value(self, x:np.array, y:np.array):
          series_sum = self.summarize(self.series_v1_1d, x, y ) 
-         pa=-self.u0*(math.sqrt(self.sigma/self.k1))*math.sinh((1-x)*math.sqrt(self.sigma/self.k1))
+         pa=-self.u0*(np.sqrt(self.sigma/self.k1))*np.sinh((1-x)*np.sqrt(self.sigma/self.k1))
          dp_dx=-pa-2*self.B0*series_sum
          return -self.k1*dp_dx
     # one term of series for 1D value 
-    def series_v1_1d(self, n, tx, ty):     
-        return -(self.un[n]*math.pi*(n+1)*math.sin(math.pi*(n+1)*tx))
+    def series_v1_1d(self, n:int, tx:np.array, ty:np.array):     
+        return -(self.un[n]*math.pi*(n+1)*np.sin(math.pi*(n+1)*tx))
     
     # sum the series with terms given by function "series"
     def summarize( self, series, x:np.array, y:np.array):
@@ -184,9 +184,10 @@ class AllValues1D(flowpy.PythonFieldBase):
         return ( p1 )
 
     def ref_velocity(self):
+        xx = self.X[0]
         tx = 1-np.absolute( xx) * Parameters.x_scale
-        vx1 = 2*Parameters.v1_fce_value(params,tx,0.0) * Parameters.x_scale * np.copysign(xx,1) *(-1)
-        return (vx1, 0.0, 0.0)
+        vx1 = 2*Parameters.v1_fce_value(params,tx,0.0) * Parameters.x_scale * np.copysign(1,xx) *(-1)
+        return self.repl( np.array([1.0, 0.0, 0.0]) ) * vx1
 
     def ref_divergence(self):
         return np.full((self._region_chunk_end-self._region_chunk_begin), 1.0)
@@ -208,9 +209,11 @@ class AllValues2D(flowpy.PythonFieldBase):
         yy = self.X[1]
         tx = 1-np.absolute( xx ) * Parameters.x_scale
         ty = np.absolute( yy ) * Parameters.y_scale
-        vx2 = Parameters.vx2_fce_value(params,tx,ty) * Parameters.x_scale * np.copysign(xx,1)  *(-1)
-        vy2 = Parameters.vy2_fce_value(params,tx,ty) * Parameters.y_scale * np.copysign(yy,1)
-        return (vx2, vy2, 0.0) 
+        vx2 = Parameters.vx2_fce_value(params,tx,ty) * Parameters.x_scale * np.copysign(1,xx)  *(-1)
+        vy2 = Parameters.vy2_fce_value(params,tx,ty) * Parameters.y_scale * np.copysign(1,yy)
+        vx2_vect = self.repl( np.array([1.0, 0.0, 0.0]) ) * vx2
+        vy2_vect = self.repl( np.array([0.0, 1.0, 0.0]) ) * vy2
+        return vx2_vect + vy2_vect
 
     def ref_divergence(self):
         return np.full((self._region_chunk_end-self._region_chunk_begin), 1.0)
