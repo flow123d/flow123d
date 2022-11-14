@@ -46,6 +46,12 @@
  * 2) difference between RT velocities and analytical solution
  * 3) difference of divergence
  *
+ * TODO:
+ * 1) implement field objects
+ * 2) implement DG_P2 finite elements
+ * 3) implement pressure postprocessing (result is DG_P2 field)
+ * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
+ *
  */
 template <unsigned int dim>
 class L2DifferenceAssembly : public AssemblyBase<dim>

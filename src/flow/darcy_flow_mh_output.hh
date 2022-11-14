@@ -141,21 +141,6 @@ protected:
 
     void output_internal_flow_data();
 
-    /**
-     * Temporary hack.
-     * Calculate approximation of L2 norm for:
-     * 1) difference between regularized pressure and analytical solution (using FunctionPython)
-     * 2) difference between RT velocities and analytical solution
-     * 3) difference of divergence
-     *
-     * TODO:
-     * 1) implement field objects
-     * 2) implement DG_P2 finite elements
-     * 3) implement pressure postprocessing (result is DG_P2 field)
-     * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
-     */
-//    void compute_l2_difference();
-
 
     DarcyLMH *darcy_flow;
     Mesh *mesh_;
@@ -216,9 +201,6 @@ protected:
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
 
-//    /// Computes L2 error on an element.
-//    void l2_diff_local(DHCellAccessor dh_cell,
-//                      FEValues<3> &fe_values, FEValues<3> &fv_rt);
 };
 
 
