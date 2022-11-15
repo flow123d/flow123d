@@ -38,10 +38,6 @@
 
 #include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
-#include "fem/fe_values.hh"
-#include "fem/fe_rt.hh"
-#include "fem/fe_values_views.hh"
-#include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
@@ -331,7 +327,6 @@ void DarcyFlowMHOutput::output()
 
         {
             if (raw_eq_data_->raw_output_file.is_open())
-                //output_internal_flow_data();
                 output_internal_assembly_->assemble(raw_eq_data_->flow_data_->dh_);
         }
     }
@@ -357,92 +352,5 @@ void DarcyFlowMHOutput::output()
     }
 
     
-}
-
-
-
-/*
- * Output of internal flow data.
- */
-void DarcyFlowMHOutput::output_internal_flow_data()
-{
-    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
-    
-    arma::vec3 flux_in_center;
-    raw_eq_data_->raw_output_strings_.resize( raw_eq_data_->flow_data_->dh_->n_own_cells() );
-
-    for ( auto cell : raw_eq_data_->flow_data_->dh_->own_range() ) {
-        ElementAccessor<3> ele = cell.elm();
-        LocDofVec indices = cell.get_loc_dof_indices();
-
-        std::stringstream ss;
-        // pressure
-        ss << fmt::format("{} {} ", cell.elm().input_id(), raw_eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
-
-        // velocity at element center
-        flux_in_center = darcy_flow->eq_fields_->field_ele_velocity.value(ele.centre(), ele);
-        for (unsigned int i = 0; i < 3; i++)
-        	ss << flux_in_center[i] << " ";
-
-        // number of sides
-        ss << ele->n_sides() << " ";
-
-        // use node permutation to permute sides
-        auto &new_to_old_node = ele.orig_nodes_order();
-        std::vector<uint> old_to_new_side(ele->n_sides());
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            // According to RefElement<dim>::opposite_node()
-            uint new_opp_node = ele->n_sides() - i - 1;
-            uint old_opp_node = new_to_old_node[new_opp_node];
-            uint old_iside = ele->n_sides() - old_opp_node - 1;
-            old_to_new_side[old_iside] = i;
-        }
-
-        // pressure on edges
-        // unsigned int lid = ele->n_sides() + 1;
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            uint new_lid = ele->n_sides() + 1 + old_to_new_side[i];
-            ss << raw_eq_data_->flow_data_->full_solution.get(indices[new_lid]) << " ";
-        }
-        // fluxes on sides
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            uint new_iside = old_to_new_side[i];
-            ss << raw_eq_data_->flow_data_->full_solution.get(indices[new_iside]) << " ";
-        }
-
-        // remove last white space
-        string line = ss.str();
-        raw_eq_data_->raw_output_strings_[cell.elm_idx()] = line.substr(0, line.size()-1);
-    }
-
-    //char dbl_fmt[ 16 ]= "%.8g ";
-    // header
-    raw_eq_data_->raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
-    raw_eq_data_->raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
-    raw_eq_data_->raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
-
-    auto permutation_vec = raw_eq_data_->flow_data_->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<raw_eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
-        raw_eq_data_->raw_output_file << raw_eq_data_->raw_output_strings_[ permutation_vec[i_elem] ] << endl;
-    }    
-    
-    raw_eq_data_->raw_output_file << "$EndFlowField\n" << endl;
-}
-
-
-#include "quadrature/quadrature_lib.hh"
-#include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
-#include "fields/field_values.hh"
-
-DarcyFlowMHOutput::FEData::FEData()
-: order(4),
-  quad(QGauss::make_array(order)),
-  fe_p1(0), fe_p0(0),
-  fe_rt( )
-{
-    UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
-    fe_values = mixed_fe_values(quad, fe_p0, flags);
-    fv_rt = mixed_fe_values(quad, fe_rt, flags);
 }
 

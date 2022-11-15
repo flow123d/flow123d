@@ -27,7 +27,6 @@
 #include "fields/field_value_cache.hh"
 #include "fields/field_fe.hh"
 
-//#include "system/index_types.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "fem/fe_p.hh"
@@ -36,8 +35,6 @@
 #include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
-
-#include "coupling/balance.hh"
 
 
 /**
@@ -255,6 +252,9 @@ protected:
 };
 
 
+/**
+ * Compute output of internal flow data.
+ */
 template <unsigned int dim>
 class OutputInternalFlowAssembly : public AssemblyBase<dim>
 {

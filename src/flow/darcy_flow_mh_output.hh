@@ -27,10 +27,6 @@
 #include <memory>                        // for shared_ptr
 #include <vector>                        // for vector
 #include <armadillo>
-#include "fem/fe_p.hh"                   // for FE_P_disc
-#include "fem/fe_rt.hh"                  // for FE_RT0
-#include "fem/fe_values.hh"              // for FEValues
-#include "quadrature/quadrature_lib.hh"  // for QGauss
 #include "fields/equation_output.hh"     // for EquationOutput
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
@@ -151,8 +147,6 @@ protected:
     template <class FieldType>
     void set_ref_solution(const Input::Record &rec, Field<3, FieldType> &output_field, std::vector<std::string> reg);
 
-    void output_internal_flow_data();
-
 
     DarcyLMH *darcy_flow;
     Mesh *mesh_;
@@ -186,28 +180,7 @@ protected:
     std::shared_ptr<RawOutputEqData> raw_eq_data_;
     
     //MixedPtr<FE_P_disc> fe_p0;
-    
-    /// Struct containing all dim dependent FE classes needed for output
-    /// (and for computing solution error).
-    struct FEData{
-        FEData();
-        
-        const unsigned int order; // order of Gauss quadrature
-        QGauss::array quad;
-        MixedPtr<FE_P_disc> fe_p1;
 
-        // following is used for calculation of postprocessed pressure difference
-        // and comparison to analytical solution
-        MixedPtr<FE_P_disc> fe_p0;
-        std::vector<FEValues<3>> fe_values;
-        
-        // FEValues for velocity.
-        MixedPtr<FE_RT0> fe_rt;
-        std::vector<FEValues<3>> fv_rt;
-    };
-    
-    FEData fe_data;
-    
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
     GenericAssembly< OutputInternalFlowAssembly > * output_internal_assembly_;
