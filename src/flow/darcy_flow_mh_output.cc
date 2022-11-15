@@ -137,6 +137,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                                                      darcy_flow->time().get_unit_conversion());
     prepare_output(main_mh_in_rec);
 
+    flow_eq_fields_ = darcy_flow->eq_fields_;
+    raw_eq_data_ = std::make_shared<RawOutputEqData>();
+    raw_eq_data_->flow_data_ = darcy_flow->eq_data_;
+    ASSERT_PTR(raw_eq_data_->flow_data_);
+
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
     if (in_rec_specific) {
         in_rec_specific->opt_val("compute_errors", compute_errors_);
@@ -160,7 +165,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                 {
                     MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
                     try {
-                        raw_output_file_path.open_stream(raw_output_file);
+                        raw_output_file_path.open_stream(raw_eq_data_->raw_output_file);
                     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
                 }
             }
@@ -201,10 +206,8 @@ void DarcyFlowMHOutput::prepare_output(Input::Record main_mh_in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_eq_fields_ = darcy_flow->eq_fields_;
     diff_eq_data_ = std::make_shared<DiffEqData>();
     diff_eq_data_->flow_data_ = darcy_flow->eq_data_;
-    ASSERT_PTR(diff_eq_data_->flow_data_);
 
     { // init DOF handlers represents element DOFs
         uint p_elem_component = 1;
@@ -233,7 +236,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     if (compute_errors_) {
         set_specific_output_python_fields();
-        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(diff_eq_fields_.get(), diff_eq_data_.get());
+        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get());
     }
 }
 
@@ -277,9 +280,9 @@ void DarcyFlowMHOutput::set_specific_output_python_fields()
     // Create instances of FieldPython and set them to Field objects
     std::string source_file = "analytical_module.py";
     for (uint i_dim=0; i_dim<3; ++i_dim) {
-        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], diff_eq_fields_->ref_pressure, reg_by_dim[i_dim]);
-        this->set_ref_solution<VectorSolution>(in_recs[i_dim], diff_eq_fields_->ref_velocity, reg_by_dim[i_dim]);
-        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], diff_eq_fields_->ref_divergence, reg_by_dim[i_dim]);
+        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], flow_eq_fields_->ref_pressure, reg_by_dim[i_dim]);
+        this->set_ref_solution<VectorSolution>(in_recs[i_dim], flow_eq_fields_->ref_velocity, reg_by_dim[i_dim]);
+        this->set_ref_solution<ScalarSolution>(in_recs[i_dim], flow_eq_fields_->ref_divergence, reg_by_dim[i_dim]);
     }
 }
 
@@ -358,38 +361,29 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 {
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
 
-    if (! raw_output_file.is_open()) return;
+    if (! raw_eq_data_->raw_output_file.is_open()) return;
     
     //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
-    raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
-    raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
+    raw_eq_data_->raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+    raw_eq_data_->raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_eq_data_->raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    
-    DarcyLMH::EqFields* eq_fields = nullptr;
-    DarcyLMH::EqData* eq_data = nullptr;
-    if (DarcyLMH* d = dynamic_cast<DarcyLMH*>(darcy_flow))
-    {
-        eq_fields = d->eq_fields_.get();
-        eq_data = d->eq_data_.get();
-    }
-    ASSERT_PTR(eq_data);
     
     arma::vec3 flux_in_center;
     
-    auto permutation_vec = eq_data->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<eq_data->dh_->n_own_cells(); ++i_elem) {
-        ElementAccessor<3> ele(eq_data->dh_->mesh(), permutation_vec[i_elem]);
-        DHCellAccessor dh_cell = eq_data->dh_->cell_accessor_from_element( ele.idx() );
+    auto permutation_vec = raw_eq_data_->flow_data_->dh_->mesh()->element_permutations();
+    for (unsigned int i_elem=0; i_elem<raw_eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
+        ElementAccessor<3> ele(raw_eq_data_->flow_data_->dh_->mesh(), permutation_vec[i_elem]);
+        DHCellAccessor dh_cell = raw_eq_data_->flow_data_->dh_->cell_accessor_from_element( ele.idx() );
         LocDofVec indices = dh_cell.get_loc_dof_indices();
 
         std::stringstream ss;
         // pressure
-        ss << fmt::format("{} {} ", dh_cell.elm().input_id(), eq_data->full_solution.get(indices[ele->n_sides()]));
+        ss << fmt::format("{} {} ", dh_cell.elm().input_id(), raw_eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
         
         // velocity at element center
-        flux_in_center = eq_fields->field_ele_velocity.value(ele.centre(), ele);
+        flux_in_center = darcy_flow->eq_fields_->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
         	ss << flux_in_center[i] << " ";
 
@@ -411,20 +405,20 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         // unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             uint new_lid = ele->n_sides() + 1 + old_to_new_side[i];
-            ss << eq_data->full_solution.get(indices[new_lid]) << " ";
+            ss << raw_eq_data_->flow_data_->full_solution.get(indices[new_lid]) << " ";
         }
         // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             uint new_iside = old_to_new_side[i];
-            ss << eq_data->full_solution.get(indices[new_iside]) << " ";
+            ss << raw_eq_data_->flow_data_->full_solution.get(indices[new_iside]) << " ";
         }
         
         // remove last white space
         string line = ss.str();
-        raw_output_file << line.substr(0, line.size()-1) << endl;
+        raw_eq_data_->raw_output_file << line.substr(0, line.size()-1) << endl;
     }    
     
-    raw_output_file << "$EndFlowField\n" << endl;
+    raw_eq_data_->raw_output_file << "$EndFlowField\n" << endl;
 }
 
 

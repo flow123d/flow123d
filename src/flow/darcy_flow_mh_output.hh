@@ -116,6 +116,16 @@ public:
         std::shared_ptr<DarcyLMH::EqData> flow_data_;
     };
 
+    class RawOutputEqData {
+    public:
+    	RawOutputEqData() {}
+
+        /// Raw data output file.
+        ofstream raw_output_file;
+
+        std::shared_ptr<DarcyLMH::EqData> flow_data_;
+    };
+
     DarcyFlowMHOutput(DarcyLMH *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
 
@@ -167,13 +177,11 @@ protected:
     
     std::shared_ptr<OutputTime> output_stream;
 
-    /// Raw data output file.
-    ofstream raw_output_file;
-
     /// Output specific field stuff
     bool is_output_specific_fields;
-    std::shared_ptr<DarcyLMH::EqFields> diff_eq_fields_;
+    std::shared_ptr<DarcyLMH::EqFields> flow_eq_fields_;
     std::shared_ptr<DiffEqData> diff_eq_data_;
+    std::shared_ptr<RawOutputEqData> raw_eq_data_;
     
     //MixedPtr<FE_P_disc> fe_p0;
     
