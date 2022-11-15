@@ -325,7 +325,8 @@ void DarcyFlowMHOutput::output()
         START_TIMER("post-process output fields");
 
         {
-                  output_internal_flow_data();
+            if (raw_eq_data_->raw_output_file.is_open())
+                output_internal_flow_data();
         }
     }
 
@@ -360,28 +361,18 @@ void DarcyFlowMHOutput::output()
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
-
-    if (! raw_eq_data_->raw_output_file.is_open()) return;
-    
-    //char dbl_fmt[ 16 ]= "%.8g ";
-    // header
-    raw_eq_data_->raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
-    raw_eq_data_->raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
-    raw_eq_data_->raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
-
     
     arma::vec3 flux_in_center;
-    
-    auto permutation_vec = raw_eq_data_->flow_data_->dh_->mesh()->element_permutations();
-    for (unsigned int i_elem=0; i_elem<raw_eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
-        ElementAccessor<3> ele(raw_eq_data_->flow_data_->dh_->mesh(), permutation_vec[i_elem]);
-        DHCellAccessor dh_cell = raw_eq_data_->flow_data_->dh_->cell_accessor_from_element( ele.idx() );
-        LocDofVec indices = dh_cell.get_loc_dof_indices();
+    std::vector< std::string > raw_data( raw_eq_data_->flow_data_->dh_->n_own_cells() );
+
+    for ( auto cell : raw_eq_data_->flow_data_->dh_->own_range() ) {
+        ElementAccessor<3> ele = cell.elm();
+        LocDofVec indices = cell.get_loc_dof_indices();
 
         std::stringstream ss;
         // pressure
-        ss << fmt::format("{} {} ", dh_cell.elm().input_id(), raw_eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
-        
+        ss << fmt::format("{} {} ", cell.elm().input_id(), raw_eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
+
         // velocity at element center
         flux_in_center = darcy_flow->eq_fields_->field_ele_velocity.value(ele.centre(), ele);
         for (unsigned int i = 0; i < 3; i++)
@@ -400,7 +391,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
             uint old_iside = ele->n_sides() - old_opp_node - 1;
             old_to_new_side[old_iside] = i;
         }
-        
+
         // pressure on edges
         // unsigned int lid = ele->n_sides() + 1;
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -412,10 +403,21 @@ void DarcyFlowMHOutput::output_internal_flow_data()
             uint new_iside = old_to_new_side[i];
             ss << raw_eq_data_->flow_data_->full_solution.get(indices[new_iside]) << " ";
         }
-        
+
         // remove last white space
         string line = ss.str();
-        raw_eq_data_->raw_output_file << line.substr(0, line.size()-1) << endl;
+        raw_data[cell.elm_idx()] = line.substr(0, line.size()-1);
+    }
+
+    //char dbl_fmt[ 16 ]= "%.8g ";
+    // header
+    raw_eq_data_->raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+    raw_eq_data_->raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_eq_data_->raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
+
+    auto permutation_vec = raw_eq_data_->flow_data_->dh_->mesh()->element_permutations();
+    for (unsigned int i_elem=0; i_elem<raw_eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
+        raw_eq_data_->raw_output_file << raw_data[ permutation_vec[i_elem] ] << endl;
     }    
     
     raw_eq_data_->raw_output_file << "$EndFlowField\n" << endl;
