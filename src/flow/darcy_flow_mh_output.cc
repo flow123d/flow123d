@@ -140,6 +140,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
     flow_eq_fields_ = darcy_flow->eq_fields_;
     raw_eq_data_ = std::make_shared<RawOutputEqData>();
     raw_eq_data_->flow_data_ = darcy_flow->eq_data_;
+    raw_eq_data_->time_ = &darcy_flow->time();
     ASSERT_PTR(raw_eq_data_->flow_data_);
 
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
@@ -167,6 +168,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                     try {
                         raw_output_file_path.open_stream(raw_eq_data_->raw_output_file);
                     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+
+                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssembly >(flow_eq_fields_.get(), raw_eq_data_.get());
                 }
             }
         }
@@ -306,6 +309,7 @@ DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
     if (l2_difference_assembly_ != nullptr) delete l2_difference_assembly_;
+    if (output_internal_assembly_ != nullptr) delete output_internal_assembly_;
 }
 
 
@@ -326,7 +330,8 @@ void DarcyFlowMHOutput::output()
 
         {
             if (raw_eq_data_->raw_output_file.is_open())
-                output_internal_flow_data();
+                //output_internal_flow_data();
+                output_internal_assembly_->assemble(raw_eq_data_->flow_data_->dh_);
         }
     }
 
@@ -363,7 +368,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
     
     arma::vec3 flux_in_center;
-    std::vector< std::string > raw_data( raw_eq_data_->flow_data_->dh_->n_own_cells() );
+    raw_eq_data_->raw_output_strings_.resize( raw_eq_data_->flow_data_->dh_->n_own_cells() );
 
     for ( auto cell : raw_eq_data_->flow_data_->dh_->own_range() ) {
         ElementAccessor<3> ele = cell.elm();
@@ -406,7 +411,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
         // remove last white space
         string line = ss.str();
-        raw_data[cell.elm_idx()] = line.substr(0, line.size()-1);
+        raw_eq_data_->raw_output_strings_[cell.elm_idx()] = line.substr(0, line.size()-1);
     }
 
     //char dbl_fmt[ 16 ]= "%.8g ";
@@ -417,7 +422,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     auto permutation_vec = raw_eq_data_->flow_data_->dh_->mesh()->element_permutations();
     for (unsigned int i_elem=0; i_elem<raw_eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
-        raw_eq_data_->raw_output_file << raw_data[ permutation_vec[i_elem] ] << endl;
+        raw_eq_data_->raw_output_file << raw_eq_data_->raw_output_strings_[ permutation_vec[i_elem] ] << endl;
     }    
     
     raw_eq_data_->raw_output_file << "$EndFlowField\n" << endl;

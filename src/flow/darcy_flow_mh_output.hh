@@ -56,6 +56,7 @@ namespace Input {
 template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
 template<unsigned int dim> class L2DifferenceAssembly;
+template<unsigned int dim> class OutputInternalFlowAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
@@ -120,8 +121,9 @@ public:
     public:
     	RawOutputEqData() {}
 
-        /// Raw data output file.
-        ofstream raw_output_file;
+        ofstream raw_output_file;                        ///< Raw data output file.
+        std::vector< std::string > raw_output_strings_;  ///< Output lines of cells.
+        TimeGovernor *time_;                             ///< Time is shared with flow equation.
 
         std::shared_ptr<DarcyLMH::EqData> flow_data_;
     };
@@ -208,6 +210,7 @@ protected:
     
     /// general assembly objects, hold assembly objects of appropriate dimension
     GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
+    GenericAssembly< OutputInternalFlowAssembly > * output_internal_assembly_;
 
 };
 

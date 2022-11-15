@@ -254,4 +254,121 @@ protected:
 
 };
 
+
+template <unsigned int dim>
+class OutputInternalFlowAssembly : public AssemblyBase<dim>
+{
+public:
+    typedef typename DarcyLMH::EqFields EqFields;
+    typedef typename DarcyFlowMHOutput::RawOutputEqData EqData;
+
+    static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
+
+    /// Constructor.
+    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->used_fields_ += eq_fields_->field_ele_velocity;
+    }
+
+    /// Destructor.
+    virtual ~OutputInternalFlowAssembly() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
+
+        ElementAccessor<3> ele = cell.elm();
+        LocDofVec indices = cell.get_loc_dof_indices();
+
+        std::stringstream ss;
+        // pressure
+        ss << fmt::format("{} {} ", cell.elm().input_id(), eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
+
+        // velocity at element center
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        flux_in_center_ = eq_fields_->field_ele_velocity(p);
+        for (unsigned int i = 0; i < 3; i++)
+        	ss << flux_in_center_[i] << " ";
+
+        // number of sides
+        ss << ele->n_sides() << " ";
+
+        // use node permutation to permute sides
+        auto &new_to_old_node = ele.orig_nodes_order();
+        std::vector<uint> old_to_new_side(ele->n_sides());
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            // According to RefElement<dim>::opposite_node()
+            uint new_opp_node = ele->n_sides() - i - 1;
+            uint old_opp_node = new_to_old_node[new_opp_node];
+            uint old_iside = ele->n_sides() - old_opp_node - 1;
+            old_to_new_side[old_iside] = i;
+        }
+
+        // pressure on edges
+        // unsigned int lid = ele->n_sides() + 1;
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            uint new_lid = ele->n_sides() + 1 + old_to_new_side[i];
+            ss << eq_data_->flow_data_->full_solution.get(indices[new_lid]) << " ";
+        }
+        // fluxes on sides
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            uint new_iside = old_to_new_side[i];
+            ss << eq_data_->flow_data_->full_solution.get(indices[new_iside]) << " ";
+        }
+
+        // remove last white space
+        string line = ss.str();
+        eq_data_->raw_output_strings_[cell.elm_idx()] = line.substr(0, line.size()-1);
+    }
+
+    /// Implements @p AssemblyBase::begin.
+    void begin() override
+    {
+    	DebugOut() << "Internal flow data output\n";
+
+    	eq_data_->raw_output_strings_.resize( eq_data_->flow_data_->dh_->n_own_cells() );
+    }
+
+    /// Implements @p AssemblyBase::end.
+    void end() override
+    {
+        //char dbl_fmt[ 16 ]= "%.8g ";
+        // header
+        eq_data_->raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+        eq_data_->raw_output_file <<  fmt::format("$FlowField\nT={}\n", eq_data_->time_->t());
+        eq_data_->raw_output_file <<  fmt::format("{}\n" , eq_data_->flow_data_->dh_->mesh()->n_elements() );
+
+        auto permutation_vec = eq_data_->flow_data_->dh_->mesh()->element_permutations();
+        for (unsigned int i_elem=0; i_elem<eq_data_->flow_data_->dh_->n_own_cells(); ++i_elem) {
+            eq_data_->raw_output_file << eq_data_->raw_output_strings_[ permutation_vec[i_elem] ] << endl;
+        }
+
+        eq_data_->raw_output_file << "$EndFlowField\n" << endl;
+    }
+
+
+protected:
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    /// Data objects shared with Flow equation
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    arma::vec3 flux_in_center_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 #endif /* ASSEMBLY_FLOW_OUTPUT_HH_ */
