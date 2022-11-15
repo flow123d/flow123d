@@ -130,7 +130,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
   is_output_specific_fields(false),
-  l2_difference_assembly_(nullptr)
+  l2_difference_assembly_(nullptr),
+  output_internal_assembly_(nullptr)
 {
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
