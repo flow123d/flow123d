@@ -6,218 +6,335 @@
  */
 
 
-
+#define TEST_USE_MPI
 #define FEAL_OVERRIDE_ASSERTS
+#include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
+#include "arma_expect.hh"
 
-#include <flow_gtest.hh>
-#include <string>
-#include <cmath>
-
-
-
-#include "system/global_defs.h"
-
-
-
-#include "system/python_loader.hh"
-#include "fields/field_python.hh"
+#include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
+#include "fields/field_value_cache.hh"
+#include "fields/field_values.hh"
+#include "fields/field_set.hh"
 #include "tools/unit_si.hh"
+#include "fields/bc_field.hh"
+#include "quadrature/quadrature.hh"
+#include "quadrature/quadrature_lib.hh"
+#include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
-
-#include <pybind11.h>
-#include <embed.h> // everything needed for embedding
-
-using namespace std;
+#include "system/sys_profiler.hh"
+#include "system/python_loader.hh"
 
 
-string test_pybind = R"CODE(
-test = testClass()
-test.testMethod()
-)CODE";
+class FieldEvalPythonTest : public testing::Test {
 
-string python_function = R"CODE(
-import math
+public:
+    class EqData : public FieldSet, public ElementCacheMap {
+    public:
+        EqData() {
+            *this += vector_field
+                        .name("vector_field")
+                        .description("Velocity vector.")
+                        .input_default("0.0")
+                        .flags_add(in_main_matrix)
+                        .units( UnitSI().kg(3).m() );
+            *this += scalar_field
+                        .name("scalar_field")
+                        .description("Pressure head")
+                        .units( UnitSI().m() );
+            *this += tensor_field
+                        .name("tensor_field")
+                        .description("")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += const_scalar
+                        .name("const_scalar")
+                        .input_default("0.0")
+                        .description("")
+                        .units( UnitSI::dimensionless() );
 
-def func_xyz(x,y,z):
-    return ( x*y*z , )     # one value tuple
+            // Asumme following types:
+            eval_points_ = std::make_shared<EvalPoints>();
+            Quadrature *q_bulk = new QGauss(3, 2);
+            Quadrature *q_side = new QGauss(2, 2);
+            mass_eval = eval_points_->add_bulk<3>(*q_bulk );
+            side_eval = eval_points_->add_edge<3>(*q_side );
+            // ngh_side_eval = ...
+            this->init(eval_points_);
 
-def func_circle(r,phi,n):
-    return ( r * math.cos(phi), r * math.sin(phi), 1 )
-)CODE";
+            this->add_coords_field();
+            this->set_default_fieldset();
+        }
 
-string python_call_object_err = R"CODE(
-import math
+        void register_eval_points() {
+            unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
+            for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
+                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            }
 
-def func_xyz(x,y,z,a):
-    return ( x*y*z+a , )     # one value tuple
-)CODE";
+            for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
+            	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                    unsigned int reg_idx = edge_side.element().region_idx().idx();
+                    for (auto p : side_eval->points(edge_side, this) ) {
+                        this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                    }
+                }
+            }
+            this->eval_point_data_.make_permanent();
+        }
+
+        void update_cache() {
+            this->register_eval_points();
+            this->create_patch();
+            this->cache_update(*this);
+            this->finish_elements_update();
+        }
+
+        void reallocate_cache() {
+            this->cache_reallocate(*this, *this);
+        }
 
 
-string input = R"INPUT(
-{   
-   field_string={
-       TYPE="FieldPython",
-       function="func_circle",
-       script_string="import math\ndef func_circle(r,phi,n): return ( r * math.cos(phi), r * math.sin(phi), 1 )"
-   },
-   field_string_unit_conversion={
-       TYPE="FieldPython",
-       function="func_circle",
-       script_string="import math\ndef func_circle(r,phi,n): return ( r * math.cos(phi), r * math.sin(phi), 1 )",
-       unit="cm"
-   },
-   field_file={
-       TYPE="FieldPython",
-       function="func_xyz",
-       script_file="fields/field_python_script.py"
-   }
+        // fields
+        Field<3, FieldValue<3>::Scalar > scalar_field;
+        Field<3, FieldValue<3>::VectorFixed > vector_field;
+        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Scalar > const_scalar;
+        std::shared_ptr<EvalPoints> eval_points_;
+        std::shared_ptr<BulkIntegral> mass_eval;
+        std::shared_ptr<EdgeIntegral> side_eval;
+        //std::shared_ptr<CouplingIntegral> ngh_side_eval;
+        DHCellAccessor computed_dh_cell_;
+    };
+
+    FieldEvalPythonTest() {
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        Profiler::instance();
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+        data_ = std::make_shared<EqData>();
+        mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/cube_2x1.msh\", optimize_mesh=false }");
+        dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+    }
+
+    ~FieldEvalPythonTest() {}
+
+    static Input::Type::Record & get_input_type() {
+        return IT::Record("SomeEquation","")
+                .declare_key("data", IT::Array(
+                        IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
+                        .copy_keys( FieldEvalPythonTest::EqData().make_field_descriptor_type("SomeEquation") )
+                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .close()
+                        ), IT::Default::obligatory(), ""  )
+                .close();
+    }
+
+    void read_input(const string &input) {
+        // read input string
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
+        Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+        TimeGovernor tg(0.0, 1.0);
+
+        //data.set_components(component_names);        // set number of substances posibly read from elsewhere
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
+        data_->set_mesh(*mesh_);
+        data_->set_input_list( inputs[input_last], tg );
+        data_->set_time(tg.step(), LimitSide::right);
+    }
+
+
+    std::shared_ptr<EqData> data_;
+    Mesh * mesh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+};
+
+
+TEST_F(FieldEvalPythonTest, evaluate) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: 3D left
+        time: 0.0
+        scalar_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest1
+          used_fields: ['X']
+        vector_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest1
+          used_fields: ['X']
+        tensor_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest1
+          used_fields: ['X']
+      - region: 3D right
+        time: 0.0
+        scalar_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest2
+          used_fields: ['X']
+        vector_field:  !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest2
+          used_fields: ['X']
+        tensor_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest2
+          used_fields: ['X']
+    )YAML";
+	this->read_input(eq_data_input);
+    data_->reallocate_cache();
+
+    std::vector<unsigned int> cell_idx = {3, 4, 5, 9};
+    std::vector<arma::mat33>  expected_tensor = {{0, 0, 0, 0, 0, 0, 0, 0, 0},
+                                                 {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},  //region 1
+                                                 {0, 0, 0, 0, 0, 0, 0, 0, 0},
+                                                 {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};  //region 3
+    for (uint i=0; i<cell_idx.size(); ++i) {
+        DebugOut() << "TEST CELL: i=" << i;
+        uint test_point = 0; // index to expected vals
+    	data_->start_elements_update();
+    	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
+        data_->update_cache();
+
+        uint r_idx = data_->computed_dh_cell_.elm().region().idx(); // element regions: {1,1,1,3} for elements {3,4,5,9}
+
+        // Bulk integral, no sides.
+        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
+            double coord = data_->scalar_field(q_point); // X coord on reg 1,  Y coord on reg 3
+
+            // Evaluation of the scalar field tested elseewhere. we can
+            // Can activqte again only after we support taking values from FieldCommon.
+
+//            auto coords = data_->X_(q_point);
+//            double expect_scalar;
+//            if (r_idx == 1) expect_scalar = coords[0];
+//            else expect_scalar = coords[2];
+//            EXPECT_DOUBLE_EQ( expect_scalar, coord);
+
+            arma::vec3 expected_vector;
+            expected_vector(0) = coord;
+            expected_vector(1) = 2*coord;
+            expected_vector(2) = 0.5;
+            EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
+
+            auto exp_tensor = expected_tensor[r_idx];
+            exp_tensor(0,0) = coord;
+            EXPECT_ARMA_EQ(exp_tensor, data_->tensor_field(q_point));
+            test_point++;
+            /* // Extracting the cached values.
+            double cs = cross_section(q_point);
+
+            // Following would be nice to have. Not clear how to
+            // deal with more then single element as fe_values have its own cache that has to be updated.
+            auto base_fn_grad = presssure_field_fe.base_value(q_point);
+            loc_matrix += outer_product((cs * base_fn_grad),  base_fn_grad) */
+        }
+
+        // Side integrals.
+        // FieldFE<..> conc;
+        for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
+        	for(DHCellSide edg_side : side.edge_sides()) {
+           	    // vector of local side quadrature points
+        	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
+        	    for (EdgePoint side_p : side_points) {
+
+        	        //uint r_idx = edg_side.element().region().idx();
+        	        //DebugOut() << "ele region: " << r_idx;
+
+        	        double coord = data_->scalar_field(side_p);
+                    //EXPECT_DOUBLE_EQ( dbl_scalar[ expected_scalar[i][test_point] ], data_->scalar_field(side_p));
+                    arma::vec3 expected_vector;
+                    expected_vector(0) = coord;
+                    expected_vector(1) = 2*coord;
+                    expected_vector(2) = 0.5;
+                    EXPECT_ARMA_EQ(expected_vector, data_->vector_field(side_p));
+
+                    auto exp_tensor = expected_tensor[r_idx];
+                    exp_tensor(0,0) = coord;
+                    EXPECT_ARMA_EQ(exp_tensor, data_->tensor_field(side_p));
+                    test_point++;
+                    EdgePoint ngh_p = side_p.point_on(edg_side);
+                    //EXPECT_DOUBLE_EQ( coord, data_->scalar_field(ngh_p));
+                    test_point++;
+        	        //loc_mat += cross_section(side_p) * sigma(side_p) *
+        		    //    (conc.base_value(side_p) * velocity(side_p)
+        		    //    + conc.base_value(ngh_p) * velocity(ngh_p)) * side_p.normal() / 2;
+                }
+            }
+        }
+    }
+
 }
-)INPUT";
 
 
-//TEST(FieldPython, vector_3D) {
-//
-//    double pi = 4.0 * atan(1);
-//
-//    Space<3>::Point point_1, point_2;
-//    point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
-//    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
-//
-//    FieldPython<3, FieldValue<3>::VectorFixed > vec_func;
-//    vec_func.set_python_field_from_string(python_function, "func_circle");
-//    ElementAccessor<3> elm;
-//
-//    arma::vec3 result;
-//    {
-//    result = vec_func.value( point_1, elm);
-//    EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
-//    EXPECT_DOUBLE_EQ( 1, result[1]);
-//    EXPECT_DOUBLE_EQ( 1, result[2]);
-//    }
-//
-//    {
-//    result = vec_func.value( point_2, elm);
-//    EXPECT_DOUBLE_EQ( -1, result[0]);
-//    EXPECT_DOUBLE_EQ( 1, result[1]);
-//    EXPECT_DOUBLE_EQ( 1, result[2]);
-//    }
-//}
+TEST_F(FieldEvalPythonTest, exc_nonexist_file) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldPython
+          source_file: fields/field_python_asm.py
+          class: SomeClass
+          used_fields: ['X']
+        vector_field: [0.5, 1.0, 0.0]
+        tensor_field: [1, 2, 3, 4, 5, 6]
+    )YAML";
 
-
-//TEST(FieldPython, double_3D) {
-//    Space<3>::Point point_1, point_2;
-//    point_1(0)=1; point_1(1)=0; point_1(2)=0;
-//    point_2(0)=1; point_2(1)=2; point_2(2)=3;
-//
-//    ElementAccessor<3> elm;
-//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-//    scalar_func.set_python_field_from_string(python_function, "func_xyz");
-//
-//    EXPECT_EQ( 0, scalar_func.value(point_1, elm));
-//    EXPECT_EQ( 6, scalar_func.value(point_2, elm));
-//
-//
-//}
-
-
-// TODO Fix test
-//TEST(FieldPython, read_from_input) {
-//    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
-//    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > ScalarField;
-//    double pi = 4.0 * atan(1);
-//
-//    // setup FilePath directories
-//    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-//
-//    Input::Type::Record rec_type = Input::Type::Record("FieldPythonTest","")
-//        .declare_key("field_string", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
-//        .declare_key("field_string_unit_conversion", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
-//        .declare_key("field_file", ScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
-//        .close();
-//
-//    // read input string
-//    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
-//    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-//    UnitSI unit = UnitSI().m();
-//    FieldAlgoBaseInitData init_data("field_python", 3, unit);
-//
-//    auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), init_data);
-//    {
-//        Space<3>::Point point_1, point_2;
-//        point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
-//        point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
-//
-//        ElementAccessor<3> elm;
-//        arma::vec3 result;
-//
-//        result = flux->value( point_1, elm);
-//        EXPECT_DOUBLE_EQ( cos(pi /2.0 ) , result[0]); // should be 0.0
-//        EXPECT_DOUBLE_EQ( 1, result[1]);
-//        EXPECT_DOUBLE_EQ( 1, result[2]);
-//
-//        result = flux->value( point_2, elm);
-//        EXPECT_DOUBLE_EQ( -1, result[0]);
-//        EXPECT_DOUBLE_EQ( 1, result[1]);
-//        EXPECT_DOUBLE_EQ( 1, result[2]);
-//    }
-//
-//    auto flux_unit_conv=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string_unit_conversion"), init_data);
-//    {
-//        Space<3>::Point point_1, point_2;
-//        point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
-//        point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
-//
-//        ElementAccessor<3> elm;
-//        arma::vec3 result;
-//
-//        result = flux_unit_conv->value( point_1, elm);
-//        EXPECT_DOUBLE_EQ( 0.01*cos(pi /2.0 ) , result[0]); // should be 0.0
-//        EXPECT_DOUBLE_EQ( 0.01, result[1]);
-//        EXPECT_DOUBLE_EQ( 0.01, result[2]);
-//
-//        result = flux_unit_conv->value( point_2, elm);
-//        EXPECT_DOUBLE_EQ( -0.01, result[0]);
-//        EXPECT_DOUBLE_EQ( 0.01, result[1]);
-//        EXPECT_DOUBLE_EQ( 0.01, result[2]);
-//    }
-//
-//    auto conc=ScalarField::function_factory(in_rec.val<Input::AbstractRecord>("field_file"), init_data);
-//    {
-//        Space<3>::Point point_1, point_2;
-//        point_1(0)=1; point_1(1)=0; point_1(2)=0;
-//        point_2(0)=1; point_2(1)=2; point_2(2)=3;
-//        ElementAccessor<3> elm;
-//
-//        EXPECT_EQ( 0, conc->value(point_1, elm));
-//        EXPECT_EQ( 6, conc->value(point_2, elm));
-//    }
-//
-//
-//}
-
-//TEST(FieldPython, python_exception) {
-//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-//	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
-//        "func_xxx");
-//
-//}
-
-
-//TEST(FieldPython, call_object_error) {
-//    FieldPython<3, FieldValue<3>::Scalar> scalar_func;
-//	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_call_object_err, "func_xyz"); }, PythonLoader::ExcPythonError,
-//        "missing 1 required positional argument: 'a'");
-//
-//}
-
-
-TEST(FieldPython, new_assembly) {
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    PythonLoader::initialize();
-
-    FieldPython<3, FieldValue<3>::Vector> vec_func;
-    vec_func.set_python_field_from_class("fields/field_python_class.py", "PythonAsm");
+    EXPECT_THROW_WHAT( { this->read_input(eq_data_input); }, FilePath::ExcFileOpen,
+        "Can not open file:");
 }
 
+
+TEST_F(FieldEvalPythonTest, exc_nonexist_class) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: NonExistClass
+          used_fields: ['X']
+        vector_field: [0.5, 1.0, 0.0]
+        tensor_field: [1, 2, 3, 4, 5, 6]
+    )YAML";
+
+    EXPECT_THROW_WHAT( { this->read_input(eq_data_input); }, PythonLoader::ExcPythonError,
+        "has no attribute 'NonExistClass'");
+}
+
+
+TEST_F(FieldEvalPythonTest, exc_nonexist_function) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldPython
+          source_file: fields/field_python_test.py
+          class: FieldPythonTest3
+          used_fields: ['X']
+        vector_field: [0.5, 1.0, 0.0]
+        tensor_field: [1, 2, 3, 4, 5, 6]
+    )YAML";
+
+    this->read_input(eq_data_input);
+    data_->reallocate_cache();
+    data_->start_elements_update();
+    data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), 3);
+    EXPECT_THROW_WHAT( { data_->update_cache(); }, PythonLoader::ExcPythonError,
+        "'NoneType' object is not subscriptable");
+}
