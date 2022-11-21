@@ -182,6 +182,10 @@ public:
     	return data_vec_;
     }
 
+    inline const VectorMPI& vec() const {
+    	return data_vec_;
+    }
+
     /// Call begin scatter functions (local to ghost) on data vector
     void local_to_ghost_data_scatter_begin();
 
