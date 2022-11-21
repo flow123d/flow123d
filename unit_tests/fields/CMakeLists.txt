@@ -35,8 +35,8 @@ define_mpi_test(field_algo_base 2)
 
 define_mpi_test(field_set 1)
 
-define_test(field_const)
 define_test(field_formula)
+define_mpi_test(field_const 1)
 define_mpi_test(field_python 1)
 define_mpi_test(field_fe 1)
 define_mpi_test(field_speed 1 30)
@@ -47,7 +47,6 @@ define_mpi_test(generic_field 1)
        
 define_mpi_test(eval_subset 1)
 define_mpi_test(field_value_cache 1)
-define_mpi_test(field_evaluate_constant 1)
 define_mpi_test(field_evaluate_fe 1)
 define_mpi_test(field_evaluate_formula 1)
 define_mpi_test(field_evaluate_model 1)
