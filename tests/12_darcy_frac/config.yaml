@@ -19,7 +19,7 @@ test_cases:
       
   - files:
       - 51_gmsh_LMH.yaml
-      #- 60_exact_2d_cc_LMH.yaml
+      - 60_exact_2d_cc_LMH.yaml
       - 80_surf_cube_cc_LMH.yaml
       
       # Mortar methods are not available for LMH at the moment

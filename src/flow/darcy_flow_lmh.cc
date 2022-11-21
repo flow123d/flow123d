@@ -291,6 +291,24 @@ DarcyLMH::EqFields::EqFields()
              .input_default("0.0")
              .description("Boundary switch piezo head.");
 
+    *this += ref_pressure.name("ref_pressure")
+             .units(UnitSI().m())
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed pressure of l2 difference output.");
+
+	*this += ref_velocity.name("ref_velocity")
+	         .units(UnitSI().m().s(-1))
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed velocity of l2 difference output.");
+
+    *this += ref_divergence.name("ref_divergence")
+             .units(UnitSI().m())
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed divergence of l2 difference output.");
+
     this->set_default_fieldset();
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
