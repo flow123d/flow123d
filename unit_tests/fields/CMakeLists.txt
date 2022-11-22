@@ -41,7 +41,7 @@ define_mpi_test(field_python 1)
 define_mpi_test(field_fe 1)
 define_mpi_test(field_speed 1 30)
 define_mpi_test(multi_field 1)
-define_test(field_time_function)
+define_mpi_test(field_time_function 1)
 
 define_mpi_test(generic_field 1)
        
