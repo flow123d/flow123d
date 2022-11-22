@@ -2,7 +2,8 @@ $MeshFormat
 2.2 0 8
 $EndMeshFormat
 $PhysicalNames
-2
+3
+2       19      ".2D top"
 3       39      "3D left"
 3       40      "3D right"
 $EndPhysicalNames
@@ -22,7 +23,7 @@ $Nodes
 12 2 1 -1
 $EndNodes
 $Elements
-12
+16
 1 4 2 39 40 1 7 3 2
 2 4 2 39 40 2 7 3 8
 3 4 2 39 40 8 7 3 6
@@ -35,6 +36,10 @@ $Elements
 10 4 2 40 42 10 7 11 5
 11 4 2 40 42 10 7 5 4
 12 4 2 40 42 10 7 4 1
+13 2 2 19 21 1 2 3
+14 2 2 19 21 1 3 4
+15 2 2 19 21 1 4 10
+16 2 2 19 21 1 9 10
 $EndElements
 
 $ElementData
