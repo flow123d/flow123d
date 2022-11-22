@@ -280,7 +280,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
             b_parser_[row*this->value_.n_cols()+col].run();
             for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
                 auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-                cache_val(row, col) = res_[i];
+                cache_val(row, col) = this->unit_conversion_coefficient_ * res_[i];
                 data_cache.set(i) = cache_val;
             }
         }
