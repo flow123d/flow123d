@@ -149,7 +149,7 @@ public:
 
     /// Copies data from the @p other vector.
     /// Both vector must have the same communicator and distribution.
-    void copy_from(VectorMPI &other);
+    void copy_from(const VectorMPI &other);
 
     
     /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
