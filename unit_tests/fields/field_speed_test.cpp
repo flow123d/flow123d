@@ -35,6 +35,8 @@
 
 #include <iostream>
 
+// TODO: split test to tests of FieldAlgoBase descendants (first: FieldConstant and FieldFE)
+
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
@@ -307,7 +309,7 @@ public:
 typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::VectorFixed > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
-TYPED_TEST(FieldSpeed, array) {
+TYPED_TEST(FieldSpeed, array) { //TODO: move to FieldConstant test with small mesh
 	this->set_values(default_n_loop);
 
     START_TIMER("array");
@@ -326,7 +328,7 @@ TYPED_TEST(FieldSpeed, array) {
 
 
 
-TYPED_TEST(FieldSpeed, virtual_function) {
+TYPED_TEST(FieldSpeed, virtual_function) { //TODO: remove
 	this->set_values(default_n_loop);
 	START_TIMER("virtual_function");
 	{
@@ -360,7 +362,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 
 
 
-TYPED_TEST(FieldSpeed, field_constant) {
+TYPED_TEST(FieldSpeed, field_constant) { //TODO: compute with same mesh as array test - compare speed
 	this->set_values();
 	string key_name = "constant_" + this->input_type_name_;
 	this->read_input(key_name);
