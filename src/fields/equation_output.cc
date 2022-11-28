@@ -426,14 +426,16 @@ typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_cont
         // throw input exception if the field is not scalar
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
 
-        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-            DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
-            auto lambda_function =
-                [error_control_field](const Armor::array &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
-                { error_control_field->value_list(point_list, elm, value_list); };
+        	ASSERT_PERMANENT(false)(error_control_field_name).error("Setting of error control field is not supported yet!\n");
 
-            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
-            return func;
+//        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+//            DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
+//            auto lambda_function =
+//                [error_control_field](const Armor::array &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+//                { error_control_field->value_list(point_list, elm, value_list); };
+//
+//            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
+//            return func;
 
         }
         else{
