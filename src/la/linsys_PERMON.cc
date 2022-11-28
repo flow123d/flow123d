@@ -186,8 +186,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
 
         chkerr(QPSetOperator(system, Afixed));
-        MatView(Afixed, PETSC_VIEWER_STDOUT_WORLD);
-        VecView(rhs_, PETSC_VIEWER_STDOUT_WORLD);
+        // MatView(Afixed, PETSC_VIEWER_STDOUT_WORLD);
+        // VecView(rhs_, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatDestroy(&Afixed));
     } else {
       chkerr(QPSetOperator(system, matrix_));
