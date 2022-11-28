@@ -1,0 +1,74 @@
+# Test kontaktni mechaniky v ctvercove oblasti s nahodnymi puklinami
+# Okrajove podminky: dole u=0, vlevo a vpravo u.n=0, nahore f=(0,1e-6,0)
+# Sit mesh.msh obsahuje pukliny, ktere deli oblast na vice komponent
+# (nemelo by vadit, ale pro jistotu jsem udelal i variantu mesh_healed.msh,
+# kde 2d elementy tvori 1 souvislou komponentu).
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Darcy flow through a fractured square domain. Two staedy states for X and Y pressure gradient BC are computed.
+  mesh:
+    mesh_file: mesh.msh
+
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 0
+    time:
+      end_time: 1
+    a_tol: 0
+    r_tol: 1e-4
+    flow_equation: !Flow_Darcy_LMH
+      nonlinear_solver:
+        linear_solver: !Petsc
+          max_it: 0
+      input_fields:
+        - region: fractures
+          cross_section: 1e-2
+      output:
+        times: &output_times
+          - step: 1
+        add_input_times: True
+        fields:
+          - pressure_p0
+          - cross_section
+          - region_id
+      output_stream:
+        format: !vtk
+      balance:
+
+    mechanics_equation:
+      output_stream:
+        format: !vtk
+          variant: ascii
+      output:
+        times: *output_times
+        fields:
+          - displacement
+          - stress
+          - cross_section_updated
+          - region_id
+          - subdomain
+      solver: !Petsc
+        a_tol: 1e-9
+        r_tol: 1e-14
+      contact: true
+      input_fields:
+        - region: bulk_2d
+          young_modulus: 50e9
+          poisson_ratio: 0.25
+
+        - region: fractures
+          young_modulus: 50e3
+          poisson_ratio: 0.25
+          cross_section_min: 1e-5
+
+        - region: [ .side_1, .side_fr_1 ]
+          bc_type: displacement
+          bc_displacement: 0
+        - region: [ .side_0, .side_2 ]
+          bc_type: displacement_n
+          bc_displacement: 0
+
+        - region: [ .side_3 ]
+          bc_type: traction
+          bc_traction: [ 0, -1e6, 0 ]
