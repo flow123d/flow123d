@@ -128,7 +128,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
-    if (l2g_) {
+    if (l2g_ && rows_ds_->np() > 1) {
     //     Mat Ais;
     //     ISLocalToGlobalMapping l2g_is;
     //     chkerr(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is));
@@ -189,9 +189,13 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // MatView(Afixed, PETSC_VIEWER_STDOUT_WORLD);
         // VecView(rhs_, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatDestroy(&Afixed));
+    } else if (l2g_) {
+        Mat matrix_aij;
+        chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
+        chkerr(QPSetOperator(system, matrix_aij));
     } else {
       chkerr(QPSetOperator(system, matrix_));
-   }
+    }
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
     if (ineq_) {
@@ -201,7 +205,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
     }
-    if (l2g_) { // FETI
+    if (l2g_ && rows_ds_->np() > 1) { // FETI
       chkerr(QPTMatISToBlockDiag(system));
       chkerr(QPGetChild(system, &system));
       chkerr(QPFetiSetUp(system));
@@ -211,9 +215,9 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     }
       
     // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
-    chkerr(QPTFromOptions(system));
-    if (l2g_) {
-      chkerr(QPGetParent(system, &system));
+    if (l2g_ &&  rows_ds_->np() > 1) {
+        chkerr(QPTFromOptions(system));
+        chkerr(QPGetParent(system, &system));
     }
 
     // Set runtime options, e.g -qp_chain_view_kkt
