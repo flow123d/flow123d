@@ -11,6 +11,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
+#include <limits>
 
 
 #include "fields/field_fe.hh"
@@ -28,6 +29,7 @@
 #include "fem/fe_rt.hh"
 
 #include "system/sys_profiler.hh"
+#include "system/exceptions.hh"
 
 #include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
@@ -337,12 +339,53 @@ public:
     	return init_data;
     }
 
+    bool check_scalar(ScalarField &field, unsigned int i_elem, double expected_val) {
+    // new assembly args: (ScalarField &field, BulkPoint &point, double expected_vals
+        try {
+            double comp_val = field.value( point, mesh->element_accessor(i_elem) );
+            if ( std::abs(expected_val - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
+                std::cout << "\nElement:       " << i_elem << std::endl;
+                std::cout << "Evaluated val: " << comp_val << std::endl;
+                std::cout << "Expected val:  " << expected_val << std::endl;
+                return false;
+            }
+        } catch (ExceptionBase &e) {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+
+    bool check_scalar(ScalarField &field, std::vector<unsigned int> i_elems, std::vector<double> expected_vals) {
+    // new assembly args: (ScalarField &field, std::vector<BulkPoint &> points, std::vector<double> expected_vals)
+    	if ( i_elems.size() != expected_vals.size() ) {
+    	    std::cout << "Number of elements must be same as number of expected values!" << std::endl;
+    	    return false;
+    	}
+    	for (uint i=0; i<i_elems.size(); ++i) {
+            try {
+                double comp_val = field.value( point, mesh->element_accessor(i_elems[i]) );
+                if ( std::abs(expected_vals[i] - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
+                    std::cout << "\nElement:       " << i_elems[i] << std::endl;
+                    std::cout << "Evaluated val: " << comp_val << std::endl;
+    	            std::cout << "Expected val:  " << expected_vals[i] << std::endl;
+           	        return false;
+                    }
+            } catch (ExceptionBase &e) {
+                std::cout << e.what() << std::endl;
+		        return false;
+            }
+        }
+        return true;
+    }
+
     Mesh * mesh;
     Input::Record rec;
     Space<3>::Point point;
     double test_time[3];
 
 };
+
 
 
 TEST_F(FieldFENewTest, scalar) {
@@ -353,7 +396,8 @@ TEST_F(FieldFENewTest, scalar) {
     for (unsigned int j=0; j<2; j++) {
         field.set_time(test_time[j]);
         for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_DOUBLE_EQ( j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+            //EXPECT_DOUBLE_EQ( j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+            EXPECT_TRUE( check_scalar(field, i, j*0.1+(i+1)*0.1 ) );
         }
     }
 }
