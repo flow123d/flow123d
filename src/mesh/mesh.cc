@@ -382,7 +382,7 @@ void Mesh::check_mesh_on_read() {
     	if (quality < 4*std::numeric_limits<double>::epsilon())
     	    THROW( ExcBadElement() << EI_Quality(quality) << EI_ElemId(ele.idx()) );
         if ( quality< 0.001)
-            WarningOut().fmt("Bad quality element ID={}, ({}<0.001).\n", ele.idx(), quality);
+            WarningOut().fmt("Bad quality element IDX={}, input id={}, ({}<0.001).\n", ele.idx(), ele.input_id(), quality);
 
         // flag used nodes
         for (uint ele_node=0; ele_node<ele->n_nodes(); ele_node++) {
@@ -1120,6 +1120,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	for( ;ni < 4; ni++) ele->nodes_[ni] = undef_idx;
 
     // check that tetrahedron element is numbered correctly and is not degenerated
+	// optimization of local node reordering depends on that
     if(ele->dim() == 3)
     {
         ElementAccessor<3> ea = this->element_accessor( this->elem_index(elm_id) );
