@@ -345,6 +345,9 @@ public:
     /// Implements FieldCommon::value_cache
     const FieldValueCache<double> * value_cache() const override;
 
+    /// Return value_cache
+    FieldValueCache<typename Value::element_type> * field_value_cache();
+
     /**
      * Implementation of FieldCommon::set_dependency().
      */

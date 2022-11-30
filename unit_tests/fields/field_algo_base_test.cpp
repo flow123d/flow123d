@@ -51,7 +51,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 template <class F>
-class FieldFix : public testing::Test, public F {
+class FieldFix : public testing::Test, public F, public ElementCacheMap {
 public:
 	typedef F FieldType;
 	static constexpr bool is_enum_valued = std::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
@@ -109,12 +109,10 @@ public:
 
 	typedef typename FieldType::ValueType Value;
 	// const value of HistoryPoint given by region index and position in circular buffer.
-//	typename Value::element_type rh_value(int r_idx, int j) {
-//		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
-//		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 );
-//		auto val = fb->value(elm.centre(), elm);
-//		return (Value(val))(0,0);
-//	}
+	typename Value::element_type rh_value(BulkPoint &eval_point) {
+		auto val = this->field_(eval_point);
+		return (Value(val))(0,0);
+	}
 	// const value of region_field_ on some region
 //	typename Value::element_type _value_(FieldType &f) {
 //		Region r = f.mesh()->region_db().get_region_set("BULK")[1];
@@ -123,6 +121,36 @@ public:
 //		auto val = f.value( point_, elm);
 //		return (Value(val))(0,0);
 //	}
+
+	void rh_update_cache(int r_idx_bulk, int r_idx_bdr) {
+	    FieldValueCache<typename Value::element_type> *fvc = field_.field_value_cache();
+	    typename FieldType::FieldBasePtr fb = rh(r_idx_bulk)[0].second;
+	    fb->cache_update(*fvc, *this, 1);
+	    typename FieldType::FieldBasePtr fb_bdr = rh(r_idx_bdr)[0].second;
+	    fb_bdr->cache_update(*fvc, *this, 0);
+	}
+
+    void rh_init_field_caches() {
+    	dh_ = std::make_shared<DOFHandlerMultiDim>(*my_mesh);
+        eval_points_ = std::make_shared<EvalPoints>();
+        Quadrature *q_bulk = new QGauss(3, 0);
+        Quadrature *q_bdr = new QGauss(2, 0);
+        bulk_eval = eval_points_->add_bulk<3>(*q_bulk );
+        bdr_eval = eval_points_->add_boundary<3>(*q_bdr );
+        this->init(eval_points_);
+    }
+
+    /// Prepare patch
+	void rh_prepare_patch(unsigned int i_reg_blk, unsigned int i_ele_blk, unsigned int i_reg_bdr, unsigned int i_ele_bdr) {
+	    this->start_elements_update();
+	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 0, i_ele_blk);
+	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 1, i_ele_blk);
+        this->eval_point_data_.emplace_back(i_reg_bdr, i_ele_bdr, 0, -1);
+        this->eval_point_data_.make_permanent();
+        this->create_patch();
+        this->rh_update_cache(i_reg_blk, i_reg_bdr);
+        this->finish_elements_update();
+    }
 
 	// simple selection with values "black" and "White"
 	static const Input::Type::Selection &get_test_selection();
@@ -162,6 +190,11 @@ public:
 	// list of simple field descriptors
 	std::shared_ptr<Input::Type::Array>          test_input_list;
 
+	// Members of test update_history, initialized in init_field_caches method
+    std::shared_ptr<EvalPoints> eval_points_;
+    std::shared_ptr<BulkIntegral> bulk_eval;
+    std::shared_ptr<BoundaryIntegral> bdr_eval;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 template <class F>
@@ -357,6 +390,30 @@ TYPED_TEST(FieldFix, update_history) {
     Region front_3d = this->mesh()->region_db().find_label("3D front");
     Region back_3d = this->mesh()->region_db().find_label("3D back");
 
+    ElementAccessor<3> el_front_3d = this->mesh()->element_accessor(8);
+    EXPECT_EQ("3D front", el_front_3d.region().label());
+    ElementAccessor<3> el_bc_top = this->mesh()->bc_mesh()->element_accessor(1); // boundary of el_front_3d (side: 0)
+    EXPECT_EQ(".top side", el_bc_top.region().label());
+
+    this->rh_init_field_caches();
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+
+    DHCellAccessor dh_cell = this->dh_->cell_accessor_from_element(el_front_3d.idx());
+    auto p_bulk = *( this->bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this).begin() );
+    bool found_bdr = false;
+    BulkPoint p_bdr;
+    for (DHCellSide cell_side : dh_cell.side_range()) {
+        if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+            if (cell_side.cond().bc_ele_idx() == 1) {
+                found_bdr = true;
+                auto p_side = *( this->bdr_eval->points(cell_side, this).begin() );
+                p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+            }
+        }
+    }
+    EXPECT_TRUE( found_bdr );
+
+
     EXPECT_EQ( 1 , this->rh(diagonal_1d.idx()).size() );
 	EXPECT_EQ( 1 , this->rh(diagonal_2d.idx()).size() );
 	EXPECT_EQ( 1 , this->rh(bc_top.idx()).size() );
@@ -367,8 +424,8 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 0.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+	EXPECT_EQ( 0 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.estimate_dt();
 	tg.next_time();
@@ -385,8 +442,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 0.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -402,8 +460,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 2.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -419,8 +478,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 2.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -436,8 +496,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 4.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 4.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 0 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -453,8 +514,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 5.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 5.0 , this->rh_time(bc_top.idx(),0) );
 
-//	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-//	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 }
 

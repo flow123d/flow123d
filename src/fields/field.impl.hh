@@ -760,6 +760,12 @@ const FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() 
 }
 
 
+template<int spacedim, class Value>
+FieldValueCache<typename Value::element_type> * Field<spacedim, Value>::field_value_cache() {
+    return &value_cache_;
+}
+
+
 
 
 #endif /* FIELD_IMPL_HH_ */
