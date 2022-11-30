@@ -263,7 +263,7 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
     // read data
     for (i_row = 0; i_row < header.n_entities; ++i_row)
         try {
-            tok_.next_line();
+            tok_.next_line(false);
             id = boost::lexical_cast<unsigned int>(*tok_); ++tok_;
             //skip_element = false;
             while (id_iter != el_ids.end() && *id_iter < (int)id) {
