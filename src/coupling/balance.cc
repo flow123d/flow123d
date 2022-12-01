@@ -345,7 +345,7 @@ void Balance::lazy_initialize()
         switch (output_format_)
         {
         case txt:
-            default_file_name = file_prefix_ + "_balance.txt";
+            default_file_name = file_prefix_ + "_balance.csv";
             break;
         case gnuplot:
             default_file_name = file_prefix_ + "_balance.dat";
