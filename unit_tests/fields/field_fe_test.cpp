@@ -12,26 +12,37 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 #include <limits>
+#include "arma_expect.hh"
 
 
+#include "fields/eval_points.hh"
+#include "fields/eval_subset.hh"
+#include "fields/field_value_cache.hh"
+#include "fields/field_values.hh"
+#include "fields/field_set.hh"
 #include "fields/field_fe.hh"
-#include "la/vector_mpi.hh"
-#include "fields/fe_value_handler.hh"
 #include "tools/unit_si.hh"
+#include "fields/bc_field.hh"
+#include "quadrature/quadrature.hh"
+#include "quadrature/quadrature_lib.hh"
+#include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "fem/fe_rt.hh"
+#include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/reader_to_storage.hh"
+#include "system/sys_profiler.hh"
+//#include "coupling/generic_assembly.hh"
+//#include "coupling/assembly_base.hh"
 
-#include "fem/dofhandler.hh"
+#include "la/vector_mpi.hh"  //includes from old tests
+#include "fields/fe_value_handler.hh"
 #include "fem/fe_p.hh"
-#include "quadrature/quadrature.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
-#include "fem/fe_rt.hh"
-
-#include "system/sys_profiler.hh"
 #include "system/exceptions.hh"
-
-#include "mesh/mesh.h"
 #include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
@@ -163,22 +174,22 @@ string input = R"INPUT(
 
 
 
-TEST_F(FieldFETest, scalar_from_input) {
-    create_mesh("fields/simplest_cube_data.msh");
-
-    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
-    Input::Record rec=reader.get_root_interface<Input::Record>();
-
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
-    field.set_mesh(mesh,false);
-    field.set_time(0.0);
-
-    Space<3>::Point point;
-    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-        EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
-    }
-}
+//TEST_F(FieldFETest, scalar_from_input) { // equivalent with TEST(FieldFENewTest, scalar) - moved to FieldEvalFETest, input_msh
+//    create_mesh("fields/simplest_cube_data.msh");
+//
+//    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
+//    Input::Record rec=reader.get_root_interface<Input::Record>();
+//
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+//    field.set_mesh(mesh,false);
+//    field.set_time(0.0);
+//
+//    Space<3>::Point point;
+//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//        EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
+//    }
+//}
 
 
 TEST_F(FieldFETest, native_data) {
@@ -195,6 +206,622 @@ TEST_F(FieldFETest, native_data) {
     Space<3>::Point point;
     for(unsigned int i=0; i < mesh->n_elements(); i++) {
         EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
+    }
+}
+
+
+class FieldEvalFETest : public testing::Test {
+public:
+    typedef Field<3, FieldValue<3>::Scalar > ScalarField;
+    typedef Field<3, FieldValue<3>::Enum > EnumField;
+    typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
+    typedef Field<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef BCField<3, FieldValue<3>::Scalar > BcScalarField;
+    typedef BCField<3, FieldValue<3>::Enum > BcEnumField;
+    typedef BCField<3, FieldValue<3>::VectorFixed > BcVectorField;
+    typedef BCField<3, FieldValue<3>::TensorFixed > BcTensorField;
+
+    class EqData : public FieldSet, public ElementCacheMap {
+    public:
+        enum enum_type {
+            none=0,
+            dirichlet=1,
+            neumann=2,
+            robin=3,
+            total_flux=4
+        };
+
+        static const IT::Selection & get_enum_selection() {
+        	return IT::Selection("EqData_enum_Type")
+                     .add_value(none, "none")
+                     .add_value(dirichlet, "dirichlet")
+                     .add_value(neumann, "neumann")
+                     .add_value(robin, "robin")
+                     .add_value(total_flux, "total_flux")
+        			 .close();
+        }
+
+        EqData() : tg_(0.0, 1.0) {
+            *this += scalar_field
+                        .name("scalar_field")
+                        .description("Scalar field.")
+						.input_default("0.0")
+                        .units( UnitSI().m() );
+            *this += vector_field
+                        .name("vector_field")
+                        .description("Vector field.")
+                        .input_default("0.0")
+                        .flags_add(in_main_matrix)
+                        .units( UnitSI().kg(3).m() );
+            *this += tensor_field
+                        .name("tensor_field")
+                        .description("Tensor field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += enum_field
+                        .name("enum_field")
+                        .description("Enum field.")
+						.input_selection( get_enum_selection() )
+						.input_default("\"none\"")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += bc_scalar_field
+                        .name("bc_scalar_field")
+                        .description("Boundary scalar field.")
+						.input_default("0.0")
+                        .units( UnitSI().m() );
+            *this += bc_vector_field
+                        .name("bc_vector_field")
+                        .description("Boundary vector field.")
+                        .input_default("0.0")
+                        .flags_add(in_main_matrix)
+                        .units( UnitSI().kg(3).m() );
+            *this += bc_tensor_field
+                        .name("bc_tensor_field")
+                        .description("Boundary tensor field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += bc_enum_field
+                        .name("bc_enum_field")
+                        .description("Boundary enum field.")
+						.input_selection( get_enum_selection() )
+						.input_default("\"none\"")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+
+            // Asumme following types:
+            eval_points_ = std::make_shared<EvalPoints>();
+            Quadrature *q_bulk1 = new QGauss(1, 0);
+            Quadrature *q_bulk2 = new QGauss(2, 0);
+            Quadrature *q_bulk3 = new QGauss(3, 0);
+            Quadrature *q_bdr1 = new QGauss(0, 0);
+            Quadrature *q_bdr2 = new QGauss(1, 0);
+            Quadrature *q_bdr3 = new QGauss(2, 0);
+            mass_integral[0] = eval_points_->add_bulk<1>(*q_bulk1 );
+            mass_integral[1] = eval_points_->add_bulk<2>(*q_bulk2 );
+            mass_integral[2] = eval_points_->add_bulk<3>(*q_bulk3 );
+            bdr_integral[0] = eval_points_->add_boundary<1>(*q_bdr1 );
+            bdr_integral[1] = eval_points_->add_boundary<2>(*q_bdr2 );
+            bdr_integral[2] = eval_points_->add_boundary<3>(*q_bdr3 );
+            this->init(eval_points_);
+
+            this->add_coords_field();
+            this->set_default_fieldset();
+        }
+
+        void register_eval_points(bool bdr=false) {
+            unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
+            for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
+                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            }
+
+            if (bdr)
+                for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
+                    if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+                        unsigned int bdr_reg = cell_side.cond().element_accessor().region_idx().idx(); // region of boundary element
+                        std::cout << "Bulk elm: " << computed_dh_cell_.elm_idx() << ", boundary element: " << cell_side.cond().bc_ele_idx() << ", region: " << bdr_reg << std::endl;
+                        for (auto p : bdr_integral[computed_dh_cell_.dim()-1]->points(cell_side, this) ) {
+                            // point on side of bulk element
+                            this->eval_point_data_.emplace_back(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+                            // point on boundary element
+                            BulkPoint p_bdr = p.point_bdr(cell_side.cond().element_accessor()); // equivalent point on boundary element
+                            this->eval_point_data_.emplace_back(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                        }
+                    }
+                }
+            this->eval_point_data_.make_permanent();
+        }
+
+        void update_cache(bool bdr=false) {
+            this->start_elements_update();
+            this->register_eval_points(bdr);
+            this->create_patch();
+            this->cache_update(*this);
+            this->finish_elements_update();
+        }
+
+        void reallocate_cache() {
+            this->cache_reallocate(*this, *this);
+        }
+
+
+        // fields
+        ScalarField scalar_field;
+        VectorField vector_field;
+        TensorField tensor_field;
+        EnumField enum_field;
+        BcScalarField bc_scalar_field;
+        BcVectorField bc_vector_field;
+        BcTensorField bc_tensor_field;
+        BcEnumField bc_enum_field;
+        std::shared_ptr<EvalPoints> eval_points_;
+        std::array< std::shared_ptr<BulkIntegral>, 3> mass_integral;
+        std::array< std::shared_ptr<BoundaryIntegral>, 3> bdr_integral;
+        DHCellAccessor computed_dh_cell_;
+        TimeGovernor tg_;
+    };
+
+    FieldEvalFETest() {
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        Profiler::instance();
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+        eq_data_ = std::make_shared<EqData>();
+    }
+
+    ~FieldEvalFETest() {}
+
+    static Input::Type::Record & get_input_type() {
+        return IT::Record("SomeEquation","")
+                .declare_key("data", IT::Array(
+                        IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
+                        .copy_keys( FieldEvalFETest::EqData().make_field_descriptor_type("SomeEquation") )
+                        .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .close()
+                        ), IT::Default::obligatory(), ""  )
+                .close();
+    }
+
+    void create_mesh(const std::string &mesh_file) {
+        std::string input_str = "{ mesh_file=\"" + mesh_file + "\", optimize_mesh=false }";
+        mesh_ = mesh_full_constructor(input_str);
+        dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+    }
+
+    void read_input(const string &input) {
+        // read input string
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
+        Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+        //data.set_components(component_names);        // set number of substances posibly read from elsewhere
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
+        eq_data_->set_mesh(*mesh_);
+        eq_data_->set_input_list( inputs[input_last], eq_data_->tg_ );
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+        eq_data_->reallocate_cache();
+    }
+
+
+    template<class EvalField, class T>
+    bool check_scalar(EvalField &field, BulkPoint &point, T expected_val) {
+        try {
+            T comp_val = field( point );
+            if ( std::abs(expected_val - comp_val) > 4*std::numeric_limits<T>::epsilon() ) {
+                std::cout << "\nElement:       " << this->eq_data_->elm_idx_on_position(point.elem_patch_idx()) << std::endl;
+                std::cout << "Evaluated val: " << comp_val << std::endl;
+                std::cout << "Expected val:  " << expected_val << std::endl;
+                return false;
+            }
+        } catch (ExceptionBase &e) {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+
+//        bool check_scalar(ScalarField &field, std::vector<BulkPoint &> points, std::vector<double> expected_vals) {
+//        	if ( points.size() != expected_vals.size() ) {
+//        	    std::cout << "Number of elements must be same as number of expected values!" << std::endl;
+//        	    return false;
+//        	}
+//        	for (uint i=0; i<points.size(); ++i) {
+//                try {
+//                    double comp_val = field( points[i] );
+//                    if ( std::abs(expected_vals[i] - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
+//                        std::cout << "\nElement:       " << this->elm_idx_on_position(points[i].elem_patch_idx()) << std::endl;
+//                        std::cout << "Evaluated val: " << comp_val << std::endl;
+//        	            std::cout << "Expected val:  " << expected_vals[i] << std::endl;
+//               	        return false;
+//                        }
+//                } catch (ExceptionBase &e) {
+//                    std::cout << e.what() << std::endl;
+//    		        return false;
+//                }
+//            }
+//            return true;
+//        }
+
+    template<class EvalField, class ArmaMat>
+    bool check_arma(EvalField &field, BulkPoint &point, const ArmaMat &ref_val)
+    {
+        try {
+            auto arma_val = field( point );
+            auto ref_shape = mat_shape(ref_val);
+            auto shape = mat_shape(arma_val);
+            if (ref_shape[0] != shape[0] || ref_shape[1] != shape[1]) {
+                if (ref_shape[0] != shape[0]) std::cout << "Different number of rows of field value and ref value!" << std::endl;
+                if (ref_shape[1] != shape[1]) std::cout << "Different number of cols of field value and ref value!" << std::endl;
+                return false;
+            }
+            double magnitude = std::max( arma::norm(ref_val, 1), arma::norm(arma_val, 1) );
+            // abs criterium
+            if (magnitude < 8*std::numeric_limits<double>::epsilon()) return true;
+
+            double error = arma::norm(ref_val - arma_val, 1)/magnitude;
+            // rel criterium
+            if (error > 8*std::numeric_limits<double>::epsilon()) {
+                unsigned int w = 11* arma_val.n_cols;
+                std::cout << std::setw(w) << "Expected" << std::setw(w) << "Result"
+                          << " rel. error: " << error << std::endl;
+                for(unsigned int i_row = 0; i_row < arma_val.n_rows; i_row++) {
+                    std::cout << std::setw(11) << ref_val.row(i_row)
+                              << std::setw(11) << arma_val.row(i_row)
+                              << std::setw(20) << ref_val.row(i_row) - arma_val.row(i_row) << std::endl;
+                }
+                return false;
+            }
+        } catch (ExceptionBase &e) {
+            std::cout << e.what() << std::endl;
+            return false;
+        }
+        return true;
+    }
+
+
+    std::shared_ptr<EqData> eq_data_;
+    Mesh * mesh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+};
+
+
+
+TEST_F(FieldEvalFETest, input_msh) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          default_value: 0.0
+        vector_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: vector_fixed
+          default_value: 0.0
+        tensor_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: tensor_fixed
+          default_value: 0.0
+        enum_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: enum
+          default_value: 0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          default_value: 0.0
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: vector_fixed
+          default_value: 0.0
+        bc_tensor_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: tensor_fixed
+          default_value: 0.0
+        bc_enum_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: enum
+          default_value: 0
+    )YAML";
+
+    string expected_vectors[2] = {"1 2 3", "2 3 4"};
+    string expected_tensors[2] = {"1 2 3; 4 5 6; 7 8 9", "2 3 4; 5 6 7; 8 9 10"};
+    string expected_bc_vectors[2] = {"4 5 6", "5 6 7"};
+    string expected_bc_tensors[2] = {"4 5 6; 7 8 9; 10 11 12", "5 6 7; 8 9 10; 11 12 13"};
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+
+        // BULK fields
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*0.1+(i+1)*0.1 ) );
+            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
+            EXPECT_TRUE( check_arma(eq_data_->tensor_field, p, arma::mat33(expected_tensors[j]) ) );
+            //EXPECT_TRUE( check_scalar(eq_data_->enum_field, p, j) );
+            EXPECT_EQ( j, eq_data_->enum_field( p ) );
+        }
+
+        // BOUNDARY fields
+        {
+            unsigned int i_elem = 3;
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i_elem);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache(true);
+
+            bool found_bdr = false;
+            for (DHCellSide cell_side : eq_data_->computed_dh_cell_.side_range()) {
+                if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+                    if (cell_side.cond().bc_ele_idx() == 0) {
+                        found_bdr = true;
+                        EXPECT_EQ(101, cell_side.cond().element_accessor().region().id());
+
+                        auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
+                        auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+                        //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
+                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, (j*0.1 + (cell_side.cond().element_accessor().input_id()+1)*0.1) ) );
+                        EXPECT_TRUE( check_arma(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
+                        EXPECT_TRUE( check_arma(eq_data_->bc_tensor_field, p_bdr, arma::mat33(expected_bc_tensors[j]) ) );
+                        //EXPECT_TRUE( check_scalar(eq_data_->enum_field, p_bdr, j+1) );
+                        EXPECT_EQ( j+1, eq_data_->bc_enum_field( p_bdr ) );
+                    }
+                }
+            }
+            EXPECT_TRUE( found_bdr );
+        }
+        eq_data_->tg_.next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, input_vtk) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/vtk_ascii_data.vtu
+          field_name: scalar_field
+          #default_value: 0.0
+        vector_field: !FieldFE
+          mesh_data_file: fields/vtk_binary_data.vtu
+          field_name: vector_field
+          #default_value: 0.0
+        tensor_field: !FieldFE
+          mesh_data_file: fields/vtk_compressed_data.vtu
+          field_name: tensor_field
+          #default_value: 0.0
+    )YAML";
+
+    string expected_vector = "0.5 1 1.5";
+    string expected_tensor = "1 2 3; 4 5 6; 7 8 9";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+    for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+        eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+        uint dim = eq_data_->computed_dh_cell_.dim()-1;
+        eq_data_->update_cache();
+
+        auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+        EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, (i+1)*0.1 ) );
+        EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
+        EXPECT_TRUE( check_arma(eq_data_->tensor_field, p, arma::mat33(expected_tensor) ) );
+    }
+}
+
+
+TEST_F(FieldEvalFETest, time_shift) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          default_value: 0.0
+          read_time_shift: 1.0
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*0.1+(i+2)*0.1 ) );
+        }
+        eq_data_->tg_.next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, default_values) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: unset_bulk
+          default_value: 0.1
+    )YAML";
+
+    string expected_vector = "0.1 0.1 0.1";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
+        }
+        eq_data_->tg_.next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, unit_conversion) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          unit: "const; const=100*m"
+          default_value: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          unit: "const; const=100*m"
+          default_value: 0.0
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+
+        // BULK field
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*10.0+(i+1)*10.0 ) );
+        }
+
+        // BOUNDARY field
+        {
+            unsigned int i_elem = 3;
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i_elem);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache(true);
+
+            bool found_bdr = false;
+            for (DHCellSide cell_side : eq_data_->computed_dh_cell_.side_range()) {
+                if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+                    if (cell_side.cond().bc_ele_idx() == 0) {
+                        found_bdr = true;
+                        EXPECT_EQ(101, cell_side.cond().element_accessor().region().id());
+
+                        auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
+                        auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+                        //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
+                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, (j*10.0 + (cell_side.cond().element_accessor().input_id()+1)*10.0) ) );
+                    }
+                }
+            }
+            EXPECT_TRUE( found_bdr );
+        }
+        eq_data_->tg_.next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, identic_mesh) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: scalar
+          default_value: 0.0
+          interpolation: identic_mesh
+        vector_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: vector_fixed
+          default_value: 0.0
+          interpolation: identic_mesh
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: scalar
+          default_value: 0.0
+          interpolation: identic_mesh
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: vector_fixed
+          default_value: 0.0
+          interpolation: identic_mesh
+    )YAML";
+
+    string expected_vectors[2] = {"3 4 5", "6 7 8"};
+    string expected_bc_vectors[2] = {"1 2 3", "4 5 9"};
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+
+        // BULK field
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, 1.0+j*0.1+(i+1)*0.1) );
+            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
+        }
+
+        // BOUNDARY field
+        {
+            unsigned int i_elem = 3;
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i_elem);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache(true);
+
+            bool found_bdr = false;
+            for (DHCellSide cell_side : eq_data_->computed_dh_cell_.side_range()) {
+                if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+                    if (cell_side.cond().bc_ele_idx() == 0) {
+                        found_bdr = true;
+                        EXPECT_EQ(101, cell_side.cond().element_accessor().region().id());
+
+                        auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
+                        auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+                        //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
+                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, 2.0+j*0.1+(i_elem+1)*0.1 ) );
+                        EXPECT_TRUE( check_arma(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
+                    }
+                }
+            }
+            EXPECT_TRUE( found_bdr );
+        }
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -339,46 +966,6 @@ public:
     	return init_data;
     }
 
-    bool check_scalar(ScalarField &field, unsigned int i_elem, double expected_val) {
-    // new assembly args: (ScalarField &field, BulkPoint &point, double expected_vals
-        try {
-            double comp_val = field.value( point, mesh->element_accessor(i_elem) );
-            if ( std::abs(expected_val - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
-                std::cout << "\nElement:       " << i_elem << std::endl;
-                std::cout << "Evaluated val: " << comp_val << std::endl;
-                std::cout << "Expected val:  " << expected_val << std::endl;
-                return false;
-            }
-        } catch (ExceptionBase &e) {
-            std::cout << e.what() << std::endl;
-            return false;
-        }
-        return true;
-    }
-
-    bool check_scalar(ScalarField &field, std::vector<unsigned int> i_elems, std::vector<double> expected_vals) {
-    // new assembly args: (ScalarField &field, std::vector<BulkPoint &> points, std::vector<double> expected_vals)
-    	if ( i_elems.size() != expected_vals.size() ) {
-    	    std::cout << "Number of elements must be same as number of expected values!" << std::endl;
-    	    return false;
-    	}
-    	for (uint i=0; i<i_elems.size(); ++i) {
-            try {
-                double comp_val = field.value( point, mesh->element_accessor(i_elems[i]) );
-                if ( std::abs(expected_vals[i] - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
-                    std::cout << "\nElement:       " << i_elems[i] << std::endl;
-                    std::cout << "Evaluated val: " << comp_val << std::endl;
-    	            std::cout << "Expected val:  " << expected_vals[i] << std::endl;
-           	        return false;
-                    }
-            } catch (ExceptionBase &e) {
-                std::cout << e.what() << std::endl;
-		        return false;
-            }
-        }
-        return true;
-    }
-
     Mesh * mesh;
     Input::Record rec;
     Space<3>::Point point;
@@ -388,283 +975,282 @@ public:
 
 
 
-TEST_F(FieldFENewTest, scalar) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
-    field.set_mesh(mesh,false);
-
-    for (unsigned int j=0; j<2; j++) {
-        field.set_time(test_time[j]);
-        for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            //EXPECT_DOUBLE_EQ( j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
-            EXPECT_TRUE( check_scalar(field, i, j*0.1+(i+1)*0.1 ) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_scalar) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
-    BCMesh *bc_mesh = mesh->bc_mesh();
-    field.set_mesh(mesh,true);
-
-    for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-
-        // only 4 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 4; i++) {
-            auto ele = bc_mesh->element_accessor(i);
-            EXPECT_DOUBLE_EQ( j*0.1 + (ele.input_id()+1)*0.1 , field.value(point,ele) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, scalar_unit_conv) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
-    field.set_mesh(mesh,false);
-
-    for (unsigned int j=0; j<2; j++) {
-        field.set_time(test_time[j]);
-        for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_DOUBLE_EQ( j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
-        }
-    }
-    field.set_time(test_time[2]); //temporary solution, remove this line after fix 'bc_scalar_unit_conv' test
-}
-
-
-TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
-    field.set_mesh(mesh,true);
-    for (unsigned int j=0; j<3; j++) {
-    	field.set_time(test_time[j]);
-
-        BCMesh *bc_mesh = mesh->bc_mesh();
-        // only 4 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 4; i++) {
-            auto ele = bc_mesh->element_accessor(i);
-            EXPECT_DOUBLE_EQ(j*10.0+(ele.input_id()+1)*10.0 , field.value(point,ele) );
-        }
-    }
-
-}
-
-
-TEST_F(FieldFENewTest, scalar_time_shift) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_time_shift"), init_data("scalar_time_shift"));
-    field.set_mesh(mesh,false);
-
-    for (unsigned int j=0; j<2; j++) {
-        field.set_time(test_time[j]);
-        for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_DOUBLE_EQ( j*0.1+(i+2)*0.1 , field.value(point,mesh->element_accessor(i)) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, vector_fixed) {
-	string expected_vals[2] = {"1 2 3", "2 3 4"};
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
-    field.set_mesh(mesh,false);
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-         for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_vector_fixed) {
-	string expected_vals[2] = {"4 5 6", "5 6 7"};
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
-    field.set_mesh(mesh,true);
-    BCMesh *bc_mesh = mesh->bc_mesh();
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-        // only 6 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 4; i++) {
-            auto ele = bc_mesh->element_accessor(i);
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,ele)) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, tensor_fixed) {
-	string expected_vals[2] = {"1 2 3; 4 5 6; 7 8 9", "2 3 4; 5 6 7; 8 9 10"};
-    TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
-    field.set_mesh(mesh,false);
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-     	for(unsigned int i=0; i < mesh->n_elements(); i++) {
-    		arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
-            EXPECT_TRUE( match.min() );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_tensor_fixed) {
-	string expected_vals[2] = {"4 5 6; 7 8 9; 10 11 12", "5 6 7; 8 9 10; 11 12 13"};
-    TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
-    field.set_mesh(mesh, true);
-    BCMesh *bc_mesh = mesh->bc_mesh();
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-        // only 4 BC elements are compatible with the comp mesh
-        for(unsigned int i=0; i < 4; i++) {
-            auto ele = bc_mesh->element_accessor(i);
-            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,ele) );
-            EXPECT_TRUE( match.min() );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, vtk_scalar) {
-	ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("vtk_scalar"), init_data("vtk_scalar"));
-    field.set_mesh(mesh, false);
-	field.set_time(0.0);
-
-	for(unsigned int i=0; i<mesh->n_elements(); i++) {
-		EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
-	}
-}
-
-
-
-TEST_F(FieldFENewTest, vtk_vector) {
-	string expected_vals = "0.5 1 1.5";
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vtk_vector"), init_data("vtk_vector"));
-    field.set_mesh(mesh, false);
-   	field.set_time(0.0);
-    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-    	EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
-    }
-}
-
-
-TEST_F(FieldFENewTest, vtk_tensor) {
-	string expected_vals = "1 2 3; 4 5 6; 7 8 9";
-    TensorField field;
-    field.init_from_input(rec.val<Input::Record>("vtk_tensor"), init_data("vtk_tensor"));
-    field.set_mesh(mesh,false);
-   	field.set_time(0.0);
-    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-    	arma::umat match = ( arma::mat33(expected_vals) == field.value(point,mesh->element_accessor(i)) );
-        EXPECT_TRUE( match.min() );
-    }
-}
-
-
-TEST_F(FieldFENewTest, scalar_enum) {
-    EnumField field;
-    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
-    field.set_mesh(mesh,false);
-    for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-     	for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_EQ( j, field.value(point,mesh->element_accessor(i)) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_scalar_enum) {
-    EnumField field;
-    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
-    field.set_mesh(mesh, true);
-    for (unsigned int j=0; j<2; j++) {
-		field.set_time(test_time[j]);
- 		for(unsigned int i=0; i < 4; i++) {
-			EXPECT_EQ( j+1, field.value(point,mesh->bc_mesh()->element_accessor(i)) );
-		}
-    }
-}
-
-
-TEST_F(FieldFENewTest, default_values) {
-	string expected_vals = "0.1 0.1 0.1";
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
-    field.set_mesh(mesh,true);
-    for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-     	for(unsigned int i=0; i < 4; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->bc_mesh()->element_accessor(i))) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, scalar_identic_mesh) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
-    field.set_mesh(mesh,false);
-
-    for (unsigned int j=0; j<2; j++) {
-        field.set_time(test_time[j]);
-        for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_scalar_identic_mesh) {
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
-    field.set_mesh(mesh,true);
-    for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-
-        for(unsigned int i=9; i < 13; i++) {
-            EXPECT_DOUBLE_EQ( 2.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->bc_mesh()->element_accessor(i-9)) );
-        }
-    }
-
-}
-
-
-TEST_F(FieldFENewTest, vector_fixed_identic_mesh) {
-	string expected_vals[2] = {"3 4 5", "6 7 8"};
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
-    field.set_mesh(mesh,false);
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-         for(unsigned int i=0; i < mesh->n_elements(); i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
-        }
-    }
-}
-
-
-TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) {
-	string expected_vals[2] = {"1 2 3", "4 5 6"};
-    VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
-    field.set_mesh(mesh,true);
-     for (unsigned int j=0; j<2; j++) {
-    	field.set_time(test_time[j]);
-     	for(unsigned int i=0; i < 4; i++) {
-            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->bc_mesh()->element_accessor(i))) );
-        }
-    }
-}
+//TEST_F(FieldFENewTest, scalar) { // moved to FieldEvalFETest, input_msh
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+//    field.set_mesh(mesh,false);
+//
+//    for (unsigned int j=0; j<2; j++) {
+//        field.set_time(test_time[j]);
+//        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_DOUBLE_EQ( j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_scalar) { // moved to FieldEvalFETest, input_msh
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+//    BCMesh *bc_mesh = mesh->bc_mesh();
+//    field.set_mesh(mesh,true);
+//
+//    for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//
+//        // only 4 BC elements are compatible with the comp mesh
+//        for(unsigned int i=0; i < 4; i++) {
+//            auto ele = bc_mesh->element_accessor(i);
+//            EXPECT_DOUBLE_EQ( j*0.1 + (ele.input_id()+1)*0.1 , field.value(point,ele) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, scalar_unit_conv) {
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
+//    field.set_mesh(mesh,false);
+//
+//    for (unsigned int j=0; j<2; j++) {
+//        field.set_time(test_time[j]);
+//        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_DOUBLE_EQ( j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
+//        }
+//    }
+//    field.set_time(test_time[2]); //temporary solution, remove this line after fix 'bc_scalar_unit_conv' test
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
+//    field.set_mesh(mesh,true);
+//    for (unsigned int j=0; j<3; j++) {
+//    	field.set_time(test_time[j]);
+//
+//        BCMesh *bc_mesh = mesh->bc_mesh();
+//        // only 4 BC elements are compatible with the comp mesh
+//        for(unsigned int i=0; i < 4; i++) {
+//            auto ele = bc_mesh->element_accessor(i);
+//            EXPECT_DOUBLE_EQ(j*10.0+(ele.input_id()+1)*10.0 , field.value(point,ele) );
+//        }
+//    }
+//
+//}
+//
+//
+//TEST_F(FieldFENewTest, scalar_time_shift) {
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar_time_shift"), init_data("scalar_time_shift"));
+//    field.set_mesh(mesh,false);
+//
+//    for (unsigned int j=0; j<2; j++) {
+//        field.set_time(test_time[j]);
+//        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_DOUBLE_EQ( j*0.1+(i+2)*0.1 , field.value(point,mesh->element_accessor(i)) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, vector_fixed) { // moved to FieldEvalFETest, input_msh
+//	string expected_vals[2] = {"1 2 3", "2 3 4"};
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
+//    field.set_mesh(mesh,false);
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//         for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_vector_fixed) { // moved to FieldEvalFETest, input_msh
+//	string expected_vals[2] = {"4 5 6", "5 6 7"};
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
+//    field.set_mesh(mesh,true);
+//    BCMesh *bc_mesh = mesh->bc_mesh();
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//        // only 6 BC elements are compatible with the comp mesh
+//        for(unsigned int i=0; i < 4; i++) {
+//            auto ele = bc_mesh->element_accessor(i);
+//            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,ele)) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, tensor_fixed) { // moved to FieldEvalFETest, input_msh
+//	string expected_vals[2] = {"1 2 3; 4 5 6; 7 8 9", "2 3 4; 5 6 7; 8 9 10"};
+//    TensorField field;
+//    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
+//    field.set_mesh(mesh,false);
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//     	for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
+//            EXPECT_TRUE( match.min() );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_tensor_fixed) { // moved to FieldEvalFETest, input_msh
+//	string expected_vals[2] = {"4 5 6; 7 8 9; 10 11 12", "5 6 7; 8 9 10; 11 12 13"};
+//    TensorField field;
+//    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
+//    field.set_mesh(mesh, true);
+//    BCMesh *bc_mesh = mesh->bc_mesh();
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//        // only 4 BC elements are compatible with the comp mesh
+//        for(unsigned int i=0; i < 4; i++) {
+//            auto ele = bc_mesh->element_accessor(i);
+//            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,ele) );
+//            EXPECT_TRUE( match.min() );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, vtk_scalar) { // moved to FieldEvalFETest, input_vtk
+//	ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("vtk_scalar"), init_data("vtk_scalar"));
+//    field.set_mesh(mesh, false);
+//	field.set_time(0.0);
+//
+//	for(unsigned int i=0; i<mesh->n_elements(); i++) {
+//		EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+//	}
+//}
+//
+//
+//
+//TEST_F(FieldFENewTest, vtk_vector) { // moved to FieldEvalFETest, input_vtk
+//	string expected_vals = "0.5 1 1.5";
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("vtk_vector"), init_data("vtk_vector"));
+//    field.set_mesh(mesh, false);
+//   	field.set_time(0.0);
+//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//    	EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, vtk_tensor) { // moved to FieldEvalFETest, input_vtk
+//	string expected_vals = "1 2 3; 4 5 6; 7 8 9";
+//    TensorField field;
+//    field.init_from_input(rec.val<Input::Record>("vtk_tensor"), init_data("vtk_tensor"));
+//    field.set_mesh(mesh,false);
+//   	field.set_time(0.0);
+//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//    	arma::umat match = ( arma::mat33(expected_vals) == field.value(point,mesh->element_accessor(i)) );
+//        EXPECT_TRUE( match.min() );
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, scalar_enum) { // moved to FieldEvalFETest, input_msh
+//    EnumField field;
+//    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
+//    field.set_mesh(mesh,false);
+//    for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//     	for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_EQ( j, field.value(point,mesh->element_accessor(i)) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_scalar_enum) { // moved to FieldEvalFETest, input_msh
+//    EnumField field;
+//    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
+//    field.set_mesh(mesh, true);
+//    for (unsigned int j=0; j<2; j++) {
+//		field.set_time(test_time[j]);
+// 		for(unsigned int i=0; i < 4; i++) {
+//			EXPECT_EQ( j+1, field.value(point,mesh->bc_mesh()->element_accessor(i)) );
+//		}
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, default_values) { // moved to FieldEvalFETest, default_values
+//	string expected_vals = "0.1 0.1 0.1";
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
+//    field.set_mesh(mesh,true);
+//    for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//     	for(unsigned int i=0; i < 4; i++) {
+//            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->bc_mesh()->element_accessor(i))) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, scalar_identic_mesh) { // moved to FieldEvalFETest, identic_mesh
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
+//    field.set_mesh(mesh,false);
+//
+//    for (unsigned int j=0; j<2; j++) {
+//        field.set_time(test_time[j]);
+//        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_scalar_identic_mesh) { // moved to FieldEvalFETest, identic_mesh
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
+//    field.set_mesh(mesh,true);
+//    for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//
+//        for(unsigned int i=9; i < 13; i++) {
+//            EXPECT_DOUBLE_EQ( 2.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->bc_mesh()->element_accessor(i-9)) );
+//        }
+//    }
+//
+//}
+//
+//
+//TEST_F(FieldFENewTest, vector_fixed_identic_mesh) { // moved to FieldEvalFETest, identic_mesh
+//	string expected_vals[2] = {"3 4 5", "6 7 8"};
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
+//    field.set_mesh(mesh,false);
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//         for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
+//        }
+//    }
+//}
+//
+//
+//TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) { // moved to FieldEvalFETest, identic_mesh
+//	string expected_vals[2] = {"1 2 3", "4 5 6"};
+//    VecFixField field;
+//    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
+//    field.set_mesh(mesh,true);
+//     for (unsigned int j=0; j<2; j++) {
+//    	field.set_time(test_time[j]);
+//     	for(unsigned int i=0; i < 4; i++) {
+//            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->bc_mesh()->element_accessor(i))) );
+//        }
+//    }
+//}
 
 
 TEST_F(FieldFENewTest, intersection_1d_2d_elements_small_scalar) {
