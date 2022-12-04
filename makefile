@@ -225,9 +225,13 @@ update-build-tree:
 # git complains for mismatch between current user and the repository owner 
 # see: https://github.blog/2022-04-12-git-security-vulnerability-announced/, 
 # This rule can be invoked manually to set appropriate exceptions to the main repository as well as to the submodules.
+#
+# ISSUE: This rule must be called under the fterm, however $HOME ise theere read only by default. So the global git configuration is 
+# inaccesible. However it works under the priviledged container.
+# HOME=/home/flow is probably necessary to make it work on windows, however it breaks build on github.
 .PHONY: set-safe-directory
 set-safe-directory:
-	export HOME=/home/flow/; \
+	#export HOME=/home/flow/; 
 	for d in \
 	    `pwd` \
 	    `pwd`/bin/yaml_converter \
@@ -238,6 +242,9 @@ set-safe-directory:
 	    `pwd`/third_party/pybind11-2.9.2; \
 	do git config --global --add safe.directory $$d; \
 	done
+	# check the configuration
+	git config --global -l
+	
 
 # initialize submodules in safe way
 # check which kind of access use this repository use same type for submodules
