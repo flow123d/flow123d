@@ -91,11 +91,13 @@ struct fn_conc_ad_coef {
 
 // Functor computing diffusion coefficient (see notes in function)
 struct fn_conc_diff_coef {
-    inline Tens operator() (Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+    inline Tens operator() (Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT,
+    		FMT_UNUSED Sclr water_content, FMT_UNUSED  Sclr porosity, Sclr cross_sec) {
 
         // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
         // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
-        double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+
+    	// double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
 
         // result
         Tens K;
@@ -120,7 +122,9 @@ struct fn_conc_diff_coef {
 
         // Note that the velocity vector is in fact the Darcian flux,
         // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-        K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+        //K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*cross_sec*water_content);
+        // We should name it: diffusivity_effective
+        K += alphaT*v_norm*arma::eye(3,3) + diff_m*cross_sec;
 
         return K;
     }
