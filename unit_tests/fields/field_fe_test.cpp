@@ -410,74 +410,17 @@ public:
     }
 
 
-    template<class EvalField, class T>
-    bool check_scalar(EvalField &field, BulkPoint &point, T expected_val) {
-        try {
-            T comp_val = field( point );
-            if ( std::abs(expected_val - comp_val) > 4*std::numeric_limits<T>::epsilon() ) {
-                std::cout << "\nElement:       " << this->eq_data_->elm_idx_on_position(point.elem_patch_idx()) << std::endl;
-                std::cout << "Evaluated val: " << comp_val << std::endl;
-                std::cout << "Expected val:  " << expected_val << std::endl;
-                return false;
-            }
-        } catch (ExceptionBase &e) {
-            std::cout << e.what() << std::endl;
-            return false;
-        }
-        return true;
-    }
+    /// Compares field value with ref_val. Internal method, called only from check_point_value method.
+    template<class Val>
+    bool compare_vals(const Val &field_val, const Val &ref_val);
 
-//        bool check_scalar(ScalarField &field, std::vector<BulkPoint &> points, std::vector<double> expected_vals) {
-//        	if ( points.size() != expected_vals.size() ) {
-//        	    std::cout << "Number of elements must be same as number of expected values!" << std::endl;
-//        	    return false;
-//        	}
-//        	for (uint i=0; i<points.size(); ++i) {
-//                try {
-//                    double comp_val = field( points[i] );
-//                    if ( std::abs(expected_vals[i] - comp_val) > 4*std::numeric_limits<double>::epsilon() ) {
-//                        std::cout << "\nElement:       " << this->elm_idx_on_position(points[i].elem_patch_idx()) << std::endl;
-//                        std::cout << "Evaluated val: " << comp_val << std::endl;
-//        	            std::cout << "Expected val:  " << expected_vals[i] << std::endl;
-//               	        return false;
-//                        }
-//                } catch (ExceptionBase &e) {
-//                    std::cout << e.what() << std::endl;
-//    		        return false;
-//                }
-//            }
-//            return true;
-//        }
 
-    template<class EvalField, class ArmaMat>
-    bool check_arma(EvalField &field, BulkPoint &point, const ArmaMat &ref_val)
+    template<class EvalField, class RefVal>
+    bool check_point_value(EvalField &field, BulkPoint &point, const RefVal &ref_val)
     {
-        try {
-            auto arma_val = field( point );
-            auto ref_shape = mat_shape(ref_val);
-            auto shape = mat_shape(arma_val);
-            if (ref_shape[0] != shape[0] || ref_shape[1] != shape[1]) {
-                if (ref_shape[0] != shape[0]) std::cout << "Different number of rows of field value and ref value!" << std::endl;
-                if (ref_shape[1] != shape[1]) std::cout << "Different number of cols of field value and ref value!" << std::endl;
-                return false;
-            }
-            double magnitude = std::max( arma::norm(ref_val, 1), arma::norm(arma_val, 1) );
-            // abs criterium
-            if (magnitude < 8*std::numeric_limits<double>::epsilon()) return true;
-
-            double error = arma::norm(ref_val - arma_val, 1)/magnitude;
-            // rel criterium
-            if (error > 8*std::numeric_limits<double>::epsilon()) {
-                unsigned int w = 11* arma_val.n_cols;
-                std::cout << std::setw(w) << "Expected" << std::setw(w) << "Result"
-                          << " rel. error: " << error << std::endl;
-                for(unsigned int i_row = 0; i_row < arma_val.n_rows; i_row++) {
-                    std::cout << std::setw(11) << ref_val.row(i_row)
-                              << std::setw(11) << arma_val.row(i_row)
-                              << std::setw(20) << ref_val.row(i_row) - arma_val.row(i_row) << std::endl;
-                }
-                return false;
-            }
+	    try {
+            auto field_val = field( point );
+            return this->compare_vals(field_val, ref_val);
         } catch (ExceptionBase &e) {
             std::cout << e.what() << std::endl;
             return false;
@@ -490,6 +433,81 @@ public:
     Mesh * mesh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
+
+
+/// General function compares value of Vector or Tensor fields with ref_val
+template<class Val>
+bool FieldEvalFETest::compare_vals(const Val &field_val, const Val &ref_val)
+{
+    try {
+        auto ref_shape = mat_shape(ref_val);
+        auto shape = mat_shape(field_val);
+        if (ref_shape[0] != shape[0] || ref_shape[1] != shape[1]) {
+            if (ref_shape[0] != shape[0]) std::cout << "Different number of rows of field value and ref value!" << std::endl;
+            if (ref_shape[1] != shape[1]) std::cout << "Different number of cols of field value and ref value!" << std::endl;
+            return false;
+        }
+        double magnitude = std::max( arma::norm(ref_val, 1), arma::norm(field_val, 1) );
+        // abs criterium
+        if (magnitude < 8*std::numeric_limits<double>::epsilon()) return true;
+
+        double error = arma::norm(ref_val - field_val, 1)/magnitude;
+        // rel criterium
+        if (error > 8*std::numeric_limits<double>::epsilon()) {
+            unsigned int w = 11* field_val.n_cols;
+            std::cout << std::setw(w) << "Expected" << std::setw(w) << "Result"
+                      << " rel. error: " << error << std::endl;
+            for(unsigned int i_row = 0; i_row < field_val.n_rows; i_row++) {
+                std::cout << std::setw(11) << ref_val.row(i_row)
+                          << std::setw(11) << field_val.row(i_row)
+                          << std::setw(20) << ref_val.row(i_row) - field_val.row(i_row) << std::endl;
+            }
+            return false;
+        }
+    } catch (ExceptionBase &e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
+/// Template specialization for Enum fields.
+template<>
+bool FieldEvalFETest::compare_vals(const unsigned int &field_val, const unsigned int &ref_val)
+{
+    try {
+        if ( ref_val != field_val ) {
+            std::cout << "\nEvaluated val: " << field_val << std::endl;
+            std::cout << "Expected val:  " << ref_val << std::endl;
+            return false;
+        }
+    } catch (ExceptionBase &e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
+/// Template specialization for Scalar fields.
+template<>
+bool FieldEvalFETest::compare_vals(const double &field_val, const double &ref_val)
+{
+    try {
+        if ( std::abs(ref_val - field_val) > 4*std::numeric_limits<double>::epsilon() ) {
+            std::cout << "\nEvaluated val: " << field_val << std::endl;
+            std::cout << "Expected val:  " << ref_val << std::endl;
+            return false;
+        }
+    } catch (ExceptionBase &e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+    return true;
+}
+
+
 
 
 
@@ -550,11 +568,10 @@ TEST_F(FieldEvalFETest, input_msh) {
             eq_data_->update_cache();
 
             auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*0.1+(i+1)*0.1 ) );
-            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
-            EXPECT_TRUE( check_arma(eq_data_->tensor_field, p, arma::mat33(expected_tensors[j]) ) );
-            //EXPECT_TRUE( check_scalar(eq_data_->enum_field, p, j) );
-            EXPECT_EQ( j, eq_data_->enum_field( p ) );
+            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*0.1+(i+1)*0.1 ) );
+            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
+            EXPECT_TRUE( check_point_value(eq_data_->tensor_field, p, arma::mat33(expected_tensors[j]) ) );
+            EXPECT_TRUE( check_point_value(eq_data_->enum_field, p, j) );
         }
 
         // BOUNDARY fields
@@ -574,11 +591,10 @@ TEST_F(FieldEvalFETest, input_msh) {
                         auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
                         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                         //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
-                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, (j*0.1 + (cell_side.cond().element_accessor().input_id()+1)*0.1) ) );
-                        EXPECT_TRUE( check_arma(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
-                        EXPECT_TRUE( check_arma(eq_data_->bc_tensor_field, p_bdr, arma::mat33(expected_bc_tensors[j]) ) );
-                        //EXPECT_TRUE( check_scalar(eq_data_->enum_field, p_bdr, j+1) );
-                        EXPECT_EQ( j+1, eq_data_->bc_enum_field( p_bdr ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_scalar_field, p_bdr, (j*0.1 + (cell_side.cond().element_accessor().input_id()+1)*0.1) ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_tensor_field, p_bdr, arma::mat33(expected_bc_tensors[j]) ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->enum_field, p_bdr, j+1) );
                     }
                 }
             }
@@ -621,9 +637,9 @@ TEST_F(FieldEvalFETest, input_vtk) {
         eq_data_->update_cache();
 
         auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-        EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, (i+1)*0.1 ) );
-        EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
-        EXPECT_TRUE( check_arma(eq_data_->tensor_field, p, arma::mat33(expected_tensor) ) );
+        EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, (i+1)*0.1 ) );
+        EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
+        EXPECT_TRUE( check_point_value(eq_data_->tensor_field, p, arma::mat33(expected_tensor) ) );
     }
 }
 
@@ -651,7 +667,7 @@ TEST_F(FieldEvalFETest, time_shift) {
             eq_data_->update_cache();
 
             auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*0.1+(i+2)*0.1 ) );
+            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*0.1+(i+2)*0.1 ) );
         }
         eq_data_->tg_.next_time();
     }
@@ -663,7 +679,7 @@ TEST_F(FieldEvalFETest, default_values) {
     data:
       - region: ALL
         time: 0.0
-        scalar_field: !FieldFE
+        vector_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: unset_bulk
           default_value: 0.1
@@ -682,7 +698,7 @@ TEST_F(FieldEvalFETest, default_values) {
             eq_data_->update_cache();
 
             auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
+            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
         }
         eq_data_->tg_.next_time();
     }
@@ -719,7 +735,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
             eq_data_->update_cache();
 
             auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, j*10.0+(i+1)*10.0 ) );
+            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*10.0+(i+1)*10.0 ) );
         }
 
         // BOUNDARY field
@@ -739,7 +755,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
                         auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
                         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                         //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
-                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, (j*10.0 + (cell_side.cond().element_accessor().input_id()+1)*10.0) ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_scalar_field, p_bdr, (j*10.0 + (cell_side.cond().element_accessor().input_id()+1)*10.0) ) );
                     }
                 }
             }
@@ -793,8 +809,8 @@ TEST_F(FieldEvalFETest, identic_mesh) {
             eq_data_->update_cache();
 
             auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_scalar(eq_data_->scalar_field, p, 1.0+j*0.1+(i+1)*0.1) );
-            EXPECT_TRUE( check_arma(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
+            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, 1.0+j*0.1+(i+1)*0.1) );
+            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
         }
 
         // BOUNDARY field
@@ -814,8 +830,8 @@ TEST_F(FieldEvalFETest, identic_mesh) {
                         auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
                         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                         //std::cout << "Time: " << j << ", input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eq_data_->bc_scalar_field(p_bdr) << std::endl;
-                        EXPECT_TRUE( check_scalar(eq_data_->bc_scalar_field, p_bdr, 2.0+j*0.1+(i_elem+1)*0.1 ) );
-                        EXPECT_TRUE( check_arma(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_scalar_field, p_bdr, 2.0+j*0.1+(i_elem+1)*0.1 ) );
+                        EXPECT_TRUE( check_point_value(eq_data_->bc_vector_field, p_bdr, arma::vec3(expected_bc_vectors[j]) ) );
                     }
                 }
             }
