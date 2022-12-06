@@ -23,6 +23,8 @@
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
+#include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 
 //#include <boost/bind.hpp>
@@ -252,6 +254,76 @@ void LinSys_PETSC::preallocate_matrix()
     delete[] on_nz;
     delete[] off_nz;
 }
+
+
+void LinSys_PETSC::preallocate_matrix(DOFHandlerMultiDim &dh)
+{
+    std::vector<LongIdx> dof_indices(dh.max_elem_dofs()), dof_indices_other(dh.max_elem_dofs());
+    std::vector<double> values(dh.max_elem_dofs()*dh.max_elem_dofs(), 1.);
+    LongIdx ndofs, ndofs_other;
+
+    for (auto cell : dh.own_range())
+    {
+        ndofs = cell.get_dof_indices(dof_indices);
+        preallocate_values(ndofs, dof_indices.data(), ndofs, dof_indices.data());
+
+        for (auto side : cell.side_range())
+        {
+            // if (side.edge_sides().begin()->element().idx() == cell.elm_idx())
+            {
+                for (auto edge : side.edge_sides())
+                {
+                    auto cell_other = edge.cell();
+                    ndofs_other = cell_other.get_dof_indices(dof_indices_other);
+                    preallocate_values(ndofs, dof_indices.data(), ndofs_other, dof_indices_other.data());
+                    preallocate_values(ndofs_other, dof_indices_other.data(), ndofs, dof_indices.data());
+                }
+            }
+        }
+
+        for (auto neigh_side : cell.neighb_sides())
+        {
+            auto cell_other = neigh_side.cell();
+            ndofs_other = cell_other.get_dof_indices(dof_indices_other);
+            preallocate_values(ndofs, dof_indices.data(), ndofs_other, dof_indices_other.data());
+            preallocate_values(ndofs_other, dof_indices_other.data(), ndofs, dof_indices.data());
+        }
+    }
+
+    start_insert_assembly();
+
+    for (auto cell : dh.own_range())
+    {
+        ndofs = cell.get_dof_indices(dof_indices);
+        MatSetValues(matrix_, ndofs, dof_indices.data(), ndofs, dof_indices.data(), values.data(), INSERT_VALUES);
+
+        for (auto side : cell.side_range())
+        {
+            // if (side.edge_sides().begin()->element().idx() == cell.elm_idx())
+            {
+                for (auto edge : side.edge_sides())
+                {
+                    auto cell_other = edge.cell();
+                    ndofs_other = cell_other.get_dof_indices(dof_indices_other);
+                    MatSetValues(matrix_, ndofs, dof_indices.data(), ndofs_other, dof_indices_other.data(), values.data(), INSERT_VALUES);
+                    MatSetValues(matrix_, ndofs_other, dof_indices_other.data(), ndofs, dof_indices.data(), values.data(), INSERT_VALUES);
+                }
+            }
+        }
+
+        for (auto neigh_side : cell.neighb_sides())
+        {
+            auto cell_other = neigh_side.cell();
+            ndofs_other = cell_other.get_dof_indices(dof_indices_other);
+            MatSetValues(matrix_, ndofs, dof_indices.data(), ndofs_other, dof_indices_other.data(), values.data(), INSERT_VALUES);
+            MatSetValues(matrix_, ndofs_other, dof_indices_other.data(), ndofs, dof_indices.data(), values.data(), INSERT_VALUES);
+        }
+    }
+    MatAssemblyBegin(matrix_, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(matrix_, MAT_FINAL_ASSEMBLY);
+    MatZeroEntries(matrix_);
+}
+
 
 void LinSys_PETSC::finish_assembly( )
 {

@@ -453,12 +453,13 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    stiffness_assembly_->assemble(eq_data_->dh_);
+    // stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
     sources_assembly_->assemble(eq_data_->dh_);
     bdr_cond_assembly_->assemble(eq_data_->dh_);
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
+      ((LinSys_PETSC*)eq_data_->ls[i])->preallocate_matrix(*eq_data_->dh_);
       VecAssemblyBegin(eq_data_->ret_vec[i]);
       VecAssemblyEnd(eq_data_->ret_vec[i]);
     }
