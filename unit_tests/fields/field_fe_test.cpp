@@ -34,8 +34,6 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
-//#include "coupling/generic_assembly.hh"
-//#include "coupling/assembly_base.hh"
 
 #include "la/vector_mpi.hh"  //includes from old tests
 #include "fields/fe_value_handler.hh"
@@ -157,23 +155,23 @@ TEST_F(FieldFETest, vector) {
 }
 
 
-string input = R"INPUT(
-{   
-   scalar={
-       TYPE="FieldFE",
-       mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="scalar"
-   }
-   native_data={
-       TYPE="FieldFE",
-       mesh_data_file="output/test_output_vtk_ascii_ref.vtu",
-       field_name="flow_data"
-   }
-}
-)INPUT";
-
-
-
+//string input = R"INPUT(
+//{
+//   scalar={
+//       TYPE="FieldFE",
+//       mesh_data_file="fields/simplest_cube_data.msh",
+//       field_name="scalar"
+//   }
+//   native_data={
+//       TYPE="FieldFE",
+//       mesh_data_file="output/test_output_vtk_ascii_ref.vtu",
+//       field_name="flow_data"
+//   }
+//}
+//)INPUT";
+//
+//
+//
 //TEST_F(FieldFETest, scalar_from_input) { // equivalent with TEST(FieldFENewTest, scalar) - moved to FieldEvalFETest, input_msh
 //    create_mesh("fields/simplest_cube_data.msh");
 //
@@ -190,24 +188,24 @@ string input = R"INPUT(
 //        EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
 //    }
 //}
-
-
-TEST_F(FieldFETest, native_data) {
-    create_mesh("fields/simplest_cube_3d.msh");
-
-    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
-    Input::Record rec=reader.get_root_interface<Input::Record>();
-
-    ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("native_data"), init_data("native_data"));
-    field.set_mesh(mesh,false);
-    field.set_time(0.0);
-
-    Space<3>::Point point;
-    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-        EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
-    }
-}
+//
+//
+//TEST_F(FieldFETest, native_data) {
+//    create_mesh("fields/simplest_cube_3d.msh");
+//
+//    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
+//    Input::Record rec=reader.get_root_interface<Input::Record>();
+//
+//    ScalarField field;
+//    field.init_from_input(rec.val<Input::Record>("native_data"), init_data("native_data"));
+//    field.set_mesh(mesh,false);
+//    field.set_time(0.0);
+//
+//    Space<3>::Point point;
+//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+//        EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
+//    }
+//}
 
 
 class FieldEvalFETest : public testing::Test {
@@ -958,6 +956,26 @@ TEST_F(FieldEvalFETest, interpolation_1d_2d) {
         }
         eq_data_->tg_.next_time();
     }
+}
+
+
+TEST_F(FieldEvalFETest, native) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: output/test_output_vtk_ascii_ref.vtu
+          field_name: flow_data
+    )YAML";
+
+    std::vector<double> expected_scalars = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 };
+
+    this->create_mesh("fields/simplest_cube_3d.msh");
+    this->read_input(eq_data_input);
+
+    eq_data_->reallocate_cache();
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, expected_scalars) );
 }
 
 
