@@ -290,6 +290,23 @@ public:
 						.input_default("\"none\"")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+            *this += scalar_ref
+                        .name("scalar_ref")
+                        .description("Reference scalar field.")
+						.input_default("0.0")
+                        .units( UnitSI().m() );
+            *this += vector_ref
+                        .name("vector_ref")
+                        .description("Reference vector field.")
+                        .input_default("0.0")
+                        .flags_add(in_main_matrix)
+                        .units( UnitSI().kg(3).m() );
+            *this += tensor_ref
+                        .name("tensor_ref")
+                        .description("Reference tensor field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
 
             // Asumme following types:
             eval_points_ = std::make_shared<EvalPoints>();
@@ -335,6 +352,7 @@ public:
         }
 
         void update_cache(bool bdr=false) {
+            this->clear_element_eval_points_map();
             this->start_elements_update();
             this->register_eval_points(bdr);
             this->create_patch();
@@ -343,6 +361,7 @@ public:
         }
 
         void reallocate_cache() {
+            this->set_time(tg_.step(), LimitSide::right);
             this->cache_reallocate(*this, *this);
         }
 
@@ -356,6 +375,10 @@ public:
         BcVectorField bc_vector_field;
         BcTensorField bc_tensor_field;
         BcEnumField bc_enum_field;
+        ScalarField scalar_ref;
+        VectorField vector_ref;
+        TensorField tensor_ref;
+
         std::shared_ptr<EvalPoints> eval_points_;
         std::array< std::shared_ptr<BulkIntegral>, 3> mass_integral;
         std::array< std::shared_ptr<BoundaryIntegral>, 3> bdr_integral;
@@ -405,8 +428,6 @@ public:
 
         eq_data_->set_mesh(*mesh_);
         eq_data_->set_input_list( inputs[input_last], eq_data_->tg_ );
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
-        eq_data_->reallocate_cache();
     }
 
 
@@ -426,6 +447,49 @@ public:
             return false;
         }
         return true;
+    }
+
+
+    template<class FieldType>
+    bool eval_bulk_field(FieldType &eval_field, FieldType &ref_field)
+    {
+        bool is_passed = true;
+	    for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            is_passed = is_passed & check_point_value(eval_field, p, ref_field(p) );
+        }
+	    return is_passed;
+    }
+
+
+    template<class FieldType, class RefVal>
+    bool eval_bulk_field(FieldType &eval_field, std::vector<RefVal> ref_val)
+    {
+        static_assert( std::is_same<typename FieldType::ValueType::return_type, RefVal>::value, "Wrong type of RefVal.");
+        ASSERT_EQ( mesh_->n_elements(), ref_val.size() );
+
+        bool is_passed = true;
+	    for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
+            uint dim = eq_data_->computed_dh_cell_.dim()-1;
+            eq_data_->update_cache();
+
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            is_passed = is_passed & check_point_value(eval_field, p, ref_val[i] );
+        }
+	    return is_passed;
+    }
+
+
+    template<class FieldType, class RefVal>
+    bool eval_bulk_field(FieldType &eval_field, RefVal ref_val)
+    {
+    	std::vector<RefVal> ref_val_vec(mesh_->n_elements(), ref_val);
+	    return eval_bulk_field(eval_field, ref_val_vec);
     }
 
 
@@ -495,7 +559,7 @@ template<>
 bool FieldEvalFETest::compare_vals(const double &field_val, const double &ref_val)
 {
     try {
-        if ( std::abs(ref_val - field_val) > 4*std::numeric_limits<double>::epsilon() ) {
+        if ( std::abs(ref_val - field_val) > 8*std::numeric_limits<double>::epsilon() ) {
             std::cout << "\nEvaluated val: " << field_val << std::endl;
             std::cout << "Expected val:  " << ref_val << std::endl;
             return false;
@@ -548,31 +612,28 @@ TEST_F(FieldEvalFETest, input_msh) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
           default_value: 0
+        scalar_ref: !FieldFormula
+          value: x+2*y+t
+        vector_ref: !FieldFormula
+          value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
+        tensor_ref: !FieldFormula
+          value: [2*x+y, 2*y+z+0.5*t, 2*z+x+t]
     )YAML";
 
-    string expected_vectors[2] = {"1 2 3", "2 3 4"};
-    string expected_tensors[2] = {"1 2 3; 4 5 6; 7 8 9", "2 3 4; 5 6 7; 8 9 10"};
     string expected_bc_vectors[2] = {"4 5 6", "5 6 7"};
     string expected_bc_tensors[2] = {"4 5 6; 7 8 9; 10 11 12", "5 6 7; 8 9 10; 11 12 13"};
 
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+    for (unsigned int j=0; j<2; j++) {  // time loop
+    	eq_data_->reallocate_cache();
 
         // BULK fields
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*0.1+(i+1)*0.1 ) );
-            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
-            EXPECT_TRUE( check_point_value(eq_data_->tensor_field, p, arma::mat33(expected_tensors[j]) ) );
-            EXPECT_TRUE( check_point_value(eq_data_->enum_field, p, j) );
-        }
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, eq_data_->vector_ref) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, eq_data_->tensor_ref) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, j) );
 
         // BOUNDARY fields
         {
@@ -613,34 +674,27 @@ TEST_F(FieldEvalFETest, input_vtk) {
         scalar_field: !FieldFE
           mesh_data_file: fields/vtk_ascii_data.vtu
           field_name: scalar_field
-          #default_value: 0.0
         vector_field: !FieldFE
-          mesh_data_file: fields/vtk_binary_data.vtu
+          mesh_data_file: fields/vtk_ascii_data.vtu
           field_name: vector_field
-          #default_value: 0.0
         tensor_field: !FieldFE
-          mesh_data_file: fields/vtk_compressed_data.vtu
+          mesh_data_file: fields/vtk_ascii_data.vtu
           field_name: tensor_field
-          #default_value: 0.0
+        scalar_ref: !FieldFormula
+          value: x+2*y
+        vector_ref: !FieldFormula
+          value: [x+2*y, y+2*z, z+2*x]
+        tensor_ref: !FieldFormula
+          value: [2*x+y, 2*y+z, 2*z+x]
     )YAML";
-
-    string expected_vector = "0.5 1 1.5";
-    string expected_tensor = "1 2 3; 4 5 6; 7 8 9";
 
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
-    for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-        eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-        uint dim = eq_data_->computed_dh_cell_.dim()-1;
-        eq_data_->update_cache();
-
-        auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-        EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, (i+1)*0.1 ) );
-        EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
-        EXPECT_TRUE( check_point_value(eq_data_->tensor_field, p, arma::mat33(expected_tensor) ) );
-    }
+    eq_data_->reallocate_cache();
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, eq_data_->vector_ref) );
+    EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, eq_data_->tensor_ref) );
 }
 
 
@@ -654,21 +708,16 @@ TEST_F(FieldEvalFETest, time_shift) {
           field_name: scalar
           default_value: 0.0
           read_time_shift: 1.0
+        scalar_ref: !FieldFormula
+          value: x+2*y+(t+1)
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*0.1+(i+2)*0.1 ) );
-        }
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
         eq_data_->tg_.next_time();
     }
 }
@@ -690,16 +739,9 @@ TEST_F(FieldEvalFETest, default_values) {
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vector) ) );
-        }
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, arma::vec3(expected_vector)) );
         eq_data_->tg_.next_time();
     }
 }
@@ -713,30 +755,25 @@ TEST_F(FieldEvalFETest, unit_conversion) {
         scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
-          unit: "const; const=100*m"
+          unit: "const; const=10*m"
           default_value: 0.0
         bc_scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
-          unit: "const; const=100*m"
+          unit: "const; const=10*m"
           default_value: 0.0
+        scalar_ref: !FieldFormula
+          value: 10*(x+2*y+t)
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
 
         // BULK field
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, j*10.0+(i+1)*10.0 ) );
-        }
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
 
         // BOUNDARY field
         {
@@ -791,6 +828,10 @@ TEST_F(FieldEvalFETest, identic_mesh) {
           field_name: vector_fixed
           default_value: 0.0
           interpolation: identic_mesh
+        scalar_ref: !FieldFormula
+          value: x+2*y+t
+        vector_ref: !FieldFormula
+          value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
     )YAML";
 
     string expected_vectors[2] = {"3 4 5", "6 7 8"};
@@ -799,19 +840,12 @@ TEST_F(FieldEvalFETest, identic_mesh) {
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
 
         // BULK field
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, 1.0+j*0.1+(i+1)*0.1) );
-            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vectors[j]) ) );
-        }
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, eq_data_->vector_ref) );
 
         // BOUNDARY field
         {
@@ -859,25 +893,17 @@ TEST_F(FieldEvalFETest, interpolation_gauss) {
           #interpolation: P0_gauss
     )YAML";
 
-    std::vector<double> expected_scalars = {0.25, 0.15, 0.25, 0.35, 0.75, 0.65, 0.75, 0.85};
-    std::vector<string> expected_vectors = {"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5",
-                                            "5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"};
+    std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };
+    std::vector< std::vector<arma::vec3> > expected_vectors = { {"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5"},
+                                                                {"5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"} };
 
     this->create_mesh("fields/interpolation_rect_small.msh");
     this->read_input(eq_data_input);
 
-    for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
-
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
-            eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
-            uint dim = eq_data_->computed_dh_cell_.dim()-1;
-            eq_data_->update_cache();
-
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
-            EXPECT_TRUE( check_point_value(eq_data_->scalar_field, p, expected_scalars[i + j*mesh_->n_elements()] ) );
-            EXPECT_TRUE( check_point_value(eq_data_->vector_field, p, arma::vec3(expected_vectors[i + j*mesh_->n_elements()]) ) );
-        }
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, expected_scalars[j]) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, expected_vectors[j]) );
         eq_data_->tg_.next_time();
     }
 }
@@ -908,9 +934,9 @@ TEST_F(FieldEvalFETest, interpolation_1d_2d) {
     this->read_input(eq_data_input);
 
     for (unsigned int j=0; j<2; j++) {
-        eq_data_->set_time(eq_data_->tg_.step(), LimitSide::right);
+        eq_data_->reallocate_cache();
 
-        for(unsigned int i=0; i < mesh_->n_elements(); i++) {
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {  // time loop
             eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i);
             uint dim = eq_data_->computed_dh_cell_.dim()-1;
             eq_data_->update_cache(true);
