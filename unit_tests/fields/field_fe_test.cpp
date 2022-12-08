@@ -27,6 +27,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -34,127 +35,125 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
-
-#include "la/vector_mpi.hh"  //includes from old tests
-#include "fields/fe_value_handler.hh"
-#include "fem/fe_p.hh"
-#include "fem/mapping_p1.hh"
-#include "fem/fe_values.hh"
-#include "system/exceptions.hh"
-#include "mesh/bc_mesh.hh"
-#include "io/msh_gmshreader.h"
-#include "io/reader_cache.hh"
+#include "la/vector_mpi.hh"
 #include "tools/mixed.hh"
 
+//#include "fields/fe_value_handler.hh"  //includes from old tests
+//#include "fem/mapping_p1.hh"
+//#include "fem/fe_values.hh"
+//#include "system/exceptions.hh"
+//#include "mesh/bc_mesh.hh"
+//#include "io/msh_gmshreader.h"
+//#include "io/reader_cache.hh"
 
 
 
-class FieldFETest : public testing::Test {
-public:
-    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
-    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
 
-    virtual void SetUp() {
-    	this->mesh = nullptr;
-        // setup FilePath directories
-        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-        Profiler::instance();
-        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
-    }
-
-    virtual void TearDown() {
-    	dh.reset();
-    	if (mesh != nullptr) delete mesh;
-    }
-
-    void create_mesh(std::string mesh_file_str) {
-        mesh = mesh_full_constructor("{ mesh_file=\"" + mesh_file_str + "\", optimize_mesh=false }");
-    }
-
-    void create_dof_handler(double val1, double val2, double val3) {
-        dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
-        v.resize(3);
-        v.set(0, val1);
-        v.set(1, val2);
-        v.set(2, val3);
-        dof_values[0] = val1;
-        dof_values[1] = val2;
-        dof_values[2] = val3;
-    }
-
-    const FieldAlgoBaseInitData& init_data(std::string field_name) {
-    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
-    	return init_data;
-    }
-
-    static Input::Type::Record &get_input_type() {
-        return Input::Type::Record("Test","")
-            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("native_data", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .close();
-    }
-
-    Mesh *mesh;
-    std::shared_ptr<DOFHandlerMultiDim> dh;
-    double dof_values[3];
-    VectorMPI v;
-
-};
-
-
-// TODO Fix these tests after improving DOF handler
-TEST_F(FieldFETest, scalar) {
-    create_mesh("fields/one_element_2d.msh");
-    create_dof_handler(1, 2, 3);
-
-	MixedPtr<FE_P_disc> fe(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
-    ScalarField field;
-
-    dh->distribute_dofs(ds);
-    field.set_fe_data(dh, v);
-    field.set_time(0.0);
-
-    Armor::array pts(3, 1);
-    pts.reinit(3);
-    pts.append(Armor::vec<3>({ 1, 1, 5 }));
-    pts.append(Armor::vec<3>({ 4, 0, 5 }));
-    pts.append(Armor::vec<3>({ 2, 3, 5 }));
-    vector<double> values(3);
-
-    // test values at vertices of the triangle
-    field.value_list( pts, mesh->element_accessor(0), values );
-    EXPECT_DOUBLE_EQ( dof_values[0], values[0] );
-    EXPECT_DOUBLE_EQ( dof_values[1], values[1] );
-    EXPECT_DOUBLE_EQ( dof_values[2], values[2] );
-
-    // test value at barycenter
-    EXPECT_DOUBLE_EQ( (dof_values[0]+dof_values[1]+dof_values[2])/3, field.value({ 7./3, 4./3, 5 }, mesh->element_accessor(0)) );
-}
-
-
-TEST_F(FieldFETest, vector) {
-    create_mesh("fields/one_element_2d.msh");
-    create_dof_handler(0, 0, 1);
-
-	MixedPtr<FE_RT0> fe;
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
-    VecField field;
-
-    dh->distribute_dofs(ds);
-    field.set_fe_data(dh, v);
-    field.set_time(0.0);
-
-    // The Raviart-Thomas function given by the following dofs
-    // is 3/7*(x-7/3, y-4/3, 0).
-
-    arma::vec3 result = { 2./7, 1./14, 0 };
-
-    EXPECT_NEAR( 0, arma::norm(result - field.value({ 3, 1.5, 5 }, mesh->element_accessor(0)), 2), 1e-15 );
-}
-
-
+//class FieldFETest : public testing::Test {
+//public:
+//    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
+//    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
+//
+//    virtual void SetUp() {
+//    	this->mesh = nullptr;
+//        // setup FilePath directories
+//        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+//
+//        Profiler::instance();
+//        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+//    }
+//
+//    virtual void TearDown() {
+//    	dh.reset();
+//    	if (mesh != nullptr) delete mesh;
+//    }
+//
+//    void create_mesh(std::string mesh_file_str) {
+//        mesh = mesh_full_constructor("{ mesh_file=\"" + mesh_file_str + "\", optimize_mesh=false }");
+//    }
+//
+//    void create_dof_handler(double val1, double val2, double val3) {
+//        dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+//        v.resize(3);
+//        v.set(0, val1);
+//        v.set(1, val2);
+//        v.set(2, val3);
+//        dof_values[0] = val1;
+//        dof_values[1] = val2;
+//        dof_values[2] = val3;
+//    }
+//
+//    const FieldAlgoBaseInitData& init_data(std::string field_name) {
+//    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
+//    	return init_data;
+//    }
+//
+//    static Input::Type::Record &get_input_type() {
+//        return Input::Type::Record("Test","")
+//            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+//            .declare_key("native_data", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+//            .close();
+//    }
+//
+//    Mesh *mesh;
+//    std::shared_ptr<DOFHandlerMultiDim> dh;
+//    double dof_values[3];
+//    VectorMPI v;
+//
+//};
+//
+//
+//TEST_F(FieldFETest, scalar) {  // moved to FieldEvalFETest, set_fe_data_scalar
+//    create_mesh("fields/one_element_2d.msh");
+//    create_dof_handler(1, 2, 3);
+//
+//	MixedPtr<FE_P_disc> fe(1);
+//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+//    ScalarField field;
+//
+//    dh->distribute_dofs(ds);
+//    field.set_fe_data(dh, v);
+//    field.set_time(0.0);
+//
+//    Armor::array pts(3, 1);
+//    pts.reinit(3);
+//    pts.append(Armor::vec<3>({ 1, 1, 5 }));
+//    pts.append(Armor::vec<3>({ 4, 0, 5 }));
+//    pts.append(Armor::vec<3>({ 2, 3, 5 }));
+//    vector<double> values(3);
+//
+//    // test values at vertices of the triangle
+//    field.value_list( pts, mesh->element_accessor(0), values );
+//    EXPECT_DOUBLE_EQ( dof_values[0], values[0] );
+//    EXPECT_DOUBLE_EQ( dof_values[1], values[1] );
+//    EXPECT_DOUBLE_EQ( dof_values[2], values[2] );
+//
+//    // test value at barycenter
+//    EXPECT_DOUBLE_EQ( (dof_values[0]+dof_values[1]+dof_values[2])/3, field.value({ 7./3, 4./3, 5 }, mesh->element_accessor(0)) );
+//}
+//
+//
+//TEST_F(FieldFETest, vector) {  // moved to FieldEvalFETest, set_fe_data_vector
+//    create_mesh("fields/one_element_2d.msh");
+//    create_dof_handler(0, 0, 1);
+//
+//	MixedPtr<FE_RT0> fe;
+//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
+//    VecField field;
+//
+//    dh->distribute_dofs(ds);
+//    field.set_fe_data(dh, v);
+//    field.set_time(0.0);
+//
+//    // The Raviart-Thomas function given by the following dofs
+//    // is 3/7*(x-7/3, y-4/3, 0).
+//
+//    arma::vec3 result = { 2./7, 1./14, 0 };
+//
+//    EXPECT_NEAR( 0, arma::norm(result - field.value({ 3, 1.5, 5 }, mesh->element_accessor(0)), 2), 1e-15 );
+//}
+//
+//
 //string input = R"INPUT(
 //{
 //   scalar={
@@ -190,7 +189,7 @@ TEST_F(FieldFETest, vector) {
 //}
 //
 //
-//TEST_F(FieldFETest, native_data) {
+//TEST_F(FieldFETest, native_data) { // moved to FieldEvalFETest, native_data
 //    create_mesh("fields/simplest_cube_3d.msh");
 //
 //    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
@@ -413,6 +412,17 @@ public:
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
+    void set_dof_values(std::vector<double> vals) {
+        v.resize(vals.size());
+        dof_values.resize(vals.size());
+        for (unsigned int i=0; i<vals.size(); ++i) {
+            v.set(i, vals[i]);
+            dof_values[i] = vals[i];
+        }
+
+        eq_data_->set_mesh(*mesh_);
+    }
+
     void read_input(const string &input) {
         // read input string
         Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
@@ -494,6 +504,8 @@ public:
     std::shared_ptr<EqData> eq_data_;
     Mesh * mesh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::vector<double> dof_values;           ///< used in test set_fe_data
+    VectorMPI v;                              ///< used in test set_fe_data
 };
 
 
@@ -976,6 +988,43 @@ TEST_F(FieldEvalFETest, native) {
 
     eq_data_->reallocate_cache();
     EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, expected_scalars) );
+}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_scalar) {
+    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5} );
+
+    MixedPtr<FE_P_disc> fe(0);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<ScalarFieldFE> fe_field = std::make_shared<ScalarFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->scalar_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, 0.5) );
+}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_vector) {
+    typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5, 1.5, 2.5} );
+
+    MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<VectorFieldFE> fe_field = std::make_shared<VectorFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->vector_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    arma::vec3 expected = { 1./7, 2./7, 0.0 };
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, expected) );
 }
 
 
