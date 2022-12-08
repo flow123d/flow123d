@@ -254,36 +254,6 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 
 
 
-/**
- * Returns std::vector of scalar values in several points at once.
- */
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type> &value_list)
-{
-	ASSERT_EQ( point_list.size(), value_list.size() ).error();
-	ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
-
-	switch (elm.dim()) {
-	case 0:
-		value_handler0_.value_list(point_list, elm, value_list);
-		break;
-	case 1:
-		value_handler1_.value_list(point_list, elm, value_list);
-		break;
-	case 2:
-		value_handler2_.value_list(point_list, elm, value_list);
-		break;
-	case 3:
-		value_handler3_.value_list(point_list, elm, value_list);
-		break;
-	default:
-		ASSERT_PERMANENT(false).error("Invalid element dimension!");
-	}
-}
-
-
-
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)

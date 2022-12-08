@@ -319,15 +319,6 @@ public:
         return this->r_value_;
     }
 
-    /// Implementation of virtual method
-    void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-    	        std::vector<typename Value::return_type> &value_list) override {
-        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
-
-        for (uint i=0; i<point_list.size(); ++i)
-            value_list[i] = this->value(point_list.template mat<Value::NRows_, Value::NCols_>(i), elm);
-    }
-
 };
 
 

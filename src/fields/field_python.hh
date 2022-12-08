@@ -79,12 +79,6 @@ public:
      */
     virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
 
-    /**
-     * Returns std::vector of scalar values in several points at once.
-     */
-    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
-
 
     /**
      * Overload @p FieldAlgorithmBase::cache_reinit

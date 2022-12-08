@@ -228,17 +228,6 @@ public:
         */
        virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm)=0;
 
-       /**
-        * Returns std::vector of scalar values in several points at once. The base class implements
-        * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
-        * but this overhead can be negligible for more complex fields as Python of Formula.
-        *
-        * FieldAlgorithmBase provides a slow implementation using the value() method. Derived Field can implement its value_list method
-        * as call of FieldAlgoritmBase<...>::value_list().
-        */
-       virtual void value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                          std::vector<typename Value::return_type>  &value_list)=0;
-
        /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
        virtual void cache_reinit(const ElementCacheMap &cache_map);
 

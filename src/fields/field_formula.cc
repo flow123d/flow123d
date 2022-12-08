@@ -221,29 +221,6 @@ typename Value::return_type const & FieldFormula<spacedim, Value>::value(const P
 }
 
 
-/**
- * Returns std::vector of scalar values in several points at once.
- */
-template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
-{
-	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
-    for(unsigned int i=0; i< point_list.size(); i++) {
-        Value envelope(value_list[i]);
-        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
-        		.error("value_list['i'] has wrong number of rows\n");
-        auto p_depth = this->eval_depth_var(point_list.vec<spacedim>(i));
-
-        for(unsigned int row=0; row < this->value_.n_rows(); row++)
-            for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
-            }
-    }
-}
-
-
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         ElementCacheMap &cache_map, unsigned int region_patch_idx)
