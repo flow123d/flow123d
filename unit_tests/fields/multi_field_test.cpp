@@ -273,7 +273,7 @@ TEST_F(MultiFieldTest, complete_test) {
     EXPECT_EQ(39, elm.region().id());                         // check element accessor
     eq_data_->computed_dh_cell_ = this->eq_data_->dh_->cell_accessor_from_element(elm.idx());
 
-    std::vector< arma::vec3 > fe_expected = {{1, 2, 3}, {2, 3, 4}};
+    std::vector< arma::vec3 > fe_expected = {{0.5, 0.5, -1.0}, {0.5, 1.0, 0.0}};
     std::vector< double >     p0_expected = {0.5, 1.0};
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
