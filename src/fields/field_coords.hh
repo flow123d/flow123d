@@ -161,12 +161,6 @@ public:
         return std::vector<const FieldCommon *>();
     }
 
-    /// Returns one value of coordinates in one given point @p.
-    inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
-    {
-        return p;
-    }
-
     /// Return item of @p value_cache_ given by i_cache_point.
     arma::vec3 operator[] (unsigned int i_cache_point) const
     {

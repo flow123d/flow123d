@@ -205,22 +205,6 @@ void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, FMT_UNUSED bool b
 }
 
 
-/**
- * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
- */
-template <int spacedim, class Value>
-typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, FMT_UNUSED  const ElementAccessor<spacedim> &elm)
-{
-
-    auto p_depth = this->eval_depth_var(p);
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
-        }
-    return this->r_value_;
-}
-
-
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         ElementCacheMap &cache_map, unsigned int region_patch_idx)

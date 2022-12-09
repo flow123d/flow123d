@@ -209,25 +209,6 @@ public:
        virtual double next_change_time()
        { ASSERT_PERMANENT(false).error("Not implemented yet."); return 0.0; }
 
-       /**
-        * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
-        * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
-        *
-        * This method just call the later one @p value(Point, ElementAccessor, Value) and drops the FieldResult.
-        *
-        * Usual implementation of this method fills @p member r_value_ through unified envelope @p value_ as general tensor
-        * and then returns member @p r_value_. However, some particular Fields may have result stored elsewhere, in such a case
-        * the reference to the result can be returned directly without using the member @p value_. Keeping such wide space for optimization
-        * has drawback in slow generic implementation of the @p value_list method that fills whole vector of values for vector of points.
-        * Its generic implementation has to copy all values instead of directly store them into the vector of result values.
-        *
-        * So the best practice when implementing @p value and @value_list methods in particular FieldBase descendant is
-        * implement some thing like value(point, elm, Value::return_type &value) and using
-        *  s having in part
-        *
-        */
-       virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm)=0;
-
        /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
        virtual void cache_reinit(const ElementCacheMap &cache_map);
 

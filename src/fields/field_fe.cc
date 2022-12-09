@@ -230,29 +230,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 }
 
 
-/**
- * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
- */
-template <int spacedim, class Value>
-typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
-{
-	switch (elm.dim()) {
-	case 0:
-		return value_handler0_.value(p, elm);
-	case 1:
-		return value_handler1_.value(p, elm);
-	case 2:
-		return value_handler2_.value(p, elm);
-	case 3:
-		return value_handler3_.value(p, elm);
-	default:
-		ASSERT_PERMANENT(false).error("Invalid element dimension!");
-	}
-
-    return this->r_value_;
-}
-
-
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,

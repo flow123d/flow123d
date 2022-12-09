@@ -111,16 +111,6 @@ void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, c
 
 
 
-/**
- * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
- */
-template <int spacedim, class Value>
-typename Value::return_type const & FieldConstant<spacedim, Value>::value(const Point &, const ElementAccessor<spacedim> &)
-{
-    return this->r_value_;
-}
-
-
 template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)

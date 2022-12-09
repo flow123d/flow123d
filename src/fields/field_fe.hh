@@ -122,11 +122,6 @@ public:
             unsigned int block_index = FieldFE<spacedim, Value>::undef_uint);
 
     /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
-
-    /**
      * Overload @p FieldAlgorithmBase::cache_update
      */
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,

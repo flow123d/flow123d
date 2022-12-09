@@ -294,12 +294,6 @@ public:
     std::string get_value_attribute() const override;
 
     /**
-     * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
-     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) const;
-
-    /**
      * Add a new factory for creating Field algorithms on individual regions.
      * The last factory is tried first, the last one is always the default implementation
      * Field<...>::FactoryBase.
@@ -427,26 +421,6 @@ protected:
 
 };
 
-
-
-
-
-
-
-/****************************************************************************************
- * Inlined methods of Field< ... >
- */
-
-template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
-{
-
-    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
-	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
-    		.error("Null field ptr on region\n");
-    return region_fields_[elm.region_idx().idx()]->value(p,elm);
-}
 
 
 

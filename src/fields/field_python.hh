@@ -75,12 +75,6 @@ public:
     void set_python_field_from_class(const string &file_name, const string &class_name);
 
     /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
-
-
-    /**
      * Overload @p FieldAlgorithmBase::cache_reinit
      *
      * Reinit dictionary of used fields and update result field to dictionary of resul fields.
