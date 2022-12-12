@@ -51,7 +51,6 @@ define_mpi_test(generic_field 1)
        
 define_mpi_test(eval_subset 1)
 define_mpi_test(field_value_cache 1)
-define_mpi_test(field_evaluate_fe 1)
 
 define_test(bparser)
 define_test(field_model)

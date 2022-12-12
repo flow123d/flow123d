@@ -206,6 +206,25 @@
  */
 
 
+/**
+ * Main class of unit test.
+ *
+ * Simulates simplified behavior of assembly algorithm. Class contains instance of inner class EqData
+ * (descendant of FieldSet) with instances of different fields (different shapes and boundary or bulk).
+ * These fields are not obligatory and only some instances can be used in test cases.
+ *
+ * Methods used in test cases:
+ *  1. create_mesh - creates mesh and appropriate DOF handler
+ *  2. read_input - reads user input in YAML format and set it to EqData instance
+ *     (alternatively can by used set_dof_values method in tests of FieldFE::set_fe_data method)
+ *  3. EqData::reallocate_cache - set time and reallocate cache, method can be called repeatedly
+ *     for different times
+ *  4. eval_bulk_field - evaluates values on all elements of bulk mesh and compare them with reference
+ *     field or value
+ *  5. eval_boundary_field - evaluates value on one specified element of boundary mesh and compare them
+ *     with reference field or value. Needs set idx of boundary element on boundary mesh and idx of
+ *     appropriate bulk element on bulk mesh
+ */
 class FieldEvalFETest : public testing::Test {
 public:
     typedef Field<3, FieldValue<3>::Scalar > ScalarField;
@@ -237,6 +256,9 @@ public:
         			 .close();
         }
 
+        /**
+         * Descendant of FieldSet. Contains different fields for evaluation and referenced.
+         */
         EqData() : tg_(0.0, 1.0) {
             *this += scalar_field
                         .name("scalar_field")
@@ -431,6 +453,7 @@ public:
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
+    /// Specialization of set_fe_data unit tests
     void set_dof_values(std::vector<double> vals) {
         v.resize(vals.size());
         dof_values.resize(vals.size());
@@ -463,6 +486,7 @@ public:
     bool compare_vals(const Val &field_val, const Val &ref_val);
 
 
+    /// Internal method of eval_bulk_field and eval_boundary_field
     template<class EvalField, class RefVal>
     bool check_point_value(EvalField &field, BulkPoint &point, const RefVal &ref_val)
     {
@@ -477,6 +501,7 @@ public:
     }
 
 
+    /// Evaluates and compare bulk field, uses FieldFormula as reference
     template<class FieldType>
     bool eval_bulk_field(FieldType &eval_field, FieldType &ref_field)
     {
@@ -493,6 +518,7 @@ public:
     }
 
 
+    /// Evaluates and compare bulk field, uses vector of value as reference
     template<class FieldType, class RefVal>
     bool eval_bulk_field(FieldType &eval_field, std::vector<RefVal> ref_val)
     {
@@ -512,6 +538,7 @@ public:
     }
 
 
+    /// Evaluates and compare bulk field, uses single value as reference on all evaluated elements
     template<class FieldType, class RefVal>
     bool eval_bulk_field(FieldType &eval_field, RefVal ref_val)
     {
@@ -520,6 +547,7 @@ public:
     }
 
 
+    /// Evaluates and compare boundary field, uses FieldFormula as reference
     template<class FieldType>
     bool eval_boundary_field(FieldType &eval_field, FieldType &ref_field, unsigned int i_bulk_elem, unsigned int i_bdr_elem)
     {
@@ -545,6 +573,7 @@ public:
     }
 
 
+    /// Evaluates and compare boundary field, uses value as reference
     template<class FieldType, class RefVal>
     bool eval_boundary_field(FieldType &eval_field, RefVal ref_val, unsigned int i_bulk_elem, unsigned int i_bdr_elem)
     {
