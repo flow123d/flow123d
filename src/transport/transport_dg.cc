@@ -39,6 +39,7 @@
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
+#include "fields/field_model.hh"
 #include "input/factory.hh"
 #include "fields/equation_output.hh"
 #include "mesh/accessors.hh"
@@ -49,6 +50,14 @@ FLOW123D_FORCE_LINK_IN_CHILD(heatModel)
 
 
 using namespace Input::Type;
+
+
+struct fn_peclet_number {
+    inline double operator() (arma::mat33 diff, arma::vec3 velocity, double diam) {
+        return arma::dot(velocity, diff.i()*velocity) * diam / arma::norm(velocity);
+    }
+};
+
 
 template<class Model>
 const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
@@ -128,6 +137,11 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+
+    *this += peclet_number.name("peclet_number")
+            .units( UnitSI::dimensionless() )
+            .flags(FieldFlag::equation_external_output)
+            .description("Local Peclet number (ratio of advection to diffusion).");
 
     *this += region_id.name("region_id")
                 .units( UnitSI::dimensionless())
@@ -212,41 +226,48 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 
-template<typename Model>
-TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
-        : Model(init_mesh, in_rec),
+template<typename TModel>
+TransportDG<TModel>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
+        : TModel(init_mesh, in_rec),
           input_rec(in_rec),
           allocation_done(false),
           mass_assembly_(nullptr)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
-    START_TIMER(Model::ModelEqData::name());
+    START_TIMER(TModel::ModelEqData::name());
     // Check that Model is derived from AdvectionDiffusionModel.
-    static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
+    static_assert(std::is_base_of<AdvectionDiffusionModel, TModel>::value, "");
 
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
     this->eq_fieldset_ = eq_fields_;
-    Model::init_balance(in_rec);
+    TModel::init_balance(in_rec);
 
 
     // Set up physical parameters.
     eq_fields_->set_mesh(init_mesh);
-    eq_fields_->region_id = GenericField<3>::region_id(*Model::mesh_);
-    eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
-    eq_fields_->elem_measure = GenericField<3>::element_measure(*Model::mesh_);
-    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*Model::mesh_);
+    eq_fields_->region_id = GenericField<3>::region_id(*TModel::mesh_);
+    eq_fields_->subdomain = GenericField<3>::subdomain(*TModel::mesh_);
+    eq_fields_->elem_measure = GenericField<3>::element_measure(*TModel::mesh_);
+    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*TModel::mesh_);
+
+    eq_fields_->peclet_number.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(
+            fn_peclet_number(), eq_fields_->diffusion_coef, eq_fields_->advection_coef, eq_fields_->elem_diameter
+        ),
+        0.0
+    );
 
     // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
     eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
-    Model::init_from_input(in_rec);
+    TModel::init_from_input(in_rec);
 
 	MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
-	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(TModel::mesh_, fe);
+	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*TModel::mesh_);
 	eq_data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", eq_data_->dh_->n_global_dofs());
 
