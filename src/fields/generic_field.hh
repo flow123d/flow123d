@@ -57,6 +57,16 @@ public:
 	 * to pass the data in safe way.
 	 */
 	static auto subdomain(Mesh &mesh) -> IndexField;
+
+	/**
+	 * Returns an instance of a scalar field that provides element measures.
+	 */
+	static auto element_measure(Mesh &mesh) -> IndexField;
+
+	/**
+	 * Returns an instance of a scalar field that provides element diameters.
+	 */
+	static auto element_diameter(Mesh &mesh) -> IndexField;
 };
 
 

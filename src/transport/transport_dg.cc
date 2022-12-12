@@ -138,6 +138,16 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
       .units( UnitSI::dimensionless() )
       .flags(FieldFlag::equation_external_output)
       .description("Subdomain ids of the domain decomposition.");
+    
+    *this += elem_measure.name("element_measure")
+                .units( UnitSI().md())
+                .flags(FieldFlag::equation_external_output)
+                .description("Element measures.");
+
+    *this += elem_diameter.name("element_diameter")
+                .units( UnitSI().m())
+                .flags(FieldFlag::equation_external_output)
+                .description("Element diameters.");
 
 
     // add all input fields to the output list
@@ -225,7 +235,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_fields_->set_mesh(init_mesh);
     eq_fields_->region_id = GenericField<3>::region_id(*Model::mesh_);
     eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
-
+    eq_fields_->elem_measure = GenericField<3>::element_measure(*Model::mesh_);
+    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*Model::mesh_);
 
     // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
