@@ -878,12 +878,18 @@ TEST(Field, disable_where) {
     std::vector<FieldEnum> list;
     Field<3, FieldValue<3>::Scalar > bc_value("bc_value", true);
     bc_value.disable_where( bc_type, {neumann} );
+    bc_value.input_default("0.0");
+    bc_value.units( UnitSI().m() );
 
     Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux", true);
     bc_flux.disable_where( bc_type, {dirichlet, robin} );
+    bc_flux.input_default("0.0");
+    bc_flux.units( UnitSI().kg().m().s(-1).md() );
 
     Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma", true);
     bc_sigma.disable_where( bc_type, {dirichlet, neumann} );
+    bc_sigma.input_default("0.0");
+    bc_sigma.units( UnitSI().s(-1) );
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
