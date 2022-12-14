@@ -198,13 +198,6 @@
 //    }
 //}
 
-/*
- * TODO: Fix evaluation of boundary FieldFE, then switch on boundary parts following tests:
- *       - input_msh
- *       - unit_conversion
- *       - identic_mesh
- */
-
 
 /**
  * Main class of unit test.
@@ -748,10 +741,10 @@ TEST_F(FieldEvalFETest, input_msh) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, j) );
 
         // BOUNDARY fields
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, eq_data_->bc_tensor_ref, 3, 0) );
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, j+1, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, eq_data_->bc_tensor_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, j+1, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
@@ -869,7 +862,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, eq_data_->scalar_ref) );
 
         // BOUNDARY field
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
@@ -921,8 +914,8 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, eq_data_->vector_ref) );
 
         // BOUNDARY field
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
-        //EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
