@@ -250,11 +250,16 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-		bool boundary_domain) {
+		FMT_UNUSED bool boundary_domain) {
+    static int imax = std::numeric_limits<int>::max();
     unsigned int id, i_row;
-    unsigned int n_read = 0;
-    std::vector<int> const & el_ids = this->get_element_ids(boundary_domain);
-    vector<int>::const_iterator id_iter = el_ids.begin();
+    unsigned int n_bulk_read = 0, n_bdr_read = 0;
+    std::vector<int> bulk_el_ids = this->get_element_ids(false); // bulk
+    bulk_el_ids.push_back( imax ); // put 'save' item at the end of vector
+    vector<int>::const_iterator bulk_id_iter = bulk_el_ids.begin();
+    std::vector<int> bdr_el_ids = this->get_element_ids(true); // boundary
+    bdr_el_ids.push_back( imax ); // put 'save' item at the end of vector
+    vector<int>::const_iterator bdr_id_iter = bdr_el_ids.begin();
 
     // read @p data buffer as we have correct header with already passed time
     // we assume that @p data buffer is big enough
@@ -265,21 +270,43 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
         try {
             tok_.next_line();
             id = boost::lexical_cast<unsigned int>(*tok_); ++tok_;
-            //skip_element = false;
-            while (id_iter != el_ids.end() && *id_iter < (int)id) {
-                ++id_iter; // skip initialization of some rows in data if ID is missing
+
+            while ( std::min(*bulk_id_iter, *bdr_id_iter) < (int)id) { // skip initialization of some rows in data if ID is missing
+                if (*bulk_id_iter < *bdr_id_iter) ++bulk_id_iter;
+                else ++bdr_id_iter;
             }
-            if (id_iter == el_ids.end()) {
-            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
-                        tok_.f_name(), header.field_name, header.time, id);
+
+            if (*bulk_id_iter == (int)id) {
+                // bulk
+                data_cache.read_ascii_data(tok_, header.n_components, (bulk_id_iter - bulk_el_ids.begin()) );
+                ++n_bulk_read;  ++bulk_id_iter;
+            } else if (*bdr_id_iter == (int)id) {
+            	// boundary
+                unsigned int bdr_shift = data_cache.get_boundary_begin();
+                data_cache.read_ascii_data(tok_, header.n_components, (bdr_id_iter - bdr_el_ids.begin() + bdr_shift) );
+                ++n_bdr_read;  ++bdr_id_iter;
+            } else {
+                if ( (*bulk_id_iter != imax) | (*bdr_id_iter != imax) )
+				    WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
+                            tok_.f_name(), header.field_name, header.time, id);
                 break;
             }
-            // save data from the line if ID was found
-            if (*id_iter == (int)id) {
-            	data_cache.read_ascii_data(tok_, header.n_components, (id_iter - el_ids.begin()) );
-                n_read++;
-            }
-            // skip the line if ID on the line  < actual ID in the map el_ids
+
+//            //skip_element = false;
+//            while (bulk_id_iter != bulk_el_ids.end() && *bulk_id_iter < (int)id) {
+//                ++bulk_id_iter; // skip initialization of some rows in data if ID is missing
+//            }
+//            if (bulk_id_iter == bulk_el_ids.end()) {
+//            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
+//                        tok_.f_name(), header.field_name, header.time, id);
+//                break;
+//            }
+//            // save data from the line if ID was found
+//            if (*bulk_id_iter == (int)id) {
+//            	data_cache.read_ascii_data(tok_, header.n_components, (bulk_id_iter - bulk_el_ids.begin()) );
+//                n_read++;
+//            }
+//             //skip the line if ID on the line  < actual ID in the map bulk_el_ids
         } catch (boost::bad_lexical_cast &) {
         	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
         			<< EI_MeshFile(tok_.f_name()) );
@@ -287,8 +314,8 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
     // possibly skip remaining lines after break
     while (i_row < header.n_entities) tok_.next_line(false), ++i_row;
 
-    LogOut().fmt("time: {}; {} entities of field {} read.\n",
-    		header.time, n_read, header.field_name);
+    LogOut().fmt("time: {}; {} bulk and {} boundary entities of field {} read.\n",
+    		header.time, n_bulk_read, n_bdr_read, header.field_name);
 }
 
 

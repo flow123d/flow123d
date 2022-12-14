@@ -425,29 +425,18 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
 
-		unsigned int n_entities;
+		auto reader_mesh = ReaderCache::get_mesh(reader_file_);
+		unsigned int n_entities = reader_mesh->n_elements() + reader_mesh->bc_mesh()->n_elements();
 		bool is_native = (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
-		bool boundary;
-		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-			boundary = this->boundary_domain_;
-		} else {
-			boundary = false;
-		}
 		if (is_native) {
-		    n_entities = dh_->mesh()->n_elements();
 		    n_components *= dh_->max_elem_dofs();
-		} else if (this->interpolation_==DataInterpolation::identic_msh) {
-			n_entities = dh_->mesh()->n_elements();
-		} else {
-            auto reader_mesh = ReaderCache::get_mesh(reader_file_);
-			n_entities = boundary ? reader_mesh->bc_mesh()->n_elements() : reader_mesh->n_elements();
 		}
 
         BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
         auto reader = ReaderCache::get_reader(reader_file_);
         auto header = reader->find_header(header_query);
 		auto input_data_cache = reader->template get_element_data<double>(
-            header, n_entities, n_components, boundary);
+            header, n_entities, n_components, reader_mesh->n_elements());
 		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
@@ -733,6 +722,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
+	unsigned int shift = (this->boundary_domain_) ? ReaderCache::get_mesh(reader_file_)->n_elements() : 0;
 
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto cell : dh_->own_range()) {
@@ -748,7 +738,7 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 				++count_vector[ loc_dofs[i] ];
 			}
 		} else {
-			data_vec_i = source_idx * dh_->max_elem_dofs();
+			data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
 			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
 				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
 				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );

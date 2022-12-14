@@ -191,7 +191,7 @@ public:
     template<typename T>
     typename ElementDataCache<T>::CacheData get_element_data(
             MeshDataHeader header, unsigned int expected_n_entities,
-            unsigned int expected_n_components, bool boundary_domain);
+            unsigned int expected_n_components, unsigned int boundary_begin);
 
     /**
      * Set ID vectors from a different mesh.

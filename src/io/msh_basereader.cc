@@ -94,7 +94,7 @@ std::vector<int> const & BaseMeshReader::get_element_ids(bool boundary_domain) {
 template<typename T>
 typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
         MeshDataHeader header, unsigned int expected_n_entities,
-        unsigned int expected_n_components, bool boundary_domain) {
+        unsigned int expected_n_components, unsigned int boundary_begin) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
@@ -121,8 +121,8 @@ typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
 
     	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >(
                 field_name, header.time,
-                expected_n_components*expected_n_entities);
-    	this->read_element_data(*(it->second), header, boundary_domain );
+                expected_n_components*expected_n_entities, boundary_begin);
+    	this->read_element_data(*(it->second), header, false );
 	}
 
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
@@ -148,7 +148,7 @@ CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coe
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::CacheData BaseMeshReader::get_element_data<TYPE>( \
         MeshDataHeader header, unsigned int n_entities, \
-	    unsigned int n_components, bool boundary_domain);
+	    unsigned int n_components, unsigned int boundary_begin);
 
 MESH_READER_GET_ELEMENT_DATA(int)
 MESH_READER_GET_ELEMENT_DATA(unsigned int)

@@ -63,7 +63,7 @@ public:
      * @param time          Actual time of data
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(std::string field_name, double time, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int row_vec_size, unsigned int boundary_begin);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)

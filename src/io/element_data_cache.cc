@@ -35,13 +35,14 @@ ElementDataCache<T>::ElementDataCache()
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int row_vec_size)
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int row_vec_size, unsigned int boundary_begin)
 : check_scale_data_(CheckScaleData::none)
 {
 	this->time_ = time;
 	this->field_input_name_ = field_name;
 	this->data_ = create_data_cache(row_vec_size);
 	this->n_dofs_per_element_ = 1;
+	this->boundary_begin_ = boundary_begin;
 }
 
 
@@ -58,6 +59,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_com
     this->n_comp_ = n_comp;
     this->fe_type_ = fe_type;
     this->n_dofs_per_element_ = n_dofs_per_element;
+    this->boundary_begin_ = size;
 
     this->data_ = ElementDataCache<T>::create_data_cache(this->n_values_ * this->n_comp_ * this->n_dofs_per_element_);
 }
