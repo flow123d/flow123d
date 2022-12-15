@@ -132,7 +132,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4), comp_mesh_(nullptr)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -344,6 +344,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             if (boundary_domain) this->make_dof_handler( mesh->bc_mesh() );
             else this->make_dof_handler( mesh );
         }
+        this->comp_mesh_ = mesh;
 	}
 }
 
@@ -425,18 +426,25 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
 
-		auto reader_mesh = ReaderCache::get_mesh(reader_file_);
-		unsigned int n_entities = reader_mesh->n_elements() + reader_mesh->bc_mesh()->n_elements();
+		unsigned int n_entities, bdr_shift;
 		bool is_native = (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		if (is_native) {
 		    n_components *= dh_->max_elem_dofs();
+		}
+		if (this->interpolation_==DataInterpolation::identic_msh) {
+		    n_entities = comp_mesh_->n_elements() + comp_mesh_->bc_mesh()->n_elements();
+		    bdr_shift = comp_mesh_->n_elements();
+		} else {
+		    auto reader_mesh = ReaderCache::get_mesh(reader_file_);
+		    n_entities = reader_mesh->n_elements() + reader_mesh->bc_mesh()->n_elements();
+		    bdr_shift = reader_mesh->n_elements();
 		}
 
         BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
         auto reader = ReaderCache::get_reader(reader_file_);
         auto header = reader->find_header(header_query);
 		auto input_data_cache = reader->template get_element_data<double>(
-            header, n_entities, n_components, reader_mesh->n_elements());
+            header, n_entities, n_components, bdr_shift);
 		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
@@ -689,32 +697,6 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_identic_values(ElementDataCache<double>::CacheData data_cache)
-{
-	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int data_vec_i;
-	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
-	data_vec_.zero_entries();
-
-	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
-	for (auto cell : dh_->own_range()) {
-		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = cell.elm_idx() * dh_->max_elem_dofs();
-		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-			ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-			data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
-			++count_vector[ loc_dofs[i] ];
-		}
-	}
-
-	// compute averages of values
-	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
-	}
-}
-
-
-template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
 {
 	// Same algorithm as in output of Node_data. Possibly code reuse.
@@ -722,7 +704,13 @@ void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<doub
 	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
 	data_vec_.zero_entries();
 	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
-	unsigned int shift = (this->boundary_domain_) ? ReaderCache::get_mesh(reader_file_)->n_elements() : 0;
+	unsigned int shift;
+	if (this->boundary_domain_) {
+		if (this->interpolation_==DataInterpolation::identic_msh) shift = this->comp_mesh_->n_elements();
+		else shift = ReaderCache::get_mesh(reader_file_)->n_elements();
+	} else {
+	    shift = 0;
+	}
 
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto cell : dh_->own_range()) {

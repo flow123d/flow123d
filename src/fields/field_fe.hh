@@ -207,9 +207,6 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
 
-	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
-	void calculate_identic_values(ElementDataCache<double>::CacheData data_cache);
-
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
 	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
@@ -294,6 +291,9 @@ private:
     /// Holds specific data of field evaluation over all dimensions.
     std::array<FEItem, 4> fe_item_;
     MixedPtr<FiniteElement> fe_;
+
+    // Pointer to computational mesh
+    const Mesh *comp_mesh_;
 
     /// Registrar of class to factory
     static const int registrar;
