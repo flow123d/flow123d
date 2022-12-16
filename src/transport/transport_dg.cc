@@ -256,7 +256,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
     eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
     
-    TModel::init_from_input(in_rec);
+    Model::init_from_input(in_rec);
 
 	MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
