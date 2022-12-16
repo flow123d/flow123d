@@ -259,6 +259,7 @@ void MultiField<spacedim, Value>::setup_components() {
 	unsigned int comp_size = this->shared_->comp_names_.size();
 	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
 	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
+	ASSERT_EQ(sub_fields_.size(), 0).error("Cannot call setup_components() on already existing sub-fields!\n");
 
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
@@ -280,6 +281,18 @@ void MultiField<spacedim, Value>::setup_components() {
     	sub_fields_[i_comp].set_input_list(this->full_input_list_, *tg_);
     	sub_fields_[i_comp].set_default_fieldset( *(this->shared_->default_fieldset_) );
     }
+}
+
+
+template<int spacedim, class Value>
+void MultiField<spacedim, Value>::setup_component_names() {
+	unsigned int comp_size = this->shared_->comp_names_.size();
+	ASSERT_GT(comp_size, 0).error("Vector of component names is empty!\n");
+	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
+	ASSERT_EQ(sub_fields_.size(), comp_size).error("Component number mismatch!\n");
+
+	for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
+		sub_fields_[i_comp].name_ = this->full_comp_name(i_comp);
 }
 
 

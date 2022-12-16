@@ -236,9 +236,12 @@ public:
     /**
      * Initialize components of MultiField.
      *
-     * Must be call after setting components, mesh and limit side.
+     * Must be called after setting components, mesh and limit side.
      */
     void setup_components();
+
+    // Update component names for manually created multifields.
+    void setup_component_names();
 
     /**
      * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.
