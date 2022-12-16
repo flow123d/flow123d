@@ -128,11 +128,11 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
         } else {
             Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
             if (vector_it) {
-                Field<3, FieldValue<3>::VectorFixed> * vector_field;
+                Field<3, FieldValue<3>::Vector> * vector_field;
                 if (is_bdr)
-                    vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
+                    vector_field = new BCField<3, FieldValue<3>::Vector>();
                 else
-                    vector_field = new Field<3, FieldValue<3>::VectorFixed>();
+                    vector_field = new Field<3, FieldValue<3>::Vector>();
                 *eq_fieldset_+=vector_field
                         ->name(field_name)
                         .description("")
@@ -145,11 +145,11 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             } else {
                 Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
                 if (tensor_it) {
-                    Field<3, FieldValue<3>::TensorFixed> * tensor_field;
+                    Field<3, FieldValue<3>::Tensor> * tensor_field;
                     if (is_bdr)
-                        tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
+                        tensor_field = new BCField<3, FieldValue<3>::Tensor>();
                     else
-                        tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
+                        tensor_field = new Field<3, FieldValue<3>::Tensor>();
                     *eq_fieldset_+=tensor_field
                             ->name(field_name)
                             .description("")

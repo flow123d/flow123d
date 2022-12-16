@@ -208,8 +208,8 @@ FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Enum >;                   \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Integer >;                \
 template class FEValueHandler<dim, spacedim, FieldValue<0>::Scalar >;                 \
-template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::VectorFixed >;     \
-template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::TensorFixed >;
+template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::Vector>;     \
+template class FEValueHandler<dim, spacedim, FieldValue<spacedim>::Tensor >;
 
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
@@ -223,5 +223,5 @@ INSTANCE_VALUE_HANDLER(3)
 template class FEShapeHandler<0, 3, FieldValue<0>::Enum >;
 template class FEShapeHandler<0, 3, FieldValue<0>::Integer >;
 template class FEShapeHandler<0, 3, FieldValue<0>::Scalar >;
-template class FEShapeHandler<1, 3, FieldValue<3>::VectorFixed >;
-template class FEShapeHandler<2, 3, FieldValue<3>::TensorFixed >;
+template class FEShapeHandler<1, 3, FieldValue<3>::Vector >;
+template class FEShapeHandler<2, 3, FieldValue<3>::Tensor >;

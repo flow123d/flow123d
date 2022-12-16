@@ -78,7 +78,7 @@ namespace IT=Input::Type;
  * we use classes provided by Armadillo library for linear algebra.
  * The @p Value template parameter should FieldValue<> template, usual choices are:
  * FieldValue<spacedim>::Scalar, FieldValue<spacedim>::Integer, FieldValue<spacedim>::Enum,
- * FieldValue<spacedim>::VectorFixed, FieldValue<spacedim>::TensorFixed.
+ * FieldValue<spacedim>::Vector, FieldValue<spacedim>::Tensor.
  *
  * This class assign particular fields (instances of descendants of FiledBase) to the regions. It keeps a table of pointers to fields for every possible bulk
  * region index (very same functionality, but for boundary regions is provided by @p BCField class). This class has interface very similar to  FiledBase, however

@@ -64,14 +64,14 @@ public:
         static const Input::Type::Selection & get_bc_type_selection();
 
         BCField<3, FieldValue<3>::Enum > bc_type;
-        BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
-        BCField<3, FieldValue<3>::VectorFixed> bc_traction;
-		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
-        Field<3, FieldValue<3>::VectorFixed> load;
+        BCField<3, FieldValue<3>::Vector> bc_displacement;
+        BCField<3, FieldValue<3>::Vector> bc_traction;
+		BCField<3, FieldValue<3>::Tensor> bc_stress;
+        Field<3, FieldValue<3>::Vector> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
-        Field<3, FieldValue<3>::TensorFixed> initial_stress;
+        Field<3, FieldValue<3>::Tensor> initial_stress;
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
@@ -81,8 +81,8 @@ public:
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
-        Field<3, FieldValue<3>::VectorFixed> output_field;
-        Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::Vector> output_field;
+        Field<3, FieldValue<3>::Tensor> output_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
@@ -97,8 +97,8 @@ public:
 
     	// @}
 
-        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Vector> > output_field_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Tensor> > output_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;

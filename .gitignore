@@ -1,3 +1,6 @@
+install-linux/**
+install-win/**
+publish_gnu/**
 config.cmake
 profiler_info*[.log, .json, .txt]
 flow*.log

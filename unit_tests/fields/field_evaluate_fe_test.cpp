@@ -102,8 +102,8 @@ public:
 
         // fields
         Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
         std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
@@ -129,8 +129,8 @@ public:
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldEvalFETest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
@@ -291,10 +291,10 @@ public:
     	unsigned int order;
 
     	// fields
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
 #ifdef ALL_FIELDS
     	Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
 #endif // ALL_FIELDS
     };
 
@@ -322,10 +322,10 @@ public:
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldFESpeedTest::EqData().make_field_descriptor_type("SomeEquation") )
-                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
 #ifdef ALL_FIELDS
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
 #endif // ALL_FIELDS
                         .close()
                         ), IT::Default::obligatory(), ""  )
@@ -351,7 +351,7 @@ public:
 
     void create_fe_fields() {
     	VectorMPI * vector_vec = new VectorMPI(dh_->distr()->lsize() * 3);
-    	auto vector_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(dh_, vector_vec);
+    	auto vector_ptr = create_field_fe<3, FieldValue<3>::Vector>(dh_, vector_vec);
         data_->vector_field.set(vector_ptr, 0.0);
     	for (unsigned int i=0; i<vector_vec->size(); ++i) {
     		vector_vec->set( i, (i % 10 + 0.5) );
@@ -366,7 +366,7 @@ public:
     	}
 
     	VectorMPI * tensor_vec = new VectorMPI(dh_->distr()->lsize() * 9);
-        auto tensor_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(dh_, tensor_vec);
+        auto tensor_ptr = create_field_fe<3, FieldValue<3>::Tensor>(dh_, tensor_vec);
         data_->tensor_field.set(tensor_ptr, 0.0);
     	for (unsigned int i=0; i<tensor_vec->size(); ++i) {
     		tensor_vec->set( i, (1 + i % 98) * 0.1 );

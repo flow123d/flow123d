@@ -55,7 +55,7 @@ ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &
 	ReaderTable::iterator it = ReaderCache::instance()->reader_table_.find( string(file_path) );
 	if (it == ReaderCache::instance()->reader_table_.end()) {
 		ReaderData reader_data;
-		if ( file_path.extension() == ".msh" ) {
+		if ( file_path.extension() == ".msh" || file_path.extension() == ".msh2") {
 			reader_data.reader_ = std::make_shared<GmshMeshReader>(file_path);
 		} else if ( file_path.extension() == ".vtu" ) {
 			reader_data.reader_ = std::make_shared<VtkMeshReader>(file_path);

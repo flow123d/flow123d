@@ -108,8 +108,8 @@ public:
 
         // fields
         Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
         Field<3, FieldValue<3>::Scalar > const_scalar;
         Field<3, FieldValue<0>::Integer > integer_scalar;
         std::shared_ptr<EvalPoints> eval_points_;
@@ -137,8 +137,8 @@ public:
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldEvalFormulaTest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
                         .close()

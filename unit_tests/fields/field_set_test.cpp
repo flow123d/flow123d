@@ -87,7 +87,7 @@ public:
 		}
 
 		// fields
-	    Field<3, FieldValue<3>::VectorFixed > velocity;
+	    Field<3, FieldValue<3>::Vector > velocity;
 	    Field<3, FieldValue<3>::Scalar > init_pressure;
 	    Field<3, FieldValue<3>::Enum > type;
 	};
@@ -359,8 +359,8 @@ public:
         	c_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_c_field(), b_field), 0.0);
             d_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_d_field(), a_field, c_field), 0.0);
             e_field.set(Model<3, FieldValue<3>::Scalar>::create(fn_e_field(), d_field), 0.0);
-            f_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_f_field(), a_field, b_field), 0.0);
-            g_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_g_field(), d_field, f_field, b_field), 0.0);
+            f_field.set(Model<3, FieldValue<3>::Vector>::create(fn_f_field(), a_field, b_field), 0.0);
+            g_field.set(Model<3, FieldValue<3>::Vector>::create(fn_g_field(), d_field, f_field, b_field), 0.0);
         }
 
         /// Check result
@@ -395,12 +395,12 @@ public:
 
         // fields
         Field<3, FieldValue<3>::Scalar >      a_field;
-        Field<3, FieldValue<3>::VectorFixed > b_field;
+        Field<3, FieldValue<3>::Vector > b_field;
         Field<3, FieldValue<3>::Scalar >      c_field;
         Field<3, FieldValue<3>::Scalar >      d_field;
         Field<3, FieldValue<3>::Scalar >      e_field;
-        Field<3, FieldValue<3>::VectorFixed > f_field;
-        Field<3, FieldValue<3>::VectorFixed > g_field;
+        Field<3, FieldValue<3>::Vector > f_field;
+        Field<3, FieldValue<3>::Vector > g_field;
     };
 
     TestDependency() {

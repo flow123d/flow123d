@@ -51,8 +51,8 @@ string input = R"INPUT(
 
 
 TEST(FieldFormula, read_from_input) {
-    typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
-    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Tensor > TensorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
     Profiler::instance();
 
@@ -203,7 +203,7 @@ string set_time_input = R"INPUT(
 
 
 TEST(FieldFormula, set_time) {
-    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
+    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 
     Profiler::instance();
 

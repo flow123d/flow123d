@@ -47,9 +47,9 @@
 #include "mpi.h"                               // for MPI_Comm_rank
 #include "petscmat.h"                          // for Mat, MatDestroy
 #include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
-#include "transport/concentration_model.hh"    // for ConcentrationTransport...
-#include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
+#include "coupling/balance.hh"
 #include "tools/mixed.hh"
+
 class DiscreteSpace;
 class Distribution;
 class OutputTime;
@@ -151,8 +151,11 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
+		MultiField<3, FieldValue<3>::Scalar> peclet_number;     ///< Peclet number (ratio of advection to diffusion).
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
+		Field<3, FieldValue<3>::Scalar> elem_measure;
+		Field<3, FieldValue<3>::Scalar> elem_diameter;
 
         EquationOutput output_fields;
 	};

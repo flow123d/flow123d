@@ -33,11 +33,13 @@
 #include "coupling/generic_assembly.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
+#include "transport/conc_dispersion_model.hh"
 #include "transport/heat_model.hh"
 #include "transport/assembly_dg.hh"
 
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
+#include "fields/field_model.hh"
 #include "input/factory.hh"
 #include "fields/equation_output.hh"
 #include "mesh/accessors.hh"
@@ -48,6 +50,14 @@ FLOW123D_FORCE_LINK_IN_CHILD(heatModel)
 
 
 using namespace Input::Type;
+
+
+struct fn_peclet_number {
+    inline double operator() (arma::mat33 diff, arma::vec3 velocity, double diam) {
+        return arma::dot(velocity, diff.i()*velocity) * diam / arma::norm(velocity);
+    }
+};
+
 
 template<class Model>
 const Selection & TransportDG<Model>::get_dg_variant_selection_input_type() {
@@ -128,6 +138,11 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
             .input_default("1.0")
             .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
 
+    *this += peclet_number.name("peclet_number")
+            .units( UnitSI::dimensionless() )
+            .flags(FieldFlag::equation_external_output)
+            .description("Local Peclet number (ratio of advection to diffusion).");
+
     *this += region_id.name("region_id")
                 .units( UnitSI::dimensionless())
                 .flags(FieldFlag::equation_external_output)
@@ -137,6 +152,16 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
       .units( UnitSI::dimensionless() )
       .flags(FieldFlag::equation_external_output)
       .description("Subdomain ids of the domain decomposition.");
+    
+    *this += elem_measure.name("element_measure")
+                .units( UnitSI().md())
+                .flags(FieldFlag::equation_external_output)
+                .description("Element measures.");
+
+    *this += elem_diameter.name("element_diameter")
+                .units( UnitSI().m())
+                .flags(FieldFlag::equation_external_output)
+                .description("Element diameters.");
 
 
     // add all input fields to the output list
@@ -224,7 +249,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     eq_fields_->set_mesh(init_mesh);
     eq_fields_->region_id = GenericField<3>::region_id(*Model::mesh_);
     eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
-
+    eq_fields_->elem_measure = GenericField<3>::element_measure(*Model::mesh_);
+    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*Model::mesh_);
 
     // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
@@ -241,22 +267,22 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 }
 
 
-template<class Model>
-void TransportDG<Model>::initialize()
+template<class TModel>
+void TransportDG<TModel>::initialize()
 {
     eq_fields_->set_components(eq_data_->substances_.names());
-    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
-    eq_data_->set_time_governor(Model::time_);
+    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(TModel::time_) );
+    eq_data_->set_time_governor(TModel::time_);
     eq_data_->balance_ = this->balance();
-    eq_fields_->initialize();
+    eq_fields_->initialize(input_rec);
 
     // DG stabilization parameters on boundary edges
     eq_data_->gamma.resize(eq_data_->n_substances());
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
+        eq_data_->gamma[sbi].resize(TModel::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    eq_data_->max_edg_sides = max(TModel::mesh_->max_edge_sides(1), max(TModel::mesh_->max_edge_sides(2), TModel::mesh_->max_edge_sides(3)));
     ret_sources.resize(eq_data_->n_substances());
     ret_sources_prev.resize(eq_data_->n_substances());
 
@@ -267,8 +293,8 @@ void TransportDG<Model>::initialize()
 
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
-    eq_fields_->output_field.set_mesh(*Model::mesh_);
-    eq_fields_->output_fields.set_mesh(*Model::mesh_);
+    eq_fields_->output_field.set_mesh(*TModel::mesh_);
+    eq_fields_->output_fields.set_mesh(*TModel::mesh_);
     eq_fields_->output_type(OutputTime::CORNER_DATA);
 
     eq_fields_->output_field.setup_components();
@@ -280,8 +306,16 @@ void TransportDG<Model>::initialize()
         eq_data_->output_vec[sbi] = output_field_ptr->vec();
     }
 
+    eq_fields_->peclet_number.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(
+            fn_peclet_number(), eq_fields_->diffusion_coef, eq_fields_->advection_coef, eq_fields_->elem_diameter
+        ),
+        0.0
+    );
+    eq_fields_->peclet_number.setup_component_names();
+
     // set time marks for writing the output
-    eq_fields_->output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
+    eq_fields_->output_fields.initialize(TModel::output_stream_, TModel::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
@@ -296,8 +330,8 @@ void TransportDG<Model>::initialize()
     eq_data_->conc_fe.resize(eq_data_->n_substances());
     
     MixedPtr<FE_P_disc> fe(0);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-    eq_data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(TModel::mesh_, fe);
+    eq_data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*TModel::mesh_);
     eq_data_->dh_p0->distribute_dofs(ds);
 
     stiffness_matrix.resize(eq_data_->n_substances(), nullptr);
@@ -334,7 +368,7 @@ void TransportDG<Model>::initialize()
         init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
-    Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
+    TModel::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());
@@ -452,12 +486,13 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    stiffness_assembly_->assemble(eq_data_->dh_);
+    // stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
     sources_assembly_->assemble(eq_data_->dh_);
     bdr_cond_assembly_->assemble(eq_data_->dh_);
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
+      ((LinSys_PETSC*)eq_data_->ls[i])->preallocate_matrix(*eq_data_->dh_);
       VecAssemblyBegin(eq_data_->ret_vec[i]);
       VecAssemblyEnd(eq_data_->ret_vec[i]);
     }
@@ -738,6 +773,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 
 
 template class TransportDG<ConcentrationTransportModel>;
+template class TransportDG<ConcDispersionModel>;
 template class TransportDG<HeatTransferModel>;
 
 

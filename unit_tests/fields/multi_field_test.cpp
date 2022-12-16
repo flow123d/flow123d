@@ -101,8 +101,8 @@ public:
 	typedef MultiField<3, FieldValue<3>::Scalar> ScalarMultiField;
 	typedef ScalarMultiField::SubFieldBaseType ScalarField;
 
-    typedef MultiField<3, FieldValue<3>::VectorFixed> VectorFixedMultiField;
-	typedef VectorFixedMultiField::SubFieldBaseType VectorFixedField;
+    typedef MultiField<3, FieldValue<3>::Vector> VectorMultiField;
+	typedef VectorMultiField::SubFieldBaseType VectorField;
 
 protected:
     virtual void SetUp() {
@@ -142,7 +142,7 @@ protected:
         TimeGovernor tg(0.0, 1.0);
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
     	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
-    		auto subfield = VectorFixedField::function_factory((*it), init_data);
+    		auto subfield = VectorField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
 
             for(uint i=0; i<2; i++)

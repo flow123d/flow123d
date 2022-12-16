@@ -138,7 +138,7 @@ template class TableFunction<FieldValue<0>::Enum >;
 template class TableFunction<FieldValue<0>::Integer >;
 template class TableFunction<FieldValue<0>::Scalar >;
 template class TableFunction<FieldValue<0>::Vector >; // temporary solution for computing more fields at once in python
-template class TableFunction<FieldValue<2>::VectorFixed >;
-template class TableFunction<FieldValue<2>::TensorFixed >;
-template class TableFunction<FieldValue<3>::VectorFixed >;
-template class TableFunction<FieldValue<3>::TensorFixed >;
+template class TableFunction<FieldValue<2>::Vector >;
+template class TableFunction<FieldValue<2>::Tensor >;
+template class TableFunction<FieldValue<3>::Vector >;
+template class TableFunction<FieldValue<3>::Tensor >;

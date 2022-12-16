@@ -16,8 +16,8 @@
  * @author  Jan Stebel
  */
 
-#ifndef CONC_TRANS_MODEL_HH_
-#define CONC_TRANS_MODEL_HH_
+#ifndef CONC_DISP_MODEL_HH_
+#define CONC_DISP_MODEL_HH_
 
 
 #include <memory>                                     // for shared_ptr
@@ -29,6 +29,9 @@
 #include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+
+#include "input/accessors.hh"                  // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"             // for Record::val
 #include "input/type_base.hh"                         // for Array
 #include "input/type_generic.hh"                      // for Instance
 #include "input/type_record.hh"                       // for Record
@@ -45,7 +48,7 @@ template <int spacedim> class ElementAccessor;
 
 
 
-class ConcentrationTransportModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
+class ConcDispersionModel : public AdvectionDiffusionModel, public ConcentrationTransportBase {
 public:
 
 	class ModelEqFields : public TransportEqFields {
@@ -61,12 +64,21 @@ public:
 		BCMultiField<3, FieldValue<3>::Scalar > bc_robin_sigma;
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_condition;
+
+		/// Components of the full dispersion tensor
+		Field<3, FieldValue<3>::Tensor > disp_uxx;
+		Field<3, FieldValue<3>::Tensor > disp_uyy;
+		Field<3, FieldValue<3>::Tensor > disp_uzz;
+		Field<3, FieldValue<3>::Tensor > disp_uyz;
+		Field<3, FieldValue<3>::Tensor > disp_uxz;
+		Field<3, FieldValue<3>::Tensor > disp_uxy;
 		/// Longitudal dispersivity (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> disp_l;
+
+		//MultiField<3, FieldValue<3>::Scalar> disp_l;
 		/// Transversal dispersivity (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> disp_t;
+		//MultiField<3, FieldValue<3>::Scalar> disp_t;
 		/// Molecular diffusivity (for each substance).
-		MultiField<3, FieldValue<3>::Tensor> diff_m;
+		//MultiField<3, FieldValue<3>::Tensor> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
 	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
@@ -79,7 +91,7 @@ public:
 		// @{
 
 		/// Field represents coefficients of mass matrix.
-        Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
+		Field<3, FieldValue<3>::Scalar > mass_matrix_coef;
 		/// Field represents retardation coefficients due to sorption.
         MultiField<3, FieldValue<3>::Scalar> retardation_coef;
     	/// Concentration sources - density output
@@ -111,7 +123,7 @@ public:
 		/**
 		 * Initialize FieldModel instances.
 		 */
-		void initialize(FMT_UNUSED Input::Record transport_rec);
+		void initialize(Input::Record transport_rec);
 
 	};
 
@@ -120,7 +132,7 @@ public:
 
 		ModelEqData() {}
 
-		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
+		static constexpr const char * name() { return "Solute_ConcDispersion"; }
 
 		static string default_output_field() { return "\"conc\""; }
 
@@ -148,6 +160,7 @@ public:
 		/// List of indices used to call balance methods for a set of quantities.
 		vector<unsigned int> subst_idx_;
 
+
     	// @}
 	};
 
@@ -155,12 +168,12 @@ public:
 	typedef ConcentrationTransportBase FactoryBaseType;
 
 
-	ConcentrationTransportModel(Mesh &mesh, const Input::Record &in_rec);
+	ConcDispersionModel(Mesh &mesh, const Input::Record &in_rec);
 
         void init_from_input(const Input::Record &in_rec) override;
 
 
-	~ConcentrationTransportModel() override;
+	~ConcDispersionModel() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
@@ -219,4 +232,4 @@ protected:
 
 
 
-#endif /* CONC_TRANS_MODEL_HH_ */
+#endif /* CONC_DISP_MODEL_HH_ */

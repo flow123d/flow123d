@@ -87,5 +87,69 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 }
 
 
+template <int spacedim>
+auto GenericField<spacedim>::element_measure(Mesh &mesh) -> IndexField {
+    MixedPtr<FE_P_disc> fe(0);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
+    dh->distribute_dofs(ds);
+
+	VectorMPI data_vec(dh->lsize());
+	ASSERT_EQ(dh->max_elem_dofs(), 1);
+	unsigned int i_ele=0;
+	for (auto cell : dh->own_range()) {
+		data_vec.set( cell.get_loc_dof_indices()(0), cell.elm().measure() );
+		++i_ele;
+	}
+    std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
+    field_ptr->set_fe_data(dh, data_vec);
+
+	IndexField measure;
+	measure.name("element_measure");
+	measure.units( UnitSI().md() );
+	measure.set_mesh(mesh);
+
+    measure.set(
+		field_ptr,
+		0.0,        // time=0.0
+		{ "ALL" }); // ALL regions
+
+	return measure;
+}
+
+
+template <int spacedim>
+auto GenericField<spacedim>::element_diameter(Mesh &mesh) -> IndexField {
+    MixedPtr<FE_P_disc> fe(0);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe);
+    dh->distribute_dofs(ds);
+
+	VectorMPI data_vec(dh->lsize());
+	ASSERT_EQ(dh->max_elem_dofs(), 1);
+	unsigned int i_ele=0;
+	for (auto cell : dh->own_range()) {
+		double h = 0;
+		for (auto side : cell.side_range())
+			h = max(h, side.diameter());
+		data_vec.set( cell.get_loc_dof_indices()(0), h );
+		++i_ele;
+	}
+    std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
+    field_ptr->set_fe_data(dh, data_vec);
+
+	IndexField diam;
+	diam.name("element_diameter");
+	diam.units( UnitSI().m() );
+	diam.set_mesh(mesh);
+
+    diam.set(
+		field_ptr,
+		0.0,        // time=0.0
+		{ "ALL" }); // ALL regions
+
+	return diam;
+}
+
 
 #endif /* GENERAL_FIELD_IMPL_HH_ */

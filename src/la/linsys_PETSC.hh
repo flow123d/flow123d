@@ -30,6 +30,7 @@
 #include "petscvec.h"    // for Vec, _p_Vec, VecCopy, VecSet
 
 class Distribution;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -114,6 +115,8 @@ public:
     void preallocate_values(int nrow,int *rows,int ncol,int *cols);
 
     void preallocate_matrix();
+
+    void preallocate_matrix(DOFHandlerMultiDim &dh);
 
     void finish_assembly() override;
 

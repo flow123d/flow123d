@@ -85,7 +85,7 @@ string input = R"INPUT(
 //    point_1(0)=1.0; point_1(1)= pi / 2.0; point_1(2)=1.0;
 //    point_2(0)= sqrt(2.0); point_2(1)= 3.0 * pi / 4.0; point_2(2)= pi / 2.0;
 //
-//    FieldPython<3, FieldValue<3>::VectorFixed > vec_func;
+//    FieldPython<3, FieldValue<3>::Vector > vec_func;
 //    vec_func.set_python_field_from_string(python_function, "func_circle");
 //    ElementAccessor<3> elm;
 //
@@ -124,7 +124,7 @@ string input = R"INPUT(
 
 // TODO Fix test
 //TEST(FieldPython, read_from_input) {
-//    typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
+//    typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
 //    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > ScalarField;
 //    double pi = 4.0 * atan(1);
 //

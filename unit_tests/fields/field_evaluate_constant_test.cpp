@@ -95,8 +95,8 @@ public:
 
         // fields
         Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
         std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
@@ -123,8 +123,8 @@ public:
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldEvalConstantTest::EqData().make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
-                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
                         .close()
                         ), IT::Default::obligatory(), ""  )
                 .close();
@@ -272,10 +272,10 @@ public:
     	unsigned int order;
 
     	// fields
-        Field<3, FieldValue<3>::VectorFixed > vector_field;
+        Field<3, FieldValue<3>::Vector > vector_field;
 #ifdef ALL_FIELDS
         Field<3, FieldValue<3>::Scalar > scalar_field;
-        Field<3, FieldValue<3>::TensorFixed > tensor_field;
+        Field<3, FieldValue<3>::Tensor > tensor_field;
 #endif // ALL_FIELDS
     };
 
@@ -301,10 +301,10 @@ public:
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
                         .copy_keys( FieldEvalConstantTest::EqData().make_field_descriptor_type("SomeEquation") )
-                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
+                        .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::Vector >::get_input_type_instance(), "" )
 #ifdef ALL_FIELDS
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
-                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor >::get_input_type_instance(), "" )
 #endif // ALL_FIELDS
                         .close()
                         ), IT::Default::obligatory(), ""  )

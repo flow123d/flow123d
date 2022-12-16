@@ -25,8 +25,8 @@
 
 // Instantiation of fields with values dependent of the dimension of range space
 #define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
-template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
-template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
+template class field<dim_from, FieldValue<dim_to>::Vector >;                       \
+template class field<dim_from, FieldValue<dim_to>::Tensor >;                       \
 
 // Instantiation of fields with domain in the ambient space of dimension @p dim_from
 #define INSTANCE_TO_ALL(field, dim_from) \
