@@ -226,38 +226,31 @@ void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
 
 
 
-template<typename TModel>
-TransportDG<TModel>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
-        : TModel(init_mesh, in_rec),
+template<typename Model>
+TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
+        : Model(init_mesh, in_rec),
           input_rec(in_rec),
           allocation_done(false),
           mass_assembly_(nullptr)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
-    START_TIMER(TModel::ModelEqData::name());
+    START_TIMER(Model::ModelEqData::name());
     // Check that Model is derived from AdvectionDiffusionModel.
-    static_assert(std::is_base_of<AdvectionDiffusionModel, TModel>::value, "");
+    static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
     eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
     this->eq_fieldset_ = eq_fields_;
-    TModel::init_balance(in_rec);
+    Model::init_balance(in_rec);
 
 
     // Set up physical parameters.
     eq_fields_->set_mesh(init_mesh);
-    eq_fields_->region_id = GenericField<3>::region_id(*TModel::mesh_);
-    eq_fields_->subdomain = GenericField<3>::subdomain(*TModel::mesh_);
-    eq_fields_->elem_measure = GenericField<3>::element_measure(*TModel::mesh_);
-    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*TModel::mesh_);
-
-    eq_fields_->peclet_number.set(
-        Model<3, FieldValue<3>::Scalar>::create_multi(
-            fn_peclet_number(), eq_fields_->diffusion_coef, eq_fields_->advection_coef, eq_fields_->elem_diameter
-        ),
-        0.0
-    );
+    eq_fields_->region_id = GenericField<3>::region_id(*Model::mesh_);
+    eq_fields_->subdomain = GenericField<3>::subdomain(*Model::mesh_);
+    eq_fields_->elem_measure = GenericField<3>::element_measure(*Model::mesh_);
+    eq_fields_->elem_diameter = GenericField<3>::element_diameter(*Model::mesh_);
 
     // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
@@ -266,30 +259,30 @@ TransportDG<TModel>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     TModel::init_from_input(in_rec);
 
 	MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
-	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(TModel::mesh_, fe);
-	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*TModel::mesh_);
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
+	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	eq_data_->dh_->distribute_dofs(ds);
     //DebugOut().fmt("TDG: solution size {}\n", eq_data_->dh_->n_global_dofs());
 
 }
 
 
-template<class Model>
-void TransportDG<Model>::initialize()
+template<class TModel>
+void TransportDG<TModel>::initialize()
 {
     eq_fields_->set_components(eq_data_->substances_.names());
-    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
-    eq_data_->set_time_governor(Model::time_);
+    eq_fields_->set_input_list( input_rec.val<Input::Array>("input_fields"), *(TModel::time_) );
+    eq_data_->set_time_governor(TModel::time_);
     eq_data_->balance_ = this->balance();
     eq_fields_->initialize(input_rec);
 
     // DG stabilization parameters on boundary edges
     eq_data_->gamma.resize(eq_data_->n_substances());
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
+        eq_data_->gamma[sbi].resize(TModel::mesh_->boundary_.size());
 
     // Resize coefficient arrays
-    eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    eq_data_->max_edg_sides = max(TModel::mesh_->max_edge_sides(1), max(TModel::mesh_->max_edge_sides(2), TModel::mesh_->max_edge_sides(3)));
     ret_sources.resize(eq_data_->n_substances());
     ret_sources_prev.resize(eq_data_->n_substances());
 
@@ -300,8 +293,8 @@ void TransportDG<Model>::initialize()
 
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->substances_.names());
-    eq_fields_->output_field.set_mesh(*Model::mesh_);
-    eq_fields_->output_fields.set_mesh(*Model::mesh_);
+    eq_fields_->output_field.set_mesh(*TModel::mesh_);
+    eq_fields_->output_fields.set_mesh(*TModel::mesh_);
     eq_fields_->output_type(OutputTime::CORNER_DATA);
 
     eq_fields_->output_field.setup_components();
@@ -313,8 +306,16 @@ void TransportDG<Model>::initialize()
         eq_data_->output_vec[sbi] = output_field_ptr->vec();
     }
 
+    eq_fields_->peclet_number.set(
+        Model<3, FieldValue<3>::Scalar>::create_multi(
+            fn_peclet_number(), eq_fields_->diffusion_coef, eq_fields_->advection_coef, eq_fields_->elem_diameter
+        ),
+        0.0
+    );
+    eq_fields_->peclet_number.setup_component_names();
+
     // set time marks for writing the output
-    eq_fields_->output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
+    eq_fields_->output_fields.initialize(TModel::output_stream_, TModel::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
@@ -329,8 +330,8 @@ void TransportDG<Model>::initialize()
     eq_data_->conc_fe.resize(eq_data_->n_substances());
     
     MixedPtr<FE_P_disc> fe(0);
-    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
-    eq_data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(TModel::mesh_, fe);
+    eq_data_->dh_p0 = make_shared<DOFHandlerMultiDim>(*TModel::mesh_);
     eq_data_->dh_p0->distribute_dofs(ds);
 
     stiffness_matrix.resize(eq_data_->n_substances(), nullptr);
@@ -367,7 +368,7 @@ void TransportDG<Model>::initialize()
         init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
 
     // initialization of balance object
-    Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
+    TModel::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());
