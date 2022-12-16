@@ -49,11 +49,13 @@ problem: !Coupling_Sequential
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 1_init_conc
               input_discretization: element_data
+              default_value: 0.0
               interpolation: identic_mesh
             - !FieldFE
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 2_init_conc
               input_discretization: element_data
+              default_value: 0.0
               #interpolation: identic_mesh
 
           diff_m:
@@ -61,11 +63,13 @@ problem: !Coupling_Sequential
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 1_diff_m
               input_discretization: element_data
+              default_value: 0.0
               interpolation: identic_mesh
             - !FieldFE
               mesh_data_file: ref_out/44_P0_data_DG_write/solute_fields/solute_fields-000000.vtu
               field_name: 2_diff_m
               input_discretization: element_data
+              default_value: 0.0
               #interpolation: identic_mesh
       output:
         fields:
