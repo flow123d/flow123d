@@ -210,6 +210,9 @@ private:
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
 	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
+	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
+	void calculate_element_values(ElementDataCache<double>::CacheData data_cache, bool native = false);
+
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
