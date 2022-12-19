@@ -249,8 +249,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-		FMT_UNUSED bool boundary_domain) {
+void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header) {
     static int imax = std::numeric_limits<int>::max();
     unsigned int id, i_row;
     unsigned int n_bulk_read = 0, n_bdr_read = 0;
@@ -287,26 +286,11 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
                 ++n_bdr_read;  ++bdr_id_iter;
             } else {
                 if ( (*bulk_id_iter != imax) | (*bdr_id_iter != imax) )
-				    WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
+				    WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} is not in order. Skipping rest of data.\n",
                             tok_.f_name(), header.field_name, header.time, id);
                 break;
             }
 
-//            //skip_element = false;
-//            while (bulk_id_iter != bulk_el_ids.end() && *bulk_id_iter < (int)id) {
-//                ++bulk_id_iter; // skip initialization of some rows in data if ID is missing
-//            }
-//            if (bulk_id_iter == bulk_el_ids.end()) {
-//            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
-//                        tok_.f_name(), header.field_name, header.time, id);
-//                break;
-//            }
-//            // save data from the line if ID was found
-//            if (*bulk_id_iter == (int)id) {
-//            	data_cache.read_ascii_data(tok_, header.n_components, (bulk_id_iter - bulk_el_ids.begin()) );
-//                n_read++;
-//            }
-//             //skip the line if ID on the line  < actual ID in the map bulk_el_ids
         } catch (boost::bad_lexical_cast &) {
         	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
         			<< EI_MeshFile(tok_.f_name()) );

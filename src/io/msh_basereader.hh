@@ -244,8 +244,7 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-    		bool boundary_domain)=0;
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.

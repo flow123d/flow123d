@@ -122,7 +122,7 @@ typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
     	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >(
                 field_name, header.time,
                 expected_n_components*expected_n_entities, boundary_begin);
-    	this->read_element_data(*(it->second), header, false );
+    	this->read_element_data(*(it->second), header );
 	}
 
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));

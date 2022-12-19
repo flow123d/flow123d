@@ -334,10 +334,7 @@ unsigned int VtkMeshReader::type_value_size(DataType data_type)
 
 
 
-void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-		bool boundary_domain) {
-
-	ASSERT(!boundary_domain).error("Reading VTK data of boundary elements is not supported yet!\n");
+void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header) {
 
     switch (data_format_) {
 		case DataFormat::ascii: {
