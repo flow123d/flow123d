@@ -204,14 +204,14 @@ private:
 	/// Interpolate data (use intersection library) over all elements of target mesh.
 	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
 
-	/// Calculate native data over all elements of target mesh.
-	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
-
-	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
-	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
+//	/// Calculate native data over all elements of target mesh.
+//	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
+//
+//	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
+//	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
-	void calculate_element_values(ElementDataCache<double>::CacheData data_cache, bool native = false);
+	void calculate_element_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>

@@ -454,11 +454,11 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	    }
 
 		if (is_native) {
-			this->calculate_element_values(input_data_cache, true);
+			this->calculate_element_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
-			this->calculate_equivalent_values(input_data_cache);
+			this->calculate_element_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::equivalent_msh) {
-			this->calculate_equivalent_values(input_data_cache);
+			this->calculate_element_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
 			this->interpolate_gauss(input_data_cache);
 		} else { // DataInterpolation::interp_p0
@@ -668,7 +668,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>::CacheData data_cache, bool native)
+void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>::CacheData data_cache)
 {
     // Same algorithm as in output of Node_data. Possibly code reuse.
     unsigned int data_vec_i;
@@ -698,8 +698,7 @@ void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>
                 ++count_vector[ loc_dofs[i] ];
             }
         } else {
-            if (native) data_vec_i = (source_idx + shift) * loc_dofs.n_elem;
-            else data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
+            data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
             for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
                 ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
                 data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
@@ -715,78 +714,78 @@ void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>
 }
 
 
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::CacheData data_cache)
-{
-	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int data_vec_i;
-	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
-	data_vec_.zero_entries();
-	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
-
-	// iterate through cells, assembly MPIVector
-	for (auto cell : dh_->own_range()) {
-		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		data_vec_i = source_target_vec[cell.elm_idx()] * loc_dofs.n_elem;
-		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
-		    ++count_vector[ loc_dofs[i] ];
-		}
-	}
-
-	// compute averages of values
-	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
-	}
-}
-
-
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
-{
-	// Same algorithm as in output of Node_data. Possibly code reuse.
-	unsigned int data_vec_i;
-	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
-	data_vec_.zero_entries();
-	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
-	unsigned int shift;
-	if (this->boundary_domain_) {
-		if (this->interpolation_==DataInterpolation::identic_msh) shift = this->comp_mesh_->n_elements();
-		else shift = ReaderCache::get_mesh(reader_file_)->n_elements();
-	} else {
-	    shift = 0;
-	}
-
-	// iterate through elements, assembly global vector and count number of writes
-	for (auto cell : dh_->own_range()) {
-		LocDofVec loc_dofs = cell.get_loc_dof_indices();
-		//DebugOut() << cell.elm_idx() << " < " << source_target_vec.size() << "\n";
-		int source_idx = source_target_vec[cell.elm_idx()];
-		if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
-			if ( std::isnan(default_value_) )
-				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
-				++count_vector[ loc_dofs[i] ];
-			}
-		} else {
-			data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
-			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
-				++count_vector[ loc_dofs[i] ];
-			}
-		}
-	}
-
-	// compute averages of values
-	for (unsigned int i=0; i<data_vec_.size(); ++i) {
-		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
-	}
-}
-
-
+//template <int spacedim, class Value>
+//void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::CacheData data_cache)
+//{
+//	// Same algorithm as in output of Node_data. Possibly code reuse.
+//	unsigned int data_vec_i;
+//	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
+//	data_vec_.zero_entries();
+//	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
+//
+//	// iterate through cells, assembly MPIVector
+//	for (auto cell : dh_->own_range()) {
+//		LocDofVec loc_dofs = cell.get_loc_dof_indices();
+//		data_vec_i = source_target_vec[cell.elm_idx()] * loc_dofs.n_elem;
+//		for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+//		    data_vec_.add( loc_dofs[i], (*data_cache)[ data_vec_i ] );
+//		    ++count_vector[ loc_dofs[i] ];
+//		}
+//	}
+//
+//	// compute averages of values
+//	for (unsigned int i=0; i<data_vec_.size(); ++i) {
+//		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
+//	}
+//}
+//
+//
+//template <int spacedim, class Value>
+//void FieldFE<spacedim, Value>::calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache)
+//{
+//	// Same algorithm as in output of Node_data. Possibly code reuse.
+//	unsigned int data_vec_i;
+//	std::vector<unsigned int> count_vector(data_vec_.size(), 0);
+//	data_vec_.zero_entries();
+//	std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
+//	unsigned int shift;
+//	if (this->boundary_domain_) {
+//		if (this->interpolation_==DataInterpolation::identic_msh) shift = this->comp_mesh_->n_elements();
+//		else shift = ReaderCache::get_mesh(reader_file_)->n_elements();
+//	} else {
+//	    shift = 0;
+//	}
+//
+//	// iterate through elements, assembly global vector and count number of writes
+//	for (auto cell : dh_->own_range()) {
+//		LocDofVec loc_dofs = cell.get_loc_dof_indices();
+//		//DebugOut() << cell.elm_idx() << " < " << source_target_vec.size() << "\n";
+//		int source_idx = source_target_vec[cell.elm_idx()];
+//		if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+//			if ( std::isnan(default_value_) )
+//				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+//			for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+//				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
+//				data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
+//				++count_vector[ loc_dofs[i] ];
+//			}
+//		} else {
+//			data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
+//			for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+//				ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
+//				data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
+//				++count_vector[ loc_dofs[i] ];
+//			}
+//		}
+//	}
+//
+//	// compute averages of values
+//	for (unsigned int i=0; i<data_vec_.size(); ++i) {
+//		if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
+//	}
+//}
+//
+//
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	//ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->distr()->lsize()).error();
