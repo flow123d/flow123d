@@ -44,22 +44,6 @@ public:
     FieldEvalConstantTest() : FieldEvalBaseTest() {}
 
     ~FieldEvalConstantTest() {}
-
-    /// Specialization of set_fe_data unit tests
-    void set_dof_values(std::vector<double> vals) {
-        v.resize(vals.size());
-        dof_values.resize(vals.size());
-        for (unsigned int i=0; i<vals.size(); ++i) {
-            v.set(i, vals[i]);
-            dof_values[i] = vals[i];
-        }
-
-        eq_data_->set_mesh(*mesh_);
-    }
-
-
-    std::vector<double> dof_values;           ///< used in test set_fe_data
-    VectorMPI v;                              ///< used in test set_fe_data
 };
 
 
