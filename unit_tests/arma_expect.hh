@@ -26,16 +26,14 @@ arma::uvec mat_shape(const Mat &x) {
 
 
 template<class ArmaMat1, class ArmaMat2>
-bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
+bool _expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, std::ostream &fail_message)
 {
-    std::ostringstream fail_message;
-
     bool no_failure=true;
     auto ref_shape = mat_shape(ref_arma_mat);
     auto shape = mat_shape(arma_mat);
     if (ref_shape[0] != shape[0] || ref_shape[1] != shape[1]) {
-        EXPECT_EQ(ref_shape[0], shape[0]); // rows
-        EXPECT_EQ(ref_shape[1], shape[1]); // cols
+        if (ref_shape[0] != shape[0]) fail_message << "Different number of rows of field value and ref value!" << std::endl;
+        if (ref_shape[1] != shape[1]) fail_message << "Different number of cols of field value and ref value!" << std::endl;
         no_failure=false;
     } else {
         double magnitude = std::max( arma::norm(ref_arma_mat, 1), arma::norm(arma_mat, 1) );
@@ -56,7 +54,16 @@ bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
             no_failure=false;
         }
     }
-    
+
+    return no_failure;
+}
+
+
+template<class ArmaMat1, class ArmaMat2>
+bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
+{
+    std::ostringstream fail_message;
+    bool no_failure = _expect_arma_eqal(ref_arma_mat, arma_mat, fail_message);
 
     if (! no_failure) {
         GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );

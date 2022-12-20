@@ -432,36 +432,7 @@ public:
 template<class Val>
 bool FieldEvalFETest::compare_vals(const Val &field_val, const Val &ref_val)
 {
-    try {
-        auto ref_shape = mat_shape(ref_val);
-        auto shape = mat_shape(field_val);
-        if (ref_shape[0] != shape[0] || ref_shape[1] != shape[1]) {
-            if (ref_shape[0] != shape[0]) std::cout << "Different number of rows of field value and ref value!" << std::endl;
-            if (ref_shape[1] != shape[1]) std::cout << "Different number of cols of field value and ref value!" << std::endl;
-            return false;
-        }
-        double magnitude = std::max( arma::norm(ref_val, 1), arma::norm(field_val, 1) );
-        // abs criterium
-        if (magnitude < 8*std::numeric_limits<double>::epsilon()) return true;
-
-        double error = arma::norm(ref_val - field_val, 1)/magnitude;
-        // rel criterium
-        if (error > 8*std::numeric_limits<double>::epsilon()) {
-            unsigned int w = 11* field_val.n_cols;
-            std::cout << std::setw(w) << "Expected" << std::setw(w) << "Result"
-                      << " rel. error: " << error << std::endl;
-            for(unsigned int i_row = 0; i_row < field_val.n_rows; i_row++) {
-                std::cout << std::setw(11) << ref_val.row(i_row)
-                          << std::setw(11) << field_val.row(i_row)
-                          << std::setw(20) << ref_val.row(i_row) - field_val.row(i_row) << std::endl;
-            }
-            return false;
-        }
-    } catch (ExceptionBase &e) {
-        std::cout << e.what() << std::endl;
-        return false;
-    }
-    return true;
+    return _expect_arma_eqal(field_val, ref_val, std::cout);
 }
 
 
