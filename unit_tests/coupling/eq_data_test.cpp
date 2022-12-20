@@ -293,6 +293,13 @@ protected:
         delete mesh;
     };
 
+    void set_dh_cell(unsigned int elm_idx, unsigned int reg_id, bool updt_bdr=false) {
+        ElementAccessor<3> elm = mesh->element_accessor(elm_idx);
+        EXPECT_EQ(reg_id, elm.region().id()); // check region id
+        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(elm.idx());
+        data_->update_cache(updt_bdr);
+    }
+
 
     Mesh * mesh;
 };
@@ -356,10 +363,8 @@ TEST_F(SomeEquation, values) {
     DebugOut().fmt("elements size: {} {}\n", mesh->n_elements(), mesh->bc_mesh()->n_elements());
 
     {
-        ElementAccessor<3> el_1d=mesh->element_accessor(0);         // region 37 "1D diagonal"
-        EXPECT_EQ(37, el_1d.region().id());                         // check element accessors
-        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(el_1d.idx());
-        data_->update_cache();
+        // region 37 "1D diagonal"
+        this->set_dh_cell(0, 37);
 
         auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
 
@@ -378,10 +383,8 @@ TEST_F(SomeEquation, values) {
     }
 
     {
-        ElementAccessor<3> el_2d=mesh->element_accessor(1);         // region 38 "2D XY diagonal"
-        EXPECT_EQ(38, el_2d.region().id());
-        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(el_2d.idx());
-        data_->update_cache();
+        // region 38 "2D XY diagonal"
+        this->set_dh_cell(1, 38);
 
         auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
 
@@ -394,10 +397,8 @@ TEST_F(SomeEquation, values) {
     }
 
     {
-        ElementAccessor<3> el_3d=mesh->element_accessor(3);         // region 39 "3D back"
-        EXPECT_EQ(39, el_3d.region().id());
-        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(el_3d.idx());
-        data_->update_cache();
+        // region 39 "3D back"
+        this->set_dh_cell(3, 39);
 
         auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
 
@@ -406,10 +407,8 @@ TEST_F(SomeEquation, values) {
     }
 
     {
-        ElementAccessor<3> el_bulk=mesh->element_accessor(8);         // bulk element of boundary element in region 101 ".top side"
-
-        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(el_bulk.idx());
-        data_->update_cache(true);
+    	// bulk element of boundary element in region 101 ".top side"
+    	this->set_dh_cell(8, 40, true);
 
         bool found_bdr = false;
         for (DHCellSide cell_side : data_->computed_dh_cell_.side_range()) {
@@ -429,10 +428,8 @@ TEST_F(SomeEquation, values) {
     }
 
     {
-        ElementAccessor<3> el_bulk=mesh->element_accessor(6);         // bulk element of boundary element in region 102 ".bottom side"
-
-        data_->computed_dh_cell_ = this->dh_->cell_accessor_from_element(el_bulk.idx());
-        data_->update_cache(true);
+        // bulk element of boundary element in region 102 ".bottom side"
+        this->set_dh_cell(6, 40, true);
 
         bool found_bdr = false;
         for (DHCellSide cell_side : data_->computed_dh_cell_.side_range()) {
