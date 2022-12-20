@@ -50,6 +50,15 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
+template<int spacedim, class Value>
+class FieldTest : public Field<spacedim, Value> {
+public:
+	FieldValueCache<typename Value::element_type> * field_value_cache() {
+	    return &this->value_cache_;
+	}
+};
+
+
 template <class F>
 class FieldFix : public testing::Test, public F, public ElementCacheMap {
 public:
@@ -210,11 +219,11 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 #define FV FieldValue
 // full list
 #define f_list(Dim) \
-	Field<Dim,FV<0>::Scalar> , \
-    Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<Dim>::VectorFixed>, \
-	Field<Dim,FV<Dim>::TensorFixed>
+	FieldTest<Dim,FV<0>::Scalar> , \
+    FieldTest<Dim,FV<0>::Enum>, \
+    FieldTest<Dim,FV<0>::Integer>, \
+	FieldTest<Dim,FV<Dim>::VectorFixed>, \
+	FieldTest<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
