@@ -167,3 +167,101 @@ TEST_F(FieldEvalConstantTest, tensor_symetric_matrix) {
    	VecRef<arma::mat33> ref_tensor(expected_tensor);
     EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
 }
+
+TEST_F(FieldEvalConstantTest, set_time) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: 0
+        bc_scalar_field: 0
+      - region: BULK
+        time: 2.0
+        scalar_field: 1
+        bc_scalar_field: 1
+      - region: .BOUNDARY
+        time: 4.0
+        scalar_field: 1
+        bc_scalar_field: 0
+    )YAML";
+
+    unsigned int        n_times             = 5;   // time steps: { 0, 1, 2, 3, 4 }
+    std::vector<double> expected_scalar     = {0.0, 0.0, 1.0, 1.0, 1.0};
+    std::vector<bool>   scalar_jump_time    = {true, false, true, false, false};
+    std::vector<bool>   bc_scalar_jump_time = {true, false, false, false, true};
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<n_times; j++) {  // time loop
+        eq_data_->reallocate_cache();
+
+        // BULK field
+        SingleValRef<double> ref_scalar(expected_scalar[j]);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        EXPECT_EQ( scalar_jump_time[j] , eq_data_->scalar_field.is_jump_time() );
+
+        // BOUNDARY field
+    	SingleValRef<double> ref_bc_scalar(0.0);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        EXPECT_EQ( bc_scalar_jump_time[j] , eq_data_->bc_scalar_field.is_jump_time() );
+
+        eq_data_->tg_.next_time();
+    }
+}
+
+TEST_F(FieldEvalConstantTest, copy_constructor) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: 0
+        scalar_ref: 1
+      - region: BULK
+        time: 1.0
+        scalar_ref: 1
+      - region: BULK
+        time: 2.0
+        scalar_field: 1
+      - region: BULK
+        time: 3.0
+        scalar_field: 0
+        scalar_ref: 0
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    ScalarField f2(eq_data_->scalar_field);	// default constructor
+    eq_data_->scalar_ref = eq_data_->scalar_field; // assignment, should overwrite name "scalar_ref" by name "scalar_field"
+
+    // tg = 0.0
+    {
+        eq_data_->reallocate_cache();
+        f2.set_time(eq_data_->tg_.step(), LimitSide::right);
+        SingleValRef<double> ref_scalar(0.0);
+        EXPECT_TRUE( eval_bulk_field(f2, ref_scalar) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+    }
+
+    // tg = 1.0
+    {
+    	eq_data_->tg_.next_time();
+        eq_data_->reallocate_cache();
+        SingleValRef<double> ref_scalar(0.0);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+    }
+
+    // tg = 2.0
+	{
+        eq_data_->tg_.next_time();
+        eq_data_->reallocate_cache();
+        SingleValRef<double> ref_scalar(1.0);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        SingleValRef<double> ref_f2(0.0);
+        EXPECT_TRUE( eval_bulk_field(f2, ref_f2) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_ref, ref_scalar) );
+	}
+
+}
+
