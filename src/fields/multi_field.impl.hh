@@ -309,28 +309,6 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const 
 }
 
 
-// template<int spacedim, class Value>
-// typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
-//     typename MultiFieldValue::return_type ret(size(), 1);
-//     for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
-//     	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
-//     }
-// 
-//     return ret;
-// }
-// 
-// 
-// 
-// template<int spacedim, class Value>
-// void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-//                    std::vector<typename MultiFieldValue::return_type>  &value_list) const {
-// 	ASSERT_PERMANENT_EQ( point_list.size(), value_list.size() );
-// 	for(unsigned int i=0; i< point_list.size(); i++) {
-// 		value_list[i]=this->value(point_list[i], elm);
-// 	}
-// }
-
-
 
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiFieldFactory::create_field(Input::Record descriptor_rec, const FieldCommon &field) {

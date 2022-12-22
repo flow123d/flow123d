@@ -39,7 +39,6 @@
 #include "fields/field_set.hh"
 #include "fem/dofhandler.hh"
 #include "fields/field_fe.hh"
-#include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
 #include "mesh/mesh.h"

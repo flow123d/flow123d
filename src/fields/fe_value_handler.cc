@@ -104,48 +104,6 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 }
 
 
-template <int elemdim, int spacedim, class Value> inline
-typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
-{
-	Armor::array point_list(spacedim, 1, 1);
-	point_list.set(0) = Armor::ArmaVec<double,spacedim>( p );
-	std::vector<typename Value::return_type> v_list;
-	v_list.push_back(r_value_);
-	this->value_list(point_list, elm, v_list);
-	this->r_value_ = v_list[0];
-	return this->r_value_;
-}
-
-
-template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::value_list(const Armor::array  &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type> &value_list)
-{
-    ASSERT_EQ( point_list.size(), value_list.size() ).error();
-
-	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
-	LocDofVec loc_dofs = cell.get_loc_dof_indices();
-
-	// map points to reference cell, create quadrature and FEValues object
-    arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
-	Quadrature quad(elemdim, point_list.size());
-	for (unsigned int k=0; k<point_list.size(); k++)
-        quad.set(k) = RefElement<elemdim>::bary_to_local(MappingP1<elemdim,spacedim>::project_real_to_unit(point_list.vec<spacedim>(k), map_mat));
-	
-	FEValues<spacedim> fe_values(quad, *fe_, update_values);
-    fe_values.reinit( elm );
-
-    for (unsigned int k=0; k<point_list.size(); k++) {
-		Value envelope(value_list[k]);
-		envelope.zeros();
-		for (unsigned int i=this->range_begin_, i_dof=0; i<this->range_end_; i++, i_dof++) {
-			value_list[k] += data_vec_.get(loc_dofs[i])
-							* FEShapeHandler<Value::rank_, spacedim, Value>::fe_value(fe_values, i_dof, k, 0);
-		}
-	}
-}
-
-
 template <int elemdim, int spacedim, class Value>
 unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
 		const ElementAccessor<spacedim> &ele, unsigned int order)

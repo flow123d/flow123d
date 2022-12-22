@@ -103,29 +103,6 @@ void FieldPython<spacedim, Value>::set_python_field_from_class(const string &fil
 
 
 
-/**
- * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
- */
-template <int spacedim, class Value>
-typename Value::return_type const & FieldPython<spacedim, Value>::value(FMT_UNUSED const Point &p, FMT_UNUSED const ElementAccessor<spacedim> &elm)
-{
-    ASSERT(false).warning("Method FieldPython::value is obsolete. DO not use it!\n");
-    return this->r_value_;
-}
-
-
-/**
- * Returns std::vector of scalar values in several points at once.
- */
-template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::value_list (FMT_UNUSED const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
-                   FMT_UNUSED std::vector<typename Value::return_type>  &value_list)
-{
-    ASSERT(false).warning("Method FieldPython::value_list is obsolete. DO not use it!\n");
-}
-
-
-
 template <int spacedim, class Value>
 std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(FieldSet &field_set) {
     required_fields_.clear();

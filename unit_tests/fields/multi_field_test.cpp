@@ -15,12 +15,27 @@
 #include <fields/multi_field.hh>
 #include <fields/field_fe.hh>
 #include <fields/field_set.hh>
+#include <fields/eval_points.hh>
+#include <fields/eval_subset.hh>
+#include <fields/field_value_cache.hh>
+#include <fields/field_set.hh>
+#include <fields/field_flag.hh>
+#include <coupling/generic_assembly.hh>
+#include <coupling/assembly_base.hh>
+#include <quadrature/quadrature.hh>
+#include <quadrature/quadrature_lib.hh>
+#include <io/msh_gmshreader.h>
+#include <fem/dofhandler.hh>
+#include <fem/dh_cell_accessor.hh>
+#include <mesh/mesh.h>
+#include <mesh/accessors.hh>
+#include <mesh/range_wrapper.hh>
 #include <tools/unit_si.hh>
 #include <input/type_base.hh>
 #include <input/reader_to_storage.hh>
 #include <input/type_output.hh>
-#include <io/msh_gmshreader.h>
 #include <system/sys_profiler.hh>
+
 
 #include <iostream>
 using namespace std;
@@ -67,178 +82,336 @@ TEST(MultiField, transposition) {
 	}
 }
 
-string all_fields_input = R"YAML(
-const_field_full: !FieldConstant
-  value:
-   - 1
-   - 2
-   - 3
-const_field_base: !FieldConstant
-  value: 1
-const_field_autoconv: 1
 
-formula_field_full: !FieldFormula
-  value:
-   - t
-   - x
-   - y-t
-formula_field_base: !FieldFormula
-  value: x
-
-fe_field: !FieldFE
-  mesh_data_file: fields/simplest_cube_data.msh
-  field_name: vector_fixed
-  default_value: 0.0
-interpolated_p0_field: !FieldFE
-  mesh_data_file: fields/simplest_cube_3d.msh
-  field_name: scalar
-  default_value: 0.0
-  interpolation: P0_intersection
-)YAML";
 
 class MultiFieldTest : public testing::Test {
 public:
-	typedef MultiField<3, FieldValue<3>::Scalar> ScalarMultiField;
-	typedef ScalarMultiField::SubFieldBaseType ScalarField;
 
-    typedef MultiField<3, FieldValue<3>::VectorFixed> VectorFixedMultiField;
-	typedef VectorFixedMultiField::SubFieldBaseType VectorFixedField;
+    class EqData : public FieldSet, public ElementCacheMap {
+    public:
+		EqData() {
+            *this+=scalar_field
+            		.name("scalar_field")
+        			.description("Scalar field.")
+        			.units(UnitSI().m())
+					.input_default("0.0")
+        			.flags_add( in_main_matrix );
 
-protected:
-    virtual void SetUp() {
+            *this+=vector_field
+            		.name("vector_field")
+        			.description("Vector field.")
+        			.units(UnitSI().m())
+					.input_default("0.0")
+        			.flags_add( in_main_matrix );
+
+            // Asumme following types:
+            eval_points_ = std::make_shared<EvalPoints>();
+            Quadrature *q_bulk_1d = new QGauss(1, 0);
+            Quadrature *q_bulk_2d = new QGauss(2, 0);
+            Quadrature *q_bulk_3d = new QGauss(3, 0);
+            bulk_int[0] = eval_points_->add_bulk<1>(*q_bulk_1d );
+            bulk_int[1] = eval_points_->add_bulk<2>(*q_bulk_2d );
+            bulk_int[2] = eval_points_->add_bulk<3>(*q_bulk_3d );
+            this->init(eval_points_);
+        }
+
+        void register_eval_points() {
+            unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
+            for (auto p : bulk_int[computed_dh_cell_.dim()-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
+                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            }
+            this->eval_point_data_.make_permanent();
+        }
+
+        void update_cache() {
+            this->register_eval_points();
+            this->create_patch();
+            this->cache_update(*this);
+            this->finish_elements_update();
+        }
+
+
+        // fields
+        MultiField<3, FieldValue<3>::Scalar > scalar_field;
+        MultiField<3, FieldValue<3>::VectorFixed > vector_field;
+        std::shared_ptr<EvalPoints> eval_points_;
+        std::array<std::shared_ptr<BulkIntegral>, 3> bulk_int;  // dim 1,2,3
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
+        DHCellAccessor computed_dh_cell_;
+    };
+
+    MultiFieldTest() : tg(0.25, 0.75) {
     	Profiler::instance();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-    	point(0)=1.0; point(1)=2.0; point(2)=3.0;
+    	component_names = {"component_0", "component_1", "component_2"};
 
-        auto mesh_reader = reader_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
-        mesh = mesh_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
-        mesh_reader->read_raw_mesh(mesh);
-        mesh->setup_topology();
-
+        eq_data_ = std::make_shared<EqData>();
+        eq_data_->add_coords_field();
+        eq_data_->set_default_fieldset();
+        mesh_ = mesh_full_constructor("{ mesh_file=\"fields/simplest_cube_data.msh\", optimize_mesh=false }");
+        eq_data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
-    virtual void TearDown() {
-    	delete mesh;
+	~MultiFieldTest() {
+    	delete mesh_;
     }
 
-    void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
-        TimeGovernor tg(0.0, 1.0);
-        auto time_step = tg.step();
-        time_step.use_fparser_ = true;
-    	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
-    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
-    		auto subfield = ScalarField::function_factory((*it), init_data);
-    		subfield->set_mesh(mesh, false);
-    		subfield->set_time(time_step);
-    		auto result = subfield->value( point, elm );
-    		EXPECT_DOUBLE_EQ( expected, result );
-    		expected += step;
-    	}
+    void read_input(const string &input) {
+        // read input string
+        Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
+        Input::Record in_rec=reader.get_root_interface<Input::Record>();
+
+        eq_data_->set_components(component_names);        // set number of substances possibly read from elsewhere
+
+        static std::vector<Input::Array> inputs;
+        unsigned int input_last = inputs.size(); // position of new item
+        inputs.push_back( in_rec.val<Input::Array>("data") );
+
+        eq_data_->set_mesh(*mesh_);
+        eq_data_->set_input_list( inputs[input_last], tg );
     }
 
-    void check_field_vec_vals(Input::Array &arr_field, ElementAccessor<3> elm, arma::vec &expected, double step) {
-        TimeGovernor tg(0.0, 1.0);
-    	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
-    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
-    		auto subfield = VectorFixedField::function_factory((*it), init_data);
-    		subfield->set_mesh(mesh, false);
-
-            for(uint i=0; i<2; i++)
-            {
-                auto time_step = tg.step();
-                time_step.use_fparser_ = true;
-                subfield->set_time(time_step);
-                auto result = subfield->value( point, elm );
-                // DebugOut() << result << "\n";
-                EXPECT_ARMA_EQ( expected, result );
-                expected += step*arma::vec({1,1,1});
-                tg.next_time();
-            }
-    	}
+    void set_dh_cell(unsigned int elm_idx, unsigned int reg_idx) {
+        ElementAccessor<3> elm = mesh_->element_accessor(elm_idx);
+        EXPECT_EQ(reg_idx, elm.region().id());                         // check element accessor
+        eq_data_->computed_dh_cell_ = this->eq_data_->dh_->cell_accessor_from_element(elm.idx());
     }
+
 
     static Input::Type::Record & get_input_type();
-    static ScalarMultiField empty_mf;
-    Mesh * mesh;
-    Space<3>::Point point;
+    static MultiField<3, FieldValue<3>::Scalar> empty_mf;
+    std::shared_ptr<EqData> eq_data_;
+    std::vector<std::string> component_names;
+    Mesh * mesh_;
+    TimeGovernor tg;
 };
 
-MultiFieldTest::ScalarMultiField MultiFieldTest::empty_mf = MultiFieldTest::ScalarMultiField();
+MultiField<3, FieldValue<3>::Scalar> MultiFieldTest::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
 Input::Type::Record & MultiFieldTest::get_input_type() {
-	return Input::Type::Record("MultiField", "Complete multi field")
-		.declare_key("const_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("const_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("const_field_autoconv", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("formula_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("formula_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("fe_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("interpolated_p0_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.close();
+    return IT::Record("SomeEquation","")
+            .declare_key("data", IT::Array(
+                IT::Record("MultiField_Data", FieldCommon::field_descriptor_record_description("MultiField_Data") )
+                .copy_keys( MultiFieldTest::EqData().make_field_descriptor_type("MultiField") )
+                .declare_key("scalar_field", empty_mf.get_multifield_input_type(), "" )
+                .declare_key("vector_field", empty_mf.get_multifield_input_type(), "" )
+                .close()
+                ), IT::Default::obligatory(), ""  )
+            .close();
 }
 
 
-TEST_F(MultiFieldTest, complete_test) {
-	Input::ReaderToStorage json_reader(all_fields_input, MultiFieldTest::get_input_type(), Input::FileFormat::format_YAML);
-	Input::Record input = json_reader.get_root_interface<Input::Record>();
+TEST_F(MultiFieldTest, const_full_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldConstant
+          value:
+           - 1
+           - 2
+           - 3
+    )YAML";
 
-    { // test of FieldConstant - full input
-		Input::Array const_fields = input.val<Input::Array>("const_field_full");
-		EXPECT_EQ(3, const_fields.size());
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
 
-		ElementAccessor<3> elm;
-		check_field_vals(const_fields, elm, 1.0, 1.0);
-	}
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
 
-    { // test of FieldConstant - set key 'value' with one value
-		Input::Array const_fields = input.val<Input::Array>("const_field_base");
-		EXPECT_EQ(1, const_fields.size());
+        EXPECT_EQ(3, eq_data_->scalar_field.size());
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_EQ(i_comp+1, eq_data_->scalar_field[i_comp](p));
+        }
 
-		ElementAccessor<3> elm;
-		check_field_vals(const_fields, elm);
-	}
-
-    { // test of FieldConstant - autoconversion of FieldAlgorithmBase Abstract and 'value' key
-		Input::Array const_fields = input.val<Input::Array>("const_field_autoconv");
-		EXPECT_EQ(1, const_fields.size());
-
-		ElementAccessor<3> elm;
-		check_field_vals(const_fields, elm);
-	}
-
-	{ // test of FieldFormula - full input
-		Input::Array formula_field = input.val<Input::Array>("formula_field_full");
-		EXPECT_EQ(3, formula_field.size());
-
-	    ElementAccessor<3> elm;
-	    check_field_vals(formula_field, elm, 0.0, 1.0);
-	}
-
-	{ // test of FieldFormula - set key 'value' with one value
-		Input::Array formula_field = input.val<Input::Array>("formula_field_base");
-		EXPECT_EQ(1, formula_field.size());
-
-	    ElementAccessor<3> elm;
-	    check_field_vals(formula_field, elm);
-	}
-
-	{ // test of FieldFE
-		Input::Array fe_field = input.val<Input::Array>("fe_field");
-		EXPECT_EQ(1, fe_field.size());
-
-        arma::vec expected = arma::vec({1,2,3});
-        check_field_vec_vals(fe_field, mesh->element_accessor(1), expected, 1.0);
-	}
-
-	{ // test of FieldInterpolatedP0
-		Input::Array interpolated_p0_field = input.val<Input::Array>("interpolated_p0_field");
-		EXPECT_EQ(1, interpolated_p0_field.size());
-
-        check_field_vals(interpolated_p0_field, mesh->element_accessor(1), 0.650, 0.0);
-	}
+        tg.next_time();
+    }
 }
+
+
+TEST_F(MultiFieldTest, const_base_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldConstant
+          value: 1
+    )YAML";
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        EXPECT_EQ(3, eq_data_->scalar_field.size());
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_EQ(1, eq_data_->scalar_field[i_comp](p));
+        }
+
+        tg.next_time();
+    }
+}
+
+
+TEST_F(MultiFieldTest, const_autoconv_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: 1
+    )YAML";
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        EXPECT_EQ(3, eq_data_->scalar_field.size());
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_EQ(1, eq_data_->scalar_field[i_comp](p));
+        }
+
+        tg.next_time();
+    }
+}
+
+
+TEST_F(MultiFieldTest, formula_full_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFormula
+          value:
+           - t
+           - x
+           - y-t
+    )YAML";
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        arma::vec3 elm_cntr = this->eq_data_->computed_dh_cell_.elm().centre(); // {-0.5, 0.5, 0.0}
+
+        // test of FieldFormula - full input
+        EXPECT_EQ(tg.t(), eq_data_->scalar_field[0](p));
+        EXPECT_EQ(elm_cntr(0), eq_data_->scalar_field[1](p));
+        EXPECT_EQ(elm_cntr(1)-tg.t(), eq_data_->scalar_field[2](p));
+
+        tg.next_time();
+    }
+}
+
+
+TEST_F(MultiFieldTest, formula_base_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFormula
+          value: x
+    )YAML";
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        arma::vec3 elm_cntr = this->eq_data_->computed_dh_cell_.elm().centre(); // {-0.5, 0.5, 0.0}
+
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_EQ(elm_cntr(0), eq_data_->scalar_field[i_comp](p));
+        }
+
+        tg.next_time();
+    }
+}
+
+
+TEST_F(MultiFieldTest, field_fe_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        vector_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: vector_fixed
+          default_value: 0.0
+    )YAML";
+    std::vector< arma::vec3 > fe_expected = {{0.5, 0.5, -1.0}, {0.5, 1.0, 0.0}};
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_ARMA_EQ(fe_expected[i_time], eq_data_->vector_field[i_comp](p));
+        }
+
+        tg.next_time();
+    }
+}
+
+
+TEST_F(MultiFieldTest, interpolated_p0_test) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          default_value: 0.0
+          interpolation: P0_intersection
+    )YAML";
+    std::vector< double > p0_expected = {0.147606084199045, 1.147606084199045};
+
+    this->read_input(eq_data_input);
+    this->set_dh_cell(4, 39);
+
+    for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
+        eq_data_->set_time(tg.step(), LimitSide::right);
+        eq_data_->cache_reallocate( *(eq_data_.get()), *(eq_data_.get()) );
+        eq_data_->update_cache();
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+
+        for (uint i_comp=0; i_comp<3; ++i_comp) {
+            EXPECT_DOUBLE_EQ(p0_expected[i_time], eq_data_->scalar_field[i_comp](p));
+        }
+
+        tg.next_time();
+    }
+}
+
 
 
 string eq_data_input = R"JSON(

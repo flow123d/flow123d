@@ -27,7 +27,6 @@
 #include "fem/fe_rt.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fields/field_fe.hh"
-#include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "coupling/balance.hh"
 #include "coupling/generic_assembly.hh"
