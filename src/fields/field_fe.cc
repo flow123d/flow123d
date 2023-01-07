@@ -630,6 +630,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	double total_measure;
 	double measure = 0;
 
+	START_TIMER("FieldFE::interpolate_intersection");
+
 	for (auto elm : dh_->mesh()->elements_range()) {
 		if (elm.dim() == 3) {
 			THROW( ExcInvalidElemeDim() << EI_ElemIdx(elm.idx()) );
@@ -651,8 +653,6 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		std::fill(value.begin(), value.end(), 0.0);
 		total_measure=0.0;
 
-		START_TIMER("compute_pressure");
-		ADD_CALLS(searched_elements.size());
 
 
         for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
@@ -717,9 +717,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		} else {
 			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
 		}
-		END_TIMER("compute_pressure");
-
 	}
+	END_TIMER("FieldFE::interpolate_intersection");
 }
 
 

@@ -29,6 +29,6 @@ COPY --from=source_image ${source_location} ${flow_install_location}
 
 # update PATH
 ENV PATH="${flow_install_location}/bin:${PATH}"
-
+ENV LD_LIBRARY_PATH=/opt/flow123d/lib
 # save the image version
 #RUN echo ${flow_version} > /.dockerversion

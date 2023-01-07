@@ -861,7 +861,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     //
     auto convert_method = python_module.attr("convert");
     // execute method with arguments
-    convert_method(json_filepath, (json_filepath + output_fiel_suffix), formatter);
+    convert_method(json_filepath, (json_filepath + output_file_suffix), formatter);
 
 }
 

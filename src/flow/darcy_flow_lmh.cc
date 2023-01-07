@@ -487,6 +487,7 @@ void DarcyLMH::init_eq_data()
 }
 
 void DarcyLMH::initialize() {
+    START_TIMER("DarcyLMH::initialize");
 
     { // init DOF handler for pressure fields
 // 		std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0_disc<0>>();
@@ -579,11 +580,14 @@ void DarcyLMH::initialize() {
     initialize_specific();
     
     // auxiliary set_time call  since allocation assembly evaluates fields as well
+    START_TIMER("DarcyLMH::initialize - set_time");
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
+    END_TIMER("DarcyLMH::initialize - set_time");
     create_linear_system(rec);
 
 
     // initialization of balance object
+    START_TIMER("DarcyLMH::initialize - balance");
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     eq_data_->water_balance_idx = balance_->add_quantity("water_volume");
@@ -591,8 +595,10 @@ void DarcyLMH::initialize() {
     balance_->units(UnitSI().m(3));
 
     eq_data_->balance_ = this->balance_;
+    END_TIMER("DarcyLMH::initialize - balance");
 
     this->initialize_asm();
+    END_TIMER("DarcyLMH::initialize");
 }
 
 void DarcyLMH::initialize_specific()
@@ -1558,9 +1564,12 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 
 
 void DarcyLMH::initialize_asm() {
+    START_TIMER("DarcyLMH::initialize_asm");
+
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
     this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMH >(eq_fields_.get(), eq_data_.get());
     this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    END_TIMER("DarcyLMH::initialize_asm");
 }
 
 

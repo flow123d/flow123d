@@ -152,14 +152,17 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   set(CMAKE_BUILD_TYPE Release)
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-  #flow_define(DEBUG_PROFILER)
+  flow_define(DEBUG_PROFILER)
   flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
   set(CMAKE_CXX_FLAGS "-O3 -g")
   set(CMAKE_C_FLAGS "-O3 -g")
   set(CMAKE_BUILD_TYPE Debug)
-  flow_define(DEBUG)
+  flow_define(DEBUG_MESSAGES)
+  flow_define(DEBUG_ASSERTS)
+  flow_define(DEBUG_PROFILER)
+  #flow_define(DEBUG)
   flow_define(BENCHMARK_ASSERTS)
 elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
   # Coverage mode creates instrumented binary
@@ -1015,6 +1018,8 @@ install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING
 # python libs, sources and config files
 install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
 install(FILES     config/host_table.yaml    DESTINATION config/)
+install(FILES     build_tree/src/libflow123d_lib.so  DESTINATION lib)
+install(FILES     build_tree/third_party/bparser/libbparser.so  DESTINATION lib)
 
 
 # To install MSVC runtime libraries ... ?

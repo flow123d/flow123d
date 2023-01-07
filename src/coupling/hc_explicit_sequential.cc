@@ -81,6 +81,8 @@ const int HC_ExplicitSequential::registrar = HC_ExplicitSequential::get_input_ty
 
 std::shared_ptr<AdvectionProcessBase> HC_ExplicitSequential::make_advection_process(string process_key)
 {
+
+
     using namespace Input;
     // setup heat object
     Iterator<AbstractRecord> it = in_record_.find<AbstractRecord>(process_key);
@@ -140,8 +142,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // setup primary equation - water flow object
     AbstractRecord prim_eq = in_record.val<AbstractRecord>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
+    START_TIMER("HC - hydro init");
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
+    END_TIMER("HC - hydro init");
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "HC explicit sequential") ) {
         WarningOut() << ss.str();
@@ -156,8 +160,12 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     if (water_content_p0_ && water_content_p0_->field_result( bulk_set ) == result_zeros )
         water_content_p0_ = nullptr;
 
+    START_TIMER("HC - solute_equation init");
     processes_.push_back(AdvectionData(make_advection_process("solute_equation")));
+    END_TIMER("HC - solute_equation init");
+    START_TIMER("HC - heat_equation init");
     processes_.push_back(AdvectionData(make_advection_process("heat_equation")));
+    END_TIMER("HC - heat_equation init");
 }
 
 void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
