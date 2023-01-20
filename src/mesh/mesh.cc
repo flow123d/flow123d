@@ -653,7 +653,7 @@ void Mesh::make_neighbours_and_edges()
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
             	WarningOut().fmt("Lonely boundary element, id: {}, region: {}, dimension {}.\n",
-            			bc_ele.idx(), bc_ele.region().id(), bc_ele->dim());
+            			bc_ele.input_id(), bc_ele.region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();

@@ -65,6 +65,7 @@ Start docker container for Flow123d developing.
    
 dbg       image with the debug build of the libraries (default), GNU environment by default
 rel       image with optimized build of the libraries, GNU environment by default
+own
 dbg_gnu   image with the debug build of the libraries, GNU environment
 rel_gnu   image with optimized build of the libraries, GNU environment
 dbg_intel image with the debug build of the libraries, Intel environment
@@ -128,10 +129,12 @@ function dbg2() {
   fi
 }
 function dbgc() {
+  set -e
   if [[ $verbose -eq 1 ]]; then
     echo -e "$bblue[RUN]$reset $@"
   fi
   $@
+  set +e
 }
 
 function get_mount_dir() {
@@ -317,6 +320,12 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
+    own)
+      image_version=$1
+      shift
+      image_tag=$1
+      shift
+    ;;
     dbg|rel|dbg_gnu|rel_gnu|dbg_intel|rel_intel)
       image_version=$1
       shift
@@ -351,12 +360,20 @@ while [[ $# -gt 0 ]]
   esac
 done
 
-image_kind=${image_version%%_*}
-image_env=${image_version#*_}
-
-if [ $image_kind = $image_env ]
+if [ "${image_version}" == "own" ]
 then
-  image_env="gnu"
+  base_image=$image_tag
+else
+  image_kind=${image_version%%_*}
+  image_env=${image_version#*_}
+
+  if [ $image_kind = $image_env ]
+  then
+    image_env="gnu"
+  fi
+
+  # determine image names
+  base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 fi
 
 # set flow123d_images if empty
@@ -366,8 +383,6 @@ flow123d_images="flow-dev-${image_env}-dbg flow-dev-${image_env}-rel"  # flow-de
 fi
 
 
-# determine image names
-base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
 dbg "base_image     = $base_image"

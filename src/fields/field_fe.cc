@@ -632,7 +632,9 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 	START_TIMER("FieldFE::interpolate_intersection");
 
-	for (auto elm : dh_->mesh()->elements_range()) {
+	//for (auto elm : dh_->mesh()->elements_range()) {
+	for (auto cell : dh_->local_range()) {
+		ElementAccessor<3> elm = cell.elm();
 		if (elm.dim() == 3) {
 			THROW( ExcInvalidElemeDim() << EI_ElemIdx(elm.idx()) );
 		}
@@ -707,7 +709,6 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
-			DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
 			LocDofVec loc_dofs = cell.get_loc_dof_indices();
 
 			ASSERT_LE(loc_dofs.n_elem, value.size());

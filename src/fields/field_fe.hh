@@ -209,6 +209,7 @@ private:
 	void interpolate_gauss(ElementDataCache<double>::CacheData data_vec);
 
 	/// Interpolate data (use intersection library) over all elements of target mesh.
+	/// Implemented only for P0 source and target elements, possibly vector valued.
 	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
 
 	/// Calculate native data over all elements of target mesh.
