@@ -73,6 +73,10 @@ public:
 
     double compute_residual() override;
 
+    void use_feti(bool feti = true) {
+        use_feti_ = feti;
+    }
+
     ~LinSys_PERMON( );
 
 private:
@@ -108,6 +112,7 @@ protected:
     PetscReal maxeig_;
 
     bool    warm_start_;
+    bool    use_feti_;
 };
 
 #endif /* LA_LINSYS_PERMON_HH_ */

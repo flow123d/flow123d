@@ -61,7 +61,8 @@ const int LinSys_PERMON::registrar = LinSys_PERMON::get_input_type().size();
 
 
 LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &params)
-        : LinSys_PETSC( rows_ds, params )
+        : LinSys_PETSC( rows_ds, params ),
+        use_feti_(false)
 {
     matrix_ineq_ = NULL;
     ineq_ = NULL;
@@ -97,7 +98,6 @@ void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
 
 LinSys::SolveInfo LinSys_PERMON::solve()
 {
-
     const char *petsc_dflt_opt;
     int nits;
     
@@ -136,24 +136,25 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
+
+    if (use_feti_ && (rows_ds_->np() == 1)) {
+        WarningOut() << "FETI can be only used on multiple processes - switching to standard QP solver.";
+        use_feti_ = false;
+    } else if (use_feti_ && (l2g_ == nullptr)) {
+        WarningOut() << "FETI can be used only for matrix type MatIS - switching to standard QP solver.";
+        use_feti_ = false;
+    }
+
     
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
-    if (l2g_ && rows_ds_->np() > 1) {
-    //     Mat Ais;
-    //     ISLocalToGlobalMapping l2g_is;
-    //     chkerr(ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, l2g_->size(), l2g_->data(), PETSC_USE_POINTER, &l2g_is));
-    //     chkerr(MatSetLocalToGlobalMapping(matrix_, l2g_is, l2g_is));
-    //     chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Ais));
-    //     chkerr(QPSetOperator(system, Ais));
-    //     chkerr(MatDestroy(&Ais));
+    if (use_feti_) {
+
+        // convert to MatIS format
         Mat Afixed;
         chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Afixed));
-        // // This does not work since the local sizes of the new matrix Afixed are incompatible with rhs_.
-        // MatISFixLocalEmpty(Afixed, PETSC_TRUE);
-        // MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY);
-        // MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY);
 
+        // create new matrix without zero rows
         Mat Aloc, Aloc_feti;
         IS isnz, isnz_tmp;
         ISLocalToGlobalMapping l2g, mapping;
@@ -178,7 +179,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
             ISCreateGeneral(PETSC_COMM_WORLD, nrows, nz_idx, PETSC_OWN_POINTER, &isnz);
         }
         ISDestroy(&isnz_tmp);
-        // ISView(isnz, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
         chkerr(MatISRestoreLocalMat(Afixed, &Aloc));
         chkerr(ISGetIndices(isnz, &nz_arr));
@@ -208,10 +208,9 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatDestroy(&Aloc_feti));
-        // cout << "Output l2g mapping of reduced matrix\n";
-        // ISLocalToGlobalMappingView(mapping, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
 
+        // set QP matrix
         chkerr(QPSetOperator(system, Afixed));
         chkerr(MatDestroy(&Afixed));
     } else if (l2g_) {
@@ -224,13 +223,9 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
     if (ineq_) {
-      //chkerr(MatScale(matrix_ineq_,-1.));
-      //chkerr(VecScale(ineq_,-1.));
-      // Bx<=c
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
     }
-    if (l2g_ && rows_ds_->np() > 1) { // FETI
+    if (use_feti_) { // FETI
       chkerr(QPTMatISToBlockDiag(system));
       chkerr(QPGetChild(system, &system));
       chkerr(QPFetiSetUp(system));
@@ -240,7 +235,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     }
       
     // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
-    if (l2g_ &&  rows_ds_->np() > 1) {
+    if (use_feti_) {
         chkerr(QPTFromOptions(system));
         chkerr(QPGetParent(system, &system));
     }
