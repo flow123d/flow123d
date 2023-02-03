@@ -67,6 +67,7 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("feti", Bool(), IT::Default("false"), "Switch for FETI domain decomposition solver.")
 		   .close();
 }
 
@@ -403,11 +404,16 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     LinSys *ls;
     has_contact_ = input_rec.val<bool>("contact");
+    bool feti = input_rec.val<bool>("feti");
+    if (!has_contact_ && feti)
+        WarningOut() << "Cannot use FETI solver for problem without contact conditions.";
     if (has_contact_) {
 #ifndef FLOW123D_HAVE_PERMON
         ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
 #endif //FLOW123D_HAVE_PERMON
         ls = new LinSys_PERMON(*eq_data_->dh_, petsc_default_opts);
+        if (feti)
+            ((LinSys_PERMON *)ls)->use_feti();
 
         // allocate constraint matrix and vector
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours

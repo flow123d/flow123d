@@ -71,6 +71,10 @@ public:
 
     double compute_residual() override;
 
+    void use_feti(bool feti = true) {
+        use_feti_ = feti;
+    }
+
     ~LinSys_PERMON( );
 
 private:
@@ -99,8 +103,10 @@ protected:
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
 
-    QP                 system;
-    QPS                solver;
+    QP      system;
+    QPS     solver;
+
+    bool    use_feti_;
 };
 
 #endif /* LA_LINSYS_PERMON_HH_ */
