@@ -76,6 +76,7 @@ LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
 {
 	MatCopy(other.matrix_ineq_, matrix_ineq_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.ineq_, ineq_);
+    use_feti_ = other.use_feti_;
 }
 
 void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
