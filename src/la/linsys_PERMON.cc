@@ -87,6 +87,7 @@ LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
 	VecCopy(other.warm_solution_, warm_solution_);
     warm_start_ = other.warm_start_;
     maxeig_ = other.maxeig_;
+    use_feti_ = other.use_feti_;
 }
 
 void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
