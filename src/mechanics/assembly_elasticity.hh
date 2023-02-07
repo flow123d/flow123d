@@ -172,19 +172,33 @@ public:
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (!cell_lower_dim.is_own()) return;
 
 		side_dof_indices_[0] = cell_lower_dim.get_loc_dof_indices();
 		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
 		fe_values_sub_.reinit(cell_sub);
 
+        vector<LongIdx> lower_nodes;
+        for (unsigned int i=0; i<dim; i++)
+            lower_nodes.push_back(cell_sub.node(i).idx());
+
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
+        vector<double> ignore_nodes(n_dofs_, false);
+        for (unsigned int idof=0; idof<n_dofs_; idof++) {
+            if ( side_dof_indices_[1][idof] >= 0 && cell_higher_dim.cell_dof(idof).dim == 0 && 
+                 find(lower_nodes.begin(), lower_nodes.end(), cell_higher_dim.elm().node(cell_higher_dim.cell_dof(idof).n_face_idx).idx()) == lower_nodes.end() )
+            {
+                ignore_nodes[idof] = true;
+            }
+        }
+
 		// Element id's for testing if they belong to local partition.
-		bool own_element_id[2];
-		own_element_id[0] = cell_lower_dim.is_own();
-		own_element_id[1] = cell_higher_dim.is_own();
+		// bool own_element_id[2];
+		// own_element_id[0] = cell_lower_dim.is_own();
+		// own_element_id[1] = cell_higher_dim.is_own();
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int i=0; i<n_dofs_; i++)
@@ -201,16 +215,19 @@ public:
 
             for (int n=0; n<2; n++)
             {
-                if (!own_element_id[n]) continue;
+                // if (!own_element_id[n]) continue;
 
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
+                    if (n == 1 && ignore_nodes[i]) continue;
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
 
                     for (int m=0; m<2; m++)
+                    {
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
+                            if (m == 1 && ignore_nodes[j]) continue;
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
@@ -226,6 +243,7 @@ public:
                                      - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fe_values_sub_.JxW(k);
                         }
+                    }
 
                 }
             }
