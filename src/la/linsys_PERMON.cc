@@ -144,17 +144,32 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY);
 
         Mat Aloc, Aloc_feti;
-        IS isnz;
+        IS isnz, isnz_tmp;
         ISLocalToGlobalMapping l2g, mapping;
         const PetscInt *l2g_arr, *nz_arr;
         PetscInt *l2g_feti_arr;
         PetscInt nmap, nrows, i, j, k;
-
+        
         chkerr(MatISGetLocalMat(Afixed, &Aloc));
-        chkerr(MatFindNonzeroRows(Aloc, &isnz));
+        chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
+        if (isnz_tmp != NULL) {
+            const PetscInt *nz_idx;
+            ISGetLocalSize(isnz_tmp, &nrows);
+            ISGetIndices(isnz_tmp, &nz_idx);
+            ISCreateGeneral(PETSC_COMM_WORLD, nrows, nz_idx, PETSC_COPY_VALUES, &isnz);
+            ISRestoreIndices(isnz_tmp, &nz_idx);
+        } else {
+            MatGetLocalSize(Aloc, &nrows, NULL);
+            PetscInt *nz_idx;
+            PetscMalloc1(nrows, &nz_idx);
+            for (int i=0; i<nrows; i++)
+                nz_idx[i] = i;
+            ISCreateGeneral(PETSC_COMM_WORLD, nrows, nz_idx, PETSC_OWN_POINTER, &isnz);
+        }
+        ISDestroy(&isnz_tmp);
+        // ISView(isnz, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
         chkerr(MatISRestoreLocalMat(Afixed, &Aloc));
-
         chkerr(ISGetIndices(isnz, &nz_arr));
         chkerr(ISGetLocalSize(isnz, &nrows));
         chkerr(MatISGetLocalToGlobalMapping(Afixed, &l2g, NULL));
@@ -171,11 +186,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
                 }
             }
         }
-        chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
-        chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
         chkerr(ISRestoreIndices(isnz, &nz_arr));
         chkerr(ISDestroy(&isnz));
-
+        chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
+        chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
         chkerr(MatDestroy(&Afixed));
         chkerr(MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                             mapping, mapping, &Afixed));
@@ -183,11 +197,11 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatDestroy(&Aloc_feti));
+        // cout << "Output l2g mapping of reduced matrix\n";
+        // ISLocalToGlobalMappingView(mapping, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
 
         chkerr(QPSetOperator(system, Afixed));
-        MatView(Afixed, PETSC_VIEWER_STDOUT_WORLD);
-        VecView(rhs_, PETSC_VIEWER_STDOUT_WORLD);
         chkerr(MatDestroy(&Afixed));
     } else if (l2g_) {
         Mat matrix_aij;
