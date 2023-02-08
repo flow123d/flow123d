@@ -68,7 +68,8 @@ LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &p
 }
 
 LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &params)
-        : LinSys_PETSC(dh, params)
+        : LinSys_PETSC(dh, params),
+        use_feti_(false)
 {}
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
