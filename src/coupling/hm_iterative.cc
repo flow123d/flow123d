@@ -99,6 +99,8 @@ const it::Record & HM_Iterative::get_input_type() {
                 "Absolute tolerance for difference in HM iteration." )
         .declare_key( "r_tol", it::Double(0), it::Default("1e-7"),
                 "Relative tolerance for difference in HM iteration." )
+        .declare_key("steady", it::Bool(), it::Default("false"),
+                "If true, only zero time is solved.")
 		.close();
 }
 
@@ -255,6 +257,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
 
     eq_fields_.add_coords_field();
+
+    steady_ = in_record.val<bool>("steady");
 }
 
 
@@ -303,7 +307,7 @@ void HM_Iterative::update_solution()
     time_->view("HM");
     eq_fields_.set_time(time_->step(), LimitSide::right);
 
-    solve_step();
+    if (!steady_) solve_step();
 }
 
 void HM_Iterative::solve_iteration()

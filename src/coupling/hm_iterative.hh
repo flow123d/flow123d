@@ -205,6 +205,8 @@ private:
 
     EqData eq_data_;
 
+    bool steady_;
+
 };
 
 #endif /* HC_EXPLICIT_SEQUENTIAL_HH_ */
