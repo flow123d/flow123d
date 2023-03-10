@@ -174,7 +174,7 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-        if (!cell_higher_dim.is_own()) return;
+        if (!cell_lower_dim.is_own()) return;
 
 		side_dof_indices_[0] = cell_lower_dim.get_loc_dof_indices();
 		fe_values_sub_.reinit(cell_lower_dim.elm());
@@ -230,7 +230,7 @@ public:
                                         )
                                         + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
                                         + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
-                                    )*fe_values_sub_.JxW(k);
+                                    )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                         }
                     }
 
