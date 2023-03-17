@@ -1,0 +1,85 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Injection into 2 fractures differing in cross section.
+  mesh:
+    mesh_file: ../00_mesh/square_2frac.msh
+  flow_equation: !Coupling_Iterative
+    time:
+      end_time: 10
+    input_fields:
+      - region: BULK
+        biot_alpha: 1
+        fluid_density: 1e1
+    a_tol: 1e-9
+    r_tol: 1e-9
+    iteration_parameter: 1
+    flow_equation: !Flow_Darcy_LMH
+        input_fields:
+          - region: rock
+            conductivity: 1e-3
+            storativity: 1
+          - region: fracture_lower
+            conductivity: 1
+            storativity: 1
+            cross_section: 1e-3
+          - region: fracture_upper
+            conductivity: 1
+            storativity: 1
+            cross_section: 2e-3
+          - region: [ .right_fl, .right_fu ]
+            bc_type: total_flux
+            bc_flux: 1e2
+          - region: .left
+            bc_type: dirichlet
+            bc_pressure: 0
+        nonlinear_solver:
+          max_it: 1
+          linear_solver: !Petsc
+            a_tol: 1e-9
+            r_tol: 1e-9
+        output:
+          times:
+            - step: 2
+          fields:
+            - pressure_p0
+            - velocity_p0
+            - region_id
+        balance: {}
+        output_stream: 
+          format: !vtk
+            variant: ascii
+    mechanics_equation:
+        input_fields:
+          - region: rock
+            young_modulus: 1e5
+            poisson_ratio: 0.25
+          - region: [ fracture_lower, fracture_upper ]
+            young_modulus: 1e0
+            poisson_ratio: 0.25
+            cross_section_min: 1e-6
+          - region: .bottom
+            bc_type: displacement
+            bc_displacement: 0
+          - region: .top
+            bc_type: traction
+            bc_traction: [ 0, -1e3, 0 ]
+          - region: [ .right_fl, .right_fu ]
+            bc_type: displacement_n
+            bc_displacement: 0
+        solver: !Petsc
+          a_tol: 1e-9
+          r_tol: 1e-9
+        contact: true
+        output_stream:
+          file: mechanics.pvd
+          format: !vtk
+            variant: ascii
+        output:
+          times:
+            - step: 2
+          fields:
+            - displacement
+            - stress
+            - cross_section_updated
+            - displacement_divergence
+            - region_id
