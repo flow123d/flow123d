@@ -1,0 +1,74 @@
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description:
+  mesh:
+    mesh_file: input_fields_200fr_306k.msh
+#    mesh_file: input_fields_400fr_989k.msh
+
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 0
+    time:
+      end_time: 1
+    a_tol: 0
+    r_tol: 1e-4
+    steady: true
+    flow_equation: !Flow_Darcy_LMH
+      nonlinear_solver:
+        max_it: 0
+        linear_solver: !Petsc
+      input_fields:
+        - region: fr_small
+          cross_section: !FieldFE 
+            mesh_data_file: input_fields_200fr_306k.msh
+            field_name: cross_section
+            default_value: 1.0
+        - region: .side_z0
+          bc_type: dirichlet
+          bc_piezo_head: 0
+
+      output:
+        times: &output_times
+          - step: 1
+        fields: []
+      output_stream:
+        format: !vtk
+      balance: {}
+
+    mechanics_equation:
+      output_stream:
+        format: !vtk
+          variant: ascii
+      output:
+        times: *output_times
+        fields:
+          - displacement
+          - stress
+          - cross_section_updated
+          - region_id
+          - subdomain
+      solver: !Petsc
+        a_tol: 1e-6
+        r_tol: 1e-9
+#        options: -ksp_type preonly -pc_type lu  # does not work in parallel
+        options: -qps_max_it 10000 -qps_divtol 1e10 -permon_dual_mat_inv_sub_mat_mumps_cntl_3 1e-8 -qps_view_convergence
+      contact: true
+#      feti: true
+      input_fields:
+        - region: box
+          young_modulus: 60e9
+          poisson_ratio: 0.2
+
+        - region: fr_small
+          young_modulus: 60e3
+          poisson_ratio: 0.2
+          cross_section_min: 0
+
+        - region: [ .side_z0, .side_z1, .side_x0, .side_x1, .side_y0, .side_y1, .fr_side_z0, .fr_side_z1, .fr_side_x0, .fr_side_x1, .fr_side_y0, .fr_side_y1 ]
+          bc_type: displacement_n
+          bc_displacement: 0
+
+        - region: [ .box_tunnel, .box_boreholes, .fr_tunnel, .fr_boreholes ]
+          bc_type: stress
+          bc_stress: [ -60e6, -45e6, -11e6 ]
