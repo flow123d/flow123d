@@ -2,8 +2,7 @@ flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description:
   mesh:
-    mesh_file: input_fields_200fr_306k.msh
-#    mesh_file: input_fields_400fr_989k.msh
+    mesh_file: &meshfile input_fields_200fr_306k.msh 
 
   flow_equation: !Coupling_Iterative
     input_fields:
@@ -21,7 +20,7 @@ problem: !Coupling_Sequential
       input_fields:
         - region: fr_small
           cross_section: !FieldFE 
-            mesh_data_file: input_fields_200fr_306k.msh
+            mesh_data_file: *meshfile
             field_name: cross_section
             default_value: 1.0
         - region: .side_z0
@@ -31,7 +30,7 @@ problem: !Coupling_Sequential
       output:
         times: &output_times
           - step: 1
-        fields: []
+        fields: cross_section
       output_stream:
         format: !vtk
       balance: {}
@@ -51,10 +50,8 @@ problem: !Coupling_Sequential
       solver: !Petsc
         a_tol: 1e-6
         r_tol: 1e-9
-#        options: -ksp_type preonly -pc_type lu  # does not work in parallel
         options: -qps_max_it 10000 -qps_divtol 1e10 -permon_dual_mat_inv_sub_mat_mumps_cntl_3 1e-8 -qps_view_convergence
       contact: true
-#      feti: true
       input_fields:
         - region: box
           young_modulus: 60e9
