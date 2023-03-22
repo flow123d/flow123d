@@ -31,7 +31,7 @@
 namespace it = Input::Type;
 
 const it::Record & LinSys_PERMON::get_input_type() {
-	return it::Record("Petsc", "PETSc solver settings.\n It provides interface to various PETSc solvers. The convergence criteria is:\n"
+	return it::Record("Permon", "PERMON solver settings.\n It provides interface to various PERMON solvers. The convergence criteria is:\n"
 	        "```\n"
 	        "norm( res_i )  < max( norm( res_0 ) * r_tol, a_tol )\n"
 	        "```\n"
@@ -50,6 +50,7 @@ const it::Record & LinSys_PERMON::get_input_type() {
         .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
                         "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
+    .declare_key("warm_start", it::Bool(), it::Default("true"), "Warm start QPS solver with the privous solution.")
 		.declare_key("options", it::String(), it::Default("\"\""),  "This options is passed to PETSC to create a particular KSP (Krylov space method).\n"
                                                                     "If the string is left empty (by default), the internal default options is used.")
 		.close();
@@ -64,17 +65,27 @@ LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &p
 {
     matrix_ineq_ = NULL;
     ineq_ = NULL;
+    warm_solution_ = NULL;
+    maxeig_ = PETSC_DECIDE;
 }
 
 LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &params)
         : LinSys_PETSC(dh, params)
-{}
+{
+    matrix_ineq_ = NULL;
+    ineq_ = NULL;
+    warm_solution_ = NULL;
+    maxeig_ = PETSC_DECIDE;
+}
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
 	: LinSys_PETSC(other)
 {
 	MatCopy(other.matrix_ineq_, matrix_ineq_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.ineq_, ineq_);
+	VecCopy(other.warm_solution_, warm_solution_);
+    warm_start_ = other.warm_start_;
+    maxeig_ = other.maxeig_;
 }
 
 void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
@@ -244,6 +255,16 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
     chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
     chkerr(QPSSetFromOptions(solver));
+    chkerr(QPSSetUp(solver)); // solvers may do additional QP tranformations
+
+    // warm start the solver
+    if (warm_solution_ != NULL) {
+      QP qp_last;
+      Vec sol;
+      chkerr(QPChainGetLast(system,&qp_last));
+      chkerr(QPGetSolutionVector(qp_last,&sol));
+      chkerr(VecCopy(warm_solution_,sol));
+    }
 
     {
 		START_TIMER("PERMON linear solver");
@@ -263,6 +284,27 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+
+    // set inner solver solution for warm start
+    if (warm_start_) {
+      QP qp_last;
+      Vec sol;
+      PetscBool same;
+      chkerr(QPChainGetLast(system,&qp_last));
+      chkerr(QPGetSolutionVector(qp_last,&sol));
+      chkerr(VecDestroy(&warm_solution_));
+      chkerr(VecDuplicate(sol,&warm_solution_));
+      chkerr(VecCopy(sol,warm_solution_));
+      chkerr(PetscObjectTypeCompare((PetscObject)solver,QPSMPGP,&same));
+      if (same) {
+        char stri[128];
+        chkerr(QPSMPGPGetOperatorMaxEigenvalue(solver,&maxeig_));
+        chkerr(PetscSNPrintf(stri, sizeof(stri), "-qps_mpgp_maxeig %.17g",maxeig_));
+        // NOTE: this could be done through API, but needs to have correct
+        // order for QPSSetUp/ warm start set up, that depends on the solver type
+        chkerr(PetscOptionsInsertString(NULL,stri));
+      } // TODO: inherit maxeig for SMALXE
+    }
 
     chkerr(QPSDestroy(&solver));
     chkerr(QPDestroy(&system));
@@ -327,11 +369,17 @@ void LinSys_PERMON::view(string text )
 
 LinSys_PERMON::~LinSys_PERMON( )
 {
-    // TODO cleanup ineq objects
+    if (warm_solution_ != NULL) chkerr(VecDestroy(&warm_solution_));
 }
 
+void LinSys_PERMON::set_from_input(const Input::Record in_rec)
+{
+    LinSys_PETSC::set_from_input(in_rec);
 
-
+    // PERMON specific parameters
+    warm_start_ = false;//in_rec.val<bool>("warm_start");
+    warm_start_ = true;//in_rec.val<bool>("warm_start");
+}
 
 double LinSys_PERMON::get_solution_precision()
 {
