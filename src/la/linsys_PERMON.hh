@@ -67,6 +67,8 @@ public:
 
     void view(string text="") override;
 
+    void set_from_input(const Input::Record in_rec) override;
+
     double get_solution_precision() override;
 
     double compute_residual() override;
@@ -102,11 +104,15 @@ protected:
 
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
+    Vec     warm_solution_;
 
     QP      system;
     QPS     solver;
 
+    PetscReal maxeig_;
+
     bool    use_feti_;
+    bool    warm_start_;
 };
 
 #endif /* LA_LINSYS_PERMON_HH_ */
