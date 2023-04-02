@@ -22,7 +22,7 @@
 #include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
-#include "include/arena_alloc.hh"       // bparser
+//#include "include/arena_alloc.hh"       // bparser
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/regex.hpp>
 
@@ -365,6 +365,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
 {
+	// Can not compile expression in set_time as the necessary cache size is not known there yet.
+
     if (arena_alloc_!=nullptr) {
         delete arena_alloc_;
     }

@@ -91,6 +91,8 @@ project(Flow123d CXX C Fortran)
 # CMake version required for pre-build this project
 cmake_minimum_required(VERSION 2.8.8)
     
+set(CMAKE_C_DEPENDS_USE_COMPILER ON)
+
 cmake_policy(SET CMP0017 NEW)
 if (${CMAKE_VERSION} VERSION_GREATER 3.0)
     cmake_policy(SET CMP0037 OLD)
@@ -195,17 +197,14 @@ set(CMAKE_C_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE} "")
 set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 
-# Compiler-specific C++14 activation.
-set(CMAKE_CXX_STANDARD 14)
+# Compiler-specific C++17 activation. Necessary for BParser and VCL2.
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
       # -Wvla - variable length arrays
 
 message(STATUS "COMPILER ID: ${CMAKE_CXX_COMPILER_ID}")
-## Compiler-specific C++11 activation.
-## It was replaced in commit a66193035 with C++14 specification.
-## Needs special definition of trigonometric functions held in the comment below:
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pedantic -Wall -Wextra -Werror \
     -Wno-catch-value -Wno-deprecated-copy -Wno-misleading-indentation -Wno-implicit-fallthrough \
@@ -457,7 +456,7 @@ include (FindPackageMultipass)
 
 # this export list is for possible BDDCML installation
 set(PETSC_EXPORT_LIST 
-  MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
+  MPIEXEC MPICXX_INCLUDES MPIFC_SHOW MPICXX_SHOW MPICC_SHOW CC FC CC_FLAGS PCC_FLAGS FC_FLAGS CPP_FLAGS
   METIS_INCLUDE BLASLAPACK_INCLUDE PARMETIS_INCLUDE MUMPS_INCLUDE
   MPI_LIB MUMPS_LIB  METIS_LIB PARMETIS_LIB BLASLAPACK_LIB SCALAPACK_LIB
   UMFPACK_LIB)  
@@ -466,6 +465,13 @@ message(STATUS "PETSC_DIR = ${PETSC_DIR}")
 message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
 
 find_package(PETSc 3.6.0 REQUIRED)
+#set(MPI_DIR ${PETSC_MPIEXEC})
+string(REGEX REPLACE "/bin/mpiexec$" "" MPI_HOME ${PETSC_MPIEXEC})
+
+# Find MPI package using the extracted MPI directory
+message(STATUS "MPI_HOME: ${MPI_HOME}")
+find_package(MPI REQUIRED)
+
 flow_define(HAVE_PETSC)
 flow_define(HAVE_MPI)
 
@@ -478,22 +484,6 @@ message(STATUS "PETSC_LIBS = ${PETSC_LIBRARIES}")
 message(STATUS "PETSC_EXTERNAL_LIB = ${PETSC_EXTERNAL_LIB}")
 message(STATUS "=======================================================\n\n")
 
-################################################################################
-#  PERMON_FOUND - set to true if the library is found
-message(STATUS "=======================================================")
-message(STATUS "====== PERMON =========================================")
-message(STATUS "=======================================================")
-message(STATUS "PERMON_ROOT = ${PERMON_ROOT}")
-
-find_package(PERMON)
-if (PERMON_FOUND)
-    flow_define(HAVE_PERMON)
-    message(STATUS "-------------------------------------------------------")
-    message(STATUS "PERMON_FOUND = ${PERMON_FOUND}")
-    message(STATUS "PERMON_INCLUDES = ${PERMON_INCLUDES}")
-    message(STATUS "PERMON_LIBRARY = ${PERMON_LIBRARY}")
-    message(STATUS "=======================================================\n\n") 
-endif()
 
 ################################################################################
 #  BDDCML_FOUND - set to true if the library is found
@@ -698,29 +688,6 @@ set(CONFIG_FILE_INCLUDES_DIRECTORY "${CMAKE_BINARY_DIR}/includes")
 ######################################################################################################################### 
 # set includes and libraries paths
 
-include_directories(
-    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
-    ${CMAKE_SOURCE_DIR}/src
-    ${CONFIG_FILE_INCLUDES_DIRECTORY}
-    #${CMAKE_SOURCE_DIR}/third_party/metis-include
-    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
-    ${CMAKE_SOURCE_DIR}/third_party/bparser
-    ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
-    ${CMAKE_SOURCE_DIR}/third_party/pybind11-2.9.2/include/pybind11
-    ${PERMON_INCLUDES}
-    ${PETSC_INCLUDES}
-    ${PYTHON_INCLUDE_DIRS}
-    
-    ${Boost_INCLUDE_DIR}
-    ${Armadillo_INCLUDE_DIRS}
-    ${MPI_CXX_INCLUDE_PATH}
-    ${YamlCpp_INCLUDE_DIR}
-    ${PugiXml_INCLUDE_DIR}
-    ${Zlib_INCLUDE_DIR}
-#    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
-#    ${CMAKE_SOURCE_DIR}/src/dealii/include
-#    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
-)
 
 ######################################################################################################################
 # custom targets
@@ -872,6 +839,29 @@ add_subdirectory(third_party/pybind11-2.9.2)
 #add_subdirectory(third_party/tbb43_20150316oss)
 
 # add various our sources
+include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}                            # include the output directory, where the rev_num.h file is generated    
+    ${CMAKE_SOURCE_DIR}/src
+    ${CONFIG_FILE_INCLUDES_DIRECTORY}
+    #${CMAKE_SOURCE_DIR}/third_party/metis-include
+    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1    
+    ${PYBIND11_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
+    ${PERMON_INCLUDES}
+    ${PETSC_INCLUDES}
+    ${PYTHON_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIR}
+    ${Armadillo_INCLUDE_DIRS}
+    ${MPI_CXX_INCLUDE_PATH}
+    ${YamlCpp_INCLUDE_DIR}
+    ${PugiXml_INCLUDE_DIR}
+    ${Zlib_INCLUDE_DIR}
+#    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
+#    ${CMAKE_SOURCE_DIR}/src/dealii/include
+#    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
+	${BPARSER_INCLUDES}
+)
+
 add_subdirectory(src)
 add_subdirectory(doc)
 add_subdirectory(unit_tests) # this also adds third_party/gtest
@@ -938,6 +928,12 @@ if( PETSC_FOUND )
 else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
+
+
+
+
+
+
 
 ###############################################################################
 # Summary

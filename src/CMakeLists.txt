@@ -72,10 +72,6 @@ endif()
 # patched json_spirit lib
 add_subdirectory("input/json_spirit")
 
-pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
-#pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
-#add_executable(flow123dpy fields/python_field_proxy.cc)
-#target_link_libraries(fieldproxypy PRIVATE pybind11::embed)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
@@ -113,7 +109,9 @@ add_library(system_lib
     system/fmt/ostream.cc
     system/fmt/posix.cc
 )
-target_link_libraries(system_lib PUBLIC pybind11::embed 
+target_link_libraries(system_lib PUBLIC 
+	MPI::MPI_CXX
+    pybind11::embed 
     ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
     ${PETSC_EXTERNAL_LIB} 
@@ -176,7 +174,6 @@ target_link_libraries(la_lib
     ${Boost_LIBRARIES})
 set_target_properties(la_lib 
     PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
-
 
 
 # tools_lib    
@@ -288,6 +285,11 @@ target_link_libraries(io_lib
     ${Zlib_LIBRARY})
 
 
+# Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
+pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
+#pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
+#add_executable(flow123dpy fields/python_field_proxy.cc)
+target_link_libraries(fieldproxypy PUBLIC armadillo system_lib)
 
 
 

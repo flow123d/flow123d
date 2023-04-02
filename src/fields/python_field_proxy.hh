@@ -18,10 +18,10 @@
 #ifndef PYTHON_FIELD_BASE_HH_
 #define PYTHON_FIELD_BASE_HH_
 
-#include <pybind11.h>
-#include <stl.h>
-#include <numpy.h>
-#include <detail/common.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+//#include <pybind11/common.h>
 #include "fields/field_value_cache.hh"
 
 namespace py = pybind11;
