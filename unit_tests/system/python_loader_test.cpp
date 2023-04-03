@@ -19,8 +19,8 @@
 #include "system/python_loader.hh"
 #include "system/file_path.hh"
 
-#include <pybind11.h>
-#include <embed.h> // everything needed for embedding
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h> // everything needed for embedding
 
 using namespace std;
 namespace py = pybind11;
