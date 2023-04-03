@@ -829,6 +829,7 @@ add_subdirectory(third_party/fparser-4.5.1)
 # add bparser sources
 message(STATUS "add subdir BParser")
 add_subdirectory(third_party/bparser)
+message(STATUS "BPARSER_INCLUDES = ${BPARSER_INCLUDES}")
 
 # add pybind11 sources
 message(STATUS "add subdir pybind11")
