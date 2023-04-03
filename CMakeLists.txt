@@ -833,7 +833,7 @@ message(STATUS "BPARSER_INCLUDES = ${BPARSER_INCLUDES}")
 
 # add pybind11 sources
 message(STATUS "add subdir pybind11")
-add_subdirectory(third_party/pybind11-2.9.2)
+add_subdirectory(third_party/pybind11)
 
 # add tbb sources
 #message(STATUS "add subdir TBB")

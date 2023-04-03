@@ -15,5 +15,5 @@
 	path = third_party/json-3.10.5
 	url = https://github.com/nlohmann/json.git
 [submodule "third_party/pybind11-2.9.2"]
-	path = third_party/pybind11-2.9.2
+	path = third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
