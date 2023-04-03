@@ -11,8 +11,8 @@
 
 #include <flow_gtest.hh>
 #include <string>
-#include "include/assert.hh"
-#include "include/parser.hh"
+#include "assert.hh"
+#include "parser.hh"
 
 
 TEST(BParser, all) {
