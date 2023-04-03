@@ -22,6 +22,7 @@
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "create_processor.hh"
 #include "mesh/accessors.hh"
 
 
@@ -30,11 +31,11 @@
  */
 
 const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigned int>::max();
-const unsigned int ElementCacheMap::simd_size_double = 4;
+//const unsigned int ElementCacheMap::simd_size_double = 4;
 
 
 ElementCacheMap::ElementCacheMap()
-: elm_idx_(CacheMapElementNumber::get(), ElementCacheMap::undef_elem_idx),
+: simd_size_double(bparser::get_simd_size()), elm_idx_(CacheMapElementNumber::get(), ElementCacheMap::undef_elem_idx),
   ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0),
   regions_starts_(2*ElementCacheMap::regions_in_chunk,ElementCacheMap::regions_in_chunk),
   element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {}
@@ -80,7 +81,7 @@ void ElementCacheMap::create_patch() {
         if (is_new_elm) {
             if (is_new_reg) {
                 unsigned int last_eval_point = i_pos-1; // set size of block by SIMD size
-                while (i_pos % ElementCacheMap::simd_size_double > 0) {
+                while (i_pos % simd_size_double > 0) {
                 	eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
                     i_pos++;
                 }
@@ -101,7 +102,7 @@ void ElementCacheMap::create_patch() {
         i_pos++;
     }
     unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size
-    while (i_pos % ElementCacheMap::simd_size_double > 0) {
+    while (i_pos % simd_size_double > 0) {
         eval_point_data_.emplace_back( eval_point_data_[last_eval_point] );
         i_pos++;
     }
