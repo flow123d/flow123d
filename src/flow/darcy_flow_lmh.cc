@@ -683,6 +683,7 @@ void DarcyLMH::zero_time_step()
         this->read_init_cond_asm();
         accept_time_step(); // accept zero time step, i.e. initial condition
         
+        
         // we reconstruct the initial solution here
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
@@ -1139,6 +1140,7 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
             lin_sys_schur().set_positive_definite();
             lin_sys_schur().set_solution( eq_data_->p_edge_solution.petsc_vec() );
             lin_sys_schur().set_symmetric();
+            ((LinSys_PETSC *)&lin_sys_schur())->set_initial_guess_nonzero(true);
             
 //             LinSys_PETSC *schur1, *schur2;
 
