@@ -80,7 +80,6 @@ jobs:
           run: |
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
- 
     unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
@@ -125,6 +124,17 @@ jobs:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh make ref-doc
 
+    done:
+        if: ${{always()}}
+        needs: integration_tests
+        runs-on: ubuntu-latest
+        name: Test a job aggregation action.
+        steps:
+          - uses: matrix-org/done-action@v1 # this action succeeds only if all dependent jobs have succeeded
+            with:
+              needs: ${{ toJSON(needs) }}
+        
+        
     conclusion:
         if: ${{always()}}
         runs-on: ubuntu-latest
