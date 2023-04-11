@@ -45,6 +45,9 @@ problem: !Coupling_Sequential
             - cross_section_updated
             - region_id
         solver: !Petsc
+          a_tol: 1e-9
+          r_tol: 1e-12
+          options: -qps_view_convergence -qps_max_it 1000
         contact: true
         input_fields:
           - region: rock

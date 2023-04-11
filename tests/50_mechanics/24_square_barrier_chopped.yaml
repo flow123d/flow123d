@@ -46,7 +46,6 @@ problem: !Coupling_Sequential
             - stress
             - region_id
         solver: !Petsc
-          options: -ksp_type preonly -pc_type lu
         input_fields:
           - region: bulk
             young_modulus: 1
