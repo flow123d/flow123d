@@ -4,9 +4,14 @@
 #     make_packages.sh <environment> <target_image>]
 # 
 
+set -e
 set -x
 
 environment=$1
+if [ -z $environment ]
+    then exit 1
+fi	    
+
 
 #######################################
 # Paths on host
@@ -31,11 +36,10 @@ imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
 #release_version=`cat ${flow_repo_host}/version`      
 
 build_type=dbg
-config_name=debug
 build_image="flow-dev-${environment}-${build_type}:${imagesversion}"
 
 
-git_hash=`rev-parse --short HEAD`
+git_hash=`git rev-parse --short=6 HEAD`
 git_branch=`git rev-parse --abbrev-ref HEAD`
 build_dir_host=build-${git_branch}
 
@@ -55,8 +59,16 @@ echo "build image: '${build_image}'"
 # docker rm -f  || echo "container not running"
 bin/fterm update
 #docker rm -f ${build_container}    
+# TODO:
+# Unable to create named container with fterm (--detach was intended to that purpose but never truly worked).
+# So as far as whole work is done on the bind volume we can just create new container for every command just using 'bin/fterm run'
+# rather prevent --priviledged as then git complains as the git user differs from the priviledged user
+# more over resulting files have wrong permissions
 
 # Build flow123d binary (and flow123d libraries)
+if [ -L build_tree ]
+then rm build_tree
+fi
 cp config/config-jenkins-docker-${build_type}.cmake config.cmake
 bin/fterm dbg_${environment}  --no-term exec make -j4 all
 

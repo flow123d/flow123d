@@ -42,7 +42,7 @@ public:
       : value_cache_( FieldValueCache<double>(3, 1) )
     {
         this->multifield_ = false;
-    	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+    	unsigned int cache_size = CacheMapElementNumber::get();
     	value_cache_.reinit(cache_size);
     	value_cache_.resize(cache_size);
     	this->set_shape(3, 1);
@@ -157,24 +157,8 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED unsigned int i_reg) const override {
         return std::vector<const FieldCommon *>();
-    }
-
-    /// Returns one value of coordinates in one given point @p.
-    inline arma::vec3 const & value(const Point &p, FMT_UNUSED const ElementAccessor<3> &elm) const
-    {
-        return p;
-    }
-
-    inline void value_list(const Armor::array &point_list, const ElementAccessor<3> &elm,
-                       std::vector<arma::vec3> &value_list) const
-    {
-        ASSERT(point_list.n_rows() == 3 && point_list.n_cols() == 1).error("Invalid point size.\n");
-        ASSERT_EQ(point_list.size(), value_list.size()).error("Different size of point list and value list.\n");
-
-        for (uint i=0; i<point_list.size(); ++i)
-            value_list[i] = this->value(point_list.template vec<3>(i), elm);
     }
 
     /// Return item of @p value_cache_ given by i_cache_point.

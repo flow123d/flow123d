@@ -325,7 +325,8 @@ protected:
     std::array<std::array<uint, 4>, 64> element_nodes_original_;
 
 
-    /// Index set assigning to global element index the local index used in parallel vectors.
+    /// Index set assigning to global element index (in nonprationed mesh) the global index in partitioned mesh
+    /// (local elements form a subsequence).
     LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
     LongIdx *el_4_loc;

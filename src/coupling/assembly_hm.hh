@@ -80,7 +80,7 @@ public:
             auto p_side = *this->boundary_points(dh_side).begin();
             auto p_bdr = p_side.point_bdr( dh_side.cond().element_accessor() );
             unsigned int flow_bc_type = eq_data_->flow_->eq_fields().bc_type(p_bdr);
-            if (flow_bc_type == DarcyMH::EqFields::dirichlet || flow_bc_type == DarcyMH::EqFields::total_flux)
+            if (flow_bc_type == DarcyLMH::EqFields::dirichlet || flow_bc_type == DarcyLMH::EqFields::total_flux)
             {
                 unsigned int k=0;
                 for ( auto p : this->boundary_points(dh_side) )

@@ -40,7 +40,7 @@ public:
       : value_cache_( FieldValueCache<double>(1, 1) ), surface_depth_(nullptr)
     {
         this->multifield_ = false;
-    	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+    	unsigned int cache_size = CacheMapElementNumber::get();
     	value_cache_.reinit(cache_size);
     	value_cache_.resize(cache_size);
     	this->set_shape(1, 1);
@@ -124,7 +124,7 @@ public:
     }
 
     /// Implements FieldCommon::set_dependency().
-    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const override {
+    std::vector<const FieldCommon *> set_dependency(FMT_UNUSED unsigned int i_reg) const override {
     	std::vector<const FieldCommon *> res;
     	res.push_back(field_coords_);
         return res;

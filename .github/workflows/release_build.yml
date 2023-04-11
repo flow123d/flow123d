@@ -1,19 +1,23 @@
-name: Build release package
-# Build official release installation packages on the Jenkins.
-
-#on:
-  #release:
-    #types: [created, published, edited, released]
+name: Build and publish official release.
 
 on:
- push:
-   tags:
-   - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Create and publish a realease build.
+                type: choice
+                options:
+                    - gnu
+                    - intel
+                required: true
+                default: gnu
 
-#on:
-#  push
 
-# TODO: add to the User guide reference to the HTML generated doc and mention that one should trust the generated part 
+
+# TODO: 
+# - check agreement of version file and branch name
+# - try to create the tag and release on github
+# - try to add release to flow123d.github.io (with generic info)
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -34,17 +38,18 @@ jobs:
     - name: Set variables
       id: vars
       run: |
-        release_version=`cat version`
+        git_commit=`git rev-parse --short=6 HEAD`
+        release_tag=`cat version`
+        echo ${release_tag}
+
         # can not use environment variables in github actions
         echo ::set-output name=pubdir::publish_${environment}
-        echo ::set-output name=relver::${release_version}
-        
-        #echo "release_version=${release_version}" >> $GITHUB_ENV
+        echo ::set-output name=reltag::${release_tag}
 
     - name: Check vars
       run: |
           echo ${{ steps.vars.outputs.pubdir }}    
-          echo ${{ steps.vars.outputs.relver }}    
+          echo ${{ steps.vars.outputs.reltag }}    
 
     - name: Build packages
       run: |
@@ -53,9 +58,10 @@ jobs:
         # Login for finall push to docker hub
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
         
+        
         # make_packages <environment> <image_name_base> [push]
-        config/package/make_packages.sh ${environment} flow123d push
-        # config/package/make_packages.sh ${environment} ci push
+        release_tag="${{ steps.vars.outputs.reltag }}"
+        config/package/make_packages.sh ${environment} flow123d ${release_tag} push
 
       #run: |
         #docker rm -f  || echo "container not running"
@@ -103,7 +109,7 @@ jobs:
         #ls -l publish_${environment}
 
         #echo ${{ steps.vars.outputs.pubdir }}    
-        #echo ${{ steps.vars.outputs.relver }}    
+        #echo ${{ steps.vars.outputs.reltag }}    
 
 
         
@@ -120,61 +126,23 @@ jobs:
       uses: actions/upload-artifact@v3
       with:       
         path: |
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
+            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
       
 
     - name: SCP upload to Share
       run: |
-          cd ${{ steps.vars.outputs.pubdir }}          
-          relver="${{ steps.vars.outputs.relver }}"
-          echo sshpass -p ${{ secrets.PUBLISH_PASS }} scp -r  \
-            doxygen \
-            flow123d_${relver}_doc.pdf \
-            flow123d_${relver}_linux_install.json \
-            flow123d_${relver}_linux_install.tar.gz \
-            flow123d_${relver}_windows_install.exe \
-            flow123d_${relver}_windows_install.json \
-            htmldoc \
-            imagename \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
-            
-          sshpass -p ${{ secrets.PUBLISH_PASS }} scp -vr -o StrictHostKeyChecking=no \
-            doxygen \
-            flow123d_${{ steps.vars.outputs.relver }}_doc.pdf \
-            flow123d_${{ steps.vars.outputs.relver }}_linux_install.json \
-            flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz \
-            flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe \
-            flow123d_${{ steps.vars.outputs.relver }}_windows_install.json \
-            htmldoc \
-            imagename \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }}:packages/${relver}
-    
-    #Unreliable    
-    #- name: SSH
-      #uses: appleboy/scp-action@master
-      #with:
-        #host: ${{ secrets.PUBLISH_HOST }}
-        #username: ${{ secrets.PUBLISH_USER }}
-        #key: ${{ secrets.PUBLISH_KEY }}
-        #password: ${{ secrets.PUBLISH_PASS }}
-        #passphrase: ${{ secrets.PUBLISH_PASSPHRASE }}
-        #port: 22
-        #source: "${{ steps.vars.outputs.pubdir }}/doxygen, 
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.json,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe,
-                 #${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.json,
-                 #${{ steps.vars.outputs.pubdir }}/htmldoc,
-                 #${{ steps.vars.outputs.pubdir }}/imagename"
-        #source: "${{ steps.vars.outputs.pubdir }}/*"
-        #target: "~/packages/${{ steps.vars.outputs.relver }}"
-        #strip_components: 0 
+          release_tag="${{ steps.vars.outputs.reltag }}"
+          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
+          ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+          sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \
+            tar -xf packages/${relver}/package.tar -C packages/${relver} --strip-components=1
 
+          
     - name: Release add assets
       # Whole action triggered by release change.
       # We add created assets: PDF, and installation packages
@@ -182,11 +150,21 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_doc.pdf
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_linux_install.tar.gz
-          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.relver }}_windows_install.exe
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz
+          ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe
         
           #tag_name: v${{ steps.getversion.outputs.version }}
           #release_name: release_${{ steps.getversion.outputs.version }}
         #env:
           #GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          
+          
+# jobs:
+#     uses: org/reop/.github/workflows/xyz.yml@master
+#     with:
+#         <var>: ...
+#     secrets:
+#         <secret_var>: ${{secrets.XYZ}}
+#
+# reusable workflow can not be used from other reusable workfalow

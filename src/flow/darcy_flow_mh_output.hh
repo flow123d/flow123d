@@ -27,10 +27,6 @@
 #include <memory>                        // for shared_ptr
 #include <vector>                        // for vector
 #include <armadillo>
-#include "fem/fe_p.hh"                   // for FE_P_disc
-#include "fem/fe_rt.hh"                  // for FE_RT0
-#include "fem/fe_values.hh"              // for FEValues
-#include "quadrature/quadrature_lib.hh"  // for QGauss
 #include "fields/equation_output.hh"     // for EquationOutput
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
@@ -43,7 +39,7 @@
 #include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
 
 class DOFHandlerMultiDim;
-class DarcyFlowInterface;
+class DarcyLMH;
 class Mesh;
 class OutputTime;
 namespace Input {
@@ -55,6 +51,9 @@ namespace Input {
 
 template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
+template<unsigned int dim> class L2DifferenceAssembly;
+template<unsigned int dim> class OutputInternalFlowAssembly;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -94,7 +93,38 @@ public:
             Field<3, FieldValue<3>::Scalar> div_diff;
     };
 
-    DarcyFlowMHOutput(DarcyFlowInterface *flow, Input::Record in_rec) ;
+    /// Output specific field stuff
+    class DiffEqData {
+    public:
+        DiffEqData() {}
+
+        double pressure_error[3], velocity_error[3], div_error[3];
+        double mask_vel_error;
+
+        // Temporary objects holding pointers to appropriate FieldFE
+        // TODO remove after final fix of equations
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
+
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_;
+
+        std::vector<int> velocity_mask;
+        std::shared_ptr<DarcyLMH::EqData> flow_data_;
+    };
+
+    class RawOutputEqData {
+    public:
+    	RawOutputEqData() {}
+
+        ofstream raw_output_file;                        ///< Raw data output file.
+        std::vector< std::string > raw_output_strings_;  ///< Output lines of cells.
+        TimeGovernor *time_;                             ///< Time is shared with flow equation.
+
+        std::shared_ptr<DarcyLMH::EqData> flow_data_;
+    };
+
+    DarcyFlowMHOutput(DarcyLMH *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type(FieldSet& eq_data, const std::string &equation_name);
@@ -111,27 +141,14 @@ protected:
     typedef const vector<unsigned int> & ElementSetRef;
 
     virtual void prepare_output(Input::Record in_rec);
-    virtual void prepare_specific_output(Input::Record in_rec);
+    void prepare_specific_output(Input::Record in_rec);
+    void set_specific_output_python_fields();
     
-    void output_internal_flow_data();
-
-    /**
-     * Temporary hack.
-     * Calculate approximation of L2 norm for:
-     * 1) difference between regularized pressure and analytical solution (using FunctionPython)
-     * 2) difference between RT velocities and analytical solution
-     * 3) difference of divergence
-     *
-     * TODO:
-     * 1) implement field objects
-     * 2) implement DG_P2 finite elements
-     * 3) implement pressure postprocessing (result is DG_P2 field)
-     * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
-     */
-    void compute_l2_difference();
+    template <class FieldType>
+    void set_ref_solution(const Input::Record &rec, Field<3, FieldType> &output_field, std::vector<std::string> reg);
 
 
-    DarcyFlowInterface *darcy_flow;
+    DarcyLMH *darcy_flow;
     Mesh *mesh_;
 
     /// Specific experimental error computing.
@@ -156,55 +173,18 @@ protected:
     
     std::shared_ptr<OutputTime> output_stream;
 
-    /// Raw data output file.
-    ofstream raw_output_file;
-
     /// Output specific field stuff
     bool is_output_specific_fields;
-    struct DiffData {
-        double pressure_error[3], velocity_error[3], div_error[3];
-        double mask_vel_error;
-
-        // Temporary objects holding pointers to appropriate FieldFE
-        // TODO remove after final fix of equations
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
-
-        std::shared_ptr<SubDOFHandlerMultiDim> dh_;
-
-        std::vector<int> velocity_mask;
-        DarcyMH::EqFields* eq_fields_;
-        DarcyMH::EqData* eq_data_;
-    } diff_data;
+    std::shared_ptr<DarcyLMH::EqFields> flow_eq_fields_;
+    std::shared_ptr<DiffEqData> diff_eq_data_;
+    std::shared_ptr<RawOutputEqData> raw_eq_data_;
     
     //MixedPtr<FE_P_disc> fe_p0;
-    
-    /// Struct containing all dim dependent FE classes needed for output
-    /// (and for computing solution error).
-    struct FEData{
-        FEData();
-        
-        const unsigned int order; // order of Gauss quadrature
-        QGauss::array quad;
-        MixedPtr<FE_P_disc> fe_p1;
 
-        // following is used for calculation of postprocessed pressure difference
-        // and comparison to analytical solution
-        MixedPtr<FE_P_disc> fe_p0;
-        std::vector<FEValues<3>> fe_values;
-        
-        // FEValues for velocity.
-        MixedPtr<FE_RT0> fe_rt;
-        std::vector<FEValues<3>> fv_rt;
-    };
-    
-    FEData fe_data;
-    
-    /// Computes L2 error on an element.
-    void l2_diff_local(DHCellAccessor dh_cell,
-                      FEValues<3> &fe_values, FEValues<3> &fv_rt,
-                      FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
+    /// general assembly objects, hold assembly objects of appropriate dimension
+    GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
+    GenericAssembly< OutputInternalFlowAssembly > * output_internal_assembly_;
+
 };
 
 

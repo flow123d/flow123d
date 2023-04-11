@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Invalid YAML type of a_tol key
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
 ### ERROR invalid double value of a_tol
@@ -11,7 +11,6 @@ problem: !Coupling_Sequential
     input_fields:
       - region: ALL
         bc_type: dirichlet
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

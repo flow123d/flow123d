@@ -34,7 +34,6 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
-#include "fields/fe_value_handler.hh"
 
 using namespace Input::Type;
 

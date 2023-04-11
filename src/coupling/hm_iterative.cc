@@ -72,10 +72,12 @@ private:
 
 
 const it::Record & HM_Iterative::get_input_type() {
-    return it::Record("Coupling_Iterative",
+    std::string equation_name = "Coupling_Iterative";
+    return it::Record(equation_name,
             "Record with data for iterative coupling of flow and mechanics.\n")
         .derive_from( DarcyFlowInterface::get_input_type() )
         .copy_keys(EquationBase::record_template())
+		.copy_keys(EquationBase::user_fields_template(equation_name))
         .copy_keys(IterativeCoupling::record_template())
 		.declare_key("flow_equation", DarcyLMH::get_input_type(),
 		        it::Default::obligatory(),
@@ -85,7 +87,7 @@ const it::Record & HM_Iterative::get_input_type() {
 				"Mechanics, provides the displacement field.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqFields()
-		            .make_field_descriptor_type("Coupling_Iterative")),
+		            .make_field_descriptor_type(equation_name)),
 		        IT::Default::obligatory(),
 		        "Input fields of the HM coupling.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
@@ -161,6 +163,8 @@ HM_Iterative::EqFields::EqFields()
                      .description("Coupling term entering the flow equation.")
                      .units(UnitSI().s(-1))
                      .flags(FieldFlag::equation_result);
+
+    this->set_default_fieldset();
 }
 
 
@@ -192,7 +196,8 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
     auto old_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_data().dh_cr_, &eq_data.flow_->eq_data().p_edge_solution_previous_time);
     old_pressure.set(old_pressure_ptr_, 0.0);
 
-    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_P_disc>(0));
+    // TODO: implement a method of FieldFE to easily duplicate the field "field_ele_pressure" to "old_iter_pressure".
+    old_iter_pressure_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.flow_->eq_fields().field_ele_pressure.get_field_fe()->get_dofhandler(), nullptr, 1);
     old_iter_pressure.set(old_iter_pressure_ptr_, 0.0);
 
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.mechanics_->eq_fields().output_div_ptr->get_dofhandler());
@@ -220,80 +225,84 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 	START_TIMER("HM constructor");
     using namespace Input;
 
+    eq_fields_ = std::make_shared<EqFields>();
+    eq_data_ = std::make_shared<EqData>();
+
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
     
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    eq_data_.flow_ = std::make_shared<DarcyLMH>(*mesh_, flow_rec, time_);
+    eq_data_->flow_ = std::make_shared<DarcyLMH>(*mesh_, flow_rec, time_);
     
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
-    eq_data_.mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
-    eq_data_.mechanics_->initialize();
+    eq_data_->mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
+    eq_data_->mechanics_->initialize();
     
     // setup coupling fields and finish initialization of flow
-    eq_data_.mechanics_->eq_fields()["cross_section"].copy_from(eq_data_.flow_->eq_fields()["cross_section"]);
-    eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["cross_section_updated"];
-    eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["stress"];
-    eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["von_mises_stress"];
-    eq_data_.flow_->eq_fields() += eq_data_.mechanics_->eq_fields()["mean_stress"];
-    eq_data_.flow_->initialize();
+    eq_data_->mechanics_->eq_fields()["cross_section"].copy_from(eq_data_->flow_->eq_fields()["cross_section"]);
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["cross_section_updated"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["von_mises_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_stress"];
+    eq_data_->flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )
         WarningOut() << ss.str();
 
-    eq_fields_ += *eq_data_.flow_->eq_fields().field("pressure_edge");
+    *eq_fields_ += *eq_data_->flow_->eq_fields().field("pressure_edge");
 
-    this->eq_fieldset_ = &eq_fields_;
+    this->eq_fieldset_ = eq_fields_;
     
     // setup input fields
-    eq_fields_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
+    eq_fields_->set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
-    eq_fields_.initialize(*mesh_, eq_data_, time_, input_record_.val<double>("iteration_parameter"));
-    eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
+    eq_fields_->initialize(*mesh_, *eq_data_, time_, input_record_.val<double>("iteration_parameter"));
+    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential, eq_fields_->ref_pressure_potential);
 
-    eq_fields_.add_coords_field();
+    eq_fields_->add_coords_field();
 }
 
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(&eq_fields_, &eq_data_);
-    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(&eq_fields_, &eq_data_);
+    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get());
+    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get());
+
+    Input::Array user_fields_arr;
+    if (input_record_.opt_val("user_fields", user_fields_arr)) {
+        FieldSet sham_eq_output; // only for correct call of init_user_fields method
+       	this->init_user_fields(user_fields_arr, sham_eq_output);
+    }
 }
 
 
 template<int dim, class Value>
-void copy_field(const FieldCommon &from_field_common, FieldFE<dim, Value> &to_field)
+void copy_field(const FieldFE<dim, Value> &from_field, FieldFE<dim, Value> &to_field)
 {
-    auto dh = to_field.get_dofhandler();
-    auto vec = to_field.vec();
-    Field<dim,Value> from_field;
-    from_field.copy_from(from_field_common);
-    
-    for ( auto cell : dh->own_range() )
-        vec.set( cell.local_idx(), from_field.value(cell.elm().centre(), cell.elm()) );
+    ASSERT( from_field.get_dofhandler() == to_field.get_dofhandler() );
+    to_field.vec().copy_from( from_field.vec() );
 }
 
 
 
 void HM_Iterative::zero_time_step()
 {
-    eq_fields_.set_time(time_->step(), LimitSide::right);
+    eq_fields_->set_time(time_->step(), LimitSide::right);
     std::stringstream ss;
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
         WarningOut() << ss.str();
     
-    eq_data_.mechanics_->update_output_fields(); // init field values for use in flow
-    eq_data_.flow_->zero_time_step();
+    eq_data_->mechanics_->update_output_fields(); // init field values for use in flow
+    eq_data_->flow_->zero_time_step();
     update_potential();
-    eq_data_.mechanics_->zero_time_step();
+    eq_data_->mechanics_->zero_time_step();
     
-    copy_field(*eq_data_.flow_->eq_fields().field("pressure_p0"), *eq_fields_.old_iter_pressure_ptr_);
-    copy_field(eq_data_.mechanics_->eq_fields().output_divergence, *eq_fields_.old_div_u_ptr_);
-    eq_fields_.old_iter_pressure.set_time_result_changed();
+    copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
+    eq_fields_->old_iter_pressure.set_time_result_changed();
 }
 
 
@@ -301,7 +310,7 @@ void HM_Iterative::update_solution()
 {
     time_->next_time();
     time_->view("HM");
-    eq_fields_.set_time(time_->step(), LimitSide::right);
+    eq_fields_->set_time(time_->step(), LimitSide::right);
 
     solve_step();
 }
@@ -311,71 +320,71 @@ void HM_Iterative::solve_iteration()
     // pass displacement (divergence) to flow
     // and solve flow problem
     update_flow_fields();
-    eq_data_.flow_->solve_time_step(false);
+    eq_data_->flow_->solve_time_step(false);
     
     // pass pressure to mechanics and solve mechanics
     update_potential();
-    eq_data_.mechanics_->solve_linear_system();
+    eq_data_->mechanics_->solve_linear_system();
 }
 
 
 void HM_Iterative::update_after_iteration()
 {
-    eq_data_.mechanics_->update_output_fields();
-    copy_field(*eq_data_.flow_->eq_fields().field("pressure_p0"), *eq_fields_.old_iter_pressure_ptr_);
-    eq_fields_.old_iter_pressure.set_time_result_changed();
+    eq_data_->mechanics_->update_output_fields();
+    copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
+    eq_fields_->old_iter_pressure.set_time_result_changed();
 }
 
 
 void HM_Iterative::update_after_converged()
 {
-    eq_data_.flow_->accept_time_step();
-    eq_data_.flow_->output_data();
-    eq_data_.mechanics_->output_data();
+    eq_data_->flow_->accept_time_step();
+    eq_data_->flow_->output_data();
+    eq_data_->mechanics_->output_data();
     
-    copy_field(eq_data_.mechanics_->eq_fields().output_divergence, *eq_fields_.old_div_u_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
 }
 
 
 void HM_Iterative::update_potential()
 {
-    auto ref_potential_vec_ = eq_fields_.ref_potential_ptr_->vec();
-    auto dh = eq_fields_.ref_potential_ptr_->get_dofhandler();
+    auto ref_potential_vec_ = eq_fields_->ref_potential_ptr_->vec();
+    auto dh = eq_fields_->ref_potential_ptr_->get_dofhandler();
 
     ref_potential_vec_.zero_entries();
     flow_potential_assembly_->assemble(dh);
     
     ref_potential_vec_.local_to_ghost_begin();
     ref_potential_vec_.local_to_ghost_end();
-    eq_fields_.pressure_potential.set_time_result_changed();
-    eq_fields_.ref_pressure_potential.set_time_result_changed();
-    eq_data_.mechanics_->set_potential_load(eq_fields_.pressure_potential, eq_fields_.ref_pressure_potential);
+    eq_fields_->pressure_potential.set_time_result_changed();
+    eq_fields_->ref_pressure_potential.set_time_result_changed();
+    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential, eq_fields_->ref_pressure_potential);
 }
 
 
 void HM_Iterative::update_flow_fields()
 {
-    eq_fields_.beta.set_time_result_changed();
-    eq_fields_.flow_source.set_time_result_changed();
-    eq_data_.flow_->set_extra_storativity(eq_fields_.beta);
-    eq_data_.flow_->set_extra_source(eq_fields_.flow_source);
+    eq_fields_->beta.set_time_result_changed();
+    eq_fields_->flow_source.set_time_result_changed();
+    eq_data_->flow_->set_extra_storativity(eq_fields_->beta);
+    eq_data_->flow_->set_extra_source(eq_fields_->flow_source);
 }
 
 
 void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 {
-    auto dh = eq_fields_.old_iter_pressure_ptr_->get_dofhandler();
-    eq_data_.p_dif2 = 0;
-    eq_data_.p_norm2 = 0;
+    auto dh = eq_fields_->old_iter_pressure_ptr_->get_dofhandler();
+    eq_data_->p_dif2 = 0;
+    eq_data_->p_norm2 = 0;
 
     residual_assembly_->assemble(dh);
-    
-    double send_data[] = { eq_data_.p_dif2, eq_data_.p_norm2 };
+
+    double send_data[] = { eq_data_->p_dif2, eq_data_->p_norm2 };
     double recv_data[2];
     MPI_Allreduce(&send_data, &recv_data, 2, MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);
     abs_error = sqrt(recv_data[0]);
     rel_error = abs_error / (sqrt(recv_data[1]) + std::numeric_limits<double>::min());
-    
+
     MessageOut().fmt("HM Iteration {} abs. difference: {}  rel. difference: {}\n"
                          "--------------------------------------------------------",
                          iteration(), abs_error, rel_error);
@@ -387,8 +396,8 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 
 
 HM_Iterative::~HM_Iterative() {
-	eq_data_.flow_.reset();
-    eq_data_.mechanics_.reset();
+	eq_data_->flow_.reset();
+    eq_data_->mechanics_.reset();
     if (flow_potential_assembly_ != nullptr) delete flow_potential_assembly_;
     if (residual_assembly_ != nullptr) delete residual_assembly_;
 }

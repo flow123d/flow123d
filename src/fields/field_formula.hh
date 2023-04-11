@@ -38,8 +38,8 @@
 #include "input/input_exception.hh"     // for ExcAssertMsg::~ExcAssertMsg
 #include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
 #include "tools/time_governor.hh"       // for TimeStep
-#include "include/assert.hh"            // bparser
-#include "include/parser.hh"            // bparser
+//#include "include/assert.hh"            // bparser
+#include "parser.hh"            // bparser
 
 class FunctionParser;
 template <int spacedim> class ElementAccessor;
@@ -67,9 +67,6 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
     TYPEDEF_ERR_INFO(EI_Field, std::string);
-    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
-            << "Unknown field " << EI_Field::qval << " in the formula: \n");
-
     DECLARE_INPUT_EXCEPTION(ExcNotDoubleField,
             << "Can not use integer valued field " << EI_Field::qval << " in the formula: \n");
 
@@ -104,17 +101,6 @@ public:
      * See also description of the FieldBase<...>::set_mesh.
      */
     void set_mesh(const Mesh *mesh, bool boundary_domain) override;
-
-    /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
-
-    /**
-     * Returns std::vector of scalar values in several points at once.
-     */
-    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;

@@ -1,0 +1,77 @@
+# Test goal: Output of user fields.
+# Derived from test 03 / 44
+# Author: Pavel Exner, David Flanderka
+#
+#   Note: only the symmetric tensors are supported
+#         (non-symmetric tensors are permuted on output)
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Anisotropic molecular diffusion
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
+    #mesh_file: ../00_mesh/square_1x1_xy.msh
+  flow_equation: !Flow_Darcy_LMH
+    user_fields:
+      - name: user_x
+        is_boundary: false
+        scalar_field: !FieldFormula
+          value: 0.1*x
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: BULK
+        conductivity: !FieldFormula
+          value: 1-x*y + 1e-10
+        anisotropy: !FieldFormula
+          value: [ [ user_x, 2*user_x, 1 ], [ 2*user_x, 0.3*y, 2 ], [ 1, 2, 3 ] ]
+    output:
+      fields:
+        - {field: conductivity, interpolation: P0_value}
+        - {field: anisotropy, interpolation: P0_value}
+        - {field: user_x, interpolation: P0_value}
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      user_fields:
+        - name: user_xy
+          is_boundary: false
+          scalar_field: !FieldFormula
+            value: x*y
+      input_fields:
+        - region: .BOUNDARY
+          bc_type: diffusive_flux
+        - region: BULK
+
+          # scalar field (variable)
+          porosity: !FieldFormula
+            value: 0.1*user_xy
+
+          init_conc:
+            # scalar field (constant)
+            #- !FieldConstant
+            #  value: 0.31
+            # scalar field (variable)
+            - !FieldFormula
+              value: 1-user_xy
+
+          diff_m:
+            # tensor field (constant)
+            - !FieldConstant
+              value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
+            # tensor field (variable)
+            - !FieldFormula
+              value: [ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]
+
+      output:
+        fields:
+        - {field: init_conc, interpolation: P0_value}
+        - {field: diff_m, interpolation: P0_value}
+        - {field: porosity, interpolation: P0_value}
+        - {field: user_xy, interpolation: P0_value}
+    output_stream: 
+      format: !vtk
+        variant: ascii
+    substances: [ 1, 2 ]
+    time:
+      end_time: 1

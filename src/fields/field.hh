@@ -257,6 +257,12 @@ public:
      */
     //bool is_jump_time();
 
+    /**
+     * Check that the field is in fact FieldFE set on all bulk regions, return shared pointer to that FieldFE or NULL
+     * if the Field is not FieldFE.
+     */
+    std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
+
 
     /**
      * @brief Indicates special field states.
@@ -286,20 +292,6 @@ public:
      *
      */
     std::string get_value_attribute() const override;
-
-    /**
-     * Returns one value in one given point @p on an element given by ElementAccessor @p elm.
-     * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm) const;
-
-    /**
-     * Returns std::vector of scalar values in several points at once. The base class implements
-     * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
-     * but this overhead can be negligible for more complex fields as Python of Formula.
-     */
-    virtual void value_list(const Armor::array &point_list, const  ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list) const;
 
     /**
      * Add a new factory for creating Field algorithms on individual regions.
@@ -342,7 +334,7 @@ public:
     /**
      * Implementation of FieldCommon::set_dependency().
      */
-    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set, unsigned int i_reg) const override;
+    std::vector<const FieldCommon *> set_dependency(unsigned int i_reg) const override;
 
     /// Implements FieldCommon::fill_data_value
     void fill_data_value(const std::vector<int> &offsets) override;
@@ -365,12 +357,6 @@ protected:
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
      */
     void check_initialized_region_fields_();
-
-    /**
-     * Check that the field is in fact FieldFE set on all bulk regions, return shared pointer to that FieldFE or NULL
-     * if the Field is not FieldFE.
-     */
-    std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
 
     /**************** Shared data **************/
 
@@ -432,41 +418,6 @@ protected:
 
 };
 
-
-
-
-
-
-
-/****************************************************************************************
- * Inlined methods of Field< ... >
- */
-
-template<int spacedim, class Value>
-inline typename Value::return_type const & Field<spacedim,Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const
-{
-
-    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
-	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
-    		.error("Null field ptr on region\n");
-    return region_fields_[elm.region_idx().idx()]->value(p,elm);
-}
-
-
-
-template<int spacedim, class Value>
-inline void Field<spacedim,Value>::value_list(const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list) const
-{
-    ASSERT(this->set_time_result_ != TimeStatus::unknown)(this->name()).error("Unknown time status.\n");
-	ASSERT_LT(elm.region_idx().idx(), region_fields_.size() )(this->name()).error("Region idx is out of range\n");
-	ASSERT( region_fields_[elm.region_idx().idx()] )(elm.region().id())(elm.region_idx().idx())(this->name())
-    		.error("Null field ptr on region\n");
-    ASSERT(point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
-
-    region_fields_[elm.region_idx().idx()]->value_list(point_list,elm, value_list);
-}
 
 
 

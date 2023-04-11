@@ -154,10 +154,6 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
-    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
-    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
-    static const unsigned int simd_size_double;
-
     /// Constructor
     ElementCacheMap();
 
@@ -193,6 +189,21 @@ public:
     /// Getter of eval_points object.
     inline std::shared_ptr<EvalPoints> eval_points() const {
         return eval_points_;
+    }
+
+    /** Adds EvalPointData using emplace_back.
+     *  Arguments correspond to constructor of EvalPointData.
+     */
+    inline void add_eval_point(unsigned int i_reg, unsigned int i_ele, unsigned int i_eval_point, unsigned int dh_loc_idx)
+    {
+        eval_point_data_.emplace_back(i_reg, i_ele, i_eval_point, dh_loc_idx);
+        set_of_regions_.insert(i_reg);
+    }
+
+    /// Returns number of eval. points with addition of max simd duplicates due to regions. 
+    inline unsigned int get_simd_rounded_size()
+    {
+        return eval_point_data_.temporary_size() + (simd_size_double - 1)*set_of_regions_.size();
     }
 
     /*
@@ -286,8 +297,12 @@ public:
         ASSERT(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
-protected:
 
+    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
+    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
+    unsigned int simd_size_double;
+
+protected:
     /// Special constant (@see element_eval_points_map_).
     static const int unused_point = -1;
 
@@ -302,6 +317,7 @@ protected:
         ASSERT_PTR(element_eval_points_map_);
         element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
     }
+
 
     /// Vector of element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;
@@ -346,6 +362,9 @@ protected:
     std::unordered_map<unsigned int, unsigned int> element_to_map_bdr_; ///< Maps boundary element_idx to element index in patch - TODO remove
 
     // @}
+
+    /// Keeps set of unique region indices of added eval. points.
+    std::unordered_set<unsigned int> set_of_regions_;
 
     // TODO: remove friend class
     template < template<IntDim...> class DimAssembly>

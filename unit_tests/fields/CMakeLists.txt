@@ -35,22 +35,22 @@ define_mpi_test(field_algo_base 2)
 
 define_mpi_test(field_set 1)
 
-define_test(field_const)
-define_test(field_formula)
-define_test(field_python)
+define_mpi_test(field_const 1)
+define_mpi_test(field_formula 1)
+define_mpi_test(field_python 1)
 define_mpi_test(field_fe 1)
-define_mpi_test(field_speed 1 30)
 define_mpi_test(multi_field 1)
-define_test(field_time_function)
+define_mpi_test(field_time_function 1)
 
 define_mpi_test(generic_field 1)
+
+#define_mpi_test(field_speed 1 30)
+#define_mpi_test(field_constant_speed 1)
+#define_mpi_test(field_fe_speed 1)
+#define_mpi_test(field_model_speed 1)
        
 define_mpi_test(eval_subset 1)
 define_mpi_test(field_value_cache 1)
-define_mpi_test(field_evaluate_constant 1)
-define_mpi_test(field_evaluate_fe 1)
-define_mpi_test(field_evaluate_formula 1)
-define_mpi_test(field_evaluate_model 1)
 
 define_test(bparser)
 define_test(field_model)

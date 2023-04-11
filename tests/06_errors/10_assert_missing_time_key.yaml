@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test produces ASSERT Missing the key 'time'.
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
 ### ERROR Missing the key 'time'
     input_fields:
       - region: ALL
@@ -11,7 +11,6 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    n_schurs: 2
     output:
       fields:
         - pressure_p0

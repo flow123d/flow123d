@@ -22,7 +22,6 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 
 #include "fields/field_python.impl.hh"
-#include "fields/field_add_potential.impl.hh"
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
@@ -35,7 +34,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 INSTANCE_ALL(FieldAlgorithmBase)
 INSTANCE_ALL(FieldPython)
 
-template class FieldAddPotential<3, FieldValue<0>::Scalar >;
+//template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 //template class FieldAddPotential<2, FieldValue<0>::Scalar >;
 
 // temporary solution for computing more fields at once in python

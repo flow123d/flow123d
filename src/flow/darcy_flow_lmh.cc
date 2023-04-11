@@ -89,8 +89,8 @@ const it::Selection & DarcyLMH::get_mh_mortar_selection() {
 const it::Record & DarcyLMH::type_field_descriptor() {
 
         const it::Record &field_descriptor =
-        it::Record("Flow_Darcy_LMH_Data",FieldCommon::field_descriptor_record_description("Flow_Darcy_LMH_Data") )
-        .copy_keys( DarcyLMH::EqFields().make_field_descriptor_type("Flow_Darcy_LMH_Data_aux") )
+        it::Record(equation_name() + "_Data",FieldCommon::field_descriptor_record_description(equation_name() + "_Data") )
+        .copy_keys( DarcyLMH::EqFields().make_field_descriptor_type(equation_name() + "_Data_aux") )
             .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
                     "Boundary piezometric head for BC types: dirichlet, robin, and river." )
             .declare_key("bc_switch_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(),
@@ -102,7 +102,6 @@ const it::Record & DarcyLMH::type_field_descriptor() {
 }
 
 const it::Record & DarcyLMH::get_input_type() {
-
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
@@ -122,9 +121,10 @@ const it::Record & DarcyLMH::get_input_type() {
 
     DarcyLMH::EqFields eq_fields;
     
-    return it::Record("Flow_Darcy_LMH", "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
+    return it::Record(equation_name(), "Lumped Mixed-Hybrid solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(EquationBase::record_template())
+		.copy_keys(EquationBase::user_fields_template(equation_name()))
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
@@ -134,7 +134,7 @@ const it::Record & DarcyLMH::get_input_type() {
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Output stream settings.\n Specify file format, precision etc.")
 
-        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, "Flow_Darcy_LMH"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name()),
                 IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
                 "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
@@ -149,20 +149,208 @@ const it::Record & DarcyLMH::get_input_type() {
 
 
 const int DarcyLMH::registrar =
-		Input::register_class< DarcyLMH, Mesh &, const Input::Record >("Flow_Darcy_LMH") +
+		Input::register_class< DarcyLMH, Mesh &, const Input::Record >(equation_name()) +
 		DarcyLMH::get_input_type().size();
 
 
 
 DarcyLMH::EqFields::EqFields()
 {
+    *this += field_ele_pressure.name("pressure_p0")
+             .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+
+    *this += field_edge_pressure.name("pressure_edge")
+             .units(UnitSI().m())
+             .flags(FieldFlag::input_copy)
+             .description("Pressure solution - Crouzeix-Raviart interpolation.");
+
+    *this += field_ele_piezo_head.name("piezo_head_p0")
+	         .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
+
+	*this += field_ele_velocity.name("velocity_p0")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
+
+    *this += flux.name("flux")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Darcy flow flux.");
+
+    *this += anisotropy.name("anisotropy")
+            .description("Anisotropy of the conductivity tensor.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += cross_section.name("cross_section")
+            .description("Complement dimension parameter (cross section for 1D, thickness for 2D).")
+            .input_default("1.0")
+            .units( UnitSI().m(3).md() );
+
+    *this += conductivity.name("conductivity")
+            .description("Isotropic conductivity scalar.")
+            .input_default("1.0")
+            .units( UnitSI().m().s(-1) )
+            .set_limits(0.0);
+
+    *this += sigma.name("sigma")
+            .description("Transition coefficient between dimensions.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += water_source_density.name("water_source_density")
+            .description("Water source density.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) );
+
+    *this += bc_type.name("bc_type")
+            .description("Boundary condition type.")
+            .input_selection( get_bc_type_selection() )
+            .input_default("\"none\"")
+            .units( UnitSI::dimensionless() );
+
+    *this += bc_pressure
+            .disable_where(bc_type, {none, seepage} )
+            .name("bc_pressure")
+            .description("Prescribed pressure value on the boundary. Used for all values of ``bc_type`` except ``none`` and ``seepage``. "
+                "See documentation of ``bc_type`` for exact meaning of ``bc_pressure`` in individual boundary condition types.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
+
+    *this += bc_flux
+            .disable_where(bc_type, {none, dirichlet} )
+            .name("bc_flux")
+            .description("Incoming water boundary flux. Used for bc_types : ``total_flux``, ``seepage``, ``river``.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
+
+    *this += bc_robin_sigma
+            .disable_where(bc_type, {none, dirichlet, seepage} )
+            .name("bc_robin_sigma")
+            .description("Conductivity coefficient in the ``total_flux`` or the ``river`` boundary condition type.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) );
+
+    *this += bc_switch_pressure
+            .disable_where(bc_type, {none, dirichlet, total_flux} )
+            .name("bc_switch_pressure")
+            .description("Critical switch pressure for ``seepage`` and ``river`` boundary conditions.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
+
+
+    //these are for unsteady
+    *this += init_pressure.name("init_pressure")
+            .description("Initial condition for pressure in time dependent problems.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
+
+    *this += storativity.name("storativity")
+            .description("Storativity (in time dependent problems).")
+            .input_default("0.0")
+            .units( UnitSI().m(-1) );
+
+    *this += extra_storativity.name("extra_storativity")
+            .description("Storativity added from upstream equation.")
+            .units( UnitSI().m(-1) )
+            .input_default("0.0")
+            .flags( input_copy );
+
+    *this += extra_source.name("extra_water_source_density")
+            .description("Water source density added from upstream equation.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags( input_copy );
+
+    *this += gravity_field.name("gravity")
+            .description("Gravity vector.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += bc_gravity.name("bc_gravity")
+            .description("Boundary gravity vector.")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += init_piezo_head.name("init_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Init piezo head.");
+
+    *this += bc_piezo_head.name("bc_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary piezo head.");
+
+    *this += bc_switch_piezo_head.name("bc_switch_piezo_head")
+	         .units(UnitSI().m())
+             .input_default("0.0")
+             .description("Boundary switch piezo head.");
+
+    *this += ref_pressure.name("ref_pressure")
+             .units(UnitSI().m())
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed pressure of l2 difference output.");
+
+	*this += ref_velocity.name("ref_velocity")
+	         .units(UnitSI().m().s(-1))
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed velocity of l2 difference output.");
+
+    *this += ref_divergence.name("ref_divergence")
+             .units(UnitSI().m())
+			 .input_default("0.0")
+             .flags(FieldFlag::equation_result)
+             .description("Precomputed divergence of l2 difference output.");
+
+    this->set_default_fieldset();
+    //time_term_fields = this->subset({"storativity"});
+    //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
+    //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
+}
+
+
+
+const it::Selection & DarcyLMH::EqFields::get_bc_type_selection() {
+	return it::Selection("Flow_Darcy_BC_Type")
+        .add_value(none, "none",
+            "Homogeneous Neumann boundary condition\n(zero normal flux over the boundary).")
+        .add_value(dirichlet, "dirichlet",
+            "Dirichlet boundary condition. "
+            "Specify the pressure head through the ``bc_pressure`` field "
+            "or the piezometric head through the ``bc_piezo_head`` field.")
+        .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
+            "Water inflow equal to (($ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$)). "
+            "Specify the water inflow by the ``bc_flux`` field, the transition coefficient by ``bc_robin_sigma`` "
+            "and the reference pressure head or piezometric head through ``bc_pressure`` or ``bc_piezo_head`` respectively.")
+        .add_value(seepage, "seepage",
+            "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
+            "is described by the pair of inequalities: "
+            "(($h_d \\le h_d^D$)) and (($ -\\boldsymbol q_d\\cdot\\boldsymbol n \\le \\delta q_d^N$)), where the equality holds in at least one of them. "
+            "Caution: setting (($q_d^N$)) strictly negative "
+            "may lead to an ill posed problem since a positive outflow is enforced. "
+            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by the fields ``bc_switch_pressure`` (or ``bc_switch_piezo_head``) and ``bc_flux`` respectively."
+            )
+        .add_value(river, "river",
+            "River boundary condition. For the water level above the bedrock, (($H_d > H_d^S$)), the Robin boundary condition is used with the inflow given by: "
+            "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d) )$)). For the water level under the bedrock, constant infiltration is used: "
+            "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d^S) )$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
+            " ``bc_sigma``, ``bc_flux``."
+            )
+        .close();
 }
 
 
 
 DarcyLMH::EqData::EqData()
-: DarcyMH::EqData::EqData()
 {
+    mortar_method_=NoMortar;
 }
 
 
@@ -229,7 +417,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 
     eq_fields_ = make_shared<EqFields>();
     eq_data_ = make_shared<EqData>();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     
     eq_fields_->set_mesh(*mesh_);
     
@@ -304,6 +492,7 @@ void DarcyLMH::init_eq_data()
 
 
     eq_fields_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
+
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
         //THROW(ExcAssertMsg());
@@ -408,7 +597,6 @@ void DarcyLMH::initialize() {
     initialize_specific();
     
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
@@ -420,7 +608,6 @@ void DarcyLMH::initialize() {
     balance_->allocate(eq_data_->dh_, 1);
     balance_->units(UnitSI().m(3));
 
-    eq_data_->balance = this->balance_; // eq_data_->balance is obsolete inherited from DarcyMH::EqData, will be remove
     eq_data_->balance_ = this->balance_;
 
     this->initialize_asm();
@@ -478,7 +665,6 @@ void DarcyLMH::zero_time_step()
      *   Solver should be able to switch from and to steady case depending on the zero time term.
      */
 
-	//time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
     // zero_time_term means steady case
@@ -529,7 +715,6 @@ void DarcyLMH::update_solution()
 
 void DarcyLMH::solve_time_step(bool output)
 {
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::left) || data_changed_;
     bool zero_time_term_from_left=zero_time_term();
 
@@ -560,7 +745,6 @@ void DarcyLMH::solve_time_step(bool output)
         return;
     }
 
-    //time_->step().use_fparser_ = true;
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
     bool zero_time_term_from_right=zero_time_term();
     if (zero_time_term_from_right) {
@@ -799,23 +983,23 @@ void DarcyLMH::allocate_mh_matrix()
         lin_sys_schur().mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
 
         tmp_rows.clear();
-        if (eq_data_->mortar_method_ != NoMortar) {
-            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
-            for(auto &isec : isec_list ) {
-                IntersectionLocalBase *local = isec.second;
-                DHCellAccessor dh_cell_slave = eq_data_->dh_cr_->cell_accessor_from_element(local->bulk_ele_idx());
-                
-                const uint ndofs_slave = dh_cell_slave.n_dofs();
-                dofs_ngh.resize(ndofs_slave);
-                dh_cell_slave.get_dof_indices(dofs_ngh);
-            
-                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
-                    tmp_rows.push_back( dofs_ngh[i_side] );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
-                }
-            }
-        }
+//        if (eq_data_->mortar_method_ != NoMortar) {
+//            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele.idx()];
+//            for(auto &isec : isec_list ) {
+//                IntersectionLocalBase *local = isec.second;
+//                DHCellAccessor dh_cell_slave = eq_data_->dh_cr_->cell_accessor_from_element(local->bulk_ele_idx());
+//
+//                const uint ndofs_slave = dh_cell_slave.n_dofs();
+//                dofs_ngh.resize(ndofs_slave);
+//                dh_cell_slave.get_dof_indices(dofs_ngh);
+//
+//                //DebugOut().fmt("Alloc: {} {}", ele.idx(), local->bulk_ele_idx());
+//                for(unsigned int i_side=0; i_side < dh_cell_slave.elm()->n_sides(); i_side++) {
+//                    tmp_rows.push_back( dofs_ngh[i_side] );
+//                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
+//                }
+//            }
+//        }
 
         lin_sys_schur().mat_set_values(ndofs, dofs_ptr, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x slave edges
         lin_sys_schur().mat_set_values(tmp_rows.size(), tmp_rows.data(), ndofs, dofs_ptr, zeros);   // slave edges  x master edges
@@ -1364,6 +1548,21 @@ DarcyLMH::~DarcyLMH() {
 }
 
 
+/// Helper method fills range (min and max) of given component
+void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
+    if (component==0) {
+        min = 0;
+        max = n_dofs/2;
+    } else if (component==1) {
+        min = n_dofs/2;
+        max = (n_dofs+1)/2;
+    } else {
+        min = (n_dofs+1)/2;
+        max = n_dofs;
+    }
+}
+
+
 std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) const {
 	ASSERT_LT(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
@@ -1388,7 +1587,6 @@ void DarcyLMH::initialize_asm() {
 void DarcyLMH::read_init_cond_asm() {
     this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
 }
-
 
 
 //-----------------------------------------------------------------------------

@@ -22,7 +22,7 @@
 #include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
-#include "include/arena_alloc.hh"       // bparser
+//#include "include/arena_alloc.hh"       // bparser
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/regex.hpp>
 
@@ -84,7 +84,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
     }
     b_parser_.reserve(this->value_.n_rows()*this->value_.n_cols());
     for(unsigned int i=0; i < this->value_.n_rows()*this->value_.n_cols(); i++) {
-        b_parser_.emplace_back( 1.1 * CacheMapElementNumber::get() );
+        b_parser_.emplace_back( CacheMapElementNumber::get() );
     }
 }
 
@@ -205,45 +205,6 @@ void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, FMT_UNUSED bool b
 }
 
 
-/**
- * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
- */
-template <int spacedim, class Value>
-typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, FMT_UNUSED  const ElementAccessor<spacedim> &elm)
-{
-
-    auto p_depth = this->eval_depth_var(p);
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
-        }
-    return this->r_value_;
-}
-
-
-/**
- * Returns std::vector of scalar values in several points at once.
- */
-template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::value_list (const Armor::array &point_list, FMT_UNUSED const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
-{
-	ASSERT_EQ( point_list.size(), value_list.size() );
-    ASSERT( point_list.n_rows() == spacedim && point_list.n_cols() == 1).error("Invalid point size.\n");
-    for(unsigned int i=0; i< point_list.size(); i++) {
-        Value envelope(value_list[i]);
-        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
-        		.error("value_list['i'] has wrong number of rows\n");
-        auto p_depth = this->eval_depth_var(point_list.vec<spacedim>(i));
-
-        for(unsigned int row=0; row < this->value_.n_rows(); row++)
-            for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
-            }
-    }
-}
-
-
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
         ElementCacheMap &cache_map, unsigned int region_patch_idx)
@@ -269,8 +230,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     }
 
     // Get vector of subsets as subarray
-    uint subsets_begin = reg_chunk_begin / ElementCacheMap::simd_size_double;
-    uint subsets_end = reg_chunk_end / ElementCacheMap::simd_size_double;
+    uint subsets_begin = reg_chunk_begin / cache_map.simd_size_double;
+    uint subsets_end = reg_chunk_end / cache_map.simd_size_double;
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
@@ -280,7 +241,7 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
             b_parser_[row*this->value_.n_cols()+col].run();
             for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
                 auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-                cache_val(row, col) = res_[i];
+                cache_val(row, col) = this->unit_conversion_coefficient_ * res_[i];
                 data_cache.set(i) = cache_val;
             }
         }
@@ -385,11 +346,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
         else {
             auto field_ptr = field_set.field(var);
             if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-            else {
-                field_ptr = field_set.user_field(var, this->time_);
-                if (field_ptr != nullptr) required_fields_.push_back( field_ptr );
-                else THROW( ExcUnknownField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
-            }
+            else THROW( FieldSet::ExcUnknownField() << FieldCommon::EI_Field(var) << FieldSet::EI_FieldType("formula") << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
             if (field_ptr->value_cache() == nullptr) THROW( ExcNotDoubleField() << EI_Field(var) << Input::EI_Address( in_rec_.address_string() ) );
             // TODO: Test the exception, report input line of the formula.
@@ -408,16 +365,18 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
 {
+	// Can not compile expression in set_time as the necessary cache size is not known there yet.
+
     if (arena_alloc_!=nullptr) {
         delete arena_alloc_;
     }
     eval_field_data_.clear();
-    uint vec_size = 1.1 * CacheMapElementNumber::get();
-    while (vec_size%ElementCacheMap::simd_size_double > 0) vec_size++; // alignment of block size
+    uint vec_size = CacheMapElementNumber::get();
+
     // number of subset alignment to block size
-    uint n_subsets = (vec_size+ElementCacheMap::simd_size_double-1) / ElementCacheMap::simd_size_double;
+    uint n_subsets = vec_size / cache_map.simd_size_double;
     uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
-    arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+    arena_alloc_ = new bparser::ArenaAlloc(cache_map.simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : required_fields_) {
         std::string field_name = field->name();

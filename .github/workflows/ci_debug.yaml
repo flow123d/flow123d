@@ -1,6 +1,21 @@
 name: Flow123d debug CI
 
-on: [push]
+on: 
+    push:
+        branches: 
+        - "**"
+    
+    # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: Build environment [gnu, intel].
+                type: choice
+                options:
+                    - gnu
+                    - intel
+                required: false
+                default: gnu
 
 env:
   autopull:  0
@@ -19,11 +34,13 @@ jobs:
             name: build_dir
             path: build_dir.tar
     
-    integration-tests:
+    integration_tests:
         needs: [build]
         runs-on: ubuntu-latest
-        name: Integration Test 
+        name: Integration Test ${{matrix.test_dir}}
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}
         strategy:
           matrix:
             test_dir:
@@ -59,12 +76,17 @@ jobs:
           with:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
-        
-    unit-tests:
+        - name: Report
+          run: |
+            echo "Job result: ${{job.result}}"
+            echo "Job status: ${{job.status}}"
+    unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
         name: Unit Test 
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
         strategy:
           matrix:
             test_dir:
@@ -88,116 +110,64 @@ jobs:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-    build-doc:
+    build_doc:
         needs: [build]
         runs-on: ubuntu-latest
         name: Test build doc
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
         - run: config/tests/run_with_build_dir.sh make ref-doc
+                     
+        
+    conclusion:
+        if: ${{always()}}
+        runs-on: ubuntu-latest
+        name: Workflow conclusion from all job results 
+        
+        #needs: [integration_tests, unit_tests, build_doc]        
+        needs: [build_doc, unit_tests, integration_tests]
+        
+        # continue-on-error jobs always reports sucess to the workflow
+        steps:
+          - name: Install gh command
+            run: |
+                sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+                sudo apt-add-repository https://cli.github.com/packages
+                sudo apt update
+                sudo apt install gh    
+          - name: Check status of all jobs
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            run: |
+                # get the current workflow run ID
+                run_id=$(jq --raw-output .run_id "$GITHUB_EVENT_PATH")
+                
+                # get the status of jobs selected by name:
+                #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/4601759611/jobs" --jq '.jobs[] | select(.name | startswith("Integration"))  | .conclusion')
+                
+                # get the status of all jobs
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/4601759611/jobs" --jq '.jobs[].conclusion')
 
-        #- name: Test - 01_cmd_line
-          #run: bin/fterm --no-term exec tests/runtest tests/01_cmd_line
-          #continue-on-error: True
+                # check if any job has failed
+                if echo "$statuses" | grep -q failure; then
+                    echo "One or more jobs have failed"
+                    exit 1
+                else
+                    echo "All jobs have succeeded"
+                fi    
 
-        #- name: Test - 02_generic_input
-          #run: bin/fterm --no-term exec tests/runtest tests/02_generic_input
-          #continue-on-error: True
+# steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
+# steps.xyz.conclusion .. The result after continue-on-error is applied. Always success for continue-on-error.
+# "${{ job.status }}" ?? status of actual job 
+# ${{needs.<job-id>.result}}
+# ${{needs.<job-id>.outpus.<output-id>}} ... does not add the job to needs list automatically !!
 
-        #- name: Test - 03_generic_output
-          #run: bin/fterm --no-term exec tests/runtest tests/03_generic_output
-          #continue-on-error: True
-
-        #- name: Test - 04_generic_mesh
-          #run: bin/fterm --no-term exec tests/runtest tests/04_generic_mesh
-          #continue-on-error: True
-
-        #- name: Test - 05_tutorial
-          #run: bin/fterm --no-term exec tests/runtest tests/05_tutorial
-          #continue-on-error: True
-
-        #- name: Test - 06_errors
-          #run: bin/fterm --no-term exec tests/runtest tests/06_errors
-          #continue-on-error: True
-
-        #- name: Test - 10_darcy
-          #run: bin/fterm --no-term exec tests/runtest tests/10_darcy
-          #continue-on-error: True
-
-        #- name: Test - 11_darcy_bc
-          #run: bin/fterm --no-term exec tests/runtest tests/11_darcy_bc
-          #continue-on-error: True
-
-        #- name: Test - 12_darcy_frac
-          #run: bin/fterm --no-term exec tests/runtest tests/12_darcy_frac
-          #continue-on-error: True
-
-        #- name: Test - 13_darcy_time
-          #run: bin/fterm --no-term exec tests/runtest tests/13_darcy_time
-          #continue-on-error: True
-
-        #- name: Test - 14_darcy_richards
-          #run: bin/fterm --no-term exec tests/runtest tests/14_darcy_richards
-          #continue-on-error: True
-
-        #- name: Test - 20_solute_fv
-          #run: bin/fterm --no-term exec tests/runtest tests/20_solute_fv
-          #continue-on-error: True
-
-        #- name: Test - 21_solute_fv_frac
-          #run: bin/fterm --no-term exec tests/runtest tests/21_solute_fv_frac
-          #continue-on-error: True
-
-        #- name: Test - 22_solute_fv_time
-          #run: bin/fterm --no-term exec tests/runtest tests/22_solute_fv_time
-          #continue-on-error: True
-
-        #- name: Test - 24_solute_dg
-          #run: bin/fterm --no-term exec tests/runtest tests/24_solute_dg
-          #continue-on-error: True
- 
-        #- name: Test - 25_solute_dg_bc
-          #run: bin/fterm --no-term exec tests/runtest tests/25_solute_dg_bc
-          #continue-on-error: True
-
-        #- name: Test - 26_solute_dg_frac
-          #run: bin/fterm --no-term exec tests/runtest tests/26_solute_dg_frac
-          #continue-on-error: True
-
-        #- name: Test - 27_solute_dg_time
-          #run: bin/fterm --no-term exec tests/runtest tests/27_solute_dg_time
-          #continue-on-error: True
-
-        #- name: Test - 30_sorption
-          #run: bin/fterm --no-term exec tests/runtest tests/30_sorption
-          #continue-on-error: True
-
-        #- name: Test - 31_dual_por
-          #run: bin/fterm --no-term exec tests/runtest tests/31_dual_por
-          #continue-on-error: True
-
-        #- name: Test - 32_decay
-          #run: bin/fterm --no-term exec tests/runtest tests/32_decay
-          #continue-on-error: True
-
-        #- name: Test - 33_reaction
-          #run: bin/fterm --no-term exec tests/runtest tests/33_reaction
-          #continue-on-error: True
- 
-        #- name: Test - 34_sorption_dg
-          #run: bin/fterm --no-term exec tests/runtest tests/34_sorption_dg
-          #continue-on-error: True
-
-        #- name: Test - 40_heat
-          #run: bin/fterm --no-term exec tests/runtest tests/40_heat
-          #continue-on-error: True
-
-        #- name: Test - 50_mechanics
-          #run: bin/fterm --no-term exec tests/runtest tests/50_mechanics
-          #continue-on-error: True
-
-          
+# problem is how to integrate the result over the whole job matrix
+# proposed solution: https://github.com/orgs/community/discussions/26822
+# uses `if: ${{always()}}` for the conclusion job which should run the job multiple times

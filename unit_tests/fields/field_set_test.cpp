@@ -24,9 +24,6 @@
 #include "input/reader_to_storage.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-
 
 enum {
 	r_first,
@@ -113,7 +110,7 @@ TEST_F(SomeEquation, add_operator_death) {
     EXPECT_ASSERT_DEATH({
         data+=pressure
              .name("init_pressure");},
-          "Another field of the same name exists");
+          "field of the same name");
 
 }
 

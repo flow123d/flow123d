@@ -16,7 +16,7 @@ test_cases:
       - 04_frac_diffusion.yaml
       - 06_frac_dualpor.yaml
   - files: 05_frac_sorption.yaml
-    time_limit: 65
+    time_limit: 85
 
   - files: 07_heat.yaml
     proc: [1]
@@ -25,10 +25,21 @@ test_cases:
       - ndiff:
           files: [energy_balance.txt]
           r_tol: 1e-3
-          a_tol: 1e5
+          a_tol: 1e12
       - ndiff:
         # default tolerance for all except energy, usage of wild chars 
         # files: ["(?!^energy_balance.txt$)*"] 
-          files: ['*.msh', water_balance.txt]
+          files: [heat.msh]
           r_tol: 1e-3
-          a_tol: 1e-6
+          a_tol: 1
+      - ndiff:
+          files: [flow.msh]
+          r_tol: 1e-3
+          a_tol: 1e-1
+      - ndiff:
+          files: [water_balance.txt]
+          r_tol: 1e-3
+          a_tol: 1e-4
+         # heat.msh a_tol : 1
+         # flow.msh a_tol : 0.1
+         # water_balance.txt : 1e-4

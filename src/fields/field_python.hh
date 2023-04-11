@@ -28,7 +28,13 @@
 #include "input/factory.hh"
 
 #include <string>
+#include <pybind11/pybind11.h>
+
 using namespace std;
+namespace py = pybind11;
+
+// Pybind11 needs set visibility to hidden (see https://pybind11.readthedocs.io/en/stable/faq.html).
+#pragma GCC visibility push(hidden)
 
 /**
  *
@@ -53,10 +59,9 @@ public:
     TYPEDEF_ERR_INFO( EI_PModule, std::string);
     TYPEDEF_ERR_INFO( EI_Size, unsigned int);
     TYPEDEF_ERR_INFO( EI_ValueSize, unsigned int);
-    DECLARE_EXCEPTION( ExcNoPythonSupport, << "Flow123d compiled without support for Python, FieldPython can not be used.\n" );
-    DECLARE_EXCEPTION( ExcNoPythonInit, << "Either 'script_string' or 'script_file' has to be specified in PythonField initialization.\n" );
     DECLARE_EXCEPTION( ExcInvalidCompNumber, << "Field " << EI_FuncName::qval << " from the python module: " << EI_PModule::val
             << " returns " << EI_Size::val << " components but should return " << EI_ValueSize::val << " components.\n" );
+
 
     FieldPython(unsigned int n_comp=0);
 
@@ -65,27 +70,24 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /**
-     * Set the file and field to be called.
-     * TODO: use FilePath
-     */
-    void set_python_field_from_file( const FilePath &file_name, const string &func_name);
-
-    /**
      * Set the source in a string and name of the field to be called.
      */
-    void set_python_field_from_string( const string &python_source, const string &func_name);
+    void set_python_field_from_class(const string &file_name, const string &class_name);
 
     /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
+     * Overload @p FieldAlgorithmBase::cache_reinit
+     *
+     * Reinit dictionary of used fields and update result field to dictionary of resul fields.
      */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
+    void cache_reinit(const ElementCacheMap &cache_map) override;
+
+    void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
-     * Returns std::vector of scalar values in several points at once.
+     * Returns list of fields on which this field depends.
      */
-    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
-
+    std::vector<const FieldCommon *> set_dependency(FieldSet &field_set) override;
 
     virtual ~FieldPython();
 
@@ -93,25 +95,24 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
-     * Common part of set_python_field_from_* methods
-     */
-    void set_func(const string &func_name);
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 
-    /**
-     * Implementation.
-     */
-    inline void set_value(const Point &p, const ElementAccessor<spacedim> &elm, Value &value);
+    /// Field name is necessary for set result
+    std::string field_name_;
 
-#ifdef FLOW123D_HAVE_PYTHON
-    PyObject *p_func_;
-    PyObject *p_module_;
-    mutable PyObject *p_args_;
-    mutable PyObject *p_value_;
-#endif // FLOW123D_HAVE_PYTHON
+    /// Holds python instance of user class.
+    py::object user_class_instance_;
+
+    /// List of fields on which this field depends
+	std::vector<const FieldCommon * > required_fields_;
+
+    /// Pointer to FieldCommon that holds this fields (stores in set_dependency and uses in cache_reinit)
+	const FieldCommon * self_field_ptr_;
 
 };
 
 
+#pragma GCC visibility pop
 
 #endif /* FUNCTION_PYTHON_HH_ */

@@ -158,9 +158,13 @@ private:
  */
 class FieldSet : public FieldFlag {
 public:
-	DECLARE_EXCEPTION(ExcUnknownField, << "Field set has no field with name: " << FieldCommon::EI_Field::qval);
+    TYPEDEF_ERR_INFO( EI_FieldType, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcUnknownField,
+            << "Unknown field " << FieldCommon::EI_Field::qval << " in the " << EI_FieldType::val << ": \n");
     DECLARE_INPUT_EXCEPTION(ExcFieldNotSet,
             << "Field " << FieldCommon::EI_Field::qval << " is not set. Please set key 'scalar_field', 'vector_field' or 'tensor_field' at: \n");
+    DECLARE_INPUT_EXCEPTION(ExcFieldExists,
+            << "Field " << FieldCommon::EI_Field::qval << " exists in equation. You cannot set user field of same name.\n");
 
 	/// Default constructor.
 	FieldSet();
@@ -168,7 +172,7 @@ public:
     /**
      * @brief Declare input record type of field defined by user.
      */
-    const Input::Type::Record & get_user_field(const std::string &equation_name);
+	static const Input::Type::Record & make_user_field_type(const std::string &equation_name);
 
     /**
 	 * Add an existing Field to the list. It stores just pointer to the field.
@@ -290,11 +294,6 @@ public:
         for(FieldCommon *field : field_list) field->set_input_list(input_list, tg);
     }
 
-   /**
-    * Fill data of user defined fields to user_fields_input_ map.
-    */
-   void set_user_fields_map(Input::Array input_list);
-
     /**
      * Collective interface to @p FieldCommonBase::flags_add().
      * @param mask   mask to set for all fields in the field set.
@@ -387,9 +386,16 @@ public:
     std::string print_dependency() const;
 
     /**
-     * Return pointer to the field defined by user given by name @p field_name. Return nullptr if not found.
+     * Collective interface to @p FieldCommon::set_default_fieldset().
+     *
+     * Set data member default_fieldset_ to all fields of FieldSet. This data member holds pointer to primary FieldSet (equation)
+     * where field is defined and it is used during evaluation of field dependency in FieldSet (see method set_dependency).
+     * The goal is to allow the user to specify a dependency on other input fields or user defined fields in same equation where
+     * field is defined.
      */
-    FieldCommon *user_field(const std::string &field_name, const TimeStep &time);
+    inline void set_default_fieldset() {
+    	for(auto field : field_list) field->set_default_fieldset(*this);
+    }
 
 
 protected:
@@ -399,9 +405,6 @@ protected:
 
     /// List of all fields.
     std::vector<FieldCommon *> field_list;
-
-    /// List of fields defined by user.
-    std::vector<FieldCommon *> user_field_list_;
 
     /// Pointer to the mesh.
     const Mesh *mesh_;
@@ -422,9 +425,6 @@ protected:
 
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
-
-    /// Map assigns Input::Record to each field defined in optional Input::Array 'user_fields'
-    std::unordered_map<std::string, Input::Record> user_fields_input_;
 
     /**
      * Stream output operator

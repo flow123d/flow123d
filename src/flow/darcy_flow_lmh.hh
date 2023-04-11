@@ -56,7 +56,6 @@
 #include "tools/time_governor.hh"               // for TimeGovernor
 #include "la/vector_mpi.hh"                     // for VectorMPI
 
-#include "flow/darcy_flow_mh.hh"                // for DarcyMH::EqData
 
 class Balance;
 class DarcyFlowMHOutput;
@@ -144,18 +143,69 @@ public:
     * This is common to all implementations since this provides interface
     * to this equation for possible coupling.
     * 
-    * This class is derived from DarcyMH::EqData especially due to the common output class DarcyFlowMHOutput.
-    * This is the only dependence between DarcyMH and DarcyLMH classes.
-    * It is also base class of RichardsLMH::EqData.
+    * This class uses the common output class DarcyFlowMHOutput.
+    * It is base class of RichardsLMH::EqFields.
     * */
-    class EqFields : public DarcyMH::EqFields {
+    class EqFields : public FieldSet {
     public:
+        /**
+         * For compatibility with old BCD file we have to assign integer codes starting from 1.
+         */
+        enum BC_Type {
+            none=0,
+            dirichlet=1,
+            total_flux=4,
+            seepage=5,
+            river=6
+        };
 
-    	EqFields();
+        /// Return a Selection corresponding to enum BC_Type.
+        static const Input::Type::Selection & get_bc_type_selection();
 
+        /// Creation of all fields.
+        EqFields();
+
+        /// Return coords field
+        FieldCoords &X() {
+            return this->X_;
+        }
+
+
+        Field<3, FieldValue<3>::TensorFixed > anisotropy;
+        Field<3, FieldValue<3>::Scalar > conductivity;
+        Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > sigma;
+
+        BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
+        BCField<3, FieldValue<3>::Scalar > bc_pressure;
+        BCField<3, FieldValue<3>::Scalar > bc_flux;
+        BCField<3, FieldValue<3>::Scalar > bc_robin_sigma;
+        BCField<3, FieldValue<3>::Scalar > bc_switch_pressure;
+
+        Field<3, FieldValue<3>::Scalar > init_pressure;
+        Field<3, FieldValue<3>::Scalar > storativity;
+        Field<3, FieldValue<3>::Scalar > extra_storativity; /// Externally added storativity.
+        Field<3, FieldValue<3>::Scalar > extra_source; /// Externally added water source.
+
+	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
+	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+        Field<3, FieldValue<3>::VectorFixed > field_ele_velocity;
+        Field<3, FieldValue<3>::VectorFixed > flux;
+        Field<3, FieldValue<3>::Scalar> field_edge_pressure;
+
+        Field<3, FieldValue<3>::VectorFixed > gravity_field; /// Holds gravity vector acceptable in FieldModel
+        BCField<3, FieldValue<3>::VectorFixed > bc_gravity; /// Same as previous but used in boundary fields
+        Field<3, FieldValue<3>::Scalar> init_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
+        BCField<3, FieldValue<3>::Scalar> bc_switch_piezo_head;
+
+        Field<3, FieldValue<3>::Scalar> ref_pressure; /// Precompute l2 difference outputs
+        Field<3, FieldValue<3>::VectorFixed> ref_velocity;
+        Field<3, FieldValue<3>::Scalar> ref_divergence;
     };
 
-    class EqData : public DarcyMH::EqData {
+    class EqData {
     public:
         
         EqData();
@@ -163,7 +213,33 @@ public:
         void init();     ///< Initialize vectors, ...
         void reset();    ///< Reset data members
 
+        /**
+         * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
+         * to pressure head and vice versa.
+         */
+        arma::vec4 gravity_;
+        arma::vec3 gravity_vec_;
+
+        // Mirroring the following members of DarcyLMH:
+        Mesh *mesh;
+        std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
+        std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
+        std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides
         std::shared_ptr<SubDOFHandlerMultiDim> dh_p_;    ///< DOF handler represents DOFs of element pressure
+
+
+        uint water_balance_idx;
+
+        // TODO: check usage of MortarMethod in LMH
+        MortarMethod mortar_method_;
+
+        int is_linear;              ///< Hack fo BDDC solver.
+        bool force_no_neumann_bc;       ///< auxiliary flag for switchting Dirichlet like BC
+
+        /// Idicator of dirichlet or neumann type of switch boundary conditions.
+        std::vector<char> bc_switch_dirichlet;
+
+    	VectorMPI full_solution;     //< full solution [vel,press,lambda] from 2. Schur complement
         
         // Propagate test for the time term to the assembly.
         // This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
@@ -357,6 +433,9 @@ protected:
 private:
     /// Registrar of class to factory
     static const int registrar;
+
+    static std::string equation_name()
+    { return "Flow_Darcy_LMH";}
 };
 
 #endif  //DARCY_FLOW_LMH_HH

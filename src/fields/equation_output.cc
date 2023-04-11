@@ -29,17 +29,28 @@ IT::Record &EquationOutput::get_input_type() {
 
     static const IT::Selection &interpolation_sel =
         IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
-            .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
-			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
-			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / cell data.")
-			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
+            .add_value(OutputTime::NODE_DATA,   "P1_average",
+                "Continuous linear interpolation. Evaluates average of FE basis functions at nodes."
+                "Continuous mesh: NodeData (GMSH) / PointData(VTK)."
+                "Discontinuous mesh: ElementNodeData (GMSH) / PointData(VTK)")
+			.add_value(OutputTime::CORNER_DATA, "D1_value",
+                "Piecewise linear interpolation (discontinuous between elements)."
+                "Continuous mesh: NodeData (GMSH) / PointData(VTK)."
+                "Discontinuous mesh: ElementNodeData (GMSH) / PointData(VTK)")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",
+                "Piecewise constant interpolation."
+                "Continuous mesh: ElementData (GMSH) / CellData(VTK)."
+                "Discontinuous mesh: ElementData (GMSH) / CellData(VTK)")
+			.add_value(OutputTime::NATIVE_DATA, "Native",
+                "Native data (Flow123d data). Corresponds to degrees of freedom of the internal FE approximation."
+                "Its main purpose is to read/write results repeatedly with minimal loss of accuracy.")
 			.close();
 
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
             .allow_auto_conversion("field")
-            .declare_key("field", IT::Parameter("output_field_selection"), IT::Default::obligatory(),
-                    "The field name (from selection).")
+            .declare_key("field", IT::String(), IT::Default::obligatory(),
+                    "The field name (of equation field or user field).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
             .declare_key("interpolation", IT::Array( interpolation_sel ), IT::Default::read_time("Interpolation type of output data."),
@@ -195,8 +206,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 }
 
 void EquationOutput::init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg) {
-    string field_name = it -> val< Input::FullEnum >("field");
+    string field_name = it -> val< std::string >("field");
     FieldCommon *found_field = field(field_name);
+    ASSERT_PERMANENT_PTR(found_field)(field_name).error("Field doesn't exist in equation!\n"); // TODO: Change to exception.
 
     Input::Array interpolations;
     OutputTime::DiscreteSpaceFlags interpolation = OutputTime::empty_discrete_flags();
@@ -414,14 +426,16 @@ typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_cont
         // throw input exception if the field is not scalar
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
 
-        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-            DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
-            auto lambda_function =
-                [error_control_field](const Armor::array &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
-                { error_control_field->value_list(point_list, elm, value_list); };
+        	ASSERT_PERMANENT(false)(error_control_field_name).error("Setting of error control field is not supported yet!\n");
 
-            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
-            return func;
+//        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+//            DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
+//            auto lambda_function =
+//                [error_control_field](const Armor::array &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+//                { error_control_field->value_list(point_list, elm, value_list); };
+//
+//            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
+//            return func;
 
         }
         else{

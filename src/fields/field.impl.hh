@@ -47,7 +47,7 @@ Field<spacedim,Value>::Field()
 	shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
 	this->add_factory( std::make_shared<FactoryBase>() );
 
-	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	unsigned int cache_size = CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
 	value_cache_.resize(cache_size);
 
@@ -67,7 +67,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
-		unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+		unsigned int cache_size = CacheMapElementNumber::get();
 		value_cache_.reinit(cache_size);
 		value_cache_.resize(cache_size);
 
@@ -90,7 +90,7 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->shared_->input_name_ = input_name;
     shared_->bc_ = bc;
 
-	unsigned int cache_size = 1.1 * CacheMapElementNumber::get();
+	unsigned int cache_size = CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
 	value_cache_.resize(cache_size);
 
@@ -514,15 +514,15 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         	if ( rh.empty() ||	! rh[0].second)   // empty region history
             {
         		// test if check is turned on and control field is FieldConst
-                if (no_check_control_field_ && no_check_control_field_->is_constant(reg) ) {
-                	// get constant enum value
-                	auto elm = ElementAccessor<spacedim>(mesh(), reg);
-                	FieldEnum value = no_check_control_field_->value(elm.centre(),elm);
-                	// check that the value is in the disable list
-                    if ( std::find(shared_->no_check_values_.begin(), shared_->no_check_values_.end(), value)
-                             != shared_->no_check_values_.end() )
-                        continue;                  // the field is not needed on this region
-                }
+//                if (no_check_control_field_ && no_check_control_field_->is_constant(reg) ) {
+//                	// get constant enum value
+//                	auto elm = ElementAccessor<spacedim>(mesh(), reg);
+//                	FieldEnum value = no_check_control_field_->value(elm.centre(),elm);
+//                	// check that the value is in the disable list
+//                    if ( std::find(shared_->no_check_values_.begin(), shared_->no_check_values_.end(), value)
+//                             != shared_->no_check_values_.end() )
+//                        continue;                  // the field is not needed on this region
+//                }
                 if (shared_->input_default_ != "") {    // try to use default
                     regions_to_init.push_back( reg );
                 } else {
@@ -720,8 +720,8 @@ void Field<spacedim, Value>::cache_update(ElementCacheMap &cache_map, unsigned i
 
 
 template<int spacedim, class Value>
-std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(FieldSet &field_set, unsigned int i_reg) const {
-   	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(field_set);
+std::vector<const FieldCommon *> Field<spacedim, Value>::set_dependency(unsigned int i_reg) const {
+   	if (region_fields_[i_reg] != nullptr) return region_fields_[i_reg]->set_dependency(*this->shared_->default_fieldset_);
    	else return std::vector<const FieldCommon *>();
 }
 
@@ -758,6 +758,7 @@ template<>
 const FieldValueCache<double> * Field<3, FieldValue<0>::Integer>::value_cache() const {
     return nullptr;
 }
+
 
 
 

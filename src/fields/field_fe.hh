@@ -122,17 +122,6 @@ public:
             unsigned int block_index = FieldFE<spacedim, Value>::undef_uint);
 
     /**
-     * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
-     */
-    virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
-
-    /**
-     * Returns std::vector of scalar values in several points at once.
-     */
-    virtual void value_list (const Armor::array &point_list, const ElementAccessor<spacedim> &elm,
-                       std::vector<typename Value::return_type>  &value_list);
-
-    /**
      * Overload @p FieldAlgorithmBase::cache_update
      */
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
@@ -182,6 +171,10 @@ public:
     	return data_vec_;
     }
 
+    inline const VectorMPI& vec() const {
+    	return data_vec_;
+    }
+
     /// Call begin scatter functions (local to ghost) on data vector
     void local_to_ghost_data_scatter_begin();
 
@@ -219,13 +212,6 @@ private:
 
 	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
 	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
-
-	/**
-	 * Fill data to boundary_dofs_ vector.
-	 *
-	 * TODO: Temporary solution. REMOVE this method and fix all places where is boundary_dofs_ vector used.
-	 */
-	void fill_boundary_dofs();
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
@@ -298,13 +284,6 @@ private:
 
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
-
-    /**
-     * Hold dofs of boundary elements.
-     *
-     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
-     */
-    std::shared_ptr< std::vector<IntIdx> > boundary_dofs_;
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     std::vector<FEValues<spacedim>> fe_values_;

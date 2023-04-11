@@ -72,6 +72,7 @@ endif()
 # patched json_spirit lib
 add_subdirectory("input/json_spirit")
 
+
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #message(STATUS "Include directories: ${flow123d_includes}")
 #include_directories(${flow123d_includes})
@@ -108,7 +109,9 @@ add_library(system_lib
     system/fmt/ostream.cc
     system/fmt/posix.cc
 )
-target_link_libraries(system_lib 
+target_link_libraries(system_lib PUBLIC 
+	MPI::MPI_CXX
+    pybind11::embed 
     ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
     ${PETSC_EXTERNAL_LIB} 
@@ -171,7 +174,6 @@ target_link_libraries(la_lib
     ${Boost_LIBRARIES})
 set_target_properties(la_lib 
     PROPERTIES  COMPILE_FLAGS "${BDDCML_CDEFS}" ) 
-
 
 
 # tools_lib    
@@ -283,6 +285,11 @@ target_link_libraries(io_lib
     ${Zlib_LIBRARY})
 
 
+# Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
+pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
+#pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
+#add_executable(flow123dpy fields/python_field_proxy.cc)
+target_link_libraries(fieldproxypy PUBLIC armadillo system_lib)
 
 
 
@@ -318,10 +325,12 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
+    fieldproxypy
     fparser   
     bparser  
     armadillo
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${PYTHON_LIBRARIES})
 
 
 
@@ -330,11 +339,11 @@ set(sources_lib_non_system
 # all remaining sources 
 add_library(flow123d_lib SHARED 
     flow/darcy_flow_mh_output.cc
-    flow/darcy_flow_mh.cc
+    # flow/darcy_flow_mh.cc
     flow/darcy_flow_lmh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
-    flow/mortar_assembly.cc
+    # flow/mortar_assembly.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc

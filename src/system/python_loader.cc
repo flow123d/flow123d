@@ -17,9 +17,6 @@
 
 #include "global_defs.h"
 
-#ifdef FLOW123D_HAVE_PYTHON
-
-#include "Python.h"
 #include "system/python_loader.hh"
 
 //#include "system/system.hh"
@@ -28,220 +25,185 @@
 //#include <iostream>
 #include <fstream>
 //#include <sstream>
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h> // everything needed for embedding
 
 using namespace std;
-
-string python_sys_path = R"CODE(
-
-def get_paths():
-    import sys
-    import os
-    # print('\n'.join(sys.path))
-    return os.pathsep.join(sys.path)
-
-)CODE";
-
-// default value
-string PythonLoader::sys_path = "";
+namespace py = pybind11;
 
 
-void PythonLoader::initialize(const std::string &python_home)
+void PythonLoader::initialize()
 {
-    static internal::PythonRunning _running(python_home);
+    static internal::PythonRunning _running;
 }
 
 
-PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
+py::module_ PythonLoader::load_module_from_file(const std::string& fname) {
     initialize();
 
-    // don't know direct way how to load module form file, so we read it into string and use load_module_from_string
     std::ifstream file_stream;
-    // check correct openning
-    FilePath(fname, FilePath::input_file).open_stream(file_stream);
-    file_stream.exceptions ( ifstream::failbit | ifstream::badbit );
+    FilePath f_path(fname, FilePath::input_file);
+    f_path.open_stream(file_stream); // checks if file exists
+    std::string parent_path = f_path.parent_path(); // add path to PythonPath
+    PythonLoader::add_sys_path(parent_path);
 
-    std::stringstream buffer;
-    buffer << file_stream.rdbuf();
-
-    string module_name;
-    std::size_t pos = fname.rfind("/");
-    if (pos != string::npos)
-        module_name = fname.substr(pos+1);
-    else
-        module_name = fname;
-
-    // cout << "python module: " << module_name <<endl;
-    // DebugOut() << buffer.str() << "\n";
-    // TODO: use exceptions and catch it here to produce shorter and more precise error message
-    return load_module_from_string(module_name, buffer.str() );
+    string module_name = f_path.stem();
+    py::module_ module;
+    try {
+    	module = py::module_::import(module_name.c_str());
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
+    return module;
 }
 
 
 
-PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
+py::module_ PythonLoader::load_module_from_string(const std::string& module_name, const std::string& func_name, const std::string& source_string) {
     initialize();
-    // compile string and check for errors
-    PyObject * compiled_string = Py_CompileString(source_string.c_str(), module_name.c_str(), Py_file_input);
-    PythonLoader::check_error();
-    
-    // import modle and check for error
-    PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
-    PythonLoader::check_error();
-    return result;
+
+    py::module_ user_module;
+    py::dict globals = py::globals();
+
+    try {
+        py::exec(source_string.c_str(), globals, globals);
+        user_module = py::module::create_extension_module(module_name.c_str(), "", new PyModuleDef());
+        user_module.add_object(func_name.c_str(), globals[func_name.c_str()]);
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
+    return user_module;
 }
 
-PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
+py::module_ PythonLoader::load_module_by_name(const std::string& module_name) {
     initialize();
 
     // import module by dot separated path and its name
-    PyObject * module_object = PyImport_ImportModule (module_name.c_str());
-    PythonLoader::check_error();
+    py::module_ module_object;
+    try {
+        module_object = py::module_::import (module_name.c_str());
+    } catch (const py::error_already_set &ex) {
+        PythonLoader::throw_error(ex);
+    }
 
     return module_object;
 }
 
 
-void PythonLoader::check_error() {
-    if (PyErr_Occurred()) {
-        PyObject *ptype, *pvalue, *ptraceback;
-        PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-        string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
-        
-        // clear error indicator
-        PyErr_Clear();
-    
-        /* See if we can get a full traceback */
-        PyObject *traceback_module = PyImport_ImportModule("traceback");
-    
-        string str_traceback;
-        if (traceback_module && ptraceback) {
-            PyObject *format_tb_method = PyObject_GetAttrString(traceback_module, "format_tb");
-            if (format_tb_method) {
-                PyObject * traceback_lines = PyObject_CallFunctionObjArgs(format_tb_method, ptraceback, NULL);
-                if (traceback_lines) {
-                    PyObject * join_str = PyUnicode_FromString("");
-                    PyObject * join = PyObject_GetAttrString(join_str, "join");
-                    PyObject * message = PyObject_CallFunctionObjArgs(join, traceback_lines, NULL);
-                    if (message) {
-                        str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(message)));
-                    }
-                    Py_DECREF(traceback_lines);
-                    Py_DECREF(join_str);
-                    Py_DECREF(join);
-                    Py_DECREF(message);
+void PythonLoader::throw_error(const py::error_already_set &ex) {
+    PyObject *ptype = ex.type().ptr();
+    PyObject *pvalue = ex.value().ptr();
+    PyObject *ptraceback = ex.trace().ptr();
+
+    PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+    string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
+
+    // clear error indicator
+    PyErr_Clear();
+
+    /* See if we can get a full traceback */
+    PyObject *traceback_module = PyImport_ImportModule("traceback");
+
+    string str_traceback;
+    if (traceback_module && ptraceback) {
+        PyObject *format_tb_method = PyObject_GetAttrString(traceback_module, "format_tb");
+        if (format_tb_method) {
+            PyObject * traceback_lines = PyObject_CallFunctionObjArgs(format_tb_method, ptraceback, NULL);
+            if (traceback_lines) {
+                PyObject * join_str = PyUnicode_FromString("");
+                PyObject * join = PyObject_GetAttrString(join_str, "join");
+                PyObject * message = PyObject_CallFunctionObjArgs(join, traceback_lines, NULL);
+                if (message) {
+                    str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(message)));
                 }
+                Py_DECREF(traceback_lines);
+                Py_DECREF(join_str);
+                Py_DECREF(join);
+                Py_DECREF(message);
             }
         }
-        
-        // get value of python's "sys.path"
-        string python_path = PythonLoader::sys_path;
-        replace(python_path.begin(), python_path.end(), ':', '\n');
-        
-        // construct error message
-        string py_message =
-                   "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str(ptype))) + "\n"
-                 + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str(pvalue))) + "\n"
-                 + "Traceback: \n" + str_traceback + "\n"
-                 + "Paths: " + "\n" + python_path + "\n";
+    }
+
+    // get value of python's "sys.path"
+    auto path_vec = PythonLoader::get_python_path();
+    string python_path;
+    for (auto p : path_vec) {
+        python_path += p + "\n";
+    }
+
+    // construct error message
+    string py_message =
+               "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.type().ptr() ))) + "\n"
+             + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str( ex.value().attr("args").ptr() ))) + "\n"
+             + "Traceback: \n" + str_traceback
+			 + "--------------------------------------------------------\n\n"
+             + "Python sys.path: " + "\n" + python_path
+	         + "--------------------------------------------------------\n\n";
     
-        THROW(ExcPythonError() << EI_PythonMessage( py_message ));
+    THROW(ExcPythonError() << EI_PythonMessage( py_message ));
+}
+
+
+
+void PythonLoader::add_sys_path(const std::string &path)
+{
+    py::module_ sys = py::module_::import("sys");
+    auto sys_paths = sys.attr("path");
+    // Checks if path exists
+    for (auto sp : sys_paths) {
+        std::string sys_path = sp.cast<std::string>();
+        if (sys_path == path) {
+            WarningOut() << "Path '" << sys_path << "' already exists in Python sys path and cannot be added repeatedly!";
+            return;
+        }
     }
+
+    // Adds only one time
+    sys_paths.attr("append")(path);
 }
 
-
-
-PyObject * PythonLoader::get_callable(PyObject *module, const std::string &func_name) {
-    char func_char[func_name.size()+2];
-    strcpy(func_char, func_name.c_str());
-    PyObject * func = PyObject_GetAttrString(module, func_char );
-    PythonLoader::check_error();
-
-    if (! PyCallable_Check(func)) {
-    	stringstream ss;
-    	ss << "Field '" << func_name << "' from the python module: " << PyModule_GetName(module) << " is not callable." << endl;
-    	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+std::vector<std::string> PythonLoader::get_python_path()
+{
+    py::module_ sys = py::module_::import("sys");
+    auto sys_paths = sys.attr("path");
+    std::vector<std::string> path_vec;
+    for (auto sp : sys_paths) {
+        std::string sys_path = sp.cast<std::string>();
+        path_vec.push_back(sys_path);
     }
 
-    return func;
+    return path_vec;
 }
 
 
-
-wstring to_py_string(const string &str) {
-    wchar_t wbuff[ str.size() ];
-    size_t wstr_size = mbstowcs( wbuff, str.c_str(), str.size() );
-    return wstring( wbuff, wstr_size );
-}
-
-string from_py_string(const wstring &wstr) {
-    char buff[ wstr.size() ];
-    size_t str_size = wcstombs( buff, wstr.c_str(), wstr.size() );
-    return string( buff, str_size );
-}
-
-#define STR_EXPAND(tok) #tok
-#define STR(tok) string(STR_EXPAND(tok))
 
 namespace internal {
 
-PythonRunning::PythonRunning(const std::string& program_name)
+PythonRunning::PythonRunning()
 {
-#ifdef FLOW123D_PYTHON_PREFIX
-        static wstring _python_program_name = to_py_string(program_name);
-        Py_SetProgramName( &(_python_program_name[0]) );
-        wstring full_program_name = Py_GetProgramFullPath();
-        // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
-
-        // try to find string "flow123d" from right side of program_name
-        // if such a string is not present, we are most likely unit-testing
-        // in that case, full_flow_prefix is current dir '.'
-        size_t pos = full_program_name.rfind( to_py_string("flow123d") );
-        wstring full_flow_prefix = ".";
-        if (pos != wstring::npos) {
-            full_flow_prefix = full_program_name.substr(0,pos-string("/bin/").size() );
-        }
-        // cout << "full flow prefix: " << from_py_string(full_flow_prefix) << std::endl;
-        wstring default_py_prefix(to_py_string(STR(FLOW123D_PYTHON_PREFIX)));
-        // cout << "default py prefix: " << from_py_string(default_py_prefix) << std::endl;
-
-        static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
-        Py_SetPythonHome( &(our_py_home[0]) );
-
-#else
-    (void)program_name; // not used
-#endif //FLOW123D_PYTHON_PREFIX 
-
     // initialize the Python interpreter.
-    Py_Initialize();
+    py::initialize_interpreter();
+    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/src/python";
+    std::string fieldproxypy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
+    PythonLoader::add_sys_path(flowpy_path);
+    PythonLoader::add_sys_path(fieldproxypy_path);
 
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
-    // update module path, first get current system path (Py_GetPath)
-    // than append flow123d Python modules path to sys.path
-    wstring path = Py_GetPath();
-    path = path + to_py_string(":") + to_py_string(string(FLOW123D_PYTHON_EXTRA_MODULES_PATH));
-    PySys_SetPath (path.c_str());
-    
-    
+    // update module path, append flow123d Python modules path to sys.path
+    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    std::string extra_path;
+    while ( std::getline(extra_paths, extra_path, ':') )
+    {
+       PythonLoader::add_sys_path(extra_path);
+    }
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
-
-    // call python and get paths available
-    PyObject *moduleMain = PyImport_ImportModule("__main__");
-    PyRun_SimpleString(python_sys_path.c_str());
-    PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
-    PyObject *args = PyTuple_New (0);
-    PyObject *result = PyObject_CallObject(func, args);
-    PythonLoader::check_error();
-    
-    // save value so we dont have to call python again
-    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
 }
+
 
 
 
 PythonRunning::~PythonRunning() {
-    Py_Finalize();
+    py::finalize_interpreter();
 }
 
 } // close namespace internal
-
-#endif // FLOW123D_HAVE_PYTHON

@@ -278,6 +278,7 @@ void MultiField<spacedim, Value>::setup_components() {
 
     	sub_fields_[i_comp].flags_ = this->flags_;
     	sub_fields_[i_comp].set_input_list(this->full_input_list_, *tg_);
+    	sub_fields_[i_comp].set_default_fieldset( *(this->shared_->default_fieldset_) );
     }
 }
 
@@ -306,28 +307,6 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const 
     // Save the full array for future use in FieldCommon::mark_input_times().
     list.copy_to(shared_->input_list_);
 }
-
-
-// template<int spacedim, class Value>
-// typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
-//     typename MultiFieldValue::return_type ret(size(), 1);
-//     for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
-//     	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
-//     }
-// 
-//     return ret;
-// }
-// 
-// 
-// 
-// template<int spacedim, class Value>
-// void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-//                    std::vector<typename MultiFieldValue::return_type>  &value_list) const {
-// 	ASSERT_PERMANENT_EQ( point_list.size(), value_list.size() );
-// 	for(unsigned int i=0; i< point_list.size(); i++) {
-// 		value_list[i]=this->value(point_list[i], elm);
-// 	}
-// }
 
 
 
@@ -363,7 +342,7 @@ bool MultiField<spacedim, Value>::MultiFieldFactory::is_active_field_descriptor(
 
 
 template<int spacedim, class Value>
-std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT_UNUSED FieldSet &field_set, FMT_UNUSED unsigned int i_reg) const {
+std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT_UNUSED unsigned int i_reg) const {
     ASSERT_PERMANENT(false).error("Set dependency of MultiField should be performed by individual components!\n");
     return std::vector<const FieldCommon *>();
 }

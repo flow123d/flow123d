@@ -6,7 +6,7 @@ problem: !Coupling_Sequential
   description: Test13 - mixing of substances on edges and quantitative test on trivial transport problem.
   mesh:
     mesh_file: ../00_mesh/y_branch.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

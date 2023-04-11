@@ -50,8 +50,17 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
+template<int spacedim, class Value>
+class FieldTest : public Field<spacedim, Value> {
+public:
+	FieldValueCache<typename Value::element_type> * field_value_cache() {
+	    return &this->value_cache_;
+	}
+};
+
+
 template <class F>
-class FieldFix : public testing::Test, public F {
+class FieldFix : public testing::Test, public F, public ElementCacheMap {
 public:
 	typedef F FieldType;
 	static constexpr bool is_enum_valued = std::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
@@ -109,20 +118,42 @@ public:
 
 	typedef typename FieldType::ValueType Value;
 	// const value of HistoryPoint given by region index and position in circular buffer.
-	typename Value::element_type rh_value(int r_idx, int j) {
-		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
-		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 );
-		auto val = fb->value(elm.centre(), elm);
+	typename Value::element_type rh_value(BulkPoint &eval_point) {
+		auto val = this->field_(eval_point);
 		return (Value(val))(0,0);
 	}
-	// const value of region_field_ on some region
-	typename Value::element_type _value_(FieldType &f) {
-		Region r = f.mesh()->region_db().get_region_set("BULK")[1];
 
-		auto elm = ElementAccessor<FieldType::space_dim>( f.mesh(), r );
-		auto val = f.value( point_, elm);
-		return (Value(val))(0,0);
+	/// Update cache for region history test
+	void rh_update_cache(int r_idx_bulk, int r_idx_bdr) {
+	    FieldValueCache<typename Value::element_type> *fvc = field_.field_value_cache();
+	    typename FieldType::FieldBasePtr fb = rh(r_idx_bulk)[0].second;
+	    fb->cache_update(*fvc, *this, 1);
+	    typename FieldType::FieldBasePtr fb_bdr = rh(r_idx_bdr)[0].second;
+	    fb_bdr->cache_update(*fvc, *this, 0);
 	}
+
+	/// Init assembly for region history test
+    void rh_init_field_caches() {
+    	dh_ = std::make_shared<DOFHandlerMultiDim>(*my_mesh);
+        eval_points_ = std::make_shared<EvalPoints>();
+        Quadrature *q_bulk = new QGauss(3, 0);
+        Quadrature *q_bdr = new QGauss(2, 0);
+        bulk_eval = eval_points_->add_bulk<3>(*q_bulk );
+        bdr_eval = eval_points_->add_boundary<3>(*q_bdr );
+        this->init(eval_points_);
+    }
+
+    /// Prepare patch for region history test
+	void rh_prepare_patch(unsigned int i_reg_blk, unsigned int i_ele_blk, unsigned int i_reg_bdr, unsigned int i_ele_bdr) {
+	    this->start_elements_update();
+	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 0, i_ele_blk);
+	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 1, i_ele_blk);
+        this->eval_point_data_.emplace_back(i_reg_bdr, i_ele_bdr, 0, -1);
+        this->eval_point_data_.make_permanent();
+        this->create_patch();
+        this->rh_update_cache(i_reg_blk, i_reg_bdr);
+        this->finish_elements_update();
+    }
 
 	// simple selection with values "black" and "White"
 	static const Input::Type::Selection &get_test_selection();
@@ -162,6 +193,11 @@ public:
 	// list of simple field descriptors
 	std::shared_ptr<Input::Type::Array>          test_input_list;
 
+	// Members of test update_history, initialized in init_field_caches method
+    std::shared_ptr<EvalPoints> eval_points_;
+    std::shared_ptr<BulkIntegral> bulk_eval;
+    std::shared_ptr<BoundaryIntegral> bdr_eval;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 template <class F>
@@ -177,11 +213,11 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 #define FV FieldValue
 // full list
 #define f_list(Dim) \
-	Field<Dim,FV<0>::Scalar> , \
-    Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<Dim>::VectorFixed>, \
-	Field<Dim,FV<Dim>::TensorFixed>
+	FieldTest<Dim,FV<0>::Scalar> , \
+    FieldTest<Dim,FV<0>::Enum>, \
+    FieldTest<Dim,FV<0>::Integer>, \
+	FieldTest<Dim,FV<Dim>::VectorFixed>, \
+	FieldTest<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -194,6 +230,7 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 typedef ::testing::Types<f_list(3)> FieldTypes;
 TYPED_TEST_CASE(FieldFix, FieldTypes);
 
+// NOTE: General tests of 'set_time' and 'copy constructor' method are defined in file field_const_test.cpp
 
 // check that get_input_type works for every Field<> type
 // It should be tested in static context, which is non-trivial,
@@ -357,6 +394,30 @@ TYPED_TEST(FieldFix, update_history) {
     Region front_3d = this->mesh()->region_db().find_label("3D front");
     Region back_3d = this->mesh()->region_db().find_label("3D back");
 
+    ElementAccessor<3> el_front_3d = this->mesh()->element_accessor(8);
+    EXPECT_EQ("3D front", el_front_3d.region().label());
+    ElementAccessor<3> el_bc_top = this->mesh()->bc_mesh()->element_accessor(1); // boundary of el_front_3d (side: 0)
+    EXPECT_EQ(".top side", el_bc_top.region().label());
+
+    this->rh_init_field_caches();
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+
+    DHCellAccessor dh_cell = this->dh_->cell_accessor_from_element(el_front_3d.idx());
+    auto p_bulk = *( this->bulk_eval->points(this->position_in_cache(dh_cell.elm_idx()), this).begin() );
+    bool found_bdr = false;
+    BulkPoint p_bdr;
+    for (DHCellSide cell_side : dh_cell.side_range()) {
+        if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+            if (cell_side.cond().bc_ele_idx() == 1) {
+                found_bdr = true;
+                auto p_side = *( this->bdr_eval->points(cell_side, this).begin() );
+                p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+            }
+        }
+    }
+    EXPECT_TRUE( found_bdr );
+
+
     EXPECT_EQ( 1 , this->rh(diagonal_1d.idx()).size() );
 	EXPECT_EQ( 1 , this->rh(diagonal_2d.idx()).size() );
 	EXPECT_EQ( 1 , this->rh(bc_top.idx()).size() );
@@ -367,8 +428,8 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 0.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 0.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+	EXPECT_EQ( 0 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.estimate_dt();
 	tg.next_time();
@@ -385,8 +446,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 0.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -402,8 +464,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 2.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -419,8 +482,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 2.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -436,8 +500,9 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 4.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 4.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 0 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 0 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 0 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 0 , this->rh_value(p_bdr) );
 
 	tg.next_time();
 	this->update_history(tg.step());
@@ -453,121 +518,11 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 5.0 , this->rh_time(front_3d.idx(),0) );
 	EXPECT_EQ( 5.0 , this->rh_time(bc_top.idx(),0) );
 
-	EXPECT_EQ( 1 , this->rh_value(front_3d.idx(),0) );
-	EXPECT_EQ( 1 , this->rh_value(bc_top.idx(),0) );
+    this->rh_prepare_patch(front_3d.idx(), el_front_3d.idx(), bc_top.idx(), el_bc_top.idx());
+	EXPECT_EQ( 1 , this->rh_value(p_bulk) );
+	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 }
-
-TYPED_TEST(FieldFix, set_time) {
-	string list_ok = "["
-			"{time=0, region=\"ALL\", a =0, b =0},"
-			"{time=1, region=\"BULK\", a =1, b =0},"
-			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
-			"{time=3, region=\"ALL\", b =0},"
-			"{time=4, region=\"ALL\", a =0},"
-			"{time=5, region=\"ALL\", a =1}"
-			"]";
-
-	if (this->is_enum_valued) {
-		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
-		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
-	}
-
-	TimeGovernor tg(0.0, 0.5);
-	this->name("a");
-	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok), tg );
-	this->units( UnitSI().m() );
-
-	// time = 0.0
-	this->set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(0, this->_value_( *this ));
-	EXPECT_TRUE( this->is_jump_time() );
-
-	tg.next_time();
-	this->set_time(tg.step(), LimitSide::left);
-	EXPECT_EQ(0, this->_value_( *this ));
-    EXPECT_FALSE( this->is_jump_time() );
-
-    this->set_time(tg.step(), LimitSide::right);
-    EXPECT_EQ(0, this->_value_( *this ));
-    EXPECT_FALSE( this->is_jump_time() );
-
-    tg.next_time();
-    this->set_time(tg.step(), LimitSide::left);
-    EXPECT_EQ(0, this->_value_( *this ));
-    EXPECT_TRUE( this->is_jump_time() );
-
-    this->set_time(tg.step(), LimitSide::right);
-    EXPECT_EQ(1, this->_value_( *this ));
-    EXPECT_TRUE( this->is_jump_time() );
-
-}
-
-
-
-// Check copy constructor and assignment oprerator
-TYPED_TEST(FieldFix, constructors) {
-	// default constructor
-	typename TestFixture::FieldType field_default;
-	EXPECT_EQ("", field_default.name());
-	EXPECT_FALSE(field_default.is_bc());
-
-	// copies
-	// check that we can have copies in different times
-	this->field_.name("a");
-	field_default
-	    .name("b")
-	    .flags(FieldFlag::input_copy);
-	this->field_.set_mesh( *(this->my_mesh) );
-	field_default.set_mesh( *(this->my_mesh) );
-	this->field_.units( UnitSI().m() );
-	field_default.units( UnitSI().m() );
-
-	string list_ok = "["
-			"{time=2,  region=\"BULK\", a=0, b=1}, "
-			"{time=3,  region=\"BULK\", b=1}, "
-			"{time=4,  region=\"BULK\", a=1},"
-			"{time=5,  region=\"BULK\", a=0, b=0}]";
-
-	if (this->is_enum_valued) {
-		list_ok = std::regex_replace(list_ok, std::regex("=1"), "=\"white\"");
-		list_ok = std::regex_replace(list_ok, std::regex("=0"), "=\"black\"");
-	}
-
-	TimeGovernor tg(2.0, 1.0);
-	this->field_.set_input_list(this->input_list(list_ok), tg);
-	field_default.set_input_list(this->input_list(list_ok), tg);
-
-
-
-	typename TestFixture::FieldType f2(this->field_);	// default constructor
-	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
-
-
-	// tg = 2.0
-	f2.set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(0,this->_value_(f2));
-	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
-	this->field_.set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(0,this->_value_(this->field_));
-
-	// tg = 3.0
-	tg.next_time();
-	this->field_.set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(0,this->_value_(this->field_));
-
-	// tg = 4.0
-	tg.next_time();
-	this->field_.set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(1,this->_value_(this->field_));
-	EXPECT_EQ(0,this->_value_(f2));
-
-	field_default.set_time(tg.step(), LimitSide::right);
-	EXPECT_EQ(1,this->_value_(field_default));
-}
-
-
 
 
 
@@ -604,6 +559,7 @@ TEST(Field, init_from_input) {
 
 	Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
 
+	FieldSet eq_fields;
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
@@ -629,15 +585,18 @@ TEST(Field, init_from_input) {
     Input::ReaderToStorage reader( field_input, main_record, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    sorption_type.set_mesh(*mesh);
-    init_conc.set_mesh(*mesh);
-    conductivity.set_mesh(*mesh);
-    conductivity_3d.set_mesh(*mesh);
+//    sorption_type.set_mesh(*mesh);
+//    init_conc.set_mesh(*mesh);
+//    conductivity.set_mesh(*mesh);
+//    conductivity_3d.set_mesh(*mesh);
 
-    sorption_type.units( UnitSI().m() );
-    init_conc.units( UnitSI().m() );
-    conductivity.units( UnitSI().m() );
-    conductivity_3d.units( UnitSI().m() );
+    eq_fields += sorption_type.name("sorption_type").units( UnitSI().m() );
+    eq_fields += init_conc.name("init_conc").units( UnitSI().m() );
+    eq_fields += conductivity.name("conductivity").units( UnitSI().m() );
+    eq_fields += conductivity_3d.name("conductivity_3d").units( UnitSI().m() );
+    eq_fields.set_mesh(*mesh);
+    eq_fields.add_coords_field();
+    eq_fields.set_default_fieldset();
 
     std::vector<std::string> region_set_names = {"BULK"};
 
@@ -657,39 +616,27 @@ TEST(Field, init_from_input) {
     conductivity.set_time(step, LimitSide::right);
     conductivity_3d.set_time(step, LimitSide::right);
 
-    {	
+    { // check size of vector returned in set_dependency
 
-	    auto ele = mesh->element_accessor(5);
+    	std::vector<const FieldCommon *> dep_fields = init_conc.set_dependency(1);
+    	EXPECT_EQ( 0, dep_fields.size() );
 
-	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
+    	dep_fields = conductivity.set_dependency(1);
+    	EXPECT_EQ( 3, dep_fields.size() );
+    	for (uint i=0; i<dep_fields.size(); ++i )
+    	    EXPECT_EQ( "X", dep_fields[i]->name() );
 
-
-	    auto vec_value = init_conc.value(ele.centre(), ele);
-	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == vec_value ) );
-
-	    auto result =conductivity.value(ele.centre(), ele);
-	    arma::mat diff = arma::mat33("-0.5 0 0;0 0 0; 0 0 -0.5") - result;
-
-	    double norm=arma::norm(diff, 1);
-	    EXPECT_DOUBLE_EQ( 0.0, norm );
+    	dep_fields = conductivity_3d.set_dependency(1);
+    	EXPECT_EQ( 0, dep_fields.size() );
     }
 
     {
-	//  using const accessor
-    	ElementAccessor<3> ele;
-
-	    EXPECT_ASSERT_DEATH( {sorption_type.value(ele.centre(), ele);}  , "Invalid element accessor.");
+	//  check const region
 	    Region reg = mesh->region_db().find_id(40);
 
 	    EXPECT_TRUE( sorption_type.is_constant(reg) );
 	    EXPECT_TRUE( init_conc.is_constant(reg) );
 	    EXPECT_FALSE( conductivity.is_constant(reg) );
-	    EXPECT_TRUE( conductivity_3d.is_constant(reg) );
-
-	    ele = ElementAccessor<3>(mesh, reg);
-	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
-	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
-
    }
 
     delete mesh;
@@ -809,67 +756,6 @@ TEST(Field, field_result) {
 
 
 
-static const it::Selection &get_test_type_selection() {
-	return it::Selection("TestType")
-				.add_value(0, "none")
-				.add_value(1,"dirichlet")
-				.close();
-}
-
-TEST(Field, init_from_default) {
-	::testing::FLAGS_gtest_death_test_style = "threadsafe";
-
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    Profiler::instance();
-    
-    Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
-
-    Space<3>::Point p("1 2 3");
-
-    {
-        Field<3, FieldValue<3>::Scalar > scalar_field("scalar_test");
-
-        // test default initialization of scalar field
-        scalar_field.input_default( "45.0" );
-        scalar_field.set_mesh(*mesh);
-        scalar_field.units( UnitSI().m() );
-
-        scalar_field.set_time(TimeGovernor().step(), LimitSide::right);
-
-        EXPECT_EQ( 45.0, scalar_field.value(p, mesh->element_accessor(0)) );
-        EXPECT_EQ( 45.0, scalar_field.value(p, mesh->element_accessor(6)) );
-        // this fails on dev.nti.tul.cz
-        //EXPECT_DEATH( { scalar_field.value(p, mesh->element_accessor(0,true)); }, "Null field ptr " );
-    }
-
-    {
-        Field<3, FieldValue<3>::Scalar > scalar_field("some", true);
-
-        // test death of set_time without default value
-        scalar_field.set_mesh(*mesh);
-
-        EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step(), LimitSide::right);} , FieldCommon::ExcMissingFieldValue,
-                "Missing value of the input field");
-    }
-
-    {
-        Field<3, FieldValue<3>::Enum > enum_field("any", true);
-
-        enum_field.input_selection( get_test_type_selection() );
-        enum_field.input_default( "\"none\"" );
-        enum_field.set_mesh(*mesh);
-        enum_field.units( UnitSI().m() );
-
-        enum_field.set_time(TimeGovernor().step(), LimitSide::right);
-
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->bc_mesh()->element_accessor(3)) );
-
-    }
-
-    delete mesh;
-}
-
 /// Test optional fields dependent e.g. on BC type
 TEST(Field, disable_where) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
@@ -885,12 +771,18 @@ TEST(Field, disable_where) {
     std::vector<FieldEnum> list;
     Field<3, FieldValue<3>::Scalar > bc_value("bc_value", true);
     bc_value.disable_where( bc_type, {neumann} );
+    bc_value.input_default("0.0");
+    bc_value.units( UnitSI().m() );
 
     Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux", true);
     bc_flux.disable_where( bc_type, {dirichlet, robin} );
+    bc_flux.input_default("0.0");
+    bc_flux.units( UnitSI().kg().m().s(-1).md() );
 
     Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma", true);
     bc_sigma.disable_where( bc_type, {dirichlet, neumann} );
+    bc_sigma.input_default("0.0");
+    bc_sigma.units( UnitSI().s(-1) );
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 

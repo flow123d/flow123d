@@ -51,6 +51,7 @@ const Record & Elasticity::get_input_type() {
                 std::string(equation_name),
                 "FEM for linear elasticity.")
            .copy_keys(EquationBase::record_template())
+		   .copy_keys(EquationBase::user_fields_template(equation_name))
            .declare_key("balance", Balance::get_input_type(), Default("{}"),
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
@@ -273,6 +274,9 @@ Elasticity::EqFields::EqFields()
     // add all input fields to the output list
     output_fields += *this;
 
+    this->add_coords_field();
+    this->set_default_fieldset();
+
 }
 
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
@@ -314,8 +318,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
     eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
-    eq_fields_->add_coords_field();
-    this->eq_fieldset_ = eq_fields_.get();
+    this->eq_fieldset_ = eq_fields_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
     if (tm == nullptr)
@@ -383,6 +386,12 @@ void Elasticity::initialize()
     // setup output divergence
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
+
+    // read optional user fields
+    Input::Array user_fields_arr;
+    if (input_rec.opt_val("user_fields", user_fields_arr)) {
+       	this->init_user_fields(user_fields_arr, eq_fields_->output_fields);
+    }
     
     eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);

@@ -3,12 +3,11 @@ problem: !Coupling_Sequential
   description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
-  flow_equation: !Flow_Darcy_MH
+  flow_equation: !Flow_Darcy_LMH
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
         a_tol: 1.0e-10
-    n_schurs: 2
     input_fields:
       - region: ALL
         conductivity: 1e-6

@@ -189,7 +189,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), convection->mark_type());
 
-    this->eq_fieldset_ = &(convection->eq_fieldset());
+    this->eq_fieldset_ = convection->eq_fieldset_ptr();
 
     Input::Iterator<Input::AbstractRecord> reactions_it = in_rec.find<Input::AbstractRecord>("reaction_term");
 	if ( reactions_it ) {
