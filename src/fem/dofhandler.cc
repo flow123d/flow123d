@@ -704,10 +704,26 @@ const DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int
 	return DHCellAccessor(this, map_it->second);
 }
 
+void DOFHandlerMultiDim::print_cell_dofs(stringstream &s, DHCellAccessor cell) const
+{
+    static std::vector<int> dofs(max_elem_dofs_);
+    auto ndofs = cell.get_dof_indices(dofs);
+    s << "-- cell " << cell.elm().input_id() << ": ";
+    for (unsigned int idof=0; idof<ndofs; idof++)
+    {
+        s << dofs[idof] << " ";
+        if (cell.cell_dof(idof).dim == 0) s << "(node " << cell.elm().node(cell.cell_dof(idof).n_face_idx).index() << ")";
+        s << ", ";
+    }
+    s << endl;
+}
+
 
 void DOFHandlerMultiDim::print() const {
+
+#ifdef FLOW123D_DEBUG_MESSAGES
+
     stringstream s;
-    std::vector<int> dofs(max_elem_dofs_);
     
     s << "DOFHandlerMultiDim structure:" << endl;
     s << "- is parallel: " << (is_parallel_?"true":"false") << endl;
@@ -715,33 +731,13 @@ void DOFHandlerMultiDim::print() const {
     s << "- global number of dofs: " << n_global_dofs_ << endl;
     s << "- number of locally owned cells: " << el_ds_->lsize() << endl;
     s << "- number of ghost cells: " << ghost_4_loc.size() << endl;
+
     s << "- dofs on locally owned cells:" << endl;
-    
-    for (auto cell : own_range())
-    {
-        auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().input_id() << ": ";
-        for (unsigned int idof=0; idof<ndofs; idof++)
-        {
-            s << dofs[idof] << " ";
-            if (cell.cell_dof(idof).dim == 0) s << "(node " << cell.elm().node(cell.cell_dof(idof).n_face_idx).index() << ")";
-            s << ", ";
-        }
-        s << endl;
-    }
+    for (auto cell : own_range()) print_cell_dofs(s, cell);
+
     s << "- dofs on ghost cells:" << endl;
-    for (auto cell : ghost_range())
-    {
-        auto ndofs = cell.get_dof_indices(dofs);
-        s << "-- cell " << cell.elm().input_id() << ": ";
-        for (unsigned int idof=0; idof<ndofs; idof++)
-        {
-            s << dofs[idof] << " ";
-            if (cell.cell_dof(idof).dim == 0) s << "(node " << cell.elm().node(cell.cell_dof(idof).n_face_idx).index() << ")";
-            s << ", ";
-        }
-        s << endl;
-    }
+    for (auto cell : ghost_range()) print_cell_dofs(s, cell);
+
     s << "- locally owned dofs (" << lsize_ << "): ";
     for (unsigned int i=0; i<lsize_; i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
     s << "- ghost dofs (" << local_to_global_dof_idx_.size() - lsize_ << "): ";
@@ -751,6 +747,9 @@ void DOFHandlerMultiDim::print() const {
     s << endl;
     
     printf("%s", s.str().c_str());
+
+#endif
+
 }
 
 
