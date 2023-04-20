@@ -807,7 +807,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     // sub_local_indices maps local dofs of parent handler to local dofs of sub-handler
     vector<LongIdx> sub_local_indices(dh->local_to_global_dof_idx_.size(), INVALID_DOF);
     map<LongIdx,LongIdx> global_to_local_dof_idx;
-    vector<unsigned int> ghost_dof_proc;
+    vector<unsigned int> ghost_dof_proc; // vector of proc ids for ghost dofs
     // first add owned dofs to local_to_global_dof_idx_ and sub_local_indices
     for (auto cell : dh->local_range())
     {
