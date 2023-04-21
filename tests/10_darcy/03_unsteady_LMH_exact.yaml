@@ -42,7 +42,7 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-        r_tol: 1.0e-5
+        r_tol: 1.0e-7
     output:
       fields:
         - pressure_p0
