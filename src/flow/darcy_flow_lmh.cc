@@ -794,7 +794,7 @@ void DarcyLMH::solve_nonlinear()
 
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
-        lin_sys_schur().set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
+        lin_sys_schur().set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 10000, 100);
     }
     vector<double> convergence_history;
 
