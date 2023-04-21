@@ -278,10 +278,10 @@ void SchurComplement::form_rhs()
 
 
 
-void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
+void SchurComplement::set_tolerances(double  r_tol, double a_tol, double d_tol, unsigned int max_it)
 {
-    LinSys_PETSC::set_tolerances(r_tol, a_tol, max_it);
-    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, max_it);
+    LinSys_PETSC::set_tolerances(r_tol, a_tol, d_tol, max_it);
+    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, d_tol, max_it);
 }
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
