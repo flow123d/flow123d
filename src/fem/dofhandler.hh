@@ -267,6 +267,11 @@ public:
     friend class DHNeighbSide;
     friend class SubDOFHandlerMultiDim;
 
+private:
+
+    /// Auxiliary function for output of information about dofs in a cell.
+    void print_cell_dofs(stringstream &s, DHCellAccessor cell) const;
+
 protected:
 
     /**
