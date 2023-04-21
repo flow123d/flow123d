@@ -46,7 +46,7 @@ problem: !Coupling_Sequential
       converge_on_stagnation: false
       linear_solver: !Petsc
         a_tol: 1e-11
-        options: -ksp_divtol 1e8 -ksp_type cg
+        d_tol: 1e8
     output:
       fields:
         - pressure_p0

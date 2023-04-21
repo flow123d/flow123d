@@ -416,7 +416,7 @@ void SparseGraphMETIS::partition(int *part)
                   options[METIS_OPTION_NITER]     = 10;
                   options[METIS_OPTION_SEED]      = 12345;
                   options[METIS_OPTION_MINCONN]   = 1;
-                  options[METIS_OPTION_CONTIG]    = 1;
+                  options[METIS_OPTION_CONTIG]    = 1; // enforce contiguous (connected) subdomains
                   options[METIS_OPTION_COMPRESS]  = 0;
                   options[METIS_OPTION_CCORDER]   = 0;
                   options[METIS_OPTION_UFACTOR]   = 30;

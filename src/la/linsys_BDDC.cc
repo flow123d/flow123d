@@ -76,7 +76,7 @@ LinSys_BDDC::LinSys_BDDC(  const Distribution * rows_ds,
 }
 
 
-void LinSys_BDDC::set_tolerances(double  r_tol, FMT_UNUSED double a_tol, unsigned int max_it)
+void LinSys_BDDC::set_tolerances(double  r_tol, FMT_UNUSED double a_tol, FMT_UNUSED double d_tol, unsigned int max_it)
 {
     if (! in_rec_.is_empty()) {
         // input record is set

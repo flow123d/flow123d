@@ -249,8 +249,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSSetQP(solver, system));
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
-    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
-    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
+    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, d_tol_, PETSC_DEFAULT));
+    chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, d_tol_,  max_it_));
     chkerr(QPSSetFromOptions(solver));
     chkerr(QPSSetUp(solver)); // solvers may do additional QP tranformations
 
