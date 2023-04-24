@@ -47,6 +47,9 @@ const it::Record & LinSys_PERMON::get_input_type() {
 		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
                         "If not, we use the value 1.0e-11."),
 		            "Absolute residual tolerance.")
+        .declare_key("d_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 10000."),
+		            "Tolerance for divergence.")
         .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
                         "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
