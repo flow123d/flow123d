@@ -22,11 +22,12 @@
 #include <functional>          // for unary_function
 #include <string>              // for string
 #include <vector>              // for vector
-#include "la/linsys_PETSC.hh"  // for LinSys
+#include "la/linsys.hh"        // for LinSys
 #include "permonqps.h"         // for QPS and whole PERMON/PETSc stack
 #include "permonqpfeti.h"      // ^except for FETI implementation
 
 class Distribution;
+class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -37,15 +38,13 @@ namespace la {
     class BddcmlWrapper;
 }
 
-class LinSys_PERMON : public LinSys_PETSC
+class LinSys_PERMON : public LinSys
 {
 
 public:
 	typedef LinSys FactoryBaseType;
 
     static const Input::Type::Record & get_input_type();
-
-    LinSys_PERMON(const  Distribution * rows_ds, const std::string &params = "");
 
     LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &params = "");
 
@@ -54,9 +53,58 @@ public:
      */
     LinSys_PERMON( LinSys_PERMON &other );
 
+    void set_tolerances(double  r_tol, double a_tol, double d_tol, unsigned int max_it) override;
+
     void set_inequality(Mat matrix_ineq, Vec ineq);
 
-    LinSys_PETSC::SolveInfo solve() override;
+    void start_allocation() override;
+
+    void start_add_assembly() override;
+
+    void start_insert_assembly() override;
+
+    void mat_set_values( int, int*, int, int*, double* ) override { ASSERT(false); }
+
+    void rhs_set_values( int nrow, int *rows, double *vals ) override;
+
+    void mat_set_values_local( int nrow, int *rows, int ncol, int *cols, double *vals ) override;
+
+    void rhs_set_values_local( int, int*, double* ) override  { ASSERT(false); }
+
+    void preallocate_values_local(int nrow,int *rows,int ncol,int *cols);
+
+    void finish_assembly() override;
+
+    void finish_assembly( MatAssemblyType assembly_type );
+
+    void preallocate_matrix();
+
+    void apply_constrains( double ) override { ASSERT(false); }
+
+    LinSys::SolveInfo solve() override;
+
+    const Mat *get_matrix() override
+    { 
+        return &matrix_;
+    }
+
+    const Vec *get_rhs() override
+    { 
+        return &rhs_;
+    }
+
+    PetscErrorCode mat_zero_entries() override
+    {
+        matrix_changed_ = true;
+        constraints_.clear();
+    	return MatZeroEntries(matrix_);
+    }
+
+    PetscErrorCode rhs_zero_entries() override
+    {
+        rhs_changed_ = true;
+    	return VecSet(rhs_, 0);
+    }
 
     /**
      * Returns information on absolute solver accuracy
@@ -101,6 +149,22 @@ private:
     };
 
 protected:
+
+    std::string params_;		 //!< command-line-like options for the PETSc solver
+
+    bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
+
+    ISLocalToGlobalMapping l2g_;
+
+    Mat     matrix_;             //!< Petsc matrix of the problem.
+    Vec     rhs_;                //!< PETSc vector constructed with vx array.
+    Vec     residual_;
+
+    Vec     on_vec_;             //!< Vectors for counting non-zero entries in diagonal block.
+    Vec     off_vec_;            //!< Vectors for counting non-zero entries in off-diagonal block.
+
+
+    double  solution_precision_; // precision of KSP system solver
 
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.

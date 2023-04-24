@@ -30,7 +30,6 @@
 #include "petscvec.h"    // for Vec, _p_Vec, VecCopy, VecSet
 
 class Distribution;
-class DOFHandlerMultiDim;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -50,8 +49,6 @@ public:
     static const Input::Type::Record & get_input_type();
 
     LinSys_PETSC(const  Distribution * rows_ds, const std::string &params = "");
-
-    LinSys_PETSC(const DOFHandlerMultiDim &dh, const std::string &params = "");
 
     /**
      * Copy constructor.
@@ -116,11 +113,9 @@ public:
 
     void preallocate_values(int nrow,int *rows,int ncol,int *cols);
 
-    void mat_set_values_local( int nrow, int *rows, int ncol, int *cols, double *vals ) override;
+    void mat_set_values_local( int, int*, int, int*, double* ) override { ASSERT(false); }
 
-    void rhs_set_values_local( int nrow, int *rows, double *vals ) override;
-
-    void preallocate_values_local(int nrow,int *rows,int ncol,int *cols);
+    void rhs_set_values_local( int, int*, double* ) override { ASSERT(false); }
 
     void preallocate_matrix();
 
@@ -181,10 +176,6 @@ protected:
 
     bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
     
-    MatType mat_type_;
-
-    ISLocalToGlobalMapping l2g_;
-
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
     Vec     residual_;
