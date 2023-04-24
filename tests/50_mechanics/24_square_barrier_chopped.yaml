@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
             - displacement
             - stress
             - region_id
-        solver: !Petsc
+        solver:
         input_fields:
           - region: bulk
             young_modulus: 1

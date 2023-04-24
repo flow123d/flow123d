@@ -51,7 +51,7 @@ problem: !Coupling_Sequential
             - stress
             - displacement_divergence
             - initial_stress
-        solver: !Petsc
+        solver:
           a_tol: 1e-20
           r_tol: 1e-15
         input_fields:

@@ -46,8 +46,8 @@ problem: !Coupling_Sequential
             - displacement
             - stress
             - region_id
-        solver: !Petsc
-          options: -ksp_type cg -pc_type hypre -pc_hypre_type boomeramg -ksp_divtol 1e8
+        solver:
+          d_tol: 1e8
         input_fields:
           - region: bulk
             young_modulus: 1
