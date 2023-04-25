@@ -356,13 +356,17 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
+
+    chkerr(QPSetRhs(system, rhs_));
+    chkerr(QPSetInitialVector(system, solution_));
+    if (ineq_) {
+      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
+    }
+
     if (use_feti_) {
 
-        // convert to MatIS format
-        Mat Afixed;
-        chkerr(MatConvert(matrix_, MATIS, MAT_INITIAL_MATRIX, &Afixed));
-
         // create new matrix without zero rows
+        Mat Afixed;
         Mat Aloc, Aloc_feti;
         IS isnz, isnz_tmp;
         ISLocalToGlobalMapping l2g, mapping;
@@ -370,7 +374,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         PetscInt *l2g_feti_arr;
         PetscInt nmap, nrows, i, j, k;
         
-        chkerr(MatISGetLocalMat(Afixed, &Aloc));
+        chkerr(MatISGetLocalMat(matrix_, &Aloc));
         chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
         if (isnz_tmp != NULL) {
             const PetscInt *nz_idx;
@@ -388,10 +392,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         }
         ISDestroy(&isnz_tmp);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
-        chkerr(MatISRestoreLocalMat(Afixed, &Aloc));
+        chkerr(MatISRestoreLocalMat(matrix_, &Aloc));
         chkerr(ISGetIndices(isnz, &nz_arr));
         chkerr(ISGetLocalSize(isnz, &nrows));
-        chkerr(MatISGetLocalToGlobalMapping(Afixed, &l2g, NULL));
+        chkerr(MatISGetLocalToGlobalMapping(matrix_, &l2g, NULL));
         chkerr(ISLocalToGlobalMappingGetIndices(l2g, &l2g_arr));
         chkerr(ISLocalToGlobalMappingGetSize(l2g, &nmap));
         chkerr(PetscMalloc1(nrows, &l2g_feti_arr));
@@ -409,7 +413,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(ISDestroy(&isnz));
         chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
         chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
-        chkerr(MatDestroy(&Afixed));
+        
         chkerr(MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                             mapping, mapping, &Afixed));
         chkerr(MatISSetLocalMat(Afixed, Aloc_feti));
@@ -421,31 +425,25 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // set QP matrix
         chkerr(QPSetOperator(system, Afixed));
         chkerr(MatDestroy(&Afixed));
+
+        chkerr(QPTMatISToBlockDiag(system));
+        chkerr(QPGetChild(system, &system));
+        chkerr(QPFetiSetUp(system));
+        chkerr(PetscOptionsInsertString(NULL, "-feti"));
+
+        // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
+        chkerr(QPTFromOptions(system));
+        chkerr(QPGetParent(system, &system));
     } else {
+        // convert to MATAIJ
         Mat matrix_aij;
         chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
         chkerr(QPSetOperator(system, matrix_aij));
-    }
-    chkerr(QPSetRhs(system, rhs_));
-    chkerr(QPSetInitialVector(system, solution_));
-    if (ineq_) {
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-    }
-    if (use_feti_) { // FETI
-      chkerr(QPTMatISToBlockDiag(system));
-      chkerr(QPGetChild(system, &system));
-      chkerr(QPFetiSetUp(system));
-      chkerr(PetscOptionsInsertString(NULL, "-feti"));
-    } else if (ineq_) { // dualization without FETI
-      chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
-    }
-      
-    // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
-    if (use_feti_) {
-        chkerr(QPTFromOptions(system));
-        chkerr(QPGetParent(system, &system));
-    }
 
+        if (ineq_) // dualization without FETI
+            chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    }
+    
     // Set runtime options, e.g -qp_chain_view_kkt
     chkerr(QPSetFromOptions(system));
     
@@ -512,7 +510,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPDestroy(&system));
 
     return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
-
 }
 
 void LinSys_PERMON::view(string text )
