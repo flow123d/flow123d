@@ -15,9 +15,10 @@
  * @brief
  */
 
-#include <pybind11.h>
-#include <embed.h>    // everything needed for embedding
-#include <stl.h>      // type conversion
+
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>    // everything needed for embedding
+#include <pybind11/stl.h>      // type conversion
 #include "fields/python_field_proxy.hh"
 
 PYBIND11_MODULE(fieldproxypy, m) {

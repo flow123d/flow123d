@@ -62,7 +62,7 @@ namespace boost { template <class T> struct hash; }
 #include <nlohmann/json.hpp>
 
 #include "time_point.hh"
-#include "petscsys.h" 
+//#include "petscsys.h"
 #include "simple_allocator.hh"
 
 //instead of #include "mpi.h"
@@ -188,9 +188,9 @@ using namespace std;
 
 
 #ifdef FLOW123D_DEBUG_PROFILER
-#define CUMUL_TIMER(tag) Profiler::instance()->find_timer(tag).cumulative_time()
+#define CUMUL_TIMER(tag) Profiler::instance()->find_timer(tag).cumulative_time
 #else
-#define CUMUL_TIMER(tag)
+#define CUMUL_TIMER(tag) 0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////

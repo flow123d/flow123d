@@ -22,7 +22,7 @@
 #include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
-#include "include/arena_alloc.hh"       // bparser
+//#include "include/arena_alloc.hh"       // bparser
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/regex.hpp>
 
@@ -230,8 +230,8 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     }
 
     // Get vector of subsets as subarray
-    uint subsets_begin = reg_chunk_begin / ElementCacheMap::simd_size_double;
-    uint subsets_end = reg_chunk_end / ElementCacheMap::simd_size_double;
+    uint subsets_begin = reg_chunk_begin / cache_map.simd_size_double;
+    uint subsets_end = reg_chunk_end / cache_map.simd_size_double;
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
@@ -365,6 +365,8 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
 {
+	// Can not compile expression in set_time as the necessary cache size is not known there yet.
+
     if (arena_alloc_!=nullptr) {
         delete arena_alloc_;
     }
@@ -372,9 +374,9 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     uint vec_size = CacheMapElementNumber::get();
 
     // number of subset alignment to block size
-    uint n_subsets = vec_size / ElementCacheMap::simd_size_double;
+    uint n_subsets = vec_size / cache_map.simd_size_double;
     uint n_vectors = sum_shape_sizes_ + 1; // needs add space of result vector
-    arena_alloc_ = new bparser::ArenaAlloc(ElementCacheMap::simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+    arena_alloc_ = new bparser::ArenaAlloc(cache_map.simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size);
     for (auto field : required_fields_) {
         std::string field_name = field->name();

@@ -154,10 +154,6 @@ public:
     /// Index of invalid element in cache.
     static const unsigned int undef_elem_idx;
 
-    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
-    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
-    static const unsigned int simd_size_double;
-
     /// Constructor
     ElementCacheMap();
 
@@ -301,8 +297,12 @@ public:
         ASSERT(value_cache_idx != ElementCacheMap::undef_elem_idx);
         return Value::get_from_array(field_cache, value_cache_idx);
     }
-protected:
 
+    /// Size of block (evaluation of FieldFormula) must be multiple of this value.
+    /// TODO We should take this value from BParser and it should be dependent on processor configuration.
+    unsigned int simd_size_double;
+
+protected:
     /// Special constant (@see element_eval_points_map_).
     static const int unused_point = -1;
 
@@ -317,6 +317,7 @@ protected:
         ASSERT_PTR(element_eval_points_map_);
         element_eval_points_map_[i_elem_in_cache*eval_points_->max_size()+i_eval_point] = val;
     }
+
 
     /// Vector of element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;

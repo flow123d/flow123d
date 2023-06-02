@@ -35,7 +35,7 @@ It can be manually tuned using the \hyperA{Coupling-Iterative::iteration-paramet
 
 
 \paragraph{Boundary conditions.}
-Given the decomposition $\partial\Omega_d=\Gamma_D\cup\Gamma_{DN}\cup\Gamma_T\cup\Gamma_S$, we impose the following \hyperA{Mechanics-LinearElasticity-FE-Data::bc-type}{boundary conditions}:
+Given the decomposition $\partial\Omega_d=\Gamma_D\cup\Gamma_{DN}\cup\Gamma_T\cup\Gamma_S$ and denoting by $\nn$ the unit outward normal vector, we impose the following \hyperA{Mechanics-LinearElasticity-FE-Data::bc-type}{boundary conditions}:
 \begin{itemize}
 \item \textbf{displacement} condition prescribes
 \eq{ \uu = \uu_D \mbox{ on }\Gamma_D }
@@ -45,9 +45,9 @@ via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-displacement}{given displacem
 (\sigma(\uu)\nn)_\tau &= \vc 0\end{aligned}\right\} \mbox{ on }\Gamma_{DN}. }
 Here $\vc a_\tau := \vc a - (\vc a\cdot\nn)\nn$ is the projection of a vector $\vc a$ to the tangent plane of the boundary.
 \item \textbf{traction} condition (default) is imposed via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-traction}{given traction} $\vc t_N$ [$\mathrm{Pa}$]:
-\eq{ \sigma(\uu)\nn = \vc t_N \mbox{ on }\Gamma_T. }
+\eq{ -\sigma(\uu)\nn = \vc t_N \mbox{ on }\Gamma_T. }
 \item \textbf{stress} condition is the same type as \textbf{traction}, but instead of traction the user supplies the full \hyperA{Mechanics-LinearElasticity-FE-Data::bc-stress}{stress tensor} $\tn\sigma_N$ [$\mathrm{Pa}$]:
-\eq{ \sigma(\uu)\nn = \tn\sigma_N\nn \mbox{ on }\Gamma_S. }
+\eq{ -\sigma(\uu)\nn = \tn\sigma_N\nn \mbox{ on }\Gamma_S. }
 \end{itemize}
 
 

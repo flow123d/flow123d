@@ -23,9 +23,9 @@
 #include "fields/field_python.hh"
 #include "fields/field_set.hh"
 #include "fields/python_field_proxy.hh" // TODO check if include is necessary
-#include <pybind11.h>
-#include <eval.h>
-#include <stl.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/eval.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 

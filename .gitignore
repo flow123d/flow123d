@@ -15,6 +15,12 @@ unit_tests/system/tokenizer_speed.txt
 unit_tests/tools/tg_steps.yaml
 unit_tests/intersection/output_intersection*.msh
 
+publish_gnu/*
+install-linux/*
+install-win/*
+build-*
+problems
+
 bin/tests/makefile
 tests/*/test_results
 tests/*/output

@@ -24,7 +24,7 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#include <pybind11.h>
+#include <pybind11/pybind11.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"

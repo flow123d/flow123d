@@ -36,9 +36,9 @@ public:
             	        .units( UnitSI::dimensionless())
             	        .flags(FieldFlag::input_copy);
 
-            *this += subdomain.name("subdomain")
-              .units( UnitSI::dimensionless() )
-              .flags(FieldFlag::input_copy);
+            //*this += subdomain.name("subdomain")
+            //  .units( UnitSI::dimensionless() )
+            //  .flags(FieldFlag::input_copy);
 
 
             // Asumme following types:
@@ -74,7 +74,7 @@ public:
 
         // fields
         Field<3, FieldValue<3>::Scalar> region_id;
-        Field<3, FieldValue<3>::Scalar> subdomain;
+        //Field<3, FieldValue<3>::Scalar> subdomain; // test of subdomain is not solved now
         std::shared_ptr<EvalPoints> eval_points_;
         std::array<std::shared_ptr<BulkIntegral>, 3> bulk_int;  // dim 1,2,3
         std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -98,7 +98,7 @@ public:
         TimeGovernor tg(0.0, 0.5);
         eq_output_->set_mesh(*mesh_);
         eq_output_->region_id = GenericField<3>::region_id(*mesh_);
-        eq_output_->subdomain = GenericField<3>::subdomain(*mesh_);
+        //eq_output_->subdomain = GenericField<3>::subdomain(*mesh_);
         eq_output_->set_time(tg.step(), LimitSide::right);
         eq_output_->cache_reallocate( *(eq_output_.get()), *(eq_output_.get()) );
     }

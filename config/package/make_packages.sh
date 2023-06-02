@@ -100,6 +100,7 @@ cp config/config-jenkins-docker-${build_type}.cmake config.cmake
 # add full version
 echo "set(FLOW_MANUAL_VERSION ${release_tag})" >> config.cmake
 ${dexec} make -C ${flow_repo_location} set-safe-directory
+${dexec} git config --global --add safe.directory '*'
 
 # compile
 ${dexec} make -C ${flow_repo_location} -j4 all

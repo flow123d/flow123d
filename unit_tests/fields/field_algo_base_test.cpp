@@ -50,6 +50,15 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
+template<int spacedim, class Value>
+class FieldTest : public Field<spacedim, Value> {
+public:
+	FieldValueCache<typename Value::element_type> * field_value_cache() {
+	    return &this->value_cache_;
+	}
+};
+
+
 template <class F>
 class FieldFix : public testing::Test, public F, public ElementCacheMap {
 public:
@@ -113,15 +122,8 @@ public:
 		auto val = this->field_(eval_point);
 		return (Value(val))(0,0);
 	}
-	// const value of region_field_ on some region
-//	typename Value::element_type _value_(FieldType &f) {
-//		Region r = f.mesh()->region_db().get_region_set("BULK")[1];
-//
-//		auto elm = ElementAccessor<FieldType::space_dim>( f.mesh(), r );
-//		auto val = f.value( point_, elm);
-//		return (Value(val))(0,0);
-//	}
 
+	/// Update cache for region history test
 	void rh_update_cache(int r_idx_bulk, int r_idx_bdr) {
 	    FieldValueCache<typename Value::element_type> *fvc = field_.field_value_cache();
 	    typename FieldType::FieldBasePtr fb = rh(r_idx_bulk)[0].second;
@@ -130,6 +132,7 @@ public:
 	    fb_bdr->cache_update(*fvc, *this, 0);
 	}
 
+	/// Init assembly for region history test
     void rh_init_field_caches() {
     	dh_ = std::make_shared<DOFHandlerMultiDim>(*my_mesh);
         eval_points_ = std::make_shared<EvalPoints>();
@@ -140,7 +143,7 @@ public:
         this->init(eval_points_);
     }
 
-    /// Prepare patch
+    /// Prepare patch for region history test
 	void rh_prepare_patch(unsigned int i_reg_blk, unsigned int i_ele_blk, unsigned int i_reg_bdr, unsigned int i_ele_bdr) {
 	    this->start_elements_update();
 	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 0, i_ele_blk);
@@ -210,11 +213,11 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 #define FV FieldValue
 // full list
 #define f_list(Dim) \
-	Field<Dim,FV<0>::Scalar> , \
-    Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<Dim>::VectorFixed>, \
-	Field<Dim,FV<Dim>::TensorFixed>
+	FieldTest<Dim,FV<0>::Scalar> , \
+    FieldTest<Dim,FV<0>::Enum>, \
+    FieldTest<Dim,FV<0>::Integer>, \
+	FieldTest<Dim,FV<Dim>::VectorFixed>, \
+	FieldTest<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -227,6 +230,7 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 typedef ::testing::Types<f_list(3)> FieldTypes;
 TYPED_TEST_CASE(FieldFix, FieldTypes);
 
+// NOTE: General tests of 'set_time' and 'copy constructor' method are defined in file field_const_test.cpp
 
 // check that get_input_type works for every Field<> type
 // It should be tested in static context, which is non-trivial,
@@ -519,117 +523,6 @@ TYPED_TEST(FieldFix, update_history) {
 	EXPECT_EQ( 1 , this->rh_value(p_bdr) );
 
 }
-
-//TYPED_TEST(FieldFix, set_time) {
-//	string list_ok = "["
-//			"{time=0, region=\"ALL\", a =0, b =0},"
-//			"{time=1, region=\"BULK\", a =1, b =0},"
-//			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
-//			"{time=3, region=\"ALL\", b =0},"
-//			"{time=4, region=\"ALL\", a =0},"
-//			"{time=5, region=\"ALL\", a =1}"
-//			"]";
-//
-//	if (this->is_enum_valued) {
-//		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
-//		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
-//	}
-//
-//	TimeGovernor tg(0.0, 0.5);
-//	this->name("a");
-//	this->set_mesh(*(this->my_mesh));
-//	this->set_input_list( this->input_list(list_ok), tg );
-//	this->units( UnitSI().m() );
-//
-//	// time = 0.0
-//	this->set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(0, this->_value_( *this ));
-//	EXPECT_TRUE( this->is_jump_time() );
-//
-//	tg.next_time();
-//	this->set_time(tg.step(), LimitSide::left);
-//	EXPECT_EQ(0, this->_value_( *this ));
-//    EXPECT_FALSE( this->is_jump_time() );
-//
-//    this->set_time(tg.step(), LimitSide::right);
-//    EXPECT_EQ(0, this->_value_( *this ));
-//    EXPECT_FALSE( this->is_jump_time() );
-//
-//    tg.next_time();
-//    this->set_time(tg.step(), LimitSide::left);
-//    EXPECT_EQ(0, this->_value_( *this ));
-//    EXPECT_TRUE( this->is_jump_time() );
-//
-//    this->set_time(tg.step(), LimitSide::right);
-//    EXPECT_EQ(1, this->_value_( *this ));
-//    EXPECT_TRUE( this->is_jump_time() );
-//
-//}
-
-
-
-// Check copy constructor and assignment oprerator
-//TYPED_TEST(FieldFix, constructors) {
-//	// default constructor
-//	typename TestFixture::FieldType field_default;
-//	EXPECT_EQ("", field_default.name());
-//	EXPECT_FALSE(field_default.is_bc());
-//
-//	// copies
-//	// check that we can have copies in different times
-//	this->field_.name("a");
-//	field_default
-//	    .name("b")
-//	    .flags(FieldFlag::input_copy);
-//	this->field_.set_mesh( *(this->my_mesh) );
-//	field_default.set_mesh( *(this->my_mesh) );
-//	this->field_.units( UnitSI().m() );
-//	field_default.units( UnitSI().m() );
-//
-//	string list_ok = "["
-//			"{time=2,  region=\"BULK\", a=0, b=1}, "
-//			"{time=3,  region=\"BULK\", b=1}, "
-//			"{time=4,  region=\"BULK\", a=1},"
-//			"{time=5,  region=\"BULK\", a=0, b=0}]";
-//
-//	if (this->is_enum_valued) {
-//		list_ok = std::regex_replace(list_ok, std::regex("=1"), "=\"white\"");
-//		list_ok = std::regex_replace(list_ok, std::regex("=0"), "=\"black\"");
-//	}
-//
-//	TimeGovernor tg(2.0, 1.0);
-//	this->field_.set_input_list(this->input_list(list_ok), tg);
-//	field_default.set_input_list(this->input_list(list_ok), tg);
-//
-//
-//
-//	typename TestFixture::FieldType f2(this->field_);	// default constructor
-//	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
-//
-//
-//	// tg = 2.0
-//	f2.set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(0,this->_value_(f2));
-//	EXPECT_ASSERT_DEATH( {this->_value_(this->field_);}, "");
-//	this->field_.set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(0,this->_value_(this->field_));
-//
-//	// tg = 3.0
-//	tg.next_time();
-//	this->field_.set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(0,this->_value_(this->field_));
-//
-//	// tg = 4.0
-//	tg.next_time();
-//	this->field_.set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(1,this->_value_(this->field_));
-//	EXPECT_EQ(0,this->_value_(f2));
-//
-//	field_default.set_time(tg.step(), LimitSide::right);
-//	EXPECT_EQ(1,this->_value_(field_default));
-//}
-
-
 
 
 
