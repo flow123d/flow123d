@@ -42,164 +42,6 @@
 
 
 
-//class FieldFETest : public testing::Test {
-//public:
-//    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
-//    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
-//
-//    virtual void SetUp() {
-//    	this->mesh = nullptr;
-//        // setup FilePath directories
-//        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-//
-//        Profiler::instance();
-//        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
-//    }
-//
-//    virtual void TearDown() {
-//    	dh.reset();
-//    	if (mesh != nullptr) delete mesh;
-//    }
-//
-//    void create_mesh(std::string mesh_file_str) {
-//        mesh = mesh_full_constructor("{ mesh_file=\"" + mesh_file_str + "\", optimize_mesh=false }");
-//    }
-//
-//    void create_dof_handler(double val1, double val2, double val3) {
-//        dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
-//        v.resize(3);
-//        v.set(0, val1);
-//        v.set(1, val2);
-//        v.set(2, val3);
-//        dof_values[0] = val1;
-//        dof_values[1] = val2;
-//        dof_values[2] = val3;
-//    }
-//
-//    const FieldAlgoBaseInitData& init_data(std::string field_name) {
-//    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
-//    	return init_data;
-//    }
-//
-//    static Input::Type::Record &get_input_type() {
-//        return Input::Type::Record("Test","")
-//            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-//            .declare_key("native_data", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-//            .close();
-//    }
-//
-//    Mesh *mesh;
-//    std::shared_ptr<DOFHandlerMultiDim> dh;
-//    double dof_values[3];
-//    VectorMPI v;
-//
-//};
-//
-//
-//TEST_F(FieldFETest, scalar) {  // moved to FieldEvalFETest, set_fe_data_scalar
-//    create_mesh("fields/one_element_2d.msh");
-//    create_dof_handler(1, 2, 3);
-//
-//	MixedPtr<FE_P_disc> fe(1);
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
-//    ScalarField field;
-//
-//    dh->distribute_dofs(ds);
-//    field.set_fe_data(dh, v);
-//    field.set_time(0.0);
-//
-//    Armor::array pts(3, 1);
-//    pts.reinit(3);
-//    pts.append(Armor::vec<3>({ 1, 1, 5 }));
-//    pts.append(Armor::vec<3>({ 4, 0, 5 }));
-//    pts.append(Armor::vec<3>({ 2, 3, 5 }));
-//    vector<double> values(3);
-//
-//    // test values at vertices of the triangle
-//    field.value_list( pts, mesh->element_accessor(0), values );
-//    EXPECT_DOUBLE_EQ( dof_values[0], values[0] );
-//    EXPECT_DOUBLE_EQ( dof_values[1], values[1] );
-//    EXPECT_DOUBLE_EQ( dof_values[2], values[2] );
-//
-//    // test value at barycenter
-//    EXPECT_DOUBLE_EQ( (dof_values[0]+dof_values[1]+dof_values[2])/3, field.value({ 7./3, 4./3, 5 }, mesh->element_accessor(0)) );
-//}
-//
-//
-//TEST_F(FieldFETest, vector) {  // moved to FieldEvalFETest, set_fe_data_vector
-//    create_mesh("fields/one_element_2d.msh");
-//    create_dof_handler(0, 0, 1);
-//
-//	MixedPtr<FE_RT0> fe;
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
-//    VecField field;
-//
-//    dh->distribute_dofs(ds);
-//    field.set_fe_data(dh, v);
-//    field.set_time(0.0);
-//
-//    // The Raviart-Thomas function given by the following dofs
-//    // is 3/7*(x-7/3, y-4/3, 0).
-//
-//    arma::vec3 result = { 2./7, 1./14, 0 };
-//
-//    EXPECT_NEAR( 0, arma::norm(result - field.value({ 3, 1.5, 5 }, mesh->element_accessor(0)), 2), 1e-15 );
-//}
-//
-//
-//string input = R"INPUT(
-//{
-//   scalar={
-//       TYPE="FieldFE",
-//       mesh_data_file="fields/simplest_cube_data.msh",
-//       field_name="scalar"
-//   }
-//   native_data={
-//       TYPE="FieldFE",
-//       mesh_data_file="output/test_output_vtk_ascii_ref.vtu",
-//       field_name="flow_data"
-//   }
-//}
-//)INPUT";
-//
-//
-//
-//TEST_F(FieldFETest, scalar_from_input) { // equivalent with TEST(FieldFENewTest, scalar) - moved to FieldEvalFETest, input_msh
-//    create_mesh("fields/simplest_cube_data.msh");
-//
-//    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
-//    Input::Record rec=reader.get_root_interface<Input::Record>();
-//
-//    ScalarField field;
-//    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
-//    field.set_mesh(mesh,false);
-//    field.set_time(0.0);
-//
-//    Space<3>::Point point;
-//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-//        EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
-//    }
-//}
-//
-//
-//TEST_F(FieldFETest, native_data) { // moved to FieldEvalFETest, native_data
-//    create_mesh("fields/simplest_cube_3d.msh");
-//
-//    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
-//    Input::Record rec=reader.get_root_interface<Input::Record>();
-//
-//    ScalarField field;
-//    field.init_from_input(rec.val<Input::Record>("native_data"), init_data("native_data"));
-//    field.set_mesh(mesh,false);
-//    field.set_time(0.0);
-//
-//    Space<3>::Point point;
-//    for(unsigned int i=0; i < mesh->n_elements(); i++) {
-//        EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
-//    }
-//}
-
-
 class FieldEvalFETest : public FieldEvalBaseTest {
 public:
 
@@ -300,10 +142,14 @@ TEST_F(FieldEvalFETest, input_msh) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
 
         // BOUNDARY fields
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, eq_data_->bc_tensor_ref, 3, 0) );
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, j+1, 3, 0) );
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+        FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
+        SingleValRef<unsigned int> ref_bc_enum(j+1);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
@@ -427,7 +273,8 @@ TEST_F(FieldEvalFETest, unit_conversion) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
 
         // BOUNDARY field
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
+    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
@@ -481,8 +328,10 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
 
         // BOUNDARY field
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, eq_data_->bc_scalar_ref, 3, 0) );
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, eq_data_->bc_vector_ref, 3, 0) );
+    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+    	FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
         eq_data_->tg_.next_time();
     }
 }
