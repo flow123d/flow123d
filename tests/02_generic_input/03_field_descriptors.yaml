@@ -24,10 +24,16 @@ problem: !Coupling_Sequential
           mesh_data_file: ./03_field_descriptors-000000.vtu
           field_name: sigma
           input_discretization: native_data
-      - region: .BOUNDARY
+      - region: .left
+        bc_type: dirichlet
+        bc_pressure: !FieldFE
+          mesh_data_file: ../00_mesh/square_0.2x0.2.msh
+          field_name: bc_pressure
+          default_value: 0.0
+      - region: .right
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: 0.1*x
+          value: 0.1*y
     output:
       fields:
         - pressure_p0
