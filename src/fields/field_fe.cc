@@ -685,6 +685,9 @@ void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>
     }
 
     for (auto cell : dh_->own_range()) {
+        // TODO need to check cell region, compare with region of FieldFE and skip cells of other regions.
+        //      We must store idx of region to FieldFE. It is possible to set in FieldAlgoBaseInitData (but region will be
+        //      used only in FieldFE). But this solution is complicated if one instance of FieldFE is shared by multiple regions.
         LocDofVec loc_dofs = cell.get_loc_dof_indices();
         //DebugOut() << cell.elm_idx() << " < " << source_target_vec.size() << "\n";
         int source_idx = source_target_vec[cell.elm_idx()];
