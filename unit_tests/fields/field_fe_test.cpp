@@ -82,41 +82,35 @@ TEST_F(FieldEvalFETest, input_msh) {
         scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
-          default_value: 0.0
         vector_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: vector_fixed
-          default_value: 0.0
         tensor_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
-          default_value: 0.0
         enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
-          default_value: 0
-        bc_scalar_field: !FieldFE
-          mesh_data_file: fields/simplest_cube_data.msh
-          field_name: scalar
-          default_value: 0.0
-        bc_vector_field: !FieldFE
-          mesh_data_file: fields/simplest_cube_data.msh
-          field_name: vector_fixed
-          default_value: 0.0
-        bc_tensor_field: !FieldFE
-          mesh_data_file: fields/simplest_cube_data.msh
-          field_name: tensor_fixed
-          default_value: 0.0
-        bc_enum_field: !FieldFE
-          mesh_data_file: fields/simplest_cube_data.msh
-          field_name: enum
-          default_value: 0
         scalar_ref: !FieldFormula
           value: x+2*y+t
         vector_ref: !FieldFormula
           value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
         tensor_ref: !FieldFormula
           value: [2*x+y, 2*y+z+0.5*t, 2*z+x+t]
+      - region: [".top side", ".bottom side"]
+        time: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: vector_fixed
+        bc_tensor_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: tensor_fixed
+        bc_enum_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: enum
         bc_scalar_ref: !FieldFormula
           value: x+y+z+t
         bc_vector_ref: !FieldFormula
@@ -198,7 +192,6 @@ TEST_F(FieldEvalFETest, time_shift) {
         scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
-          default_value: 0.0
           read_time_shift: 1.0
         scalar_ref: !FieldFormula
           value: x+2*y+(t+1)
@@ -244,20 +237,20 @@ TEST_F(FieldEvalFETest, default_values) {
 TEST_F(FieldEvalFETest, unit_conversion) {
     string eq_data_input = R"YAML(
     data:
-      - region: ALL
+      - region: BULK
         time: 0.0
         scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
           unit: "const; const=0.1*m"
-          default_value: 0.0
+        scalar_ref: !FieldFormula
+          value: 0.1*(x+2*y+t)
+      - region: [".top side", ".bottom side"]
+        time: 0.0
         bc_scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
           unit: "const; const=0.1*m"
-          default_value: 0.0
-        scalar_ref: !FieldFormula
-          value: 0.1*(x+2*y+t)
         bc_scalar_ref: !FieldFormula
           value: 0.1*(x+y+z+t)
     )YAML";
@@ -288,27 +281,25 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         scalar_field: !FieldFE
           mesh_data_file: fields/identic_mesh_data.msh
           field_name: scalar
-          default_value: 0.0
           interpolation: identic_mesh
         vector_field: !FieldFE
           mesh_data_file: fields/identic_mesh_data.msh
           field_name: vector_fixed
-          default_value: 0.0
-          interpolation: identic_mesh
-        bc_scalar_field: !FieldFE
-          mesh_data_file: fields/identic_mesh_data.msh
-          field_name: scalar
-          default_value: 0.0
-          interpolation: identic_mesh
-        bc_vector_field: !FieldFE
-          mesh_data_file: fields/identic_mesh_data.msh
-          field_name: vector_fixed
-          default_value: 0.0
           interpolation: identic_mesh
         scalar_ref: !FieldFormula
           value: x+2*y+t
         vector_ref: !FieldFormula
           value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
+      - region: [".top side", ".bottom side"]
+        time: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: scalar
+          interpolation: identic_mesh
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: vector_fixed
+          interpolation: identic_mesh
         bc_scalar_ref: !FieldFormula
           value: x+y+z+t
         bc_vector_ref: !FieldFormula
@@ -367,6 +358,33 @@ TEST_F(FieldEvalFETest, interpolation_gauss) {
         VecRef<arma::vec3> ref_vector(expected_vectors[j]);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+        eq_data_->tg_.next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, interpolation_gauss_unit_conversion) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: scalar
+          default_value: 0.0
+          unit: "conv; conv=10*m"
+          #interpolation: P0_gauss
+    )YAML";
+
+    std::vector< std::vector<double> > expected_scalars = { {2.5, 1.5, 2.5, 3.5}, {7.5, 6.5, 7.5, 8.5} };
+
+    this->create_mesh("fields/interpolation_rect_small.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        VecRef<double> ref_scalar(expected_scalars[j]);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         eq_data_->tg_.next_time();
     }
 }

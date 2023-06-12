@@ -29,7 +29,6 @@ problem: !Coupling_Sequential
         bc_pressure: !FieldFE
           mesh_data_file: ../00_mesh/square_0.2x0.2.msh
           field_name: bc_pressure
-          default_value: 0.0
       - region: .right
         bc_type: dirichlet
         bc_pressure: !FieldFormula
