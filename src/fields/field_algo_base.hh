@@ -100,8 +100,9 @@ struct FieldAlgoBaseInitData {
 
 /// Declaration of exception.
 TYPEDEF_ERR_INFO(EI_Field, std::string);
+TYPEDEF_ERR_INFO(EI_File, std::string);
 DECLARE_INPUT_EXCEPTION(ExcUndefElementValue,
-        << "Values of some elements of FieldFE " << EI_Field::qval << " is undefined.\n"
+        << "Values of some elements of FieldFE " << EI_Field::qval << " in file " << EI_File::qval << " are undefined.\n"
 		   << "Please specify in default_value key.\n");
 
 

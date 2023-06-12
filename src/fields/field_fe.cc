@@ -249,7 +249,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     // Throws exception if any element value of processed region is NaN
     unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
     if (region_value_err_[r_idx].is_nan_)
-        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
 
     for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
@@ -840,7 +840,7 @@ double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr
         return_val = (*input_data_cache_)[i_cache_el];
 
     if ( std::isnan(return_val) ) {
-        actual_compute_region_error.set(0, 0.0); // use better args in set
+        actual_compute_region_error.set(0, return_val); // TODO try set correct element idx
     } else
         return_val *= this->unit_conversion_coefficient_;
 
