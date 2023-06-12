@@ -226,6 +226,8 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
 	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
+	region_value_err_.resize(dh_->mesh()->region_db().size());
+
 	return data_vec_;
 }
 
@@ -243,6 +245,11 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     DHCellAccessor cell = *( dh_->local_range().begin() ); //needs set variable for correct compiling
     LocDofVec loc_dofs;
     unsigned int range_bgn=0, range_end=0;
+
+    // Throws exception if any element value of processed region is NaN
+    unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+    if (region_value_err_[r_idx].is_nan_)
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 
     for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
@@ -344,6 +351,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             if (boundary_domain) this->make_dof_handler( mesh->bc_mesh() );
             else this->make_dof_handler( mesh );
         }
+        region_value_err_.resize(mesh->region_db().size());
         this->comp_mesh_ = mesh;
 	}
 }
@@ -445,13 +453,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
         auto header = reader->find_header(header_query);
 		auto input_data_cache = reader->template get_element_data<double>(
             header, n_entities, n_components, bdr_shift);
-		CheckResult checked_data = reader->scale_and_check_limits(field_name_,
-				this->unit_conversion_coefficient_, default_value_);
-
-
-	    if ( !is_native && (checked_data == CheckResult::not_a_number) ) {
-	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-	    }
 
 		if (is_native) {
 			this->calculate_element_values(input_data_cache);
@@ -671,7 +672,7 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>::CacheData data_cache)
 {
     // Same algorithm as in output of Node_data. Possibly code reuse.
-    unsigned int data_vec_i;
+    unsigned int data_vec_i, vec_inc;
     std::vector<unsigned int> count_vector(data_vec_.size(), 0);
     data_vec_.zero_entries();
     std::vector<LongIdx> &source_target_vec = (dynamic_cast<BCMesh*>(dh_->mesh()) != nullptr) ? source_target_mesh_elm_map_->boundary : source_target_mesh_elm_map_->bulk;
@@ -684,30 +685,49 @@ void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>
         shift = 0;
     }
 
+    ASSERT_GT(region_value_err_.size(), 0)(field_name_).error("Vector of region isNaN flags is not initialized. Did you call set_mesh or set_fe_data?\n");
+    for (auto r : region_value_err_)
+        r.reset();
+
     for (auto cell : dh_->own_range()) {
-        // TODO need to check cell region, compare with region of FieldFE and skip cells of other regions.
-        //      We must store idx of region to FieldFE. It is possible to set in FieldAlgoBaseInitData (but region will be
-        //      used only in FieldFE). But this solution is complicated if one instance of FieldFE is shared by multiple regions.
         LocDofVec loc_dofs = cell.get_loc_dof_indices();
         //DebugOut() << cell.elm_idx() << " < " << source_target_vec.size() << "\n";
         int source_idx = source_target_vec[cell.elm_idx()];
 
-        if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
-            if ( std::isnan(default_value_) )
-                THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-            for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-                data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
-                ++count_vector[ loc_dofs[i] ];
-            }
+        if (source_idx == (int)(Mesh::undef_idx)) {
+            data_vec_i = source_idx;
+            vec_inc = 0;
         } else {
             data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
-            for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-                data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
-                ++count_vector[ loc_dofs[i] ];
-            }
+            vec_inc = 1;
         }
+        auto r_idx = cell.elm().region_idx().idx();
+        for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+            ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
+            data_vec_.add( loc_dofs[i], get_scaled_value(data_vec_i, region_value_err_[r_idx], data_cache ) );
+            ++count_vector[ loc_dofs[i] ];
+            data_vec_i += vec_inc;
+        }
+
+//        if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
+//            if ( std::isnan(default_value_) ) {
+//                auto r_idx = cell.elm().region_idx().idx();
+//                if (!region_value_err_[r_idx].is_nan_)
+//                    region_value_err_[r_idx].set(cell.elm_idx(), default_value_);
+//            }
+//            for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
+//                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
+//                data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
+//                ++count_vector[ loc_dofs[i] ];
+//            }
+//        } else {
+//            data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
+//            for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
+//                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
+//                data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
+//                ++count_vector[ loc_dofs[i] ];
+//            }
+//        }
     }
 
     // compute averages of values
@@ -825,6 +845,27 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_begin() {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 	data_vec_.local_to_ghost_end();
+}
+
+
+
+template <int spacedim, class Value>
+double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error, ElementDataCache<double>::CacheData data_cache) {
+	// store data_cache to data member and don't pass to method, maybe needs new args that set actual_compute_region_error
+    double return_val;
+    if (i_cache_el == (int)(Mesh::undef_idx))
+        return_val = default_value_;
+    else if ( std::isnan((*data_cache)[i_cache_el]) )
+        return_val = default_value_;
+    else
+        return_val = (*data_cache)[i_cache_el];
+
+    if ( std::isnan(return_val) ) {
+        actual_compute_region_error.set(0, 0.0); // use better args in set
+    } else
+        return_val *= this->unit_conversion_coefficient_;
+
+    return return_val;
 }
 
 

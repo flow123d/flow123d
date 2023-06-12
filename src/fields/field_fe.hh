@@ -195,6 +195,38 @@ private:
         unsigned int range_end_;
     };
 
+	/**
+	 * Helper class holds data of invalid values of all regions.
+	 *
+	 * If region contains invalid element value (typically 'not a number') is_nan_ flag is set to true
+	 * and other information (element id an value) are stored. Check of invalid values is performed
+	 * during processing data of reader cache and possible exception is thrown only if FieldFE is defined
+	 * on appropriate region.
+	 *
+	 * Data of all regions are stored in vector of RegionValueErr instances.
+	 */
+    class RegionValueErr {
+    public:
+        /// Constructor
+        RegionValueErr() : is_nan_(false) {}
+
+        /// Reset data of region to 'valid' state
+        void reset() {
+            is_nan_ = false;
+        }
+
+        /// Sets invalid state, store invalid element id and value
+        void set(unsigned int elm_id, double value) {
+            is_nan_ = true;
+            elm_id_ = elm_id;
+            value_ = value;
+        }
+
+        bool is_nan_;
+        unsigned int elm_id_;
+        double value_;
+    };
+
 	/// Create DofHandler object
 	void make_dof_handler(const MeshBase *mesh);
 
@@ -246,6 +278,8 @@ private:
         this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
 
+    double get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error, ElementDataCache<double>::CacheData data_cache);
+
 
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -295,8 +329,11 @@ private:
     std::array<FEItem, 4> fe_item_;
     MixedPtr<FiniteElement> fe_;
 
-    // Pointer to computational mesh
+    /// Pointer to computational mesh
     const Mesh *comp_mesh_;
+
+    /// Set holds data of valid / invalid element values on all regions
+    std::vector<RegionValueErr> region_value_err_;
 
     /// Registrar of class to factory
     static const int registrar;
