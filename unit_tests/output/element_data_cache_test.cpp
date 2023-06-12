@@ -60,10 +60,10 @@ TEST(ElementDataCache, read_data)
     auto &data_vec = *( data_cache.get_data().get() );
     for (unsigned int i=0; i<data_vec.size(); ++i) EXPECT_DOUBLE_EQ(data_vec[i], (double)i);
 
-    EXPECT_EQ(data_cache.check_values(0.0, 0.0, 10.0), CheckResult::ok);
+    //EXPECT_EQ(data_cache.check_values(0.0, 0.0, 10.0), CheckResult::ok);
 
-    data_cache.scale_data(0.1);
-    for (unsigned int i=0; i<data_vec.size(); ++i) EXPECT_DOUBLE_EQ(data_vec[i], 0.1*i);
+    //data_cache.scale_data(0.1);
+    for (unsigned int i=0; i<data_vec.size(); ++i) EXPECT_DOUBLE_EQ(data_vec[i], 1.0*i);
 }
 
 

@@ -129,19 +129,6 @@ typename ElementDataCache<T>::CacheData BaseMeshReader::get_element_data(
 	return current_cache.get_data();
 }
 
-CheckResult BaseMeshReader::scale_and_check_limits(string field_name, double coef, double default_val, double lower_bound,
-        double upper_bound) {
-    ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
-    ASSERT(it != element_data_values_->end())(field_name);
-
-    std::shared_ptr< ElementDataCache<double> > current_cache = dynamic_pointer_cast<ElementDataCache<double> >(it->second);
-    ASSERT(current_cache)(field_name).error("scale_and_check_limits can be call only for scalable fields!\n");
-
-    CheckResult check_val = current_cache->check_values(default_val, lower_bound, upper_bound);
-    current_cache->scale_data(coef);
-    return check_val;
-}
-
 
 
 // explicit instantiation of template methods
