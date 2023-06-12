@@ -515,6 +515,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 		searched_elements.clear();
 		source_mesh->get_bih_tree().find_bounding_box(ele.bounding_box(), searched_elements);
 
+		auto r_idx = cell.elm().region_idx().idx();
 		for (unsigned int i=0; i<quadrature_size; ++i) {
 			std::fill(sum_val.begin(), sum_val.end(), 0.0);
 			elem_count = 0;
@@ -541,7 +542,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 					// projection point in element
 					unsigned int index = sum_val.size() * (*it);
 					for (unsigned int j=0; j < sum_val.size(); j++) {
-						sum_val[j] += (*input_data_cache_)[index+j];
+						sum_val[j] += get_scaled_value(index+j, region_value_err_[r_idx]);
 					}
 					++elem_count;
 				}
@@ -560,7 +561,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 		ASSERT_LE(loc_dofs.n_elem, elem_value.size());
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT( loc_dofs[i], (int)data_vec_.size());
-			data_vec_.set( loc_dofs[i], elem_value[i] * this->unit_conversion_coefficient_ );
+			data_vec_.set( loc_dofs[i], elem_value[i] );
 		}
 	}
 }
@@ -581,6 +582,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection()
 		}
 
 		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
+		auto r_idx = elm.region_idx().idx();
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
@@ -641,9 +643,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection()
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
 					unsigned int index = value.size() * (*it);
-			        std::vector<double> &vec = *( input_data_cache_.get() );
 			        for (unsigned int i=0; i < value.size(); i++) {
-			        	value[i] += vec[index+i] * measure;
+			        	value[i] += get_scaled_value(index+i, region_value_err_[r_idx]) * measure;
 			        }
 					total_measure += measure;
 				}
