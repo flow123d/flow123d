@@ -231,10 +231,10 @@ private:
 	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
-	void interpolate_gauss(ElementDataCache<double>::CacheData data_vec);
+	void interpolate_gauss();
 
 	/// Interpolate data (use intersection library) over all elements of target mesh.
-	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
+	void interpolate_intersection();
 
 //	/// Calculate native data over all elements of target mesh.
 //	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
@@ -243,7 +243,7 @@ private:
 //	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
 	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
-	void calculate_element_values(ElementDataCache<double>::CacheData data_cache);
+	void calculate_element_values();
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
@@ -278,7 +278,7 @@ private:
         this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
 
-    double get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error, ElementDataCache<double>::CacheData data_cache);
+    double get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error);
 
 
 	/// DOF handler object
@@ -334,6 +334,9 @@ private:
 
     /// Set holds data of valid / invalid element values on all regions
     std::vector<RegionValueErr> region_value_err_;
+
+    /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
+    ElementDataCache<double>::CacheData input_data_cache_;
 
     /// Registrar of class to factory
     static const int registrar;

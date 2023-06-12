@@ -451,19 +451,19 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
         BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
         auto reader = ReaderCache::get_reader(reader_file_);
         auto header = reader->find_header(header_query);
-		auto input_data_cache = reader->template get_element_data<double>(
+        this->input_data_cache_ = reader->template get_element_data<double>(
             header, n_entities, n_components, bdr_shift);
 
 		if (is_native) {
-			this->calculate_element_values(input_data_cache);
+			this->calculate_element_values();
 		} else if (this->interpolation_==DataInterpolation::identic_msh) {
-			this->calculate_element_values(input_data_cache);
+			this->calculate_element_values();
 		} else if (this->interpolation_==DataInterpolation::equivalent_msh) {
-			this->calculate_element_values(input_data_cache);
+			this->calculate_element_values();
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
-			this->interpolate_gauss(input_data_cache);
+			this->interpolate_gauss();
 		} else { // DataInterpolation::interp_p0
-			this->interpolate_intersection(input_data_cache);
+			this->interpolate_intersection();
 		}
 
 		return true;
@@ -473,7 +473,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::CacheData data_vec)
+void FieldFE<spacedim, Value>::interpolate_gauss()
 {
 	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
@@ -541,7 +541,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Cache
 					// projection point in element
 					unsigned int index = sum_val.size() * (*it);
 					for (unsigned int j=0; j < sum_val.size(); j++) {
-						sum_val[j] += (*data_vec)[index+j];
+						sum_val[j] += (*input_data_cache_)[index+j];
 					}
 					++elem_count;
 				}
@@ -567,7 +567,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Cache
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::CacheData data_vec)
+void FieldFE<spacedim, Value>::interpolate_intersection()
 {
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
@@ -641,7 +641,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
 					unsigned int index = value.size() * (*it);
-			        std::vector<double> &vec = *( data_vec.get() );
+			        std::vector<double> &vec = *( input_data_cache_.get() );
 			        for (unsigned int i=0; i < value.size(); i++) {
 			        	value[i] += vec[index+i] * measure;
 			        }
@@ -669,7 +669,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>::CacheData data_cache)
+void FieldFE<spacedim, Value>::calculate_element_values()
 {
     // Same algorithm as in output of Node_data. Possibly code reuse.
     unsigned int data_vec_i, vec_inc;
@@ -704,30 +704,10 @@ void FieldFE<spacedim, Value>::calculate_element_values(ElementDataCache<double>
         auto r_idx = cell.elm().region_idx().idx();
         for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
             ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-            data_vec_.add( loc_dofs[i], get_scaled_value(data_vec_i, region_value_err_[r_idx], data_cache ) );
+            data_vec_.add( loc_dofs[i], get_scaled_value(data_vec_i, region_value_err_[r_idx]) );
             ++count_vector[ loc_dofs[i] ];
             data_vec_i += vec_inc;
         }
-
-//        if (source_idx == (int)(Mesh::undef_idx)) { // undefined value in input data mesh
-//            if ( std::isnan(default_value_) ) {
-//                auto r_idx = cell.elm().region_idx().idx();
-//                if (!region_value_err_[r_idx].is_nan_)
-//                    region_value_err_[r_idx].set(cell.elm_idx(), default_value_);
-//            }
-//            for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
-//                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-//                data_vec_.add( loc_dofs[i], default_value_ * this->unit_conversion_coefficient_ );
-//                ++count_vector[ loc_dofs[i] ];
-//            }
-//        } else {
-//            data_vec_i = (source_idx + shift) * dh_->max_elem_dofs();
-//            for (unsigned int i=0; i<loc_dofs.n_elem; ++i, ++data_vec_i) {
-//                ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-//                data_vec_.add( loc_dofs[i], (*data_cache)[data_vec_i] );
-//                ++count_vector[ loc_dofs[i] ];
-//            }
-//        }
     }
 
     // compute averages of values
@@ -850,15 +830,14 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 
 
 template <int spacedim, class Value>
-double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error, ElementDataCache<double>::CacheData data_cache) {
-	// store data_cache to data member and don't pass to method, maybe needs new args that set actual_compute_region_error
+double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error) {
     double return_val;
     if (i_cache_el == (int)(Mesh::undef_idx))
         return_val = default_value_;
-    else if ( std::isnan((*data_cache)[i_cache_el]) )
+    else if ( std::isnan((*input_data_cache_)[i_cache_el]) )
         return_val = default_value_;
     else
-        return_val = (*data_cache)[i_cache_el];
+        return_val = (*input_data_cache_)[i_cache_el];
 
     if ( std::isnan(return_val) ) {
         actual_compute_region_error.set(0, 0.0); // use better args in set
