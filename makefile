@@ -235,7 +235,7 @@ set-safe-directory:
 	    `pwd`/third_party/bparser \
 	    `pwd`/third_party/json-3.10.5 \
 	    `pwd`/third_party/gtest-1.10.0 \
-	    `pwd`/third_party/pybind11-2.9.2; \
+	    `pwd`/third_party/pybind11; \
 	do git config --global --add safe.directory $$d; \
 	done
 
