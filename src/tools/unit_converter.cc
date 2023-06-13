@@ -33,6 +33,7 @@ BasicFactors::BasicFactors() {
 			{ "*K",  { 1,           UnitSI().K() } },
 			{ "*cd", { 1,           UnitSI().cd() } },
 			{ "*mol",{ 1,           UnitSI().mol() } },
+			{ "md",  { 1,           UnitSI().md() } },
 
 			{ "*N",  { 1,           UnitSI().m().kg().s(-2) } },
 			{ "*J",  { 1,           UnitSI().m(2).kg().s(-2) } },
