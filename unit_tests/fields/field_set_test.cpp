@@ -256,7 +256,6 @@ TEST_F(SomeEquation, input_related) {
     data.mark_input_times(tg);
     Region front_3d = mesh_->region_db().find_id(40);
     // time = 0.0
-    tg.step().use_fparser_ = true;
     data.set_time(tg.step(), LimitSide::right);
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_TRUE(data.changed());
@@ -266,15 +265,13 @@ TEST_F(SomeEquation, input_related) {
     tg.next_time();
 
     // time = 0.5
-    tg.step().use_fparser_ = true;
     data.set_time(tg.step(), LimitSide::right);
-    EXPECT_FALSE(data.changed());
+    EXPECT_TRUE(data.changed());
     EXPECT_FALSE(data.is_constant(front_3d));
     EXPECT_FALSE(tg.is_current(tg.marks().type_input()));
     tg.next_time();
 
     // time = 1.0
-    tg.step().use_fparser_ = true;
     data.set_time(tg.step(), LimitSide::right);
     EXPECT_TRUE(data.changed());
     EXPECT_TRUE(data.is_constant(front_3d));
@@ -427,7 +424,6 @@ public:
         data_->set_mesh(*mesh_);
         data_->initialize();
         data_->set_input_list( inputs[input_last], tg );
-        tg.step().use_fparser_ = true;
         data_->set_time(tg.step(), LimitSide::right);
         data_->set_dependency( *(data_.get()) );
     }

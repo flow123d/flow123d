@@ -268,7 +268,6 @@ public:
 
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
-	    tg.step().use_fparser_ = true;
 	    set_of_field_.set_time(tg.step(), LimitSide::right);
 
 	}

@@ -284,7 +284,6 @@ protected:
                 (data_->bc_gravity, data_->X(), data_->bc_piezo_head) );
 
         data_->set_input_list( inputs[input_last], tg );
-        tg.step().use_fparser_ = true;
         data_->set_time(tg.step(), LimitSide::right);
         data_->cache_reallocate( *(data_.get()), *(data_.get()) );
     }
