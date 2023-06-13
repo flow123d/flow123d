@@ -103,95 +103,93 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
 template <int spacedim, class Value>
 bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
-	if (!time.use_fparser_) {
-	    this->time_=time;
-		this->is_constant_in_space_ = false;
-	    return true;
-	}
+    this->time_=time;
+	this->is_constant_in_space_ = false;
+    return true;
 
 	/* OLD FPARSER CODE */
-    bool any_parser_changed = false;
-    std::string value_input_address = in_rec_.address_string();
-    has_depth_var_ = false;
-    this->is_constant_in_space_ = true; // set flag to true, then if found 'x', 'y', 'z' or 'd' reset to false
-
-
-    std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
-    std::vector<bool> time_dependent(this->value_.n_rows() * this->value_.n_cols(), false);
-    // update parsers
-    for(unsigned int row=0; row < this->value_.n_rows(); row++)
-        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            // get all variable names from the formula
-            std::vector<std::string> var_list;
-
-            FunctionParser tmp_parser;
-            tmp_parser.AddConstant("Pi", 3.14159265358979323846);
-            tmp_parser.AddConstant("E", 2.71828182845904523536);
-
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-            {
-                int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-                ASSERT_PERMANENT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
-            }
-#pragma GCC diagnostic pop
-
-            for(std::string &var_name : var_list ) {
-                if (var_name == std::string("t") ) time_dependent[row*this->value_.n_rows()+col]=true;
-                else if (var_name == std::string("d") ) {
-                	this->is_constant_in_space_ = false;
-                	if (surface_depth_)
-                		has_depth_var_=true;
-                	else
-                    	WarningOut().fmt("Unset surface region. Variable '{}' in the FieldFormula[{}][{}] == '{}' will be set to zero\n at the input address:\n {} \n",
-                                var_name, row, col, formula_matrix_.at(row,col), value_input_address );
-                }
-                else if (var_name == "x" || var_name == "y" || var_name == "z") {
-                	this->is_constant_in_space_ = false;
-                	continue;
-                }
-                else
-                	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
-                            var_name, row, col, formula_matrix_.at(row,col), value_input_address );
-            }
-
-            // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
-            parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
-            parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
-            if (time_dependent[row*this->value_.n_rows()+col]) {
-                parser_matrix_[row][col].AddConstant("t", time.end());
-            }
-        }
-
-    if (has_depth_var_)
-        vars += string(",d");
-
-	// update parsers
-	for(unsigned int row=0; row < this->value_.n_rows(); row++)
-		for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            // TODO:
-            // - possibly add user defined constants and units here ...
-            // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
-            //parser_matrix_[row][col] = tmp_parser;
-            if (time_dependent[row*this->value_.n_rows()+col] || first_time_set_ ) {
-                parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
-
-                if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
-                    THROW( ExcFParserError() << EI_FParserMsg(parser_matrix_[row][col].ErrorMsg()) << EI_Row(row)
-                        << EI_Col(col) << EI_Formula(formula_matrix_.at(row,col)) );
-                }
-
-                parser_matrix_[row][col].Optimize();
-                any_parser_changed = true;
-            }
-
-
-        }
-
-    first_time_set_ = false;
-    this->time_=time;
-    return any_parser_changed;
+//    bool any_parser_changed = false;
+//    std::string value_input_address = in_rec_.address_string();
+//    has_depth_var_ = false;
+//    this->is_constant_in_space_ = true; // set flag to true, then if found 'x', 'y', 'z' or 'd' reset to false
+//
+//
+//    std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
+//    std::vector<bool> time_dependent(this->value_.n_rows() * this->value_.n_cols(), false);
+//    // update parsers
+//    for(unsigned int row=0; row < this->value_.n_rows(); row++)
+//        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+//            // get all variable names from the formula
+//            std::vector<std::string> var_list;
+//
+//            FunctionParser tmp_parser;
+//            tmp_parser.AddConstant("Pi", 3.14159265358979323846);
+//            tmp_parser.AddConstant("E", 2.71828182845904523536);
+//
+//
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wunused-variable"
+//            {
+//                int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
+//                ASSERT_PERMANENT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
+//            }
+//#pragma GCC diagnostic pop
+//
+//            for(std::string &var_name : var_list ) {
+//                if (var_name == std::string("t") ) time_dependent[row*this->value_.n_rows()+col]=true;
+//                else if (var_name == std::string("d") ) {
+//                	this->is_constant_in_space_ = false;
+//                	if (surface_depth_)
+//                		has_depth_var_=true;
+//                	else
+//                    	WarningOut().fmt("Unset surface region. Variable '{}' in the FieldFormula[{}][{}] == '{}' will be set to zero\n at the input address:\n {} \n",
+//                                var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+//                }
+//                else if (var_name == "x" || var_name == "y" || var_name == "z") {
+//                	this->is_constant_in_space_ = false;
+//                	continue;
+//                }
+//                else
+//                	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
+//                            var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+//            }
+//
+//            // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
+//            parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
+//            parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
+//            if (time_dependent[row*this->value_.n_rows()+col]) {
+//                parser_matrix_[row][col].AddConstant("t", time.end());
+//            }
+//        }
+//
+//    if (has_depth_var_)
+//        vars += string(",d");
+//
+//	// update parsers
+//	for(unsigned int row=0; row < this->value_.n_rows(); row++)
+//		for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+//            // TODO:
+//            // - possibly add user defined constants and units here ...
+//            // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
+//            //parser_matrix_[row][col] = tmp_parser;
+//            if (time_dependent[row*this->value_.n_rows()+col] || first_time_set_ ) {
+//                parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
+//
+//                if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
+//                    THROW( ExcFParserError() << EI_FParserMsg(parser_matrix_[row][col].ErrorMsg()) << EI_Row(row)
+//                        << EI_Col(col) << EI_Formula(formula_matrix_.at(row,col)) );
+//                }
+//
+//                parser_matrix_[row][col].Optimize();
+//                any_parser_changed = true;
+//            }
+//
+//
+//        }
+//
+//    first_time_set_ = false;
+//    this->time_=time;
+//    return any_parser_changed;
 }
 
 
