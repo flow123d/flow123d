@@ -201,7 +201,6 @@ double TimeUnitConversion::read_coef(Input::Iterator<Input::Record> unit_it) con
  */
 
 TimeStep::TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion) :
-use_fparser_(false),
 index_(0),
 length_(1.0),
 end_(init_time),
@@ -211,7 +210,6 @@ time_unit_conversion_(time_unit_conversion)
 
 
 TimeStep::TimeStep() :
-use_fparser_(false),
 index_(0),
 length_(TimeGovernor::inf_time),
 end_(-TimeGovernor::inf_time)
@@ -223,7 +221,6 @@ end_(-TimeGovernor::inf_time)
 
 
 TimeStep::TimeStep(const TimeStep &other):
-use_fparser_(false),
 index_(other.index_),
 length_(other.length_),
 end_(other.end_),
