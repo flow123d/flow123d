@@ -198,7 +198,7 @@ private:
 	/**
 	 * Helper class holds data of invalid values of all regions.
 	 *
-	 * If region contains invalid element value (typically 'not a number') is_nan_ flag is set to true
+	 * If region contains invalid element value (typically 'not a number') is_invalid_ flag is set to true
 	 * and other information (element id an value) are stored. Check of invalid values is performed
 	 * during processing data of reader cache and possible exception is thrown only if FieldFE is defined
 	 * on appropriate region.
@@ -207,22 +207,19 @@ private:
 	 */
     class RegionValueErr {
     public:
-        /// Constructor
-        RegionValueErr() : is_nan_(false) {}
+        /// Default constructor, sets valid region
+        RegionValueErr() : is_invalid_(false) {}
 
-        /// Reset data of region to 'valid' state
-        void reset() {
-            is_nan_ = false;
-        }
-
-        /// Sets invalid state, store invalid element id and value
-        void set(unsigned int elm_id, double value) {
-            is_nan_ = true;
+        /// Constructor, sets invalid region, element and value specification
+        RegionValueErr(std::string region_name, unsigned int elm_id, double value) {
+            is_invalid_ = true;
+            region_name_ = region_name;
             elm_id_ = elm_id;
             value_ = value;
         }
 
-        bool is_nan_;
+        bool is_invalid_;
+        std::string region_name_;
         unsigned int elm_id_;
         double value_;
     };
