@@ -329,9 +329,6 @@ private:
     std::array<FEItem, 4> fe_item_;
     MixedPtr<FiniteElement> fe_;
 
-    /// Pointer to computational mesh
-    const Mesh *comp_mesh_;
-
     /// Set holds data of valid / invalid element values on all regions
     std::vector<RegionValueErr> region_value_err_;
 

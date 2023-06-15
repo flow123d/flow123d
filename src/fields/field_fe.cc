@@ -132,7 +132,7 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4), comp_mesh_(nullptr)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -352,7 +352,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             else this->make_dof_handler( mesh );
         }
         region_value_err_.resize(mesh->region_db().size());
-        this->comp_mesh_ = mesh;
 	}
 }
 
@@ -440,8 +439,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		    n_components *= dh_->max_elem_dofs();
 		}
 		if (this->interpolation_==DataInterpolation::identic_msh) {
-		    n_entities = comp_mesh_->n_elements() + comp_mesh_->bc_mesh()->n_elements();
-		    bdr_shift = comp_mesh_->n_elements();
+		    n_entities = source_target_mesh_elm_map_->bulk.size() + source_target_mesh_elm_map_->boundary.size();
+		    bdr_shift = source_target_mesh_elm_map_->bulk.size();
 		} else {
 		    auto reader_mesh = ReaderCache::get_mesh(reader_file_);
 		    n_entities = reader_mesh->n_elements() + reader_mesh->bc_mesh()->n_elements();
@@ -680,7 +679,7 @@ void FieldFE<spacedim, Value>::calculate_element_values()
 
     unsigned int shift;
     if (this->boundary_domain_) {
-        if (this->interpolation_==DataInterpolation::identic_msh) shift = this->comp_mesh_->n_elements();
+        if (this->interpolation_==DataInterpolation::identic_msh) shift = source_target_mesh_elm_map_->bulk.size();
 	    else shift = ReaderCache::get_mesh(reader_file_)->n_elements();
     } else {
         shift = 0;
