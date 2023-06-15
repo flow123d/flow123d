@@ -257,40 +257,6 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     }
 }
 
-//template <typename T>
-//CheckResult ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
-//    if (check_scale_data_ != CheckScaleData::none) return CheckResult::ok; // method is executed only once
-//    check_scale_data_ = CheckScaleData::check;
-//
-//    bool is_nan = false, out_of_limit = false;
-//    std::vector<T> &vec = *( this->data_.get() );
-//    for(unsigned int i=0; i<vec.size(); ++i) {
-//        if ( std::isnan(vec[i]) ) {
-//            if ( std::isnan(default_val) ) is_nan = true;
-//            else vec[i] = default_val;
-//        }
-//        if ( (vec[i] < lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
-//    }
-//
-//    if (is_nan) return CheckResult::not_a_number;
-//    else if (out_of_limit) return CheckResult::out_of_limits;
-//    else return CheckResult::ok;
-//}
-//
-//template <typename T>
-//void ElementDataCache<T>::scale_data(double coef) {
-//    if (check_scale_data_ == CheckScaleData::scale) return; // method is executed only once
-//    ASSERT(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
-//
-//    std::vector<T> &vec = *( this->data_.get() );
-//    for(unsigned int i=0; i<vec.size(); ++i) {
-//        vec[i] *= coef;
-//    }
-//
-//    check_scale_data_ = CheckScaleData::scale;
-//}
-
-
 template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution *distr, LongIdx *local_to_global) {
     std::shared_ptr< ElementDataCache<T> > gather_cache;
