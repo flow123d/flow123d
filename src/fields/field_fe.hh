@@ -65,8 +65,18 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
+    /// Declaration of exception.
+    TYPEDEF_ERR_INFO( EI_Field, std::string);
+    TYPEDEF_ERR_INFO( EI_File, std::string);
     TYPEDEF_ERR_INFO( EI_ElemIdx, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Region, std::string);
     DECLARE_EXCEPTION( ExcInvalidElemeDim, << "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = " << EI_ElemIdx::val << ".\n" );
+    DECLARE_INPUT_EXCEPTION( ExcUndefElementValue,
+            << "FieldFE " << EI_Field::qval << " on region " << EI_Region::qval << " have invalid value .\n"
+            << "Provided by file " << EI_File::qval << " at element ID " << EI_ElemIdx::val << ".\n"
+            << "Please specify in default_value key.\n");
+
+
 
     static const unsigned int undef_uint = -1;
 
@@ -211,7 +221,7 @@ private:
         RegionValueErr() : is_invalid_(false) {}
 
         /// Constructor, sets invalid region, element and value specification
-        RegionValueErr(std::string region_name, unsigned int elm_id, double value) {
+        RegionValueErr(const std::string &region_name, unsigned int elm_id, double value) {
             is_invalid_ = true;
             region_name_ = region_name;
             elm_id_ = elm_id;
@@ -275,7 +285,16 @@ private:
         this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
 
-    double get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error);
+    /**
+     * Method computes value of given input cache element.
+     *
+     * If computed value is invalid (e.g. NaN value) sets the data specifying error value.
+     * @param i_cache_el Index of element of input ElementDataCache
+     * @param elm_idx Idx of element of computational mesh
+     * @param region_name Region of computational mesh
+     * @param actual_compute_region_error Data object holding data of region with invalid value.
+     */
+    double get_scaled_value(int i_cache_el, unsigned int elm_idx, const std::string &region_name, RegionValueErr &actual_compute_region_error);
 
 
 	/// DOF handler object

@@ -515,6 +515,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 		source_mesh->get_bih_tree().find_bounding_box(ele.bounding_box(), searched_elements);
 
 		auto r_idx = cell.elm().region_idx().idx();
+		std::string reg_name = cell.elm().region().label();
 		for (unsigned int i=0; i<quadrature_size; ++i) {
 			std::fill(sum_val.begin(), sum_val.end(), 0.0);
 			elem_count = 0;
@@ -541,7 +542,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 					// projection point in element
 					unsigned int index = sum_val.size() * (*it);
 					for (unsigned int j=0; j < sum_val.size(); j++) {
-						sum_val[j] += get_scaled_value(index+j, region_value_err_[r_idx]);
+						sum_val[j] += get_scaled_value(index+j, dh_->mesh()->elem_index( cell.elm_idx() ), reg_name, region_value_err_[r_idx]);
 					}
 					++elem_count;
 				}
@@ -582,6 +583,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection()
 
 		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
 		auto r_idx = elm.region_idx().idx();
+		std::string reg_name = elm.region().label();
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
@@ -643,7 +645,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection()
 				if (measure > epsilon) {
 					unsigned int index = value.size() * (*it);
 			        for (unsigned int i=0; i < value.size(); i++) {
-			        	value[i] += get_scaled_value(index+i, region_value_err_[r_idx]) * measure;
+			        	value[i] += get_scaled_value(index+i, dh_->mesh()->elem_index( elm.idx() ), reg_name, region_value_err_[r_idx]) * measure;
 			        }
 					total_measure += measure;
 				}
@@ -702,9 +704,10 @@ void FieldFE<spacedim, Value>::calculate_element_values()
             vec_inc = 1;
         }
         auto r_idx = cell.elm().region_idx().idx();
+        std::string reg_name = cell.elm().region().label();
         for (unsigned int i=0; i<loc_dofs.n_elem; ++i) {
             ASSERT_LT(loc_dofs[i], (LongIdx)data_vec_.size());
-            data_vec_.add( loc_dofs[i], get_scaled_value(data_vec_i, region_value_err_[r_idx]) );
+            data_vec_.add( loc_dofs[i], get_scaled_value(data_vec_i, dh_->mesh()->elem_index( cell.elm_idx() ), reg_name, region_value_err_[r_idx]) );
             ++count_vector[ loc_dofs[i] ];
             data_vec_i += vec_inc;
         }
@@ -830,7 +833,8 @@ void FieldFE<spacedim, Value>::local_to_ghost_data_scatter_end() {
 
 
 template <int spacedim, class Value>
-double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr &actual_compute_region_error) {
+double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, unsigned int elm_idx, const std::string &region_name,
+        RegionValueErr &actual_compute_region_error) {
     double return_val;
     if (i_cache_el == (int)(Mesh::undef_idx))
         return_val = default_value_;
@@ -840,7 +844,7 @@ double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, RegionValueErr
         return_val = (*input_data_cache_)[i_cache_el];
 
     if ( std::isnan(return_val) ) {
-        actual_compute_region_error = RegionValueErr("region name", 0, return_val); // TODO try set correct region and element idx
+        actual_compute_region_error = RegionValueErr(region_name, elm_idx, return_val);
     } else
         return_val *= this->unit_conversion_coefficient_;
 
