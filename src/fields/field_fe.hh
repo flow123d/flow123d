@@ -65,8 +65,18 @@ public:
 		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
+    /// Declaration of exception.
+    TYPEDEF_ERR_INFO( EI_Field, std::string);
+    TYPEDEF_ERR_INFO( EI_File, std::string);
     TYPEDEF_ERR_INFO( EI_ElemIdx, unsigned int);
+    TYPEDEF_ERR_INFO( EI_Region, std::string);
     DECLARE_EXCEPTION( ExcInvalidElemeDim, << "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = " << EI_ElemIdx::val << ".\n" );
+    DECLARE_INPUT_EXCEPTION( ExcUndefElementValue,
+            << "FieldFE " << EI_Field::qval << " on region " << EI_Region::qval << " have invalid value .\n"
+            << "Provided by file " << EI_File::qval << " at element ID " << EI_ElemIdx::val << ".\n"
+            << "Please specify in default_value key.\n");
+
+
 
     static const unsigned int undef_uint = -1;
 
@@ -195,23 +205,52 @@ private:
         unsigned int range_end_;
     };
 
+	/**
+	 * Helper class holds data of invalid values of all regions.
+	 *
+	 * If region contains invalid element value (typically 'not a number') is_invalid_ flag is set to true
+	 * and other information (element id an value) are stored. Check of invalid values is performed
+	 * during processing data of reader cache and possible exception is thrown only if FieldFE is defined
+	 * on appropriate region.
+	 *
+	 * Data of all regions are stored in vector of RegionValueErr instances.
+	 */
+    class RegionValueErr {
+    public:
+        /// Default constructor, sets valid region
+        RegionValueErr() : is_invalid_(false) {}
+
+        /// Constructor, sets invalid region, element and value specification
+        RegionValueErr(const std::string &region_name, unsigned int elm_id, double value) {
+            is_invalid_ = true;
+            region_name_ = region_name;
+            elm_id_ = elm_id;
+            value_ = value;
+        }
+
+        bool is_invalid_;
+        std::string region_name_;
+        unsigned int elm_id_;
+        double value_;
+    };
+
 	/// Create DofHandler object
 	void make_dof_handler(const MeshBase *mesh);
 
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
-	void interpolate_gauss(ElementDataCache<double>::CacheData data_vec);
+	void interpolate_gauss();
 
 	/// Interpolate data (use intersection library) over all elements of target mesh.
-	void interpolate_intersection(ElementDataCache<double>::CacheData data_vec);
+	void interpolate_intersection();
 
-	/// Calculate native data over all elements of target mesh.
-	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
+//	/// Calculate native data over all elements of target mesh.
+//	void calculate_native_values(ElementDataCache<double>::CacheData data_cache);
+//
+//	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
+//	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
 
-	/// Calculate data of identict_mesh interpolation on input data over all elements of target mesh.
-	void calculate_identic_values(ElementDataCache<double>::CacheData data_cache);
-
-	/// Calculate data of equivalent_mesh interpolation on input over all elements of target mesh.
-	void calculate_equivalent_values(ElementDataCache<double>::CacheData data_cache);
+	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
+	void calculate_element_values();
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
@@ -245,6 +284,17 @@ private:
         this->fe_item_[dim].range_begin_ = 0;
         this->fe_item_[dim].range_end_ = dh_->ds()->fe()[Dim<dim>{}]->n_dofs();
     }
+
+    /**
+     * Method computes value of given input cache element.
+     *
+     * If computed value is invalid (e.g. NaN value) sets the data specifying error value.
+     * @param i_cache_el Index of element of input ElementDataCache
+     * @param elm_idx Idx of element of computational mesh
+     * @param region_name Region of computational mesh
+     * @param actual_compute_region_error Data object holding data of region with invalid value.
+     */
+    double get_scaled_value(int i_cache_el, unsigned int elm_idx, const std::string &region_name, RegionValueErr &actual_compute_region_error);
 
 
 	/// DOF handler object
@@ -294,6 +344,12 @@ private:
     /// Holds specific data of field evaluation over all dimensions.
     std::array<FEItem, 4> fe_item_;
     MixedPtr<FiniteElement> fe_;
+
+    /// Set holds data of valid / invalid element values on all regions
+    std::vector<RegionValueErr> region_value_err_;
+
+    /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
+    ElementDataCache<double>::CacheData input_data_cache_;
 
     /// Registrar of class to factory
     static const int registrar;

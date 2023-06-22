@@ -55,6 +55,7 @@ public:
         }
         this->eval_point_data_.make_permanent();
         elm_to_patch_.insert(cell.elm_idx());
+        DebugOut().fmt("Bulk points of element '{}' added. Size of eval_point_data is '{}'.\n", cell.elm_idx(), this->eval_point_data_.permanent_size());
     }
 
     void add_side_points(DHCellSide cell_side) {
@@ -67,6 +68,7 @@ public:
         	this->eval_point_data_.emplace_back(ghost_reg, cell_side.elem_idx(), p_ghost.eval_point_idx(), cell_side.cell().local_idx());
         }
         elm_to_patch_.insert(cell_side.elem_idx());
+        DebugOut().fmt("Side points of element '{}' added. Size of eval_point_data is '{}'.\n", cell_side.cell().elm_idx(), this->eval_point_data_.permanent_size());
     }
 
     Mesh * mesh_;
@@ -186,6 +188,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
+    DebugOut().fmt("Start of problematic part!");
     this->start_elements_update();
     DHCellAccessor dh_cell3(dh_.get(), 3);
     DHCellAccessor dh_cell6(dh_.get(), 6);

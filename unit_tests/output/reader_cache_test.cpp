@@ -49,28 +49,29 @@ TEST(ReaderCache, get_bulk_element_) {
     reader->read_raw_mesh(mesh);
     ReaderCache::get_element_ids(file_name, *mesh);
 
-    const unsigned int n_entities = 9;  // n bulk elements in mesh
-    const unsigned int n_comp = 3;      // n components
+    const unsigned int n_entities = 15;  // n bulk elements in mesh
+    const unsigned int bdr_shift = 9;    // n bulk elements in mesh
+    const unsigned int n_comp = 3;       // n components
 
     // read  by components for MultiField
     {
         BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
         auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
         typename ElementDataCache<int>::CacheData multifield_ =
-                ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
+                ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, bdr_shift);
         std::vector<int> &vec = *( multifield_.get() );
         EXPECT_EQ(n_entities*n_comp, vec.size());
-        for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( j%n_comp+1, vec[j] );
+        for (j=0; j<bdr_shift*n_comp; j++) EXPECT_EQ( j%n_comp+1, vec[j] );
     }
     // read  to one vector for Field
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
     	typename ElementDataCache<int>::CacheData field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, false);
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, bdr_shift);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
-    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 2+(j%3), vec[j] );
+    	for (j=0; j<bdr_shift*n_comp; j++) EXPECT_EQ( 2+(j%3), vec[j] );
     }
 
     delete mesh;
@@ -92,18 +93,19 @@ TEST(ReaderCache, get_boundary_element_) {
     reader->read_raw_mesh(mesh);
     ReaderCache::get_element_ids(file_name, *mesh);
 
-    const unsigned int n_entities = 6;  // n boundary elements in mesh
-    const unsigned int n_comp = 3;      // n components
+    const unsigned int n_entities = 15;  // n bulk elements in mesh
+    const unsigned int bdr_shift = 9;    // n bulk elements in mesh
+    const unsigned int n_comp = 3;       // n components
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
     {
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
         typename ElementDataCache<int>::CacheData multifield_ =
-        		ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
+        		ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, bdr_shift);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
-    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( j%n_comp+4, vec[j] );
+    	for (j=bdr_shift*n_comp; j<n_entities*n_comp; j++) EXPECT_EQ( j%n_comp+4, vec[j] );
     }
 
     // read  to one vector for Field
@@ -111,10 +113,10 @@ TEST(ReaderCache, get_boundary_element_) {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	auto header = ReaderCache::get_reader(file_name)->find_header(header_params);
     	typename ElementDataCache<int>::CacheData field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, true);
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(header, n_entities, n_comp, bdr_shift);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(n_entities*n_comp, vec.size());
-    	for (j=0; j<n_entities*n_comp; j++) EXPECT_EQ( 5+(j%3), vec[j] );
+    	for (j=bdr_shift*n_comp; j<n_entities*n_comp; j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
     delete mesh;

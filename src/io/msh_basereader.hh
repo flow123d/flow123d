@@ -191,7 +191,7 @@ public:
     template<typename T>
     typename ElementDataCache<T>::CacheData get_element_data(
             MeshDataHeader header, unsigned int expected_n_entities,
-            unsigned int expected_n_components, bool boundary_domain);
+            unsigned int expected_n_components, unsigned int boundary_begin);
 
     /**
      * Set ID vectors from a different mesh.
@@ -210,12 +210,6 @@ public:
 	 * Find data header for time and field given by header_query.
 	 */
     virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
-
-    /**
-     * Scale and check data stored in ElementDataCache of given field.
-     */
-    CheckResult scale_and_check_limits(string field_name, double coef, double default_val,
-    		double lower_bound = -std::numeric_limits<double>::max(), double upper_bound = std::numeric_limits<double>::max());
 
 
 protected:
@@ -244,8 +238,7 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-    		bool boundary_domain)=0;
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.
