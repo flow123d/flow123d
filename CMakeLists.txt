@@ -822,10 +822,6 @@ make_link_in_source(unit_tests/Makefile)
 ############################################################33 process subdirectories
 
 
-# add fparser sources
-message(STATUS "add subdir FParser")
-add_subdirectory(third_party/fparser-4.5.1)
-
 # add bparser sources
 message(STATUS "add subdir BParser")
 add_subdirectory(third_party/bparser)
@@ -845,7 +841,6 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src
     ${CONFIG_FILE_INCLUDES_DIRECTORY}
     #${CMAKE_SOURCE_DIR}/third_party/metis-include
-    ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1    
     ${PYBIND11_INCLUDE_DIR}
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PERMON_INCLUDES}
