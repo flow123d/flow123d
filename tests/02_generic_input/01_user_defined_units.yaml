@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Tests correct functionality of setting input fields by user defined units.
   mesh:

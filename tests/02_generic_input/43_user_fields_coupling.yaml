@@ -3,7 +3,7 @@
 # Derived from test 50 / 03
 #
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Mandel's rectangular problem (upper right subdomain).
   mesh:
@@ -17,7 +17,7 @@ problem: !Coupling_Sequential
       - region: BULK
         biot_alpha: 1
         fluid_density: !FieldFormula
-          value: user_fd^3
+          value: user_fd**3
     time:
       end_time: 1e5
     iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
