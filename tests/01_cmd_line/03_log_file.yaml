@@ -2,7 +2,7 @@
 # Author: David Flanderka
 # Source for reference: regex check rules of log file
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Test of redirect log to file given with command parameter.
   mesh:
@@ -14,6 +14,6 @@ problem: !Coupling_Sequential
         bc_piezo_head: 2
     output:
       fields: []
-    output_stream: 
+    output_stream:
       file: ./flow.msh
       format: !gmsh

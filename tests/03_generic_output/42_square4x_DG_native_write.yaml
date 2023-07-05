@@ -9,7 +9,7 @@
 #   - testing native output, the result after the first half period
 #     is read by 43_square4x_DG_native_read.yaml (it runs only the second half period)
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Benchmark - 2D DG transport on square with 4 regions with highly different conductivity
   mesh:
@@ -71,7 +71,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
       output:
         fields:
-          - { field: conc, interpolation: Native }
+          - {field: conc, interpolation: Native}
           #- conc
     output_stream:
       file: ./solute.pvd

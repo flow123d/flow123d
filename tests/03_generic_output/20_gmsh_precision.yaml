@@ -6,9 +6,9 @@
 # Only conductivity (given constant) is written, so it is accurate and no linear solver error is involved
 # in the output file.
 
-flow123d_version: 2.0.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
-  description: 'Testing the output precision in GMSH format.'
+  description: Testing the output precision in GMSH format.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_LMH

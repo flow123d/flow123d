@@ -1,5 +1,5 @@
 # Variant of the 04_frac_diffusion, without dead-end fractures. Used for creating a figure in Tutorial 4 for the comparison.
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Tutorial 4 - Fractures - diffusion, no dead-end fractures (auxiliary)
   mesh:
@@ -78,7 +78,7 @@ problem: !Coupling_Sequential
         - region: .left_points
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+            value: 2.84959e-5*exp(-0.5*((t-2000)/700)**2)
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12

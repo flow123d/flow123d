@@ -9,7 +9,7 @@
 #
 #   See Test 44 for other details.
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Anisotropic molecular diffusion
   mesh:

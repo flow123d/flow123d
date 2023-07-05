@@ -3,9 +3,9 @@
 # Author: Jan Brezina
 # Source for reference: qualitative
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
-  description: Output of observe fields, setting of observe points in different ways.  
+  description: Output of observe fields, setting of observe points in different ways.
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
   # mesh

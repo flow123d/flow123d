@@ -1,9 +1,9 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Raw output for neighboring data in mesh with multidimensional connections 1D-2D-3D, minimalistic steady flow.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
-    raw_ngh_output: ./raw_ngh_output.txt 
+    raw_ngh_output: ./raw_ngh_output.txt
   flow_equation: !Flow_Darcy_LMH
     input_fields:
       - region: .BOUNDARY
