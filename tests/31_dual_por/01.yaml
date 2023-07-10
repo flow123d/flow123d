@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Simple dual porosity test - steady flow, simple transport
   mesh:
@@ -17,7 +17,7 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-    output_stream: 
+    output_stream:
       file: dual_por.pvd
       format: !vtk
         variant: ascii
@@ -34,7 +34,7 @@ problem: !Coupling_Sequential
     substances:
       - A
       - B
-    output_stream: 
+    output_stream:
       file: dual_por_transport.pvd
       format: !vtk
         variant: ascii

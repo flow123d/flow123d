@@ -3,7 +3,7 @@
 # Source for reference:
 #   - qualitative and mass balance check.
 #   - reference substance A - check sorption none (with source, init_conc_solid)"
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Sorption with sources - no flow, no transport, only source term and sorptions.
   mesh:
