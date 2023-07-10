@@ -5,7 +5,7 @@ flow_equation: !Flow_Darcy_LMH
   input_fields:
     - region: ALL
       water_source_density: !FieldFormula
-        value: if(((x-0.5)^2+(y-0.5)^2+z^2)^0.5 > 0.01, log(((x-0.5)^2+(y-0.5)^2+z^2)^0.5), log(0.01))
+        value: ' ((log(((x-0.5)^2+(y-0.5)^2+z^2)^0.5)) if (((x-0.5)^2+(y-0.5)^2+z^2)^0.5 > 0.01) else (log(0.01))) '
     - region: .BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
