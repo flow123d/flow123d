@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 #COMMENT_Stop_time: '1275'
 problem: !Coupling_Sequential
   description: Steady flow + transport with time dependent source
@@ -44,9 +44,9 @@ problem: !Coupling_Sequential
         - rid: 7
           init_conc: 0
           porosity: 1
-        - rid: 100  
+        - rid: 100
           sources_density: !FieldFormula
-            value: max(4-t,0)
+            value: maximum(4-t,0)
         - rid: 200
           time: 2
           sources_sigma: 1

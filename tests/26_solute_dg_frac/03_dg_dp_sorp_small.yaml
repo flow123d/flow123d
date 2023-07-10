@@ -11,7 +11,7 @@
 #
 # similar to tests: 21-03, 22-01, 27-02
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Transport implicit 1D-2D, (convection, dispersion)
   mesh:

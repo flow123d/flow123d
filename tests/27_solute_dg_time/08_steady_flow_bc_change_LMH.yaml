@@ -5,7 +5,7 @@
 #   with low storativity.
 #   Checked and compared in Paraview
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:
