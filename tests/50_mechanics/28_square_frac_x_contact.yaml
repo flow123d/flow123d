@@ -4,7 +4,7 @@
 #   - the domain is a square with 2 crossing fractures
 #   - for testing contact conditions
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: 2D elastic model with crossing fractures.
   mesh:

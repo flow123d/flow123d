@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Injection into 2 fractures differing in cross section, test of nonlinear hydraulic conductivity depending on mechanics.
   mesh:
@@ -21,12 +21,12 @@ problem: !Coupling_Sequential
             storativity: 1
           - region: fracture_lower
             conductivity: !FieldFormula
-              value: (cross_section_updated/1e-3)^2
+              value: (cross_section_updated/1e-3)**2
             storativity: 1
             cross_section: 1e-3
           - region: fracture_upper
             conductivity: !FieldFormula
-              value: (cross_section_updated/1e-3)^2
+              value: (cross_section_updated/1e-3)**2
             storativity: 1
             cross_section: 2e-3
           - region: [ .right_fl, .right_fu ]
