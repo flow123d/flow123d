@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Test6 - Coupling between dimension 1D-2D - influence of sigma and cross section parameters.
   mesh:

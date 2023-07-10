@@ -6,7 +6,7 @@
 # Author: Jan Březina
 # Source for reference: qualitative
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Check correct time unit conversion of global time declaration in time governor in input YAML file.
   mesh:
@@ -61,7 +61,7 @@ problem: !Coupling_Sequential
         - anisotropy
         - water_source_density
         - field: init_pressure
-          times: 
+          times:
             - 0.0
         - field: storativity
           times:

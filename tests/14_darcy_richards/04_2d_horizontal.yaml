@@ -3,7 +3,7 @@
 # there is a hole at the top side so the air can vent out freely.
 # 
 # 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Horizontal infiltration into dry sample. Should end in the steady state pressure 10m.
   mesh:

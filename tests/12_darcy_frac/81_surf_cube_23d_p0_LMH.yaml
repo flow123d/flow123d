@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Cube with vertical fractures, Dirichlet BC on top simulating simple terrain.
   mesh:
@@ -20,7 +20,7 @@ problem: !Coupling_Sequential
       - region: .3d_top
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: 200.0/(1.0 + 4*(x/10000)^2 + 4*(y/10000)^2)  # simple bell shape
+          value: 200.0/(1.0 + 4*(x/10000)**2 + 4*(y/10000)**2) # simple bell shape
       - region: 2d
         conductivity: 1e-5
         cross_section: 1
