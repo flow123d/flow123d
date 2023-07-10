@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0
 problem: !Coupling_Sequential
   description: Test14 - 2D transport with time variable boundary
   mesh:
@@ -51,6 +51,6 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
-      precision: 15  
+      precision: 15
     balance:
       cumulative: true
