@@ -610,7 +610,6 @@ TEST(Field, init_from_input) {
 
 
     auto step = TimeGovernor().step();
-    step.use_fparser_ = true;
     sorption_type.set_time(step, LimitSide::right);
     init_conc.set_time(step, LimitSide::right);
     conductivity.set_time(step, LimitSide::right);

@@ -226,13 +226,6 @@ public:
                 && (length_ == other.length_)
                 && (end_ == other.end_);
         }
-
-    /**
-     * Temporary hack allows switched of using of FParser in FieldFormula.
-     *
-     * Flag is set to false default and can be set to true before call set_time in equation.
-     */
-    mutable bool use_fparser_;
 private:
 
     /* Returns true if t1-t0 > delta. Where delta is choosen

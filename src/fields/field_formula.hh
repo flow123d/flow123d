@@ -41,7 +41,6 @@
 //#include "include/assert.hh"            // bparser
 #include "parser.hh"            // bparser
 
-class FunctionParser;
 template <int spacedim> class ElementAccessor;
 class SurfaceDepth;
 
@@ -52,7 +51,6 @@ using namespace std;
  *
  * Using libraries:
  * https://github.com/flow123d/bparser/
- * http://warp.povusers.org/FunctionParser/ (gradually replaced by BParser)
  *
  * Allows parsing:
  * - base variables: coordinates (x,y,z), time (t), surface depth (d); constants: e, pi
@@ -132,8 +130,7 @@ private:
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     StringTensor formula_matrix_;
 
-    // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
-    std::vector< std::vector<FunctionParser> > parser_matrix_;
+    // Vector of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< bparser::Parser > b_parser_;
 
     /// Accessor to Input::Record
@@ -150,9 +147,6 @@ private:
 
     /// Helper variable for construct of arena, holds sum of sizes (over shape) of all dependent fields.
     uint sum_shape_sizes_;
-
-    /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
-    bool first_time_set_;
 
     /// Arena object providing data arrays
     bparser::ArenaAlloc * arena_alloc_;
