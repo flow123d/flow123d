@@ -189,38 +189,6 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
             unsigned int i_p = row*this->value_.n_cols()+col;
             //b_parser_[i_p].parse(formula_matrix_.at(row,col));
             std::string expr = formula_matrix_.at(row,col);
-//            boost::replace_all(expr, "^", "**"); // power function
-//            boost::replace_all(expr, "max(", "maximum("); // max function
-//            boost::replace_all(expr, "min(", "minimum("); // min function
-//            boost::replace_all(expr, "Pi", "pi"); // Math.pi
-//            boost::replace_all(expr, "E", "e"); // Math.e
-//            boost::replace_all(expr, "!", "not");
-//            boost::replace_all(expr, "=", "==");
-//            boost::replace_all(expr, "<==", "<=");
-//            boost::replace_all(expr, ">==", ">=");
-//            boost::replace_all(expr, ":=", "=");
-//            boost::replace_all(expr, "&", " and ");
-//            boost::replace_all(expr, "|", " or ");
-//            {
-//
-//                // Regexp tested with perl syntax, first is matched the inner most if
-//                boost::regex r(R"((.*)(if\()((?<RR>(?:[^()]*)|((?:[^()]*)\((?&RR)\)(?:[^()]*))*)),((?&RR)),((?&RR))(\))(.*))");
-//                //                     if (                                                      ,        ,          )
-//                //                  1  2..2                                                         6..6     7..7    8   9
-//                // (.*)
-//                // (if\()
-//                // ( (?<RR> (?:[^()]*) | ( (?:[^()]*) \((?&RR)\)(?:[^()]*))* ) )
-//                // , ((?&RR)) , ((?&RR)) (\)) (.*)
-//                // ((.*)(if\()((? <RR>(?:[^()]*)|((?:[^()]*)\((?& RR)\)(?:[^()]*))*)),((?& RR)),((?& RR))(\))(.*))
-//                // ((.*)(if\()((?P<RR>(?:[^()]*)|((?:[^()]*)\((?P>RR)\)(?:[^()]*))*)),((?P>RR)),((?P>RR))(\))(.*))
-//                boost::smatch res;
-//                while (1) {
-//                	if (! boost::regex_match(expr, res, r)) break;
-//                    std::string tmp = res[1].str() + "((" + res[6].str() + ") if (" + res[3].str() + ") else (" + res[7].str() + "))" + res[9].str();
-//                    expr = tmp;
-//                }
-//                DebugOut() << "After fparser translation to BParser: " << expr << "\n";
-//            }
             try {
                 b_parser_[i_p].parse( expr );
             } catch (std::exception const& e) {
