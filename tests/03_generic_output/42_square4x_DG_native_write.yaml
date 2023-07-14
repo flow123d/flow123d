@@ -9,7 +9,7 @@
 #   - testing native output, the result after the first half period
 #     is read by 43_square4x_DG_native_read.yaml (it runs only the second half period)
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Benchmark - 2D DG transport on square with 4 regions with highly different conductivity
   mesh:

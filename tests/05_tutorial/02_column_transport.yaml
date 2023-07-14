@@ -77,7 +77,7 @@
 ##
 ##![Results of evolution of mass in the volume and flux through boundaries.](tutor_figures/02_mass_plot.pdf){#fig:mass_plot}
 ##
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model with transport
   mesh:

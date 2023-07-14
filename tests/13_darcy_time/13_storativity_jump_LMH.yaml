@@ -3,7 +3,7 @@
 # Source for reference: pressure is linear in x-axis in each time step, values correspond to Dirichlet b.c. set.
 #   results between MH and LMH are the same, passed ndiff with 0
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Unsteady flow in 2D by the means of time dependent boundary condition, Lumped Mixed Hybrid method.
   mesh:

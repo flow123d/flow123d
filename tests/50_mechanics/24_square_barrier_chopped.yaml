@@ -6,7 +6,7 @@
 #   The full model (with 2D fracture discretization) is used as qualitative reference,
 #   see 24_square_full_ref.yaml
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Chopped square testing different boundary conditions.
   mesh:

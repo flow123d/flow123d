@@ -13,7 +13,7 @@
 # (note that we must add the initial stress to the reference stress to get equality)
 # (checked in paraview - diff up to 1e-14)
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 3D linear elastic simple loading problem.
   mesh:

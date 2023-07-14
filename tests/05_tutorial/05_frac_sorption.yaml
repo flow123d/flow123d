@@ -38,7 +38,7 @@
 ##![Results of sorption.](tutor_figures/05_mass_flux.pdf){#fig:sorp_res}
 ##
 ##
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 5 - Fractures - sorption
   mesh:

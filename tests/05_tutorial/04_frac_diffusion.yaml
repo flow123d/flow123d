@@ -163,7 +163,7 @@
 ##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without dead-end fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
 ##
 ##
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Tutorial 4 - Fractures - diffusion
   mesh:

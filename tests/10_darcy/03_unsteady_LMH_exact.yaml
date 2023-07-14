@@ -15,7 +15,7 @@
 # 0.3      0.2275        0.3574         0.2358      0.2358
 # 0.6      0.0518        0.0813
 # 1        0.0072        0.0113
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Unsteady flow in 2D, Lumped Mixed Hybrid, analytical solution.
   mesh:

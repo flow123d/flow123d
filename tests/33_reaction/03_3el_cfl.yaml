@@ -1,4 +1,4 @@
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test12 - demonstration of unstability of reaction solver without CFL condition (exact solution (50+5*exp(-55*t))/55)
   mesh:

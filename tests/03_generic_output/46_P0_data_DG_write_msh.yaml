@@ -11,7 +11,7 @@
 #   Note: only the symmetric tensors are supported
 #         (non-symmetric tensors are permuted on output)
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Anisotropic molecular diffusion
   mesh:

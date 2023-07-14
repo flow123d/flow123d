@@ -3,7 +3,7 @@
 # Source for reference:
 #   This is full model serving as reference for 23_square_fract_chopped.yaml.
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D elastic model with a single fracture with different BC. (Reference with full fine 2d fracture).
   mesh:

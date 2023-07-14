@@ -3,6 +3,6 @@
 # Author: Pavel Exner
 # Source for reference: qualitative
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !include:Coupling_Sequential
   file: ./include/vtk_refined_1d_problem.yaml

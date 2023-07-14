@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: qualitative (only output times are important)
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Tests correct functionality of balance output. Check fix of problem when both balances (water and mass) are
     performed in time step when is expected only one.

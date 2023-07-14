@@ -5,7 +5,7 @@
 #   in the direction (2,1) and (1,2), respectively.
 #   The magnitude of the diffusivity is 0.05 (the only positive eigenvalue).
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Anisotropic molecular diffusion
   mesh:

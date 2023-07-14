@@ -3,7 +3,7 @@
 # Author: Pavel Exner
 # Source for reference: qualitative
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Output of observe fields when there are no output fields.
   mesh:

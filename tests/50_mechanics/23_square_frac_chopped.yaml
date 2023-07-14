@@ -7,7 +7,7 @@
 #   - mechanics independent of flow, different BC prescribed in subsequent times
 #     (see the note at the last problematic set of BC)
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D elastic model with a single fracture with different BC.
   mesh:

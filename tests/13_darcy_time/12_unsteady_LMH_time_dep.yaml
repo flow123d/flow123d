@@ -4,7 +4,7 @@
 #   It is the same problem as in test 02_unsteady_MH_time_dep.
 #   Difference between MH and LMH:
 #       different treatment of time term (lumping) causes differences
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test unsteady LMH with time dependent data.
   mesh:

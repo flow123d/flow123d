@@ -1,5 +1,5 @@
 # Variant of the 06_frac_dualpor.  Used for creating a figure in Tutorial 6 for the comparison.
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 6 - Fractures - flow through dead-end fractures (auxiliary)
   mesh:

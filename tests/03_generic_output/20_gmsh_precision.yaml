@@ -6,7 +6,7 @@
 # Only conductivity (given constant) is written, so it is accurate and no linear solver error is involved
 # in the output file.
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Testing the output precision in GMSH format.
   mesh:

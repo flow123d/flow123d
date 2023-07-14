@@ -3,7 +3,7 @@
 # Author: Jan Stebel
 # Source for reference: qualitative
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - small cube
   mesh:

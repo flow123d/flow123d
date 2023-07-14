@@ -7,7 +7,7 @@
 #   - pvpython filter with analytic solution "04_pv_filter.py"
 #     it also prints out precomputed input parameters for Flow123d and possibly plots graph
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Terzaghi's 1D problem.
   mesh:

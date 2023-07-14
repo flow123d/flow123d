@@ -5,7 +5,7 @@
 # - the 2D block is however half the size,
 #   so we double the force to get equal deformation
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D linear elastic simple loading problem.
   mesh:

@@ -3,7 +3,7 @@
 # Author: Jan Brezina
 # Source for reference: qualitative
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test that all fields are checked when they are needed not only at time zero.
   mesh:

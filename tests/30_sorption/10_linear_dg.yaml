@@ -4,7 +4,7 @@
 #   - qualitative, check in Paraview
 #   - simple convective transport from right to left
 #   - same as test 03, but using DG instead of FV
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: TOS combining DG and sorption.
   mesh:

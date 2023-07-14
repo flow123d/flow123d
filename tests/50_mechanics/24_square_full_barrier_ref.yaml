@@ -3,7 +3,7 @@
 # Source for reference:
 #   This is the full model serving as reference for 24_square_barrier_chopped.yaml.
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D elastic model with a single barrier with different BC. (Reference with full fine 2d fracture).
   mesh:

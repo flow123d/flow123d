@@ -4,7 +4,7 @@
 #   - qualitative, check in Paraview
 #   - simple convective transport from right to left
 #   - same as test 03, but the sorption process is postponed to the time 5
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test variable sorption parameters with simple 2D transport.
   mesh:

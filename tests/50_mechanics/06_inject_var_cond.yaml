@@ -1,4 +1,4 @@
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Injection into 2 fractures differing in cross section, test of nonlinear hydraulic conductivity depending on mechanics.
   mesh:

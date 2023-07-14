@@ -3,7 +3,7 @@
 # Author: Jan Brezina
 # Source for reference: Just run
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model
   mesh:

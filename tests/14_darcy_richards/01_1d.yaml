@@ -3,7 +3,7 @@
 # there is a hole at the top side so the air can vent out freely.
 # 
 # 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:

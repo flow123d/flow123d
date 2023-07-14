@@ -1,5 +1,5 @@
 # Variant of the 04_frac_diffusion, without dead-end fractures. Used for creating a figure in Tutorial 4 for the comparison.
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Tutorial 4 - Fractures - diffusion, no dead-end fractures (auxiliary)
   mesh:

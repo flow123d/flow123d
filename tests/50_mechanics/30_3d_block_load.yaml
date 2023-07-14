@@ -13,7 +13,7 @@
 # ezz = -0.1125
 # uz = -0.225
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 3D linear elastic simple loading problem.
   mesh:

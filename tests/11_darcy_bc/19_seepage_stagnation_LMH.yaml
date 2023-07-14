@@ -3,7 +3,7 @@
 # Source for reference:
 #   it is the same problem as in test 09_seepage_stagnation
 #   results between MH and LMH are the same, passed ndiff with 0
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Steady flow with Seepage face boundary condition
   #      * The test problem use square computational domain and emulate slope of the top surface

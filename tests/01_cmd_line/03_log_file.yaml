@@ -2,7 +2,7 @@
 # Author: David Flanderka
 # Source for reference: regex check rules of log file
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test of redirect log to file given with command parameter.
   mesh:

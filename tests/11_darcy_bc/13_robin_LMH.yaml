@@ -20,7 +20,7 @@
 #       y=1:    -(-K*(2x-1,2y)).(0,1) = 2K
 #   checked in Paraview
 
-flow123d_version: 4.0.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:
