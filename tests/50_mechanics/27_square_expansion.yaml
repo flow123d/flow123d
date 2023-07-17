@@ -92,7 +92,7 @@ problem: !Coupling_Sequential
             time: 0
             bc_type: stress
             bc_stress: !FieldFormula
-              value: [ -45e6*(1/(18*86400)**t), -11e6*(1/(18*86400)**t), 0] # 1d=86400s
+              value: "[ [-45e6*(1/(18*86400)**t), 0, 0], [0, -11e6*(1/(18*86400)**t), 0], [0, 0, 0] ]" # 1d=86400s
           - region: .left_x
             time: 18
             bc_type: stress

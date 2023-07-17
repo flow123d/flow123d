@@ -50,4 +50,4 @@ problem: !Coupling_Sequential
           - region: [.BOUNDARY]
             bc_type: displacement
             bc_displacement: !FieldFormula
-              value: [-0.03*x*y, -0.17*x*y, 0]
+              value: "[-0.03*x*y, -0.17*x*y, 0]"
