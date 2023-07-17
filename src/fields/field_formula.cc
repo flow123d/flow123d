@@ -141,16 +141,18 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     std::vector<uint> subset_vec;
     subset_vec.assign(subsets_ + subsets_begin, subsets_ + subsets_end);
 
-    //for(unsigned int row=0; row < this->value_.n_rows(); row++)
-    //    for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            b_parser_.set_subset(subset_vec);
-            b_parser_.run();
-            for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-                auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-                cache_val(0, 0) = this->unit_conversion_coefficient_ * res_[i]; // TODO fix vector/tensor formula, should be (row, col)
-                data_cache.set(i) = cache_val;
+    b_parser_.set_subset(subset_vec);
+    b_parser_.run();
+    uint vec_size = CacheMapElementNumber::get();
+    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
+        auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
+        for(unsigned int row=0; row < this->value_.n_rows(); row++)
+            for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+                uint comp_shift = (row*this->value_.n_cols()+col) * vec_size;
+                cache_val(row, col) = this->unit_conversion_coefficient_ * res_[i + comp_shift];
             }
-    //    }
+        data_cache.set(i) = cache_val;
+    }
 }
 
 
@@ -230,10 +232,10 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
 
     // number of subset alignment to block size
     uint n_subsets = vec_size / cache_map.simd_size_double;
-    uint res_shape = Value::NRows_ * Value::NCols_;
-    uint n_vectors = sum_shape_sizes_ + res_shape; // needs add space of result vector
+    uint res_comp = Value::NRows_ * Value::NCols_;
+    uint n_vectors = sum_shape_sizes_ + res_comp; // needs add space of result vector
     arena_alloc_ = new bparser::ArenaAlloc(cache_map.simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
-    res_ = arena_alloc_->create_array<double>(vec_size);
+    res_ = arena_alloc_->create_array<double>(vec_size * res_comp);
     for (auto field : required_fields_) {
         std::string field_name = field->name();
         eval_field_data_[field] = arena_alloc_->create_array<double>(field->n_shape() * vec_size);
@@ -261,9 +263,6 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     std::vector<uint> shape = {};
     if (Value::NRows_ > 1) shape.push_back(Value::NRows_);
     if (Value::NCols_ > 1) shape.push_back(Value::NCols_);
-    std::cout << "shape: {";
-    for (auto i : shape) std::cout << i << " ";
-    std::cout << "}" << std::endl;
     b_parser_.set_variable("_result_", shape, res_);
     b_parser_.compile();
     // set subset vector
