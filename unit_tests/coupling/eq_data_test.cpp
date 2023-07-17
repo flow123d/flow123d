@@ -346,14 +346,14 @@ TEST_F(SomeEquation, values) {
         bc_pressure: !FieldConstant
           value: 1.23
         bc_conc: !FieldFormula
-          value: ["x", "10+x", "20+x"]
+          value: "[x, 10+x, 20+x]"
         conc_mobile: !FieldConstant 
           value: [5, 6, 7]
       - rid: 102
         bc_type: "dirichlet"
         bc_piezo_head: 1.23
         bc_conc: !FieldFormula
-          value: ["x", "10+x", "20+x"]
+          value: "[x, 10+x, 20+x]"
         conc_mobile: [5, 6, 7]
     )YAML";
 

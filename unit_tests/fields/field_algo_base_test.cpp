@@ -534,11 +534,11 @@ string field_input = R"INPUT(
    init_conc=[ 10, 20, 30],    // FieldConst
    conductivity={ //3x3 tensor
        TYPE="FieldFormula",
-       value=["x","y", "z"]
+       value="[x, y, z]"
    },
    conductivity_3d={ //3x3 tensor - for test of Field::is_constant method
        TYPE="FieldFormula",
-       value=["1", "t", "t*t"]
+       value="[1, t, t*t]"
    }
 }
 )INPUT";
