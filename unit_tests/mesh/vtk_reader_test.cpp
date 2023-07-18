@@ -53,7 +53,7 @@ public:
 
 		// set new cache
 	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header.field_name, actual_header.time,
-	    		actual_header.n_components*actual_header.n_entities);
+	    		actual_header.n_components*actual_header.n_entities, mesh->n_elements());
 
 		switch (data_format_) {
 			case DataFormat::ascii: {

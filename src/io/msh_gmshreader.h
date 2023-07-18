@@ -108,8 +108,7 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-    		bool boundary_domain) override;
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header) override;
 
 
     /// Table with data of ElementData headers

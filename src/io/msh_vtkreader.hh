@@ -158,8 +158,7 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header,
-    		bool boundary_domain) override;
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader header) override;
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;

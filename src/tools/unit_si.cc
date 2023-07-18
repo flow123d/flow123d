@@ -221,7 +221,7 @@ double UnitSI::convert_unit_from(std::string actual_unit) const {
 	if ( converter.unit_si() == (*this) ) {
 		return coef;
 	} else {
-		THROW( ExcNoncorrespondingUnit() << EI_UnitDefinition(actual_unit) << EI_ExpectedUnit(this->format_text()) );
+		THROW( ExcNoncorrespondingUnit() << EI_UnitDefinition(converter.unit_si().format_text()) << EI_ExpectedUnit(this->format_text()) );
 		return 0.0;
 	}
 }

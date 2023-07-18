@@ -63,7 +63,7 @@ public:
      * @param time          Actual time of data
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(std::string field_name, double time, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int row_vec_size, unsigned int boundary_begin);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)
@@ -146,26 +146,6 @@ public:
      */
     void get_min_max_range(double &min, double &max) override;
 
-    /**
-     * Make full check of data stored in cache.
-     *
-     * Method iterates through data and
-     *  - checks NaN data values, default_val replaces NaN
-     *  - if default_val==NaN and some value(s) is not replaced with valid value return CheckResult::nan
-     *  - if some value(s) is out of limits )lower_bound, upper_bound) return CheckResult::out_of_limits
-     *  - in other cases return CheckResult::ok
-     *
-     * Method is executed only once.
-     */
-    CheckResult check_values(double default_val, double lower_bound, double upper_bound);
-
-    /**
-     * Scale data vector of given 'component_idx' with scale 'coef'.
-     *
-     * Method is executed only once and should be called after check_values method.
-     * Method can be used e. g. for convert between units.
-     */
-    void scale_data(double coef);
 
     /// Implements ElementDataCacheBase::gather.
     std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override;
