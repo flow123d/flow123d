@@ -9,7 +9,7 @@
 #   is nonunique in the 3rd direction. Works only with iterative linear solvers.
 #
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Mandel's rectangular problem (upper right subdomain).
   mesh:

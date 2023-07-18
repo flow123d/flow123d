@@ -163,7 +163,7 @@
 ##![Outgoing mass flux through the right part of the boundary. Comparison of results with and without dead-end fractures.](tutor_figures/04_mass_flux.pdf){#fig:diff_res} 
 ##
 ##
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Tutorial 4 - Fractures - diffusion
   mesh:
@@ -242,7 +242,7 @@ problem: !Coupling_Sequential
         - region: .left_points
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
+            value: 2.84959e-5*exp(-0.5*((t-2000)/700)**2)
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12

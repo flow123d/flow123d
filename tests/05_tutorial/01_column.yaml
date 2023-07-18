@@ -118,7 +118,7 @@
 ##Control file ```02_column_transport.yaml``` contains modified boundary conditions and solute transport model for the same physical problem.
 ##
 ##
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model
   mesh:

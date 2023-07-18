@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Binary VTK output interpolated as node / element data.
   mesh:

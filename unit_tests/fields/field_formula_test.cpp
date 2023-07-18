@@ -208,7 +208,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         vector_field: !FieldFormula
           value: [x, 2*x, 0.5]
         density_unit_conversion: !FieldFormula
-          value: [x, x^2, 2*x+t]
+          value: [x, x**2, 2*x+t]
           unit: g*cm^-3
         tensor_field: !FieldFormula
           value: [x, 0.2, 0.3, 0.4, 0.5, 0.6]
@@ -225,7 +225,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         vector_field:  !FieldFormula
           value: [y, 2*y, 0.5]
         density_unit_conversion: !FieldFormula
-          value: [y, y^2, 2*y+t]
+          value: [y, y**2, 2*y+t]
           unit: g*cm^-3
         tensor_field: !FieldFormula
           value: [y, 2.2, 2.3, 2.4, 2.5, 2.6]

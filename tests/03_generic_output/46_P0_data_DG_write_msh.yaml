@@ -11,7 +11,7 @@
 #   Note: only the symmetric tensors are supported
 #         (non-symmetric tensors are permuted on output)
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Anisotropic molecular diffusion
   mesh:
@@ -26,7 +26,7 @@ problem: !Coupling_Sequential
         conductivity: !FieldFormula
           value: 1-x*y + 1e-10
         anisotropy: !FieldFormula
-          value: [ [ 0.1*x, 0.2*x, 1 ], [ 0.2*x, 0.3*y, 2 ], [ 1, 2, 3 ] ]
+          value: [[0.1*x, 0.2*x, 1], [0.2*x, 0.3*y, 2], [1, 2, 3]]
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}

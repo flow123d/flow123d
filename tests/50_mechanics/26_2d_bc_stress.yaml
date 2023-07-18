@@ -5,7 +5,7 @@
 # - the traction at the top is prescribed by bc_stress
 # - the solutions are the same, checked in Paraview and kdiff
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D linear elastic simple loading problem.
   mesh:

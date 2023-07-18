@@ -3,7 +3,7 @@
 # Author: Jan Brezina, David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test usage of user fields.
   mesh:
@@ -42,7 +42,7 @@ problem: !Coupling_Sequential
         - name: bc_flux_x
           is_boundary: true
           scalar_field: !FieldFormula
-            value: if(y < 0.75, if(1 & 1,1,0), 0)
+            value: ' ((  ((1) if (1  and  1) else (0)) ) if (y < 0.75) else ( 0)) '
             # future Python-like syntax with BParser
             #value: 1 if (0.5 < y < 0.75) else 0
         - name: bc_flux_t

@@ -2,7 +2,7 @@
 # Author:
 # Source for reference: qualitative (pressure incresing from the .right_x boundary)
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   time: &anchor2
     end_time: 0.5

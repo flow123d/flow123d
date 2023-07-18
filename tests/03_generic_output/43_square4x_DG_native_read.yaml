@@ -13,7 +13,7 @@
 #     - setting `init_projection: false` gives exactly the same results (ndiff=0)
 #     - setting `init_projection: true` gives nearly the same results (ndiff=1e-13)
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Benchmark - 2D DG transport on square with 4 regions with highly different conductivity
   mesh:

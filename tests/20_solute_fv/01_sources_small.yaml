@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Zero flow + transport with source. Substance A - increase of concentration, B - decrease of concentration,
     C - rapid increase of concentration with high sigma, such that it determines CFL condition (t equals 1/(10/0.9)).

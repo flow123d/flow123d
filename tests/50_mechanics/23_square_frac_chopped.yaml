@@ -7,7 +7,7 @@
 #   - mechanics independent of flow, different BC prescribed in subsequent times
 #     (see the note at the last problematic set of BC)
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D elastic model with a single fracture with different BC.
   mesh:
@@ -75,7 +75,7 @@ problem: !Coupling_Sequential
           - region: .top_y
             time: 1
             bc_traction: !FieldFormula
-              value: [ 0, "if(x>0.5,-0.3,0)", 0 ]
+              value: [ 0, " ((-0.3) if (x>0.5) else (0)) ", 0 ]
 
           - region: .left_x
             time: 2

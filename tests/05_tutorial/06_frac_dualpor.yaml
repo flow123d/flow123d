@@ -28,7 +28,7 @@
 ##
 ##![Results of calibration.](tutor_figures/06_mass_flux.pdf){#fig:calib}
 ##
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Example 6 - Fractures - dual-porosity
   mesh:

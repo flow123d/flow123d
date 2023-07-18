@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient
   mesh:

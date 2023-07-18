@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: Just run
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Check correct includes of other YAML files to main input file.
   mesh:

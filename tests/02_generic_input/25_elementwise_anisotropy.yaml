@@ -3,7 +3,7 @@
 # Source for reference: qualitative
 #   This test reads anisotropy tensor field from vtu file a write it in the output.
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test10 - Steady flow with anisotropic conductivity
   mesh:

@@ -3,7 +3,7 @@
 # Source for reference:
 # Check prescribed displacement in Paraview.
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: 2D linear elastic Dirichlet BC problem.
   mesh:

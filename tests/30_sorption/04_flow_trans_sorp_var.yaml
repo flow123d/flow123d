@@ -4,7 +4,7 @@
 #   - qualitative, check in Paraview
 #   - simple convective transport from right to left
 #   - same as test 03, but the sorption process is postponed to the time 5
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test variable sorption parameters with simple 2D transport.
   mesh:
@@ -70,22 +70,22 @@ problem: !Coupling_Sequential
           sorption_type: !FieldFormula
             value:
               # using selection type integers in FieldFormula
-              - 0           # 0-none
-              - if(t>5,1,0) # 1-linear
-              - if(t>5,2,0) # 1-langmuir
-              - if(t>5,3,0) # 1-freundlich
+              - 0                           # 0-none
+              - ' ((1) if (t>5) else (0)) ' # 1-linear
+              - ' ((2) if (t>5) else (0)) ' # 1-langmuir
+              - ' ((3) if (t>5) else (0)) ' # 1-freundlich
           distribution_coefficient: !FieldFormula
             value:
               - 0
-              - if(t>5,0.6,0.0)
-              - if(t>5,0.4,0.0)
-              - if(t>5,0.6,0.0)
+              - ' ((0.6) if (t>5) else (0.0)) '
+              - ' ((0.4) if (t>5) else (0.0)) '
+              - ' ((0.6) if (t>5) else (0.0)) '
           isotherm_other: !FieldFormula
             value:
               - 0
               - 0
-              - if(t>5,0.6,0.0)
-              - if(t>5,0.4,0.0)
+              - ' ((0.6) if (t>5) else (0.0)) '
+              - ' ((0.4) if (t>5) else (0.0)) '
       output:
         fields: []
     balance:

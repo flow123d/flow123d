@@ -9,7 +9,7 @@
 #           cl:0.25*cl + 0.6*0.75*0.4*cl/(1+0.4*cl):0.25, cl:0.635278976
 # - freundlich: compute cl with newton with cs:f(cl):
 #           cl:0.25*cl + 0.6*0.75*cl^0.4:0.25, cl:0.152233290
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Simple sorption test - no flow, no transport, known values of sorbed substances.
   mesh:

@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
@@ -30,11 +30,11 @@ problem: !Coupling_Sequential
         - region: .left
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: 2-((y-0.5)*2)^8
+            value: 2-((y-0.5)*2)**8
         - region: .right
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: ((y-0.5)*2)^8
+            value: ((y-0.5)*2)**8
         - region: .top
           bc_type: dirichlet
           bc_conc: 1

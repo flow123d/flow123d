@@ -1,4 +1,4 @@
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient
   mesh:
@@ -52,9 +52,9 @@ problem: !Coupling_Sequential
         - time: 6.0
           region: BULK
           diffusion_rate_immobile: !FieldFormula
-            value: if(t>=7.0,0.01,0.001)
+            value: ' ((0.01) if (t>=7.0) else (0.001)) '
           porosity_immobile: !FieldFormula
-            value: if(t>8.0,0.5,0.2)
+            value: ' ((0.5) if (t>8.0) else (0.2)) '
           # change porosity
       output:
         fields:

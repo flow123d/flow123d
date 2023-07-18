@@ -2,7 +2,7 @@
 # Author: David Flanderka
 # Source for reference: regex check rules of water_balance.yaml file
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test of command line parameter yaml_balance.
   mesh:
@@ -15,6 +15,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-    output_stream: 
+    output_stream:
       file: ./flow.msh
       format: !gmsh

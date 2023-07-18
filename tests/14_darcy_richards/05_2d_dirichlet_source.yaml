@@ -8,7 +8,7 @@
 #   At the end time, the domain is fully saturated up to approx. z=-0.175.
 #   Checked only qualitatively in Paraview
 
-flow123d_version: 3.1.0
+flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
