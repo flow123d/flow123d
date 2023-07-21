@@ -144,15 +144,15 @@ void FieldFormula<spacedim, Value>::cache_update(FieldValueCache<typename Value:
     b_parser_.set_subset(subset_vec);
     b_parser_.run();
     uint vec_size = CacheMapElementNumber::get();
-    for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
-        auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
-        for(unsigned int row=0; row < this->value_.n_rows(); row++)
-            for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                uint comp_shift = (row*this->value_.n_cols()+col) * vec_size;
+    for(unsigned int row=0; row < this->value_.n_rows(); row++)
+        for(unsigned int col=0; col < this->value_.n_cols(); col++) {
+            uint comp_shift = (row*this->value_.n_cols()+col) * vec_size;
+            for (unsigned int i=reg_chunk_begin; i<reg_chunk_end; ++i) {
+                auto cache_val = data_cache.template mat<Value::NRows_, Value::NCols_>(i);
                 cache_val(row, col) = this->unit_conversion_coefficient_ * res_[i + comp_shift];
+                data_cache.set(i) = cache_val;
             }
-        data_cache.set(i) = cache_val;
-    }
+        }
 }
 
 
