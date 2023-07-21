@@ -207,6 +207,12 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->region_chunk_end(0), 8);
     EXPECT_EQ(this->region_chunk_begin(1), 8);
     EXPECT_EQ(this->region_chunk_end(1), 12);
+    stringstream ss;
+    for (auto i : regions_starts_) ss << " " << i;
+    DebugOut().fmt("Region starts: {}\n", ss.str());
+    stringstream ss2;
+    for (auto i : element_starts_) ss2 << " " << i;
+    DebugOut().fmt("Element starts: {}\n", ss2.str());
 
     this->finish_elements_update();
     this->eval_point_data_.reset();
