@@ -1,0 +1,8 @@
+# List of Python packages to install in release image
+# format is part of the pip doc: https://pip.pypa.io/en/stable/reference/requirements-file-format/
+
+# - PyPi packages should be preinstalled in the install-base image
+# - github packages (packages not on PyPi), auxiliary tools not part of the Flow123d direct dependencies, not expected to be modified during Flow123d development
+#   Prefered in the install-<env>.
+# - submodules and possibly some github packages, could be installed during build of the release image
+yamlconv @ git+https://github.com/flow123d/yaml_converter@release_4.0.0a01

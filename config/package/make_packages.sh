@@ -85,7 +85,7 @@ dexec="docker exec ${build_container}"      # execute command which will follow
 dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
 
 function dexec_setvars_make {
-    # dexec_setvars_make  <make parameters>
+    # dexec_setvars_make  <make parameters>if [ -s build_tree ]; echo "link";fi
     ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
 }
 
@@ -103,7 +103,9 @@ ${dexec} make -C ${flow_repo_location} set-safe-directory
 ${dexec} git config --global --add safe.directory '*'
 
 # compile
-${dexec} make -C ${flow_repo_location} -j4 all
+#DEBUG=--debug=j
+${dexec} make -C ${flow_repo_location} clean-all
+${dexec} make -C ${flow_repo_location} ${DEBUG} -j4 all
 echo "Exit: $?"
 dexec_setvars_make package
 

@@ -26,6 +26,8 @@ LABEL org.label-schema.build-date="$build_date" \
       
       
 COPY --from=source_image ${source_location} ${flow_install_location} 
+RUN pip install -r ${flow_install_location}/config/requirements.txt
+
 
 # update PATH
 ENV PATH="${flow_install_location}/bin:${PATH}"
