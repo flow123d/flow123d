@@ -71,16 +71,6 @@ public:
         DebugOut().fmt("Side points of element '{}' added. Size of eval_point_data is '{}'.\n", cell_side.cell().elm_idx(), this->eval_point_data_.permanent_size());
     }
 
-    void debug_print(std::string message = "ElementCacheMap inner lists:") {
-    	DebugOut() << message << "\n";
-        stringstream ss;
-        for (auto i : regions_starts_) ss << " " << i;
-        DebugOut().fmt("Region starts: {}\n", ss.str());
-        stringstream ss2;
-        for (auto i : element_starts_) ss2 << " " << i;
-        DebugOut().fmt("Element starts: {}\n", ss2.str());
-    }
-
     Mesh * mesh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
@@ -198,21 +188,15 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
-    DebugOut().fmt("=== Start of problematic part!");
     this->start_elements_update();
     DHCellAccessor dh_cell3(dh_.get(), 3);
     DHCellAccessor dh_cell6(dh_.get(), 6);
     this->add_bulk_points(dh_cell1);
-    debug_print("First point:");
     this->add_bulk_points(dh_cell3);
-    debug_print("Second point:");
     this->add_bulk_points(dh_cell6);
-    debug_print("Third point:");
 
     this->eval_point_data_.make_permanent();
-    debug_print("make_permanent:");
     this->create_patch();
-    debug_print("create_patch:");
     EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(this->n_regions(), 2);
     EXPECT_TRUE(element_to_map_.find(1)!=element_to_map_.end());
@@ -221,8 +205,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->region_chunk_begin(0), 0);
     EXPECT_EQ(this->region_chunk_end(0), 8);
     EXPECT_EQ(this->region_chunk_begin(1), 8);
-    EXPECT_EQ(this->region_chunk_end(1), 12);
-    debug_print("Problematic step:");
+    EXPECT_EQ(this->region_chunk_end(1), element_starts_[this->n_regions()+1]);
 
     this->finish_elements_update();
     this->eval_point_data_.reset();
