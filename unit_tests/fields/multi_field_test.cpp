@@ -298,8 +298,8 @@ TEST_F(MultiFieldTest, formula_full_test) {
         scalar_field: !FieldFormula
           value:
            - t
-           - x
-           - y-t
+           - X[0]
+           - X[1]-t
     )YAML";
 
     this->read_input(eq_data_input);
@@ -329,7 +329,7 @@ TEST_F(MultiFieldTest, formula_base_test) {
       - region: ALL
         time: 0.0
         scalar_field: !FieldFormula
-          value: x
+          value: X[0]
     )YAML";
 
     this->read_input(eq_data_input);

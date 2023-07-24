@@ -199,36 +199,36 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
       - region: 3D left
         time: 0.0
         scalar_field: !FieldFormula
-          value: x
+          value: X[0]
         scalar_z: !FieldFormula
-          value: z
+          value: X[2]
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
         vector_field: !FieldFormula
-          value: "[x, 2*x, 0.5]"
+          value: "[X[0], 2*X[0], 0.5]"
         density_unit_conversion: !FieldFormula
           value: "[x, x**2, 2*x+t]"
           unit: g*cm^-3
         tensor_field: !FieldFormula
-          value: "[ [x, 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
+          value: "[ [X[0], 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
         integer_scalar: 1
       - region: 3D right
         time: 0.0
         scalar_field: !FieldFormula
-          value: y
+          value: X[1]
         scalar_z: !FieldFormula
-          value: z
+          value: X[2]
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
         vector_field:  !FieldFormula
-          value: "[y, 2*y, 0.5]"
+          value: "[X[1], 2*X[1], 0.5]"
         density_unit_conversion: !FieldFormula
-          value: "[y, y**2, 2*y+t]"
+          value: "[X[1], X[1]**2, 2*X[1]+t]"
           unit: g*cm^-3
         tensor_field: !FieldFormula
-          value: "[ [y, 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
+          value: "[ [X[1], 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
         integer_scalar: 1
     )YAML";
 	this->read_input(eq_data_input);
@@ -464,10 +464,10 @@ TEST_F(FieldEvalFormulaTest, dependency_notdouble_field_exc) {
 
 string set_time_input = R"INPUT(
 [ 
-      { TYPE="FieldFormula",  value="[x, x*y, y+t]" },
-      { TYPE="FieldFormula",  value="[x, x*y, y]" },
-      { TYPE="FieldFormula",  value="[x+t, x*y+t, y+t]" },
-      { TYPE="FieldFormula",  value="[x, x*y, y]" }
+      { TYPE="FieldFormula",  value="[X[0],   X[0]*X[1],   X[1]+t]" },
+      { TYPE="FieldFormula",  value="[X[0],   X[0]*X[1],   X[1]]" },
+      { TYPE="FieldFormula",  value="[X[0]+t, X[0]*X[1]+t, X[1]+t]" },
+      { TYPE="FieldFormula",  value="[X[0],   X[0]*X[1],   X[1]]" }
 ]
 
 )INPUT";

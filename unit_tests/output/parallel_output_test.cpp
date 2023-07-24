@@ -36,9 +36,9 @@ data:
   - region: BULK
     time: 0.0
     init_scalar: !FieldFormula
-      value: x
+      value: X[0]
     init_vector: !FieldFormula
-      value: "[x*y, x+y, z]"
+      value: "[X[0]*X[1], X[0]+X[1], z]"
 )YAML";
 
 /**

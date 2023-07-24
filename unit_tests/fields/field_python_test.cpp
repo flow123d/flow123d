@@ -64,11 +64,11 @@ TEST_F(FieldEvalPythonTest, evaluate) {
           class: FieldPythonTest1
           used_fields: ['X']
         scalar_ref: !FieldFormula
-          value: x
+          value: X[0]
         vector_ref: !FieldFormula
-          value: "[x, 2*x, 0.5]"
+          value: "[X[0], 2*X[0], 0.5]"
         tensor_ref: !FieldFormula
-          value: "[ [x, 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
+          value: "[ [X[0], 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
       - region: 3D right
         time: 0.0
         scalar_field: !FieldPython
@@ -84,11 +84,11 @@ TEST_F(FieldEvalPythonTest, evaluate) {
           class: FieldPythonTest2
           used_fields: ['X']
         scalar_ref: !FieldFormula
-          value: y
+          value: X[1]
         vector_ref: !FieldFormula
-          value: "[y, 2*y, 0.5]"
+          value: "[X[1], 2*X[1], 0.5]"
         tensor_ref: !FieldFormula
-          value: "[ [y, 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
+          value: "[ [X[1], 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
     )YAML";
 
     this->create_mesh("mesh/cube_2x1.msh");

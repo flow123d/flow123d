@@ -92,11 +92,11 @@ TEST_F(FieldEvalFETest, input_msh) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
         scalar_ref: !FieldFormula
-          value: x+2*y+t
+          value: X[0]+2*X[1]+t
         vector_ref: !FieldFormula
-          value: "[x+2*y, y+2*z+0.5*t, z+2*x+t]"
+          value: "[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]"
         tensor_ref: !FieldFormula
-          value: "[ [2*x+y, 0, 0], [0, 2*y+z+0.5*t, 0], [0, 0, 2*z+x+t] ]"
+          value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2]+0.5*t, 0], [0, 0, 2*X[2]+X[0]+t] ]"
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -112,11 +112,11 @@ TEST_F(FieldEvalFETest, input_msh) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
         bc_scalar_ref: !FieldFormula
-          value: x+y+z+t
+          value: X[0]+X[1]+X[2]+t
         bc_vector_ref: !FieldFormula
-          value: "[3*x, 3*y+0.5*t, 3*z+t]"
+          value: "[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]"
         bc_tensor_ref: !FieldFormula
-          value: "[ [x+y+z, 0, 0], [0, 2*(x+y+z)+0.5*t, 0], [0, 0, 3*(x+y+z)+t] ]"
+          value: "[ [X[0]+X[1]+X[2], 0, 0], [0, 2*(X[0]+X[1]+X[2])+0.5*t, 0], [0, 0, 3*(X[0]+X[1]+X[2])+t] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -164,11 +164,11 @@ TEST_F(FieldEvalFETest, input_vtk) {
           mesh_data_file: fields/vtk_ascii_data.vtu
           field_name: tensor_field
         scalar_ref: !FieldFormula
-          value: x+2*y
+          value: X[0]+2*X[1]
         vector_ref: !FieldFormula
-          value: "[x+2*y, y+2*z, z+2*x]"
+          value: "[X[0]+2*X[1], X[1]+2*X[2], X[2]+2*X[0]]"
         tensor_ref: !FieldFormula
-          value: "[ [2*x+y, 0, 0], [0, 2*y+z, 0], [0, 0, 2*z+x] ]"
+          value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2], 0], [0, 0, 2*X[2]+X[0]] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -194,7 +194,7 @@ TEST_F(FieldEvalFETest, time_shift) {
           field_name: scalar
           read_time_shift: 1.0
         scalar_ref: !FieldFormula
-          value: x+2*y+(t+1)
+          value: X[0]+2*X[1]+(t+1)
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -244,7 +244,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
           field_name: scalar
           unit: "const; const=0.1*m"
         scalar_ref: !FieldFormula
-          value: 0.1*(x+2*y+t)
+          value: 0.1*(X[0]+2*X[1]+t)
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -252,7 +252,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
           field_name: scalar
           unit: "const; const=0.1*m"
         bc_scalar_ref: !FieldFormula
-          value: 0.1*(x+y+z+t)
+          value: 0.1*(X[0]+X[1]+X[2]+t)
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -287,9 +287,9 @@ TEST_F(FieldEvalFETest, identic_mesh) {
           field_name: vector_fixed
           interpolation: identic_mesh
         scalar_ref: !FieldFormula
-          value: x+2*y+t
+          value: X[0]+2*X[1]+t
         vector_ref: !FieldFormula
-          value: '[x+2*y, y+2*z+0.5*t, z+2*x+t]'
+          value: '[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]'
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -301,9 +301,9 @@ TEST_F(FieldEvalFETest, identic_mesh) {
           field_name: vector_fixed
           interpolation: identic_mesh
         bc_scalar_ref: !FieldFormula
-          value: x+y+z+t
+          value: X[0]+X[1]+X[2]+t
         bc_vector_ref: !FieldFormula
-          value: '[3*x, 3*y+0.5*t, 3*z+t]'
+          value: '[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]'
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
