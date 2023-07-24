@@ -152,6 +152,7 @@ private:
     bparser::ArenaAlloc * arena_alloc_;
 
     // BParser data arrays and variables
+	double *X_;       ///< Coordinates vector
 	double *x_;       ///< Coordinates x, part of previous array
 	double *y_;       ///< Coordinates y, part of previous array
 	double *z_;       ///< Coordinates z, part of previous array

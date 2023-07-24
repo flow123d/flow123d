@@ -195,7 +195,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
     has_time_=false;
     sum_shape_sizes_=0; // scecifies size of arena
     for (auto var : variables) {
-        if (var == "x" || var == "y" || var == "z") {
+        if (var == "X" || var == "x" || var == "y" || var == "z") {
             required_fields_.push_back( field_set.field("X") );
             sum_shape_sizes_ += spacedim;
         }
@@ -240,6 +240,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
         std::string field_name = field->name();
         eval_field_data_[field] = arena_alloc_->create_array<double>(field->n_shape() * vec_size);
         if (field_name == "X") {
+            X_ = eval_field_data_[field] + 0;
             x_ = eval_field_data_[field] + 0;
             y_ = eval_field_data_[field] + vec_size;
             z_ = eval_field_data_[field] + 2*vec_size;
@@ -254,6 +255,7 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
     for (auto field : required_fields_) {
         std::string field_name = field->name();
         if (field_name == "X") {
+            b_parser_.set_variable("X",  {3}, X_);
             b_parser_.set_variable("x",  {}, x_);
             b_parser_.set_variable("y",  {}, y_);
             b_parser_.set_variable("z",  {}, z_);
