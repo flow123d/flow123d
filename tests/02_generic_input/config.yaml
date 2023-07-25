@@ -42,6 +42,7 @@ test_cases:
    - 24_elementwise_integer_field.yaml
    - 26_empty_region.yaml
    - 30_formula.yaml
+   - 31_formula_mat_multi.yaml
   proc: [1, 2]
 
 # Temporary turn off native input/output tests
