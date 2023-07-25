@@ -22,7 +22,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x*y
+          value: X[0]*X[1]
     output:
       fields:
         - pressure_p0

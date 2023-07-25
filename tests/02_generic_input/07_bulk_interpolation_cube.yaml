@@ -16,16 +16,16 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
       - region: 2d_fracture_1
         conductivity: !FieldFormula
-          value: (x+100)**2
+          value: (X[0]+100)**2
       - region: 2d_fracture_2
         conductivity: !FieldFormula
-          value: (x+100)**2
+          value: (X[0]+100)**2
       - region: 3d_cube
         conductivity: !FieldFormula
-          value: x**2
+          value: X[0]**2
     output:
       fields:
         - piezo_head_p0

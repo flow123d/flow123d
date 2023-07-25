@@ -5,7 +5,7 @@ flow_equation: !Flow_Darcy_LMH
   input_fields:
     - region: plane
       water_source_density: !FieldFormula
-        value: 1/(x+0.01)
+        value: 1/(X[0]+0.01)
     - region: .BOUNDARY
       bc_type: dirichlet
       bc_pressure: !FieldFormula
@@ -36,7 +36,7 @@ solute_equation: !Coupling_OperatorSplitting
       - region: plane
         init_conc: 0.5
         porosity: !FieldFormula
-          value: -1/(x-1.01)
+          value: -1/(X[0]-1.01)
       - region: .BOUNDARY
         bc_conc:
           - 0.0

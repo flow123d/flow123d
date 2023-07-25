@@ -33,7 +33,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x+y
+          value: X[0]+X[1]
     output:
       fields: []
       observe_fields: [pressure_p0, velocity_p0, anisotropy]

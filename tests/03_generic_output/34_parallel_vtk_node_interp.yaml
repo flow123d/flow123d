@@ -36,7 +36,7 @@ problem: !Coupling_Sequential
       - region: .3d_cube
         bc_type: dirichlet
         bc_piezo_head: !FieldFormula
-          value: z
+          value: X[2]
           # p_3d
     output:
       fields:

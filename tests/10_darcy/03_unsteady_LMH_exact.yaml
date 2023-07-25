@@ -31,7 +31,7 @@ problem: !Coupling_Sequential
         conductivity: 0.5
         cross_section: 1.0
         init_pressure: !FieldFormula
-          value: sin(pi*x)
+          value: sin(pi*X[0])
         storativity: 1
       - region: .right_x
         bc_type: dirichlet

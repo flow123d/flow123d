@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: 0.2*y
+          value: 0.2*X[1]
       - rid: 7
         cross_section: 1
         conductivity: 1

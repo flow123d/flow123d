@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
     nonlinear_solver:
       linear_solver: !Petsc
     # this should create, "flow.pvd file and flow directory"

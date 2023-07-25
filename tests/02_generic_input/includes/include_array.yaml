@@ -3,4 +3,4 @@
 - region: .BOUNDARY
   bc_type: dirichlet
   bc_pressure: !FieldFormula
-    value: y
+    value: X[1]

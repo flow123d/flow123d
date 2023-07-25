@@ -24,14 +24,14 @@ problem: !Coupling_Sequential
         anisotropy: 10
         sigma: 0.05
         cross_section: !FieldFormula
-          value: 0.1+x/10
+          value: 0.1+X[0]/10
       - region: 2d
         anisotropy: 1
         cross_section: 1
       - region: .sides
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
     output:
       fields:
         - pressure_p0

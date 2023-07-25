@@ -19,9 +19,9 @@ problem: !Coupling_Sequential
       - region: bulk
         anisotropy: 1
         water_source_density: !FieldFormula
-          value: 2*(1-x**2)+2*(1-y**2)
+          value: 2*(1-X[0]**2)+2*(1-X[1]**2)
         init_pressure: !FieldFormula
-          value: sin(pi*x)
+          value: sin(pi*X[0])
         sigma: !FieldFE
           mesh_data_file: ./test41-data.vtu
           field_name: sigma

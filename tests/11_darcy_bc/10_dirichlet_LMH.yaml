@@ -23,11 +23,11 @@ problem: !Coupling_Sequential
       - region: .right_x
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: y
+          value: X[1]
       - region: .top_y
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
       - region: .left_x
         bc_type: dirichlet
         bc_pressure: 0

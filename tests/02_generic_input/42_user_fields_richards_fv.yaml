@@ -25,7 +25,7 @@ problem: !Coupling_Sequential
       - name: user_pressure
         is_boundary: true
         scalar_field: !FieldFormula
-          value: x
+          value: X[0]
     input_fields:
       - region: 1d
         anisotropy: 10
@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
         - name: user_conc
           is_boundary: true
           scalar_field: !FieldFormula
-            value: x
+            value: X[0]
       input_fields:
         - region: .sides
           bc_conc: !FieldFormula

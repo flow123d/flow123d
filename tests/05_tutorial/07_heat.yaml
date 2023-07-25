@@ -207,13 +207,13 @@ problem: !Coupling_Sequential
         solid_heat_conductivity: 2.5
       - region: rock
         init_temperature: !FieldFormula
-          value: 10-z/5000*150+273.15
+          value: 10-X[2]/5000*150+273.15
         porosity: 1.0e-05
       - region: exchanger
         porosity: 1.0e-05
       - region: wells
         init_temperature: !FieldFormula
-          value: 15-z/5000*150+273.15
+          value: 15-X[2]/5000*150+273.15
         porosity: 1.0e-05
         fracture_sigma: 0
       - region: wells_deep
@@ -225,7 +225,7 @@ problem: !Coupling_Sequential
       - region: .deep
         bc_type: dirichlet
         bc_temperature: !FieldFormula
-          value: 10-z/5000*150+273.15
+          value: 10-X[2]/5000*150+273.15
       - region: .surface
         bc_type: dirichlet
         bc_temperature: !FieldFormula
@@ -233,7 +233,7 @@ problem: !Coupling_Sequential
       - region: .sides
         bc_type: dirichlet
         bc_temperature: !FieldFormula
-          value: 10-z/5000*150+273.15
+          value: 10-X[2]/5000*150+273.15
     output_stream:
       file: heat
       format: !gmsh

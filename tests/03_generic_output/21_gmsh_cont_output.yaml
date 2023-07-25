@@ -26,7 +26,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: rock
         conductivity: !FieldFormula
-          value: 0.001*(y + 1.0)
+          value: 0.001*(X[1] + 1.0)
         cross_section: 1
       - region: fracture
         conductivity: 1
