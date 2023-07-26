@@ -26,11 +26,15 @@ LABEL org.label-schema.build-date="$build_date" \
       
       
 COPY --from=source_image ${source_location} ${flow_install_location} 
-RUN pip install -r ${flow_install_location}/config/requirements.txt
+#RUN ls -la ${flow_install_location}/config/requirements.txt
+#RUN cat ${flow_install_location}/config/requirements.txt
+COPY --from=source_image /root/.local /root/.local
+#RUN pip install -r ${flow_install_location}/config/requirements.txt
 
 
 # update PATH
-ENV PATH="${flow_install_location}/bin:${PATH}"
+ENV PATH="/root/.local/bin:${flow_install_location}/bin:${PATH}"
+
 
 # save the image version
 #RUN echo ${flow_version} > /.dockerversion

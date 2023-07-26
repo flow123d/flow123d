@@ -109,15 +109,17 @@ ${dexec} make -C ${flow_repo_location} ${DEBUG} -j4 all
 echo "Exit: $?"
 dexec_setvars_make package
 
-${dexec} ls ${flow_repo_location}/build_tree/
-${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages
-${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux
+#${dexec} ls ${flow_repo_location}/build_tree/
+#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages
+#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux
 ${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ
 
 #${dexec} make -C ${{flow_repo_location}} FORCE_DOC_UPDATE=1 ref-doc
 #${dexec} make -C ${{flow_repo_location}} html-doc
 #${dexec} make -C ${{flow_repo_location}} doxy-doc
 
+# Local install of source Python packages
+${dexec} pip install --user -r ${flow_repo_location}/config/package/requirements.txt
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"
