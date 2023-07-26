@@ -25,7 +25,7 @@ problem: !Coupling_Sequential
         conductivity: !FieldFormula
           value: 1-x*y + 1e-10
         anisotropy: !FieldFormula
-          value: [[0.1*x, 0.2*x, 1], [0.2*x, 0.3*y, 2], [1, 2, 3]]
+          value: "[[0.1*x, 0.2*x, 1], [0.2*x, 0.3*y, 2], [1, 2, 3]]"
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}
@@ -55,7 +55,7 @@ problem: !Coupling_Sequential
               value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
             # tensor field (variable)
             - !FieldFormula
-              value: [ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]
+              value: "[ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]"
 
       output:
         fields:

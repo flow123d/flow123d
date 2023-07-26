@@ -127,11 +127,11 @@ private:
      */
     inline arma::vec eval_depth_var(const Point &p);
 
-    // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
-    StringTensor formula_matrix_;
+    // formula expression, string is set to BParser
+    std::string formula_;
 
-    // Vector of parsers corresponding to the formula matrix returned by formula_matrix_helper_
-    std::vector< bparser::Parser > b_parser_;
+    // Parser evaluating scalar, vector or tensor expression returned by formula_ string.
+    bparser::Parser b_parser_;
 
     /// Accessor to Input::Record
     Input::Record in_rec_;

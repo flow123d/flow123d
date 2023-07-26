@@ -38,10 +38,7 @@ data:
     init_scalar: !FieldFormula
       value: x
     init_vector: !FieldFormula
-      value: 
-        - x*y
-        - x+y
-        - z
+      value: "[x*y, x+y, z]"
 )YAML";
 
 /**

@@ -45,7 +45,7 @@ const string eq_data_input = R"JSON(
         region="BULK",
         init_pressure=1.1,
         velocity={TYPE="FieldFormula",
-            value=[ "x", "y" , "z"]
+            value="[ x, y, z]"
         },
         reaction_type="r_first"
       },
