@@ -94,9 +94,9 @@ TEST_F(FieldEvalFETest, input_msh) {
         scalar_ref: !FieldFormula
           value: x+2*y+t
         vector_ref: !FieldFormula
-          value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
+          value: "[x+2*y, y+2*z+0.5*t, z+2*x+t]"
         tensor_ref: !FieldFormula
-          value: [2*x+y, 2*y+z+0.5*t, 2*z+x+t]
+          value: "[ [2*x+y, 0, 0], [0, 2*y+z+0.5*t, 0], [0, 0, 2*z+x+t] ]"
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -114,9 +114,9 @@ TEST_F(FieldEvalFETest, input_msh) {
         bc_scalar_ref: !FieldFormula
           value: x+y+z+t
         bc_vector_ref: !FieldFormula
-          value: [3*x, 3*y+0.5*t, 3*z+t]
+          value: "[3*x, 3*y+0.5*t, 3*z+t]"
         bc_tensor_ref: !FieldFormula
-          value: [x+y+z, 2*(x+y+z)+0.5*t, 3*(x+y+z)+t]
+          value: "[ [x+y+z, 0, 0], [0, 2*(x+y+z)+0.5*t, 0], [0, 0, 3*(x+y+z)+t] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -166,9 +166,9 @@ TEST_F(FieldEvalFETest, input_vtk) {
         scalar_ref: !FieldFormula
           value: x+2*y
         vector_ref: !FieldFormula
-          value: [x+2*y, y+2*z, z+2*x]
+          value: "[x+2*y, y+2*z, z+2*x]"
         tensor_ref: !FieldFormula
-          value: [2*x+y, 2*y+z, 2*z+x]
+          value: "[ [2*x+y, 0, 0], [0, 2*y+z, 0], [0, 0, 2*z+x] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -289,7 +289,7 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         scalar_ref: !FieldFormula
           value: x+2*y+t
         vector_ref: !FieldFormula
-          value: [x+2*y, y+2*z+0.5*t, z+2*x+t]
+          value: '[x+2*y, y+2*z+0.5*t, z+2*x+t]'
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -303,7 +303,7 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         bc_scalar_ref: !FieldFormula
           value: x+y+z+t
         bc_vector_ref: !FieldFormula
-          value: [3*x, 3*y+0.5*t, 3*z+t]
+          value: '[3*x, 3*y+0.5*t, 3*z+t]'
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");

@@ -60,7 +60,7 @@ problem: !Coupling_Sequential
             poisson_ratio: 0.2
 
             initial_stress: !FieldFormula
-              value: [[x, 2*(x+y), 3*(x+z)], [2*(x+y), 4*y, 5*(y+z)], [3*(x+z), 5*(y+z), 6*z]]
+              value: "[[x, 2*(x+y), 3*(x+z)], [2*(x+y), 4*y, 5*(y+z)], [3*(x+z), 5*(y+z), 6*z]]"
             # replace initial_stress with corresponding load for reference
             #load: [6, 11, 14]
 

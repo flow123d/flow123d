@@ -206,12 +206,12 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           value: d
           surface_region: ".2D top"
         vector_field: !FieldFormula
-          value: [x, 2*x, 0.5]
+          value: "[x, 2*x, 0.5]"
         density_unit_conversion: !FieldFormula
-          value: [x, x**2, 2*x+t]
+          value: "[x, x**2, 2*x+t]"
           unit: g*cm^-3
         tensor_field: !FieldFormula
-          value: [x, 0.2, 0.3, 0.4, 0.5, 0.6]
+          value: "[ [x, 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
         integer_scalar: 1
       - region: 3D right
         time: 0.0
@@ -223,12 +223,12 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           value: d
           surface_region: ".2D top"
         vector_field:  !FieldFormula
-          value: [y, 2*y, 0.5]
+          value: "[y, 2*y, 0.5]"
         density_unit_conversion: !FieldFormula
-          value: [y, y**2, 2*y+t]
+          value: "[y, y**2, 2*y+t]"
           unit: g*cm^-3
         tensor_field: !FieldFormula
-          value: [y, 2.2, 2.3, 2.4, 2.5, 2.6]
+          value: "[ [y, 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
         integer_scalar: 1
     )YAML";
 	this->read_input(eq_data_input);
@@ -335,7 +335,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         scalar_field: !FieldFormula
           value: const_scalar * const_scalar
         vector_field: !FieldFormula
-          value: [scalar_field, 2*scalar_field, 0.5]
+          value: "[scalar_field, 2*scalar_field, 0.5]"
         tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         const_scalar: 0.5
         integer_scalar: 1
@@ -344,7 +344,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         scalar_field: !FieldFormula
           value: 0.5 * const_scalar
         vector_field:  !FieldFormula
-          value: [scalar_field, 2*scalar_field, 0.5]
+          value: "[scalar_field, 2*scalar_field, 0.5]"
         tensor_field: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
         const_scalar: 1.5
         integer_scalar: 1
@@ -464,10 +464,10 @@ TEST_F(FieldEvalFormulaTest, dependency_notdouble_field_exc) {
 
 string set_time_input = R"INPUT(
 [ 
-      { TYPE="FieldFormula",  value=["x", "x*y", "y+t"] },
-      { TYPE="FieldFormula",  value=["x", "x*y", "y"] },
-      { TYPE="FieldFormula",  value=["x+t", "x*y+t", "y+t"] },
-      { TYPE="FieldFormula",  value=["x", "x*y", "y"] }
+      { TYPE="FieldFormula",  value="[x, x*y, y+t]" },
+      { TYPE="FieldFormula",  value="[x, x*y, y]" },
+      { TYPE="FieldFormula",  value="[x+t, x*y+t, y+t]" },
+      { TYPE="FieldFormula",  value="[x, x*y, y]" }
 ]
 
 )INPUT";

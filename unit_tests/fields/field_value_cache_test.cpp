@@ -188,7 +188,6 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     this->clear_element_eval_points_map();
 
     // Test of 3 elements on 2 different regions
-    DebugOut().fmt("Start of problematic part!");
     this->start_elements_update();
     DHCellAccessor dh_cell3(dh_.get(), 3);
     DHCellAccessor dh_cell6(dh_.get(), 6);
@@ -206,7 +205,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->region_chunk_begin(0), 0);
     EXPECT_EQ(this->region_chunk_end(0), 8);
     EXPECT_EQ(this->region_chunk_begin(1), 8);
-    EXPECT_EQ(this->region_chunk_end(1), 12);
+    EXPECT_EQ(this->region_chunk_end(1), element_starts_[this->n_regions()+1]);
 
     this->finish_elements_update();
     this->eval_point_data_.reset();
