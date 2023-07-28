@@ -170,7 +170,7 @@ update-tutorials: $(TUTORIALS_IN_DOC)
 .PHONY: $(TUTORIALS_IN_DOC)
 $(TUTORIALS_IN_DOC):
 	@cp $(TUTOR_DIR)/$@ $(DOC_DIR)
-	@if ! ( cd $(DOC_DIR) && $(TUTOR_DIR)/make_tex.sh $@ ); \
+	@if ! ( cd $(DOC_DIR) && $(DOC_DIR)/make_tex.sh $@ ); \
 	then \
 		if [ -z $(FORCE_DOC_UPDATE) ];\
 		then \

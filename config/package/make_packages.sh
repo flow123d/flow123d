@@ -85,7 +85,7 @@ dexec="docker exec ${build_container}"      # execute command which will follow
 dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
 
 function dexec_setvars_make {
-    # dexec_setvars_make  <make parameters>
+    # dexec_setvars_make  <make parameters>if [ -s build_tree ]; echo "link";fi
     ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
 }
 
@@ -103,19 +103,23 @@ ${dexec} make -C ${flow_repo_location} set-safe-directory
 ${dexec} git config --global --add safe.directory '*'
 
 # compile
-${dexec} make -C ${flow_repo_location} -j4 all
+#DEBUG=--debug=j
+${dexec} make -C ${flow_repo_location} clean-all
+${dexec} make -C ${flow_repo_location} ${DEBUG} -j4 all
 echo "Exit: $?"
 dexec_setvars_make package
 
-${dexec} ls ${flow_repo_location}/build_tree/
-${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages
-${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux
+#${dexec} ls ${flow_repo_location}/build_tree/
+#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages
+#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux
 ${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ
 
 #${dexec} make -C ${{flow_repo_location}} FORCE_DOC_UPDATE=1 ref-doc
 #${dexec} make -C ${{flow_repo_location}} html-doc
 #${dexec} make -C ${{flow_repo_location}} doxy-doc
 
+# Local install of source Python packages
+${dexec} pip install --user -r ${flow_repo_location}/config/package/requirements.txt
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"

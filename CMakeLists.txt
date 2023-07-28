@@ -975,9 +975,9 @@ install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/runtest               DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
 install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
-install(PROGRAMS  bin/yaml_converter/yaml_converter.py    DESTINATION bin/yaml_converter)
-install(PROGRAMS  bin/yaml_converter/YAMLConverter.py     DESTINATION bin/yaml_converter)
-install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
+#install(PROGRAMS  bin/yaml_converter/yaml_converter.py    DESTINATION bin/yaml_converter)
+#install(PROGRAMS  bin/yaml_converter/YAMLConverter.py     DESTINATION bin/yaml_converter)
+#install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 
@@ -1007,6 +1007,7 @@ install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING
 # python libs, sources and config files
 install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
 install(FILES     config/host_table.yaml    DESTINATION config/)
+install(FILES     config/package/requirements.txt    DESTINATION config)
 
 
 # To install MSVC runtime libraries ... ?
