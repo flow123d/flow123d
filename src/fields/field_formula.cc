@@ -259,8 +259,10 @@ void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMa
             b_parser_.set_variable("x",  {}, x_);
             b_parser_.set_variable("y",  {}, y_);
             b_parser_.set_variable("z",  {}, z_);
-        } else
-            b_parser_.set_variable(field_name, {}, eval_field_data_[field]);
+        } else {
+            std::vector<uint> f_shape = field->shape_;
+            b_parser_.set_variable(field_name, f_shape, eval_field_data_[field]);
+        }
     }
     std::vector<uint> shape = {};
     if (Value::NRows_ > 1) shape.push_back(Value::NRows_);
