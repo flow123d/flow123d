@@ -1,3 +1,6 @@
+# Test goal: Unsteady flow in 2D, Mixed Hybrid method
+# Author: Jan Brezina
+
 flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
   time: &anchor2

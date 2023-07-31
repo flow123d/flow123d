@@ -1,78 +1,46 @@
-# Test goal: Using matrix multiplication in FieldFormula
-# Author: Pavel Exner, Jan Stebel, David Flanderka
-# Derived from test 50 / 03
-#
+# Test goal: FieldFormula - test of dot product
+# Author: Jan Brezina
+# Derived from test 10 / 04, modified by David Flanderka
 
 flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
-  description: Mandel's rectangular problem (upper right subdomain).
+  time: &anchor2
+    end_time: 0.5
+    max_dt: 0.01
+    min_dt: 0.01
+  description: Test10 - Unsteady flow in 2D, Mixed Hybrid method
   mesh:
-    mesh_file: ../00_mesh/square_1x1_xy_28el.msh
-  flow_equation: !Coupling_Iterative
+    mesh_file: ../00_mesh/square_xz_1x1.msh
+  flow_equation: !Flow_Darcy_LMH
     input_fields:
-      - region: BULK
-        biot_alpha: 1
-        fluid_density: !FieldFormula
-          value: 10e3
-    time:
-      end_time: 1e5
-    iteration_parameter: 1 # affects convergence of HM coupling (defaults to 1, lower value sometimes helps)
-    a_tol: 0
-    r_tol: 1e-12
-    flow_equation: !Flow_Darcy_LMH
-      nonlinear_solver:
-        linear_solver: !Petsc
-          a_tol: 0
-          r_tol: 1e-12
-      input_fields:
-        - region: BULK
-          conductivity: 1e-5
-          storativity: 1.61865
-          init_pressure: 3.860949897148156e-05
-
-        - region: .right_x
-          bc_type: dirichlet
-          bc_pressure: 0
-
-      output:
-        times: &output_times [1e2, 1e3, 1e4, 1e5]
-        fields:
-          - pressure_p0
-          - velocity_p0
-      output_stream:
-        file: flow.pvd
-        format: !vtk
-    mechanics_equation:
-      output_stream:
-        file: mechanics.pvd
-        format: !vtk
-      output:
-        times: *output_times
-        fields:
-          - displacement
-          - stress
-          - displacement_divergence
-      solver: !Petsc
-        a_tol: 0
-        r_tol: 1e-12
-      #user_fields:
-      #  - name: pressure_grad
-      #    is_boundary: true
-      #    tensor_field: !FieldFormula
-      #      value: "diag = [-1e4, -1e2, -1e4]; diag * [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ]" # " ...; diag * eye(3)"
-    ## ERROR.Bparser, /c/Users/davidflanderka/vyvoj/flow123d/third_party/bparser/include/array.hh:874
-    ## Error: Matmult can not multiply by scalar a.
-      input_fields:
-        - region: BULK
-          young_modulus: 1e8
-          poisson_ratio: 0.25
-
-        - region: .top_y
-          bc_type: traction
-          bc_traction: !FieldFormula
-            value: "diag = [-1e4, -1e2, -1e4]; pressure_grad = diag * [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ]; pressure_grad @ X"
-            #value: "pressure_grad @ X"
-
-        - region: [ .left_x, .bottom_y ]
-          bc_type: displacement_n
-          bc_displacement: 0
+      - region: ALL
+        storativity: 1.0
+      - region: plane
+        anisotropy: 0.02
+        init_piezo_head: !FieldFormula
+          value: "pressure_grad = [1, 2, 3]; pressure_grad @ X"
+        storativity: 1
+        # default
+      - region: .top
+        bc_type: dirichlet
+        bc_pressure: 2
+      - region: .bottom
+        bc_type: dirichlet
+        bc_pressure: 0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    balance:
+      cumulative: true
+    time: *anchor2
+    output_stream:
+      file: ./test10.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.1
+      precision: 15
