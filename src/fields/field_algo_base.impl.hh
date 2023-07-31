@@ -124,7 +124,7 @@ bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *,  bool) {
+void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *) {
 }
 
 

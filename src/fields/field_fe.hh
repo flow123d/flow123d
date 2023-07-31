@@ -159,7 +159,7 @@ public:
     /**
      * Set target mesh.
      */
-    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
+    void set_mesh(const Mesh *mesh) override;
 
 
     /**

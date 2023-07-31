@@ -250,7 +250,7 @@ void Field<spacedim, Value>::set(
 
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set().\n");
     ASSERT_EQ( field->n_comp() , shared_->n_comp_);
-    field->set_mesh( mesh() , is_bc() );
+    field->set_mesh( mesh() );
 
 	for (auto set_name : region_set_names) {
 		RegionSet domain = mesh()->region_db().get_region_set(set_name);
@@ -472,7 +472,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				{
 					// add to history
 					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
-					field_instance->set_mesh( mesh() , is_bc() );
+					field_instance->set_mesh( mesh() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
                         // or if region history is not empty and the input_time is higher, add new field
@@ -543,7 +543,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
     	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
-        field_ptr->set_mesh( mesh(), is_bc() );
+        field_ptr->set_mesh( mesh() );
         for(const Region &reg: regions_to_init) {
     		data_->region_history_[reg.idx()]
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
