@@ -19,6 +19,7 @@ problem: !Coupling_Sequential
           mesh_data_file: ref_out/05_interpolation_large_cube/large_cube.msh
           field_name: piezo_head_p0
           interpolation: P0_intersection
+          is_boundary: true
       - region: BULK
         anisotropy: 1
         sigma: 0.5
