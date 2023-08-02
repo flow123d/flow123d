@@ -74,7 +74,7 @@ problem: !Coupling_Sequential
           - region: .top_y
             time: 1
             bc_traction: !FieldFormula
-              value: "[ 0, ((-0.3) if (x>0.5) else (0)), 0 ]"
+              value: "[ 0, ((-0.3) if (X[0]>0.5) else (0)), 0 ]"
 
           - region: .left_x
             time: 2

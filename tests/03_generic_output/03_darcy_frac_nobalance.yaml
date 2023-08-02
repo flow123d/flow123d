@@ -28,19 +28,19 @@ problem: !Coupling_Sequential
       - region: .1d_channel
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
       - region: .2d_fracture_1
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
       - region: .2d_fracture_2
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
       - region: .3d_cube
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
     balance: {add_output_times: false}
     output:
       fields:

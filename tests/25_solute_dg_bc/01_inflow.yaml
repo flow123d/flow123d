@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: (x-0.5)*y
+          value: (X[0]-0.5)*X[1]
     output:
       fields:
         - pressure_p0
@@ -32,7 +32,7 @@ problem: !Coupling_Sequential
           bc_conc: 3
         - region: domain
           diff_m: !FieldFormula
-            value: 'diag = ((0) if (y>0.5) else (1e-2)); diag * [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ]'
+            value: 'diag = ((0) if (X[1]>0.5) else (1e-2)); diag * [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ]'
       solver:
         a_tol: 1.0e-12
         r_tol: 1.0e-12

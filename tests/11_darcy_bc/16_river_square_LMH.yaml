@@ -25,9 +25,9 @@ problem: !Coupling_Sequential
       - region: .top
         bc_type: river
         bc_switch_pressure: !FieldFormula
-          value: -x+0.3
+          value: -X[0]+0.3
         bc_pressure: !FieldFormula
-          value: -x+0.6
+          value: -X[0]+0.6
         bc_robin_sigma: 0.0004
 #      - time: 1.0
 #        region: .top

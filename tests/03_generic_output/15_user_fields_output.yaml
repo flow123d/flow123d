@@ -16,16 +16,16 @@ problem: !Coupling_Sequential
       - name: user_x
         is_boundary: false
         scalar_field: !FieldFormula
-          value: 0.1*x
+          value: 0.1*X[0]
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: 0
       - region: BULK
         conductivity: !FieldFormula
-          value: 1-x*y + 1e-10
+          value: 1-X[0]*X[1] + 1e-10
         anisotropy: !FieldFormula
-          value: "[ [ user_x, 2*user_x, 1 ], [ 2*user_x, 0.3*y, 2 ], [ 1, 2, 3 ] ]"
+          value: "[ [ user_x, 2*user_x, 1 ], [ 2*user_x, 0.3*X[1], 2 ], [ 1, 2, 3 ] ]"
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}
@@ -37,7 +37,7 @@ problem: !Coupling_Sequential
         - name: user_xy
           is_boundary: false
           scalar_field: !FieldFormula
-            value: x*y
+            value: X[0]*X[1]
       input_fields:
         - region: .BOUNDARY
           bc_type: diffusive_flux
@@ -61,7 +61,7 @@ problem: !Coupling_Sequential
               value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
             # tensor field (variable)
             - !FieldFormula
-              value: "[ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]"
+              value: "[ [ 0.01*X[0], 0.2*X[1], 1 ], [ 0.2*X[1], 0.01*X[0], 2 ], [ 1, 2, 3 ] ]"
 
       output:
         fields:

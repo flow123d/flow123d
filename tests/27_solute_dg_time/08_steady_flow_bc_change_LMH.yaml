@@ -29,13 +29,13 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-            value: 100*(1-x)
+            value: 100*(1-X[0])
 
       # Change in BC - direction of flow.
       - region: .BOUNDARY
         time: 5
         bc_pressure: !FieldFormula
-            value: 100*(1-y)
+            value: 100*(1-X[1])
 
     output:
       fields: [velocity_p0, pressure_p0]

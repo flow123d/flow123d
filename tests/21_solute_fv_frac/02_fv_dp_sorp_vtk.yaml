@@ -38,14 +38,17 @@ problem: !Coupling_Sequential
       - region: .sides
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
 
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
         - region: .sides
           bc_conc: !FieldFormula
-            value: [x/12.75, x/12.75, 0]
+            value: 
+              - X[0]/12.75
+              - X[0]/12.75
+              - 0
         - region: subset
           init_conc: 0
           porosity: 0.25

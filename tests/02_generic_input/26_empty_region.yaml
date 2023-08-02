@@ -44,18 +44,18 @@ problem: !Coupling_Sequential
       - region: [.top]
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: z
+          value: X[2]
       
       # renamed region
       - region: [.bottom]
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: z
+          value: X[2]
           
       - region: [.back, .front]
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
     balance: {}
     output:
       fields:

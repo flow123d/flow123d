@@ -24,12 +24,12 @@ problem: !Coupling_Sequential
         time: 1
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x
+          value: X[0]
       - region: .BOUNDARY
         time: 2
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: 2*x
+          value: 2*X[0]
     output:
       fields:
         - pressure_p0

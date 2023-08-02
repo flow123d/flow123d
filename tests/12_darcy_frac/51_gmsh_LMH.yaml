@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
       - region: dirichlet_boundary
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x-z
+          value: X[0]-X[2]
     output:
       fields:
         - piezo_head_p0

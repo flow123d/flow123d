@@ -19,11 +19,11 @@ problem: !Coupling_Sequential
         time: 0.0
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: (x-0.5)*y
+          value: (X[0]-0.5)*X[1]
       - region: .BOUNDARY
         time: 1.0                       # no output at time 1.0
         bc_pressure: !FieldFormula
-          value: 2*(x-0.5)*y
+          value: 2*(X[0]-0.5)*X[1]
 
     output:
       times:

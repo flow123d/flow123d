@@ -25,12 +25,12 @@ problem: !Coupling_Sequential
       - region: .top
         bc_type: seepage
         bc_switch_pressure: !FieldFormula
-          value: -x+0.5
+          value: -X[0]+0.5
         bc_flux: 0.0005
       - time: 1.0
         region: .top
         bc_switch_pressure: !FieldFormula
-          value: -1.1*x+0.5
+          value: -1.1*X[0]+0.5
 
       # ,
     output:

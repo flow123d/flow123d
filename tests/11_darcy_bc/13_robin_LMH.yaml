@@ -62,7 +62,7 @@ problem: !Coupling_Sequential
       - region: .left_x
         bc_type: total_flux
         bc_flux: !FieldFormula
-          value: 0.002*(0.25+y*y)
+          value: 0.002*(0.25+X[1]*X[1])
         bc_pressure: !FieldFormula
           value: 0.03/0.002
         bc_robin_sigma: 0.002

@@ -34,7 +34,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: x+y
+          value: X[0]+X[1]
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

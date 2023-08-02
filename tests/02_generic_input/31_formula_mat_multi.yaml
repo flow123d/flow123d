@@ -1,5 +1,6 @@
-# Test goal: Unsteady flow in 2D, Mixed Hybrid method
+# Test goal: FieldFormula - test of dot product
 # Author: Jan Brezina
+# Derived from test 10 / 04, modified by David Flanderka
 
 flow123d_version: 4.0.0a01
 problem: !Coupling_Sequential
@@ -16,8 +17,8 @@ problem: !Coupling_Sequential
         storativity: 1.0
       - region: plane
         anisotropy: 0.02
-        init_piezo_head: 0
-        # default
+        init_piezo_head: !FieldFormula
+          value: "pressure_grad = [1, 2, 3]; pressure_grad @ X"
         storativity: 1
         # default
       - region: .top

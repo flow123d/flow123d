@@ -24,9 +24,9 @@ problem: !Coupling_Sequential
         bc_pressure: 0
       - region: BULK
         conductivity: !FieldFormula
-          value: 1-x*y + 1e-10
+          value: 1-X[0]*X[1] + 1e-10
         anisotropy: !FieldFormula
-          value: "[[0.1*x, 0.2*x, 1], [0.2*x, 0.3*y, 2], [1, 2, 3]]"
+          value: "[[0.1*X[0], 0.2*X[0], 1], [0.2*X[0], 0.3*X[1], 2], [1, 2, 3]]"
     output:
       fields:
         - {field: conductivity, interpolation: P0_value}
@@ -42,7 +42,7 @@ problem: !Coupling_Sequential
 
           # scalar field (variable)
           porosity: !FieldFormula
-            value: 0.1*x*y
+            value: 0.1*X[0]*X[1]
 
           init_conc:
             # scalar field (constant)
@@ -50,7 +50,7 @@ problem: !Coupling_Sequential
               value: 0.31
             # scalar field (variable)
             - !FieldFormula
-              value: 1-x*y
+              value: 1-X[0]*X[1]
 
           diff_m:
             # tensor field (constant)
@@ -58,7 +58,7 @@ problem: !Coupling_Sequential
               value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
             # tensor field (variable)
             - !FieldFormula
-              value: "[ [ 0.01*x, 0.2*y, 1 ], [ 0.2*y, 0.01*x, 2 ], [ 1, 2, 3 ] ]"
+              value: "[ [ 0.01*X[0], 0.2*X[1], 1 ], [ 0.2*X[1], 0.01*X[0], 2 ], [ 1, 2, 3 ] ]"
 
       output:
         fields:

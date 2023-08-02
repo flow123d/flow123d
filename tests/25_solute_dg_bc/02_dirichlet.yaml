@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: (1-x)/10
+          value: (1-X[0])/10
     output:
       fields:
         - pressure_p0
@@ -30,11 +30,11 @@ problem: !Coupling_Sequential
         - region: .left
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: 2-((y-0.5)*2)**8
+            value: 2-((X[1]-0.5)*2)**8
         - region: .right
           bc_type: dirichlet
           bc_conc: !FieldFormula
-            value: ((y-0.5)*2)**8
+            value: ((X[1]-0.5)*2)**8
         - region: .top
           bc_type: dirichlet
           bc_conc: 1
