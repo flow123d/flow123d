@@ -322,7 +322,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     	auto rh = data_->region_history_[reg.idx()];
 
     	// skip regions with no matching BC flag
-    	if (reg.is_boundary() != is_bc()) continue;
+    	//if (reg.is_boundary() != is_bc()) continue;
 
     	// Check regions with empty history, possibly set default.
     	if ( rh.empty()) continue;
@@ -508,8 +508,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     // check there are no empty field pointers, collect regions to be initialized from default value
     RegionSet regions_to_init; // empty vector
 
-    for(const Region &reg : mesh()->region_db().get_region_set("ALL") )
-        if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
+    for(const Region &reg : mesh()->region_db().get_region_set("ALL") ) {
+        //if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
             RegionHistory &rh = data_->region_history_[reg.idx()];
         	if ( rh.empty() ||	! rh[0].second)   // empty region history
             {
@@ -530,7 +530,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 	        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
                 }
             }
-        }
+        //}
+    }
 
     // possibly set from default value
     if ( regions_to_init.size() ) {

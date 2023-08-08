@@ -134,7 +134,8 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED),
+  boundary_domain_(false), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -239,6 +240,12 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
+    auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if ( (region_idx % 2) == this->boundary_domain_ ) {
+        // Skip evaluation of boundary fields on bulk regions and vice versa
+        return;
+    }
+
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
