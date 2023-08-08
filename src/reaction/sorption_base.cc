@@ -87,6 +87,7 @@ SorptionBase::EqFields::EqFields(const string &output_field_name, const string &
             .description("Considered sorption is described by selected isotherm.\n"
                 "If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.")
             .input_selection(get_sorption_type_selection())
+            .input_default("\"none\"")
             .units( UnitSI::dimensionless() );
 
     *this += distribution_coefficient.name("distribution_coefficient")

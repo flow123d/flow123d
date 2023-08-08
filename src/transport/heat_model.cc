@@ -211,18 +211,21 @@ HeatTransferModel::ModelEqFields::ModelEqFields()
             .name("solid_density")
             .description("Density of solid (rock).")
             .units( UnitSI().kg().m(-3) )
+            .input_default("0.0")
             .flags_add(in_time_term);
 
     *this+=solid_heat_capacity
             .name("solid_heat_capacity")
             .description("Heat capacity of solid (rock).")
             .units( UnitSI::J() * UnitSI().kg(-1).K(-1) )
+            .input_default("0.0")
             .flags_add(in_time_term);
 
     *this+=solid_heat_conductivity
             .name("solid_heat_conductivity")
             .description("Heat conductivity of solid (rock).")
             .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
+            .input_default("0.0")
             .flags_add(in_main_matrix)
 			.set_limits(0.0);
 
