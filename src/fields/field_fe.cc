@@ -202,30 +202,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
                 );
     }
 
-    unsigned int ndofs = dh_->max_elem_dofs();
-
-    // initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.mixed_fe = this->fe_;
-
-	// initialize value handler objects
-	init_data.range_begin = this->fe_item_[0].range_begin_;
-	init_data.range_end = this->fe_item_[0].range_end_;
-	value_handler0_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[1].range_begin_;
-	init_data.range_end = this->fe_item_[1].range_end_;
-	value_handler1_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[2].range_begin_;
-	init_data.range_end = this->fe_item_[2].range_end_;
-	value_handler2_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[3].range_begin_;
-	init_data.range_end = this->fe_item_[3].range_end_;
-	value_handler3_.initialize(init_data);
-
 	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
@@ -394,7 +370,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<MeshBase &>(*mesh), fe);
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
-    unsigned int ndofs = dh_->max_elem_dofs();
 
     this->fill_fe_item<0>();
     this->fill_fe_item<1>();
@@ -403,28 +378,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
     this->fe_ = dh_->ds()->fe();
 
     data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
-
-	// initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.mixed_fe = this->fe_;
-
-	// initialize value handler objects
-	init_data.range_begin = this->fe_item_[0].range_begin_;
-	init_data.range_end = this->fe_item_[0].range_end_;
-	value_handler0_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[1].range_begin_;
-	init_data.range_end = this->fe_item_[1].range_end_;
-	value_handler1_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[2].range_begin_;
-	init_data.range_end = this->fe_item_[2].range_end_;
-	value_handler2_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[3].range_begin_;
-	init_data.range_end = this->fe_item_[3].range_end_;
-	value_handler3_.initialize(init_data);
 }
 
 
@@ -511,13 +464,13 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 			q_weights[0] = 1.0;
 			break;
 		case 1:
-			quadrature_size = value_handler1_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<1, spacedim>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 2:
-			quadrature_size = value_handler2_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<2, spacedim>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 3:
-			quadrature_size = value_handler3_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<3, spacedim>(q_points, q_weights, ele, quadrature_order);
 			break;
 		}
 		searched_elements.clear();

@@ -22,7 +22,6 @@
 #include "system/system.hh"
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/fe_value_handler.hh"
 #include "fields/field.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
@@ -301,15 +300,6 @@ private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-
-    /// Value handler that allows get value of 0D elements.
-    FEValueHandler<0, spacedim, Value> value_handler0_;
-    /// Value handler that allows get value of 1D elements.
-    FEValueHandler<1, spacedim, Value> value_handler1_;
-    /// Value handler that allows get value of 2D elements.
-    FEValueHandler<2, spacedim, Value> value_handler2_;
-    /// Value handler that allows get value of 3D elements.
-    FEValueHandler<3, spacedim, Value> value_handler3_;
 
 	/// mesh reader file
 	FilePath reader_file_;
