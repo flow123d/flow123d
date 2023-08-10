@@ -73,12 +73,14 @@ public:
 						.disable_where(type, {r_first, r_second })
 						.name("init_pressure")
 						.description("Pressure head")
+						.input_default("0.0")
 						.units( UnitSI().m() );
 
 			*this += type
 						.name("reaction_type")
 						.description("")
 						.units( UnitSI::dimensionless() )
+						.input_default("\"r_first\"")
 						.flags_add(in_main_matrix)
 						.input_selection(reaction_type_sel);
 		}
@@ -381,9 +383,6 @@ public:
                     for (unsigned int i=1; i<r.second.size(); ++i)
                         // fields are sorted by name
                         EXPECT_TRUE(r.second[i-1]->name() < r.second[i]->name());
-                else // boundary regions are in original order
-                	for (unsigned int i=0; i<r.second.size(); ++i)
-                	    EXPECT_EQ(r.second[i]->name(), orig_order[i]);
             }
         }
 

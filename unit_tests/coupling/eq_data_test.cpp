@@ -153,8 +153,8 @@ public:
         EqData() : SomeEquationBase::EqData() {
             *this += init_pressure.name("init_pressure").description("Initial condition as pressure.").input_default("0.0");
             *this += init_conc.name("init_conc").description("Initial condition for the concentration.").input_default("0.0");
-            *this += bulk_set_field.name("bulk_set_field");
-            *this += conc_mobile.name("conc_mobile");
+            *this += bulk_set_field.name("bulk_set_field").input_default("0.0");
+            *this += conc_mobile.name("conc_mobile").input_default("0.0");
             *this += bc_gravity.name("bc_gravity").description("Boundary gravity vector.").input_default("0.0");
             *this += bc_piezo_head.name("bc_piezo_head").description("Boundary piezo head.").input_default("0.0");
 

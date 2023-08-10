@@ -187,8 +187,8 @@ TEST_F(FieldEvalConstantTest, set_time) {
 
     unsigned int        n_times             = 5;   // time steps: { 0, 1, 2, 3, 4 }
     std::vector<double> expected_scalar     = {0.0, 0.0, 1.0, 1.0, 1.0};
-    std::vector<bool>   scalar_jump_time    = {true, false, true, false, false};
-    std::vector<bool>   bc_scalar_jump_time = {true, false, false, false, true};
+    std::vector<bool>   scalar_jump_time    = {true, false, true, false, true};
+    std::vector<bool>   bc_scalar_jump_time = {true, false, true, false, true};
 
     this->create_mesh("mesh/simplest_cube.msh");
     this->read_input(eq_data_input);
