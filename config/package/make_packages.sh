@@ -28,8 +28,8 @@ destination="`pwd`/publish_${environment}"
 
 ################################
 # paths inside docker container
-flow_install_location=/opt/flow123d
-flow_repo_location=/opt/flow123d/flow123d
+flow_install_location=//opt/flow123d
+flow_repo_location=//opt/flow123d/flow123d
 
 
 #####################
@@ -79,14 +79,14 @@ echo "target_image: '${target_image}'"
 # docker rm -f  || echo "container not running"
 bin/fterm update
 docker rm -f ${build_container}
-bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
+bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume /`pwd`:${flow_repo_location}
 
 dexec="docker exec ${build_container}"      # execute command which will follow
 dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
 
 function dexec_setvars_make {
     # dexec_setvars_make  <make parameters>if [ -s build_tree ]; echo "link";fi
-    ${dexec} /bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
+    ${dexec} //bin/bash -c "cd ${flow_repo_location} && bin/setvars.sh && make $*"
 }
 
 
@@ -205,6 +205,10 @@ ${dcp}:${flow_repo_location}/build_tree/htmldoc/html/src/.          ${destinatio
 ${dcp}:${flow_repo_location}/build_tree/doc/online-doc/flow123d/.   ${destination}/doxygen
 ${dcp}:${flow_repo_location}/${ist_location}                        ${destination}/input_reference.json
 ${dcp}:${flow_repo_location}/bin/fterm                              ${destination}/bin/fterm
+
+dcpdest="docker cp ${destination}"                                  # Copy files/folders between a local filesystem and the container
+${dcp}:${flow_repo_location}/build_tree/src/libflow123d_lib.so      ${destination}/bin/libflow123d_lib.so
+${dcpdest}/bin/libflow123d_lib.so                                   ${build_container}://bin/libflow123d_lib.so
 
 echo "${release_tag}" > ${destination}/version
 echo "${target_tagged}" > ${destination}/imagename
