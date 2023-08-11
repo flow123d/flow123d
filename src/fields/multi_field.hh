@@ -112,9 +112,8 @@ public:
 
     /**
      * Default constructor.
-     * bc indicates boundary multifield.
      */
-    MultiField(bool bc = false);
+    MultiField();
 
     /**
      * Copy constructor.

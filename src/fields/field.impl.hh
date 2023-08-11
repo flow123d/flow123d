@@ -57,14 +57,13 @@ Field<spacedim,Value>::Field()
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(const string &name, bool bc)
+Field<spacedim,Value>::Field(const string &name)
 : data_(std::make_shared<SharedData>()),
   value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
 		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
-		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
 		unsigned int cache_size = CacheMapElementNumber::get();
@@ -78,7 +77,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
 : data_(std::make_shared<SharedData>()),
   value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
@@ -88,7 +87,6 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->set_component_index(component_index);
 	this->name_ = (name=="") ? input_name : name;
 	this->shared_->input_name_ = input_name;
-    shared_->bc_ = bc;
 
 	unsigned int cache_size = CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
@@ -678,7 +676,7 @@ void Field<spacedim,Value>::fill_observe_value(std::shared_ptr<ElementDataCacheB
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
 	ASSERT_EQ(this->mesh()->region_db().size(), region_fields_.size()).error();
-	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+	//ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
 
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
 

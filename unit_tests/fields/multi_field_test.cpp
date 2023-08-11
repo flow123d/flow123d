@@ -451,7 +451,6 @@ TEST(Operators, assignment) {
 
     MultiField<3, FieldValue<3>::Scalar> mf_assignment;
 	EXPECT_EQ("", mf_assignment.name());
-	EXPECT_FALSE(mf_assignment.is_bc());
 
 	// copies
 	mf_assignment
