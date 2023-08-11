@@ -321,9 +321,6 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
     	auto rh = data_->region_history_[reg.idx()];
 
-    	// skip regions with no matching BC flag
-    	//if (reg.is_boundary() != is_bc()) continue;
-
     	// Check regions with empty history, possibly set default.
     	if ( rh.empty()) continue;
 
@@ -384,10 +381,8 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
 	// currently we cannot output boundary fields
-	if (!is_bc()) {
-	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
-	    this->compute_field_data( type, stream);
-	}
+    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+    this->compute_field_data( type, stream);
 }
 
 
@@ -509,10 +504,9 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     RegionSet regions_to_init; // empty vector
 
     for(const Region &reg : mesh()->region_db().get_region_set("ALL") ) {
-        //if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
-            RegionHistory &rh = data_->region_history_[reg.idx()];
-        	if ( rh.empty() ||	! rh[0].second)   // empty region history
-            {
+        RegionHistory &rh = data_->region_history_[reg.idx()];
+        if ( rh.empty() ||	! rh[0].second)   // empty region history
+        {
         		// test if check is turned on and control field is FieldConst
 //                if (no_check_control_field_ && no_check_control_field_->is_constant(reg) ) {
 //                	// get constant enum value
@@ -523,14 +517,13 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 //                             != shared_->no_check_values_.end() )
 //                        continue;                  // the field is not needed on this region
 //                }
-                if (shared_->input_default_ != "") {    // try to use default
-                    regions_to_init.push_back( reg );
-                } else {
-                	THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
-                	        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
-                }
+            if (shared_->input_default_ != "") {    // try to use default
+                regions_to_init.push_back( reg );
+            } else {
+                THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
+                        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
             }
-        //}
+        }
     }
 
     // possibly set from default value

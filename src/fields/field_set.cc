@@ -141,7 +141,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     // add value for each field excluding boundary fields
     for( auto field : field_list)
     {
-        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+        if ( field->flags().match( FieldFlag::allow_output) )
         {
             string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
             if (field->description().length() > 0)

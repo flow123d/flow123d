@@ -197,14 +197,12 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
-	// currently we cannot output boundary fields
-	if (!is_bc()) {
-	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+    // currently we cannot output boundary fields
+    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 
-	    for (unsigned long index=0; index < this->size(); index++) {
-            sub_fields_[index].compute_field_data( type, stream );
-	    }
-	}
+    for (unsigned long index=0; index < this->size(); index++) {
+        sub_fields_[index].compute_field_data( type, stream );
+    }
 }
 
 
