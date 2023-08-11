@@ -775,6 +775,7 @@ TEST(Field, disable_where) {
     Field<3, FieldValue<3>::Enum > bc_type("bc_type", true);
     bc_type.input_selection( get_bc_type_selection() );
     bc_type.input_default("\"dirichlet\"");
+    bc_type.units( UnitSI::dimensionless() );
 
     std::vector<FieldEnum> list;
     Field<3, FieldValue<3>::Scalar > bc_value("bc_value", true);
