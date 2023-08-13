@@ -307,7 +307,10 @@ package: all
 	make -C build_tree package
 .PHONY : package
 
-	
+deb-package: all
+	cpack -G DEB
+.PHONY : deb-package
+
 ################################################################################################
 # Help Target
 help:

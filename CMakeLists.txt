@@ -14,6 +14,7 @@
 # since CMakeList.txt can be called by generated makefiles.
 execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+cmake_policy(VERSION 3.16)
 
 
 # Include settings given by user first
@@ -890,8 +891,9 @@ if( PETSC_FOUND )
 # Setting for RPATH
 
  
-  SET (CMAKE_EXE_LINKER_FLAGS
-    "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/../lib" )
+  # BUILD_RPATH and INSTALL_RPATH  to make CMAKE properties working, so set RPATH directly.
+  #SET (CMAKE_EXE_LINKER_FLAGS
+  #  "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,$ORIGIN/../lib -Wl,-rpath,$ORIGIN/../src" )
   
   # bug in cmake https://cmake.org/Bug/view.php?id=13934
   # causing error during CPack operation
@@ -917,11 +919,18 @@ if( PETSC_FOUND )
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}
   )     # set libraries linked to main binary (order matter)
-  add_dependencies(bin/flow123d update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
+  add_dependencies("bin/flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
-else()
+  
+  # INSTALL_RPATH should be used for target relinging during its instalation, however that does not happen
+  # for the pacakging directory we use to install to the image therefore we rather set both ../lib and ../src
+  # and use just BUILD_RPATH.
+  set_target_properties("bin/flow123d"  PROPERTIES 
+               BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+               INSTALL_RPATH "$ORIGIN/../lib")
+ else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
@@ -957,13 +966,6 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
-# Cache PLATFORM_NAME
-# set(CMAKE_INSTALL_MESSAGE ALWAYS)
-set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
-set(CMAKE_INSTALL_PREFIX "$ENV{FLOW123D_HOME}") # install prefix is taken from sys env variable FLOW123D_HOME
-set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
-
-
 # install bin directory
 install(DIRECTORY bin/config                DESTINATION bin/)
 install(DIRECTORY bin/ndiff                 DESTINATION bin/)
@@ -971,6 +973,7 @@ install(DIRECTORY bin/paraview              DESTINATION bin/)
 install(DIRECTORY bin/python                DESTINATION bin/ PATTERN "*.pyc" EXCLUDE)
 
 # binary files
+
 install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/runtest               DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
@@ -980,6 +983,8 @@ install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/)
 #install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
+install(FILES build_tree/src/libflow123d_lib.so  DESTINATION lib/)
+install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)
 
 # plain files
 install(FILES     bin/README                DESTINATION bin/)
@@ -1015,16 +1020,67 @@ INCLUDE(InstallRequiredSystemLibraries)
 set(FLOW123D_SOURCE_DIR ${CMAKE_SOURCE_DIR})
 include(Flow123d_git_info)
 
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator")
+message(STATUS "VERSION patch: ${GIT_VERSION_PATCH}")
+
+
+set(CPACK_PACKAGE_NAME flow123d-base
+    CACHE STRING "The resulting package name"
+)
+
+# which is useful in case of packing only selected components instead of the whole thing
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Flow123d - subsurface flow and transport simulator"
+    CACHE STRING "Package description for the package metadata"
+)
+
 SET(CPACK_PACKAGE_VENDOR "Technical University of Liberec")
+
+# make all CPACK_* varaibles escaped/quated when forming the cpack configuration file
+# keep all special characters
+set(CPACK_VERBATIM_VARIABLES YES)
+
+
+
+# Cache PLATFORM_NAME
+# set(CMAKE_INSTALL_MESSAGE ALWAYS)
+#set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
+#set(CMAKE_INSTALL_PREFIX "$ENV{FLOW123D_HOME}") # install prefix is taken from sys env variable FLOW123D_HOME
+set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
+
+# Seems to be a directory within the installation prefix to put some CMAKE releated installation stuff.
+# used by NSYS
+#set(CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})  
+#SET(CPACK_OUTPUT_FILE_PREFIX "${CMAKE_SOURCE_DIR}/_packages")
+
+# https://unix.stackexchange.com/a/11552/254512
+#set(CPACK_PACKAGING_INSTALL_PREFIX "/opt/flow123d")#/${CMAKE_PROJECT_VERSION}")
+
 SET(CPACK_PACKAGE_VERSION_MAJOR ${GIT_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${GIT_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${GIT_VERSION_PATCH})
-SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
+
+set(CPACK_PACKAGE_CONTACT "jan.brezina@tul.cz")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Jan Brezina")
+
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/doc/LICENSE")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+
+# package name for deb. If set, then instead of some-application-0.9.2-Linux.deb
+# you'll get some-application_0.9.2_amd64.deb (note the underscores too)
+set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
+# that is if you want every group to have its own package,
+# although the same will happen if this is not set (so it defaults to ONE_PER_GROUP)
+# and CPACK_DEB_COMPONENT_INSTALL is set to YES
+set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)#ONE_PER_GROUP)
+#SET(CPACK_COMPONENTS_ALL_IN_ONE_PACKAGE On)
+# without this you won't be able to pack only specified component
+set(CPACK_DEB_COMPONENT_INSTALL YES)
+
 SET(CPACK_SOURCE_IGNORE_FILES "/build_tree/" "/\\\\.git/" "/unit_tests/.*/makefile")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-set(CPACK_GENERATOR "TGZ")
+set(CPACK_GENERATOR "TGZ;DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
+
+#set(CPACK_PROJECT_CONFIG_FILE ${CMAKE_SOURCE_DIR}/cmake/package.linux.txt)
 
 add_custom_target(package_debug
               COMMAND ${CMAKE_CPACK_COMMAND} --debug --verbose --config CPackConfig.cmake

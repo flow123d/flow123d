@@ -161,7 +161,12 @@ public:
         return std::vector<const FieldCommon *>();
     }
 
-    /// Return item of @p value_cache_ given by i_cache_point.
+    /**
+     * Return item of @p value_cache_ given by i_cache_point.
+     *
+     * This is used to mimick Field<> interface in order to use it in FieldModel this is used for direct access to the value cache.
+     * FieldFormula on other hand use the whole cache passed to the BParser.
+     */
     arma::vec3 operator[] (unsigned int i_cache_point) const
     {
         return this->value_cache_.template vec<3>(i_cache_point);

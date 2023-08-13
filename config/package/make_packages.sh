@@ -125,11 +125,12 @@ ${dexec} pip install --user -r ${flow_repo_location}/config/package/requirements
 install_image="install-${environment}:${imagesversion}"
 target_tagged=flow123d/${target_image}:${release_tag}
 
-tmp_install_dir=${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/Flow123d-${release_tag}-Linux
+tmp_install_dir=${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/flow123d-base-${release_tag}-Linux
 
 # have to copy package dir out of the mounted volume ${flow_repo_location}
 # TODO: try to use the install target
 ${dexec} cp -r ${tmp_install_dir} ${flow_install_location}/docker_package
+#${dexec} cp -r ${flow_repo_location}/_packages/flow123d-base_${release_tag}_amd64.deb ${flow_install_location}/docker_package
 # we only use temporary installation and copy it directly from the build image to the target image
 # TODO: need to copy the package out of the vmount, but only for testing
 
