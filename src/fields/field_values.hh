@@ -210,14 +210,16 @@ void init_vector_from_input( VectorType &value, Input::Array rec ) {
     unsigned int nrows = value.n_rows;
 
     typedef typename AccessTypeDispatch<ET>::type InnerType;
-    Input::Iterator<InnerType> it = rec.begin<InnerType>();
+    auto it = rec.begin<Input::Array>();
 
-    if ( rec.size() == 1 ) {
+    if ( it->size() == 1 && rec.size() == 1 ) {
+    	InnerType v = *(it->begin<InnerType>());
         for(unsigned int i=0; i< nrows; i++)
-            value.at(i)=ET(*it);
-    } else if ( rec.size() == nrows ) {
-        for(unsigned int i=0; i< nrows; i++, ++it) {
-            value.at(i)=ET(*it);
+            value.at(i) = v;
+    } else if ( it->size() == 1 && rec.size() == nrows ) {
+    	for(unsigned int i=0; i< nrows; i++, ++it) {
+    		InnerType v = *(it->begin<InnerType>());
+            value.at(i) = v;
         }
     } else {
         THROW( ExcFV_Input()
@@ -366,7 +368,19 @@ public:
         return arr.scalar(idx);
     }
 
-    void init_from_input( AccessType val ) { value_ = return_type(val); }
+    void init_from_input( Input::Array rec ) {
+        auto it = rec.begin<Input::Array>();
+        if (it->size() == 1 && rec.size() == 1) {
+            AccessType scalar = *(it->begin<AccessType>());
+            value_ = return_type(scalar);
+        } else {
+            THROW( ExcFV_Input()
+                    << EI_InputMsg("Initializing scalar field value by vector or tensor")
+                    << rec.ei_address()
+                 );
+
+        }
+    }
 
     void set_n_comp(unsigned int) {};
     inline unsigned int n_cols() const
