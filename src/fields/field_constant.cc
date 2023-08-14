@@ -18,6 +18,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field_algo_base.impl.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
+#include "fields/field_values.hh"
 #include "input/input_type.hh"
 #include "system/armor.hh"
 
@@ -32,10 +33,11 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_constant)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
 {
+    typedef FieldValue<3>::TensorFixed TensorValue;
     return it::Record("FieldConstant", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
+        .declare_key("value", TensorValue::get_input_type(), it::Default::obligatory(),
                                     "Value of the constant field. "
                                     "For vector values, you can use scalar value to enter constant vector. "
                                     "For square (($N\\times N$))-matrix values, you can use: "
@@ -75,8 +77,7 @@ template <int spacedim, class Value>
 void FieldConstant<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
 
-
-    this->value_.init_from_input( rec.val<typename Value::AccessType>("value") );
+    this->value_.init_from_input( rec.val<Input::Array>("value") );
     this->value_.scale(this->unit_conversion_coefficient_);
     this->check_field_limits(rec, init_data);
 

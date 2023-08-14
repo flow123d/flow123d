@@ -30,12 +30,13 @@ const it::Tuple & TableFunction<Value>::get_input_type_val()
 	 * to independent value. It needs only replace type of 't' with generic type
 	 * (Input::Type::Parameter).
 	 */
+    typedef FieldValue<3>::TensorFixed TensorValue;
     return it::Tuple("IndependentValue", "Value of Field for time variable.")
                                        //"Value of Field for independent variable."
         .declare_key("t", TimeGovernor::get_input_time_type( 0.0 ), it::Default::obligatory(),
                                     "Time stamp." )
                                   //"Independent variable of stamp."
-		.declare_key("value", Value::get_input_type(), it::Default::obligatory(),
+		.declare_key("value", TensorValue::get_input_type(), it::Default::obligatory(),
 									"Value of the field in given stamp." )
 		.close();
 }
@@ -76,7 +77,7 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec, const TimeS
 
         	typename Value::return_type r_value;
         	Value value(r_value);
-        	value.init_from_input( it->val<typename Value::AccessType>("value") );
+        	value.init_from_input( it->val<Input::Array>("value") );
         	table_values_.push_back( TableValue(t, value) );
     	}
     }
