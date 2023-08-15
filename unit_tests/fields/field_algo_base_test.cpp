@@ -772,23 +772,23 @@ TEST(Field, disable_where) {
         robin
     };
     // test optional checking in the set_time method
-    Field<3, FieldValue<3>::Enum > bc_type("bc_type", true);
+    Field<3, FieldValue<3>::Enum > bc_type("bc_type");
     bc_type.input_selection( get_bc_type_selection() );
     bc_type.input_default("\"dirichlet\"");
     bc_type.units( UnitSI::dimensionless() );
 
     std::vector<FieldEnum> list;
-    Field<3, FieldValue<3>::Scalar > bc_value("bc_value", true);
+    Field<3, FieldValue<3>::Scalar > bc_value("bc_value");
     bc_value.disable_where( bc_type, {neumann} );
     bc_value.input_default("0.0");
     bc_value.units( UnitSI().m() );
 
-    Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux", true);
+    Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux");
     bc_flux.disable_where( bc_type, {dirichlet, robin} );
     bc_flux.input_default("0.0");
     bc_flux.units( UnitSI().kg().m().s(-1).md() );
 
-    Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma", true);
+    Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma");
     bc_sigma.disable_where( bc_type, {dirichlet, neumann} );
     bc_sigma.input_default("0.0");
     bc_sigma.units( UnitSI().s(-1) );
