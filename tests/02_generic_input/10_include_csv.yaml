@@ -54,7 +54,7 @@ problem: !Coupling_Sequential
                 format:
                   t:
                     time: $0
-                  value: $1
+                  value: [[$1]]
 ### We need support of CSV include in transposed part of IST if we can use !include_csv tag for MultiFields 
         - region: .BOUNDARY
           bc_conc: 
@@ -67,7 +67,7 @@ problem: !Coupling_Sequential
                     format:
                       t: 
                         time: $0
-                      value: $2
+                      value: [[$2]]
 
               -  !FieldTimeFunction
                 time_function: 
@@ -78,7 +78,7 @@ problem: !Coupling_Sequential
                     format:
                       t: 
                         time: $0
-                      value: $3
+                      value: [[$3]]
       output:
         fields:
           - porosity
