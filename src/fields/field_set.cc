@@ -45,8 +45,6 @@ const Input::Type::Record & FieldSet::make_user_field_type(const std::string &eq
     return Input::Type::Record( equation_name+":UserData", "Record to set fields of the equation: "+equation_name+".")
         .declare_key("name", Input::Type::String(), Input::Type::Default::obligatory(),
                      "Name of user defined field.")
-        .declare_key("is_boundary", Input::Type::Bool(), Input::Type::Default("false"),
-                     "Type of field: boundary or bulk.")
         .declare_key("shape_type", FieldSet::get_user_field_shape_selection(), Input::Type::Default("\"scalar\""), "Shape of user field.")
         .declare_key("field", tensor_field.get_input_type(), Input::Type::Default::obligatory(),
                      "Instance of FieldAlgoBase descendant.\n"

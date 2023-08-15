@@ -15,11 +15,9 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
     user_fields:
       - name: user_cond
-        is_boundary: false
         field: !FieldFormula
           value: 1e-5
       - name: user_dir
-        is_boundary: true
         field: !FieldFormula
           value: 0.2
     input_fields:
@@ -40,13 +38,11 @@ problem: !Coupling_Sequential
       # Create auxiliary user fields.
       user_fields:
         - name: bc_flux_x
-          is_boundary: true
           field: !FieldFormula
             value: ' ((  ((1) if (1  and  1) else (0)) ) if (X[1] < 0.75) else ( 0)) '
             # future Python-like syntax with BParser
             #value: 1 if (0.5 < y < 0.75) else 0
         - name: bc_flux_t
-          is_boundary: true
           field: !FieldTimeFunction
             time_function:
               values: !include_csv

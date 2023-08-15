@@ -62,7 +62,6 @@ problem: !Coupling_Sequential
           r_tol: 1e-12
         user_fields:
           - name: user_trac
-            is_boundary: true
             field: !FieldFormula
               value: -1e4
         input_fields:

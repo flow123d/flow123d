@@ -86,7 +86,6 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
                     it != user_fields.end();
                     ++it) {
 	    std::string field_name = it->val<std::string>("name");
-    	bool is_bdr = it->val<bool>("is_boundary");
     	auto shape_type = it->val<FieldSet::UserFieldShape>("shape_type");
 
     	// check if field of same name doesn't exist in FieldSet
@@ -115,10 +114,7 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
         {
         case FieldSet::scalar:
             Field<3, FieldValue<3>::Scalar> * scalar_field;
-            if (is_bdr)
-                scalar_field = new BCField<3, FieldValue<3>::Scalar>();
-            else
-                scalar_field = new Field<3, FieldValue<3>::Scalar>();
+            scalar_field = new Field<3, FieldValue<3>::Scalar>();
             *eq_fieldset_+=scalar_field
                     ->name(field_name)
                     .description("")
@@ -131,10 +127,7 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             break;
         case FieldSet::vector:
             Field<3, FieldValue<3>::VectorFixed> * vector_field;
-            if (is_bdr)
-                vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
-            else
-                vector_field = new Field<3, FieldValue<3>::VectorFixed>();
+            vector_field = new Field<3, FieldValue<3>::VectorFixed>();
             *eq_fieldset_+=vector_field
                     ->name(field_name)
                     .description("")
@@ -147,10 +140,7 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             break;
         case FieldSet::tensor:
             Field<3, FieldValue<3>::TensorFixed> * tensor_field;
-            if (is_bdr)
-                tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
-            else
-                tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
+            tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
             *eq_fieldset_+=tensor_field
                     ->name(field_name)
                     .description("")
