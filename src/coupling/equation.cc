@@ -87,6 +87,7 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
                     ++it) {
 	    std::string field_name = it->val<std::string>("name");
     	bool is_bdr = it->val<bool>("is_boundary");
+    	auto shape_type = it->val<FieldSet::UserFieldShape>("shape_type");
 
     	// check if field of same name doesn't exist in FieldSet
     	auto * exist_field = eq_fieldset_->field(field_name);
@@ -109,8 +110,10 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
         	}
         }
 
-    	Input::Iterator<Input::AbstractRecord> scalar_it = it->find<Input::AbstractRecord>("scalar_field");
-        if (scalar_it) {
+    	Input::AbstractRecord field_rec = it->val<Input::AbstractRecord>("field");
+        switch (shape_type)
+        {
+        case FieldSet::scalar:
             Field<3, FieldValue<3>::Scalar> * scalar_field;
             if (is_bdr)
                 scalar_field = new BCField<3, FieldValue<3>::Scalar>();
@@ -122,47 +125,42 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
                     .units( units )
 					.flags(FieldFlag::equation_result);
             scalar_field->set_mesh(*mesh_);
-            scalar_field->set( *scalar_it, time_->t());
+            scalar_field->set( field_rec, time_->t());
             scalar_field->set_default_fieldset(*eq_fieldset_);
             output_fields+=*scalar_field;
-        } else {
-            Input::Iterator<Input::AbstractRecord> vector_it = it->find<Input::AbstractRecord>("vector_field");
-            if (vector_it) {
-                Field<3, FieldValue<3>::VectorFixed> * vector_field;
-                if (is_bdr)
-                    vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
-                else
-                    vector_field = new Field<3, FieldValue<3>::VectorFixed>();
-                *eq_fieldset_+=vector_field
-                        ->name(field_name)
-                        .description("")
-                        .units( units )
-						.flags(FieldFlag::equation_result);
-                vector_field->set_mesh(*mesh_);
-                vector_field->set( *vector_it, time_->t());
-                vector_field->set_default_fieldset(*eq_fieldset_);
-                output_fields+=*vector_field;
-            } else {
-                Input::Iterator<Input::AbstractRecord> tensor_it = it->find<Input::AbstractRecord>("tensor_field");
-                if (tensor_it) {
-                    Field<3, FieldValue<3>::TensorFixed> * tensor_field;
-                    if (is_bdr)
-                        tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
-                    else
-                        tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
-                    *eq_fieldset_+=tensor_field
-                            ->name(field_name)
-                            .description("")
-                            .units( units )
-							.flags(FieldFlag::equation_result);
-                    tensor_field->set_mesh(*mesh_);
-                    tensor_field->set( *tensor_it, time_->t());
-                    tensor_field->set_default_fieldset(*eq_fieldset_);
-                    output_fields+=*tensor_field;
-	            } else {
-	                THROW(FieldSet::ExcFieldNotSet() << FieldCommon::EI_Field(field_name));
-	            }
-            }
-	    }
+            break;
+        case FieldSet::vector:
+            Field<3, FieldValue<3>::VectorFixed> * vector_field;
+            if (is_bdr)
+                vector_field = new BCField<3, FieldValue<3>::VectorFixed>();
+            else
+                vector_field = new Field<3, FieldValue<3>::VectorFixed>();
+            *eq_fieldset_+=vector_field
+                    ->name(field_name)
+                    .description("")
+                    .units( units )
+					.flags(FieldFlag::equation_result);
+            vector_field->set_mesh(*mesh_);
+            vector_field->set( field_rec, time_->t());
+            vector_field->set_default_fieldset(*eq_fieldset_);
+            output_fields+=*vector_field;
+            break;
+        case FieldSet::tensor:
+            Field<3, FieldValue<3>::TensorFixed> * tensor_field;
+            if (is_bdr)
+                tensor_field = new BCField<3, FieldValue<3>::TensorFixed>();
+            else
+                tensor_field = new Field<3, FieldValue<3>::TensorFixed>();
+            *eq_fieldset_+=tensor_field
+                    ->name(field_name)
+                    .description("")
+                    .units( units )
+					.flags(FieldFlag::equation_result);
+            tensor_field->set_mesh(*mesh_);
+            tensor_field->set( field_rec, time_->t());
+            tensor_field->set_default_fieldset(*eq_fieldset_);
+            output_fields+=*tensor_field;
+            break;
+        }
 	}
 }
