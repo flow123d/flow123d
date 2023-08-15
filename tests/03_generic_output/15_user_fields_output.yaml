@@ -15,7 +15,8 @@ problem: !Coupling_Sequential
     user_fields:
       - name: user_x
         is_boundary: false
-        scalar_field: !FieldFormula
+        shape_type: scalar
+        field: !FieldFormula
           value: 0.1*X[0]
     input_fields:
       - region: .BOUNDARY
@@ -36,7 +37,8 @@ problem: !Coupling_Sequential
       user_fields:
         - name: user_xy
           is_boundary: false
-          scalar_field: !FieldFormula
+          shape_type: scalar
+          field: !FieldFormula
             value: X[0]*X[1]
       input_fields:
         - region: .BOUNDARY

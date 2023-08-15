@@ -24,7 +24,8 @@ problem: !Coupling_Sequential
     user_fields:
       - name: user_pressure
         is_boundary: true
-        scalar_field: !FieldFormula
+        shape_type: scalar
+        field: !FieldFormula
           value: X[0]
     input_fields:
       - region: 1d
@@ -44,7 +45,7 @@ problem: !Coupling_Sequential
       user_fields:
         - name: user_conc
           is_boundary: true
-          scalar_field: !FieldFormula
+          field: !FieldFormula
             value: X[0]
       input_fields:
         - region: .sides

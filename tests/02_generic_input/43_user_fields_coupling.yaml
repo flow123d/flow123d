@@ -11,7 +11,7 @@ problem: !Coupling_Sequential
   flow_equation: !Coupling_Iterative
     user_fields:
       - name: user_fd
-        scalar_field: !FieldFormula
+        field: !FieldFormula
           value: 10
     input_fields:
       - region: BULK
@@ -63,7 +63,7 @@ problem: !Coupling_Sequential
         user_fields:
           - name: user_trac
             is_boundary: true
-            scalar_field: !FieldFormula
+            field: !FieldFormula
               value: -1e4
         input_fields:
           - region: BULK
