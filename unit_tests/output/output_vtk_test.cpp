@@ -88,7 +88,7 @@ public:
 		typedef typename Value::element_type ElemType;
 
 		// make field, init it form the init string
-		Field<spacedim, Value> field(field_name, false); // bulk field
+		Field<spacedim, Value> field(field_name); // bulk field
 		field.input_default(init);
 		field.set_components(component_names);
 
@@ -116,7 +116,7 @@ public:
     {
 
 		// make field init it form the init string
-		Field<3, FieldVal> field(field_name, false);
+		Field<3, FieldVal> field(field_name);
 		field.set_components(component_names);
 		field.set_mesh( *(this->_mesh) );
 		field.units(UnitSI::one());
