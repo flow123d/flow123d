@@ -48,6 +48,7 @@ define_mpi_test(generic_field 1)
 #define_mpi_test(field_constant_speed 1)
 #define_mpi_test(field_fe_speed 1)
 #define_mpi_test(field_model_speed 1)
+define_mpi_test(assembly_speed 1)
        
 define_mpi_test(eval_subset 1)
 define_mpi_test(field_value_cache 1)
