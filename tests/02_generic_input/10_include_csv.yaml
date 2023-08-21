@@ -55,6 +55,8 @@ problem: !Coupling_Sequential
                   t:
                     time: $0
                   value: [[$1]]
+                  # CSV reader is not compatible with automatic conversion to the tensor, 
+                  # which is the input shape of all FieldConstant and FieldTimeFunction fields.
 ### We need support of CSV include in transposed part of IST if we can use !include_csv tag for MultiFields 
         - region: .BOUNDARY
           bc_conc: 

@@ -15,6 +15,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
     user_fields:
       - name: user_cond
+        # type of user field is defined by key 'shape_type', default type is scalar
         field: !FieldFormula
           value: 1e-5
       - name: user_dir
