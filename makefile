@@ -227,7 +227,6 @@ update-build-tree:
 # This rule can be invoked manually to set appropriate exceptions to the main repository as well as to the submodules.
 .PHONY: set-safe-directory
 set-safe-directory:
-	export HOME=/home/flow/; \
 	for d in \
 	    `pwd` \
 	    `pwd`/bin/yaml_converter \

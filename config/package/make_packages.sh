@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage:
 #  
-#     make_packages.sh <environment> <target_image> [push]
+#     make_packages.sh <environment> <target_image> <release_tag> [push]
 # 
 
 # Stop on first error.
@@ -9,9 +9,9 @@ set -e
 set -x
 
 
-environment=$1
-image_name_base=$2
-release_tag=$3
+environment=$1          # gnu
+image_name_base=$2      # flow123d | ci
+release_tag=$3          # version
 if [ "$4" == "push" ]
 then
     docker_push="docker push"
@@ -78,8 +78,10 @@ echo "target_image: '${target_image}'"
 
 # docker rm -f  || echo "container not running"
 bin/fterm update
-docker rm -f ${build_container}
-bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
+bin/fterm rel_$environment --detach ${build_container} -v `pwd`:${flow_repo_location} 
+#docker rm -f ${build_container}
+#bin/fterm rel_$environment -- -di --name ${build_container} --volume `pwd`:${flow_repo_location}
+#bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
 
 dexec="docker exec ${build_container}"      # execute command which will follow
 dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
@@ -106,7 +108,9 @@ ${dexec} git config --global --add safe.directory '*'
 #DEBUG=--debug=j
 ${dexec} make -C ${flow_repo_location} clean-all
 ${dexec} make -C ${flow_repo_location} ${DEBUG} -j4 all
-echo "Exit: $?"
+echo "build result: $?"
+
+
 dexec_setvars_make package
 
 #${dexec} ls ${flow_repo_location}/build_tree/
@@ -130,7 +134,6 @@ tmp_install_dir=${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/flow1
 # have to copy package dir out of the mounted volume ${flow_repo_location}
 # TODO: try to use the install target
 ${dexec} cp -r ${tmp_install_dir} ${flow_install_location}/docker_package
-#${dexec} cp -r ${flow_repo_location}/_packages/flow123d-base_${release_tag}_amd64.deb ${flow_install_location}/docker_package
 # we only use temporary installation and copy it directly from the build image to the target image
 # TODO: need to copy the package out of the vmount, but only for testing
 
@@ -253,4 +256,6 @@ echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destinati
 
 # list build packages
 ls -l ${destination}
+
+############################################################################################## Windows package
 

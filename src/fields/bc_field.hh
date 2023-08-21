@@ -27,6 +27,13 @@
  *
  * Definition of BCField must be in separate file.
  * In other case source file field.cc is too big and compiler can throw compile error.
+ *
+ * TODO: get rid of BCField and BCMultiField as separate class
+ * - From version 4.0.0 we should distinguish betwean a field as a representation of
+ *   a space-time function and the field evaluation domain dictated by a particular assembly.
+ *   The definition domain of the generic field is not restricted to either bulk or boundary, in fact
+ *   Most of the fields can be evaluated on both type of regions the only exception is the FieldFE
+ *   so newly the boundary domain flag is only attribute of the FieldFE.
  */
 template<int spacedim, class Value>
 class BCField : public Field<spacedim, Value> {
