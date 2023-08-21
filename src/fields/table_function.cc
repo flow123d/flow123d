@@ -15,6 +15,7 @@
  * @brief
  */
 
+#include "fields/field_constant.hh"
 #include "fields/table_function.hh"
 #include "tools/time_governor.hh"
 #include "input/input_type.hh"
@@ -30,13 +31,12 @@ const it::Tuple & TableFunction<Value>::get_input_type_val()
 	 * to independent value. It needs only replace type of 't' with generic type
 	 * (Input::Type::Parameter).
 	 */
-    typedef FieldValue<3>::TensorFixed TensorValue;
     return it::Tuple("IndependentValue", "Value of Field for time variable.")
                                        //"Value of Field for independent variable."
         .declare_key("t", TimeGovernor::get_input_time_type( 0.0 ), it::Default::obligatory(),
                                     "Time stamp." )
                                   //"Independent variable of stamp."
-		.declare_key("value", TensorValue::get_input_type(), it::Default::obligatory(),
+		.declare_key("value", FieldConstant<3, Value>::get_tensor_input_type(), it::Default::obligatory(),
 									"Value of the field in given stamp." )
 		.close();
 }
@@ -139,7 +139,7 @@ template class TableFunction<FieldValue<0>::Enum >;
 template class TableFunction<FieldValue<0>::Integer >;
 template class TableFunction<FieldValue<0>::Scalar >;
 template class TableFunction<FieldValue<0>::Vector >; // temporary solution for computing more fields at once in python
-template class TableFunction<FieldValue<2>::VectorFixed >;
-template class TableFunction<FieldValue<2>::TensorFixed >;
+//template class TableFunction<FieldValue<2>::VectorFixed >;
+//template class TableFunction<FieldValue<2>::TensorFixed >;
 template class TableFunction<FieldValue<3>::VectorFixed >;
 template class TableFunction<FieldValue<3>::TensorFixed >;

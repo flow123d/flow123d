@@ -258,16 +258,6 @@ public:
     const static int rank_ = 2;
 
     static std::string type_name() { return fmt::format("R[{:d},{:d}]", NRows, NCols); }
-    static IT::Array get_input_type() {
-		if (NRows == NCols) {
-			// for square tensors allow initialization by diagonal vector, etc.
-			return IT::Array( IT::Array( IT::Parameter("element_input_type"), 1), 1 );
-		}
-		else {
-			return IT::Array( IT::Array( IT::Parameter("element_input_type"), NCols, NCols), NRows, NRows );
-		}
-
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -346,10 +336,6 @@ public:
     const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
-    static IT::Parameter get_input_type()
-    {
-        return IT::Parameter("element_input_type");
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -437,9 +423,6 @@ public:
 
 
     static std::string type_name() { return "R[n]"; }
-    static IT::Array get_input_type() {
-        return IT::Array( IT::Parameter("element_input_type"), 1);
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -515,9 +498,6 @@ public:
 
 
     static std::string type_name() { return fmt::format("R[{:d}]", NRows); }
-    static IT::Array get_input_type() {
-        return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
