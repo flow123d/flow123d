@@ -48,8 +48,8 @@ image_version=dbg
 image_tag=latest
 
 # In order to link the flow123d commit with particular image tag 
-# see the file: config/docker/image_tag
-DOCKER_TAG="$CFG/docker/image_tag"
+# see the file: config/build/image_tag
+DOCKER_TAG="$CFG/build/image_tag"
 if [[ -f "$DOCKER_TAG" ]]; then
   image_tag=$(cat "$DOCKER_TAG")
 fi
@@ -412,7 +412,7 @@ case $action in
   ;;
   detach)
     docker rm -f $contname > /dev/null 2>&1
-    dbgc docker run -di --name $contname ${docker_terminal} $envarg $mountargs $priv_true $rest $base_image 
+    dbgc docker run -d --name $contname ${docker_terminal} $envarg $mountargs $priv_true $rest $base_image 
     #dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
   run)

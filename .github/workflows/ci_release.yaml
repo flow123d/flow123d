@@ -59,9 +59,9 @@ jobs:
     - name: Build flow123d, verify, tarball.
       run: config/tests/make_build_dir.sh gnu
     - uses: actions/upload-artifact@v3
-        with:         
-          name: build_dir
-          path: build_dir.tar    
+      with:         
+        name: build_dir
+        path: build_dir.tar    
 
     - name: Build packages
       run: |
