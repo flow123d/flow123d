@@ -35,6 +35,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/mapping_p1.hh"
 #include "input/factory.hh"
 
 #include <memory>
@@ -295,8 +296,31 @@ private:
      */
     double get_scaled_value(int i_cache_el, unsigned int elm_idx, const std::string &region_name, RegionValueErr &actual_compute_region_error);
 
+    /**
+     * Helper method. Compute real coordinates and weights (use QGauss) of given element.
+     *
+     * Method is needs in Gauss interpolation.
+     */
+    template<int elemdim>
+    unsigned int compute_fe_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
+    		const ElementAccessor<spacedim> &elm, unsigned int order=3)
+    {
+        static_assert(elemdim <= spacedim, "Dimension of element must be less equal than spacedim.");
+    	static const double weight_coefs[] = { 1., 1., 2., 6. };
 
-	/// DOF handler object
+    	QGauss qgauss(elemdim, order);
+    	arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
+
+    	for(unsigned i=0; i<qgauss.size(); ++i) {
+    		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
+    		q_points[i] = MappingP1<elemdim,spacedim>::project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i)), map_mat);
+    	}
+
+    	return qgauss.size();
+    }
+
+
+    /// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;

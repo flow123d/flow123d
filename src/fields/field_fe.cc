@@ -21,7 +21,6 @@
 #include "fields/field_fe.hh"
 #include "la/vector_mpi.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
-#include "fields/fe_value_handler.hh"
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
@@ -464,13 +463,13 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 			q_weights[0] = 1.0;
 			break;
 		case 1:
-			quadrature_size = compute_fe_quadrature<1, spacedim>(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<1>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 2:
-			quadrature_size = compute_fe_quadrature<2, spacedim>(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<2>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 3:
-			quadrature_size = compute_fe_quadrature<3, spacedim>(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<3>(q_points, q_weights, ele, quadrature_order);
 			break;
 		}
 		searched_elements.clear();
