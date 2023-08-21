@@ -118,8 +118,6 @@ public:
     virtual ~FieldFormula();
 
 private:
-    typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
-
     /**
      * Evaluate depth variable if it is contained in formula.
      *
