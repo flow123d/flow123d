@@ -77,7 +77,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        - run: config/build/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
         - name: Report
           run: |
             echo "Job result: ${{job.result}}"
@@ -110,7 +110,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+        - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
     build_doc:
         needs: [build]
@@ -124,7 +124,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/tests/run_with_build_dir.sh  dbg_gnu make ref-doc
+        - run: config/build/run_with_build_dir.sh  dbg_gnu make ref-doc
                      
         
     conclusion:
