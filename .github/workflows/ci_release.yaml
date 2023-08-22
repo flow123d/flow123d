@@ -30,51 +30,43 @@ env:
   environment: gnu
   
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Set variables
-      id: vars
-      run: |
-        git_commit=`git rev-parse --short=6 HEAD`
-        release_tag=`cat version`_${git_commit}
-        echo ${release_tag}
-
-        # can not use environment variables in github actions
-        echo ::set-output name=pubdir::publish_${environment}
-        echo ::set-output name=reltag::${release_tag}
-
-    - name: Check vars
-      run: |
-          echo pubdir="${{ steps.vars.outputs.pubdir }}"    
-          echo reltag="${{ steps.vars.outputs.reltag }}"
-
-    - name: Build flow123d, verify, tarball.
-
-    - name: Build packages
-      run: |
-        # Login for finall push to docker hub
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-        
-        
-        # make_packages <environment> <image_name_base> [push]
-        release_tag="${{ steps.vars.outputs.reltag }}"
-        #config/package/make_packages.sh ${environment} ci ${release_tag} push
-        config/build/auto_build.sh rel ${environment} ci ${release_tag}  
-    - uses: actions/upload-artifact@v3
-      with:         
-        name: build_dir
-        path: build_dir.tar    
+    build:
+        runs-on: ubuntu-latest
+        name: Flow123d release main build
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+    
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
+            echo ${release_tag}
+    
+            # can not use environment variables in github actions
+            echo ::set-output name=pubdir::publish_${environment}
+            echo ::set-output name=reltag::${release_tag}
+    
+        - name: Check vars
+          run: |
+              echo pubdir="${{ steps.vars.outputs.pubdir }}"    
+              echo reltag="${{ steps.vars.outputs.reltag }}"
+        - name: Build Flow123d
+          run: |        
+              release_tag="${{ steps.vars.outputs.reltag }}"
+              # auto_build.sh <build_type> <environment> <image_name_base> <release_tag> 
+              config/build/auto_build.sh rel ${environment} ci ${release_tag}  
+        - uses: actions/upload-artifact@v3
+          with:         
+            name: build_dir
+            path: build_dir.tar   
 
  
     packages:
+        name: Images and installation packages
         needs: [build]
         runs-on: ubuntu-latest
-        name: Packages
         continue-on-error: True
         outputs:
             status: ${{job.status}}
@@ -85,6 +77,8 @@ jobs:
           with:
             name: build_dir
         - run: |
+            # Login for finall push to docker hub
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
             release_tag="${{ steps.vars.outputs.reltag }}"
             make_packages.sh ${environment} ci ${release_tag} push
     
