@@ -1012,7 +1012,7 @@ install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING
 # python libs, sources and config files
 install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
 install(FILES     config/host_table.yaml    DESTINATION config/)
-install(FILES     config/package/requirements.txt    DESTINATION config)
+install(FILES     config/build/requirements.txt    DESTINATION config)
 
 
 # To install MSVC runtime libraries ... ?
