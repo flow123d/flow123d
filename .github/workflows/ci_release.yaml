@@ -80,7 +80,7 @@ jobs:
             # Login for finall push to docker hub
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
             release_tag="${{ steps.vars.outputs.reltag }}"
-            make_packages.sh ${environment} ci ${release_tag} push
+            config/build/make_packages.sh ${environment} ci ${release_tag} push
     
         - name: upload artifacts
           uses: actions/upload-artifact@v3
