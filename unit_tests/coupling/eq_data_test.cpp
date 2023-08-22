@@ -330,8 +330,7 @@ TEST_F(SomeEquation, values) {
           value: 1.1
         init_conc: [ 1, 2, 3 ]
         # MultiField
-        conc_mobile: !FieldConstant 
-          value: [1, 2, 3]
+        conc_mobile: [1, 2, 3]
       - region: ["2D XY diagonal", "3D back"]
         init_pressure: 2.2
         conc_mobile: [1, 2, 3]
@@ -347,8 +346,7 @@ TEST_F(SomeEquation, values) {
           value: 1.23
         bc_conc: !FieldFormula
           value: "[X[0], 10+X[0], 20+X[0]]"
-        conc_mobile: !FieldConstant 
-          value: [5, 6, 7]
+        conc_mobile: [5, 6, 7]
       - rid: 102
         bc_type: "dirichlet"
         bc_piezo_head: 1.23

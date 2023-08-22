@@ -113,3 +113,13 @@ test_cases:
     - regex:
         files: [job_output.log]
         substr: "/problem/flow_equation"
+        
+- files: 15_bparser_invalid_shape.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Segmentation fault"
+#    - regex:
+#        files: [job_output.log]
+#        substr: "/problem/flow_equation/input_fields/0/conductivity"

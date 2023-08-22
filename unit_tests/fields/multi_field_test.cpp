@@ -45,11 +45,10 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 string field_constant_input = R"YAML(
-common: !FieldConstant 
-  value:
-   - 1
-   - 2
-   - 3
+common:
+  - 1
+  - 2
+  - 3
 transposed:
  - !FieldConstant
    value: 1
@@ -74,11 +73,18 @@ TEST(MultiField, transposition) {
 
 	EXPECT_EQ(common.size(), transposed.size());
 
+    typename FieldValue<3>::Scalar::return_type r_value;
+	FieldValue<3>::Scalar value(r_value);
+
 	auto it_c = common.begin<Input::AbstractRecord>();
 	for (auto it_t = transposed.begin<Input::AbstractRecord>(); it_t != transposed.end(); ++it_t, ++it_c) {
 		Input::Record rec_t = (*it_t);
 		Input::Record rec_c = (*it_c);
-		EXPECT_DOUBLE_EQ( rec_t.val<double>("value"), rec_c.val<double>("value") );
+		value.init_from_input( rec_t.val<Input::Array>("value") );
+		double t_val = value.mem_ptr()[0];
+		value.init_from_input( rec_c.val<Input::Array>("value") );
+		double c_val = value.mem_ptr()[0];
+		EXPECT_DOUBLE_EQ( t_val, c_val );
 	}
 }
 
@@ -209,11 +215,13 @@ TEST_F(MultiFieldTest, const_full_test) {
     data:
       - region: ALL
         time: 0.0
-        scalar_field: !FieldConstant
-          value:
-           - 1
-           - 2
-           - 3
+        scalar_field:
+          - !FieldConstant
+            value: 1
+          - !FieldConstant
+            value: 2
+          - !FieldConstant
+            value: 3
     )YAML";
 
     this->read_input(eq_data_input);
