@@ -29,7 +29,7 @@ destination="`pwd`/publish_${environment}"
 ################################
 # paths inside docker container
 flow_install_location=/opt/flow123d
-flow_repo_location=/opt/flow123d/flow123d
+flow_repo_location=`pwd`
 
 
 #####################
@@ -42,14 +42,14 @@ build_container=contgnurelease
 
 ###############################
 # Conatiners and images names and tags
-imagesversion=`cat ${flow_repo_host}/config/docker/image_tag`
-release_version=`cat ${flow_repo_host}/version`      
+imagesversion=`cat ${flow_repo_host}/config/build/image_tag`
+#release_version=`cat ${flow_repo_host}/version`      
 
 
 
 git_hash=`git rev-parse --short=6 HEAD`
-#git_branch=`${dexec} cd ${flow_repo_location} && git rev-parse --abbrev-ref HEAD`
-
+git_branch=`git rev-parse --abbrev-ref HEAD`
+build_dir_host=build-${git_branch}
 
 
 if [ "${image_name_base}" == "flow123d" ];
@@ -66,7 +66,7 @@ fi
 
 echo "Variables summary"
 echo "build_container: '${build_container}'"
-echo "release_version: '${release_version}'"
+#echo "release_version: '${release_version}'"
 echo "environment: '${environment}'"
 echo "imagesversion: '${imagesversion}'"
 echo "release_tag: '${release_tag}'"
@@ -75,10 +75,23 @@ echo "target_image: '${target_image}'"
 
 
 ######################################################################################################### setup container
+# Recreate build files and dirs
+rm -rf ${build_dir_host}
+mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
+rm build_tree
+ln -s ${build_dir_host} build_tree
+cp ${build_dir_host}/_config.cmake config.cmake
+
+${dexec} make -C ${flow_repo_location} set-safe-directory
+${dexec} git config --global --add safe.directory '*'
+
+make update-submodules
+
+
 
 # docker rm -f  || echo "container not running"
 bin/fterm update
-bin/fterm rel_$environment --detach ${build_container} -v `pwd`:${flow_repo_location} 
+bin/fterm rel_$environment --detach ${build_container} #-v `pwd`:${flow_repo_location} 
 #docker rm -f ${build_container}
 #bin/fterm rel_$environment -- -di --name ${build_container} --volume `pwd`:${flow_repo_location}
 #bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
@@ -95,20 +108,10 @@ function dexec_setvars_make {
 ######################################################################################################### build flow123d install container
 
 
-# copy config
-#${dexec} ls ${flow_repo_location}
-cp config/config-jenkins-docker-${build_type}.cmake config.cmake
-
-# add full version
-echo "set(FLOW_MANUAL_VERSION ${release_tag})" >> config.cmake
 ${dexec} make -C ${flow_repo_location} set-safe-directory
 ${dexec} git config --global --add safe.directory '*'
 
-# compile
-#DEBUG=--debug=j
-${dexec} make -C ${flow_repo_location} clean-all
-${dexec} make -C ${flow_repo_location} ${DEBUG} -j4 all
-echo "build result: $?"
+
 
 
 dexec_setvars_make package
@@ -123,7 +126,7 @@ ${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ
 #${dexec} make -C ${{flow_repo_location}} doxy-doc
 
 # Local install of source Python packages
-${dexec} pip install --user -r ${flow_repo_location}/config/package/requirements.txt
+${dexec} pip install --user -r ${flow_repo_location}/config/build/requirements.txt
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"
@@ -154,7 +157,7 @@ docker build \
      --build-arg git_hash="${git_hash}" \
      --build-arg build_date="${build_date}" \
      --tag ${target_tagged} \
-     ${flow_repo_host}/config/package/dockerfile
+     ${flow_repo_host}/config/build/dockerfile
 
 # Push only if $3 == push
 ${docker_push} ${target_tagged}
@@ -226,7 +229,7 @@ cmake \
     -DFLOW123D_ROOT="${flow_repo_location}" \
     -DIMAGE_TAG="${target_tagged}" \
     -DDEST="${destination}" \
-    -S ${flow_repo_host}/config/package/project -B install-linux
+    -S ${flow_repo_host}/config/build/project -B install-linux
 
 make -C install-linux package
 mv install-linux/${base_name}.tar.gz ${destination}/${lin_arch_name}
@@ -235,7 +238,7 @@ echo "{\"build\": \"${current_date}\", \"hash\": \"${git_hash}\"}" > ${destinati
 ############################################################################################## Windows package
 
 mkdir -p install-win
-cp -r ${flow_repo_host}/config/package/project/src/windows/* install-win
+cp -r ${flow_repo_host}/config/build/project/src/windows/* install-win
 cp -r ${flow_repo_host}/tests install-win
 ${dcp}:${flow_repo_location}/build_tree/htmldoc/html/src/.  install-win/htmldoc
 ${dcp}:${flow_repo_location}/build_tree/${pdf_location}     install-win/flow123d_${release_tag}_doc.pdf

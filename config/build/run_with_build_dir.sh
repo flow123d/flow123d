@@ -9,10 +9,9 @@
 set -e
 set -x
 
-env=$1
+env=$1;shift
 case $env in
     dbg_gnu|rel_gnu|dbg_intel|rel_intel):
-    shift
     ;;
     *)
     echo Wrong environment.

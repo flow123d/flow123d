@@ -44,7 +44,7 @@ cd ${flow_repo_host}
 ################################
 # paths inside docker container
 flow_install_location=/opt/flow123d
-flow_repo_location=/opt/flow123d/flow123d
+flow_repo_location=`pwd`
 
 
 #####################
@@ -83,7 +83,7 @@ echo "target_image: '${target_image}'"
 
 # docker rm -f  || echo "container not running"
 bin/fterm update
-bin/fterm ${build_type}_${environment} --detach ${build_container} -v `pwd`:${flow_repo_location} 
+bin/fterm ${build_type}_${environment} --detach ${build_container} 
 
 dexec="docker exec -u $(id -u):$(id -g) ${build_container}"      # execute command which will follow
 #dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
