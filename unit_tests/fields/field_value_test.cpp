@@ -10,6 +10,7 @@
 
 #include <flow_gtest.hh>
 #include <fields/field_values.hh>
+#include <fields/field_constant.hh>
 #include "arma_expect.hh"
 #include <system/armor.hh>
 
@@ -104,8 +105,6 @@ TEST(FieldValue_, construction_from_raw) {
 string input = R"INPUT(
 {   
 double_scalar=1.3,
-int_scalar=23,
-enum_scalar="one",
 
 double_fix_vector_full=[1.2, 3.4, 5.6],
 int_fix_vector_full=[1,2,3],
@@ -141,7 +140,7 @@ Input::Type::TypeBase::MakeInstanceReturnType get_instance(const Input::Type::Se
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
 
-	static auto value_type = Value::get_input_type();
+	static auto value_type = FieldConstant<3, Value>::get_tensor_input_type();
 	return value_type.make_instance(param_vec);
 }
 
