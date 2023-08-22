@@ -223,9 +223,7 @@ void init_vector_from_input( VectorType &value, Input::Array rec ) {
         }
     } else {
         THROW( ExcFV_Input()
-                << EI_InputMsg(
-                        fmt::format("Initializing vector of size {:d} by vector of size {%d.}",
-                            nrows, rec.size()))
+                << EI_InputMsg(fmt::format("Initializing vector of size {:d} by vector of other size or by tensor", nrows))
                 << rec.ei_address()
              );
     }
