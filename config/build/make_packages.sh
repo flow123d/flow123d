@@ -78,7 +78,7 @@ echo "target_image: '${target_image}'"
 # Recreate build files and dirs
 rm -rf ${build_dir_host}
 mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
-rm build_tree
+rm -f build_tree
 ln -s ${build_dir_host} build_tree
 cp ${build_dir_host}/_config.cmake config.cmake
 
