@@ -21,7 +21,6 @@
 #include "fields/field_fe.hh"
 #include "la/vector_mpi.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
-#include "fields/fe_value_handler.hh"
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
@@ -85,6 +84,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"as the computational mesh, but possibly with different numbering. In the case of the same numbering, "
         		"the user can set 'identical_mesh' to omit algorithm for guessing node and element renumbering. "
         		"Alternatively, in case of different input mesh, several interpolation algorithms are available.")
+        .declare_key("is_boundary", IT::Bool(), IT::Default("false"),
+                "Distinguishes bulk / boundary FieldFE.")
         .close();
 }
 
@@ -132,7 +133,8 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED), fe_values_(4)
+  dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED),
+  boundary_domain_(false), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -199,30 +201,6 @@ VectorMPI FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiD
                 );
     }
 
-    unsigned int ndofs = dh_->max_elem_dofs();
-
-    // initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.mixed_fe = this->fe_;
-
-	// initialize value handler objects
-	init_data.range_begin = this->fe_item_[0].range_begin_;
-	init_data.range_end = this->fe_item_[0].range_end_;
-	value_handler0_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[1].range_begin_;
-	init_data.range_end = this->fe_item_[1].range_end_;
-	value_handler1_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[2].range_begin_;
-	init_data.range_end = this->fe_item_[2].range_end_;
-	value_handler2_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[3].range_begin_;
-	init_data.range_end = this->fe_item_[3].range_end_;
-	value_handler3_.initialize(init_data);
-
 	// set interpolation
 	interpolation_ = DataInterpolation::equivalent_msh;
 
@@ -237,6 +215,12 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
+    auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if ( (region_idx % 2) == this->boundary_domain_ ) {
+        // Skip evaluation of boundary fields on bulk regions and vice versa
+        return;
+    }
+
     Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> mat_value;
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
@@ -307,6 +291,7 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read data from input record
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 	field_name_ = rec.val<std::string>("field_name");
+	this->boundary_domain_ = rec.val<bool>("is_boundary");
 	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
 		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 	}
@@ -321,11 +306,10 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
+void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh) {
     // Mesh can be set only for field initialized from input.
     if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
         ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
-        this->boundary_domain_ = boundary_domain;
         if (this->interpolation_ == DataInterpolation::identic_msh) {
         	//DebugOut() << "Identic mesh branch\n";
             source_target_mesh_elm_map_ = ReaderCache::identic_mesh_map(reader_file_, const_cast<Mesh *>(mesh));
@@ -340,7 +324,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
                             field_name_);
                 }
             } else if (this->interpolation_ == DataInterpolation::interp_p0) {
-                if (!boundary_domain) {
+                if (!this->boundary_domain_) {
                     this->interpolation_ = DataInterpolation::gauss_p0;
                     WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n",
                             field_name_);
@@ -348,7 +332,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
             }
         }
         if (dh_ == nullptr) {
-            if (boundary_domain) this->make_dof_handler( mesh->bc_mesh() );
+            if (this->boundary_domain_) this->make_dof_handler( mesh->bc_mesh() );
             else this->make_dof_handler( mesh );
         }
         region_value_err_.resize(mesh->region_db().size());
@@ -385,7 +369,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<MeshBase &>(*mesh), fe);
 	dh_par->distribute_dofs(ds);
 	dh_ = dh_par;
-    unsigned int ndofs = dh_->max_elem_dofs();
 
     this->fill_fe_item<0>();
     this->fill_fe_item<1>();
@@ -394,28 +377,6 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
     this->fe_ = dh_->ds()->fe();
 
     data_vec_ = VectorMPI::sequential( dh_->lsize() ); // allocate data_vec_
-
-	// initialization data of value handlers
-	FEValueInitData init_data;
-	init_data.dh = dh_;
-	init_data.data_vec = data_vec_;
-	init_data.ndofs = ndofs;
-	init_data.n_comp = this->n_comp();
-	init_data.mixed_fe = this->fe_;
-
-	// initialize value handler objects
-	init_data.range_begin = this->fe_item_[0].range_begin_;
-	init_data.range_end = this->fe_item_[0].range_end_;
-	value_handler0_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[1].range_begin_;
-	init_data.range_end = this->fe_item_[1].range_end_;
-	value_handler1_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[2].range_begin_;
-	init_data.range_end = this->fe_item_[2].range_end_;
-	value_handler2_.initialize(init_data);
-	init_data.range_begin = this->fe_item_[3].range_begin_;
-	init_data.range_end = this->fe_item_[3].range_end_;
-	value_handler3_.initialize(init_data);
 }
 
 
@@ -502,13 +463,13 @@ void FieldFE<spacedim, Value>::interpolate_gauss()
 			q_weights[0] = 1.0;
 			break;
 		case 1:
-			quadrature_size = value_handler1_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<1>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 2:
-			quadrature_size = value_handler2_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<2>(q_points, q_weights, ele, quadrature_order);
 			break;
 		case 3:
-			quadrature_size = value_handler3_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			quadrature_size = compute_fe_quadrature<3>(q_points, q_weights, ele, quadrature_order);
 			break;
 		}
 		searched_elements.clear();

@@ -314,7 +314,6 @@ add_library(coupling_lib
     fields/table_function.cc
     fields/field_time_function.cc
     fields/field_fe.cc
-    fields/fe_value_handler.cc
     fields/eval_subset.cc
     fields/eval_points.cc
     fields/field_value_cache.cc

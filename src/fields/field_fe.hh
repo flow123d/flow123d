@@ -22,7 +22,6 @@
 #include "system/system.hh"
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/fe_value_handler.hh"
 #include "fields/field.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
@@ -36,6 +35,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/mapping_p1.hh"
 #include "input/factory.hh"
 
 #include <memory>
@@ -159,7 +159,7 @@ public:
     /**
      * Set target mesh.
      */
-    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
+    void set_mesh(const Mesh *mesh) override;
 
 
     /**
@@ -296,20 +296,34 @@ private:
      */
     double get_scaled_value(int i_cache_el, unsigned int elm_idx, const std::string &region_name, RegionValueErr &actual_compute_region_error);
 
+    /**
+     * Helper method. Compute real coordinates and weights (use QGauss) of given element.
+     *
+     * Method is needs in Gauss interpolation.
+     */
+    template<int elemdim>
+    unsigned int compute_fe_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
+    		const ElementAccessor<spacedim> &elm, unsigned int order=3)
+    {
+        static_assert(elemdim <= spacedim, "Dimension of element must be less equal than spacedim.");
+    	static const double weight_coefs[] = { 1., 1., 2., 6. };
 
-	/// DOF handler object
+    	QGauss qgauss(elemdim, order);
+    	arma::mat map_mat = MappingP1<elemdim,spacedim>::element_map(elm);
+
+    	for(unsigned i=0; i<qgauss.size(); ++i) {
+    		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
+    		q_points[i] = MappingP1<elemdim,spacedim>::project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point<elemdim>(i)), map_mat);
+    	}
+
+    	return qgauss.size();
+    }
+
+
+    /// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorMPI data_vec_;
-
-    /// Value handler that allows get value of 0D elements.
-    FEValueHandler<0, spacedim, Value> value_handler0_;
-    /// Value handler that allows get value of 1D elements.
-    FEValueHandler<1, spacedim, Value> value_handler1_;
-    /// Value handler that allows get value of 2D elements.
-    FEValueHandler<2, spacedim, Value> value_handler2_;
-    /// Value handler that allows get value of 3D elements.
-    FEValueHandler<3, spacedim, Value> value_handler3_;
 
 	/// mesh reader file
 	FilePath reader_file_;

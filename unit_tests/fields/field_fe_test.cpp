@@ -102,15 +102,19 @@ TEST_F(FieldEvalFETest, input_msh) {
         bc_scalar_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
+          is_boundary: true
         bc_vector_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: vector_fixed
+          is_boundary: true
         bc_tensor_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
+          is_boundary: true
         bc_enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
+          is_boundary: true
         bc_scalar_ref: !FieldFormula
           value: X[0]+X[1]+X[2]+t
         bc_vector_ref: !FieldFormula
@@ -251,6 +255,7 @@ TEST_F(FieldEvalFETest, unit_conversion) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: scalar
           unit: "const; const=0.1*m"
+          is_boundary: true
         bc_scalar_ref: !FieldFormula
           value: 0.1*(X[0]+X[1]+X[2]+t)
     )YAML";
@@ -296,10 +301,12 @@ TEST_F(FieldEvalFETest, identic_mesh) {
           mesh_data_file: fields/identic_mesh_data.msh
           field_name: scalar
           interpolation: identic_mesh
+          is_boundary: true
         bc_vector_field: !FieldFE
           mesh_data_file: fields/identic_mesh_data.msh
           field_name: vector_fixed
           interpolation: identic_mesh
+          is_boundary: true
         bc_scalar_ref: !FieldFormula
           value: X[0]+X[1]+X[2]+t
         bc_vector_ref: !FieldFormula
@@ -400,11 +407,13 @@ TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
           field_name: scalar
           default_value: 0.0
           #interpolation: P0_intersection
+          is_boundary: true
         bc_vector_field: !FieldFE
           mesh_data_file: fields/interpolation_rectangle.msh
           field_name: vector_fixed
           default_value: 0.0
           #interpolation: P0_intersection
+          is_boundary: true
     )YAML";
 
     std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };

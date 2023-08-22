@@ -88,6 +88,7 @@ DualPorosity::EqFields::EqFields()
   *this += init_conc_immobile
           .name("init_conc_immobile")
           .description("Initial concentration of substances in the immobile zone.")
+          .input_default("0")
           .units( UnitSI().kg().m(-3) );
 
   //creating field for porosity that is set later from the governing equation (transport)

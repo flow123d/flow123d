@@ -35,13 +35,12 @@ namespace it = Input::Type;
  */
 
 template<int spacedim, class Value>
-MultiField<spacedim, Value>::MultiField(bool bc)
+MultiField<spacedim, Value>::MultiField()
 : FieldCommon(),
   no_check_control_field_(nullptr)
 {
 // 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
-    this->shared_->bc_ = bc;
     this->set_shape( Value::NRows_, Value::NCols_ );
 }
 
@@ -197,14 +196,11 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
-	// currently we cannot output boundary fields
-	if (!is_bc()) {
-	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
 
-	    for (unsigned long index=0; index < this->size(); index++) {
-            sub_fields_[index].compute_field_data( type, stream );
-	    }
-	}
+    for (unsigned long index=0; index < this->size(); index++) {
+        sub_fields_[index].compute_field_data( type, stream );
+    }
 }
 
 
@@ -263,7 +259,7 @@ void MultiField<spacedim, Value>::setup_components() {
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
     {
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), this->full_comp_name(i_comp), is_bc()) );
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), this->full_comp_name(i_comp)) );
     	sub_fields_[i_comp].units( units() );
         if (no_check_control_field_ != nullptr && no_check_control_field_->size() == sub_fields_.size())
           sub_fields_[i_comp].disable_where((*no_check_control_field_)[i_comp], shared_->no_check_values_);
@@ -377,7 +373,7 @@ void MultiField<spacedim, Value>::set(
     sub_fields_.reserve( comp_size );
     for(unsigned int i_comp=0; i_comp < comp_size; i_comp++)
     {
-    	sub_fields_.push_back( SubFieldType(i_comp, name(), "", is_bc()) );
+    	sub_fields_.push_back( SubFieldType(i_comp, name(), "") );
     	sub_fields_[i_comp].set_mesh( *(shared_->mesh_) );
     	sub_fields_[i_comp].flags_ = this->flags_;
     	sub_fields_[i_comp].set(field_vec[i_comp], time, region_set_names);
@@ -395,7 +391,7 @@ void MultiField<spacedim, Value>::set(
 	ASSERT_PTR(this->shared_->mesh_).error("Mesh is not set!\n");
 
     sub_fields_.reserve(1);
-   	sub_fields_.push_back( SubFieldType(0, name(), "", is_bc()) );
+   	sub_fields_.push_back( SubFieldType(0, name(), "") );
    	sub_fields_[0].set_mesh( *(shared_->mesh_) );
    	sub_fields_[0].flags_ = this->flags_;
    	sub_fields_[0].set(field, time, region_set_names);

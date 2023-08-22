@@ -35,21 +35,20 @@ problem: !Coupling_Sequential
         - region: .boundary
           bc_conc: 0
         - region: ALL
-          init_conc: !FieldConstant
-            value:
-              - 0
-              - 900
-              - 0
-            unit: g*m^-3
+          init_conc:
+            - !FieldConstant
+              value: 0
+            - !FieldConstant
+              value: 900
+              unit: g*m^-3
+            - !FieldConstant
+              value: 0
           sources_sigma:
             - 3
             - 3
             - 10
           sources_conc: !FieldConstant
-            value:
-              - 600
-              - 600
-              - 600
+            value: 600
             unit: g*m^-3
           porosity: 0.9
     output_stream:

@@ -29,24 +29,28 @@ problem: !Coupling_Sequential
         bc_type: !FieldFE
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_type
+          is_boundary: true
         bc_pressure: !FieldFormula
           value: X[0]-X[2]
       - region: .2d_fracture_1
         bc_type: !FieldFE
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_type
+          is_boundary: true
         bc_pressure: !FieldFormula
           value: X[0]-X[2]
       - region: .2d_fracture_2
         bc_type: !FieldFE
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_type
+          is_boundary: true
         bc_pressure: !FieldFormula
           value: X[0]-X[2]
       - region: .3d_cube
         bc_type: !FieldFE
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_type
+          is_boundary: true
         bc_pressure: !FieldFormula
           value: X[0]-X[2]
     output:

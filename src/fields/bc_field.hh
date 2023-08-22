@@ -31,7 +31,7 @@
 template<int spacedim, class Value>
 class BCField : public Field<spacedim, Value> {
 public:
-    BCField() : Field<spacedim,Value>("anonymous_bc", true) {}
+    BCField() : Field<spacedim,Value>("anonymous_bc") {}
 };
 
 #endif /* BC_FIELD_HH_ */

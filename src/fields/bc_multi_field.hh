@@ -28,7 +28,7 @@
 template<int spacedim, class Value>
 class BCMultiField : public MultiField<spacedim, Value> {
 public:
-    BCMultiField() : MultiField<spacedim,Value>(true) {}
+    BCMultiField() : MultiField<spacedim,Value>() {}
 };
 
 #endif /* BC_MULTI_FIELD_HH_ */

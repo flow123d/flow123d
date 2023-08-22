@@ -266,9 +266,6 @@ public:
     OutputTime::DiscreteSpace get_output_type() const
     { return default_output_data_; }
 
-    bool is_bc() const
-    { return shared_->bc_;}
-
     unsigned int n_comp() const
     { return shared_->comp_names_.size();}
 
@@ -592,10 +589,6 @@ protected:
     	SharedData()
     	: list_idx_(0), limits_(std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max())) {};
 
-        /**
-         * True for boundary fields.
-         */
-        bool bc_;
         /**
          * Number of components for fields that return variable size vectors. Zero in other cases.
          */
