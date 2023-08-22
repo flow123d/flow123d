@@ -16,7 +16,7 @@ problem: !Coupling_Sequential
       - name: user_cond
         field: !FieldFormula
           value: "[1e-5, 0, 1e-6]"
-          shape_type: vector
+        shape_type: vector
       - name: user_dir
         field: !FieldFormula
           value: 0.2
