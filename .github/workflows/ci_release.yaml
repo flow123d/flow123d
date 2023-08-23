@@ -79,7 +79,8 @@ jobs:
         - run: |
             # Login for finall push to docker hub
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-            release_tag="${{ steps.vars.outputs.reltag }}"
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
             config/build/make_packages.sh ${environment} ci ${release_tag} push
     
         - name: upload artifacts
@@ -127,7 +128,8 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+        - run: |
+          config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
 
     # TODO: modify to run integration tests with release image
