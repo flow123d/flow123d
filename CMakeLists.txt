@@ -155,7 +155,7 @@ elseif(FLOW_BUILD_TYPE STREQUAL "release")
   set(CMAKE_BUILD_TYPE Release)
   # armadillo is configured using this definition
   add_definitions(-DARMA_NO_DEBUG)    # no bound checks in armadillo 
-  #flow_define(DEBUG_PROFILER)
+  flow_define(DEBUG_PROFILER)
   flow_define(BENCHMARK_ASSERTS)    # check time for benchmark unit tests
 elseif(FLOW_BUILD_TYPE STREQUAL "release_with_debug")
   # Release mode with debug info 
@@ -310,7 +310,7 @@ flow_define(COMPILER_FLAGS_ ${CMAKE_CXX_FLAGS})
 flow_define(SOURCE_DIR ${CMAKE_SOURCE_DIR})
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
-add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.7.1")
+add_subdirectory("${CMAKE_SOURCE_DIR}/third_party/json-3.10.5")
 
 ######################################################################### find libraries
 #
