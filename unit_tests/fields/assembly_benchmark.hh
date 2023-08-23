@@ -34,6 +34,8 @@
 #include "system/sys_profiler.hh"
 
 template<unsigned int dim> class MassAssembly;
+template<unsigned int dim> class StiffnessAssembly;
+template<unsigned int dim> class SourcesAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 #ifdef FLOW123D_DEBUG
@@ -47,7 +49,7 @@ static const unsigned int profiler_loop = 1000;
  */
 using Sclr = double;
 using Vect = arma::vec3;
-//using Tens = arma::mat33;
+using Tens = arma::mat33;
 
 // Functor computing velocity norm
 struct fn_conc_v_norm {
@@ -68,6 +70,71 @@ struct fn_conc_mass_matrix {
 struct fn_conc_retardation {
     inline Sclr operator() (Sclr csec, Sclr por_m, Sclr rho_s, Sclr sorp_mult) {
         return (1.-por_m)*rho_s*sorp_mult*csec;
+    }
+};
+
+// Functor computing sources density output (cross_section * sources_density)
+struct fn_conc_sources_dens {
+    inline Sclr operator() (Sclr csec, Sclr sdens) {
+        return csec * sdens;
+    }
+};
+
+// Functor computing sources sigma output (cross_section * sources_sigma)
+struct fn_conc_sources_sigma {
+    inline Sclr operator() (Sclr csec, Sclr ssigma) {
+        return csec * ssigma;
+    }
+};
+
+// Functor computing sources concentration output (sources_conc)
+struct fn_conc_sources_conc {
+    inline Sclr operator() (Sclr sconc) {
+        return sconc;
+    }
+};
+
+// Functor computing advection coefficient (velocity)
+struct fn_conc_ad_coef {
+    inline Vect operator() (Vect velocity) {
+        return velocity;
+    }
+};
+
+// Functor computing diffusion coefficient (see notes in function)
+struct fn_conc_diff_coef {
+    inline Tens operator() (Tens diff_m, Vect velocity, Sclr v_norm, Sclr alphaL, Sclr alphaT, Sclr water_content, Sclr porosity, Sclr c_sec) {
+
+        // used tortuosity model dues to Millington and Quirk(1961) (should it be with power 10/3 ?)
+        // for an overview of other models see: Chou, Wu, Zeng, Chang (2011)
+        double tortuosity = pow(water_content, 7.0 / 3.0)/ (porosity * porosity);
+
+        // result
+        Tens K;
+
+        // Note that the velocity vector is in fact the Darcian flux,
+        // so we need not to multiply vnorm by water_content and cross_section.
+	    //K = ((alphaL-alphaT) / vnorm) * K + (alphaT*vnorm + Dm*tortuosity*cross_cut*water_content) * arma::eye(3,3);
+
+        if (fabs(v_norm) > 0) {
+            /*
+            for (int i=0; i<3; i++)
+                for (int j=0; j<3; j++)
+                    K(i,j) = (velocity[i]/vnorm)*(velocity[j]);
+            */
+            K = ((alphaL - alphaT) / v_norm) * arma::kron(velocity.t(), velocity);
+
+            //arma::mat33 abs_diff_mat = arma::abs(K -  kk);
+            //double diff = arma::min( arma::min(abs_diff_mat) );
+            //ASSERT_PERMANENT(  diff < 1e-12 )(diff)(K)(kk);
+        } else
+            K.zeros();
+
+        // Note that the velocity vector is in fact the Darcian flux,
+        // so to obtain |v| we have to divide vnorm by porosity and cross_section.
+        K += alphaT*v_norm*arma::eye(3,3) + diff_m*(tortuosity*c_sec*water_content);
+
+        return K;
     }
 };
 
@@ -301,12 +368,12 @@ public:
         {
             // initialize multifield components
         	sorption_coefficient.setup_components();
-            //sources_conc.setup_components();
-            //sources_density.setup_components();
-            //sources_sigma.setup_components();
-            //diff_m.setup_components();
-            //disp_l.setup_components();
-            //disp_t.setup_components();
+            sources_conc.setup_components();
+            sources_density.setup_components();
+            sources_sigma.setup_components();
+            diff_m.setup_components();
+            disp_l.setup_components();
+            disp_t.setup_components();
 
             // create FieldModels
             v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
@@ -315,19 +382,19 @@ public:
                 Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient),
         		0.0
             );
-            //sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
-            //sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
-            //sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
-            //std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-            //for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
-            //    ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
-            //advection_coef.set(ad_coef_ptr_vec, 0.0);
-            //diffusion_coef.set(
-            //    Model<3, FieldValue<3>::TensorFixed>::create_multi(
-            //        fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
-            //    ),
-            //    0.0
-            //);
+            sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
+            sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
+            sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
+            std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
+            for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
+                ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
+            advection_coef.set(ad_coef_ptr_vec, 0.0);
+            diffusion_coef.set(
+                Model<3, FieldValue<3>::TensorFixed>::create_multi(
+                    fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
+                ),
+                0.0
+            );
         }
 
         // from TransportEqFields
@@ -375,17 +442,18 @@ public:
         EqData() {}
 
 
-    	int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
-    	unsigned int dg_order;                    ///< Polynomial order of finite elements.
+        int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
+        unsigned int dg_order;                    ///< Polynomial order of finite elements.
         std::shared_ptr<DOFHandlerMultiDim> dh_;  ///< Object for distribution of dofs.
         std::vector<std::string> substances_;     ///< Names of substances
 
-    	std::vector<std::vector<double> > gamma;  ///< Penalty parameters.
-    	vector<vector<arma::mat33> > dif_coef;    ///< Diffusion coefficients.
+        std::vector<std::vector<double> > gamma;  ///< Penalty parameters.
+        vector<vector<arma::mat33> > dif_coef;    ///< Diffusion coefficients.
+        unsigned int max_edg_sides;               ///< Maximal number of edge sides (evaluate from dim 1,2,3)
 
-    	std::vector<Vec> ret_vec;  ///< Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-    	LinSys **ls;               ///< Linear algebra system for the transport equation.
-    	LinSys **ls_dt;            ///< Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
+        std::vector<Vec> ret_vec;  ///< Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
+        LinSys **ls;               ///< Linear algebra system for the transport equation.
+        LinSys **ls_dt;            ///< Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
 
         std::vector<VectorMPI> output_vec;        ///< Vector of solution data.
 
@@ -499,8 +567,8 @@ public:
 
             if (mass_assembly_ != nullptr) {
                 delete mass_assembly_;
-            //    delete stiffness_assembly_;
-            //    delete sources_assembly_;
+                delete stiffness_assembly_;
+                delete sources_assembly_;
             }
         }
     }
@@ -529,6 +597,8 @@ public:
     Input::Record in_rec_;
 
     GenericAssembly< MassAssembly > * mass_assembly_;
+    GenericAssembly< StiffnessAssembly > * stiffness_assembly_;
+    GenericAssembly< SourcesAssembly > * sources_assembly_;
 };
 
 

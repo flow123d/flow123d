@@ -50,7 +50,7 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
         eq_data_->gamma[sbi].resize(this->mesh_->boundary_.size());
 
     // Resize coefficient array
-    //eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
+    eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
 
     eq_data_->output_vec.resize(eq_data_->n_substances());
     eq_fields_->output_field.set_components(eq_data_->subst_names());
@@ -101,8 +101,8 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
 
     // create assemblation object, finite element structures and distribute DOFs
     mass_assembly_ = new GenericAssembly< MassAssembly >(eq_fields_.get(), eq_data_.get());
-    //stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get());
-    //sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssembly >(eq_fields_.get(), eq_data_.get());
+    sources_assembly_ = new GenericAssembly< SourcesAssembly >(eq_fields_.get(), eq_data_.get());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());
@@ -132,9 +132,9 @@ void AssemblyBenchmarkTest::zero_time_step() {
         //mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    //stiffness_assembly_->assemble(eq_data_->dh_);
+    stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
-    //sources_assembly_->assemble(eq_data_->dh_);
+    sources_assembly_->assemble(eq_data_->dh_);
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
