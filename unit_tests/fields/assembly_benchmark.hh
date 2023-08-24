@@ -588,9 +588,22 @@ public:
         eq_data_->dh_->distribute_dofs(ds);
     }
 
+    /// Initialize equation
     void initialize(const string &input, std::vector<std::string> substances);
 
+    /// Execute zero time step. Do not call method directly, use run_simulation
     void zero_time_step();
+
+    /// Update equation solution. Do not call method directly, use run_simulation
+    void update_solution();
+
+    /// Call zero_time_step and update_solution for 4 time steps.
+    void run_simulation() {
+        this->zero_time_step();
+        for (uint i=0; i<4; ++i) {
+            this->update_solution();
+        }
+    }
 
     std::shared_ptr<EqFields> eq_fields_;  ///< Fields for model parameters.
     std::shared_ptr<EqData> eq_data_;      ///< Data for model parameters.
