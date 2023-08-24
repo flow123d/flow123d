@@ -546,18 +546,18 @@ public:
                     delete eq_data_->ls_dt[i];
                 }
 
-                //if (stiffness_matrix.size() > 0) {
-                //    if (stiffness_matrix[i])
-                //        chkerr(MatDestroy(&stiffness_matrix[i]));
-                //    if (mass_matrix[i])
-                //        chkerr(MatDestroy(&mass_matrix[i]));
-                //    if (rhs[i])
-                //    	chkerr(VecDestroy(&rhs[i]));
-                //    if (mass_vec[i])
-                //    	chkerr(VecDestroy(&mass_vec[i]));
+                if (stiffness_matrix.size() > 0) {
+                    if (stiffness_matrix[i])
+                        chkerr(MatDestroy(&stiffness_matrix[i]));
+                    if (mass_matrix[i])
+                        chkerr(MatDestroy(&mass_matrix[i]));
+                    if (rhs[i])
+                        chkerr(VecDestroy(&rhs[i]));
+                    if (mass_vec[i])
+                        chkerr(VecDestroy(&mass_vec[i]));
                     if (eq_data_->ret_vec[i])
-                    	chkerr(VecDestroy(&eq_data_->ret_vec[i]));
-                //}
+                        chkerr(VecDestroy(&eq_data_->ret_vec[i]));
+                }
             }
             if (eq_data_->ls != nullptr) {
                 delete[] eq_data_->ls;
@@ -609,7 +609,12 @@ public:
     std::shared_ptr<EqData> eq_data_;      ///< Data for model parameters.
     Input::Record in_rec_;
 
-    GenericAssembly< MassAssembly > * mass_assembly_;
+	std::vector<Vec> rhs;               ///< Vector of right hand side.
+	std::vector<Mat> stiffness_matrix;  ///< The stiffness matrix.
+	std::vector<Mat> mass_matrix;       ///< The mass matrix.
+	std::vector<Vec> mass_vec;          ///< Mass from previous time instant (necessary when coefficients of mass matrix change in time).
+
+	GenericAssembly< MassAssembly > * mass_assembly_;
     GenericAssembly< StiffnessAssembly > * stiffness_assembly_;
     GenericAssembly< SourcesAssembly > * sources_assembly_;
 };
