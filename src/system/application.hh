@@ -18,6 +18,26 @@
 #ifndef APPLICATION_BASE_HH_
 #define APPLICATION_BASE_HH_
 
+#include "system/application.hh"
+//#include <mpi.hh>
+//#include "system/system.hh"
+//#include "system/sys_profiler.hh"
+#include "system/python_loader.hh"
+#include "coupling/hc_explicit_sequential.hh"
+#include "coupling/balance.hh"
+//#include "input/accessors.hh"
+//#include "input/reader_to_storage.hh"
+//#include "input/reader_internal_base.hh"
+#include "system/armadillo_tools.hh"
+//
+#include <iostream>
+//#include <fstream>
+#include <regex>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/options_description.hpp>
+//#include <boost/filesystem.hpp>
+
 
 #include <string>
 //#include <sstream>
@@ -32,6 +52,11 @@
 #include "petscsys.h"                // for PetscErrorCode
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 
+#include "input/type_output.hh"
+#include "input/accessors.hh"
+#include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
+
 
 //#ifdef FLOW123D_HAVE_PETSC
 //#include "petsc.h"
@@ -43,6 +68,8 @@ using namespace std;
 TYPEDEF_ERR_INFO( EI_Signal, int);
 TYPEDEF_ERR_INFO( EI_SignalName, string);
 DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_SignalName::val << ") received! ]" );
+
+
 
 
 /**
@@ -62,21 +89,13 @@ DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_Sig
  @endcode
  *
  */
-class ApplicationBase {
+class Application {
 public:
-
-	/**
-	 * Contains basic structure of application (initialization, run and finalization).
-	 * Method is call after constructor and allows to call virtual methods.
-	 */
-	void init(int argc, char ** argv);
-
-	/**
-	 * Run application.
-	 *
-	 * Method must be implemented in derived class.
-	 */
-	virtual void run() = 0;
+    TYPEDEF_ERR_INFO( EI_InputVersionStr, string);
+    DECLARE_EXCEPTION( ExcVersionFormat,
+            << "Wrong format of the version specification: "
+            << EI_InputVersionStr::qval);
+    DECLARE_INPUT_EXCEPTION( ExcUnknownProblem, << "Problem type not implemented.\n" );
 
     /// Return codes of application
 	static const int exit_success = 0;
@@ -86,29 +105,76 @@ public:
     static bool petsc_initialized;
     static bool permon_initialized;
 
-protected:
 
-	/**
+
+    /// Root of the Input::Type tree. Description of whole input structure.
+    static Input::Type::Record & get_input_type();
+
+
+    /**
 	 * Constructor
 	 *
 	 * Construction is done in init method. We need to call virtual methods during construction.
 	 */
-	ApplicationBase();
+	Application();
 
-	/// Destructor
-	virtual ~ApplicationBase();
+
+    /**
+     * Read main input file
+     *
+     * Returns accessor to the root Record.
+     */
+    Input::Record read_input();
+
+
+
+    void init(int argc, char ** argv);
+    /**
+     * Run application.
+     *
+     * Read input and solve problem.
+     */
+    void run();
+
+
+    /**
+     * Displays program version and build info.
+     * Pass version information to Profiler.
+     *
+     * TODO: Split these two functionalities.
+     */
+    void display_version();
+
+
+    /// Destructor
+    ~Application();
+
+
+protected:
+
+    /**
+     * Check pause_after_run flag defined in input file.
+     */
+    void after_run();
+
+
+
+    /**
+     * Parse command line parameters.
+     * @param[in] argc       command line argument count
+     * @param[in] argv       command line arguments
+     */
+     void parse_cmd_line(const int argc, char ** argv);
+
+protected:
+
+
 
 	/**
 	 * Read system parameters, open log.
 	 */
 	void system_init( MPI_Comm comm, const string &log_filename);
 
-	/**
-	 * Parse command line parameters before Flow123D initialization.
-	 *
-	 * Method must be implemented in derived class.
-	 */
-	virtual void parse_cmd_line(const int argc, char ** argv) = 0;
 
 	/**
 	 * Implement printf function for PETSc with support for redirecting.
@@ -153,6 +219,40 @@ protected:
 
     /// Turn off signal handling useful to debug with valgrind.
     bool signal_handler_off_;
+
+
+    /// Get version of program and other base data from rev_num.h and store them to map
+    //Input::Type::RevNumData get_rev_num_data();
+
+    /// Main Flow123d problem
+    HC_ExplicitSequential *problem_;
+
+    /// filename of main input file
+    string main_input_filename_;
+
+    //int passed_argc_;
+    //char ** passed_argv_;
+
+    /// Description of possible command line arguments.
+    string program_arguments_desc_;
+
+    /// If true, we do output of profiling information.
+    bool use_profiler;
+
+    /// location of the profiler report file
+    string profiler_path;
+
+    /// If true, preserves output of balance in YAML format.
+    bool yaml_balance_output_;
+
+    /// root input record
+    Input::Record root_record;
+
 };
+
+
+
+
+
 
 #endif /* APPLICATION_BASE_HH_ */
