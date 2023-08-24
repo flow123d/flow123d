@@ -43,6 +43,10 @@
 
 
 void mpi_terminate() {
+	int mpi_on;
+	MPI_Initialized(&mpi_on);
+	if (! mpi_on) return;
+
     // Test if all processes are in the exception.
     MPI_Request request;
     MPI_Ibarrier(MPI_COMM_WORLD, &request);
@@ -68,6 +72,7 @@ void application_run(int argc, char **argv) {
     app.init(argc, argv);
     app.run();
 }
+
 //=============================================================================
 
 /**
@@ -76,11 +81,12 @@ void application_run(int argc, char **argv) {
 int main(int argc, char **argv) {
     try {
     	application_run(argc, argv);
+    } catch (Application::ExcNoRunOption) {
+        mpi_terminate();
+        return Application::exit_success;
     } catch (std::exception & e) {
         _LOG( Logger::MsgType::error ).every_proc() << e.what();
-        std::cout << "main catch\n";
         mpi_terminate();
-        std::cout << "main catch after terminate \n";
         return Application::exit_failure;
     } catch (...) {
         _LOG( Logger::MsgType::error ).every_proc() << "Unknown exception" << endl;

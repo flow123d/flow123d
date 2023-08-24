@@ -22,6 +22,7 @@
 #include "system/file_path.hh"
 #include "system/system.hh"
 #include <signal.h>
+#include <iostream>
 
 #ifdef FLOW123D_HAVE_PETSC
 //#include <petsc.h>
@@ -355,6 +356,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     po::store(parsed, vm);
     po::notify(vm);
 
+
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
 
@@ -391,13 +393,13 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         cout << "   flow123d -s <main_input>.yaml <other options> <PETSC options>" << endl;
         cout << "   flow123d <main_input>.yaml <other options> <PETSC options>" << endl;
         cout << desc << "\n";
-        //exit( exit_output );
+        THROW(ExcNoRunOption());
     }
 
 
     if (vm.count("version")) {
     	display_version();
-    	//exit( exit_output );
+    	THROW(ExcNoRunOption());
     }
 
 
@@ -413,7 +415,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         Input::Type::TypeBase::delete_unfinished_types();
         json_stream << Input::Type::OutputJSONMachine( root_type, get_rev_num_data() );
         json_stream.close();
-        //exit( exit_output );
+        THROW(ExcNoRunOption());
     }
 
 

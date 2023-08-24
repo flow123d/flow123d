@@ -31,7 +31,7 @@
 #include "system/armadillo_tools.hh"
 //
 #include <iostream>
-//#include <fstream>
+#include <fstream>
 #include <regex>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -96,6 +96,7 @@ public:
             << "Wrong format of the version specification: "
             << EI_InputVersionStr::qval);
     DECLARE_INPUT_EXCEPTION( ExcUnknownProblem, << "Problem type not implemented.\n" );
+    DECLARE_INPUT_EXCEPTION( ExcNoRunOption, << "No run option should be catched. Seeng this message is an error.\n" );
 
     /// Return codes of application
 	static const int exit_success = 0;
@@ -202,6 +203,7 @@ protected:
 	 * Finalize PERMON. If finalization failed return nonzero value.
 	 */
 	int permon_finalize();
+
 
     /**
      * Log file name argument - passed to system_init; "" means default, "\n" means no logging
