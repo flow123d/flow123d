@@ -188,7 +188,7 @@ using namespace std;
 
 
 #ifdef FLOW123D_DEBUG_PROFILER
-#define CUMUL_TIMER(tag) Profiler::instance()->find_timer(tag).cumulative_time
+#define CUMUL_TIMER(tag) Profiler::instance()->find_timer(tag).cumulative_time()
 #else
 #define CUMUL_TIMER(tag) 0
 #endif
