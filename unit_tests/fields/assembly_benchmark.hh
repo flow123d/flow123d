@@ -521,6 +521,12 @@ public:
 		symmetric = 1        // Symmetric weighted interior penalty DG
 	};
 
+	/// Allow set switch on/off initialization of FieldModels
+	enum EqFieldsInitialize {
+		use_field_const = 0,
+		use_field_model = 1
+	};
+
 	AssemblyBenchmarkTest()
     {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -589,7 +595,7 @@ public:
     }
 
     /// Initialize equation
-    void initialize(const string &input, std::vector<std::string> substances);
+    void initialize(const string &input, std::vector<std::string> substances, EqFieldsInitialize use_models);
 
     /// Execute zero time step. Do not call method directly, use run_simulation
     void zero_time_step();

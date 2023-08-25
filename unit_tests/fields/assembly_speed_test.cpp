@@ -29,7 +29,7 @@
  *
  ****************************************************************************************/
 
-void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances) {
+void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances, EqFieldsInitialize use_models) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
     in_rec_ = reader.get_root_interface<Input::Record>();
 
@@ -42,7 +42,7 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
 
     eq_fields_->set_components(eq_data_->subst_names());
     eq_fields_->set_input_list( in_rec_.val<Input::Array>("input_fields"), *this->time_ );
-    eq_fields_->initialize();
+    if (use_models == use_field_model) eq_fields_->initialize();
 
     // DG stabilization parameters on boundary edges
     eq_data_->gamma.resize(eq_data_->n_substances());
