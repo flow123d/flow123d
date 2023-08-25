@@ -23,8 +23,8 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-12
     user_fields:
       - name: user_pressure
-        is_boundary: true
-        scalar_field: !FieldFormula
+        shape_type: scalar
+        field: !FieldFormula
           value: X[0]
     input_fields:
       - region: 1d
@@ -43,8 +43,7 @@ problem: !Coupling_Sequential
     transport: !Solute_Advection_FV
       user_fields:
         - name: user_conc
-          is_boundary: true
-          scalar_field: !FieldFormula
+          field: !FieldFormula
             value: X[0]
       input_fields:
         - region: .sides

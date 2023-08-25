@@ -143,7 +143,7 @@ public:
      */
     Field();
 
-    Field(const string &name, bool bc = false);
+    Field(const string &name);
 
     /**
      * Constructor that must be used for create of MultiField components.
@@ -151,7 +151,7 @@ public:
      * Set parameters @p component_index_, @p shared_->input_name_ and @p name_.
      * Parameter name_ of Field is consisted of component name and MultiField name.
      */
-    Field(unsigned int component_index, string input_name, string name = "", bool bc = false);
+    Field(unsigned int component_index, string input_name, string name = "");
 
     /**
      * Copy constructor. Keeps shared history, declaration data, mesh.

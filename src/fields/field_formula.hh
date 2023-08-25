@@ -98,7 +98,7 @@ public:
      *
      * See also description of the FieldBase<...>::set_mesh.
      */
-    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
+    void set_mesh(const Mesh *mesh) override;
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
@@ -118,8 +118,6 @@ public:
     virtual ~FieldFormula();
 
 private:
-    typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
-
     /**
      * Evaluate depth variable if it is contained in formula.
      *

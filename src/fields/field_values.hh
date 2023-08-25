@@ -210,20 +210,20 @@ void init_vector_from_input( VectorType &value, Input::Array rec ) {
     unsigned int nrows = value.n_rows;
 
     typedef typename AccessTypeDispatch<ET>::type InnerType;
-    Input::Iterator<InnerType> it = rec.begin<InnerType>();
+    auto it = rec.begin<Input::Array>();
 
-    if ( rec.size() == 1 ) {
+    if ( it->size() == 1 && rec.size() == 1 ) {
+    	InnerType v = *(it->begin<InnerType>());
         for(unsigned int i=0; i< nrows; i++)
-            value.at(i)=ET(*it);
-    } else if ( rec.size() == nrows ) {
-        for(unsigned int i=0; i< nrows; i++, ++it) {
-            value.at(i)=ET(*it);
+            value.at(i) = v;
+    } else if ( it->size() == 1 && rec.size() == nrows ) {
+    	for(unsigned int i=0; i< nrows; i++, ++it) {
+    		InnerType v = *(it->begin<InnerType>());
+            value.at(i) = v;
         }
     } else {
         THROW( ExcFV_Input()
-                << EI_InputMsg(
-                        fmt::format("Initializing vector of size {:d} by vector of size {%d.}",
-                            nrows, rec.size()))
+                << EI_InputMsg(fmt::format("Initializing vector of size {:d} by vector of other size or by tensor", nrows))
                 << rec.ei_address()
              );
     }
@@ -256,16 +256,6 @@ public:
     const static int rank_ = 2;
 
     static std::string type_name() { return fmt::format("R[{:d},{:d}]", NRows, NCols); }
-    static IT::Array get_input_type() {
-		if (NRows == NCols) {
-			// for square tensors allow initialization by diagonal vector, etc.
-			return IT::Array( IT::Array( IT::Parameter("element_input_type"), 1), 1 );
-		}
-		else {
-			return IT::Array( IT::Array( IT::Parameter("element_input_type"), NCols, NCols), NRows, NRows );
-		}
-
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -344,10 +334,6 @@ public:
     const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
-    static IT::Parameter get_input_type()
-    {
-        return IT::Parameter("element_input_type");
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -366,7 +352,19 @@ public:
         return arr.scalar(idx);
     }
 
-    void init_from_input( AccessType val ) { value_ = return_type(val); }
+    void init_from_input( Input::Array rec ) {
+        auto it = rec.begin<Input::Array>();
+        if (it->size() == 1 && rec.size() == 1) {
+            AccessType scalar = *(it->begin<AccessType>());
+            value_ = return_type(scalar);
+        } else {
+            THROW( ExcFV_Input()
+                    << EI_InputMsg("Initializing scalar field value by vector or tensor")
+                    << rec.ei_address()
+                 );
+
+        }
+    }
 
     void set_n_comp(unsigned int) {};
     inline unsigned int n_cols() const
@@ -423,9 +421,6 @@ public:
 
 
     static std::string type_name() { return "R[n]"; }
-    static IT::Array get_input_type() {
-        return IT::Array( IT::Parameter("element_input_type"), 1);
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -501,9 +496,6 @@ public:
 
 
     static std::string type_name() { return fmt::format("R[{:d}]", NRows); }
-    static IT::Array get_input_type() {
-        return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
-    }
     static constexpr bool is_scalable() {
         return std::is_floating_point<element_type>::value;
     }
@@ -560,76 +552,6 @@ public:
 
 private:
     return_type &value_;
-};
-
-
-
-//****************************************************************************
-// string tensor (for FieldFormula)
-
-
-/**
- * Mimics arma::mat<std::string>. Used in FieldFormula
- */
-class StringTensor {
-public:
-    typedef std::string elem_type;
-
-    StringTensor( unsigned int n_rows, unsigned int n_cols )
-    : n_rows(n_rows),n_cols(n_cols), values_(n_rows*n_cols) {}
-
-    std::string & at(unsigned int row) { return at(row,0); }
-    std::string & at(unsigned int row, unsigned int col) { return values_[col*n_rows+row]; }
-
-    void zeros() {
-        for( auto &elem: values_) elem = "0.0";
-    }
-    unsigned int n_rows;
-    unsigned int n_cols;
-private:
-    std::vector<std::string>  values_;
-
-};
-
-
-template<int NRows, int NCols>
-struct StringTensorInput
-{
-    typedef Input::Array AccessType;
-    static IT::Array get_input_type() {
-        if (NRows == NCols) {
-            // for square tensors allow initialization by diagonal vector, etc.
-            return IT::Array( IT::Array( IT::String(), 1), 1 );
-        }
-        else {
-            return IT::Array( IT::Array( IT::String(), NCols, NCols), NRows, NRows );
-        }
-
-    }
-
-    static void init_from_input(StringTensor &tensor, AccessType input) {
-        internal::init_matrix_from_input(tensor, input);
-    }
-};
-
-template<>
-struct StringTensorInput<1,1> {
-    typedef std::string AccessType;
-    static IT::String get_input_type() { return IT::String(); }
-    static void init_from_input(StringTensor &tensor, AccessType input) {
-        tensor.at(0,0) = input;
-    }
-};
-
-template<int Nrows>
-struct StringTensorInput<Nrows,1> {
-    typedef Input::Array AccessType;
-    static IT::Array get_input_type() {
-        return IT::Array( IT::String(), 1);
-    }
-    static void init_from_input(StringTensor &tensor, AccessType input) {
-        internal::init_vector_from_input(tensor, input);
-    }
 };
 
 

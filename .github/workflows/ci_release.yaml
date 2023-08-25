@@ -6,6 +6,7 @@ on:
     push:
         branches:
         - master
+        - JB_release_tests
         - 3.9.1
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
@@ -27,120 +28,191 @@ env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
   DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
   environment: gnu
-  build_type: release
-  build_container: contgnurelease
-  FLOW: /opt/flow123d/flow123d
   
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
+        name: Flow123d release main build
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+    
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
+            echo ${release_tag}
+    
+            # can not use environment variables in github actions
+            echo ::set-output name=pubdir::publish_${environment}
+            echo ::set-output name=reltag::${release_tag}
+    
+        - name: Check vars
+          run: |
+              echo pubdir="${{ steps.vars.outputs.pubdir }}"    
+              echo reltag="${{ steps.vars.outputs.reltag }}"
+        - name: Build Flow123d
+          run: |        
+              release_tag="${{ steps.vars.outputs.reltag }}"
+              # auto_build.sh <build_type> <environment> <image_name_base> <release_tag> 
+              config/build/auto_build.sh rel ${environment} ci ${release_tag}  
+        - uses: actions/upload-artifact@v3
+          with:         
+            name: build_dir
+            path: build_dir.tar   
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+ 
+    packages:
+        name: Images and installation packages
+        needs: [build]
+        runs-on: ubuntu-latest
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
 
-    - name: Set variables
-      id: vars
-      run: |
-        git_commit=`git rev-parse --short=6 HEAD`
-        release_tag=`cat version`_${git_commit}
-        echo ${release_tag}
-
-        # can not use environment variables in github actions
-        echo ::set-output name=pubdir::publish_${environment}
-        echo ::set-output name=reltag::${release_tag}
-
-    - name: Check vars
-      run: |
-          echo pubdir="${{ steps.vars.outputs.pubdir }}"    
-          echo reltag="${{ steps.vars.outputs.reltag }}"
-
-    - name: Build packages
-      run: |
-        #uses: docker/login-action@v1
-        # docker/* provides various actions provided by docker, but that requires learning their approach of CI/CD
-        # Login for finall push to docker hub
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-        
-        
-        # make_packages <environment> <image_name_base> [push]
-        release_tag="${{ steps.vars.outputs.reltag }}"
-        config/package/make_packages.sh ${environment} ci ${release_tag} push
-
-      #run: |
-        #docker rm -f  || echo "container not running"
-        #bin/fterm update
-        #bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume $(pwd):$FLOW
-         #--volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
-        
-        #copy config
-        #docker exec ${build_container} ls $FLOW
-        #docker exec ${build_container} cp $FLOW/config/config-jenkins-docker-${build_type}.cmake $FLOW/config.cmake
-
-        #configure and compile
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW/bin/yaml_converter
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW/src/dealii
-        
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/bparser
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/json-3.10.5
-        #docker exec ${build_container} git config --global --add safe.directory $FLOW/third_party/gtest-1.10.0
-        #docker exec ${build_container} make -C $FLOW -j4 all
-    #- name: make doc
-      #run: |
-        #docker exec ${build_container} make -C ${FLOW} FORCE_DOC_UPDATE=1 ref-doc
-        #docker exec ${build_container} make -C ${FLOW} html-doc
-        #docker exec ${build_container} make -C ${FLOW} doxy-doc
-        
-    #- name: package
-      #run: |        
-        #make -C config/package \
-              #container_name=${build_container} \
-              #install_image="install-${environment}:${imagesversion}" \
-              #target_image=flow123d-${environment} \
-              #image_tag=${release_version} \
-              #destination=${destination} \
-              #all
-
-        #make -C config/package \
-              #container_name=${build_container} \
-              #target_image=flow123d-${environment} \
-              #image_tag=${release_version} \
-              #destination=${destination} \
-              #push-to-hub
-
-        #ls -l
-        #ls -l publish_${environment}
-
-        #echo ${{ steps.vars.outputs.pubdir }}    
-        #echo ${{ steps.vars.outputs.reltag }}    
-
-
-        
-              
-#    - name: Release
-#      uses: softprops/action-gh-release@v1
-#      with:
-#          files: |
-#            flow123d_${release_version}_doc.pdf
-#            flow123d_${release_version}_linux_install.tar.gz
-#            flow123d_${release_version}_windows_install.exe
- #         name: release_${release_version}
-    - name: upload artifacts
-      uses: actions/upload-artifact@v3
-      with:       
-        path: |
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
-            ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
+        steps:
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: |
+            # Login for finall push to docker hub
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
+            config/build/make_packages.sh ${environment} ci ${release_tag} push
+    
+        - name: upload artifacts
+          uses: actions/upload-artifact@v3
+          with:       
+            path: |
+                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
+                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
+                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
+                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
+                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
       
+        - name: SCP upload to Share
+          run: |
+            release_tag="${{ steps.vars.outputs.reltag }}"
+            config/build/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
-    - name: SCP upload to Share
-      run: |
-          release_tag="${{ steps.vars.outputs.reltag }}"
-          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
-          ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+    # Run unit tests with release build, similar to the debug build
+    unit_tests:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Unit Test 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test_dir:
+            - coupling
+            - fem
+            - fields
+            - flow
+            - input
+            - intersection
+            - la
+            - mesh
+            - output
+            - scripts
+            - system
+            - test_scripts
+            - tools
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-          
+
+    # TODO: modify to run integration tests with release image
+    #integration_tests:
+        #needs: [build]
+        #runs-on: ubuntu-latest
+        #name: Integration Test ${{matrix.test_dir}}
+        #continue-on-error: True
+        #outputs:
+            #status: ${{job.status}}
+        #strategy:
+          #matrix:
+            #test_dir:
+            #- 01_cmd_line
+            #- 02_generic_input
+            #- 03_generic_output
+            #- 04_generic_mesh
+            #- 05_tutorial
+            #- 06_errors
+            #- 10_darcy
+            #- 11_darcy_bc
+            #- 12_darcy_frac
+            #- 13_darcy_time
+            #- 14_darcy_richards
+            #- 20_solute_fv
+            #- 21_solute_fv_frac
+            #- 22_solute_fv_time
+            #- 24_solute_dg
+            #- 25_solute_dg_bc
+            #- 26_solute_dg_frac
+            #- 27_solute_dg_time
+            #- 30_sorption
+            #- 31_dual_por
+            #- 32_decay
+            #- 33_reaction
+            #- 34_sorption_dg
+            #- 40_heat
+            #- 50_mechanics
+            
+        #steps:  
+        #- uses: actions/checkout@v3
+        #- uses: actions/download-artifact@v3
+          #with:
+            #name: build_dir
+        #- run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        #- name: Report
+          #run: |
+            #echo "Job result: ${{job.result}}"
+            #echo "Job status: ${{job.status}}"
+
+            
+    conclusion:
+        if: ${{always()}}
+        runs-on: ubuntu-latest
+        name: Workflow conclusion from all job results 
+        
+        #needs: [integration_tests, unit_tests, build_doc]        
+        needs: [packages, unit_tests]
+        
+        # continue-on-error jobs always reports sucess to the workflow
+        steps:
+          - name: Install gh command
+            run: |
+                sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+                sudo apt-add-repository https://cli.github.com/packages
+                sudo apt update
+                sudo apt install gh    
+          - name: Check status of all jobs
+            env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            run: |
+                # get the current workflow run ID
+                run_id=$(jq --raw-output .run_id "$GITHUB_EVENT_PATH")
+                
+                # get the status of jobs selected by name:
+                #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
+                
+                # get the status of all jobs
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[].conclusion')
+
+                # check if any job has failed
+                if echo "$statuses" | grep -q failure; then
+                    echo "One or more jobs have failed"
+                    exit 1
+                else
+                    echo "All jobs have succeeded"
+                fi    

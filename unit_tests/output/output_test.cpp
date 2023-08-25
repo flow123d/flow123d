@@ -248,7 +248,7 @@ public:
 	    typedef typename Value::element_type ElemType;
 
 	    // make field init it form the init string
-	    Field<spacedim, Value> field("test_field", false); // bulk field
+	    Field<spacedim, Value> field("test_field"); // bulk field
 		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);

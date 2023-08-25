@@ -30,6 +30,14 @@ FieldSet::FieldSet()
 : mesh_(nullptr) {}
 
 
+const Input::Type::Selection & FieldSet::get_user_field_shape_selection() {
+	return Input::Type::Selection("User_fields_shape", "Allowed shapes of user fields.")
+		.add_value(FieldSet::scalar, "scalar", "Scalar user field.")
+		.add_value(FieldSet::vector, "vector", "Vector user field.")
+		.add_value(FieldSet::tensor, "tensor", "Tensor user field.")
+		.close();
+}
+
 const Input::Type::Record & FieldSet::make_user_field_type(const std::string &equation_name) {
     static Field<3, FieldValue<3>::Scalar> scalar_field;
     static Field<3, FieldValue<3>::VectorFixed> vector_field;
@@ -37,16 +45,10 @@ const Input::Type::Record & FieldSet::make_user_field_type(const std::string &eq
     return Input::Type::Record( equation_name+":UserData", "Record to set fields of the equation: "+equation_name+".")
         .declare_key("name", Input::Type::String(), Input::Type::Default::obligatory(),
                      "Name of user defined field.")
-        .declare_key("is_boundary", Input::Type::Bool(), Input::Type::Default("false"),
-                     "Type of field: boundary or bulk.")
-        .declare_key("scalar_field", scalar_field.get_input_type(),
-                     "Instance of FieldAlgoBase ScalarField descendant.\n"
-        		     "One of keys 'scalar_field', 'vector_field', 'tensor_field' must be set.\n"
-        		     "If you set more than one of these keys, only first key is accepted.")
-        .declare_key("vector_field", vector_field.get_input_type(),
-                     "Instance of FieldAlgoBase VectorField descendant. See above for details.")
-        .declare_key("tensor_field", tensor_field.get_input_type(),
-                     "Instance of FieldAlgoBase TensorField descendant. See above for details.")
+        .declare_key("shape_type", FieldSet::get_user_field_shape_selection(), Input::Type::Default("\"scalar\""), "Shape of user field.")
+        .declare_key("field", tensor_field.get_input_type(), Input::Type::Default::obligatory(),
+                     "Instance of FieldAlgoBase descendant.\n"
+        		     "Please specify shape of field in 'shape_type' key.")
         .declare_key("unit", UnitConverter::get_input_type(), Input::Type::Default::optional(),
                      "Unit of the field values provided in the main input file, in the external file, or "
                      "by a function (FieldPython).")
@@ -141,7 +143,7 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
     // add value for each field excluding boundary fields
     for( auto field : field_list)
     {
-        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+        if ( field->flags().match( FieldFlag::allow_output) )
         {
             string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
             if (field->description().length() > 0)

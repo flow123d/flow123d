@@ -10,6 +10,7 @@
 
 #include <flow_gtest.hh>
 #include <fields/field_values.hh>
+#include <fields/field_constant.hh>
 #include "arma_expect.hh"
 #include <system/armor.hh>
 
@@ -104,8 +105,6 @@ TEST(FieldValue_, construction_from_raw) {
 string input = R"INPUT(
 {   
 double_scalar=1.3,
-int_scalar=23,
-enum_scalar="one",
 
 double_fix_vector_full=[1.2, 3.4, 5.6],
 int_fix_vector_full=[1,2,3],
@@ -141,7 +140,7 @@ Input::Type::TypeBase::MakeInstanceReturnType get_instance(const Input::Type::Se
 		param_vec.push_back( std::make_pair("element_input_type", std::make_shared<typename Value::ElementInputType>()) );
 	}
 
-	static auto value_type = Value::get_input_type();
+	static auto value_type = FieldConstant<3, Value>::get_tensor_input_type();
 	return value_type.make_instance(param_vec);
 }
 
@@ -155,25 +154,18 @@ TEST(FieldValue_, init_from_input) {
 		.close();
 
     Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
-    	.declare_key("double_scalar",get_instance< FieldValue_<1,1,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("int_scalar",get_instance< FieldValue_<1,1,int> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("enum_scalar",aux_sel, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_scalar",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<3,1,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("int_fix_vector_full",get_instance< FieldValue_<3,1,int> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<3,1,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("int_fix_vector_const",get_instance< FieldValue_<3,1,int> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_vector_full",get_instance< FieldValue_<0,1,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("int_vector_full",get_instance< FieldValue_<0,1,int> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("enum_vector_full",get_instance< FieldValue_<0,1,FieldEnum> >(&aux_sel).first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_vector_const",get_instance< FieldValue_<0,1,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("int_vector_const",get_instance< FieldValue_<0,1,int> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_full",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_const",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<2,3,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<2,2,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<3,3,double> >().first, Input::Type::Default::obligatory(),"" )
 
     	.close();
 
@@ -184,18 +176,8 @@ TEST(FieldValue_, init_from_input) {
 
     {
         typedef FieldValue_<1,1,double> T; T::return_type x_val; T val(x_val);
-        val.init_from_input(in_rec.val<double>("double_scalar"));
+        val.init_from_input(in_rec.val<Input::Array>("double_scalar"));
         EXPECT_EQ(T::return_type(val), 1.3);
-    }
-    {
-        typedef FieldValue_<1,1,int> T; T::return_type x_val; T val(x_val);
-        val.init_from_input(in_rec.val<int>("int_scalar"));
-        EXPECT_EQ(T::return_type(val), 23);
-    }
-    {
-        typedef FieldValue_<1,1,FieldEnum> T; T::return_type x_val; T val(x_val);
-        val.init_from_input(in_rec.val<Input::Enum>("enum_scalar"));
-        EXPECT_EQ(T::return_type(val), 1);
     }
 
 
@@ -206,19 +188,9 @@ TEST(FieldValue_, init_from_input) {
         EXPECT_TRUE( arma::min(expected == T::return_type(val)) );
     }
     {
-        typedef FieldValue_<3,1,int> T; T::return_type x_val; T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("int_fix_vector_full"));
-        EXPECT_TRUE( arma::min(T::return_type("1 2 3") == T::return_type(val)) );
-    }
-    {
         typedef FieldValue_<3,1,double> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_vector_const"));
         EXPECT_TRUE( arma::min(T::return_type("1.3 1.3 1.3") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<3,1,int> T; T::return_type x_val; T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("int_fix_vector_const"));
-        EXPECT_TRUE( arma::min(T::return_type("23 23 23") == T::return_type(val)) );
     }
 
 
@@ -228,24 +200,9 @@ TEST(FieldValue_, init_from_input) {
         EXPECT_TRUE( arma::min(T::return_type("1.2 3.4") == T::return_type(val)) );
     }
     {
-        typedef FieldValue_<0,1,int> T; T::return_type x_val(4); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("int_vector_full"));
-        EXPECT_TRUE( arma::min(T::return_type("1 2 3 4") == T::return_type(val)) );
-    }
-    {
         typedef FieldValue_<0,1,double> T; T::return_type x_val(3); T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_vector_const"));
         EXPECT_TRUE( arma::min(T::return_type("1.2 1.2 1.2") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<0,1,FieldEnum> T; T::return_type x_val(3); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("enum_vector_full"));
-        EXPECT_TRUE( arma::min(T::return_type("0 1 1") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<0,1,int> T; T::return_type x_val(3); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("int_vector_const"));
-        EXPECT_TRUE( arma::min(T::return_type("23 23 23") == T::return_type(val)) );
     }
 
 
@@ -255,7 +212,6 @@ TEST(FieldValue_, init_from_input) {
         arma::umat match = (T::return_type("1.1 1.2 1.3; 2.1 2.2 2.3") == T::return_type(val));
         EXPECT_TRUE( match.min());
     }
-
     {
         typedef FieldValue_<2,2,double> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_symm"));
@@ -273,122 +229,6 @@ TEST(FieldValue_, init_from_input) {
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_cdiag"));
         arma::umat match = (T::return_type("1.3 0; 0 1.3") == T::return_type(val));
         EXPECT_TRUE( match.min());
-    }
-}
-
-string formula_input = R"INPUT(
-{   
-double_scalar="x",
-
-double_fix_vector_full=["x", "y", "z"],
-double_fix_vector_const="x",
-
-double_vector_full=["x","y"],
-double_vector_const="x",
-
-double_fix_tensor_full=[ ["x", "y", "z"], ["x*x", "y*y", "z*z"] ],
-double_fix_tensor_symm=[ "x*x", "x*y", "y*y"],
-double_fix_tensor_diag=[ "x*x", "y*y"],
-double_fix_tensor_cdiag="x*y*z"
-}
-)INPUT";
-
-TEST(FieldValue_, string_values_init_from_input) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
-		.declare_key("double_scalar", StringTensorInput<1,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
-
-    	.declare_key("double_fix_vector_full",StringTensorInput<3,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_vector_const",StringTensorInput<3,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
-
-    	.declare_key("double_vector_full",StringTensorInput<0,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_vector_const",StringTensorInput<0,1>::get_input_type(), Input::Type::Default::obligatory(),"" )
-
-    	.declare_key("double_fix_tensor_full",StringTensorInput<2,3>::get_input_type(), Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_symm",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_diag",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_cdiag",StringTensorInput<2,2>::get_input_type(), Input::Type::Default::obligatory(),"" )
-
-    	.close();
-
-    // read input string
-    Input::ReaderToStorage reader( formula_input, rec_type, Input::FileFormat::format_JSON );
-    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-
-
-    {
-        StringTensor val(1,1);
-        StringTensorInput<1,1>::init_from_input(val, in_rec.val<std::string>("double_scalar"));
-        EXPECT_EQ(val.at(0,0), "x");
-    }
-
-
-    {
-        StringTensor val(3,1);
-        StringTensorInput<3,1>::init_from_input(val, in_rec.val<Input::Array>("double_fix_vector_full"));
-        EXPECT_EQ( "x",val.at(0));
-        EXPECT_EQ( "y",val.at(1));
-        EXPECT_EQ( "z",val.at(2));
-    }
-    {
-        StringTensor val(3,1);
-        StringTensorInput<3,1>::init_from_input(val, in_rec.val<Input::Array>("double_fix_vector_const"));
-        EXPECT_EQ( "x",val.at(0));
-        EXPECT_EQ( "x",val.at(1));
-        EXPECT_EQ( "x",val.at(2));
-    }
-
-
-    {
-        StringTensor val(2,1);
-        StringTensorInput<0,1>::init_from_input(val, in_rec.val<Input::Array>("double_vector_full"));
-        EXPECT_EQ( "x",val.at(0));
-        EXPECT_EQ( "y",val.at(1));
-    }
-    {
-        StringTensor val(3,1);
-        StringTensorInput<0,1>::init_from_input(val, in_rec.val<Input::Array>("double_vector_const"));
-        EXPECT_EQ( "x",val.at(0));
-        EXPECT_EQ( "x",val.at(1));
-        EXPECT_EQ( "x",val.at(2));
-    }
-
-
-    {
-        StringTensor val(2,3);
-        StringTensorInput<2,3>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_full"));
-        EXPECT_EQ( "x",val.at(0,0));
-        EXPECT_EQ( "y",val.at(0,1));
-        EXPECT_EQ( "z",val.at(0,2));
-        EXPECT_EQ( "x*x",val.at(1,0));
-        EXPECT_EQ( "y*y",val.at(1,1));
-        EXPECT_EQ( "z*z",val.at(1,2));
-    }
-    {
-        StringTensor val(2,2);
-        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_symm"));
-        EXPECT_EQ( "x*x",val.at(0,0));
-        EXPECT_EQ( "x*y",val.at(0,1));
-        EXPECT_EQ( "x*y",val.at(1,0));
-        EXPECT_EQ( "y*y",val.at(1,1));
-    }
-    {
-        StringTensor val(2,2);
-        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_diag"));
-        EXPECT_EQ( "x*x",val.at(0,0));
-        EXPECT_EQ( "0.0",val.at(0,1));
-        EXPECT_EQ( "0.0",val.at(1,0));
-        EXPECT_EQ( "y*y",val.at(1,1));
-    }
-    {
-        StringTensor val(2,2);
-        StringTensorInput<2,2>::init_from_input(val, in_rec.val<Input::Array>("double_fix_tensor_cdiag"));
-        EXPECT_EQ( "x*y*z",val.at(0,0));
-        EXPECT_EQ( "0.0",val.at(0,1));
-        EXPECT_EQ( "0.0",val.at(1,0));
-        EXPECT_EQ( "x*y*z",val.at(1,1));
     }
 }
 

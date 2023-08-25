@@ -61,7 +61,7 @@ jobs:
         
         # make_packages <environment> <image_name_base> [push]
         release_tag="${{ steps.vars.outputs.reltag }}"
-        config/package/make_packages.sh ${environment} flow123d ${release_tag} push
+        config/build/make_packages.sh ${environment} flow123d ${release_tag} push
 
       #run: |
         #docker rm -f  || echo "container not running"
@@ -136,7 +136,7 @@ jobs:
     - name: SCP upload to Share
       run: |
           release_tag="${{ steps.vars.outputs.reltag }}"
-          config/package/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
+          config/build/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
           ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
           sshpass -p ${{ secrets.PUBLISH_PASS }} ssh -o PreferredAuthentications=password -o PubkeyAuthentication=no -o StrictHostKeyChecking=no \
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} \

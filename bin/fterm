@@ -48,8 +48,8 @@ image_version=dbg
 image_tag=latest
 
 # In order to link the flow123d commit with particular image tag 
-# see the file: config/docker/image_tag
-DOCKER_TAG="$CFG/docker/image_tag"
+# see the file: config/build/image_tag
+DOCKER_TAG="$CFG/build/image_tag"
 if [[ -f "$DOCKER_TAG" ]]; then
   image_tag=$(cat "$DOCKER_TAG")
 fi
@@ -278,6 +278,8 @@ work=$(get_mount_dir $ABS_FLOW_DIR)
 contname=""
 docker_terminal="-it"
 
+manual_volumes=""
+
 while [[ $# -gt 0 ]]
   do
   key="$1"
@@ -305,6 +307,12 @@ while [[ $# -gt 0 ]]
       action=detach
       shift; shift;
       rest="$@"
+      break
+    ;;
+    -v)
+      vol="$2"
+      shift; shift;
+      manual_volumes="$manual_volumes -v $vol"
       break
     ;;
     -T|--no-term)
@@ -384,7 +392,13 @@ dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
-mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
+if [ -z "${manual_volumes}" ]
+then
+  mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
+else
+  mountargs="$manual_volumes"
+fi
+
 if [[ $privileged == "1" ]]; then
   priv_true="--privileged=true"
 fi
@@ -398,8 +412,8 @@ case $action in
   ;;
   detach)
     docker rm -f $contname > /dev/null 2>&1
-    dbgc docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
-    dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
+    dbgc docker run -d --name $contname ${docker_terminal} $envarg $mountargs $priv_true $rest $base_image 
+    #dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
   run)
     update_image $base_image $autopull
