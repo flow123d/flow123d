@@ -3,13 +3,13 @@
 
 #include <flow_gtest.hh>
 
-#include "system/application_base.hh"
+#include "../../src/system/application.hh"
 #include "system/system.hh"
 
 
-class ApplicationBaseTest : public testing::Test, public ApplicationBase {
+class ApplicationBaseTest : public testing::Test, public Application {
 public:
-	ApplicationBaseTest() : testing::Test(), ApplicationBase() {}
+	ApplicationBaseTest() : testing::Test(), Application() {}
 protected:
 	void run() {
 		ASSERT_PERMANENT(false).error("testing error...\n");

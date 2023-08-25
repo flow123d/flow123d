@@ -615,8 +615,9 @@ void save_nonmpi_metric (nlohmann::json &node, T * ptr, string name) {
     node[name + "-sum"] = *ptr;
 }
 
-std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
-     json_filepath = FilePath("profiler_info.log.json", FilePath::output_file);
+std::shared_ptr<std::ostream> Profiler::get_output_stream(string path) {
+    if (path == "") path = "profiler_info.log.json";
+    json_filepath = FilePath(path, FilePath::output_file);
 
     //LogOut() << "output into: " << json_filepath << std::endl;
     return make_shared<ofstream>(json_filepath.c_str());
@@ -716,13 +717,15 @@ void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
   chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
 
     if (mpi_rank == 0) {
-        if (profiler_path == "") {
-          output(comm, *get_default_output_stream());
-        } else {
-          json_filepath = profiler_path;
-          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-          output(comm, *os);
-        }
+//        if (profiler_path == "") {
+//        	profiler_path ="profiler_info.log.json"
+//          output(comm, *get_default_output_stream());
+//        } else {
+//          json_filepath = profiler_path;
+//          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+//
+//        }
+        output(comm, *get_output_stream(profiler_path));
     } else {
       ostringstream os;
       output(comm, os);
@@ -801,13 +804,14 @@ void Profiler::output(ostream &os) {
 
 
 void Profiler::output(string profiler_path /* = "" */) {
-    if(profiler_path == "") {
-        output(*get_default_output_stream());
-    } else {
-        json_filepath = profiler_path;
-        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-        output(*os);
-    }
+//    if(profiler_path == "") {
+//        output();
+//    } else {
+//        json_filepath = profiler_path;
+//        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
+//
+//    }
+    output(*get_output_stream(profiler_path));
 }
 
 void Profiler::output_header (nlohmann::json &root, int mpi_size) {
@@ -861,7 +865,7 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     //
     auto convert_method = python_module.attr("convert");
     // execute method with arguments
-    convert_method(json_filepath, (json_filepath + output_fiel_suffix), formatter);
+    convert_method(json_filepath, (json_filepath + output_file_suffix), formatter);
 
 }
 

@@ -101,7 +101,7 @@ add_library(system_lib
     system/asserts.cc
     system/file_path.cc
     system/tokenizer.cc
-    system/application_base.cc
+    system/application.cc
     system/logger.cc
     system/logger_options.cc
     system/armadillo_tools.cc

@@ -62,7 +62,7 @@ namespace boost { template <class T> struct hash; }
 #include <nlohmann/json.hpp>
 
 #include "time_point.hh"
-//#include "petscsys.h"
+#include "petscsys.h"
 #include "simple_allocator.hh"
 
 //instead of #include "mpi.h"
@@ -753,7 +753,7 @@ protected:
      * Open a new file for profiler output with default name based on the
      * actual time and date. Returns a pointer to the stream of the output file.
      */
-    std::shared_ptr<std::ostream> get_default_output_stream();
+    std::shared_ptr<std::ostream> get_output_stream(string path);
 
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, internal::SimpleAllocator<Timer>> timers_;

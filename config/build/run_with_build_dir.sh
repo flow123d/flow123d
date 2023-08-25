@@ -1,5 +1,7 @@
 # Usage: run_with_build_dir.sh <environment> <command> [args]
 #
+# environment= dbg_gnu | rel_gnu | dbg_intel ....
+#
 # Assumes coloned repository set to correct branch. 
 # Extract the build_dir tar ball.
 # Run the <command> within the build container with the extracted build dir.
@@ -7,14 +9,15 @@
 set -e
 set -x
 
-env=$1
+env=$1;shift
 case $env in
-    gnu|intel):
-    shift
+    dbg_gnu|rel_gnu|dbg_intel|rel_intel):
     ;;
     *)
-    env=gnu
+    echo Wrong environment.
+    exit 1
 esac
+
 
 command_with_args=$@
 
@@ -24,12 +27,13 @@ build_dir_host=build-${git_branch}
 # Recreate build files and dirs
 rm -rf ${build_dir_host}
 mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
+rm -f build_tree
 ln -s ${build_dir_host} build_tree
 cp ${build_dir_host}/_config.cmake config.cmake
 make update-submodules
-
+    
 # run the command
-bin/fterm dbg_${env} --no-term  exec ${command_with_args}
+bin/fterm ${env} --no-term  exec ${command_with_args}
 
 
 
