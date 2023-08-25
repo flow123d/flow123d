@@ -18,7 +18,7 @@ then
 else
     docker_push="echo docker push"
 fi
-
+# 
 #######################################
 # Paths on host
 # TODO: move both version and image_tag to the same location in package
@@ -133,7 +133,8 @@ tmp_install_dir=${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/flow1
 
 # have to copy package dir out of the mounted volume ${flow_repo_location}
 # TODO: try to use the install target
-${dexec} cp -r ${tmp_install_dir} ${flow_install_location}/docker_package
+
+${dexec} cp -r ${tmp_install_dir} /docker_package
 # we only use temporary installation and copy it directly from the build image to the target image
 # TODO: need to copy the package out of the vmount, but only for testing
 
@@ -148,7 +149,7 @@ build_date=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 docker build \
      --build-arg base_image=flow123d/${install_image} \
      --build-arg source_image=flow123d/temporary_build \
-     --build-arg source_location=${flow_install_location}/docker_package \
+     --build-arg source_location=/docker_package \
      --build-arg flow_version=${release_tag} \
      --build-arg flow_install_location=${flow_install_location} \
      --build-arg git_hash="${git_hash}" \
