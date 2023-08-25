@@ -113,6 +113,11 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
 }
 
 void AssemblyBenchmarkTest::zero_time_step() {
+    START_TIMER("ZERO-TIME STEP");
+
+    DebugOut().fmt("zero_time_step time {}\n", this->time_->t());
+
+    START_TIMER("data initialize");
     eq_fields_->mark_input_times( *this->time_ );
     eq_fields_->set_time(this->time_->step(), LimitSide::left);
 
@@ -132,9 +137,14 @@ void AssemblyBenchmarkTest::zero_time_step() {
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
+    END_TIMER("data initialize");
+
+    START_TIMER("assembly");
     stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
     sources_assembly_->assemble(eq_data_->dh_);
+    END_TIMER("assembly");
+
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
@@ -142,20 +152,23 @@ void AssemblyBenchmarkTest::zero_time_step() {
     }
 
     //output_data();
+    END_TIMER("ZERO-TIME STEP");
 }
 
 
 void AssemblyBenchmarkTest::update_solution()
 {
-    //START_TIMER("DG-ONE STEP");
+    START_TIMER("SIMULATION-ONE STEP");
 
     this->time_->next_time();
+    DebugOut().fmt("update_solution time {}\n", this->time_->t());
 
-    //START_TIMER("data reinit");
+    START_TIMER("data reinit");
     eq_fields_->set_time(this->time_->step(), LimitSide::left);
-    //END_TIMER("data reinit");
+    END_TIMER("data reinit");
 
     // assemble mass matrix
+    START_TIMER("assembly");
     if (mass_matrix[0] == NULL || eq_fields_->subset(FieldFlag::in_time_term).changed() )
     {
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
@@ -164,6 +177,7 @@ void AssemblyBenchmarkTest::update_solution()
         	eq_data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(eq_data_->ret_vec[i]);
         }
+        DebugOut() << " - mass_assembly \n";
         mass_assembly_->assemble(eq_data_->dh_);
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
@@ -194,6 +208,7 @@ void AssemblyBenchmarkTest::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->mat_zero_entries();
         }
+        DebugOut() << " - stiffness_assembly \n";
         stiffness_assembly_->assemble(eq_data_->dh_);
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
@@ -216,6 +231,7 @@ void AssemblyBenchmarkTest::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->rhs_zero_entries();
         }
+        DebugOut() << " - sources_assembly \n";
         sources_assembly_->assemble(eq_data_->dh_);
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
@@ -225,6 +241,7 @@ void AssemblyBenchmarkTest::update_solution()
             VecCopy(*( eq_data_->ls[i]->get_rhs() ), rhs[i]);
         }
     }
+    END_TIMER("assembly");
 
     /* Apply backward Euler time integration.
     *
@@ -243,7 +260,7 @@ void AssemblyBenchmarkTest::update_solution()
     *
     */
     Mat m;
-    //START_TIMER("solve");
+    START_TIMER("solve");
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
         MatConvert(stiffness_matrix[i], MATSAME, MAT_INITIAL_MATRIX, &m);
@@ -262,9 +279,9 @@ void AssemblyBenchmarkTest::update_solution()
         // update mass_vec due to possible changes in mass matrix
         MatMult(*(eq_data_->ls_dt[i]->get_matrix()), eq_data_->ls[i]->get_solution(), mass_vec[i]);
     }
-    //END_TIMER("solve");
+    END_TIMER("solve");
 
-    //END_TIMER("DG-ONE STEP");
+    END_TIMER("SIMULATION-ONE STEP");
 }
 
 
@@ -293,6 +310,6 @@ TEST_F(AssemblyBenchmarkTest, simple_asm) {
     )YAML";
 
     this->create_and_set_mesh("mesh/cube_2x1.msh");
-    this->initialize( eq_data_input, {"A", "B"} );
+    this->initialize( eq_data_input, {"A", "B"}, use_field_model );
     this->run_simulation();
 }
