@@ -3,8 +3,8 @@
 
 #include <flow_gtest.hh>
 
-#include "../../src/system/application.hh"
 #include "system/system.hh"
+#include "coupling/application.hh"
 
 
 class ApplicationBaseTest : public testing::Test, public Application {
@@ -15,8 +15,6 @@ protected:
 		ASSERT_PERMANENT(false).error("testing error...\n");
 	}
 
-    void parse_cmd_line(const int, char **) override 
-    {}
 	
 	void seg_fault() {
       // Attempt to read from unallocated memory.
