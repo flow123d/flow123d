@@ -447,7 +447,6 @@ public:
         std::shared_ptr<DOFHandlerMultiDim> dh_;  ///< Object for distribution of dofs.
         std::vector<std::string> substances_;     ///< Names of substances
 
-        std::vector<std::vector<double> > gamma;  ///< Penalty parameters.
         vector<vector<arma::mat33> > dif_coef;    ///< Diffusion coefficients.
         unsigned int max_edg_sides;               ///< Maximal number of edge sides (evaluate from dim 1,2,3)
 
@@ -542,7 +541,7 @@ public:
     }
 
     ~AssemblyBenchmarkTest() {
-        if (eq_data_->gamma.size() > 0) {
+        if (eq_data_->dif_coef.size() > 0) {
             // initialize called
 
             for (unsigned int i=0; i<eq_data_->n_substances(); i++)

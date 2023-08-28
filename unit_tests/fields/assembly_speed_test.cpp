@@ -44,11 +44,6 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
     eq_fields_->set_input_list( in_rec_.val<Input::Array>("input_fields"), *this->time_ );
     if (use_models == use_field_model) eq_fields_->initialize();
 
-    // DG stabilization parameters on boundary edges
-    eq_data_->gamma.resize(eq_data_->n_substances());
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->gamma[sbi].resize(this->mesh_->boundary_.size());
-
     // Resize coefficient array
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
 
