@@ -31,6 +31,7 @@ add_test_directory("${libs}")
     
 define_mpi_test(eq_data 1)
     
+define_mpi_test(assembly_speed 1)
 
 
 

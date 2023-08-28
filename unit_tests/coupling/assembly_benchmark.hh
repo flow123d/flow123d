@@ -5,7 +5,6 @@
 #include <mesh_constructor.hh>
 #include "arma_expect.hh"
 
-#include "field_eval_base.hh"
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
 #include "fields/field_value_cache.hh"
