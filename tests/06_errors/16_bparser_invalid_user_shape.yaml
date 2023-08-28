@@ -1,0 +1,34 @@
+#################
+# Test goal: Test of BParser error.
+# Author: Jan Brezina, David Flanderka
+
+flow123d_version: 4.0.0a01
+problem: !Coupling_Sequential
+  description: Test usage of user fields.
+  mesh:
+    mesh_file: ../00_mesh/rectangle_0.2x1_frac.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    user_fields:
+      - name: user_cond
+        field: !FieldFormula
+          value: "[1e-5, 0, 1e-6]"
+        shape_type: scalar
+      - name: user_dir
+        field: !FieldFormula
+          value: 0.2
+    input_fields:
+      - region: ALL
+        conductivity: !FieldFormula
+          value: 1e5*user_cond[0]
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: X[1]*5*user_dir
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
