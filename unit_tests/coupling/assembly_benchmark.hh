@@ -16,6 +16,7 @@
 #include "fields/bc_multi_field.hh"
 #include "fields/equation_output.hh"
 #include "fields/field_model.hh"
+#include "fields/field_constant.hh"
 #include "coupling/equation.hh"
 #include "tools/unit_si.hh"
 #include "quadrature/quadrature.hh"
@@ -192,6 +193,7 @@ public:
         			  .close();
         }
 
+        /// Constructor
         EqFields()
         {
             *this += porosity.name("porosity")
@@ -363,7 +365,8 @@ public:
             this->set_default_fieldset();
         }
 
-        void initialize()
+        /// Setup components of MultiFields defined as FieldModels, internal method
+        void setup_mf_components()
         {
             // initialize multifield components
         	sorption_coefficient.setup_components();
@@ -374,7 +377,13 @@ public:
             disp_l.setup_components();
             disp_t.setup_components();
 
-            // create FieldModels
+        }
+
+        /// Initialize selected fields as FieldModels
+        void init_field_models()
+        {
+        	setup_mf_components();
+
             v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
             mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix(), cross_section, water_content), 0.0);
             retardation_coef.set(
@@ -394,6 +403,76 @@ public:
                 ),
                 0.0
             );
+        }
+
+        /// Initialize selected fields as FieldConstants
+        void init_field_constants(double vnorm, double mass_matrix, double ret_coef, double sources_dens, double sourc_sigma,
+                double sourc_conc, arma::vec3 advec_coef, arma::mat33 diff_coef)
+        {
+        	setup_mf_components();
+
+            {
+        	    FieldValue<3>::Scalar f_value(vnorm);
+                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                field_algo->set_value(f_value);
+                v_norm.set(field_algo, 0.0);
+            }
+            {
+        	    FieldValue<3>::Scalar f_value(mass_matrix);
+                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                field_algo->set_value(f_value);
+                mass_matrix_coef.set(field_algo, 0.0);
+            }
+            {
+                FieldValue<3>::Scalar f_value(ret_coef);
+                std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+                for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++) {
+                    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                    field_algo->set_value(f_value);
+                    field_vec.push_back(field_algo);
+                }
+                retardation_coef.set(field_vec, 0.0);
+            }
+            {
+                FieldValue<3>::Scalar f_value(sources_dens);
+                std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+                for (unsigned int sbi=0; sbi<sources_density.size(); sbi++) {
+                    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                    field_algo->set_value(f_value);
+                    field_vec.push_back(field_algo);
+                }
+                sources_density_out.set(field_vec, 0.0);
+            }
+            {
+                FieldValue<3>::Scalar f_value(sourc_sigma);
+                std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+                for (unsigned int sbi=0; sbi<sources_sigma.size(); sbi++) {
+                    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                    field_algo->set_value(f_value);
+                    field_vec.push_back(field_algo);
+                }
+                sources_sigma_out.set(field_vec, 0.0);
+            }
+            {
+                FieldValue<3>::Scalar f_value(sourc_conc);
+                std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+                for (unsigned int sbi=0; sbi<sources_conc.size(); sbi++) {
+                    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+                    field_algo->set_value(f_value);
+                    field_vec.push_back(field_algo);
+                }
+                sources_conc_out.set(field_vec, 0.0);
+            }
+            {
+                FieldValue<3>::TensorFixed f_value(diff_coef);
+                std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> field_vec;
+                for (unsigned int sbi=0; sbi<diff_m.size(); sbi++) {
+                    auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::TensorFixed>>();
+                    field_algo->set_value(f_value);
+                    field_vec.push_back(field_algo);
+                }
+                diffusion_coef.set(field_vec, 0.0);
+            }
         }
 
         // from TransportEqFields
@@ -519,12 +598,6 @@ public:
 		symmetric = 1        // Symmetric weighted interior penalty DG
 	};
 
-	/// Allow set switch on/off initialization of FieldModels
-	enum EqFieldsInitialize {
-		use_field_const = 0,
-		use_field_model = 1
-	};
-
 	AssemblyBenchmarkTest()
     {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -593,7 +666,7 @@ public:
     }
 
     /// Initialize equation
-    void initialize(const string &input, std::vector<std::string> substances, EqFieldsInitialize use_models);
+    void initialize(const string &input, std::vector<std::string> substances);
 
     /// Execute zero time step. Do not call method directly, use run_simulation
     void zero_time_step();

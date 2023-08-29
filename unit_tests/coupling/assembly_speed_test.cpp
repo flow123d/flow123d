@@ -29,7 +29,7 @@
  *
  ****************************************************************************************/
 
-void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances, EqFieldsInitialize use_models) {
+void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
     in_rec_ = reader.get_root_interface<Input::Record>();
 
@@ -42,7 +42,6 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
 
     eq_fields_->set_components(eq_data_->subst_names());
     eq_fields_->set_input_list( in_rec_.val<Input::Array>("input_fields"), *this->time_ );
-    if (use_models == use_field_model) eq_fields_->initialize();
 
     // Resize coefficient array
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
@@ -305,6 +304,8 @@ TEST_F(AssemblyBenchmarkTest, simple_asm) {
     )YAML";
 
     this->create_and_set_mesh("mesh/cube_2x1.msh");
-    this->initialize( eq_data_input, {"A", "B"}, use_field_model );
+    this->initialize( eq_data_input, {"A", "B"} );
+    this->eq_fields_->init_field_models();
+    //this->eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
     this->run_simulation();
 }
