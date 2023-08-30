@@ -56,4 +56,5 @@ TEST_F(AssemblyBenchmarkTest, simple_asm) {
     this->initialize( eq_data_input, {"A", "B"} );
     this->eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
     this->run_simulation();
+    this->profiler_output("const_simple");
 }

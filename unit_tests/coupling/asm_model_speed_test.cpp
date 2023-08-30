@@ -56,4 +56,5 @@ TEST_F(AssemblyBenchmarkTest, simple_asm) {
     this->initialize( eq_data_input, {"A", "B"} );
     this->eq_fields_->init_field_models();
     this->run_simulation();
+    this->profiler_output("model_simple");
 }

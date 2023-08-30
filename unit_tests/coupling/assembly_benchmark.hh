@@ -648,6 +648,8 @@ public:
                 delete sources_assembly_;
             }
         }
+
+        Profiler::uninitialize();
     }
 
     void create_and_set_mesh(const std::string &mesh_file) {
@@ -681,6 +683,14 @@ public:
             this->update_solution();
         }
     }
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		static ofstream os( FilePath("benchmark_" + file_name + "_test.log", FilePath::output_file) );
+		Profiler::instance()->output(MPI_COMM_WORLD, os);
+		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
+	}
+
 
     std::shared_ptr<EqFields> eq_fields_;  ///< Fields for model parameters.
     std::shared_ptr<EqData> eq_data_;      ///< Data for model parameters.
