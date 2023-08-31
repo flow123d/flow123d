@@ -688,7 +688,7 @@ public:
     void profiler_output(std::string file_name) {
 		static ofstream os( FilePath("benchmark_" + file_name + "_test.log", FilePath::output_file) );
 		Profiler::instance()->output(MPI_COMM_WORLD, os);
-		os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
+		//os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
 	}
 
 

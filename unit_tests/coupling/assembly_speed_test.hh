@@ -22,7 +22,7 @@ public:
     typedef typename AssemblyBenchmarkTest::EqFields EqFields;
     typedef typename AssemblyBenchmarkTest::EqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyBenchmark"; }
+    static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
     MassAssembly(EqFields *eq_fields, EqData *eq_data)
@@ -132,7 +132,7 @@ public:
     typedef typename AssemblyBenchmarkTest::EqFields EqFields;
     typedef typename AssemblyBenchmarkTest::EqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyBenchmark"; }
+    static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
     StiffnessAssembly(EqFields *eq_fields, EqData *eq_data)
@@ -614,7 +614,7 @@ public:
     typedef typename AssemblyBenchmarkTest::EqFields EqFields;
     typedef typename AssemblyBenchmarkTest::EqData EqData;
 
-    static constexpr const char * name() { return "SourcesAssemblyBenchmark"; }
+    static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
     SourcesAssembly(EqFields *eq_fields, EqData *eq_data)
