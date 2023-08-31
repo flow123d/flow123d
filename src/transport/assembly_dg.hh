@@ -156,6 +156,66 @@ public:
 };
 
 
+// return the ratio of longest and shortest edge
+double elem_anisotropy(ElementAccessor<3> e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            double dist = arma::norm(*e.node(i) - *e.node(j));
+            h_max = max(h_max, dist);
+            h_min = min(h_min, dist);
+        }
+    return h_max/h_min;
+}
+
+
+/**
+ * @brief Computes the penalty parameter of the DG method on a given boundary edge.
+ *
+ * Assumption is that the edge consists of only 1 side.
+ * @param side       		The boundary side.
+ * @param K_size            Size of vector of tensors K.
+ * @param K					Dispersivity tensor.
+ * @param ad_vector         Advection vector.
+ * @param normal_vector		Normal vector (assumed constant along the edge).
+ * @param alpha				Penalty parameter that influences the continuity
+ * 							of the solution (large value=more continuity).
+ */
+double DG_penalty_boundary(Side side,
+            const int K_size,
+            const vector<arma::mat33> &K,
+            const double flux,
+            const arma::vec3 &normal_vector,
+            const double alpha)
+{
+    double delta = 0, h = 0;
+
+    // calculate the side diameter
+    if (side.dim() == 0)
+    {
+        h = 1;
+    }
+    else
+    {
+        for (unsigned int i=0; i<side.n_nodes(); i++)
+            for (unsigned int j=i+1; j<side.n_nodes(); j++) {
+                double dist = arma::norm(*side.node(i) - *side.node(j));
+                h = max(h, dist);
+            }
+
+    }
+
+    // delta is set to the average value of Kn.n on the side
+    for (int k=0; k<K_size; k++)
+        delta += dot(K[k]*normal_vector,normal_vector);
+    delta /= K_size;
+
+    return 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
+}
+
+
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
@@ -312,13 +372,12 @@ public:
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
+                k=0; // temporary solution, set dif_coef until DG_penalty_boundary will not be removed
                 for (auto p : this->boundary_points(cell_side) ) {
                     eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
                     k++;
                 }
-                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
-                eq_data_->gamma[sbi][side.cond_idx()] = gamma_l;
+                gamma_l = DG_penalty_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
             }
 
@@ -463,8 +522,8 @@ public:
                         omega[0] = delta[1]/delta_sum;
                         omega[1] = delta[0]/delta_sum;
                         double h = edge_side1.diameter();
-                        aniso1 = eq_data_->elem_anisotropy(edge_side1.element());
-                        aniso2 = eq_data_->elem_anisotropy(edge_side2.element());
+                        aniso1 = elem_anisotropy(edge_side1.element());
+                        aniso2 = elem_anisotropy(edge_side2.element());
                         gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
                     }
                     else
@@ -818,8 +877,6 @@ public:
     {
         unsigned int k;
 
-        const unsigned int cond_idx = cell_side.side().cond_idx();
-
         ElementAccessor<3> bc_elm = cell_side.cond().element_accessor();
 
         fe_values_side_.reinit(cell_side.side());
@@ -860,11 +917,27 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
+                double side_flux = 0;
+                k=0;
+                for (auto p : this->boundary_points(cell_side) ) {
+                    side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
+                    k++;
+                }
+                double transport_flux = side_flux/cell_side.measure();
+
+                // temporary solution, set dif_coef until DG_penalty_boundary will not be removed
+                k=0;
+                for (auto p : this->boundary_points(cell_side) ) {
+                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
+                    k++;
+                }
+                double gamma_l = DG_penalty_boundary(cell_side.side(), this->quad_low_->size(), eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_bdr));
+
                 k=0;
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = eq_data_->gamma[sbi][cond_idx]*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
+                    double bc_term = gamma_l*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
                     arma::vec3 bc_grad = -eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k)*eq_data_->dg_variant*(arma::trans(eq_fields_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
@@ -878,7 +951,7 @@ public:
                     {
                         local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
                                 - arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
-                                + eq_data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                                + gamma_l*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
                     }
                     k++;
                 }
