@@ -1,9 +1,9 @@
-#ifndef ASSEMBLY_SPEED_TEST_HH_
-#define ASSEMBLY_SPEED_TEST_HH_
+#ifndef DG_MOCKUP_ASSEMBLYA_HH_
+#define DG_MOCKUP_ASSEMBLYA_HH_
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
-#include "assembly_benchmark.hh"
+#include "DG_mockup.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -712,5 +712,5 @@ public:
 };
 
 
-#endif /* ASSEMBLY_SPEED_TEST_HH_ */
+#endif /* DG_MOCKUP_ASSEMBLYA_HH_ */
 

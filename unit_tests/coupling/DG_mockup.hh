@@ -1,5 +1,5 @@
-#ifndef ASSEMBLY_BENCHMARK_HH_
-#define ASSEMBLY_BENCHMARK_HH_
+#ifndef DG_MOCKUP_HH_
+#define DG_MOCKUP_HH_
 
 
 #include <mesh_constructor.hh>
@@ -707,5 +707,4 @@ public:
 };
 
 
-#endif /* ASSEMBLY_BENCHMARK_HH_ */
-
+#endif /* DG_MOCKUP_HH_ */

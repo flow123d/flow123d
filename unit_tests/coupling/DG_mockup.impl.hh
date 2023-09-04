@@ -1,8 +1,8 @@
-#ifndef ASSEMBLY_BENCHMARK_IMPL_HH_
-#define ASSEMBLY_BENCHMARK_IMPL_HH_
+#ifndef DG_MOCKUP_IMPL_HH_
+#define DG_MOCKUP_IMPL_HH_
 
-#include "assembly_benchmark.hh"
-#include "assembly_speed_test.hh"
+#include "DG_mockup.hh"
+#include "DG_mockup_assembly.hh"
 
 void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
@@ -195,4 +195,4 @@ void AssemblyBenchmarkTest::update_solution()
     END_TIMER("SIMULATION-ONE STEP");
 }
 
-#endif /* ASSEMBLY_BENCHMARK_IMPL_HH_ */
+#endif /*DG_MOCKUP_IMPL_HH_ */

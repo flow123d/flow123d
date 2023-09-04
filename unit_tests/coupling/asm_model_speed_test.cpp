@@ -11,7 +11,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
-#include "assembly_benchmark.impl.hh"
+#include "DG_mockup.impl.hh"
 
 
 /****************************************************************************************
