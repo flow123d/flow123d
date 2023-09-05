@@ -290,6 +290,7 @@ protected:
 
     ~SomeEquation() {
         delete mesh;
+        Profiler::uninitialize();
     };
 
     void set_dh_cell(unsigned int elm_idx, unsigned int reg_id, bool updt_bdr=false) {
