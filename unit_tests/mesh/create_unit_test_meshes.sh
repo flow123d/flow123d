@@ -1,11 +1,15 @@
 #!/bin/bash
 
+# suppose that
+# - pwd is the root dir of flow123d repository
+# - OUTPUT_DIR is also under the root dir of flow123d repository
+
 # SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-# OUTPUT_DIR="${SCRIPTPATH}/meshes"
-# mkdir ${OUTPUT_DIR}
+# cd ${SCRIPTPATH}
 
 OUTPUT_DIR=$1
 mkdir -p ${OUTPUT_DIR}
+echo "pwd: $(pwd)"
 
 # gmsh in Docker container
 docker_container="flow123d/geomop-gnu:2.0.0"
@@ -21,6 +25,7 @@ gmsh="${dexec} gmsh -format msh2"
 # BIG     300 000
 
 # input geo variants
+ut_dir="unit_tests/mesh"
 geos=("lshape_2D.geo" \
       "lshape_3D.geo" \
       "square_2D.geo" \
@@ -51,26 +56,27 @@ steps2_big=(0.0097 0.5 0.014 0.37)
 steps3_big=(0.0048 0.045 0.00275 0.0245)
 
 for i in ${!geos[@]}; do
+  geofile="${ut_dir}/${geos[$i]}"
   filename="${geos[$i]%.*}"
   echo "VARIANT: ${filename}"
   # refined small
   mshfile="${OUTPUT_DIR}/${filename}_small_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_small[$i]} -setnumber mesh ${steps2_small[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_small[$i]} -setnumber mesh ${steps2_small[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
   # refined medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_medium[$i]} -setnumber mesh ${steps2_medium[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_medium[$i]} -setnumber mesh ${steps2_medium[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
   # refined big
   mshfile="${OUTPUT_DIR}/${filename}_big_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_big[$i]} -setnumber mesh ${steps2_big[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_big[$i]} -setnumber mesh ${steps2_big[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
   uniform small
   mshfile="${OUTPUT_DIR}/${filename}_small_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_small[$i]} -setnumber mesh ${steps3_small[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps3_small[$i]} -setnumber mesh ${steps3_small[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
   # uniform medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_medium[$i]} -setnumber mesh ${steps3_medium[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps3_medium[$i]} -setnumber mesh ${steps3_medium[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
   # uniform big
   mshfile="${OUTPUT_DIR}/${filename}_big_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_big[$i]} -setnumber mesh ${steps3_big[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps3_big[$i]} -setnumber mesh ${steps3_big[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
 done
 
 docker stop ${docker_contname}
