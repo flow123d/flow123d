@@ -1,8 +1,11 @@
 #!/bin/bash
 
-SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-OUTPUT_DIR="${SCRIPTPATH}/meshes"
-mkdir ${OUTPUT_DIR}
+# SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+# OUTPUT_DIR="${SCRIPTPATH}/meshes"
+# mkdir ${OUTPUT_DIR}
+
+OUTPUT_DIR=$1
+mkdir -p ${OUTPUT_DIR}
 
 # target element counts:
 # SMALL     3 000

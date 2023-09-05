@@ -43,20 +43,36 @@ jobs:
             git_commit=`git rev-parse --short=6 HEAD`
             release_tag=`cat version`_${git_commit}
             echo ${release_tag}
+
+            # create build_dir variable
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+            echo ${build_dir}
     
             # can not use environment variables in github actions
             echo ::set-output name=pubdir::publish_${environment}
             echo ::set-output name=reltag::${release_tag}
+            echo ::set-output name=builddir::${build_dir}
     
         - name: Check vars
           run: |
-              echo pubdir="${{ steps.vars.outputs.pubdir }}"    
+              echo pubdir="${{ steps.vars.outputs.pubdir }}"
               echo reltag="${{ steps.vars.outputs.reltag }}"
+              echo builddir="${{ steps.vars.outputs.builddir }}"
         - name: Build Flow123d
-          run: |        
+          run: |
               release_tag="${{ steps.vars.outputs.reltag }}"
               # auto_build.sh <build_type> <environment> <image_name_base> <release_tag> 
-              config/build/auto_build.sh rel ${environment} ci ${release_tag}  
+              config/build/auto_build.sh rel ${environment} ci ${release_tag}
+        - name: Benchmark meshes
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              unit_tests/mesh/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+        - name: Tarball build dir
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              cp config.cmake ${build_dir}/_config.cmake
+              tar -cvf build_dir.tar ${build_dir}/*
         - uses: actions/upload-artifact@v3
           with:         
             name: build_dir
