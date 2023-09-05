@@ -7,6 +7,14 @@
 OUTPUT_DIR=$1
 mkdir -p ${OUTPUT_DIR}
 
+# gmsh in Docker container
+docker_container="flow123d/geomop-gnu:2.0.0"
+docker_contname="geomop-gnu"
+echo "start docker container: '${docker_container}'"
+docker run -t -d --name ${docker_contname} -w /$(pwd) -v /$(pwd):/$(pwd) ${docker_container}
+dexec="docker exec -u $(id -u):$(id -g) ${docker_contname}"
+gmsh="${dexec} gmsh -format msh2"
+
 # target element counts:
 # SMALL     3 000
 # MEDIUM   30 000
@@ -47,21 +55,23 @@ for i in ${!geos[@]}; do
   echo "VARIANT: ${filename}"
   # refined small
   mshfile="${OUTPUT_DIR}/${filename}_small_refined.msh"
-  gmsh -setnumber fine_step ${steps1_small[$i]} -setnumber mesh ${steps2_small[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_small[$i]} -setnumber mesh ${steps2_small[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
   # refined medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_refined.msh"
-  gmsh -setnumber fine_step ${steps1_medium[$i]} -setnumber mesh ${steps2_medium[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_medium[$i]} -setnumber mesh ${steps2_medium[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
   # refined big
   mshfile="${OUTPUT_DIR}/${filename}_big_refined.msh"
-  gmsh -setnumber fine_step ${steps1_big[$i]} -setnumber mesh ${steps2_big[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps1_big[$i]} -setnumber mesh ${steps2_big[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
   uniform small
   mshfile="${OUTPUT_DIR}/${filename}_small_uniform.msh"
-  gmsh -setnumber fine_step ${steps3_small[$i]} -setnumber mesh ${steps3_small[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps3_small[$i]} -setnumber mesh ${steps3_small[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
   # uniform medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_uniform.msh"
-  gmsh -setnumber fine_step ${steps3_medium[$i]} -setnumber mesh ${steps3_medium[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
+  ${gmsh} -setnumber fine_step ${steps3_medium[$i]} -setnumber mesh ${steps3_medium[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
   # uniform big
   mshfile="${OUTPUT_DIR}/${filename}_big_uniform.msh"
-  gmsh -setnumber fine_step ${steps3_big[$i]} -setnumber mesh ${steps3_big[$i]} -${dim[$i]} -format msh2 -o ${mshfile} ${geos[$i]}
-  exit 0
+  ${gmsh} -setnumber fine_step ${steps3_big[$i]} -setnumber mesh ${steps3_big[$i]} -${dim[$i]} -o ${mshfile} ${geos[$i]}
 done
+
+docker stop ${docker_contname}
+docker rm ${docker_contname}
