@@ -50,10 +50,10 @@ jobs:
             echo ${build_dir}
     
             # can not use environment variables in github actions
-            echo ::set-output name=pubdir::publish_${environment}
-            echo ::set-output name=reltag::${release_tag}
-            echo ::set-output name=builddir::${build_dir}
-    
+            echo "pubdir=publish_${environment}" >> $GITHUB_OUTPUT
+            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+
         - name: Check vars
           run: |
               echo pubdir="${{ steps.vars.outputs.pubdir }}"
