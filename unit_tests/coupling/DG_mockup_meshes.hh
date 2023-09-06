@@ -20,9 +20,12 @@ public:
 
 /// Define paths of test meshes here.
 std::vector<std::string> meshes_table {
-    "square_uniform_2_S",
-	"square_uniform_2_M",
-    "square_uniform_2_L"
+    //"square_uniform_2_S",
+    //"square_uniform_2_M",
+    //"square_uniform_2_L"
+    "test_108_elem",
+    "test_7590_elem",
+    "test_27936_elem"
 };
 
 
