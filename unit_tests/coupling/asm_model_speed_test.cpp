@@ -55,15 +55,18 @@ TEST_F(DGMocupTest, simple_asm) {
 
     for (uint i=0; i<meshes_table.size(); ++i)
     {
-        std::string mesh_file( meshes_table[i] );
-        CP nonconst_cp(meshes_table[i].c_str());
-		START_TIMER( nonconst_cp.str_ );
+        // replace START_TIMER tag, we can't set constexpr string converted from meshes_table[i]
+        CodePoint cp = CODE_POINT(meshes_table[i].c_str());
+        TimerFrame timer = TimerFrame( cp );
+
         AssemblyBenchmarkTest test;
-        test.create_and_set_mesh( "mesh/" + mesh_file + ".msh");
+        test.create_and_set_mesh( "mesh/" + meshes_table[i] + ".msh");
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_models();
         test.run_simulation();
-        END_TIMER( nonconst_cp.str_ );
+
+        // replace END_TIMER equivalent as START_TIMER
+        Profiler::instance()->stop_timer( cp );
     }
     this->profiler_output("model_simple");
 }
