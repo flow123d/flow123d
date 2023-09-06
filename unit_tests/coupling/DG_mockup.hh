@@ -38,11 +38,6 @@ template<unsigned int dim> class StiffnessAssembly;
 template<unsigned int dim> class SourcesAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
-#ifdef FLOW123D_DEBUG
-static const unsigned int profiler_loop = 10;
-#else
-static const unsigned int profiler_loop = 1000;
-#endif
 
 /*******************************************************************************
  * Functors of FieldModels
@@ -139,10 +134,30 @@ struct fn_conc_diff_coef {
 };
 
 
+class DGMocupTest : public testing::Test {
+public:
+	DGMocupTest()
+    {
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        Profiler::instance();
+        Profiler::set_memory_monitoring(false, false);
+    }
+
+    ~DGMocupTest() {
+        Profiler::uninitialize();
+    }
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		static ofstream os( FilePath("benchmark_" + file_name + "_test.log", FilePath::output_file) );
+		Profiler::instance()->output(MPI_COMM_WORLD, os);
+	}
+};
+
 /*******************************************************************************
- * Test fixture class
+ * Test class
  */
-class AssemblyBenchmarkTest : public testing::Test, public EquationBase {
+class AssemblyBenchmarkTest : public EquationBase {
 public:
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
@@ -600,9 +615,6 @@ public:
 
 	AssemblyBenchmarkTest()
     {
-        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-        Profiler::instance();
-
         eq_data_ = make_shared<EqData>();
         eq_fields_ = make_shared<EqFields>();
         this->eq_fieldset_ = eq_fields_;
@@ -649,11 +661,10 @@ public:
             }
         }
 
-        Profiler::uninitialize();
     }
 
     void create_and_set_mesh(const std::string &mesh_file) {
-        std::string input_str = "{ mesh_file=\"" + mesh_file + "\", optimize_mesh=false }";
+        std::string input_str = "{ mesh_file=\"" + mesh_file + "\" }";
         this->mesh_ = mesh_full_constructor(input_str);
 
         // Set up physical parameters.
@@ -683,13 +694,6 @@ public:
             this->update_solution();
         }
     }
-
-	/// Perform profiler output.
-    void profiler_output(std::string file_name) {
-		static ofstream os( FilePath("benchmark_" + file_name + "_test.log", FilePath::output_file) );
-		Profiler::instance()->output(MPI_COMM_WORLD, os);
-		//os << "" << std::setfill('=') << setw(80) << "" << std::setfill(' ') << endl << endl;
-	}
 
 
     std::shared_ptr<EqFields> eq_fields_;  ///< Fields for model parameters.

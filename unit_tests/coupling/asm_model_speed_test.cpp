@@ -12,6 +12,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "DG_mockup.impl.hh"
+#include "DG_mockup_meshes.hh"
 
 
 /****************************************************************************************
@@ -29,7 +30,7 @@
  ****************************************************************************************/
 
 
-TEST_F(AssemblyBenchmarkTest, simple_asm) {
+TEST_F(DGMocupTest, simple_asm) {
     string eq_data_input = R"YAML(
     solver: !Petsc
       a_tol: 1.0e-12
@@ -52,9 +53,17 @@ TEST_F(AssemblyBenchmarkTest, simple_asm) {
             value: "[ [ 0.01*X[0], 0.2*X[1], 1 ], [ 0.2*X[1], 0.01*X[0], 2 ], [ 1, 2, 3 ] ]"
     )YAML";
 
-    this->create_and_set_mesh("mesh/cube_2x1.msh");
-    this->initialize( eq_data_input, {"A", "B"} );
-    this->eq_fields_->init_field_models();
-    this->run_simulation();
+    for (uint i=0; i<meshes_table.size(); ++i)
+    {
+        std::string mesh_file( meshes_table[i] );
+        CP nonconst_cp(meshes_table[i].c_str());
+		START_TIMER( nonconst_cp.str_ );
+        AssemblyBenchmarkTest test;
+        test.create_and_set_mesh( "mesh/" + mesh_file + ".msh");
+        test.initialize( eq_data_input, {"A", "B"} );
+        test.eq_fields_->init_field_models();
+        test.run_simulation();
+        END_TIMER( nonconst_cp.str_ );
+    }
     this->profiler_output("model_simple");
 }
