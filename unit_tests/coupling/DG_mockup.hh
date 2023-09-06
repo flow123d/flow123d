@@ -143,9 +143,7 @@ public:
         Profiler::set_memory_monitoring(false, false);
     }
 
-    ~DGMocupTest() {
-        Profiler::uninitialize();
-    }
+    ~DGMocupTest() {}
 
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {

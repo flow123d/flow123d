@@ -53,11 +53,12 @@ TEST_F(DGMocupTest, simple_asm) {
             value: "[ [ 0.01*X[0], 0.2*X[1], 1 ], [ 0.2*X[1], 0.01*X[0], 2 ], [ 1, 2, 3 ] ]"
     )YAML";
 
+    std::vector< std::shared_ptr<CodePoint> > cp_vec;
     for (uint i=0; i<meshes_table.size(); ++i)
     {
         // replace START_TIMER tag, we can't set constexpr string converted from meshes_table[i]
-        CodePoint cp = CODE_POINT(meshes_table[i].c_str());
-        TimerFrame timer = TimerFrame( cp );
+        cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
+        TimerFrame timer = TimerFrame( *cp_vec[i] );
 
         AssemblyBenchmarkTest test;
         test.create_and_set_mesh( "mesh/" + meshes_table[i] + ".msh");
@@ -66,8 +67,8 @@ TEST_F(DGMocupTest, simple_asm) {
         test.run_simulation();
 
         // replace END_TIMER equivalent as START_TIMER
-        Profiler::instance()->stop_timer( cp );
+        Profiler::instance()->stop_timer( *cp_vec[i] );
     }
     this->profiler_output("const_simple");
-    this->profiler_output("const_simple");
+    Profiler::uninitialize();
 }
