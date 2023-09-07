@@ -68,7 +68,7 @@ jobs:
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
-              unit_tests/mesh/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+              unit_tests/coupling/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
         - name: Tarball build dir
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
