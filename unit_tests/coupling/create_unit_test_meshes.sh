@@ -25,7 +25,7 @@ gmsh="${dexec} gmsh -format msh2"
 # BIG     300 000
 
 # input geo variants
-ut_dir="unit_tests/mesh"
+ut_dir="unit_tests/coupling"
 geos=("lshape_2D.geo" \
       "lshape_3D.geo" \
       "square_2D.geo" \

@@ -9,23 +9,11 @@
  * Defines and provides path to mesh files used in assembly benchmark tests.
  */
 
-class CP {
-public:
-    constexpr CP(const char * str)
-    : str_(str)
-    {}
-
-    const char * str_;
-};
-
 /// Define paths of test meshes here.
 std::vector<std::string> meshes_table {
-    //"square_uniform_2_S",
-    //"square_uniform_2_M",
-    //"square_uniform_2_L"
-    "test_108_elem",
-    "test_7590_elem",
-    "test_27936_elem"
+    "square_2D_small_uniform",
+    "square_2D_medium_uniform",
+    "square_2D_big_uniform"
 };
 
 
