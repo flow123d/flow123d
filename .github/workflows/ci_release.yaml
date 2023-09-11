@@ -68,12 +68,11 @@ jobs:
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
-              unit_tests/coupling/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+              config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
         - name: Tarball build dir
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
-              cp config.cmake ${build_dir}/_config.cmake
-              tar -cvf build_dir.tar ${build_dir}/*
+              config/build/tar_build_dir.sh ${build_dir}              
         - uses: actions/upload-artifact@v3
           with:         
             name: build_dir
