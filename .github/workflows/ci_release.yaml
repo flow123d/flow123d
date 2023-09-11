@@ -68,6 +68,7 @@ jobs:
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
+              echo "Benchmark meshes build_dir="${build_dir}
               config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
         - name: Tarball build dir
           run: |
