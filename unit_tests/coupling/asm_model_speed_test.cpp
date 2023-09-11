@@ -30,7 +30,7 @@
  ****************************************************************************************/
 
 
-TEST_F(DGMocupTest, simple_asm) {
+TEST_F(DGMockupTest, simple_asm) {
     string eq_data_input = R"YAML(
     solver: !Petsc
       a_tol: 1.0e-12
@@ -60,7 +60,7 @@ TEST_F(DGMocupTest, simple_asm) {
     	cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
-        AssemblyBenchmarkTest test;
+        DGMockup test;
         test.create_and_set_mesh( "benchmark_meshes/" + meshes_table[i] + ".msh");
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_models();

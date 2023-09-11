@@ -134,16 +134,16 @@ struct fn_conc_diff_coef {
 };
 
 
-class DGMocupTest : public testing::Test {
+class DGMockupTest : public testing::Test {
 public:
-	DGMocupTest()
+	DGMockupTest()
     {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         Profiler::instance();
         Profiler::set_memory_monitoring(false, false);
     }
 
-    ~DGMocupTest() {}
+    ~DGMockupTest() {}
 
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {
@@ -155,7 +155,7 @@ public:
 /*******************************************************************************
  * Test class
  */
-class AssemblyBenchmarkTest : public EquationBase {
+class DGMockup : public EquationBase {
 public:
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
@@ -173,7 +173,7 @@ public:
             .declare_key("solver", LinSys_PETSC::get_input_type(), Input::Type::Default("{}"),
                     "Solver for the linear system.")
             .declare_key("input_fields", Input::Type::Array(
-            		AssemblyBenchmarkTest::EqFields()
+                    DGMockup::EqFields()
                         .make_field_descriptor_type(equation_name)),
                     IT::Default::obligatory(),
                     "Input fields of the equation.")
@@ -611,7 +611,7 @@ public:
 		symmetric = 1        // Symmetric weighted interior penalty DG
 	};
 
-	AssemblyBenchmarkTest()
+	DGMockup()
     {
         eq_data_ = make_shared<EqData>();
         eq_fields_ = make_shared<EqFields>();
@@ -622,7 +622,7 @@ public:
         eq_data_->dg_order = 1;
     }
 
-    ~AssemblyBenchmarkTest() {
+    ~DGMockup() {
         if (eq_data_->dif_coef.size() > 0) {
             // initialize called
 

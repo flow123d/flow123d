@@ -4,7 +4,7 @@
 #include "DG_mockup.hh"
 #include "DG_mockup_assembly.hh"
 
-void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances) {
+void DGMockup::initialize(const string &input, std::vector<std::string> substances) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
     in_rec_ = reader.get_root_interface<Input::Record>();
 
@@ -81,7 +81,7 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
     }
 }
 
-void AssemblyBenchmarkTest::zero_time_step() {
+void DGMockup::zero_time_step() {
     START_TIMER("ZERO-TIME STEP");
 
     DebugOut().fmt("zero_time_step time {}\n", this->time_->t());
@@ -125,7 +125,7 @@ void AssemblyBenchmarkTest::zero_time_step() {
 }
 
 
-void AssemblyBenchmarkTest::update_solution()
+void DGMockup::update_solution()
 {
     START_TIMER("SIMULATION-ONE STEP");
 
