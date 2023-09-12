@@ -60,8 +60,8 @@ TEST_F(DGMockupTest, simple_asm) {
     	cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
-        DGMockup test;
         test.create_and_set_mesh( "../../benchmark_meshes/" + meshes_table[i] + ".msh");
+        DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test;
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_models();
         test.run_simulation();

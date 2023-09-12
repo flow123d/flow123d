@@ -19,8 +19,8 @@ template <unsigned int dim>
 class Mass_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -130,8 +130,8 @@ template <unsigned int dim>
 class Mass_ComputeLocal : public Mass_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -155,8 +155,8 @@ template <unsigned int dim>
 class Mass_EvalFields : public Mass_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -182,8 +182,8 @@ template <unsigned int dim>
 class Stiffness_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -324,7 +324,7 @@ public:
             auto p_side = *( this->boundary_points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
-            if (bc_type == DGMockup::abc_dirichlet)
+            if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
             {
                 // set up the parameters for DG method
                 k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
@@ -341,18 +341,18 @@ public:
             for (auto p : this->boundary_points(cell_side) )
             {
                 double flux_times_JxW;
-                if (bc_type == DGMockup::abc_total_flux)
+                if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
                     flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
                 }
-                else if (bc_type == DGMockup::abc_diffusive_flux)
+                else if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
                     flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
                 }
-                else if (bc_type == DGMockup::abc_inflow && side_flux < 0)
+                else if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
                     flux_times_JxW = transport_flux*fe_values_side_.JxW(k);
@@ -365,7 +365,7 @@ public:
                         local_matrix_[i*ndofs_+j] += flux_times_JxW*fe_values_side_.shape_value(i,k)*fe_values_side_.shape_value(j,k);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
-                        if (bc_type == DGMockup::abc_dirichlet)
+                        if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
                             local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
                                     + arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*eq_data_->dg_variant
                                     )*fe_values_side_.JxW(k);
@@ -678,8 +678,8 @@ template <unsigned int dim>
 class Stiffness_ComputeLocal : public Stiffness_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -709,8 +709,8 @@ template <unsigned int dim>
 class Stiffness_EvalFields : public Stiffness_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -748,8 +748,8 @@ template <unsigned int dim>
 class Sources_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
@@ -858,8 +858,8 @@ template <unsigned int dim>
 class Sources_ComputeLocal : public Sources_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup< Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly >::EqFields EqFields;
+    typedef typename DGMockup< Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly >::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
@@ -885,8 +885,8 @@ template <unsigned int dim>
 class Sources_EvalFields : public Sources_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup::EqFields EqFields;
-    typedef typename DGMockup::EqData EqData;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
+    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 

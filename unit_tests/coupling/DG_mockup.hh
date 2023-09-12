@@ -33,6 +33,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
+class GenericAssemblyBase;
 template<unsigned int dim> class Mass_FullAssembly;
 template<unsigned int dim> class Mass_ComputeLocal;
 template<unsigned int dim> class Mass_EvalFields;
@@ -158,11 +159,14 @@ public:
 	}
 };
 
+
 /*******************************************************************************
  * Test class
  */
+template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
 class DGMockup : public EquationBase {
 public:
+
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
     enum Abstract_bc_types {
@@ -179,7 +183,7 @@ public:
             .declare_key("solver", LinSys_PETSC::get_input_type(), Input::Type::Default("{}"),
                     "Solver for the linear system.")
             .declare_key("input_fields", Input::Type::Array(
-                    DGMockup::EqFields()
+                    DGMockup<Mass, Stiffness, Sources>::EqFields()
                         .make_field_descriptor_type(equation_name)),
                     IT::Default::obligatory(),
                     "Input fields of the equation.")
@@ -709,9 +713,9 @@ public:
 	std::vector<Mat> mass_matrix;       ///< The mass matrix.
 	std::vector<Vec> mass_vec;          ///< Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 
-	GenericAssembly< Mass_FullAssembly > * mass_assembly_;
-    GenericAssembly< Stiffness_FullAssembly > * stiffness_assembly_;
-    GenericAssembly< Sources_FullAssembly > * sources_assembly_;
+    GenericAssemblyBase * mass_assembly_;
+    GenericAssemblyBase * stiffness_assembly_;
+    GenericAssemblyBase * sources_assembly_;
 };
 
 
