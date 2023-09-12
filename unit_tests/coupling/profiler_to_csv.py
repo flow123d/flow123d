@@ -34,10 +34,9 @@ def step_profiler_data(json_in):
     
 
 # Load JSON file
-profiler_file = '../' + sys.argv[1]
-f_in = open(profiler_file)
-profiler_data = json.load(f_in)
-f_in.close()
+profiler_file = sys.argv[1]
+with open(profiler_file) as f_in:
+    profiler_data = json.load(f_in)
 
 # Only one descendant 'Whole Program' of root tree exists 
 whole_program = profiler_data['children'][0]

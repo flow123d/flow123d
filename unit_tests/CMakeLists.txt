@@ -27,6 +27,7 @@ add_dependencies(gtest_mpi_obj gtest gtest_main)
 # some test files in its source directory, while the binary of the test is created
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
+add_definitions(-DUNIT_TESTS_BIN_DIR="${CMAKE_BINARY_DIR}/unit_tests")
 
 # target to make all unit tests
 #add_custom_target(all-unit-test)
@@ -228,7 +229,7 @@ macro(define_mpi_benchmark class_name n_proc postproc_script)
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${test_name}.xml"
-      COMMAND pyhton3 ${CMAKE_CURRENT_SOURCE_DIR}/${postproc_script} ${class_name}_profiler.json
+      COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/${postproc_script} ${class_name}_profiler.json
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
