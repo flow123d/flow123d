@@ -95,3 +95,4 @@ bin/pythonenv.sh
 # IDEs
 /.vscode
 /.clang-format
+/build/
