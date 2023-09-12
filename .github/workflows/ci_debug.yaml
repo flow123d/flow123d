@@ -31,6 +31,14 @@ jobs:
           run: |
             release_tag=`cat version`
             config/build/auto_build.sh dbg gnu ci ${release_tag} 
+        - name: Benchmark meshes
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+        - name: Tarball build dir
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              config/build/tar_build_dir.sh ${build_dir}                
         - uses: actions/upload-artifact@v3
           with:         
             name: build_dir

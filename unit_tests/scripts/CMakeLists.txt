@@ -23,4 +23,4 @@
       DEPENDS tester_mpi
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-  add_dependencies(${super_test} test_flow123d_sh)
+  add_dependencies(${dir_test_target} test_flow123d_sh)

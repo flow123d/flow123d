@@ -61,7 +61,7 @@ TEST_F(DGMockupTest, simple_asm) {
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
         DGMockup test;
-        test.create_and_set_mesh( "benchmark_meshes/" + meshes_table[i] + ".msh");
+        test.create_and_set_mesh( "../../benchmark_meshes/" + meshes_table[i] + ".msh");
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_models();
         test.run_simulation();
