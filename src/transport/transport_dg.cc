@@ -277,13 +277,6 @@ void TransportDG<Model>::initialize()
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
 
-    int qsize = mass_assembly_->eval_points()->max_size();
-    eq_data_->dif_coef.resize(eq_data_->n_substances());
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-    {
-        eq_data_->dif_coef[sbi].resize(qsize);
-    }
-
     eq_fields_->init_condition.setup_components();
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {

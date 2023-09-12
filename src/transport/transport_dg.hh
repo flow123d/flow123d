@@ -192,8 +192,6 @@ public:
     	/// @name Auxiliary fields used during assembly
     	// @{
 
-    	/// Diffusion coefficients.
-    	vector<vector<arma::mat33> > dif_coef;
     	/// Maximal number of edge sides (evaluate from dim 1,2,3)
     	unsigned int max_edg_sides;
 

@@ -170,49 +170,64 @@ double elem_anisotropy(ElementAccessor<3> e)
     return h_max/h_min;
 }
 
+/**
+ * @brief Computes average normal diffusivity over a set of points
+ * 
+ * @param diff_coef Diffusion tensor.
+ * @param pts       Points.
+ * @param nv        Normal vector.
+ * @return double 
+ */
+double diffusion_delta(Field<3, FieldValue<3>::TensorFixed> &diff_coef, Range<BoundaryPoint> pts, const arma::vec3 &nv)
+{
+    double delta = 0;
+    unsigned int n = 0;
+    for (auto p : pts )
+    {
+        delta += dot(diff_coef(p)*nv, nv);
+        n++;
+    }
+    return n == 0 ? 0 : (delta/n);
+}
+
 
 /**
  * @brief Computes the penalty parameter of the DG method on a given boundary edge.
  *
  * Assumption is that the edge consists of only 1 side.
  * @param side       		The boundary side.
- * @param K_size            Size of vector of tensors K.
- * @param K					Dispersivity tensor.
+ * @param diff_delta	    Average normal dispersivity K*n.n computed by diffusion_delta()
  * @param ad_vector         Advection vector.
- * @param normal_vector		Normal vector (assumed constant along the edge).
  * @param alpha				Penalty parameter that influences the continuity
  * 							of the solution (large value=more continuity).
  */
 double DG_penalty_boundary(Side side,
-            const int K_size,
-            const vector<arma::mat33> &K,
+            const double &diff_delta,
             const double flux,
-            const arma::vec3 &normal_vector,
             const double alpha)
 {
-    double delta = 0, h = 0;
+    return 0.5*fabs(flux) + alpha/side.diameter()*diff_delta*elem_anisotropy(side.element());
+}
 
-    // calculate the side diameter
-    if (side.dim() == 0)
-    {
-        h = 1;
+
+/**
+ * @brief Computes advective flux.
+ * 
+ * @param advection_coef Advection vector.
+ * @param pts            Quadrature points.
+ * @param fv             FE values object.
+ * @return double 
+ */
+template <class PointType>
+double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Range<PointType> pts, FEValues<3> &fv)
+{
+    double side_flux = 0;
+    unsigned int k=0;
+    for (auto p : pts) {
+        side_flux += arma::dot(advection_coef(p), fv.normal_vector(k))*fv.JxW(k);
+        k++;
     }
-    else
-    {
-        for (unsigned int i=0; i<side.n_nodes(); i++)
-            for (unsigned int j=i+1; j<side.n_nodes(); j++) {
-                double dist = arma::norm(*side.node(i) - *side.node(j));
-                h = max(h, dist);
-            }
-
-    }
-
-    // delta is set to the average value of Kn.n on the side
-    for (int k=0; k<K_size; k++)
-        delta += dot(K[k]*normal_vector,normal_vector);
-    delta /= K_size;
-
-    return 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
+    return side_flux;
 }
 
 
@@ -356,28 +371,21 @@ public:
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
-            // On Neumann boundaries we have only term from integrating by parts the advective term,
-            // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-            double side_flux = 0;
-            k=0;
-            for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
-                k++;
-            }
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), fe_values_side_);
             double transport_flux = side_flux/side.measure();
 
+            // On Neumann boundaries we have only term from integrating by parts the advective term,
+            // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
             auto p_side = *( this->boundary_points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                k=0; // temporary solution, set dif_coef until DG_penalty_boundary will not be removed
-                for (auto p : this->boundary_points(cell_side) ) {
-                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
-                    k++;
-                }
-                gamma_l = DG_penalty_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_side));
+                gamma_l = DG_penalty_boundary(side, 
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(0)),
+                                              transport_flux,
+                                              eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
             }
 
@@ -450,13 +458,7 @@ public:
             sid=0;
             for( DHCellSide edge_side : edge_side_range )
             {
-                fluxes[sid] = 0;
-                k=0;
-                for (auto p : this->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
-                    k++;
-                }
-                fluxes[sid] /= edge_side.measure();
+                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], this->edge_points(edge_side), fe_values_vec_[sid]) / edge_side.measure();
                 if (fluxes[sid] > 0)
                     pflux += fluxes[sid];
                 else
@@ -890,12 +892,7 @@ public:
             local_flux_balance_vector_.assign(ndofs_, 0);
             local_flux_balance_rhs_ = 0;
 
-            double side_flux = 0;
-            k=0;
-            for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
-                k++;
-            }
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), fe_values_side_);
             double transport_flux = side_flux/cell_side.measure();
 
             auto p_side = *( this->boundary_points(cell_side)).begin();
@@ -917,21 +914,13 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
-                double side_flux = 0;
-                k=0;
-                for (auto p : this->boundary_points(cell_side) ) {
-                    side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
-                    k++;
-                }
+                double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), fe_values_side_);
                 double transport_flux = side_flux/cell_side.measure();
 
-                // temporary solution, set dif_coef until DG_penalty_boundary will not be removed
-                k=0;
-                for (auto p : this->boundary_points(cell_side) ) {
-                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
-                    k++;
-                }
-                double gamma_l = DG_penalty_boundary(cell_side.side(), this->quad_low_->size(), eq_data_->dif_coef[sbi], transport_flux, fe_values_side_.normal_vector(0), eq_fields_->dg_penalty[sbi](p_bdr));
+                double gamma_l = DG_penalty_boundary(cell_side.side(), 
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(0)), 
+                                              transport_flux, 
+                                              eq_fields_->dg_penalty[sbi](p_bdr));
 
                 k=0;
                 for (auto p : this->boundary_points(cell_side) )
