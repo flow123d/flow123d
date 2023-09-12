@@ -69,9 +69,9 @@ void DGMockup::initialize(const string &input, std::vector<std::string> substanc
     }
 
     // create assemblation object, finite element structures and distribute DOFs
-    mass_assembly_ = new GenericAssembly< MassAssembly >(eq_fields_.get(), eq_data_.get());
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssembly >(eq_fields_.get(), eq_data_.get());
-    sources_assembly_ = new GenericAssembly< SourcesAssembly >(eq_fields_.get(), eq_data_.get());
+    mass_assembly_ = new GenericAssembly< Mass_FullAssembly >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< Stiffness_FullAssembly >(eq_fields_.get(), eq_data_.get());
+    sources_assembly_ = new GenericAssembly< Sources_FullAssembly >(eq_fields_.get(), eq_data_.get());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());

@@ -33,9 +33,15 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
-template<unsigned int dim> class MassAssembly;
-template<unsigned int dim> class StiffnessAssembly;
-template<unsigned int dim> class SourcesAssembly;
+template<unsigned int dim> class Mass_FullAssembly;
+template<unsigned int dim> class Mass_ComputeLocal;
+template<unsigned int dim> class Mass_EvalFields;
+template<unsigned int dim> class Stiffness_FullAssembly;
+template<unsigned int dim> class Stiffness_ComputeLocal;
+template<unsigned int dim> class Stiffness_EvalFields;
+template<unsigned int dim> class Sources_FullAssembly;
+template<unsigned int dim> class Sources_ComputeLocal;
+template<unsigned int dim> class Sources_EvalFields;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -703,9 +709,9 @@ public:
 	std::vector<Mat> mass_matrix;       ///< The mass matrix.
 	std::vector<Vec> mass_vec;          ///< Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 
-	GenericAssembly< MassAssembly > * mass_assembly_;
-    GenericAssembly< StiffnessAssembly > * stiffness_assembly_;
-    GenericAssembly< SourcesAssembly > * sources_assembly_;
+	GenericAssembly< Mass_FullAssembly > * mass_assembly_;
+    GenericAssembly< Stiffness_FullAssembly > * stiffness_assembly_;
+    GenericAssembly< Sources_FullAssembly > * sources_assembly_;
 };
 
 
