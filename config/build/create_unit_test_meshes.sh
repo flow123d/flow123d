@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Prepare benchmark meshes using GMSH in a docker image `geomop-gnu`. 
+# Syntax:
+# 
+#    create_unit_test_meshes.sh <OUTPUT_DIR> [<MAX_SIZE>]
+#
+#  Create meshes in the directory <OUTPUT_DIR>. 
+#  MAX_SIZE is one of [small|medium|big], with 'big' default. 
+
+
 # suppose that
 # - pwd is the root dir of flow123d repository
 # - OUTPUT_DIR is also under the root dir of flow123d repository
@@ -8,6 +17,18 @@
 # cd ${SCRIPTPATH}
 
 OUTPUT_DIR=$1
+if [ -z "$OUTPUT_DIR" ]; then
+    echo "Missing output dir."
+    exit 1
+fi
+MAX_SIZE=${2:-big}
+MAX_SIZE_INT=3
+if [ "${MAX_SIZE}" == "small" ]; then
+    MAX_SIZE_INT=1
+elif [ "${MAX_SIZE}" == "medium" ]; then
+    MAX_SIZE_INT=2
+fi
+    
 mkdir -p ${OUTPUT_DIR}
 echo "pwd: $(pwd)"
 
@@ -34,6 +55,7 @@ geos=("lshape_2D.geo" \
 # corresponding dimension
 dim=(2 3 2 3)
 
+
 # SMALL fine_step
 steps1_small=(1e-6 3.5e-2 1e-6 3.2e-2)
 # SMALL mesh
@@ -55,28 +77,39 @@ steps2_big=(0.0097 0.5 0.014 0.37)
 # BIG (uniform) mesh
 steps3_big=(0.0048 0.045 0.00275 0.0245)
 
+function make_mesh {
+  fine_step=$1
+  mesh_step=$2
+  dim=$3
+  size_int=$4
+  if [ "$size_int" -le "$MAX_SIZE_INT" ]; then
+      ${gmsh} -setnumber fine_step $fine_step -setnumber mesh ${mesh_step} -${dim[$i]} -o ${mshfile} ${geofile}
+  fi
+}
+
+
 for i in ${!geos[@]}; do
   geofile="${ut_dir}/${geos[$i]}"
   filename="${geos[$i]%.*}"
   echo "VARIANT: ${filename}"
   # refined small
   mshfile="${OUTPUT_DIR}/${filename}_small_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_small[$i]} -setnumber mesh ${steps2_small[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
+  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 1
   # refined medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_medium[$i]} -setnumber mesh ${steps2_medium[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
+  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 2
   # refined big
   mshfile="${OUTPUT_DIR}/${filename}_big_refined.msh"
-  ${gmsh} -setnumber fine_step ${steps1_big[$i]} -setnumber mesh ${steps2_big[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
-  uniform small
+  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 3
+  # uniform small
   mshfile="${OUTPUT_DIR}/${filename}_small_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_small[$i]} -setnumber mesh ${steps3_small[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
+  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 1  
   # uniform medium
   mshfile="${OUTPUT_DIR}/${filename}_medium_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_medium[$i]} -setnumber mesh ${steps3_medium[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
+  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 2
   # uniform big
   mshfile="${OUTPUT_DIR}/${filename}_big_uniform.msh"
-  ${gmsh} -setnumber fine_step ${steps3_big[$i]} -setnumber mesh ${steps3_big[$i]} -${dim[$i]} -o ${mshfile} ${geofile}
+  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 3
 done
 
 docker stop ${docker_contname}

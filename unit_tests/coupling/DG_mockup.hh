@@ -145,7 +145,8 @@ class DGMockupTest : public testing::Test {
 public:
 	DGMockupTest()
     {
-        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+        FilePath::set_io_dirs(".",root_dir,"",".");
         Profiler::instance();
         Profiler::set_memory_monitoring(false, false);
     }
@@ -154,8 +155,8 @@ public:
 
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {
-		static ofstream os( FilePath("benchmark_" + file_name + "_test.log", FilePath::output_file) );
-		Profiler::instance()->output(MPI_COMM_WORLD, os);
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
 	}
 };
 

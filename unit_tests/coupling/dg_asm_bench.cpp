@@ -60,8 +60,10 @@ TEST_F(DGMockupTest, simple_asm) {
     	cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
+		DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test;
+		// path relative to the DGTest root which is <BUILD_DIR>/unit_tests/coupling
+        // see set_io_dirs in the DGMocupTest constructor
         test.create_and_set_mesh( "../../benchmark_meshes/" + meshes_table[i] + ".msh");
-        DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test;
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_models();
         test.run_simulation();
@@ -69,6 +71,6 @@ TEST_F(DGMockupTest, simple_asm) {
         // replace END_TIMER equivalent as START_TIMER
         Profiler::instance()->stop_timer( *cp_vec[i] );
     }
-    this->profiler_output("model_simple");
+    this->profiler_output("dg_asm");
     Profiler::uninitialize();
 }

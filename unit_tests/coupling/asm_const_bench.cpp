@@ -60,8 +60,8 @@ TEST_F(DGMockupTest, simple_asm) {
         cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
-        test.create_and_set_mesh( "../../benchmark_meshes/" + meshes_table[i] + ".msh");
         DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test;
+        test.create_and_set_mesh( "../../benchmark_meshes/" + meshes_table[i] + ".msh");
         test.initialize( eq_data_input, {"A", "B"} );
         test.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
         test.run_simulation();
