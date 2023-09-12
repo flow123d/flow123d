@@ -147,6 +147,45 @@ jobs:
             name: build_dir
         - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
+    benchmarks:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Benchmarks 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test:
+            - {dir: coupling, target: }
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+
+            # create build_dir variable
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+    
+            # can not use environment variables in github actions
+            echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+        - name: Check vars
+          run: |
+              echo git_commit="${{ steps.vars.outputs.git_commit }}"
+              echo builddir="${{ steps.vars.outputs.builddir }}"
+        - name: Run Benchmark
+          run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}
+        - name: Upload Artifacts
+          uses: actions/upload-artifact@v3
+          with:       
+            path: |
+                build_tree/unit_tests/${{matrix.test.dir}}/summary_${{matrix.test.target}}.csv
 
     # TODO: modify to run integration tests with release image
     #integration_tests:
