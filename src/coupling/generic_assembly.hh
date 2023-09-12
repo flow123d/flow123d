@@ -145,6 +145,11 @@ public:
     virtual ~GenericAssemblyBase(){}
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
 
+    /// Getter to EvalPoints object
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
+    }
+
 protected:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
@@ -189,11 +194,6 @@ public:
     /// Getter to set of assembly objects
     inline MixedPtr<DimAssembly, 1> multidim_assembly() const {
         return multidim_assembly_;
-    }
-
-    /// Geter to EvalPoints object
-    inline std::shared_ptr<EvalPoints> eval_points() const {
-        return eval_points_;
     }
 
     void set_min_edge_sides(unsigned int val) {
