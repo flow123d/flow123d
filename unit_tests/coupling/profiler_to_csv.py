@@ -34,64 +34,85 @@ def step_profiler_data(json_in):
 
 
 # Load data from profilerJSON file
-def load_data(profiler_file, whole_program_time):
+def load_data(profiler_file):
     # Load JSON file
     with open(profiler_file) as f_in:
         profiler_data = json.load(f_in)
 
     # Only one descendant 'Whole Program' of root tree exists 
     whole_program = profiler_data['children'][0]
-    whole_program_time = whole_program['cumul-time-sum']
-    #print("time:", whole_program_time)
 
     # Store data of all meshes to one dictionary
     prof_out_data = dict()
+    # Sum time of one mesh is store to separate dictionary
+    mesh_full_data = dict()
 
     # Iterate over data of meshes
     for i in whole_program['children']:
-        key = i['tag']
+        key_mesh = i['tag']
+        mesh_time = i['cumul-time-sum']
+        mesh_full_data[key_mesh] = mesh_time
 
-        # Extract zero time step and simulation step
+        # Extract type of simulation and type of field
         for j in i['children']:
-            if j['tag'] == "ZERO-TIME STEP": zero_step = j
-            if j['tag'] == "SIMULATION-ONE STEP": simulation_step = j
+            key_type = j['tag']
+            # Extract zero time step and simulation step
+            for k in j['children']:
+                if k['tag'] == "ZERO-TIME STEP": zero_step = k
+                if k['tag'] == "SIMULATION-ONE STEP": simulation_step = k
 
-        zero_step_data = step_profiler_data(zero_step['children'])
-        simulation_data = step_profiler_data(simulation_step['children'])
-        prof_out_data[key] = simulation_data
+            zero_step_data = step_profiler_data(zero_step['children'])
+            simulation_data = step_profiler_data(simulation_step['children'])
+            key_mesh_type = key_mesh + '_' + key_type
+            prof_out_data[key_mesh_type] = simulation_data
 
     #print("------------")
     #print(prof_out_data)
     #print("============")
-    return prof_out_data;
+    return mesh_full_data, prof_out_data
 
 
 # Print header to CSV file
 def write_header(writer):
-    header = ['domain_shape', 'uniformity', 'spacedim', 'mesh_size', 'field_variant', 'assembly_variant', 
-              'assembly_class', 'tag', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
+    header = ['commit', 'run_id', 'domain_shape', 'uniformity', 'spacedim', 'mesh_size', 'n_repeats', 'field_variant',  
+              'assembly_variant', 'assembly_class', 'tag', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
     writer.writerow(header)
 
 
+# Print data of full meshes to CSV file
+def write_full_meshes(mesh_full_data, writer):
+    key_names = mesh_full_data.keys()
+    for key in key_names:
+        mesh_split = key.split("_")
+        n_repeats = 1
+        if mesh_split[2] == 'small': n_repeats = 10
+        row = ['', '1', mesh_split[0], mesh_split[3], mesh_split[1], mesh_split[2], n_repeats, '',  
+               '', '', 'full_mesh', '', mesh_full_data[key], '', '']
+        writer.writerow(row)
+    
+
 """
-Return test parameters in list (data of first columns is same in all rows)
-TODO should be create dynamicaly by type of mesh and test
-     domain shape cube, Lshape, square
+Return test parameters in list (data of first columns is same in all rows of one mesh)
+Columns specifying mesh are following:
+     domain shape: cube, Lshape, square
      uniformity: uniform, refined
-     space dimension: 2, 3
-     mesh size: S ~3000el, M~30k el, L~ 300k el
+     space dimension: 2D, 3D
+     mesh size: small ~3000el, medium ~30k el, big ~300k el
+     n_repeats: 10 in case of small mesh, 1 in other cases
      field variant: model, constant
-     assembly variant: empty, eval, assemble
+     assembly variant: FullAssembly, ComputeLocal, EvalField
 """
-def test_params(mesh_name, field_var):
+def test_params(mesh_name):
     # square_2D_small_uniform
     params = mesh_name.split("_")
-    list = [ params[0], params[3], params[1], params[2], field_var, 'assemble']
+    n_repeats = 1
+    if params[2] == 'small': n_repeats = 10
+    list = [ '', '1', params[0], params[3], params[1], params[2], n_repeats, params[5], params[4]]
     return list
 
 
 # Print assembly data to CSV file
-def asm_output_in(mesh_name, asm_name, assembly_data, writer, field_var, whole_program_time):
+def asm_output_in(mesh_name, asm_name, assembly_data, writer):
     integrals = {
         "assemble_volume_integrals": "cell_integral",
         "assemble_fluxes_boundary":  "boundary_side_integral",
@@ -100,15 +121,18 @@ def asm_output_in(mesh_name, asm_name, assembly_data, writer, field_var, whole_p
     }
     # Time of whole assembly
     asm_time = assembly_data['asm_time']
-    asm_row = test_params(mesh_name, field_var)
-    asm_row.extend([asm_name, asm_name, None, asm_time, 0, (asm_time/whole_program_time)])
+    sum_sub_times = 0.0
+    for name in assembly_data.keys():
+        if name=='asm_time': continue
+        sum_sub_times += assembly_data[name]
+    asm_row = test_params(mesh_name)
+    asm_row.extend([asm_name, asm_name, None, asm_time, 0, ((asm_time-sum_sub_times)/asm_time)])
     writer.writerow(asm_row)
     # Times of subprocesses
-    sub_names = assembly_data.keys()
-    for name in sub_names:
+    for name in assembly_data.keys():
         if name=='asm_time': continue
         sub_time = assembly_data[name]
-        sub_row = test_params(mesh_name, field_var)
+        sub_row = test_params(mesh_name)
         integral = None
         if name in integrals:
             integral = integrals[name]
@@ -117,37 +141,33 @@ def asm_output_in(mesh_name, asm_name, assembly_data, writer, field_var, whole_p
 
 
 # Prepare print of mesh data to CSV file
-def asm_output_mesh(mesh_name, assembly_data, writer, field_var, whole_program_time):
+def asm_output_mesh(mesh_name, assembly_data, writer):
     asm_names = assembly_data.keys()
     for asm_name in asm_names:
-        asm_output_in(mesh_name, asm_name, assembly_data[asm_name], writer, field_var, whole_program_time)
+        asm_output_in(mesh_name, asm_name, assembly_data[asm_name], writer)
 
 
 # Prepare print of profiler data to CSV file
-def asm_output(profiler_data, writer, field_var, whole_program_time):
+def asm_output(profiler_data, writer):
     mesh_names = profiler_data.keys()
     for mesh_name in mesh_names:
-        asm_output_mesh(mesh_name, profiler_data[mesh_name], writer, field_var, whole_program_time)
+        asm_output_mesh(mesh_name, profiler_data[mesh_name], writer)
 
 
 # Perform outout to CSV file
-def csv_output(csv_file, prof_out_data, whole_program_time):
+def csv_output(csv_file, mesh_full_data, prof_out_data):
     out_mode = 'w'
-    field_var = 'full'
     with open(csv_file, out_mode) as f_out:
         writer = csv.writer(f_out)
 
         # print header if file output mode is rewrite
         if out_mode == 'w': write_header(writer)
 
-        # print whole_program data
-        # TODO whole program is not used, will be replaced by time of one mesh
-        #whole_program_row = [ None, None, None, None, field_var, 'assemble']
-        #whole_program_row.extend([None, whole_program['tag'], None, whole_program_time, 0, 0])
-        #writer.writerow(whole_program_row)
+        # print data of full meshes
+        write_full_meshes(mesh_full_data, writer)
 
         # print data of assembly calls
-        asm_output(prof_out_data, writer, field_var, whole_program_time)
+        asm_output(prof_out_data, writer)
 
 
 def main():
@@ -156,9 +176,13 @@ def main():
     file_name_split = profiler_file.split(".")
     csv_file = file_name_split[0] + '.csv'
 
-    whole_program_time = 1.0         # temporary
-    prof_out_data = load_data(profiler_file, whole_program_time)
-    csv_output(csv_file, prof_out_data, whole_program_time)
+    # load and process JSON
+    input_result = load_data(profiler_file)
+    mesh_full_data = input_result[0]
+    prof_out_data  = input_result[1]
+    
+    # output to CSV
+    csv_output(csv_file, mesh_full_data, prof_out_data)
 
 
 
