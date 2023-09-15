@@ -86,6 +86,24 @@ TEST_F(DGMockupTest, simple_asm) {
             test_comp_local_const.run_simulation();
             END_TIMER("ComputeLocal_const");
 
+            // EvalFields + field_const
+            START_TIMER("EvalFields_const");
+            DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_const;
+            test_eval_fields_const.create_and_set_mesh(mesh_file);
+            test_eval_fields_const.initialize( eq_data_input, {"A", "B"} );
+            test_eval_fields_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+            test_eval_fields_const.run_simulation();
+            END_TIMER("EvalFields_const");
+
+            // EvalFields + field_model
+            START_TIMER("EvalFields_model");
+            DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_model;
+            test_eval_fields_model.create_and_set_mesh(mesh_file);
+            test_eval_fields_model.initialize( eq_data_input, {"A", "B"} );
+            test_eval_fields_model.eq_fields_->init_field_models();
+            test_eval_fields_model.run_simulation();
+            END_TIMER("EvalFields_model");
+
         }
 
         // replace END_TIMER equivalent as START_TIMER
