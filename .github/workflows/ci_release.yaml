@@ -182,10 +182,11 @@ jobs:
         - name: Run Benchmark
           run: |
               config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}
-              ls build_tree/unit_tests/${{matrix.test.dir}}        - name: Upload Artifacts
+              ls build_tree/unit_tests/${{matrix.test.dir}}        
+        - name: Upload Artifacts
           uses: actions/upload-artifact@v3
           with:       
-         path: |
+            path: |
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.csv
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.json
 
