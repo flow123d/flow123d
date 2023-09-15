@@ -181,12 +181,15 @@ jobs:
               echo git_commit="${{ steps.vars.outputs.git_commit }}"
               echo builddir="${{ steps.vars.outputs.builddir }}"
         - name: Run Benchmark
-          run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}
+          run: |
+              config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}
+              ls build_tree/unit_tests/${{matrix.test.dir}}        
         - name: Upload Artifacts
           uses: actions/upload-artifact@v3
           with:       
             path: |
-                build_tree/unit_tests/${{matrix.test.dir}}/summary_${{matrix.test.target}}.csv
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.csv
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.json
 
     # TODO: modify to run integration tests with release image
     #integration_tests:

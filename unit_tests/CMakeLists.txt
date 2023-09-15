@@ -229,7 +229,8 @@ macro(define_mpi_benchmark class_name n_proc postproc_script)
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${test_name}.xml"
-      COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/${postproc_script} ${class_name}_profiler.json
+      COMMAND mv ${class_name}_profiler.json ${test_name}_profiler.json
+      COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/${postproc_script} ${test_name}_profiler.json
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
