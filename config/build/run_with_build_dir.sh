@@ -2,7 +2,7 @@
 #
 # environment= dbg_gnu | rel_gnu | dbg_intel ....
 #
-# Assumes coloned repository set to correct branch. 
+# Assumes cloned repository set to correct branch. 
 # Extract the build_dir tar ball.
 # Run the <command> within the build container with the extracted build dir.
 

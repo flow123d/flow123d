@@ -228,7 +228,8 @@ macro(define_mpi_benchmark class_name n_proc postproc_script)
   # set(RUN_COMMAND ulimit -t 300\; )
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/run_benchmark.sh -t=${test_timeout} -np=${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      # BENCHMARK_N_RUNS variable can be used to specify number of repetition
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/run_benchmark.sh -t=${test_timeout} -np=${n_proc}  ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} 
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 

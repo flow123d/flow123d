@@ -11,9 +11,9 @@
 
 /// Define paths of test meshes here.
 std::vector<std::string> meshes_table {
-    "square_2D_small_uniform",
-    "square_2D_medium_uniform",
-    "square_2D_big_uniform"
+    "square_2D_uniform_small",
+    "square_2D_uniform_medium",
+    "square_2D_uniform_big"
 };
 
 
