@@ -186,7 +186,8 @@ jobs:
               ls build_tree/unit_tests/${{matrix.test.dir}}        
         - name: Upload Artifacts
           uses: actions/upload-artifact@v3
-          with:       
+          with:     
+            name: ${{matrix.test.target}}
             path: |
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.csv
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.json
