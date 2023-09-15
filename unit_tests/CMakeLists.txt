@@ -228,18 +228,16 @@ macro(define_mpi_benchmark class_name n_proc postproc_script)
   # set(RUN_COMMAND ulimit -t 300\; )
   # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${test_name}.xml"
-      COMMAND mv ${class_name}_profiler.json ${test_name}_profiler.json
-      COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/${postproc_script} ${test_name}_profiler.json
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/run_benchmark.sh -t=${test_timeout} -np=${n_proc} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
       DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 
   # rule to run the test under valgrind
-  add_custom_target(${test_valgrind}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  #add_custom_target(${test_valgrind}
+  #    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/#python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+  #    DEPENDS ${test_binary}
+  #    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
   # register the test into dir_test_target
   add_dependencies(${dir_bench_target} ${test_name})
