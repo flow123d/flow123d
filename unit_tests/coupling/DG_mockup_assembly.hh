@@ -19,8 +19,8 @@ template <unsigned int dim>
 class Mass_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -130,8 +130,8 @@ template <unsigned int dim>
 class Mass_ComputeLocal : public Mass_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -155,8 +155,8 @@ template <unsigned int dim>
 class Mass_EvalFields : public Mass_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
@@ -182,8 +182,8 @@ template <unsigned int dim>
 class Stiffness_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -678,8 +678,8 @@ template <unsigned int dim>
 class Stiffness_ComputeLocal : public Stiffness_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -709,8 +709,8 @@ template <unsigned int dim>
 class Stiffness_EvalFields : public Stiffness_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
@@ -748,8 +748,8 @@ template <unsigned int dim>
 class Sources_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
@@ -858,8 +858,8 @@ template <unsigned int dim>
 class Sources_ComputeLocal : public Sources_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup< Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly >::EqFields EqFields;
-    typedef typename DGMockup< Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly >::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
@@ -885,8 +885,8 @@ template <unsigned int dim>
 class Sources_EvalFields : public Sources_FullAssembly<dim>
 {
 public:
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqFields EqFields;
-    typedef typename DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
