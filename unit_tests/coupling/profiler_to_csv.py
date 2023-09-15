@@ -49,23 +49,26 @@ def load_data(profiler_file):
 
     # Iterate over data of meshes
     for i in whole_program['children']:
-        key_mesh = i['tag']
-        mesh_time = i['cumul-time-sum']
-        mesh_repeats = i['children'][0]['call-count-sum']
-        mesh_full_data[key_mesh] = (mesh_time, mesh_repeats)
-
-        # Extract type of simulation and type of field
+        key_mesh_name = i['tag']
         for j in i['children']:
-            key_type = j['tag']
-            # Extract zero time step and simulation step
-            for k in j['children']:
-                if k['tag'] == "ZERO-TIME STEP": zero_step = k
-                if k['tag'] == "SIMULATION-ONE STEP": simulation_step = k
+            key_mesh_size = j['tag']
+            key_mesh = key_mesh_name + '_' + key_mesh_size
+            mesh_time = j['cumul-time-sum']
+            mesh_repeats = j['children'][0]['call-count-sum']
+            mesh_full_data[key_mesh] = (mesh_time, mesh_repeats)
 
-            zero_step_data = step_profiler_data(zero_step['children'])
-            simulation_data = step_profiler_data(simulation_step['children'])
-            key_mesh_type = key_mesh + '_' + key_type
-            prof_out_data[key_mesh_type] = simulation_data
+            # Extract type of simulation and type of field
+            for k in j['children']:
+                key_type = k['tag']
+                # Extract zero time step and simulation step
+                for m in k['children']:
+                    if m['tag'] == "ZERO-TIME STEP": zero_step = m
+                    if m['tag'] == "SIMULATION-ONE STEP": simulation_step = m
+
+                zero_step_data = step_profiler_data(zero_step['children'])
+                simulation_data = step_profiler_data(simulation_step['children'])
+                key_mesh_type = key_mesh + '_' + key_type
+                prof_out_data[key_mesh_type] = simulation_data
 
     #print("------------")
     #print(prof_out_data)

@@ -54,58 +54,66 @@ TEST_F(DGMockupTest, simple_asm) {
     )YAML";
 
     std::vector< std::shared_ptr<CodePoint> > cp_vec;
+    std::vector< std::shared_ptr<CodePoint> > cp_vec_in;
     for (uint i=0; i<meshes_table.size(); ++i)
     {
         // replace START_TIMER tag, we can't set constexpr string converted from meshes_table[i]
     	cp_vec.emplace_back( new CODE_POINT(meshes_table[i].c_str()) );
         TimerFrame timer = TimerFrame( *cp_vec[i] );
 
-        std::string mesh_file = "../../benchmark_meshes/" + meshes_table[i] + ".msh";
-        uint n_repeats = 1;
-        if (meshes_table[i].find("small") != std::string::npos) {
-            // 10 repeats of simulation for small meshes
-            n_repeats = 10;
+        for (uint j=0; j<meshes_sizes.size(); ++j)
+        {
+        	cp_vec_in.emplace_back( new CODE_POINT(meshes_sizes[j].c_str()) );
+            TimerFrame timer = TimerFrame( *cp_vec_in[i*meshes_sizes.size()+j] );
+
+            std::string mesh_file = "../../benchmark_meshes/" + meshes_table[i] + "_" + meshes_sizes[j] + ".msh";
+            uint n_repeats = 1;
+            if (meshes_sizes[j] == "small") {
+                // 10 repeats of simulation for small meshes
+                n_repeats = 10;
+            }
+
+            for (uint k=0; k<n_repeats; ++k) {
+                // FullAssembly + field_const
+                START_TIMER("FullAssembly_const");
+                DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test_full_asm_const;
+                test_full_asm_const.create_and_set_mesh(mesh_file);
+                test_full_asm_const.initialize( eq_data_input, {"A", "B"} );
+                test_full_asm_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+                test_full_asm_const.run_simulation();
+                END_TIMER("FullAssembly_const");
+
+                // ComputeLocal + field_const
+                START_TIMER("ComputeLocal_const");
+                DGMockup<Mass_ComputeLocal, Stiffness_ComputeLocal, Sources_ComputeLocal> test_comp_local_const;
+                test_comp_local_const.create_and_set_mesh(mesh_file);
+                test_comp_local_const.initialize( eq_data_input, {"A", "B"} );
+                test_comp_local_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+                test_comp_local_const.run_simulation();
+                END_TIMER("ComputeLocal_const");
+
+                // EvalFields + field_const
+                START_TIMER("EvalFields_const");
+                DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_const;
+                test_eval_fields_const.create_and_set_mesh(mesh_file);
+                test_eval_fields_const.initialize( eq_data_input, {"A", "B"} );
+                test_eval_fields_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+                test_eval_fields_const.run_simulation();
+                END_TIMER("EvalFields_const");
+
+                // EvalFields + field_model
+                START_TIMER("EvalFields_model");
+                DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_model;
+                test_eval_fields_model.create_and_set_mesh(mesh_file);
+                test_eval_fields_model.initialize( eq_data_input, {"A", "B"} );
+                test_eval_fields_model.eq_fields_->init_field_models();
+                test_eval_fields_model.run_simulation();
+                END_TIMER("EvalFields_model");
+
+            }
+            Profiler::instance()->stop_timer( *cp_vec_in[i*meshes_sizes.size()+j] );
+
         }
-
-        for (uint j=0; j<n_repeats; ++j) {
-            // FullAssembly + field_const
-            START_TIMER("FullAssembly_const");
-            DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test_full_asm_const;
-            test_full_asm_const.create_and_set_mesh(mesh_file);
-            test_full_asm_const.initialize( eq_data_input, {"A", "B"} );
-            test_full_asm_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
-            test_full_asm_const.run_simulation();
-            END_TIMER("FullAssembly_const");
-
-            // ComputeLocal + field_const
-            START_TIMER("ComputeLocal_const");
-            DGMockup<Mass_ComputeLocal, Stiffness_ComputeLocal, Sources_ComputeLocal> test_comp_local_const;
-            test_comp_local_const.create_and_set_mesh(mesh_file);
-            test_comp_local_const.initialize( eq_data_input, {"A", "B"} );
-            test_comp_local_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
-            test_comp_local_const.run_simulation();
-            END_TIMER("ComputeLocal_const");
-
-            // EvalFields + field_const
-            START_TIMER("EvalFields_const");
-            DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_const;
-            test_eval_fields_const.create_and_set_mesh(mesh_file);
-            test_eval_fields_const.initialize( eq_data_input, {"A", "B"} );
-            test_eval_fields_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
-            test_eval_fields_const.run_simulation();
-            END_TIMER("EvalFields_const");
-
-            // EvalFields + field_model
-            START_TIMER("EvalFields_model");
-            DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_model;
-            test_eval_fields_model.create_and_set_mesh(mesh_file);
-            test_eval_fields_model.initialize( eq_data_input, {"A", "B"} );
-            test_eval_fields_model.eq_fields_->init_field_models();
-            test_eval_fields_model.run_simulation();
-            END_TIMER("EvalFields_model");
-
-        }
-
         // replace END_TIMER equivalent as START_TIMER
         Profiler::instance()->stop_timer( *cp_vec[i] );
     }

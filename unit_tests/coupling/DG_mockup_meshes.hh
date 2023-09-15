@@ -11,30 +11,21 @@
 
 /// Define paths of test meshes here.
 std::vector<std::string> meshes_table {
-    "square_2D_small_uniform",
-    "square_2D_medium_uniform",
-    "square_2D_big_uniform",
-    "square_2D_small_refined",
-    "square_2D_medium_refined",
-    "square_2D_big_refined",
-    "lshape_2D_small_uniform",
-    "lshape_2D_medium_uniform",
-    "lshape_2D_big_uniform",
-    "lshape_2D_small_refined",
-    "lshape_2D_medium_refined",
-    "lshape_2D_big_refined"/*,
-    "cube_3D_small_uniform",
-    "cube_3D_medium_uniform",
-    "cube_3D_big_uniform",
-    "cube_3D_small_refined",
-    "cube_3D_medium_refined",
-    "cube_3D_big_refined",
-    "lshape_3D_small_uniform",
-    "lshape_3D_medium_uniform",
-    "lshape_3D_big_uniform",
-    "lshape_3D_small_refined",
-    "lshape_3D_medium_refined",
-    "lshape_3D_big_refined"*/
+    "square_2D_uniform",
+    "square_2D_refined",
+    "lshape_2D_uniform",
+    "lshape_2D_refined",
+    "cube_3D_uniform",
+    "cube_3D_refined",
+    "lshape_3D_uniform",
+    "lshape_3D_refined"
+};
+
+/// Define sizes of meshes here.
+std::vector<std::string> meshes_sizes {
+    "small",
+    "medium",
+    "big"
 };
 
 
