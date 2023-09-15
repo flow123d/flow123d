@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 # Prepare benchmark meshes using GMSH in a docker image `geomop-gnu`. 
 # Syntax:
 # 
@@ -16,18 +16,21 @@
 # SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 # cd ${SCRIPTPATH}
 
-OUTPUT_DIR=$1
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/../../build_tree/benchmark_meshes"
+OUTPUT_DIR="${1:-${DEFAULT_OUTPUT_DIR}}"
 if [ -z "$OUTPUT_DIR" ]; then
     echo "Missing output dir."
     exit 1
 fi
+
 MAX_SIZE=${2:-big}
-MAX_SIZE_INT=3
-if [ "${MAX_SIZE}" == "small" ]; then
-    MAX_SIZE_INT=1
-elif [ "${MAX_SIZE}" == "medium" ]; then
-    MAX_SIZE_INT=2
-fi
+SIZE_NAMES=("small" "medium" "big")
+for i_size in ${!SIZE_NAMES[@]}; do
+    if [ "${MAX_SIZE}" == "${SIZE_NAMES[$i_size]}" ]; then
+        MAX_SIZE_INT=$i_size
+    fi
+done
     
 mkdir -p ${OUTPUT_DIR}
 echo "pwd: $(pwd)"
@@ -87,29 +90,32 @@ function make_mesh {
   fi
 }
 
+function make_mesh_variants {
+  i_mesh=$1
+
+  geofile="${ut_dir}/${geos[$i_mesh]}"
+  filename="${geos[$i_mesh]%.*}"
+  echo "generate meshes for: ${filename}"
+  for i_size in 0 1 2; do
+    size_str=${SIZE_NAMES[$i_size]}
+        
+    
+    eval refined_step_min=\${steps1_${size_str}[$i_mesh]}
+    eval refined_step_max=\${steps2_${size_str}[$i_mesh]}
+    eval uniform_step=\${steps3_${size_str}[$i_mesh]}
+    
+    # refined
+    mshfile="${OUTPUT_DIR}/${filename}_refined_${size_str}.msh"
+    make_mesh ${refined_step_min} ${refined_step_max} ${dim[$i_mesh]} ${i_size}
+    
+    # uniform
+    mshfile="${OUTPUT_DIR}/${filename}_uniform_${size_str}.msh"
+    make_mesh ${uniform_step} ${uniform_step} ${dim[$i_mesh]} ${i_size}
+  done
+}
 
 for i in ${!geos[@]}; do
-  geofile="${ut_dir}/${geos[$i]}"
-  filename="${geos[$i]%.*}"
-  echo "VARIANT: ${filename}"
-  # refined small
-  mshfile="${OUTPUT_DIR}/${filename}_small_refined.msh"
-  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 1
-  # refined medium
-  mshfile="${OUTPUT_DIR}/${filename}_medium_refined.msh"
-  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 2
-  # refined big
-  mshfile="${OUTPUT_DIR}/${filename}_big_refined.msh"
-  make_mesh ${steps1_small[$i]} ${steps2_small[$i]} ${dim[$i]} 3
-  # uniform small
-  mshfile="${OUTPUT_DIR}/${filename}_small_uniform.msh"
-  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 1  
-  # uniform medium
-  mshfile="${OUTPUT_DIR}/${filename}_medium_uniform.msh"
-  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 2
-  # uniform big
-  mshfile="${OUTPUT_DIR}/${filename}_big_uniform.msh"
-  make_mesh ${steps3_small[$i]} ${steps3_small[$i]} ${dim[$i]} 3
+  make_mesh_variants $i
 done
 
 docker stop ${docker_contname}

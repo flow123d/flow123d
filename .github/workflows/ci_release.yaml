@@ -158,7 +158,7 @@ jobs:
         strategy:
           matrix:
             test:
-            - {dir: coupling, target: dg_asm-1-bench}
+            - {dir: coupling, target: dg_asm}
         steps:  
         - uses: actions/checkout@v3
         - uses: actions/download-artifact@v3
@@ -181,12 +181,14 @@ jobs:
               echo git_commit="${{ steps.vars.outputs.git_commit }}"
               echo builddir="${{ steps.vars.outputs.builddir }}"
         - name: Run Benchmark
-          run: |
-              config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}
+          run: |              
+              config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
+              config/build/run_with_build_dir.sh rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=3 ${{matrix.test.dir}}/${{matrix.test.target}} 
               ls build_tree/unit_tests/${{matrix.test.dir}}        
         - name: Upload Artifacts
           uses: actions/upload-artifact@v3
-          with:       
+          with:     
+            name: ${{matrix.test.target}}
             path: |
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.csv
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}_profiler.json
