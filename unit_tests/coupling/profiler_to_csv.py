@@ -51,7 +51,8 @@ def load_data(profiler_file):
     for i in whole_program['children']:
         key_mesh = i['tag']
         mesh_time = i['cumul-time-sum']
-        mesh_full_data[key_mesh] = mesh_time
+        mesh_repeats = i['children'][0]['call-count-sum']
+        mesh_full_data[key_mesh] = (mesh_time, mesh_repeats)
 
         # Extract type of simulation and type of field
         for j in i['children']:
@@ -84,10 +85,8 @@ def write_full_meshes(mesh_full_data, writer):
     key_names = mesh_full_data.keys()
     for key in key_names:
         mesh_split = key.split("_")
-        n_repeats = 1
-        if mesh_split[2] == 'small': n_repeats = 10
-        row = ['', '1', mesh_split[0], mesh_split[3], mesh_split[1], mesh_split[2], n_repeats, '',  
-               '', '', 'full_mesh', '', mesh_full_data[key], '', '']
+        row = ['', '1', mesh_split[0], mesh_split[3], mesh_split[1], mesh_split[2], mesh_full_data[key][1], '',  
+               '', '', 'full_mesh', '', mesh_full_data[key][0], '', '']
         writer.writerow(row)
     
 
@@ -99,20 +98,20 @@ Columns specifying mesh are following:
      space dimension: 2D, 3D
      mesh size: small ~3000el, medium ~30k el, big ~300k el
      n_repeats: 10 in case of small mesh, 1 in other cases
-     field variant: model, constant
+     field variant: model, const
      assembly variant: FullAssembly, ComputeLocal, EvalField
 """
-def test_params(mesh_name):
-    # square_2D_small_uniform
-    params = mesh_name.split("_")
-    n_repeats = 1
-    if params[2] == 'small': n_repeats = 10
-    list = [ '', '1', params[0], params[3], params[1], params[2], n_repeats, params[5], params[4]]
+def test_params(mesh_name, mesh_full_data):
+    # posible format: square_2D_small_uniform_FullAssembly_const
+    separator = '_'
+    params = mesh_name.split(separator)
+    mesh_short_name = separator.join(params[0:4])
+    list = [ '', '1', params[0], params[3], params[1], params[2], mesh_full_data[mesh_short_name][1], params[5], params[4]]
     return list
 
 
 # Print assembly data to CSV file
-def asm_output_in(mesh_name, asm_name, assembly_data, writer):
+def asm_output_in(mesh_name, asm_name, assembly_data, mesh_full_data, writer):
     integrals = {
         "assemble_volume_integrals": "cell_integral",
         "assemble_fluxes_boundary":  "boundary_side_integral",
@@ -125,14 +124,14 @@ def asm_output_in(mesh_name, asm_name, assembly_data, writer):
     for name in assembly_data.keys():
         if name=='asm_time': continue
         sum_sub_times += assembly_data[name]
-    asm_row = test_params(mesh_name)
+    asm_row = test_params(mesh_name, mesh_full_data)
     asm_row.extend([asm_name, asm_name, None, asm_time, 0, ((asm_time-sum_sub_times)/asm_time)])
     writer.writerow(asm_row)
     # Times of subprocesses
     for name in assembly_data.keys():
         if name=='asm_time': continue
         sub_time = assembly_data[name]
-        sub_row = test_params(mesh_name)
+        sub_row = test_params(mesh_name, mesh_full_data)
         integral = None
         if name in integrals:
             integral = integrals[name]
@@ -141,17 +140,17 @@ def asm_output_in(mesh_name, asm_name, assembly_data, writer):
 
 
 # Prepare print of mesh data to CSV file
-def asm_output_mesh(mesh_name, assembly_data, writer):
+def asm_output_mesh(mesh_name, assembly_data, mesh_full_data, writer):
     asm_names = assembly_data.keys()
     for asm_name in asm_names:
-        asm_output_in(mesh_name, asm_name, assembly_data[asm_name], writer)
+        asm_output_in(mesh_name, asm_name, assembly_data[asm_name], mesh_full_data, writer)
 
 
 # Prepare print of profiler data to CSV file
-def asm_output(profiler_data, writer):
+def asm_output(mesh_full_data, profiler_data, writer):
     mesh_names = profiler_data.keys()
     for mesh_name in mesh_names:
-        asm_output_mesh(mesh_name, profiler_data[mesh_name], writer)
+        asm_output_mesh(mesh_name, profiler_data[mesh_name], mesh_full_data, writer)
 
 
 # Perform outout to CSV file
@@ -167,7 +166,7 @@ def csv_output(csv_file, mesh_full_data, prof_out_data):
         write_full_meshes(mesh_full_data, writer)
 
         # print data of assembly calls
-        asm_output(prof_out_data, writer)
+        asm_output(mesh_full_data, prof_out_data, writer)
 
 
 def main():
