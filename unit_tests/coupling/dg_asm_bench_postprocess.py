@@ -158,7 +158,8 @@ def asm_output(program_params, mesh_full_data, profiler_data, writer):
 
 # Perform outout to CSV file
 def csv_output(csv_file, program_params, mesh_full_data, prof_out_data):
-    out_mode = 'w'
+    out_mode = 'a'
+    if program_params[1] == '1': out_mode = 'w'
     with open(csv_file, out_mode) as f_out:
         writer = csv.writer(f_out)
 
