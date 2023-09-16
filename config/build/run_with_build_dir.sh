@@ -40,8 +40,10 @@ if [ -z "$PRESERVE_BUILD_DIR" ]; then
     cp --preserve=timestamps ${build_dir_host}/_config.cmake config.cmake
 fi
 make update-submodules
-#bin/fterm ${env} --no-term  exec make --dry-run fast-flow123d
-    
+echo "Make dry run."
+bin/fterm ${env} --no-term  exec make --dry-run fast-flow123d
+
+echo "Payload command"
 # run the command
 bin/fterm ${env} --no-term  exec ${command_with_args}
 
