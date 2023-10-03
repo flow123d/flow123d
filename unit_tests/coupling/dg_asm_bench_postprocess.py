@@ -78,7 +78,7 @@ def load_data(profiler_file):
 
 # Print header to CSV file
 def write_header(writer):
-    header = ['commit', 'run_id', 'domain_shape', 'uniformity', 'spacedim', 'mesh_size', 'n_repeats', 'field_variant',  
+    header = ['commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_repeats', 'field_variant',  
               'assembly_variant', 'assembly_class', 'tag', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
     writer.writerow(header)
 
