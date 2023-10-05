@@ -679,6 +679,11 @@ public:
     void create_and_set_mesh(const std::string &mesh_file) {
         std::string input_str = "{ mesh_file=\"" + mesh_file + "\" }";
         this->mesh_ = mesh_full_constructor(input_str);
+        START_TIMER("n_mesh_elements");
+        uint n_elements = this->mesh_->n_elements();
+        // for(i =0; i<n_elements; i++) i+1;
+        ADD_CALLS(n_elements);
+        END_TIMER("n_mesh_elements");
 
         // Set up physical parameters.
         eq_fields_->set_mesh(*mesh_);
