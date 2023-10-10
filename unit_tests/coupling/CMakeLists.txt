@@ -31,6 +31,8 @@ add_test_directory("${libs}")
     
 define_mpi_test(eq_data 1)
     
+define_mpi_benchmark(dg_asm 1 profiler_to_csv.py 150)
+#define_mpi_benchmark(asm_const 1 profiler_to_csv.py 150)
 
 
 

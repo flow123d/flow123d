@@ -8,6 +8,7 @@ on:
         - master
         - JB_release_tests
         - 3.9.1
+        - DF_benchmark_asm
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
@@ -62,17 +63,17 @@ jobs:
         - name: Build Flow123d
           run: |
               release_tag="${{ steps.vars.outputs.reltag }}"
-              # auto_build.sh <build_type> <environment> <image_name_base> <release_tag> 
+              # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>               
               config/build/auto_build.sh rel ${environment} ci ${release_tag}
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
-              unit_tests/mesh/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+              echo "Benchmark meshes build_dir="${build_dir}
+              config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
         - name: Tarball build dir
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
-              cp config.cmake ${build_dir}/_config.cmake
-              tar -cvf build_dir.tar ${build_dir}/*
+              config/build/tar_build_dir.sh ${build_dir}              
         - uses: actions/upload-artifact@v3
           with:         
             name: build_dir
@@ -146,6 +147,50 @@ jobs:
             name: build_dir
         - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
+    benchmarks:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Benchmarks 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test:
+            - {dir: coupling, target: dg_asm}
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+
+            # create build_dir variable
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+    
+            # can not use environment variables in github actions
+            echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+        - name: Check vars
+          run: |
+              echo git_commit="${{ steps.vars.outputs.git_commit }}"
+              echo builddir="${{ steps.vars.outputs.builddir }}"
+        - name: Run Benchmark
+          run: |              
+              config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
+              config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=3 ${{matrix.test.dir}}/${{matrix.test.target}} 
+              ls build_tree/unit_tests/${{matrix.test.dir}}        
+        - name: Upload Artifacts
+          uses: actions/upload-artifact@v3
+          with:     
+            name: ${{matrix.test.target}}
+            path: |
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler.csv
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler.json
 
     # TODO: modify to run integration tests with release image
     #integration_tests:
