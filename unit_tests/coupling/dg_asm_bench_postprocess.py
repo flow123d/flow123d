@@ -92,6 +92,7 @@ def full_mesh(json_node, ph, df):
     return process_node(json_node, ph, df2)
 
 
+# Process one tag and call recursivelly processing of children
 def process_node(json_node, ph, df):
     ph.json_tree_nodes.append(json_node)
     if 'children' in json_node:
@@ -107,6 +108,23 @@ def process_node(json_node, ph, df):
     return df
 
 
+# Unify values of DataFrame selected columns.
+def unify_df_values(df):
+    # unify 'cube' and 'square' to 'box'
+    shape_map = {'square': 'B', 'cube': 'B', 'lshape': 'L'}
+    df['domain_shape'] = [shape_map[s] for s in df['domain_shape']]
+    
+    # use short formats of mesh size: 'S', 'M' and 'L'
+    size_map = {'small': 'S', 'medium': 'M', 'big': 'L'}
+    df['mesh_size'] = [size_map[s] for s in df['mesh_size']]
+    
+    # use name of assembly class without 'Assembly' postfix
+    asm_map = {'MassAssembly': 'Mass', 'StiffnessAssembly': 'Stiffness', 'SourcesAssembly': 'Sources', '': ''}
+    df['assembly_class'] = [asm_map[s] for s in df['assembly_class']]
+    
+    return df
+
+
 # Load data from profiler JSON file
 def load_profiler_data(ph, df):
     # Load JSON file
@@ -117,6 +135,7 @@ def load_profiler_data(ph, df):
     whole_program = profiler_data['children'][0]
     
     df = process_node(whole_program, ph, df)
+    df = unify_df_values(df)
     return df
 
 
@@ -146,6 +165,7 @@ def main():
     
     # output to CSV
     csv_output(csv_file, program_params, df)
+
 
 # Processes one node of profiler tree: print tag and calls children nodes recursivelly
 def print_profiler_node(json_in, indent):
