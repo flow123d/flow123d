@@ -126,7 +126,11 @@ def unify_df_values(df):
 
 
 # Load data from profiler JSON file
-def load_profiler_data(ph, df):
+def load_profiler_data(profiler_file, program_params):
+    # Create ProfilerHandler and DataFrame
+    ph = ProfilerHandler(profiler_file, program_params)
+    df = pd.DataFrame( columns=ph.column_names )
+    
     # Load JSON file
     with open(ph.profiler_file) as f_in:
         profiler_data = json.load(f_in)
@@ -159,9 +163,7 @@ def main():
     csv_file = profiler_file + '.csv'
 
     # load and process JSON
-    ph = ProfilerHandler(profiler_file, program_params)
-    df = pd.DataFrame( columns=ph.column_names )
-    df = load_profiler_data(ph, df)
+    df = load_profiler_data(profiler_file, program_params)
     
     # output to CSV
     csv_output(csv_file, program_params, df)
