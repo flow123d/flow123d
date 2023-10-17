@@ -6,6 +6,7 @@ Usage:
 """
 
 import sys
+import os
 import json
 import csv
 import pandas as pd
@@ -16,12 +17,11 @@ Hold processed profiler data and helper variables.
 Object is used during processing of profiler JSON input.
 """
 class ProfilerHandler:
-    def __init__(self, profiler_file, program_params):
+    def __init__(self, profiler_file):
         self.profiler_file = profiler_file
-        self.program_params = program_params
         
         # Define name of columns 
-        self.column_names = ['commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_mesh_elements', 'n_repeats', 'field_variant',   
+        self.column_names = ['branch', 'commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_mesh_elements', 'n_repeats', 'field_variant',   
             'assembly_variant', 'assembly_class', 'tag', 'mumber_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
         
         # Dictionary holds pairs tag-method, these methods are called for selected tags during processing of profiler tree
@@ -39,6 +39,15 @@ class ProfilerHandler:
         self.mesh_repeats = 0
         self.common_row_data = []
         self.sum_subtags_time = 0.0
+        self.program_branch = ''
+        self.program_revision = ''
+        self.run_id = 0
+
+    # Set base program parameters
+    def set_program_params(self, program_branch, program_revision, run_id):
+        self.program_branch = program_branch
+        self.program_revision = program_revision
+        self.run_id = run_id
 
 
 # Process one assembly (Mass, Stiffness or Sources) and all subtags 
@@ -84,10 +93,10 @@ def full_mesh(json_node, ph, df):
     ph.n_mesh_elements = json_node['children'][1]['call-count-sum']
     mesh_full_name = ph.json_tree_nodes[-3]['tag'] + '_' + ph.json_tree_nodes[-2]['tag'] + '_' + ph.json_tree_nodes[-1]['tag']
     mesh_params = mesh_full_name.split('_')
-    ph.common_row_data = [ ph.program_params[0], ph.program_params[1], mesh_params[0], mesh_params[3], mesh_params[1], 
+    ph.common_row_data = [ ph.program_branch, ph.program_revision, ph.run_id, mesh_params[0], mesh_params[3], mesh_params[1], 
                     mesh_params[2], (ph.n_mesh_elements/ph.mesh_repeats), ph.mesh_repeats, mesh_params[5], mesh_params[4] ]
     mesh_row_data = ph.common_row_data.copy()
-    mesh_row_data.extend( ['', 'full_mesh', json_node['call-count-sum']*ph.mesh_repeats, '',  json_node['cumul-time-sum'], '', ''] )
+    mesh_row_data.extend( ['', 'full_mesh', json_node['call-count-sum']/ph.mesh_repeats, '',  json_node['cumul-time-sum'], '', ''] )
     df2 = pd.concat([df, pd.DataFrame([mesh_row_data], columns=ph.column_names)], ignore_index=True)
     return process_node(json_node, ph, df2)
 
@@ -125,29 +134,43 @@ def unify_df_values(df):
     return df
 
 
-# Load data from profiler JSON file
-def load_profiler_data(profiler_file, program_params):
+"""
+Load data from set of profiler JSON files.
+
+Name of files must be in format '<profiler_file>_<n>.json' where:
+    <profiler_file> Same for all files in set, it is given by arg 'profiler_file'
+    <n> Order of file in set 1,2,3,... Number of files is given by arg 'n_runs'
+"""
+def load_profiler_data(profiler_file, n_runs):
+
     # Create ProfilerHandler and DataFrame
-    ph = ProfilerHandler(profiler_file, program_params)
+    ph = ProfilerHandler(profiler_file)
     df = pd.DataFrame( columns=ph.column_names )
     
-    # Load JSON file
-    with open(ph.profiler_file) as f_in:
-        profiler_data = json.load(f_in)
+    for run_id in range(1, n_runs+1):
+        file_name = ph.profiler_file + '_' + str(run_id) + '.json'
+
+        # Load JSON file
+        with open(file_name) as f_in:
+            profiler_data = json.load(f_in)
     
-    # Only one descendant 'Whole Program' of root tree exists 
-    whole_program = profiler_data['children'][0]
+        # Only one descendant 'Whole Program' of root tree exists 
+        whole_program = profiler_data['children'][0]
+        program_branch = profiler_data['program-branch']
+        program_revision = profiler_data['program-revision']
+        ph.set_program_params(program_branch, program_revision, run_id)
     
-    df = process_node(whole_program, ph, df)
+        df = process_node(whole_program, ph, df)
+    
     df = unify_df_values(df)
     return df
 
 
 # Perform outout to CSV file
-def csv_output(csv_file, program_params, df):
+def csv_output(csv_file, run_id, df):
     out_mode = 'a'
     out_header = False
-    if program_params[1] == '1': 
+    if run_id == '1': 
         out_mode = 'w'
         out_header = True
     df.to_csv(path_or_buf=csv_file, header=out_header, index=False, mode=out_mode)
@@ -158,15 +181,13 @@ def main():
     
     # store names of input json and output csv file from arg
     profiler_file = sys.argv[1]
-    # commit, run_id 
-    program_params = sys.argv[2:4]
     csv_file = profiler_file + '.csv'
 
     # load and process JSON
-    df = load_profiler_data(profiler_file, program_params)
+    df = load_profiler_data(profiler_file, 1)
     
     # output to CSV
-    csv_output(csv_file, program_params, df)
+    csv_output(csv_file, 1, df)
 
 
 # Processes one node of profiler tree: print tag and calls children nodes recursivelly
@@ -181,7 +202,7 @@ def print_profiler_node(json_in, indent):
 Helper function. Prints tree of profiler nodes.
 
 Usage:
-  python3 ./dg_asm_bench_postprocess.py <profiler_output.json> <commit> <run_id>
+  python3 ./dg_asm_bench_postprocess.py <profiler_output.json>
 """
 def print_profiler_tree():
     profiler_file = sys.argv[1]
