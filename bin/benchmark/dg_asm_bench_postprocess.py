@@ -22,7 +22,7 @@ class ProfilerHandler:
         
         # Define name of columns 
         self.column_names = ['branch', 'commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_mesh_elements', 'n_repeats', 'field_variant',   
-            'assembly_variant', 'assembly_class', 'tag', 'mumber_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
+            'assembly_variant', 'assembly_class', 'tag', 'number_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
         
         # Dictionary holds pairs tag-method, these methods are called for selected tags during processing of profiler tree
         self.tag_method = {
@@ -66,17 +66,17 @@ def assembly(json_node, ph, df):
     for i in json_node['children']:
         tag = i['tag']
         time = i['cumul-time-sum']
-        integral = None
+        integral = ''
         if tag in integrals:
             integral = integrals[tag]
         tag_row_data = ph.common_row_data.copy()
-        tag_row_data.extend( [asm_name, tag, i['call-count-sum'], integral, time, (time/json_node['cumul-time-sum']), 0] )
+        tag_row_data.extend( [asm_name, tag, i['call-count-sum'], integral, time, (time/json_node['cumul-time-sum']), ''] )
         df = pd.concat([df, pd.DataFrame([tag_row_data], columns=ph.column_names)], ignore_index=True)
         ph.sum_subtags_time += time
 
     asm_time = json_node['cumul-time-sum']
     asm_row_data = ph.common_row_data.copy()
-    asm_row_data.extend( [asm_name, asm_name, json_node['call-count-sum'], None, asm_time, 0, ((asm_time-ph.sum_subtags_time)/asm_time)] )
+    asm_row_data.extend( [asm_name, asm_name, json_node['call-count-sum'], '', asm_time, '', ((asm_time-ph.sum_subtags_time)/asm_time)] )
     df2 = pd.concat([df, pd.DataFrame([asm_row_data], columns=ph.column_names)], ignore_index=True)
     ph.json_tree_nodes.pop()
     return df2
@@ -96,7 +96,7 @@ def full_mesh(json_node, ph, df):
     ph.common_row_data = [ ph.program_branch, ph.program_revision, ph.run_id, mesh_params[0], mesh_params[3], mesh_params[1], 
                     mesh_params[2], (ph.n_mesh_elements/ph.mesh_repeats), ph.mesh_repeats, mesh_params[5], mesh_params[4] ]
     mesh_row_data = ph.common_row_data.copy()
-    mesh_row_data.extend( ['', 'full_mesh', json_node['call-count-sum']/ph.mesh_repeats, '',  json_node['cumul-time-sum'], '', ''] )
+    mesh_row_data.extend( ['', 'full_mesh', json_node['call-count-sum'], '',  json_node['cumul-time-sum'], '', ''] )
     df2 = pd.concat([df, pd.DataFrame([mesh_row_data], columns=ph.column_names)], ignore_index=True)
     return process_node(json_node, ph, df2)
 
