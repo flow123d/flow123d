@@ -23,6 +23,7 @@
 
 #include <armadillo>
 #include <vector>
+#include <limits>
 #include "system/fmt/posix.h"           // for FMT_UNUSED
 
 
@@ -137,6 +138,68 @@ template<> inline double determinant(const arma::mat::fixed<3,2> &M)
 {
 	return sqrt( determinant(normal_matrix(M)) );
 }
+
+
+/**
+ * @brief Calculates inverse of rectangular matrix or pseudoinverse of non-rectangular matrix.
+ */
+template<arma::uword m, arma::uword n>
+arma::mat::fixed<n,m> inverse(const arma::mat::fixed<m,n> &A) {
+    return A.t() * inverse(normal_matrix(A));
+}
+
+
+template<> inline arma::mat::fixed<1,1> inverse(const arma::mat::fixed<1,1> &A)
+{
+	arma::mat::fixed<1,1> B;
+	B(0,0) = 1/A(0,0);
+	return B;
+}
+
+template<> inline arma::mat::fixed<2,2> inverse(const arma::mat::fixed<2,2> &A)
+{
+	arma::mat::fixed<2,2> B;
+	double det = determinant(A);
+	if ( fabs(det) < 4*std::numeric_limits<double>::epsilon() ) return B;
+
+	B(0,0) = A(1,1) / det;
+	B(0,1) = -A(0,1) / det;
+	B(1,0) = -A(1,0) / det;
+	B(1,1) = A(0,0) / det;
+	return B;
+}
+
+template<> inline arma::mat::fixed<3,3> inverse(const arma::mat::fixed<3,3> &A)
+{
+	arma::mat::fixed<3,3> B;
+
+	B(0,0) = A(1,1)*A(2,2) - A(2,1)*A(1,2);
+	B(0,1) = -A(1,0)*A(2,2) + A(2,0)*A(1,2);
+	B(0,2) = A(1,0)*A(2,1) - A(2,0)*A(1,1);
+
+	double det = A(0,0)*B(0,0) + A(0,1)*B(0,1) + A(0,2)*B(0,2);
+	if ( fabs(det) < 4*std::numeric_limits<double>::epsilon() ) return B;
+	B(0,0)/=det; B(0,1)/=det; B(0,2)/=det;
+
+	B(1,0) = (-A(0,1)*A(2,2) + A(2,1)*A(0,2)) / det;
+	B(1,1) = (A(0,0)*A(2,2) - A(2,0)*A(0,2)) / det;
+	B(1,2) = (-A(0,0)*A(2,1) + A(2,0)*A(0,1)) / det;
+
+	B(2,0) = (A(0,1)*A(1,2) - A(1,1)*A(0,2)) / det;
+	B(2,1) = (-A(0,0)*A(1,2) + A(1,0)*A(0,2)) / det;
+	B(2,2) = (A(0,0)*A(1,1) - A(1,0)*A(0,1)) / det;
+
+	return B;
+}
+
+
+/**
+ * @brief Calculates inverse matrix of a non-rectangular matrix.
+ */
+//template<arma::uword m, arma::uword n>
+//arma::mat::fixed<n,m> pinverse(const arma::mat::fixed<m,n> &A) {
+//    return A.t() * inverse(normal_matrix(A));
+//}
 
 
 
