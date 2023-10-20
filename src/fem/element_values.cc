@@ -21,6 +21,7 @@
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/element_values.hh"
+#include "fem/fem_tools.hh"
 
 
 
@@ -322,14 +323,15 @@ void ElementValues<spacedim>::fill_data()
         if (data.update_flags & update_inverse_jacobians)
         {
             arma::mat::fixed<dim,spacedim> ijac;
-            if (dim==spacedim)
-            {
-                ijac = inv(jac);
-            }
-            else
-            {
-                ijac = pinv(jac);
-            }
+            ijac = inverse(jac);
+//            if (dim==spacedim)
+//            {
+//                ijac = inv(jac);
+//            }
+//            else
+//            {
+//                ijac = pinv(jac);
+//            }
             for (unsigned int i=0; i<n_points_; i++)
                 data.inverse_jacobians.set(i) = Armor::mat<dim,spacedim>( ijac );
         }
