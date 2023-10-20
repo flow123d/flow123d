@@ -12,7 +12,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include <armadillo>
-#include "fem/mapping.hh"
+#include "fem/fem_tools.hh"
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
 
