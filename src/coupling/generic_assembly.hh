@@ -205,6 +205,11 @@ public:
 	 *
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
+	 *
+	 * TODO:
+	 * - make estimate of the cache fill for combination of (integral_type x element dimension)
+	 * - add next cell to patch if current_patch_size + next_element_size <= fixed_cache_size
+	 * - avoid reverting the integral data lists.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
