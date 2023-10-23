@@ -225,9 +225,9 @@ public:
         	    add_into_patch = true;
             }
 
-            //START_TIMER("add_integrals_to_patch");
+            START_TIMER("add_integrals_to_patch");
             this->add_integrals_of_computing_step(*cell_it);
-            //END_TIMER("add_integrals_to_patch");
+            END_TIMER("add_integrals_to_patch");
 
             if (element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();

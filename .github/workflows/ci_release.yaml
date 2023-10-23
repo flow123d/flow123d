@@ -190,8 +190,7 @@ jobs:
           with:     
             name: ${{matrix.test.target}}
             path: |
-                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler.csv
-                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler.json
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
 
     # TODO: modify to run integration tests with release image
     #integration_tests:

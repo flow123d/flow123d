@@ -4,6 +4,7 @@
 
 #include <mesh_constructor.hh>
 #include "arma_expect.hh"
+#include <rev_num.h>
 
 #include "fields/eval_points.hh"
 #include "fields/eval_subset.hh"
@@ -146,8 +147,13 @@ public:
 	DGMockupTest()
     {
 		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+		string build = string(__DATE__) + ", " + string(__TIME__)
+	            + " flags: (unknown compiler flags)";
+
         FilePath::set_io_dirs(".",root_dir,"",".");
         Profiler::instance();
+        Profiler::instance()->set_program_info("Flow123d",
+                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
         Profiler::set_memory_monitoring(false, false);
     }
 
