@@ -18,7 +18,7 @@ unit_tests/intersection/output_intersection*.msh
 publish_gnu/*
 install-linux/*
 install-win/*
-build-*
+./build-*
 problems
 
 bin/tests/makefile
