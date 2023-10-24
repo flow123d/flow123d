@@ -1,0 +1,3 @@
+Neccesary Pyton packages: 
+ - pandas
+ - zipfile
