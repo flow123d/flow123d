@@ -10,6 +10,7 @@ import os
 import json
 import csv
 import pandas as pd
+from zipfile import ZipFile, Path
 
 
 """
@@ -141,19 +142,19 @@ Name of files must be in format '<profiler_file>_<n>.json' where:
     <profiler_file> Same for all files in set, it is given by arg 'profiler_file'
     <n> Order of file in set 1,2,3,... Number of files is given by arg 'n_runs'
 """
-def load_profiler_data(profiler_file, n_runs):
+def load_profiler_data(profiler_zip):
 
     # Create ProfilerHandler and DataFrame
-    ph = ProfilerHandler(profiler_file)
+    ph = ProfilerHandler(profiler_zip)
     df = pd.DataFrame( columns=ph.column_names )
     
-    for run_id in range(1, n_runs+1):
-        file_name = ph.profiler_file + '_' + str(run_id) + '.json'
-
-        # Load JSON file
-        with open(file_name) as f_in:
+    run_id = 1
+    zf = ZipFile(profiler_zip)
+    path = Path(zf)
+    for file in path.iterdir():
+        with file.open() as f_in:
             profiler_data = json.load(f_in)
-    
+        
         # Only one descendant 'Whole Program' of root tree exists 
         whole_program = profiler_data['children'][0]
         program_branch = profiler_data['program-branch']
@@ -161,7 +162,8 @@ def load_profiler_data(profiler_file, n_runs):
         ph.set_program_params(program_branch, program_revision, run_id)
     
         df = process_node(whole_program, ph, df)
-    
+        run_id += 1
+
     df = unify_df_values(df)
     return df
 
@@ -179,12 +181,12 @@ def csv_output(csv_file, run_id, df):
 def main():
     pass
     
-    # store names of input json and output csv file from arg
-    profiler_file = sys.argv[1]
-    csv_file = profiler_file + '.csv'
+    # store names of input zip archive and output csv file from arg
+    profiler_zip = sys.argv[1]
+    csv_file = profiler_zip + '.csv'
 
     # load and process JSON
-    df = load_profiler_data(profiler_file, 1)
+    df = load_profiler_data(profiler_zip)
     
     # output to CSV
     csv_output(csv_file, 1, df)
