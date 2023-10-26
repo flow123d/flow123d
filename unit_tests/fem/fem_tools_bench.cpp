@@ -16,6 +16,7 @@
 #include "fem/fem_tools.hh"
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
+#include "system/armor.hh"
 
 
 class FemToolsTest : public testing::Test {
@@ -83,29 +84,56 @@ TEST(FemToolsDevelopTest, functionst) {
 
 
 /// Benchmark test. Compare 'determinant()' and 'arma::det()' function. Matrix size: 3x3
-TEST_F(FemToolsTest, speed_det_mat33) {
+TEST_F(FemToolsTest, speed_test) {
     static const uint N_RUNS = 2.5e7;
 
-    std::vector< arma::mat::fixed<3,3> > mat_vec = {
+    std::vector< arma::mat::fixed<3,3> > mat33_vec = {
             { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} },
             { {2, 4, 5}, {3, 2, 1}, {0, 6, 4} },
             { {1, 4, 2}, {5, 1, 3}, {2, 3, 4} },
             { {9, 7, 5}, {2, 4, 6}, {1, 3, 8} }
     };
+    std::vector< arma::mat::fixed<2,3> > mat23_vec = {
+            { {1, 2, 3}, {2, 4, 5} },
+            { {2, 4, 5}, {3, 2, 1} },
+            { {1, 4, 2}, {5, 1, 3} },
+            { {9, 7, 5}, {2, 4, 6} }
+    };
 
-    uint vec_size = mat_vec.size();
-    std::vector< double > result_own(vec_size);
-    std::vector< double > result_arma(vec_size);
+    uint vec_size = mat33_vec.size();
+    std::vector< double > result_det(vec_size);
+    std::vector< arma::mat::fixed<3,3> > result_mat33(vec_size);
+    std::vector< arma::mat::fixed<3,2> > result_mat32(vec_size);
 
-    START_TIMER("own_implementation");
+    START_TIMER("determinant_own");
     for (uint i=0; i<N_RUNS; ++i)
-        for (uint j=0; j<mat_vec.size(); ++j) result_own[j] = determinant( mat_vec[j] );
-    END_TIMER("own_implementation");
+        for (uint j=0; j<vec_size; ++j) result_det[j] = determinant( mat33_vec[j] );
+    END_TIMER("determinant_own");
 
-    START_TIMER("arma_implementation");
+    START_TIMER("determinant_arma");
     for (uint i=0; i<N_RUNS; ++i)
-        for (uint j=0; j<mat_vec.size(); ++j) result_own[j] = det( mat_vec[j] );
-    END_TIMER("arma_implementation");
+        for (uint j=0; j<vec_size; ++j) result_det[j] = det( mat33_vec[j] );
+    END_TIMER("determinant_arma");
+
+    START_TIMER("inv_33_own");
+    for (uint i=0; i<N_RUNS; ++i)
+        for (uint j=0; j<vec_size; ++j) result_mat33[j] = inverse( mat33_vec[j] );
+    END_TIMER("inv_33_own");
+
+    START_TIMER("inv_33_arma");
+    for (uint i=0; i<N_RUNS; ++i)
+        for (uint j=0; j<vec_size; ++j) result_mat33[j] = inv( mat33_vec[j] );
+    END_TIMER("inv_33_arma");
+
+    START_TIMER("pinv_23_own");
+    for (uint i=0; i<N_RUNS/10; ++i)
+        for (uint j=0; j<vec_size; ++j) result_mat32[j] = inverse( mat23_vec[j] );
+    END_TIMER("pinv_23_own");
+
+    START_TIMER("pinv_23_arma");
+    for (uint i=0; i<N_RUNS/10; ++i)
+        for (uint j=0; j<vec_size; ++j) result_mat32[j] = pinv( mat23_vec[j] );
+    END_TIMER("pinv_23_arma");
 
     this->profiler_output("fem_tools");
 }
