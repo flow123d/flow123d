@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Starts VTUNE server, use in the flow-dev-xyz-vtune container.
+# Allows to use it through a web browser.
+
+ABS_FLOW_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+
+vtune-backend --allow-remote-access --web-port=7788 --enable-server-profiling --data-directory ${ABS_FLOW_DIR} 

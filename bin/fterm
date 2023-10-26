@@ -69,7 +69,9 @@ dbg_gnu   image with the debug build of the libraries, GNU environment
 rel_gnu   image with optimized build of the libraries, GNU environment
 dbg_intel image with the debug build of the libraries, Intel environment
 rel_intel image with optimized build of the libraries, Intel environment
-   
+vtune_gnu rel_gnu image with installed oneapi-basekit containing vtune
+
+
 tag     version of the development image, e.g. @2.2.0, @3.0.0, @latest
         Images automatically downloaded from docker hub, see:  ${bblue} https://hub.docker.com/r/flow123d/flow-dev-gnu-dbg/tags ${reset}
         for avalilable tags. Default tag is taken form: ${bblue} config/docker/image_tag ${reset}
@@ -325,7 +327,7 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    dbg|rel|dbg_gnu|rel_gnu|dbg_intel|rel_intel)
+    dbg|rel|dbg_gnu|rel_gnu|vtune_gnu|dbg_intel|rel_intel)
       image_version=$1
       shift
     ;;
@@ -359,8 +361,8 @@ while [[ $# -gt 0 ]]
   esac
 done
 
-image_kind=${image_version%%_*}
-image_env=${image_version#*_}
+image_kind=${image_version%%_*}   # rel / dbg
+image_env=${image_version#*_}     # gnu /intel
 
 if [ $image_kind = $image_env ]
 then
@@ -392,6 +394,11 @@ dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
+if [ "${base_image}" == "flow123d/flow-dev-gnu-vtune" ]
+then
+  envarg="--name=vtune_cont --cap-add CAP_SYS_ADMIN --publish 7788:7788 ${envarg}"
+fi
+
 if [ -z "${manual_volumes}" ]
 then
   mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
