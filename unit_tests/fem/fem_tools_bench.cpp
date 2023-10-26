@@ -10,8 +10,9 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
-
 #include <armadillo>
+#include "arma_expect.hh"
+
 #include "fem/fem_tools.hh"
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
@@ -41,16 +42,44 @@ public:
 
 
 
-/// Check correct implementation of 'determinant()' function
-//TEST(FemToolsDevelopTest, determinant) {
-//    arma::mat::fixed<1,1> mat11 = {2};
-//    arma::mat::fixed<2,2> mat22 = { {2, 3}, {4, 5} };
-//    arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} };
-//
-//    EXPECT_DOUBLE_EQ( det(mat11), determinant(mat11) );
-//    EXPECT_DOUBLE_EQ( det(mat22), determinant(mat22) );
-//    EXPECT_DOUBLE_EQ( det(mat33), determinant(mat33) );
-//}
+/// Check correct implementation of 'determinant()' and 'inverse()' function
+TEST(FemToolsDevelopTest, functionst) {
+    arma::mat::fixed<1,1> mat11 = {2};
+    arma::mat::fixed<2,2> mat22 = { {2, 3}, {4, 5} };
+    arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} };
+    arma::mat::fixed<2,3> mat23 = { {1, 2, 3}, {4, 5, 6} };
+    arma::mat::fixed<3,2> mat32 = { {1, 4}, {2, 5}, {3, 6} };
+
+    /* Test of determinant function */
+    EXPECT_DOUBLE_EQ( det(mat11), determinant(mat11) );
+    EXPECT_DOUBLE_EQ( det(mat22), determinant(mat22) );
+    EXPECT_DOUBLE_EQ( det(mat33), determinant(mat33) );
+
+    /* Test of inverse function */
+    // computing of inverse matrices
+    arma::mat::fixed<1,1> inv11 = inverse(mat11);
+    arma::mat::fixed<2,2> inv22 = inverse(mat22);
+    arma::mat::fixed<3,3> inv33 = inverse(mat33);
+    arma::mat::fixed<3,2> inv23 = inverse(mat23);
+    arma::mat::fixed<2,3> inv32 = inverse(mat32);
+    // expected values
+    arma::mat::fixed<2,2> expect_22 = arma::eye(2,2);
+    arma::mat::fixed<3,3> expect_33 = arma::eye(3,3);
+    // matrix 1x1
+    EXPECT_DOUBLE_EQ( mat11(0,0), 1 / inv11(0,0) );
+    // matrix 2x2
+    arma::mat::fixed<2,2> multi_22 = mat22 * inv22;
+    EXPECT_ARMA_EQ(expect_22, multi_22);
+    // matrix 3x3
+    arma::mat::fixed<3,3> multi_33 = mat33 * inv33;
+    EXPECT_ARMA_EQ(expect_33, multi_33);
+    // matrix 2x3
+    arma::mat::fixed<2,2> multi_23 = mat23 * inv23;
+    EXPECT_ARMA_EQ(expect_22, multi_23);
+    // matrix 3x2
+    arma::mat::fixed<2,2> multi_32 = inv32 * mat32;
+    EXPECT_ARMA_EQ(expect_22, multi_32);
+}
 
 
 /// Benchmark test. Compare 'determinant()' and 'arma::det()' function. Matrix size: 3x3
