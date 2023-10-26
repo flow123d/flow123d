@@ -145,7 +145,8 @@ template<> inline double determinant(const arma::mat::fixed<3,2> &M)
  */
 template<arma::uword m, arma::uword n>
 arma::mat::fixed<n,m> inverse(const arma::mat::fixed<m,n> &A) {
-    return A.t() * inverse(normal_matrix(A));
+    if (m<n) return A.t() * inverse(normal_matrix(A));
+    else return inverse(normal_matrix(A)) * A.t();
 }
 
 
