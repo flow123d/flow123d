@@ -4,7 +4,7 @@
  *  Created on: Oct 18, 2023
  *      Author: David Flanderka
  *
- *  Speed tests of determinant function
+ *  Speed tests of determinant and inverse function
  */
 
 #define TEST_USE_PETSC
@@ -83,9 +83,29 @@ TEST(FemToolsDevelopTest, functionst) {
 }
 
 
-/// Benchmark test. Compare 'determinant()' and 'arma::det()' function. Matrix size: 3x3
+/**
+ * Benchmark test. Compare speed of functions implemented in fem_tools.hh and armadillo library.
+ *
+ * Test compares following functions:
+ *  - determinant (fem_tools and armadillo)
+ *  - determinant (vectorized case in Armor object)
+ *  - inversion of 3x3 matrix (fem_tools and armadillo)
+ *  - pseudoinversion of 2x3 matrix (fem_tools and armadillo)
+ *
+ *
+ *  Results:
+ *   - result date: October 27, 2023:
+ *   - run on: Dell Inspiron CPU 1.80 GHz, 16.0 GB RAM
+ *   - n_repeats: 4e7
+ *   - time unit: [s]
+ *
+ *               fem_tools   armadillo
+ *  det 3x3         0.0899      0.4040
+ *  inv 3x3         0.5873      1.5258
+ *  pinv 2x3        1.9312     66.5879
+ */
 TEST_F(FemToolsTest, speed_test) {
-    static const uint N_RUNS = 2.5e7;
+    static const uint N_RUNS = 1e7;
 
     std::vector< arma::mat::fixed<3,3> > mat33_vec = {
             { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} },
@@ -126,12 +146,12 @@ TEST_F(FemToolsTest, speed_test) {
     END_TIMER("inv_33_arma");
 
     START_TIMER("pinv_23_own");
-    for (uint i=0; i<N_RUNS/10; ++i)
+    for (uint i=0; i<N_RUNS; ++i)
         for (uint j=0; j<vec_size; ++j) result_mat32[j] = inverse( mat23_vec[j] );
     END_TIMER("pinv_23_own");
 
     START_TIMER("pinv_23_arma");
-    for (uint i=0; i<N_RUNS/10; ++i)
+    for (uint i=0; i<N_RUNS; ++i)
         for (uint j=0; j<vec_size; ++j) result_mat32[j] = pinv( mat23_vec[j] );
     END_TIMER("pinv_23_arma");
 
