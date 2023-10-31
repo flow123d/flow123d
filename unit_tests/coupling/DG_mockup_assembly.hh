@@ -871,9 +871,7 @@ public:
     ~Sources_ComputeLocal() {}
 
 protected:
-    virtual void cell_integral_set_values(unsigned int sbi) {
-        this->eq_data_->ls[sbi]->rhs_set_values(this->ndofs_, &(this->dof_indices_[0]), &(this->local_rhs_[0]));
-    }
+    virtual void cell_integral_set_values(unsigned int sbi) {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
