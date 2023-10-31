@@ -159,6 +159,14 @@ public:
 
     ~DGMockupTest() {}
 
+    /// Run assembly algorithms with different type of assembly and type of field
+    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
+
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {
 		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
