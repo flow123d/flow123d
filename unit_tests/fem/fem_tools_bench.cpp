@@ -12,6 +12,7 @@
 #include <flow_gtest_mpi.hh>
 #include <armadillo>
 #include "arma_expect.hh"
+#include "./fem_tools_test.hh"
 
 #include "fem/fem_tools.hh"
 #include "system/file_path.hh"
@@ -99,10 +100,10 @@ TEST(FemToolsDevelopTest, functionst) {
  *   - n_repeats: 4e7
  *   - time unit: [s]
  *
- *               fem_tools   armadillo
- *  det 3x3         0.0899      0.4040
- *  inv 3x3         0.5873      1.5258
- *  pinv 2x3        1.9312     66.5879
+ *               fem_tools   armadillo       armor
+ *  det 3x3         0.0899      0.4040      0. NaN
+ *  inv 3x3         0.5873      1.5258      ------
+ *  pinv 2x3        1.9312     66.5879      ------
  */
 TEST_F(FemToolsTest, speed_test) {
     static const uint N_RUNS = 1e7;
@@ -122,8 +123,15 @@ TEST_F(FemToolsTest, speed_test) {
 
     uint vec_size = mat33_vec.size();
     std::vector< double > result_det(vec_size);
+    double * result_det_armor;
     std::vector< arma::mat::fixed<3,3> > result_mat33(vec_size);
     std::vector< arma::mat::fixed<3,2> > result_mat32(vec_size);
+
+    Armor::Array<double> armor_mat(3, 3);
+    armor_mat.reinit(4*vec_size);
+    for (uint i=0; i<4; ++i)
+        for (uint j=0; j<vec_size; ++j)
+            armor_mat.append(mat33_vec[j]);
 
     START_TIMER("determinant_own");
     for (uint i=0; i<N_RUNS; ++i)
@@ -134,6 +142,14 @@ TEST_F(FemToolsTest, speed_test) {
     for (uint i=0; i<N_RUNS; ++i)
         for (uint j=0; j<vec_size; ++j) result_det[j] = det( mat33_vec[j] );
     END_TIMER("determinant_arma");
+
+    // Armor
+    START_TIMER("determinant_armor");
+    uint armor_runs = N_RUNS/4;
+    for (uint i=0; i<armor_runs; ++i) {
+        result_det_armor = vec_determinant(armor_mat);
+    }
+    END_TIMER("determinant_armor");
 
     START_TIMER("inv_33_own");
     for (uint i=0; i<N_RUNS; ++i)
