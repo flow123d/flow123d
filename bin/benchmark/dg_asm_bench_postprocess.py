@@ -9,8 +9,96 @@ import sys
 import os
 import json
 import csv
+
+import numpy as np
 import pandas as pd
 from zipfile import ZipFile, Path
+
+
+class ProcessTag:
+    """
+    Collect tag processing functions.
+    """
+
+    @staticmethod
+    def assembly(json_node, ph, df):
+        """
+        Process one assembly (Mass, Stiffness or Sources) and all subtags 
+        """
+
+        asm_name = json_node['tag']
+        sum_subtags_time = sum(ch['cumul-time-sum'] for ch in json_node['children'])
+
+        asm_time = json_node['cumul-time-sum']
+        reminder_fraction = (asm_time - sum_subtags_time) / asm_time
+        asm_row_data = ph.form_row(
+            assembly_class=asm_name,
+            time_fraction_of_reminder=reminder_fraction
+        )
+        return ph.df_append(df, asm_row_data)
+
+
+    @staticmethod
+    def asm_child(json_node, ph, df):
+        integrals = {
+            "assemble_volume_integrals": "cell",
+            "assemble_fluxes_boundary":  "boundary_side",
+            "assemble_fluxes_elem_elem": "edge",
+            "assemble_fluxes_elem_side": "dimjoin"
+        }
+
+        tag = json_node['tag']
+        integral = integrals.get(tag, '')
+        row_data = ph.form_row(
+            assembly_class=ph.parent_node['tag'],
+            integral_type=integral,
+        )
+        return ph.df_append(df, row_data)
+            
+
+    @staticmethod
+    def empty(json_node, ph, df):
+        """
+        We can skip some tags which are not to be processed (e.g. 'ZERO-TIME STEP')
+        """
+        return df
+
+
+    @staticmethod
+    def full_mesh(json_node, ph, df):
+        """
+        Process 'full_mesh' tag
+        """
+        mesh_repeats = json_node['call-count-sum']
+        n_mesh_elements = json_node['children'][1]['call-count-sum']
+
+        shape, dim, uniform = ph.node_path[-4]['tag'].split('_')
+        size = ph.node_path[-3]['tag']
+        asm_type, field_type = ph.node_path[-2]['tag'].split('_')
+        ph.set_mesh_dict(
+            branch=ph.program_branch, 
+            commit=ph.program_revision,
+            run_id=ph.run_id,
+            domain_shape=shape,
+            mesh_size=size,
+            spacedim=dim,
+            uniformity=uniform,
+            n_mesh_elements=(n_mesh_elements/mesh_repeats),
+            n_repeats=mesh_repeats,
+            field_variant=field_type,
+            assembly_variant=asm_type,
+            assembly_class='',
+            tag='',
+            number_of_calls=0,
+            integral_type='',
+            time=0.0,
+            time_fraction=0.0,
+            time_fraction_of_reminder=np.NaN,
+            parent_tag='',
+            level=0
+            )
+        mesh_row_data = ph.form_row()
+        return ph.df_append(df, mesh_row_data)
 
 
 """
@@ -18,103 +106,109 @@ Hold processed profiler data and helper variables.
 Object is used during processing of profiler JSON input.
 """
 class ProfilerHandler:
-    def __init__(self, profiler_file):
+    def __init__(self, profiler_file, program_branch, program_revision, run_id):
         self.profiler_file = profiler_file
         
         # Define name of columns 
         self.column_names = ['branch', 'commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_mesh_elements', 'n_repeats', 'field_variant',   
-            'assembly_variant', 'assembly_class', 'tag', 'number_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
+            'assembly_variant',
+                             'assembly_class', 'tag', 'number_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
+        
+        self.assembly_tags = ['MassAssembly', 'StiffnessAssembly', 'SourcesAssembly']
         
         # Dictionary holds pairs tag-method, these methods are called for selected tags during processing of profiler tree
         self.tag_method = {
-            'full_mesh':                     'full_mesh', 
-            'BaseMeshReader - mesh factory': 'empty', 
-            'ZERO-TIME STEP':                'empty', 
-            'MassAssembly':                  'assembly', 
-            'StiffnessAssembly':             'assembly', 
-            'SourcesAssembly':               'assembly'} 
+            'full_mesh':                     ProcessTag.full_mesh, 
+            'BaseMeshReader - mesh factory': ProcessTag.empty, 
+            'ZERO-TIME STEP':                ProcessTag.empty}
+        self.tag_method.update({t: ProcessTag.assembly for t in self.assembly_tags})
         
         # Create other data members using during profiler processing
-        self.json_tree_nodes = []
-        self.n_mesh_elements = 0
-        self.mesh_repeats = 0
-        self.common_row_data = []
-        self.sum_subtags_time = 0.0
-        self.program_branch = ''
-        self.program_revision = ''
-        self.run_id = 0
-
-    # Set base program parameters
-    def set_program_params(self, program_branch, program_revision, run_id):
+        self.node_path = []
+        self.mesh_dict = None
         self.program_branch = program_branch
         self.program_revision = program_revision
         self.run_id = run_id
 
 
-# Process one assembly (Mass, Stiffness or Sources) and all subtags 
-def assembly(json_node, ph, df):
-    integrals = {
-        "assemble_volume_integrals": "cell",
-        "assemble_fluxes_boundary":  "boundary_side",
-        "assemble_fluxes_elem_elem": "edge",
-        "assemble_fluxes_elem_side": "dimjoin"
-    }
+    def set_mesh_dict(self, **kwargs):
+        self.mesh_dict = kwargs
 
-    ph.json_tree_nodes.append(json_node)
-    asm_name = json_node['tag']
-    #print(" -", json_node['tag'], ph.json_tree_nodes[-2]['tag'], ph.json_tree_nodes[-1]['tag'])
-    ph.sum_subtags_time = 0.0
-    for i in json_node['children']:
-        tag = i['tag']
-        time = i['cumul-time-sum']
-        integral = ''
-        if tag in integrals:
-            integral = integrals[tag]
-        tag_row_data = ph.common_row_data.copy()
-        tag_row_data.extend( [asm_name, tag, i['call-count-sum'], integral, time, (time/json_node['cumul-time-sum']), ''] )
-        df = pd.concat([df, pd.DataFrame([tag_row_data], columns=ph.column_names)], ignore_index=True)
-        ph.sum_subtags_time += time
+    def form_row(self, **kwargs):
+        time = self.current_node['cumul-time-sum']
 
-    asm_time = json_node['cumul-time-sum']
-    asm_row_data = ph.common_row_data.copy()
-    asm_row_data.extend( [asm_name, asm_name, json_node['call-count-sum'], '', asm_time, '', ((asm_time-ph.sum_subtags_time)/asm_time)] )
-    df2 = pd.concat([df, pd.DataFrame([asm_row_data], columns=ph.column_names)], ignore_index=True)
-    ph.json_tree_nodes.pop()
-    return df2
+        row = self.mesh_dict.copy()
+        row.update(dict(
+            tag=self.current_node['tag'],
+            number_of_calls=self.current_node['call-count-sum'],
+            time=time,
+            time_fraction=time / self.parent_node['cumul-time-sum'],
+            parent_tag=self.parent_node['tag'],
+            level=len(self.node_path)
+        ))
+        row.update(kwargs)
+        return row
+
+    def df_append(self, df, row_df:dict):
+        #row_df = pd.DataFrame(row_data, index=[0])
+
+        if df is None:
+            df = {k:[v] for k, v in row_df.items()}
+            return df
+        # For unknown reason df.append is deprecated.
+#        c_row_df = list(row_df.columns)
+#        c_df = list(df.columns)
+#        assert c_row_df == c_df, f"\nrow_df: {c_row_df}\ndf:{c_df}"
+
+        for k,v in row_df.items():
+            df[k].append(v)
+        return df
+    @property
+    def current_node(self):        
+        return self.node_path[-1]
+    
+    @property
+    def parent_node(self):
+        try:
+            return self.node_path[-2]
+        except IndexError:
+            return None
+    
+    def process_node_item(self, df):
+        """
+        Detect nodes for which we generate row  in df.
+        """
+        try:
+            process_method = self.tag_method[self.current_node['tag']] 
+        except KeyError:
+            if self.parent_node is not None and self.parent_node['tag'] in self.assembly_tags:
+                process_method = ProcessTag.asm_child
+            else:
+                return df
+        return process_method(self.current_node, self, df)
+    
+    
+    # Set base program parameters
 
 
-# We can skip some tags which are not to be processed (e.g. 'ZERO-TIME STEP')
-def empty(json_node, ph, df):
-    return df
+    def location(self):
+        """
+        Form current node address in terms of tags.
+        :return: str
+        """
+        return ' > '.join([node['tag'] for node in self.node_path])
 
-
-# Process 'full_mesh' tag
-def full_mesh(json_node, ph, df):
-    ph.mesh_repeats = json_node['call-count-sum']
-    ph.n_mesh_elements = json_node['children'][1]['call-count-sum']
-    mesh_full_name = ph.json_tree_nodes[-3]['tag'] + '_' + ph.json_tree_nodes[-2]['tag'] + '_' + ph.json_tree_nodes[-1]['tag']
-    mesh_params = mesh_full_name.split('_')
-    ph.common_row_data = [ ph.program_branch, ph.program_revision, ph.run_id, mesh_params[0], mesh_params[3], mesh_params[1], 
-                    mesh_params[2], (ph.n_mesh_elements/ph.mesh_repeats), ph.mesh_repeats, mesh_params[5], mesh_params[4] ]
-    mesh_row_data = ph.common_row_data.copy()
-    mesh_row_data.extend( ['', 'full_mesh', json_node['call-count-sum'], '',  json_node['cumul-time-sum'], '', ''] )
-    df2 = pd.concat([df, pd.DataFrame([mesh_row_data], columns=ph.column_names)], ignore_index=True)
-    return process_node(json_node, ph, df2)
-
-
-# Process one tag and call recursivelly processing of children
 def process_node(json_node, ph, df):
-    ph.json_tree_nodes.append(json_node)
+    """
+    Process one tag and call recursivelly processing of children
+    """
+    ph.node_path.append(json_node)
+    #print(ph.location())
+    df = ph.process_node_item(df)
     if 'children' in json_node:
         for i in json_node['children']:
-            if i['tag'] in ph.tag_method.keys():
-                possibles = globals().copy()
-                possibles.update(locals())
-                method = possibles.get( ph.tag_method[ i['tag'] ] )
-                df = method(i, ph, df) 
-            else:
-                df = process_node(i, ph, df)
-    ph.json_tree_nodes.pop()
+            df = process_node(i, ph, df)
+    ph.node_path.pop()
     return df
 
 
@@ -145,8 +239,8 @@ Name of files must be in format '<profiler_file>_<n>.json' where:
 def load_profiler_data(profiler_zip):
 
     # Create ProfilerHandler and DataFrame
-    ph = ProfilerHandler(profiler_zip)
-    df = pd.DataFrame( columns=ph.column_names )
+
+    df = None
     
     run_id = 1
     zf = ZipFile(profiler_zip)
@@ -159,23 +253,18 @@ def load_profiler_data(profiler_zip):
         whole_program = profiler_data['children'][0]
         program_branch = profiler_data['program-branch']
         program_revision = profiler_data['program-revision']
-        ph.set_program_params(program_branch, program_revision, run_id)
+        ph = ProfilerHandler(profiler_zip, program_branch, program_revision, run_id)
     
         df = process_node(whole_program, ph, df)
         run_id += 1
-
+    df = pd.DataFrame(df)
     df = unify_df_values(df)
     return df
 
 
 # Perform outout to CSV file
-def csv_output(csv_file, run_id, df):
-    out_mode = 'a'
-    out_header = False
-    if run_id == '1': 
-        out_mode = 'w'
-        out_header = True
-    df.to_csv(path_or_buf=csv_file, header=out_header, index=False, mode=out_mode)
+def csv_output(csv_file, df):
+    df.to_csv(path_or_buf=csv_file, header=True, index=False, mode='w')
 
 
 def main():
@@ -187,9 +276,10 @@ def main():
 
     # load and process JSON
     df = load_profiler_data(profiler_zip)
-    
+
+
     # output to CSV
-    csv_output(csv_file, 1, df)
+    csv_output(csv_file, df)
 
 
 # Processes one node of profiler tree: print tag and calls children nodes recursivelly
