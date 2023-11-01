@@ -394,9 +394,10 @@ dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
-if [ "${base_image}" == "flow123d/flow-dev-gnu-vtune" ]
+if [ "${base_image%:*}" == "flow123d/flow-dev-gnu-vtune" ]
 then
-  envarg="--name=vtune_cont --cap-add CAP_SYS_ADMIN --publish 7788:7788 ${envarg}"
+  # port binding under Windows 10 needs host local IP adress to be specified.
+  envarg="--name=vtune_cont --cap-add CAP_SYS_ADMIN --publish 127.0.0.1:7788:7788 ${envarg}"
 fi
 
 if [ -z "${manual_volumes}" ]
@@ -435,6 +436,7 @@ case $action in
   shell)
     update_image $base_image $autopull
     dbg2 "Entering shell"
+    
     dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
   ;;
   update)
