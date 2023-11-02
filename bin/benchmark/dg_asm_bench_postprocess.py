@@ -198,6 +198,10 @@ class ProfilerHandler:
         """
         return ' > '.join([node['tag'] for node in self.node_path])
 
+    def child_nodes(self):
+        if self.current_node['tag'] == "ZERO-TIME STEP":
+            return []
+        return self.current_node.get('children', [])
 def process_node(json_node, ph, df):
     """
     Process one tag and call recursivelly processing of children
@@ -205,9 +209,9 @@ def process_node(json_node, ph, df):
     ph.node_path.append(json_node)
     #print(ph.location())
     df = ph.process_node_item(df)
-    if 'children' in json_node:
-        for i in json_node['children']:
-            df = process_node(i, ph, df)
+
+    for i in ph.child_nodes():
+        df = process_node(i, ph, df)
     ph.node_path.pop()
     return df
 
