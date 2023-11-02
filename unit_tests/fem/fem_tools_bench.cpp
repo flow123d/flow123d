@@ -12,7 +12,6 @@
 #include <flow_gtest_mpi.hh>
 #include <armadillo>
 #include "arma_expect.hh"
-#include "./fem_tools_test.hh"
 
 #include "fem/fem_tools.hh"
 #include "system/file_path.hh"
@@ -45,10 +44,14 @@ public:
 
 
 /// Check correct implementation of 'determinant()' and 'inverse()' function
-TEST(FemToolsDevelopTest, functionst) {
+TEST(FemToolsDevelopTest, functions_test) {
     arma::mat::fixed<1,1> mat11 = {2};
     arma::mat::fixed<2,2> mat22 = { {2, 3}, {4, 5} };
     arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} };
+    arma::mat::fixed<1,2> mat12 = { {2, 5} };
+    arma::mat::fixed<2,1> mat21; mat21(0,0) = 2; mat21(1,0) = 5;
+    arma::mat::fixed<1,3> mat13 = { {2, 4, 5} };
+    arma::mat::fixed<3,1> mat31; mat31(0,0) = 2; mat31(1,0) = 4; mat31(2,0) = 5;
     arma::mat::fixed<2,3> mat23 = { {1, 2, 3}, {4, 5, 6} };
     arma::mat::fixed<3,2> mat32 = { {1, 4}, {2, 5}, {3, 6} };
 
@@ -62,6 +65,10 @@ TEST(FemToolsDevelopTest, functionst) {
     arma::mat::fixed<1,1> inv11 = inverse(mat11);
     arma::mat::fixed<2,2> inv22 = inverse(mat22);
     arma::mat::fixed<3,3> inv33 = inverse(mat33);
+    arma::mat::fixed<2,1> inv12 = inverse(mat12);
+    arma::mat::fixed<1,2> inv21 = inverse(mat21);
+    arma::mat::fixed<3,1> inv13 = inverse(mat13);
+    arma::mat::fixed<1,3> inv31 = inverse(mat31);
     arma::mat::fixed<3,2> inv23 = inverse(mat23);
     arma::mat::fixed<2,3> inv32 = inverse(mat32);
     // expected values
@@ -75,6 +82,18 @@ TEST(FemToolsDevelopTest, functionst) {
     // matrix 3x3
     arma::mat::fixed<3,3> multi_33 = mat33 * inv33;
     EXPECT_ARMA_EQ(expect_33, multi_33);
+    // matrix 1x2
+    arma::mat::fixed<1,1> multi_12 = mat12 * inv12;
+    EXPECT_DOUBLE_EQ( multi_12(0,0), 1 );
+    // matrix 3x1
+    arma::mat::fixed<1,1> multi_21 = inv21 * mat21;
+    EXPECT_DOUBLE_EQ( multi_21(0,0), 1 );
+    // matrix 1x3
+    arma::mat::fixed<1,1> multi_13 = mat13 * inv13;
+    EXPECT_DOUBLE_EQ( multi_13(0,0), 1 );
+    // matrix 3x1
+    arma::mat::fixed<1,1> multi_31 = inv31 * mat31;
+    EXPECT_DOUBLE_EQ( multi_31(0,0), 1 );
     // matrix 2x3
     arma::mat::fixed<2,2> multi_23 = mat23 * inv23;
     EXPECT_ARMA_EQ(expect_22, multi_23);
@@ -100,10 +119,10 @@ TEST(FemToolsDevelopTest, functionst) {
  *   - n_repeats: 4e7
  *   - time unit: [s]
  *
- *               fem_tools   armadillo       armor
- *  det 3x3         0.0899      0.4040      0. NaN
- *  inv 3x3         0.5873      1.5258      ------
- *  pinv 2x3        1.9312     66.5879      ------
+ *               fem_tools   armadillo
+ *  det 3x3         0.0899      0.4040
+ *  inv 3x3         0.5873      1.5258
+ *  pinv 2x3        1.9312     66.5879
  */
 TEST_F(FemToolsTest, speed_test) {
     static const uint N_RUNS = 1e7;
@@ -123,15 +142,8 @@ TEST_F(FemToolsTest, speed_test) {
 
     uint vec_size = mat33_vec.size();
     std::vector< double > result_det(vec_size);
-    double * result_det_armor;
     std::vector< arma::mat::fixed<3,3> > result_mat33(vec_size);
     std::vector< arma::mat::fixed<3,2> > result_mat32(vec_size);
-
-    Armor::Array<double> armor_mat(3, 3);
-    armor_mat.reinit(4*vec_size);
-    for (uint i=0; i<4; ++i)
-        for (uint j=0; j<vec_size; ++j)
-            armor_mat.append(mat33_vec[j]);
 
     START_TIMER("determinant_own");
     for (uint i=0; i<N_RUNS; ++i)
@@ -142,14 +154,6 @@ TEST_F(FemToolsTest, speed_test) {
     for (uint i=0; i<N_RUNS; ++i)
         for (uint j=0; j<vec_size; ++j) result_det[j] = det( mat33_vec[j] );
     END_TIMER("determinant_arma");
-
-    // Armor
-    START_TIMER("determinant_armor");
-    uint armor_runs = N_RUNS/4;
-    for (uint i=0; i<armor_runs; ++i) {
-        result_det_armor = vec_determinant(armor_mat);
-    }
-    END_TIMER("determinant_armor");
 
     START_TIMER("inv_33_own");
     for (uint i=0; i<N_RUNS; ++i)
