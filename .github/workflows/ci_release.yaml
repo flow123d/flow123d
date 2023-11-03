@@ -197,7 +197,8 @@ jobs:
             params: "build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
             isReport: False
             poll: True  
-        - uses: actions/upload-artifact@v3
+        - name: "Upload Artifacts: notebook"
+          uses: actions/upload-artifact@v3
           if: always()
           with:
               name: ${{matrix.test.target}}-plots
@@ -205,7 +206,7 @@ jobs:
           env:
               RUNNER: ${{ toJson(runner) }}
                 
-        - name: Upload Artifacts: profiler results
+        - name: "Upload Artifacts: profiler results"
           uses: actions/upload-artifact@v3
           with:     
             name: ${{matrix.test.target}}
