@@ -189,7 +189,7 @@ jobs:
         - name: Run postprocessing notebook
           run: |
             cd src/python/notebooks
-            pip install nbconvert jupyter papermil -r requirements.txt
+            pip install nbconvert jupyter papermill -r requirements.txt
             git_branch=`git rev-parse --abbrev-ref HEAD`
             build_dir=build-${git_branch}
             papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files '../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"'
