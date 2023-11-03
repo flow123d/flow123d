@@ -198,12 +198,12 @@ jobs:
             isReport: False
             poll: True  
         - uses: actions/upload-artifact@v3
-            if: always()
-            with:
-                name: ${{matrix.test.target}}-plots
-                path: ${{ RUNNER.temp }}/nb-runner
-            env:
-                RUNNER: ${{ toJson(runner) }}
+          if: always()
+          with:
+              name: ${{matrix.test.target}}-plots
+              path: ${{ RUNNER.temp }}/nb-runner
+          env:
+              RUNNER: ${{ toJson(runner) }}
                 
         - name: Upload Artifacts: profiler results
           uses: actions/upload-artifact@v3
