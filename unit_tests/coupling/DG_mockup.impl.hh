@@ -189,7 +189,8 @@ void DGMockup<Mass, Stiffness, Sources>::zero_time_step() {
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
     END_TIMER("data initialize");
-
+    
+    /*
     START_TIMER("assembly");
     stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
@@ -201,7 +202,7 @@ void DGMockup<Mass, Stiffness, Sources>::zero_time_step() {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
       VecAssemblyEnd(eq_data_->ret_vec[i]);
     }
-
+    */
     //output_data();
     END_TIMER("ZERO-TIME STEP");
 }

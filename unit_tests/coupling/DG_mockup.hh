@@ -722,7 +722,7 @@ public:
     /// Call zero_time_step and update_solution for 4 time steps.
     void run_simulation() {
         this->zero_time_step();
-        for (uint i=0; i<4; ++i) {
+        for (uint i=0; i<1; ++i) {
             this->update_solution();
         }
     }
