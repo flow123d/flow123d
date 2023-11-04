@@ -200,7 +200,7 @@ jobs:
             pip install nbconvert jupyter papermill -r requirements.txt
             git_branch=`git rev-parse --abbrev-ref HEAD`
             build_dir=build-${git_branch}
-            papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files '../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"'
+            papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
             jupyter nbconvert --to html --execute ${{matrix.test.notebook}}_out.ipynb --output-dir public            
         - name: GitHub Pages action
           uses: peaceiris/actions-gh-pages@v3.6.1

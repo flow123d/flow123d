@@ -254,7 +254,11 @@ Name of files must be in format '<profiler_file>_<n>.json' where:
 def load_profiler_data_(file_gen):
     # Create ProfilerHandler and DataFrame
     df = None # directory - list representation of the data table
-    for run_id, file in enumerate(file_gen):
+    files = list(file_gen)
+    print("Input profiler files: ", files)
+    if len(files) == 0:
+        raise IOError("Empty set of profiler files.")
+    for run_id, file in enumerate(files):
         with file.open() as f_in:
             profiler_data = json.load(f_in)
         
@@ -265,7 +269,7 @@ def load_profiler_data_(file_gen):
         ph = ProfilerHandler(program_branch, program_revision, run_id)
     
         df = process_node(whole_program, ph, df)
-        run_id += 1
+
     df = pd.DataFrame(df)
     df = unify_df_values(df)
     return df
