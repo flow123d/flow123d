@@ -186,6 +186,14 @@ jobs:
               config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
               config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=1 ${{matrix.test.dir}}/${{matrix.test.target}} 
               ls build_tree/unit_tests/${{matrix.test.dir}}    
+
+        - name: "Upload Artifacts: profiler results"
+          uses: actions/upload-artifact@v3
+          with:     
+            name: ${{matrix.test.target}}
+            path: |
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
+
         - name: Run postprocessing notebook
           run: |
             cd src/python/notebooks
@@ -200,12 +208,6 @@ jobs:
               github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./_build/html    
                 
-        - name: "Upload Artifacts: profiler results"
-          uses: actions/upload-artifact@v3
-          with:     
-            name: ${{matrix.test.target}}
-            path: |
-                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
  
     # TODO: modify to run integration tests with release image
     #integration_tests:
