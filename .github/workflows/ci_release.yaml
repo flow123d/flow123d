@@ -175,6 +175,7 @@ jobs:
             build_dir=build-${git_branch}
     
             # can not use environment variables in github actions
+            echo "dev_version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT 
             echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
             echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
         - name: Check vars
@@ -184,7 +185,7 @@ jobs:
         - name: Run Benchmark
           run: |              
               config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
-              config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=1 ${{matrix.test.dir}}/${{matrix.test.target}} 
+              config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{matrix.test.dir}}/${{matrix.test.target}} 
               ls build_tree/unit_tests/${{matrix.test.dir}}    
 
         - name: "Upload Artifacts: profiler results"
@@ -207,6 +208,7 @@ jobs:
           with:
               github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./src/python/notebooks/public   
+              commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
                 
  
     # TODO: modify to run integration tests with release image
