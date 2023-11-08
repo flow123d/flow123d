@@ -269,7 +269,7 @@ public:
              UpdateFlags _flags)
     : FEValues()
     {
-        initialize(_quadrature, _fe, _flags);
+        this->initialize(_quadrature, _fe, _flags);
     }
 
 
