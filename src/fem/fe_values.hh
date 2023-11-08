@@ -45,6 +45,7 @@ template<unsigned int dim> class MapTensor;
 template<unsigned int dim> class MapSystem;
 
 template<unsigned int spcedim> class FEValues;
+template<unsigned int spcedim> class PatchFEValues;
 
 
 

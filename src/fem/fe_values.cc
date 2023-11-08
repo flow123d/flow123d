@@ -23,6 +23,7 @@
 #include "fem/element_values.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "fem/fe_system.hh"
 #include "fem/fe_values_map.hh"
 

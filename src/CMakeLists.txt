@@ -252,6 +252,7 @@ add_library(fem_lib
     fem/fe_values.cc
     fem/fe_values_views.cc
     fem/mapping_p1.cc
+    fem/patch_fe_values.cc
 )
 target_link_libraries(fem_lib
     system_lib mesh_lib 
