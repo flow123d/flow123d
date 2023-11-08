@@ -40,7 +40,7 @@ public:
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
-                fe_values.shape_values[i][j] = fe_data.ref_shape_values[i][j][0];
+                fe_values.shape_values_[i][j] = fe_data.ref_shape_values[i][j][0];
     }
 
     /// Update shape_gradients of given FEValues object.
@@ -50,7 +50,7 @@ public:
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
-                fe_values.shape_gradients[i][j] = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j];
+                fe_values.shape_gradients_[i][j] = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j];
     }
 };
 
@@ -75,7 +75,7 @@ public:
             {
                 arma::vec fv_vec = elm_values.jacobian(i)*fe_data.ref_shape_values[i][j]/elm_values.determinant(i);
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_values[i][j*spacedim+c] = fv_vec(c);
+                    fe_values.shape_values_[i][j*spacedim+c] = fv_vec(c);
             }
     }
 
@@ -90,7 +90,7 @@ public:
                 arma::mat grads = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j] * trans(elm_values.jacobian(i))
                         / elm_values.determinant(i);
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                    fe_values.shape_gradients_[i][j*spacedim+c] = grads.col(c);
             }
     }
 };
@@ -116,7 +116,7 @@ public:
             {
                 arma::vec fv_vec = elm_values.jacobian(i) * fe_data.ref_shape_values[i][j];
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_values[i][j*spacedim+c] = fv_vec[c];
+                    fe_values.shape_values_[i][j*spacedim+c] = fv_vec[c];
             }
     }
 
@@ -130,7 +130,7 @@ public:
             {
                 arma::mat grads = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j] * trans(elm_values.jacobian(i));
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                    fe_values.shape_gradients_[i][j*spacedim+c] = grads.col(c);
             }
     }
 };
@@ -156,7 +156,7 @@ public:
             {
                 arma::vec fv_vec = fe_data.ref_shape_values[i][j];
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_values[i][j*spacedim+c] = fv_vec[c];
+                    fe_values.shape_values_[i][j*spacedim+c] = fv_vec[c];
             }
     }
 
@@ -170,7 +170,7 @@ public:
             {
                 arma::mat grads = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j];
                 for (unsigned int c=0; c<spacedim; c++)
-                    fe_values.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                    fe_values.shape_gradients_[i][j*spacedim+c] = grads.col(c);
             }
     }
 };
@@ -196,7 +196,7 @@ public:
             {
                 arma::vec fv_vec = fe_data.ref_shape_values[i][j];
                 for (unsigned int c=0; c<spacedim*spacedim; c++)
-                    fe_values.shape_values[i][j*spacedim*spacedim+c] = fv_vec[c];
+                    fe_values.shape_values_[i][j*spacedim*spacedim+c] = fv_vec[c];
             }
     }
 
@@ -210,7 +210,7 @@ public:
             {
                 arma::mat grads = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j];
                 for (unsigned int c=0; c<spacedim*spacedim; c++)
-                    fe_values.shape_gradients[i][j*spacedim*spacedim+c] = grads.col(c);
+                    fe_values.shape_gradients_[i][j*spacedim*spacedim+c] = grads.col(c);
             }
     }
 };
@@ -252,8 +252,8 @@ public:
             for (unsigned int i=0; i<fe_data.n_points; i++)
                 for (unsigned int n=0; n<fe_values.fe_sys_dofs_[f].size(); n++)
                     for (unsigned int c=0; c<fe_values.fe_sys_n_space_components_[f]; c++)
-                        fe_values.shape_values[i][shape_offset+fe_values.n_components_*n+comp_offset+c] =
-                                fe_values.fe_values_vec[f].shape_values[i][n*fe_values.fe_sys_n_space_components_[f]+c];
+                        fe_values.shape_values_[i][shape_offset+fe_values.n_components_*n+comp_offset+c] =
+                                fe_values.fe_values_vec[f].shape_values_[i][n*fe_values.fe_sys_n_space_components_[f]+c];
 
             comp_offset += fe_values.fe_sys_n_space_components_[f];
             shape_offset += fe_values.fe_sys_dofs_[f].size()*fe_values.n_components_;
@@ -274,8 +274,8 @@ public:
             for (unsigned int i=0; i<fe_data.n_points; i++)
                 for (unsigned int n=0; n<fe_values.fe_sys_dofs_[f].size(); n++)
                     for (unsigned int c=0; c<fe_values.fe_sys_n_space_components_[f]; c++)
-                        fe_values.shape_gradients[i][shape_offset+fe_values.n_components_*n+comp_offset+c] =
-                                fe_values.fe_values_vec[f].shape_gradients[i][n*fe_values.fe_sys_n_space_components_[f]+c];
+                        fe_values.shape_gradients_[i][shape_offset+fe_values.n_components_*n+comp_offset+c] =
+                                fe_values.fe_values_vec[f].shape_gradients_[i][n*fe_values.fe_sys_n_space_components_[f]+c];
 
             comp_offset += fe_values.fe_sys_n_space_components_[f];
             shape_offset += fe_values.fe_sys_dofs_[f].size()*fe_values.n_components_;

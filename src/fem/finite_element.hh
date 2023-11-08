@@ -32,6 +32,7 @@
 #include "system/exceptions.hh"                // for ExcAssertMsg::~ExcAsse...
 
 template<unsigned int dim> class FESystem;
+template<class FV, unsigned int spacedim> class FEValuesBase;
 template<unsigned int spacedim> class FEValues;
 template<unsigned int dim> class FE_P_disc;
 
@@ -389,6 +390,7 @@ protected:
     
     
     friend class FESystem<dim>;
+    friend class FEValuesBase<FEValues<3>, 3>;
     friend class FEValues<3>;
     friend class FE_P_disc<dim>;
     friend class SubDOFHandlerMultiDim;
