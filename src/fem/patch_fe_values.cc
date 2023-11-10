@@ -21,33 +21,3 @@
 #include "fem/patch_fe_values.hh"
 
 
-template<unsigned int spacedim>
-void PatchFEValues<spacedim>::resize(unsigned int new_size) {
-    ASSERT_LE(new_size, max_size());
-    used_size_ = new_size;
-
-    // TODO maybe reset Element data objects??
-}
-
-template<unsigned int spacedim>
-void PatchFEValues<spacedim>::allocate_in()
-{
-//    if (this->update_flags & update_values)
-//        shape_values_.resize(this->n_points_, vector<double>(this->n_dofs_*this->n_components_));
-//
-//    if (this->update_flags & update_gradients)
-//        shape_gradients_.resize(this->n_points_, vector<arma::vec::fixed<spacedim> >(this->n_dofs_*this->n_components_));
-
-    this->fv_ = this;
-}
-
-
-template<unsigned int spacedim>
-void PatchFEValues<spacedim>::initialize_in(
-         FMT_UNUSED Quadrature &q,
-		 FMT_UNUSED unsigned int dim)
-{
-}
-
-/// Explicit initialization
-template class PatchFEValues<3>;

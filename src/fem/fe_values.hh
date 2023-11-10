@@ -59,12 +59,12 @@ protected:
     // internal structure that stores all possible views
     // for scalar and vector-valued components of the FE
     struct ViewsCache {
-        vector<FEValuesViews::Scalar<spacedim> > scalars;
-        vector<FEValuesViews::Vector<spacedim> > vectors;
-        vector<FEValuesViews::Tensor<spacedim> > tensors;
+        vector<FEValuesViews::Scalar<FV, spacedim> > scalars;
+        vector<FEValuesViews::Vector<FV, spacedim> > vectors;
+        vector<FEValuesViews::Tensor<FV, spacedim> > tensors;
 
         template<unsigned int DIM>
-        void initialize(const FEValues<spacedim> &fv, const FiniteElement<DIM> &fe);
+        void initialize(const FV &fv, const FiniteElement<DIM> &fe);
     };
 
 
@@ -119,7 +119,7 @@ public:
      * @brief Accessor to scalar values of multicomponent FE.
      * @param i Index of scalar component.
      */
-	const FEValuesViews::Scalar<spacedim> &scalar_view(unsigned int i) const
+	const FEValuesViews::Scalar<FV, spacedim> &scalar_view(unsigned int i) const
 	{
       ASSERT_LT(i, views_cache_.scalars.size());
       return views_cache_.scalars[i];
@@ -129,7 +129,7 @@ public:
      * @brief Accessor to vector values of multicomponent FE.
      * @param i Index of first vector component.
      */
-    const FEValuesViews::Vector<spacedim> &vector_view(unsigned int i) const
+    const FEValuesViews::Vector<FV, spacedim> &vector_view(unsigned int i) const
     {
       ASSERT_LT(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
@@ -139,7 +139,7 @@ public:
      * @brief Accessor to tensor values of multicomponent FE.
      * @param i Index of first tensor component.
      */
-    const FEValuesViews::Tensor<spacedim> &tensor_view(unsigned int i) const
+    const FEValuesViews::Tensor<FV, spacedim> &tensor_view(unsigned int i) const
     {
       ASSERT_LT(i, views_cache_.tensors.size());
       return views_cache_.tensors[i];
@@ -458,6 +458,95 @@ protected:
 
 
 
+
+
+
+template<unsigned int spacedim = 3>
+class PatchFEValues : public FEValuesBase<PatchFEValues<spacedim>, spacedim> {
+public:
+    /// Constructor, set size of ElementData vector (maximal capacity)
+	PatchFEValues(unsigned int max_size);
+
+    /// Set new value of used_size_
+    void resize(unsigned int new_size);
+
+	inline unsigned int used_size() const {
+	    return used_size_;
+	}
+
+	inline unsigned int max_size() const {
+	    return element_data_.size();
+	}
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * For vectorial finite elements.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    inline double shape_value_component(const unsigned int function_no,
+                                        const unsigned int point_no,
+                                        const unsigned int comp) const
+    {
+        ASSERT_LT(function_no, this->n_dofs_);
+        ASSERT_LT(point_no, this->n_points_);
+        ASSERT_LT(comp, this->n_components_);
+        return element_data_[patch_cell_idx_].shape_values_[point_no][function_no*this->n_components_+comp];
+    }
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * For vectorial finite elements.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    arma::vec::fixed<spacedim> shape_grad_component(const unsigned int function_no,
+                                                           const unsigned int point_no,
+                                                           const unsigned int comp) const;
+
+protected:
+    class ElementFEData
+    {
+    public:
+        ElementFEData() {}
+
+        /// Shape functions evaluated at the quadrature points.
+        std::vector<std::vector<double> > shape_values_;
+
+        /// Gradients of shape functions evaluated at the quadrature points.
+        /// Each row of the matrix contains the gradient of one shape function.
+        std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients_;
+
+        /// Auxiliary object for calculation of element-dependent data.
+        std::shared_ptr<ElementValues<spacedim> > elm_values_;
+
+    };
+
+    /// Implement @p FEValuesBase::allocate_in
+    void allocate_in() override;
+
+    /// Implement @p FEValuesBase::initialize_in
+    void initialize_in(Quadrature &q, unsigned int dim) override;
+
+    /// Patch index of processed element.
+    unsigned int patch_cell_idx_;
+
+    /// Index of patch of processed element.
+    unsigned int side_idx_;
+
+    /// Data of elements on patch
+    std::vector<ElementFEData> element_data_;
+
+    /// Number of elements on patch. Must be less or equal to size of element_data vector
+    unsigned int used_size_;
+
+};
 
 
 
