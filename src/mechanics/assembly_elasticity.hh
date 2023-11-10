@@ -259,20 +259,20 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                     ///< Number of dofs
-    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
-    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
-    FEValues<3> fe_values_side_;                              ///< FEValues of side object
-    FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
+    unsigned int n_dofs_;                                          ///< Number of dofs
+    unsigned int n_dofs_sub_;                                      ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                         ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    FEValues<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fe_values_side_;                                   ///< FEValues of side object
+    FEValues<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
-    vector<vector<vector<PetscScalar>>> local_matrix_ngh_;    ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
-    const FEValuesViews::Vector<3> * vec_view_sub_;           ///< Vector view of low dim element in neighbour calculation.
+    vector<LongIdx> dof_indices_;                                  ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;                    ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                             ///< Auxiliary vector for assemble methods
+    vector<vector<vector<PetscScalar>>> local_matrix_ngh_;         ///< Auxiliary vectors for assemble ngh integral
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -541,22 +541,22 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                     ///< Number of dofs
-    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
-    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_values_;                                   ///< FEValues of cell object (FESystem of P disc finite element type)
-    FEValues<3> fe_values_bdr_side_;                          ///< FEValues of side (boundary integral) object
-    FEValues<3> fe_values_side_;                              ///< FEValues of side (neighbour integral) object
-    FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
+    unsigned int n_dofs_;                                          ///< Number of dofs
+    unsigned int n_dofs_sub_;                                      ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                         ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    FEValues<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fe_values_bdr_side_;                               ///< FEValues of side (boundary integral) object
+    FEValues<3> fe_values_side_;                                   ///< FEValues of side (neighbour integral) object
+    FEValues<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for assemble methods
-    vector<vector<PetscScalar>> local_rhs_ngh_;               ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<3> * vec_view_bdr_;           ///< Vector view in boundary calculation.
-    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in neighbour calculation.
-    const FEValuesViews::Vector<3> * vec_view_sub_;           ///< Vector view of low dim element in neighbour calculation.
+    vector<LongIdx> dof_indices_;                                  ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;                    ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_rhs_;                                ///< Auxiliary vector for assemble methods
+    vector<vector<PetscScalar>> local_rhs_ngh_;                    ///< Auxiliary vectors for assemble ngh integral
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_bdr_;   ///< Vector view in boundary calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
 
 
     template < template<IntDim...> class DimAssembly>
@@ -697,18 +697,18 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                     ///< Number of dofs
-    FEValues<3> fv_;                                          ///< FEValues of cell object (FESystem of P disc finite element type)
-    FEValues<3> fsv_;                                         ///< FEValues of side (neighbour integral) object
+    unsigned int n_dofs_;                                          ///< Number of dofs
+    FEValues<3> fv_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fsv_;                                              ///< FEValues of side (neighbour integral) object
 
-    LocDofVec dof_indices_;                                   ///< Vector of local DOF indices of vector fields
-    LocDofVec dof_indices_scalar_;                            ///< Vector of local DOF indices of scalar fields
-    LocDofVec dof_indices_tensor_;                            ///< Vector of local DOF indices of tensor fields
-    const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in neighbour calculation.
+    LocDofVec dof_indices_;                                        ///< Vector of local DOF indices of vector fields
+    LocDofVec dof_indices_scalar_;                                 ///< Vector of local DOF indices of scalar fields
+    LocDofVec dof_indices_tensor_;                                 ///< Vector of local DOF indices of tensor fields
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
 
-    double normal_displacement_;                              ///< Holds constributions of normal displacement.
-    arma::mat33 normal_stress_;                               ///< Holds constributions of normal stress.
+    double normal_displacement_;                                   ///< Holds constributions of normal displacement.
+    arma::mat33 normal_stress_;                                    ///< Holds constributions of normal stress.
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
@@ -818,13 +818,13 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                     ///< Number of dofs
-    FEValues<3> fe_values_side_;                              ///< FEValues of side object
+    unsigned int n_dofs_;                                          ///< Number of dofs
+    FEValues<3> fe_values_side_;                                   ///< FEValues of side object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
-    const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
+    vector<LongIdx> dof_indices_;                                  ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;                    ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                             ///< Auxiliary vector for assemble methods
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
