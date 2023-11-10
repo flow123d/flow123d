@@ -32,5 +32,6 @@ define_mpi_test(dofhandler 1)
 define_mpi_test(dofhandler 2)
 define_mpi_test(dofhandler 3)
 define_test(fe_system)
+define_mpi_test(patch_fe_values 1)
 
 
