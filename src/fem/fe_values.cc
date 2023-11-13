@@ -56,7 +56,7 @@ FEValuesBase<FV, spacedim>::FEInternalData::FEInternalData(unsigned int np, unsi
 
 
 template<class FV, unsigned int spacedim>
-FEValuesBase<FV, spacedim>::FEInternalData::FEInternalData(const FEInternalData &fe_system_data,
+FEValuesBase<FV, spacedim>::FEInternalData::FEInternalData(const FEValuesBase<FV, spacedim>::FEInternalData &fe_system_data,
                                const std::vector<unsigned int> &dof_indices,
                                unsigned int first_component_idx,
                                unsigned int ncomps)
@@ -147,6 +147,7 @@ void FEValuesBase<FV, spacedim>::initialize(
         ASSERT(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         fe_values_vec.resize(fe->fe().size());
+        // TODO set max_size of PatchFEValues - virtual method ??
         for (unsigned int f=0; f<fe->fe().size(); f++)
             fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
     }
@@ -250,6 +251,49 @@ std::shared_ptr<typename FEValuesBase<FV, spacedim>::FEInternalData> FEValuesBas
     
     return data;
 }
+
+
+template<class FV, unsigned int spacedim>
+void FEValuesBase<FV, spacedim>::fill_data(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FV, spacedim>::FEInternalData &fe_data)
+{
+    switch (this->fe_type_) {
+        case FEScalar:
+            this->fill_data_specialized<MapScalar<FV, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVector:
+            this->fill_data_specialized<MapVector<FV, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVectorContravariant:
+            this->fill_data_specialized<MapContravariant<FV, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVectorPiola:
+            this->fill_data_specialized<MapPiola<FV, spacedim>>(elm_values, fe_data);
+            break;
+        case FETensor:
+            this->fill_data_specialized<MapTensor<FV, spacedim>>(elm_values, fe_data);
+            break;
+        case FEMixedSystem:
+            this->fill_data_specialized<MapSystem<FV, spacedim>>(elm_values, fe_data);
+            break;
+        default:
+            ASSERT_PERMANENT(false).error("Not implemented.");
+    }
+}
+
+
+
+template<class FV, unsigned int spacedim>
+template<class MapType>
+inline void FEValuesBase<FV, spacedim>::fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FV, spacedim>::FEInternalData &fe_data) {
+	MapType map_type;
+	map_type.fill_values_vec(*this->fv_, elm_values, fe_data);
+    if (this->update_flags & update_values)
+    	map_type.update_values(*this->fv_, elm_values, fe_data);
+    if (this->update_flags & update_gradients)
+    	map_type.update_gradients(*this->fv_, elm_values, fe_data);
+}
+
+
 
 
 /*template<unsigned int spacedim>
@@ -516,49 +560,6 @@ void FEValues<spacedim>::fill_system_data(const ElementValues<spacedim> &elm_val
 
 
 template<unsigned int spacedim>
-void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FEValues<spacedim>, spacedim>::FEInternalData &fe_data)
-{
-    switch (this->fe_type_) {
-        case FEScalar:
-            this->fill_data_specialized<MapScalar<spacedim>>(elm_values, fe_data);
-            break;
-        case FEVector:
-            this->fill_data_specialized<MapVector<spacedim>>(elm_values, fe_data);
-            break;
-        case FEVectorContravariant:
-            this->fill_data_specialized<MapContravariant<spacedim>>(elm_values, fe_data);
-            break;
-        case FEVectorPiola:
-            this->fill_data_specialized<MapPiola<spacedim>>(elm_values, fe_data);
-            break;
-        case FETensor:
-            this->fill_data_specialized<MapTensor<spacedim>>(elm_values, fe_data);
-            break;
-        case FEMixedSystem:
-            this->fill_data_specialized<MapSystem<spacedim>>(elm_values, fe_data);
-            break;
-        default:
-            ASSERT_PERMANENT(false).error("Not implemented.");
-    }
-}
-
-
-
-template<unsigned int spacedim>
-template<class MapType>
-inline void FEValues<spacedim>::fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FEValues<spacedim>, spacedim>::FEInternalData &fe_data) {
-	MapType map_type;
-	map_type.fill_values_vec(*this, elm_values, fe_data);
-    if (this->update_flags & update_values)
-    	map_type.update_values(*this, elm_values, fe_data);
-    if (this->update_flags & update_gradients)
-    	map_type.update_gradients(*this, elm_values, fe_data);
-}
-
-
-
-
-template<unsigned int spacedim>
 void FEValues<spacedim>::reinit(const ElementAccessor<spacedim> &cell)
 {
 	ASSERT_EQ( this->dim_, cell.dim() );
@@ -569,7 +570,7 @@ void FEValues<spacedim>::reinit(const ElementAccessor<spacedim> &cell)
         elm_values_->reinit(cell);
     }
     
-    fill_data(*elm_values_, *this->fe_data_);
+    this->fill_data(*elm_values_, *this->fe_data_);
 }
 
 
@@ -587,7 +588,7 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
     const LongIdx sid = cell_side.side_idx();
     
     // calculation of finite element data
-    fill_data(*elm_values_, *(this->side_fe_data_[sid]) );
+    this->fill_data(*elm_values_, *(this->side_fe_data_[sid]) );
 }
 
 
@@ -599,11 +600,22 @@ PatchFEValues<spacedim>::PatchFEValues(unsigned int max_size)
     element_data_.resize(max_size);
 }
 
+
 template<unsigned int spacedim>
-void PatchFEValues<spacedim>::resize(unsigned int new_size) {
-    ASSERT_LE(new_size, max_size());
-    used_size_ = new_size;
+void PatchFEValues<spacedim>::reinit(std::vector<ElementAccessor<3>> elm_vec) {
+    ASSERT_LE(elm_vec.size(), max_size());
+    used_size_ = elm_vec.size();
+
+    for (unsigned int i=0; i<used_size_; ++i) {
+    	// skip elements of different dimensions
+    	if ( this->dim_ != elm_vec[i].dim() ) continue;
+
+        this->patch_cell_idx_ = i;
+    	element_data_[i].elm_values_->reinit(elm_vec[i]);
+        this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+    }
 }
+
 
 template<unsigned int spacedim>
 void PatchFEValues<spacedim>::allocate_in()
@@ -665,16 +677,25 @@ template void FEValuesBase<FEValues<3>, 3>::initialize<0>(Quadrature&, FiniteEle
 template void FEValuesBase<FEValues<3>, 3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
 template void FEValuesBase<FEValues<3>, 3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
 template void FEValuesBase<FEValues<3>, 3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
+
 template void FEValuesBase<PatchFEValues<3>, 3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
 template void FEValuesBase<PatchFEValues<3>, 3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
 template void FEValuesBase<PatchFEValues<3>, 3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
 template void FEValuesBase<PatchFEValues<3>, 3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
-template void FEValues<3>::fill_data_specialized<MapScalar<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
-template void FEValues<3>::fill_data_specialized<MapPiola<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
-template void FEValues<3>::fill_data_specialized<MapContravariant<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
-template void FEValues<3>::fill_data_specialized<MapVector<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
-template void FEValues<3>::fill_data_specialized<MapTensor<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
-template void FEValues<3>::fill_data_specialized<MapSystem<3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapScalar<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapPiola<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapContravariant<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapVector<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapTensor<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapSystem<FEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<FEValues<3>, 3>::FEInternalData &);
+
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapScalar<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapPiola<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapContravariant<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapVector<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapTensor<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
+template void FEValuesBase<PatchFEValues<3>, 3>::fill_data_specialized<MapSystem<PatchFEValues<3>, 3>>(const ElementValues<3> &, const typename FEValuesBase<PatchFEValues<3>, 3>::FEInternalData &);
 
 
 

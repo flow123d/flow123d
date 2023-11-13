@@ -37,12 +37,12 @@
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
 
-template<unsigned int dim> class MapScalar;
-template<unsigned int dim> class MapPiola;
-template<unsigned int dim> class MapContravariant;
-template<unsigned int dim> class MapVector;
-template<unsigned int dim> class MapTensor;
-template<unsigned int dim> class MapSystem;
+template<class FV, unsigned int dim> class MapScalar;
+template<class FV, unsigned int dim> class MapPiola;
+template<class FV, unsigned int dim> class MapContravariant;
+template<class FV, unsigned int dim> class MapVector;
+template<class FV, unsigned int dim> class MapTensor;
+template<class FV, unsigned int dim> class MapSystem;
 
 template<unsigned int spcedim> class FEValues;
 template<unsigned int spcedim> class PatchFEValues;
@@ -145,7 +145,6 @@ public:
       return views_cache_.tensors[i];
     }
 
-protected:
     /// Structure for storing the precomputed finite element data.
     class FEInternalData
     {
@@ -157,7 +156,7 @@ protected:
         FEInternalData(const FEInternalData &fe_system_data,
                        const std::vector<unsigned int> &dof_indices,
                        unsigned int first_component_idx,
-                       unsigned int ncomponents = 1);
+                       unsigned int ncomps = 1);
 
         /**
          * @brief Precomputed values of basis functions at the quadrature points.
@@ -183,6 +182,24 @@ protected:
         /// Number of dofs (shape functions).
         unsigned int n_dofs;
     };
+
+
+protected:
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure.
+     *
+     * @param fe_data Precomputed finite element data.
+     */
+    void fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
+
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure. Specialized variant of previous method for
+     * different FETypes given by template parameter.
+     */
+    template<class MapType>
+    void fill_data_specialized(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
 
 
     /// Initialize vectors declared separately in descendants.
@@ -220,7 +237,7 @@ protected:
     UpdateFlags update_flags;
 
     /// Vector of FEValues for sub-elements of FESystem.
-    std::vector<FEValues<spacedim>> fe_values_vec;
+    std::vector<FV> fe_values_vec;
 
     /// Number of components of the FE.
     unsigned int n_components_;
@@ -235,8 +252,14 @@ protected:
     std::vector<shared_ptr<FEInternalData> > side_fe_data_;
 
     /// Helper object, we need its for ViewsCache initialization.
-    const FV *fv_;
+    FV *fv_;
 
+    friend class MapScalar<FV, spacedim>;
+    friend class MapPiola<FV, spacedim>;
+    friend class MapContravariant<FV, spacedim>;
+    friend class MapVector<FV, spacedim>;
+    friend class MapTensor<FV, spacedim>;
+    friend class MapSystem<FV, spacedim>;
 };
 
 
@@ -353,6 +376,22 @@ public:
                                                            const unsigned int comp) const;
 
     /**
+     * Set shape value @p val of the @p i_point and @p i_func_comp.
+     */
+    inline void set_shape_value(unsigned int i_point, unsigned int i_func_comp, double val)
+    {
+        shape_values_[i_point][i_func_comp] = val;
+    }
+
+    /**
+     * Set shape gradient @p val of the @p i_point and @p i_func_comp.
+     */
+    inline void set_shape_gradient(unsigned int i_point, unsigned int i_func_comp, arma::vec::fixed<spacedim> val)
+    {
+        shape_gradients_[i_point][i_func_comp] = val;
+    }
+
+    /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
      *
      * If dim_==spacedim then the sign may be negative, otherwise the
@@ -415,23 +454,6 @@ public:
 
 protected:
     
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param fe_data Precomputed finite element data.
-     */
-    void fill_data(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FEValues<spacedim>, spacedim>::FEInternalData &fe_data);
-    
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure. Specialized variant of previous method for
-     * different FETypes given by template parameter.
-     */
-    template<class MapType>
-    void fill_data_specialized(const ElementValues<spacedim> &elm_values, const typename FEValuesBase<FEValues<spacedim>, spacedim>::FEInternalData &fe_data);
-
-
     /// Implement @p FEValuesBase::allocate_in
     void allocate_in() override;
 
@@ -447,13 +469,13 @@ protected:
 
     /// Auxiliary object for calculation of element-dependent data.
     std::shared_ptr<ElementValues<spacedim> > elm_values_;
-    
-    friend class MapScalar<spacedim>;
-    friend class MapPiola<spacedim>;
-    friend class MapContravariant<spacedim>;
-    friend class MapVector<spacedim>;
-    friend class MapTensor<spacedim>;
-    friend class MapSystem<spacedim>;
+
+    friend class MapScalar<FEValues<spacedim>, spacedim>;
+    friend class MapPiola<FEValues<spacedim>, spacedim>;
+    friend class MapContravariant<FEValues<spacedim>, spacedim>;
+    friend class MapVector<FEValues<spacedim>, spacedim>;
+    friend class MapTensor<FEValues<spacedim>, spacedim>;
+    friend class MapSystem<FEValues<spacedim>, spacedim>;
 };
 
 
@@ -465,10 +487,10 @@ template<unsigned int spacedim = 3>
 class PatchFEValues : public FEValuesBase<PatchFEValues<spacedim>, spacedim> {
 public:
     /// Constructor, set size of ElementData vector (maximal capacity)
-	PatchFEValues(unsigned int max_size);
+	PatchFEValues(unsigned int max_size=0);
 
-    /// Set new value of used_size_
-    void resize(unsigned int new_size);
+    /// Reinit data.
+    void reinit(std::vector<ElementAccessor<3>> elm_vec);
 
 	inline unsigned int used_size() const {
 	    return used_size_;
@@ -477,6 +499,39 @@ public:
 	inline unsigned int max_size() const {
 	    return element_data_.size();
 	}
+
+	inline void get_cell(const unsigned int cell_idx) {
+	    patch_cell_idx_ = cell_idx;
+	}
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
+    {
+        ASSERT_LT(function_no, this->n_dofs_);
+        ASSERT_LT(point_no, this->n_points_);
+        return element_data_[patch_cell_idx_].shape_values_[point_no][function_no];
+    }
+
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
+	{
+        ASSERT_LT(function_no, this->n_dofs_);
+        ASSERT_LT(point_no, this->n_points_);
+        return element_data_[patch_cell_idx_].shape_gradients_[point_no][function_no];
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -509,6 +564,50 @@ public:
     arma::vec::fixed<spacedim> shape_grad_component(const unsigned int function_no,
                                                            const unsigned int point_no,
                                                            const unsigned int comp) const;
+
+
+    /**
+     * Set shape value @p val of the @p i_point and @p i_func_comp.
+     */
+    inline void set_shape_value(unsigned int i_point, unsigned int i_func_comp, double val)
+    {
+        element_data_[patch_cell_idx_].shape_values_[i_point][i_func_comp] = val;
+    }
+
+    /**
+     * Set shape gradient @p val of the @p i_point and @p i_func_comp.
+     */
+    inline void set_shape_gradient(unsigned int i_point, unsigned int i_func_comp, arma::vec::fixed<spacedim> val)
+    {
+        element_data_[patch_cell_idx_].shape_gradients_[i_point][i_func_comp] = val;
+    }
+
+    /**
+     * @brief Return the relative volume change of the cell (Jacobian determinant).
+     *
+     * If dim_==spacedim then the sign may be negative, otherwise the
+     * result is a positive number.
+     *
+     * @param point_no Number of the quadrature point.
+     */
+    inline double determinant(const unsigned int point_no)
+    {
+        ASSERT_LT(point_no, this->n_points_);
+        return element_data_[patch_cell_idx_].elm_values_->determinant(point_no);
+    }
+
+    /**
+     * @brief Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param point_no Number of the quadrature point.
+     */
+    inline double JxW(const unsigned int point_no)
+    {
+        ASSERT_LT(point_no, this->n_points_);
+        // TODO: This is temporary solution only for JxW on element.
+        return element_data_[patch_cell_idx_].elm_values_->JxW(point_no);
+    }
 
 protected:
     class ElementFEData
@@ -546,6 +645,13 @@ protected:
     /// Number of elements on patch. Must be less or equal to size of element_data vector
     unsigned int used_size_;
 
+
+    friend class MapScalar<PatchFEValues<spacedim>, spacedim>;
+    friend class MapPiola<PatchFEValues<spacedim>, spacedim>;
+    friend class MapContravariant<PatchFEValues<spacedim>, spacedim>;
+    friend class MapVector<PatchFEValues<spacedim>, spacedim>;
+    friend class MapTensor<PatchFEValues<spacedim>, spacedim>;
+    friend class MapSystem<PatchFEValues<spacedim>, spacedim>;
 };
 
 
