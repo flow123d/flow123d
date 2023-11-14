@@ -490,7 +490,7 @@ public:
 	PatchFEValues(unsigned int max_size=0);
 
     /// Reinit data.
-    void reinit(std::vector<ElementAccessor<3>> elm_vec);
+    void reinit(const MeshBase *mesh, std::vector<unsigned int> elm_idx_vec);
 
 	inline unsigned int used_size() const {
 	    return used_size_;
