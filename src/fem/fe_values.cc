@@ -147,7 +147,7 @@ void FEValuesBase<FV, spacedim>::initialize(
         ASSERT(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         fe_values_vec.resize(fe->fe().size());
-        // TODO set max_size of PatchFEValues - virtual method ??
+        init_fe_val_vec();
         for (unsigned int f=0; f<fe->fe().size(); f++)
             fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
     }
@@ -643,6 +643,14 @@ void PatchFEValues<spacedim>::initialize_in(
 {
     for (uint i=0; i<max_size(); ++i)
         element_data_[i].elm_values_ = std::make_shared<ElementValues<spacedim> >(q, this->update_flags, dim);
+}
+
+
+template<unsigned int spacedim>
+void PatchFEValues<spacedim>::init_fe_val_vec()
+{
+    for (unsigned int i=0; i<this->fe_values_vec.size(); ++i)
+        this->fe_values_vec[i].resize( this->max_size() );
 }
 
 

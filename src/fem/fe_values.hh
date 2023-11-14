@@ -208,6 +208,9 @@ protected:
     /// Initialize ElementValues separately in descendants.
     virtual void initialize_in(Quadrature &, unsigned int) =0;
 
+    /// Initialize @p fe_values_vec only in PatchFEValues.
+    virtual void init_fe_val_vec() =0;
+
     /// Precompute finite element data on reference element.
     template<unsigned int DIM>
     std::shared_ptr<typename FEValuesBase<FV, spacedim>::FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
@@ -453,12 +456,16 @@ public:
 	
 
 protected:
-    
+
     /// Implement @p FEValuesBase::allocate_in
     void allocate_in() override;
 
     /// Implement @p FEValuesBase::initialize_in
     void initialize_in(Quadrature &q, unsigned int dim) override;
+
+    /// Implement @p FEValuesBase::initialize_in
+    void init_fe_val_vec() override
+    {}
 
     /// Shape functions evaluated at the quadrature points.
     std::vector<std::vector<double> > shape_values_;
@@ -627,11 +634,19 @@ protected:
 
     };
 
+    /// Set size of ElementFEData. Important: Use only during the initialization of FESystem !
+    void resize(unsigned int max_size) {
+        element_data_.resize(max_size);
+    }
+
     /// Implement @p FEValuesBase::allocate_in
     void allocate_in() override;
 
     /// Implement @p FEValuesBase::initialize_in
     void initialize_in(Quadrature &q, unsigned int dim) override;
+
+    /// Implement @p FEValuesBase::initialize_in
+    void init_fe_val_vec() override;
 
     /// Patch index of processed element.
     unsigned int patch_cell_idx_;
