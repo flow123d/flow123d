@@ -26,7 +26,8 @@ public:
 
     /// Constructor.
     Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_values_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -51,15 +52,21 @@ public:
     }
 
 
+    /// Reinit PatchFEValues objects (all computed elements in one step).
+    void patch_reinit(const std::vector<unsigned int> &elm_idx_vec) override
+    {
+        fe_values_.reinit(eq_data_->dh_->mesh(), elm_idx_vec);
+    }
+
+
     /// Assemble integral over element
     inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        ElementAccessor<3> elm = cell.elm();
         unsigned int k;
 
-        fe_values_.reinit(elm);
+        fe_values_.get_cell(element_patch_idx);
         cell.get_dof_indices(dof_indices_);
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
@@ -113,7 +120,7 @@ public:
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
@@ -168,6 +175,8 @@ public:
     ~Mass_EvalFields() {}
 
     void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+
+    void patch_reinit(const std::vector<unsigned int> &elm_idx_vec) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
