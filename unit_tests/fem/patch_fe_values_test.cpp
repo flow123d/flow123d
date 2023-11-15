@@ -71,15 +71,16 @@ public:
             patch_fe_values.get_cell(i);
 
             // Loops are swapped, JxW and determinant don't depend on dofs
-            for (unsigned int k=0; k<patch_fe_values.n_points(); k++)
+            for (unsigned int i_point=0; i_point<patch_fe_values.n_points(); i_point++)
             {
-                for (unsigned int j=0; j<patch_fe_values.n_dofs(); j++)
-                {
-                    EXPECT_EQ(fe_values.shape_value(j,k), patch_fe_values.shape_value(j,k));
-                    EXPECT_ARMA_EQ(fe_values.shape_grad(j,k), patch_fe_values.shape_grad(j,k));
-                }
-                EXPECT_EQ(fe_values.JxW(k), patch_fe_values.JxW(k));
-                //EXPECT_EQ(fe_values.determinant(k), patch_fe_values.determinant(k));
+                for (unsigned int i_dof=0; i_dof<patch_fe_values.n_dofs(); i_dof++)
+                    for (unsigned int i_comp=0; i_comp<fe->n_space_components(3); i_comp++)
+                    {
+                        EXPECT_EQ(fe_values.shape_value_component(i_dof, i_point, i_comp), patch_fe_values.shape_value_component(i_dof, i_point, i_comp));
+                        EXPECT_ARMA_EQ(fe_values.shape_grad_component(i_dof, i_point, i_comp), patch_fe_values.shape_grad_component(i_dof, i_point, i_comp));
+                    }
+                EXPECT_EQ(fe_values.JxW(i_point), patch_fe_values.JxW(i_point));
+                //EXPECT_EQ(fe_values.determinant(i_point), patch_fe_values.determinant(i_point));
             }
         }
     }
