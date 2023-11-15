@@ -602,11 +602,14 @@ PatchFEValues<spacedim>::PatchFEValues(unsigned int max_size)
 
 
 template<unsigned int spacedim>
-void PatchFEValues<spacedim>::reinit(const MeshBase *mesh, std::vector<unsigned int> elm_idx_vec) {
+void PatchFEValues<spacedim>::reinit(const MeshBase *mesh, const std::vector<unsigned int> &elm_idx_vec) {
     ASSERT_LE(elm_idx_vec.size(), max_size());
     used_size_ = elm_idx_vec.size();
 
     for (unsigned int i=0; i<used_size_; ++i) {
+        // Skip invalid element indices.
+        if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
+
         ElementAccessor<3> elm(mesh, elm_idx_vec[i]);
 
     	// skip elements of different dimensions

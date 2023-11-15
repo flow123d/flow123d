@@ -269,6 +269,14 @@ private:
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
+
+        START_TIMER("patch_reinit");
+        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
+        multidim_assembly_[1_d]->patch_reinit(elm_idx_vec);
+        multidim_assembly_[2_d]->patch_reinit(elm_idx_vec);
+        multidim_assembly_[3_d]->patch_reinit(elm_idx_vec);
+        END_TIMER("patch_reinit");
+
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
