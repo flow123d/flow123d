@@ -220,7 +220,14 @@ public:
 
     /// Return mesh_idx of element stored at given position of ElementCacheMap
     inline unsigned int elm_idx_on_position(unsigned pos) const {
-        return elm_idx_[pos];
+        if (elm_idx_[pos] == ElementCacheMap::undef_elem_idx) return bdr_elm_idx_[pos];
+        else return elm_idx_[pos];
+    }
+
+    /// Return vector of bulk/boundary element idx
+    inline const std::vector<unsigned int> &elm_idx_vec(bool bdr = false) const {
+        if (bdr) return bdr_elm_idx_;
+        else return elm_idx_;
     }
 
     /// Return position of element stored in ElementCacheMap
@@ -319,8 +326,11 @@ protected:
     }
 
 
-    /// Vector of element indexes stored in cache.
+    /// Vector of bulk element indexes stored in cache.
     std::vector<unsigned int> elm_idx_;
+
+    /// Vector of boundary element indexes stored in cache.
+    std::vector<unsigned int> bdr_elm_idx_;
 
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
