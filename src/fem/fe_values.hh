@@ -93,7 +93,7 @@ public:
      * @param flags       The update flags.
      */
     template<unsigned int DIM>
-    void allocate(unsigned int n_points,
+    void allocate(Quadrature &_quadrature,
                   FiniteElement<DIM> &_fe,
                   UpdateFlags flags);
 
@@ -203,7 +203,7 @@ protected:
 
 
     /// Initialize vectors declared separately in descendants.
-    virtual void allocate_in() =0;
+    virtual void allocate_in(unsigned int) =0;
 
     /// Initialize ElementValues separately in descendants.
     virtual void initialize_in(Quadrature &, unsigned int) =0;
@@ -458,7 +458,7 @@ public:
 protected:
 
     /// Implement @p FEValuesBase::allocate_in
-    void allocate_in() override;
+    void allocate_in(unsigned int q_dim) override;
 
     /// Implement @p FEValuesBase::initialize_in
     void initialize_in(Quadrature &q, unsigned int dim) override;
@@ -493,7 +493,7 @@ protected:
 template<unsigned int spacedim = 3>
 class PatchFEValues : public FEValuesBase<PatchFEValues<spacedim>, spacedim> {
 public:
-    /// Constructor, set size of ElementData vector (maximal capacity)
+    /// Constructor, set maximal number of elements on patch
 	PatchFEValues(unsigned int max_size=0);
 
     /// Reinit data.
@@ -507,8 +507,14 @@ public:
 	    return element_data_.size();
 	}
 
-	inline void get_cell(const unsigned int cell_idx) {
-	    patch_cell_idx_ = cell_idx;
+	/// Set element that is selected for processing. Element is given by index on patch.
+	inline void get_cell(const unsigned int patch_cell_idx) {
+	    patch_data_idx_ = patch_cell_idx;
+	}
+
+	/// Set element and side that are selected for processing. Element is given by index on patch.
+	inline void get_side(unsigned int patch_cell_idx, unsigned int side_idx) {
+	    patch_data_idx_ = patch_cell_idx * (this->dim_+1) + side_idx;
 	}
 
     /**
@@ -522,7 +528,7 @@ public:
     {
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
-        return element_data_[patch_cell_idx_].shape_values_[point_no][function_no];
+        return element_data_[patch_data_idx_].shape_values_[point_no][function_no];
     }
 
 
@@ -537,7 +543,7 @@ public:
 	{
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
-        return element_data_[patch_cell_idx_].shape_gradients_[point_no][function_no];
+        return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no];
     }
 
     /**
@@ -556,7 +562,7 @@ public:
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
         ASSERT_LT(comp, this->n_components_);
-        return element_data_[patch_cell_idx_].shape_values_[point_no][function_no*this->n_components_+comp];
+        return element_data_[patch_data_idx_].shape_values_[point_no][function_no*this->n_components_+comp];
     }
 
     /**
@@ -578,7 +584,7 @@ public:
      */
     inline void set_shape_value(unsigned int i_point, unsigned int i_func_comp, double val)
     {
-        element_data_[patch_cell_idx_].shape_values_[i_point][i_func_comp] = val;
+        element_data_[patch_data_idx_].shape_values_[i_point][i_func_comp] = val;
     }
 
     /**
@@ -586,7 +592,7 @@ public:
      */
     inline void set_shape_gradient(unsigned int i_point, unsigned int i_func_comp, arma::vec::fixed<spacedim> val)
     {
-        element_data_[patch_cell_idx_].shape_gradients_[i_point][i_func_comp] = val;
+        element_data_[patch_data_idx_].shape_gradients_[i_point][i_func_comp] = val;
     }
 
     /**
@@ -600,7 +606,7 @@ public:
     inline double determinant(const unsigned int point_no)
     {
         ASSERT_LT(point_no, this->n_points_);
-        return element_data_[patch_cell_idx_].elm_values_->determinant(point_no);
+        return element_data_[patch_data_idx_].elm_values_->determinant(point_no);
     }
 
     /**
@@ -613,10 +619,15 @@ public:
     {
         ASSERT_LT(point_no, this->n_points_);
         // TODO: This is temporary solution only for JxW on element.
-        return element_data_[patch_cell_idx_].elm_values_->JxW(point_no);
+        return element_data_[patch_data_idx_].elm_values_->JxW(point_no);
     }
 
 protected:
+    enum MeshObjectType {
+        ElementFE = 0,
+		SideFE = 1
+    };
+
     class ElementFEData
     {
     public:
@@ -640,7 +651,7 @@ protected:
     }
 
     /// Implement @p FEValuesBase::allocate_in
-    void allocate_in() override;
+    void allocate_in(unsigned int q_dim) override;
 
     /// Implement @p FEValuesBase::initialize_in
     void initialize_in(Quadrature &q, unsigned int dim) override;
@@ -648,17 +659,20 @@ protected:
     /// Implement @p FEValuesBase::initialize_in
     void init_fe_val_vec() override;
 
-    /// Patch index of processed element.
-    unsigned int patch_cell_idx_;
+    /// Patch index of processed element / side.
+    unsigned int patch_data_idx_;
 
-    /// Index of patch of processed element.
-    unsigned int side_idx_;
-
-    /// Data of elements on patch
+    /// Data of elements / sides on patch
     std::vector<ElementFEData> element_data_;
 
-    /// Number of elements on patch. Must be less or equal to size of element_data vector
+    /// Number of elements / sides on patch. Must be less or equal to size of element_data vector
     unsigned int used_size_;
+
+    /// Maximal number of elements on patch.
+    unsigned int max_n_elem_;
+
+    /// Distinguishes using of PatchFEValues for storing data of elements or sides.
+    MeshObjectType object_type_;
 
 
     friend class MapScalar<PatchFEValues<spacedim>, spacedim>;

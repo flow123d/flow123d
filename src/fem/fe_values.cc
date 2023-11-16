@@ -137,7 +137,7 @@ void FEValuesBase<FV, spacedim>::initialize(
     if (DIM == 0) //return; // avoid unnecessary allocation of dummy 0 dimensional objects
     	ASSERT(q.size() == 1);
 
-    this->allocate( q.size(), _fe, _flags);
+    this->allocate( q, _fe, _flags);
     this->initialize_in(q, DIM);
 
     // In case of mixed system allocate data for sub-elements.
@@ -174,7 +174,7 @@ void FEValuesBase<FV, spacedim>::initialize(
 template<class FV, unsigned int spacedim>
 template<unsigned int DIM>
 void FEValuesBase<FV, spacedim>::allocate(
-        unsigned int n_points,
+        Quadrature &_q,
         FiniteElement<DIM> & _fe,
         UpdateFlags _flags)
 {
@@ -191,7 +191,7 @@ void FEValuesBase<FV, spacedim>::allocate(
     fe_sys_n_space_components_.clear();
     
     dim_ = DIM;
-    n_points_ = n_points;
+    n_points_ = _q.size();
     n_dofs_ = _fe.n_dofs();
     n_components_ = _fe.n_space_components(spacedim);
     fe_type_ = _fe.type_;
@@ -209,7 +209,7 @@ void FEValuesBase<FV, spacedim>::allocate(
     // add flags required by the finite element or mapping
     update_flags = _flags | _fe.update_each(_flags);
     update_flags |= MappingP1<DIM,spacedim>::update_each(update_flags);
-    this->allocate_in();
+    this->allocate_in(_q.dim());
 
     views_cache_.initialize(*this->fv_, _fe);
 }
@@ -329,7 +329,7 @@ void FEValues<spacedim>::initialize_in (
 
 
 template<unsigned int spacedim>
-void FEValues<spacedim>::allocate_in()
+void FEValues<spacedim>::allocate_in(FMT_UNUSED unsigned int q_dim)
 {
     if (this->update_flags & update_values)
         shape_values_.resize(this->n_points_, vector<double>(this->n_dofs_*this->n_components_));
@@ -596,36 +596,55 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
 template<unsigned int spacedim>
 PatchFEValues<spacedim>::PatchFEValues(unsigned int max_size)
 : FEValuesBase<PatchFEValues<spacedim>, spacedim>(),
-  patch_cell_idx_(-1), side_idx_(-1), used_size_(0) {
-    element_data_.resize(max_size);
-}
+  patch_data_idx_(-1), used_size_(0), max_n_elem_(max_size) {}
 
 
 template<unsigned int spacedim>
 void PatchFEValues<spacedim>::reinit(const MeshBase *mesh, const std::vector<unsigned int> &elm_idx_vec) {
-    ASSERT_LE(elm_idx_vec.size(), max_size());
-    used_size_ = elm_idx_vec.size();
+    if (object_type_ == ElementFE)
+        used_size_ = elm_idx_vec.size();
+    else
+        used_size_ = elm_idx_vec.size() * (this->dim_+1);
+    ASSERT_LE(used_size_, max_size());
 
-    for (unsigned int i=0; i<used_size_; ++i) {
+    for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
         // Skip invalid element indices.
         if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
 
         ElementAccessor<3> elm(mesh, elm_idx_vec[i]);
 
-    	// skip elements of different dimensions
-    	if ( this->dim_ != elm.dim() ) continue;
+        // skip elements of different dimensions
+        if ( this->dim_ != elm.dim() ) continue;
 
-        this->patch_cell_idx_ = i;
-    	element_data_[i].elm_values_->reinit(elm);
-        this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+        if (object_type_ == ElementFE) {
+            patch_data_idx_ = i;
+            element_data_[i].elm_values_->reinit(elm);
+            this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+        } else {
+            for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
+                patch_data_idx_ = i * (this->dim_+1) + sid;
+                element_data_[patch_data_idx_].elm_values_->reinit( *elm.side(sid) );
+                this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
+
+            }
+        }
     }
 }
 
 
 template<unsigned int spacedim>
-void PatchFEValues<spacedim>::allocate_in()
+void PatchFEValues<spacedim>::allocate_in(unsigned int q_dim)
 {
-    ASSERT_PERMANENT_GT(max_size(), 0);
+    ASSERT_PERMANENT_GT(this->max_n_elem_, 0);
+
+    if ( q_dim == this->dim_ ) {
+        element_data_.resize( this->max_n_elem_ );
+        object_type_ = ElementFE;
+    } else if ( q_dim+1 == this->dim_ ) {
+        element_data_.resize( this->max_n_elem_ * (this->dim_+1) );
+        object_type_ = SideFE;
+    } else
+        ASSERT(false)(q_dim)(this->dim_).error("Invalid dimension of quadrature!");
 
     for (uint i=0; i<max_size(); ++i) {
         if (this->update_flags & update_values)
@@ -662,10 +681,10 @@ arma::vec::fixed<spacedim> PatchFEValues<spacedim>::shape_grad_component(const u
                                                         const unsigned int point_no,
                                                         const unsigned int comp) const
 {
-  ASSERT_LT(function_no, this->n_dofs_);
-  ASSERT_LT(point_no, this->n_points_);
-  ASSERT_LT(comp, this->n_components_);
-  return element_data_[patch_cell_idx_].shape_gradients_[point_no][function_no*this->n_components_+comp];
+    ASSERT_LT(function_no, this->n_dofs_);
+    ASSERT_LT(point_no, this->n_points_);
+    ASSERT_LT(comp, this->n_components_);
+    return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no*this->n_components_+comp];
 }
 
 
