@@ -209,6 +209,11 @@ Elasticity::EqFields::EqFields()
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
     
+    *this+=output_cross_section_old
+      .name("cross_section_old")
+      .units( UnitSI().m(3).md() )
+      .flags(equation_external_output & input_copy);
+    
     *this+=cross_section_min
       .name("cross_section_min")
       .description("Minimal cross-section of fractures.")

@@ -112,10 +112,17 @@ public:
             for (unsigned int i=0; i<n_dofs_; i++)
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
-                    local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
+                    if (dim == 1)
+                    {
+                        local_matrix_[i*n_dofs_+j] += arma::dot(vec_view_->value(j,k), vec_view_->value(i,k))*fe_values_.JxW(k);
+                    }
+                    else
+                    {
+                        local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
                                                 2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
                                                 + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
                                                )*fe_values_.JxW(k);
+                    }
             }
             k++;
         }
@@ -147,7 +154,7 @@ public:
             for (auto p : this->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
+                        if (dim>0) local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
                                 arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * fe_values_side_.JxW(k);
                 k++;
             }
@@ -158,7 +165,7 @@ public:
             for (auto p : this->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
+                        if (dim>0) local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
                                 arma::dot(vec_view_side_->value(i,k), fe_values_side_.normal_vector(k)) *
                                 arma::dot(vec_view_side_->value(j,k), fe_values_side_.normal_vector(k)) * fe_values_side_.JxW(k);
                 k++;
@@ -207,8 +214,8 @@ public:
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
-                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                    arma::vec3 vf = arma::zeros(3); //(n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+                    arma::mat33 gvft = arma::zeros(3,3); //(n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
 
                     for (int m=0; m<2; m++)
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
@@ -424,7 +431,7 @@ public:
             {
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
-                    local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
+                    if (dim>0) local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
 					        arma::dot(eq_fields_->bc_displacement(p_bdr), vec_view_bdr_->value(i,k)) *
 					        fe_values_bdr_side_.JxW(k);
                 ++k;
@@ -437,7 +444,7 @@ public:
             {
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
-                    local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
+                    if (dim>0) local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
                             arma::dot(eq_fields_->bc_displacement(p_bdr), fe_values_bdr_side_.normal_vector(k)) *
                             arma::dot(vec_view_bdr_->value(i,k), fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
@@ -515,10 +522,10 @@ public:
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+                    arma::vec3 vf = arma::zeros(3); //(n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
 
-                    local_rhs_ngh_[n][i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
-                            arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * fe_values_sub_.JxW(k);
+                    local_rhs_ngh_[n][i] -= /*eq_fields_->fracture_sigma(p_low) */ eq_fields_->cross_section(p_high) *
+                            arma::dot(vf-vi, eq_fields_->potential_load(p_low) * nv) * fe_values_sub_.JxW(k);
                 }
             }
             ++k;
@@ -634,7 +641,7 @@ public:
         {
             stress += (2*eq_fields_->lame_mu(p)*vec_view_->sym_grad(i,0) + eq_fields_->lame_lambda(p)*vec_view_->divergence(i,0)*arma::eye(3,3))
                     * output_vec_.get(dof_indices_[i]);
-            div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
+            if (dim != 1) div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
         }
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
