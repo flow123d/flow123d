@@ -22,6 +22,7 @@
 #include "fields/eval_subset.hh"
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
+#include "fem/fe_values.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
 
@@ -235,7 +236,7 @@ public:
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
                 element_cache_map_.eval_point_data_.revert_temporary();
-                this->assemble_integrals();
+                this->assemble_integrals(dh);
                 add_into_patch = false;
             } else {
                 bulk_integral_data_.make_permanent();
@@ -244,14 +245,14 @@ public:
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.eval_point_data_.make_permanent();
                 if (element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
-                    this->assemble_integrals();
+                    this->assemble_integrals(dh);
                     add_into_patch = false;
                 }
                 ++cell_it;
             }
         }
         if (add_into_patch) {
-            this->assemble_integrals();
+            this->assemble_integrals(dh);
         }
 
         multidim_assembly_[1_d]->end();
@@ -265,12 +266,12 @@ public:
 
 private:
     /// Call assemblations when patch is filled
-    void assemble_integrals() {
+    void assemble_integrals(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
         START_TIMER("patch_reinit");
-        patch_reinit();
+        patch_reinit(dh);
         END_TIMER("patch_reinit");
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_); // TODO replace with sub FieldSet
@@ -315,7 +316,7 @@ private:
         element_cache_map_.clear_element_eval_points_map();
     }
 
-    void patch_reinit() {
+    void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
         const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
         std::array<PatchElementsList, 3> patch_elements;
 
@@ -323,7 +324,7 @@ private:
             // Skip invalid element indices.
             if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
 
-            ElementAccessor<3> elm(mesh, elm_idx_vec[i]);
+            ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
             patch_elements[elm.dim()-1].push_back(std::make_pair(elm, i));
         }
         multidim_assembly_[1_d]->patch_reinit(patch_elements[0]);
