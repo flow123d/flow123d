@@ -72,9 +72,9 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(const std::vector<unsigned int> &elm_idx_vec) override
+    void patch_reinit(PatchElementsList patch_elements) override
     {
-        fe_values_.reinit(eq_data_->dh_->mesh(), elm_idx_vec);
+        fe_values_.reinit(patch_elements);
     }
 
 

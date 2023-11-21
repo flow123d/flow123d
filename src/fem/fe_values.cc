@@ -600,30 +600,26 @@ PatchFEValues<spacedim>::PatchFEValues(unsigned int max_size)
 
 
 template<unsigned int spacedim>
-void PatchFEValues<spacedim>::reinit(const MeshBase *mesh, const std::vector<unsigned int> &elm_idx_vec) {
+void PatchFEValues<spacedim>::reinit(PatchElementsList patch_elements) {
+    element_patch_map_.clear();
     if (object_type_ == ElementFE)
-        used_size_ = elm_idx_vec.size();
+        used_size_ = patch_elements.size();
     else
-        used_size_ = elm_idx_vec.size() * (this->dim_+1);
+        used_size_ = patch_elements.size() * (this->dim_+1);
     ASSERT_LE(used_size_, max_size());
 
-    for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
-        // Skip invalid element indices.
-        if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
-
-        ElementAccessor<3> elm(mesh, elm_idx_vec[i]);
-
-        // skip elements of different dimensions
-        if ( this->dim_ != elm.dim() ) continue;
-
+    unsigned int i=0;
+    for (auto it=patch_elements.begin(); it!=patch_elements.end(); ++it, ++i) {
         if (object_type_ == ElementFE) {
             patch_data_idx_ = i;
-            element_data_[i].elm_values_->reinit(elm);
+            element_patch_map_[it->second] = i;
+            element_data_[i].elm_values_->reinit(it->first);
             this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
         } else {
+            element_patch_map_[it->second] = i * (this->dim_+1);
             for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
                 patch_data_idx_ = i * (this->dim_+1) + sid;
-                element_data_[patch_data_idx_].elm_values_->reinit( *elm.side(sid) );
+                element_data_[patch_data_idx_].elm_values_->reinit( *it->first.side(sid) );
                 this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
 
             }

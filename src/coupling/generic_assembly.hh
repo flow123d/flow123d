@@ -269,14 +269,9 @@ private:
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
-
         START_TIMER("patch_reinit");
-        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
-        multidim_assembly_[1_d]->patch_reinit(elm_idx_vec);
-        multidim_assembly_[2_d]->patch_reinit(elm_idx_vec);
-        multidim_assembly_[3_d]->patch_reinit(elm_idx_vec);
+        patch_reinit();
         END_TIMER("patch_reinit");
-
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
@@ -318,6 +313,22 @@ private:
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
+    }
+
+    void patch_reinit() {
+        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
+        std::array<PatchElementsList, 3> patch_elements;
+
+        for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
+            // Skip invalid element indices.
+            if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
+
+            ElementAccessor<3> elm(mesh, elm_idx_vec[i]);
+            patch_elements[elm.dim()-1].push_back(std::make_pair(elm, i));
+        }
+        multidim_assembly_[1_d]->patch_reinit(patch_elements[0]);
+        multidim_assembly_[2_d]->patch_reinit(patch_elements[1]);
+        multidim_assembly_[3_d]->patch_reinit(patch_elements[2]);
     }
 
     /**

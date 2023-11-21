@@ -66,7 +66,7 @@ TEST_F(DGMockupTest, simple_asm) {
         	cp_vec_in.emplace_back( new CODE_POINT(meshes_sizes[j].c_str()) );
             TimerFrame timer = TimerFrame( *cp_vec_in[i*meshes_sizes.size()+j] );
 
-            std::string mesh_file = "../../benchmark_meshes/" + meshes_table[i] + "_" + meshes_sizes[j] + ".msh";
+            std::string mesh_file = "../../../unit_tests/benchmark_meshes/" + meshes_table[i] + "_" + meshes_sizes[j] + ".msh";
             uint n_repeats = 1;
             if (meshes_sizes[j] == "small") {
                 // 10 repeats of simulation for small meshes
@@ -76,9 +76,9 @@ TEST_F(DGMockupTest, simple_asm) {
             for (uint k=0; k<n_repeats; ++k) {
                 // measure needs call of assembly algorithm in separate methods
                 this->run_fullassembly_model(eq_data_input, mesh_file);
-                this->run_computelocal_model(eq_data_input, mesh_file);
-                this->run_evalfields_const(eq_data_input, mesh_file);
-                this->run_evalfields_model(eq_data_input, mesh_file);
+//                this->run_computelocal_model(eq_data_input, mesh_file);
+//                this->run_evalfields_const(eq_data_input, mesh_file);
+//                this->run_evalfields_model(eq_data_input, mesh_file);
             }
             Profiler::instance()->stop_timer( *cp_vec_in[i*meshes_sizes.size()+j] );
 

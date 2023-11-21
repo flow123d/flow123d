@@ -52,6 +52,10 @@ template<unsigned int spcedim> class PatchFEValues;
 
 
 
+
+typedef std::list< std::pair<ElementAccessor<3>, unsigned int> > PatchElementsList;
+
+
 template<class FV, unsigned int spacedim = 3>
 class FEValuesBase
 {
@@ -497,7 +501,7 @@ public:
 	PatchFEValues(unsigned int max_size=0);
 
     /// Reinit data.
-    void reinit(const MeshBase *mesh, const std::vector<unsigned int> &elm_idx_vec);
+    void reinit(PatchElementsList patch_elements);
 
 	inline unsigned int used_size() const {
 	    return used_size_;
@@ -509,12 +513,12 @@ public:
 
 	/// Set element that is selected for processing. Element is given by index on patch.
 	inline void get_cell(const unsigned int patch_cell_idx) {
-	    patch_data_idx_ = patch_cell_idx;
+	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second;
 	}
 
 	/// Set element and side that are selected for processing. Element is given by index on patch.
 	inline void get_side(unsigned int patch_cell_idx, unsigned int side_idx) {
-	    patch_data_idx_ = patch_cell_idx * (this->dim_+1) + side_idx;
+	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second * (this->dim_+1) + side_idx;
 	}
 
     /**
@@ -661,6 +665,9 @@ protected:
 
     /// Patch index of processed element / side.
     unsigned int patch_data_idx_;
+
+    /// Map of element patch indexes to element_data_.
+    std::map<unsigned int, unsigned int> element_patch_map_;
 
     /// Data of elements / sides on patch
     std::vector<ElementFEData> element_data_;
