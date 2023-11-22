@@ -623,8 +623,21 @@ public:
     {
         ASSERT_LT(point_no, this->n_points_);
         // TODO: This is temporary solution only for JxW on element.
-        return element_data_[patch_data_idx_].elm_values_->JxW(point_no);
+        return (object_type_==ElementFE) ? element_data_[patch_data_idx_].elm_values_->JxW(point_no)
+                                         : element_data_[patch_data_idx_].elm_values_->side_JxW(point_no);
     }
+
+    /**
+     * @brief Returns the normal vector to a side at given quadrature point.
+     *
+     * @param point_no Number of the quadrature point.
+     */
+	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
+	{
+        ASSERT_LT(point_no, this->n_points_);
+	    return element_data_[patch_data_idx_].elm_values_->normal_vector(point_no);
+	}
+
 
 protected:
     enum MeshObjectType {
