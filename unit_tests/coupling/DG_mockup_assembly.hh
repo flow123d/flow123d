@@ -405,6 +405,7 @@ public:
             ++sid;
         }
         arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
+        unsigned int n_dofs = fe_values_vec_[0].n_dofs();
 
         // fluxes and penalty
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -504,11 +505,10 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
                         {
-                            for (int n=0; n<2; n++)
-                            {
-                                jumps[n][k*fe_->n_dofs()+i] = (n==0)*fe_values_vec_[s1].shape_value(i,k) - (n==1)*fe_values_vec_[s2].shape_value(i,k);
-                                waverages[n][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi]( (n==0 ? p1 : p2) )*fe_values_vec_[sd[n]].shape_grad(i,k),nv)*omega[n];
-                            }
+                            jumps[0][k*fe_->n_dofs()+i] = fe_values_vec_[s1].shape_value(i,k);
+                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*fe_values_vec_[s1].shape_grad(i,k),nv)*omega[0];
+                            jumps[1][k*fe_->n_dofs()+i] = - fe_values_vec_[s2].shape_value(i,k);
+                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*fe_values_vec_[s2].shape_grad(i,k),nv)*omega[1];
                         }
                         k++;
                     }
@@ -520,17 +520,17 @@ public:
 
                         for (int m=0; m<2; m++)
                         {
-                            for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
-                                for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
-                                    local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
+                            for (unsigned int i=0; i<n_dofs; i++)
+                                for (unsigned int j=0; j<n_dofs; j++)
+                                    local_matrix_[i*n_dofs+j] = 0;
 
                             for (k=0; k<this->quad_low_->size(); ++k)
                             {
-                                for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
+                                for (unsigned int i=0; i<n_dofs; i++)
                                 {
-                                    for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
+                                    for (unsigned int j=0; j<n_dofs; j++)
                                     {
-                                        int index = i*fe_values_vec_[sd[m]].n_dofs()+j;
+                                        int index = i*n_dofs+j;
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
@@ -546,7 +546,7 @@ public:
                                     }
                                 }
                             }
-                            this->edge_integral_set_values(sbi, m, n, sd);
+                            this->edge_integral_set_values(sbi, n_dofs, m, n, sd);
                         }
                     }
                 }
@@ -641,8 +641,8 @@ protected:
         this->eq_data_->ls[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
     }
 
-    virtual void edge_integral_set_values(unsigned int sbi, int m, int n, int sd[2]) {
-        this->eq_data_->ls[sbi]->mat_set_values(this->fe_values_vec_[sd[n]].n_dofs(), &(this->side_dof_indices_[sd[n]][0]), this->fe_values_vec_[sd[m]].n_dofs(), &(this->side_dof_indices_[sd[m]][0]), &(this->local_matrix_[0]));
+    virtual void edge_integral_set_values(unsigned int sbi, unsigned int n_dofs, int m, int n, int sd[2]) {
+        this->eq_data_->ls[sbi]->mat_set_values(n_dofs, &(this->side_dof_indices_[sd[n]][0]), n_dofs, &(this->side_dof_indices_[sd[m]][0]), &(this->local_matrix_[0]));
     }
 
     virtual void dimjoin_intergral_set_values(unsigned int sbi, unsigned int n_dofs[2]) {
@@ -704,7 +704,7 @@ protected:
 
     void boundary_side_integral_set_values(unsigned int sbi) override {}
 
-    void edge_integral_set_values(unsigned int sbi, int m, int n, int sd[2]) override {}
+    void edge_integral_set_values(unsigned int sbi, unsigned int n_dofs, int m, int n, int sd[2]) override {}
 
     void dimjoin_intergral_set_values(unsigned int sbi, unsigned int n_dofs[2]) override {}
 
