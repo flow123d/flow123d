@@ -198,7 +198,9 @@ public:
 
     /// Constructor.
     Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_values_(CacheMapElementNumber::get()),
+	  fe_values_edge_(CacheMapElementNumber::get()) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -236,13 +238,14 @@ public:
         side_dof_indices_vb_.resize(2*ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
 
-        fe_values_vec_.resize(eq_data_->max_edg_sides);
+        edge_values_map_.element_patch_idx_.resize(eq_data_->max_edg_sides);
+		edge_values_map_.side_idx_.resize(eq_data_->max_edg_sides);
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
-            fe_values_vec_[sid].initialize(*this->quad_low_, *fe_,
-                    update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
         }
+        fe_values_edge_.initialize(*this->quad_low_, *fe_,
+                update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
 
         // index 0 = element with lower dimension,
         // index 1 = side of element with higher dimension
@@ -263,15 +266,20 @@ public:
     }
 
 
+    /// Reinit PatchFEValues objects (all computed elements in one step).
+    void patch_reinit(PatchElementsList patch_elements) override
+    {
+        fe_values_.reinit(patch_elements);
+    }
+
+
     /// Assembles the cell (volume) integral into the stiffness matrix.
     inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
 
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values_.reinit(elm);
+        fe_values_.get_cell(element_patch_idx);
         cell.get_dof_indices(dof_indices_);
         unsigned int k;
 
@@ -401,11 +409,13 @@ public:
         {
             auto dh_edge_cell = eq_data_->dh_->cell_accessor_from_element( edge_side.elem_idx() );
             dh_edge_cell.get_dof_indices(side_dof_indices_[sid]);
-            fe_values_vec_[sid].reinit(edge_side.side());
+            edge_values_map_.element_patch_idx_[sid] = this->element_cache_map_->position_in_cache(edge_side.elem_idx());
+    		edge_values_map_.side_idx_[sid] = edge_side.side_idx();
             ++sid;
         }
-        arma::vec3 normal_vector = fe_values_vec_[0].normal_vector(0);
-        unsigned int n_dofs = fe_values_vec_[0].n_dofs();
+        fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[0], edge_values_map_.side_idx_[0]);
+        arma::vec3 normal_vector = fe_values_edge_.normal_vector(0);
+        unsigned int n_dofs = fe_values_edge_.n_dofs();
 
         // fluxes and penalty
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -417,8 +427,9 @@ public:
             {
                 fluxes[sid] = 0;
                 k=0;
+                fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[sid], edge_values_map_.side_idx_[sid]);
                 for (auto p : this->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_vec_[sid].normal_vector(k))*fe_values_vec_[sid].JxW(k);
+                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_edge_.normal_vector(k))*fe_values_edge_.JxW(k);
                     k++;
                 }
                 fluxes[sid] /= edge_side.measure();
@@ -436,8 +447,9 @@ public:
                 (void)edge_side;
                 for (unsigned int k=0; k<qsize_lower_dim_; k++)
                 {
+                    fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s1], edge_values_map_.side_idx_[s1]);
                     for (unsigned int i=0; i<fe_->n_dofs(); i++)
-                        averages[s1][k*fe_->n_dofs()+i] = fe_values_vec_[s1].shape_value(i,k)*0.5;
+                        averages[s1][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,k)*0.5;
                 }
                 s1++;
             }
@@ -453,7 +465,8 @@ public:
                     if (s2<=s1) continue;
                     ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
-                    arma::vec3 nv = fe_values_vec_[s1].normal_vector(0);
+                    fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s1], edge_values_map_.side_idx_[s1]);
+                    arma::vec3 nv = fe_values_edge_.normal_vector(0);
 
                     // set up the parameters for DG method
                     // calculate the flux from edge_side1 to edge_side2
@@ -505,14 +518,17 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
                         {
-                            jumps[0][k*fe_->n_dofs()+i] = fe_values_vec_[s1].shape_value(i,k);
-                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*fe_values_vec_[s1].shape_grad(i,k),nv)*omega[0];
-                            jumps[1][k*fe_->n_dofs()+i] = - fe_values_vec_[s2].shape_value(i,k);
-                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*fe_values_vec_[s2].shape_grad(i,k),nv)*omega[1];
+                            fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s1], edge_values_map_.side_idx_[s1]);
+                            jumps[0][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,k);
+                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*fe_values_edge_.shape_grad(i,k),nv)*omega[0];
+                            fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s2], edge_values_map_.side_idx_[s2]);
+                            jumps[1][k*fe_->n_dofs()+i] = - fe_values_edge_.shape_value(i,k);
+                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*fe_values_edge_.shape_grad(i,k),nv)*omega[1];
                         }
                         k++;
                     }
 
+                    fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[0], edge_values_map_.side_idx_[0]);
                     // For selected pair of elements:
                     for (int n=0; n<2; n++)
                     {
@@ -542,7 +558,7 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
                                             - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_vec_[0].JxW(k) + LocalSystem::almost_zero;
+                                            )*fe_values_edge_.JxW(k) + LocalSystem::almost_zero;
                                     }
                                 }
                             }
@@ -633,6 +649,12 @@ public:
 
 
 protected:
+    /// Holds set of element_patch_idx and side_idx of processed edge.
+    struct EdgeValuesMap {
+        std::vector<unsigned int> element_patch_idx_;      ///< Index of element in patch
+        std::vector<unsigned int> side_idx_;               ///< Index of side in element
+    };
+
     virtual void cell_integral_set_values(unsigned int sbi) {
         this->eq_data_->ls[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
     }
@@ -662,11 +684,12 @@ protected:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+    PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
-    vector<FEValues<3>> fe_values_vec_;                       ///< Vector of FEValues of object (of P disc finite element types)
+    PatchFEValues<3> fe_values_edge_;                         ///< FEValues evaluated on patch (of P disc finite element type)
     vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
+    EdgeValuesMap edge_values_map_;                           ///< Holds indices of processed edge.
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
