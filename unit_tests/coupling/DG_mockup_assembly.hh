@@ -270,6 +270,7 @@ public:
     void patch_reinit(PatchElementsList patch_elements) override
     {
         fe_values_.reinit(patch_elements);
+        fe_values_edge_.reinit(patch_elements);
     }
 
 
