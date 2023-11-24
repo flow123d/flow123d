@@ -15,7 +15,7 @@ protected:
 		ASSERT_PERMANENT(false).error("testing error...\n");
 	}
 
-    void parse_cmd_line(const int, char **) override 
+    void parse_cmd_line(const int, char **)
     {}
 	
 	void seg_fault() {
