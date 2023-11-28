@@ -190,6 +190,12 @@ DarcyLMH::EqFields::EqFields()
             .description("Complement dimension parameter (cross section for 1D, thickness for 2D).")
             .input_default("1.0")
             .units( UnitSI().m(3).md() );
+    
+    *this += cross_section_updated
+            .name("cross_section_updated")
+            .description("Cross-section after deformation - output.")
+            .units( UnitSI().m() )
+            .flags(input_copy & equation_external_output);
 
     *this += conductivity.name("conductivity")
             .description("Isotropic conductivity scalar.")
@@ -542,7 +548,7 @@ void DarcyLMH::initialize() {
         auto ele_flux_ptr = create_field_fe<3, FieldValue<3>::VectorFixed>(eq_data_->dh_, &eq_data_->full_solution, rt_component);
         eq_fields_->flux.set(ele_flux_ptr, 0.0);
 
-		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section), 0.0);
+		eq_fields_->field_ele_velocity.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_mh_velocity(), eq_fields_->flux, eq_fields_->cross_section_updated), 0.0);
 
 		uint p_ele_component = 1;
         auto ele_pressure_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_, &eq_data_->full_solution, p_ele_component);

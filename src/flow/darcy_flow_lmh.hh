@@ -165,6 +165,8 @@ public:
         /// Creation of all fields.
         EqFields();
 
+        Field<3, FieldValue<3>::Scalar> cross_section_updated;
+
         /// Return coords field
         FieldCoords &X() {
             return this->X_;
