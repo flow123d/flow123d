@@ -33,6 +33,7 @@
 #include "fem/update_flags.hh"                // for UpdateFlags
 #include "tools/mixed.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "fields/eval_subset.hh"
 
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
@@ -530,9 +531,40 @@ public:
      */
     inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
     {
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
         return element_data_[patch_data_idx_].shape_values_[point_no][function_no];
+    }
+
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline double shape_value(const unsigned int function_no, FMT_UNUSED const BulkPoint &p) const
+    {
+        // TODO: Implement method!
+        ASSERT_LT(function_no, this->n_dofs_);
+        return 0;
+    }
+
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline double shape_value(const unsigned int function_no, FMT_UNUSED const SidePoint &p) const
+    {
+        // TODO: Implement method!
+        ASSERT_LT(function_no, this->n_dofs_);
+        return 0;
     }
 
 
@@ -545,9 +577,40 @@ public:
      */
     inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
 	{
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
         return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no];
+    }
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, FMT_UNUSED const BulkPoint &p) const
+	{
+        // TODO: Implement method!
+        ASSERT_LT(function_no, this->n_dofs_);
+        arma::vec::fixed<spacedim> grad; grad.zeros();
+        return grad;
+    }
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, FMT_UNUSED const SidePoint &p) const
+	{
+        // TODO: Implement method!
+        ASSERT_LT(function_no, this->n_dofs_);
+        arma::vec::fixed<spacedim> grad; grad.zeros();
+        return grad;
     }
 
     /**
@@ -621,10 +684,34 @@ public:
      */
     inline double JxW(const unsigned int point_no)
     {
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(point_no, this->n_points_);
-        // TODO: This is temporary solution only for JxW on element.
         return (object_type_==ElementFE) ? element_data_[patch_data_idx_].elm_values_->JxW(point_no)
                                          : element_data_[patch_data_idx_].elm_values_->side_JxW(point_no);
+    }
+
+    /**
+     * @brief Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline double JxW(FMT_UNUSED const BulkPoint &p)
+    {
+        // TODO: Implement method!
+        return 0.0;
+    }
+
+    /**
+     * @brief Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline double JxW(FMT_UNUSED const SidePoint &p)
+    {
+        // TODO: Implement method!
+        return 0.0;
     }
 
     /**
@@ -634,8 +721,21 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
+        // TODO: obsolete method, will be replaced with following method.
         ASSERT_LT(point_no, this->n_points_);
 	    return element_data_[patch_data_idx_].elm_values_->normal_vector(point_no);
+	}
+
+    /**
+     * @brief Returns the normal vector to a side at given quadrature point.
+     *
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+	inline arma::vec::fixed<spacedim> normal_vector(FMT_UNUSED const SidePoint &p)
+	{
+        // TODO: Implement method!
+        arma::vec::fixed<spacedim> norm; norm.zeros();
+        return norm;
 	}
 
 
