@@ -739,7 +739,8 @@ public:
 
     /// Constructor.
     ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_values_side_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
@@ -764,6 +765,13 @@ public:
     }
 
 
+    /// Reinit PatchFEValues objects (all computed elements in one step).
+    void patch_reinit(PatchElementsList patch_elements) override
+    {
+        fe_values_side_.reinit(patch_elements);
+    }
+
+
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
@@ -774,7 +782,7 @@ public:
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(dof_indices_);
 
-		fe_values_side_.reinit(neighb_side.side());
+		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
 
         for (unsigned int i=0; i<n_dofs_; i++)
             local_matrix_[i] = 0;
@@ -818,13 +826,13 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                          ///< Number of dofs
-    FEValues<3> fe_values_side_;                                   ///< FEValues of side object
+    unsigned int n_dofs_;                                               ///< Number of dofs
+    PatchFEValues<3> fe_values_side_;                                   ///< FEValues of side object
 
-    vector<LongIdx> dof_indices_;                                  ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;                    ///< 2 items vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_matrix_;                             ///< Auxiliary vector for assemble methods
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+    vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
+    vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
+    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
