@@ -519,7 +519,7 @@ public:
 
 	/// Set element and side that are selected for processing. Element is given by index on patch.
 	inline void get_side(unsigned int patch_cell_idx, unsigned int side_idx) {
-	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second * (this->dim_+1) + side_idx;
+	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second + side_idx;
 	}
 
     /**
