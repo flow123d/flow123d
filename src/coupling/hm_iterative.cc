@@ -32,9 +32,9 @@ namespace it = Input::Type;
 
 
 struct fn_pressure_potential {
-    inline double operator() (double alpha, double density, double gravity, double pressure)
+    inline double operator() (double alpha, double density, double gravity, double pressure, double init_pressure)
     {
-        return -alpha*density*gravity*pressure;
+        return -alpha*density*gravity*(pressure - init_pressure);
     }
 };
 
@@ -178,7 +178,8 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
         alpha,
         density,
         gravity,
-        eq_data.flow_->eq_fields().field_edge_pressure
+        eq_data.flow_->eq_fields().field_edge_pressure,
+        eq_data.flow_->eq_fields().init_pressure
         ), 0.0);
     
     ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
