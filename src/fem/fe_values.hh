@@ -545,11 +545,11 @@ public:
      * @param function_no Number of the shape function.
      * @param p BulkPoint corresponds to the quadrature point.
      */
-    inline double shape_value(const unsigned int function_no, FMT_UNUSED const BulkPoint &p) const
+    inline double shape_value(const unsigned int function_no, const BulkPoint &p) const
     {
-        // TODO: Implement method!
         ASSERT_LT(function_no, this->n_dofs_);
-        return 0;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].shape_values_[p.eval_point_idx()][function_no];
     }
 
 
@@ -590,12 +590,11 @@ public:
      * @param function_no Number of the shape function.
      * @param p BulkPoint corresponds to the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, FMT_UNUSED const BulkPoint &p) const
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const BulkPoint &p) const
 	{
-        // TODO: Implement method!
         ASSERT_LT(function_no, this->n_dofs_);
-        arma::vec::fixed<spacedim> grad; grad.zeros();
-        return grad;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].shape_gradients_[p.eval_point_idx()][function_no];;
     }
 
     /**
@@ -696,10 +695,10 @@ public:
      *
      * @param p BulkPoint corresponds to the quadrature point.
      */
-    inline double JxW(FMT_UNUSED const BulkPoint &p)
+    inline double JxW(const BulkPoint &p)
     {
-        // TODO: Implement method!
-        return 0.0;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].elm_values_->JxW(p.eval_point_idx());
     }
 
     /**
