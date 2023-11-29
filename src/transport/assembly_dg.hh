@@ -177,7 +177,8 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_values_(CacheMapElementNumber::get()) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -246,17 +247,20 @@ public:
     }
 
 
+    /// Reinit PatchFEValues objects (all computed elements in one step).
+    void patch_reinit(PatchElementsList patch_elements) override
+    {
+        fe_values_.reinit(patch_elements);
+    }
+
+
     /// Assembles the cell (volume) integral into the stiffness matrix.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
 
-        ElementAccessor<3> elm = cell.elm();
-
-        fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
-        unsigned int k;
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -265,20 +269,18 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                     local_matrix_[i*ndofs_+j] = 0;
 
-            k=0;
             for (auto p : this->bulk_points(element_patch_idx) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,k);
-                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_.shape_grad(i,k));
+                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,p);
+                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_.shape_grad(i,p));
 
                     for (unsigned int j=0; j<ndofs_; j++)
-                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,k))
-                                                  -fe_values_.shape_value(j,k)*ad_dot_grad_i
-                                                  +eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k))*fe_values_.JxW(k);
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,p))
+                                                  -fe_values_.shape_value(j,p)*ad_dot_grad_i
+                                                  +eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,p)*fe_values_.shape_value(i,p))*fe_values_.JxW(p);
                 }
-                k++;
             }
             eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
         }
@@ -630,7 +632,7 @@ private:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+    PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
     vector<FEValues<3>> fe_values_vec_;                       ///< Vector of FEValues of object (of P disc finite element types)
