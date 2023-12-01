@@ -560,11 +560,11 @@ public:
      * @param function_no Number of the shape function.
      * @param p SidePoint corresponds to the quadrature point.
      */
-    inline double shape_value(const unsigned int function_no, FMT_UNUSED const SidePoint &p) const
+    inline double shape_value(const unsigned int function_no, const SidePoint &p) const
     {
-        // TODO: Implement method!
         ASSERT_LT(function_no, this->n_dofs_);
-        return 0;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].shape_values_[p.local_point_idx()][function_no];
     }
 
 
@@ -604,12 +604,11 @@ public:
      * @param function_no Number of the shape function.
      * @param p SidePoint corresponds to the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, FMT_UNUSED const SidePoint &p) const
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const SidePoint &p) const
 	{
-        // TODO: Implement method!
         ASSERT_LT(function_no, this->n_dofs_);
-        arma::vec::fixed<spacedim> grad; grad.zeros();
-        return grad;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].shape_gradients_[p.local_point_idx()][function_no];;
     }
 
     /**
@@ -707,10 +706,10 @@ public:
      *
      * @param p SidePoint corresponds to the quadrature point.
      */
-    inline double JxW(FMT_UNUSED const SidePoint &p)
+    inline double JxW(const SidePoint &p)
     {
-        // TODO: Implement method!
-        return 0.0;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].elm_values_->side_JxW(p.local_point_idx());
     }
 
     /**
@@ -730,11 +729,10 @@ public:
      *
      * @param p SidePoint corresponds to the quadrature point.
      */
-	inline arma::vec::fixed<spacedim> normal_vector(FMT_UNUSED const SidePoint &p)
+	inline arma::vec::fixed<spacedim> normal_vector(const SidePoint &p)
 	{
-        // TODO: Implement method!
-        arma::vec::fixed<spacedim> norm; norm.zeros();
-        return norm;
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].elm_values_->normal_vector(p.local_point_idx());
 	}
 
 
