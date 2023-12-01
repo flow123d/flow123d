@@ -166,11 +166,13 @@ public:
         Field<3, FieldValue<3>::Scalar> old_pressure;
         Field<3, FieldValue<3>::Scalar> old_iter_pressure;
         Field<3, FieldValue<3>::Scalar> old_div_u;
+        Field<3, FieldValue<3>::Scalar> old_cross_section;
         
         /// FieldFE for pressure_potential field.
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_cs_ptr_;
     };
     
     /// Define input record.

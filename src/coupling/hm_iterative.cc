@@ -154,6 +154,11 @@ HM_Iterative::EqFields::EqFields()
                      .units(UnitSI().dimensionless())
                      .flags(FieldFlag::equation_external_output);
 
+    *this += old_cross_section.name("old_cross_section")
+                     .description("Cross-section from last computed time.")
+                     .units(UnitSI().m())
+                     .flags(FieldFlag::equation_external_output);
+
     *this += ref_pressure_potential.name("ref_pressure_potential")
                      .description("Pressure potential on boundary (taking into account the flow boundary condition.")
                      .units(UnitSI().m())
@@ -203,6 +208,9 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
 
     old_div_u_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.mechanics_->eq_fields().output_div_ptr->get_dofhandler());
     old_div_u.set(old_div_u_ptr_, 0.0);
+
+    old_cs_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(eq_data.mechanics_->eq_fields().output_cross_section_ptr->get_dofhandler());
+    old_cross_section.set(old_cs_ptr_, 0.0);
 
     flow_source.set(Model<3, FieldValue<3>::Scalar>::create(
         fn_fluid_source(time_),
@@ -262,6 +270,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     eq_fields_->initialize(*mesh_, *eq_data_, time_, input_record_.val<double>("iteration_parameter"));
     eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential, eq_fields_->ref_pressure_potential);
+    eq_data_->mechanics_->eq_fields()["cross_section_old"].copy_from(eq_fields_->old_cross_section);
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["cross_section_old"];
 
     eq_fields_->add_coords_field();
 }
@@ -297,12 +307,14 @@ void HM_Iterative::zero_time_step()
         WarningOut() << ss.str();
     
     eq_data_->mechanics_->update_output_fields(); // init field values for use in flow
+    copy_field(*eq_data_->mechanics_->eq_fields().output_cross_section.get_field_fe(), *eq_fields_->old_cs_ptr_);
     eq_data_->flow_->zero_time_step();
     update_potential();
     eq_data_->mechanics_->zero_time_step();
     
     copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
     copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_cross_section.get_field_fe(), *eq_fields_->old_cs_ptr_);
     eq_fields_->old_iter_pressure.set_time_result_changed();
 }
 
@@ -344,6 +356,7 @@ void HM_Iterative::update_after_converged()
     eq_data_->mechanics_->output_data();
     
     copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
+    copy_field(*eq_data_->mechanics_->eq_fields().output_cross_section.get_field_fe(), *eq_fields_->old_cs_ptr_);
 }
 
 

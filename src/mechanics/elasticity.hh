@@ -87,6 +87,7 @@ public:
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
+        Field<3, FieldValue<3>::Scalar> output_cross_section_old;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         
 		/// @name Instances of FieldModel used in assembly methods

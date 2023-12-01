@@ -105,7 +105,7 @@ struct fn_lame_lambda {
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
 	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e3 * (2 * lame_mu + lame_lambda);
+        return 1e6 * (2 * lame_mu + lame_lambda);
     }
 };
 
@@ -208,6 +208,11 @@ Elasticity::EqFields::EqFields()
       .name("cross_section")
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
+    
+    *this+=output_cross_section_old
+      .name("cross_section_old")
+      .units( UnitSI().m(3).md() )
+      .flags(equation_external_output & input_copy);
     
     *this+=cross_section_min
       .name("cross_section_min")
