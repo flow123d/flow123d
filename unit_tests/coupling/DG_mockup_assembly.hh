@@ -53,9 +53,9 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
     }
 
 
@@ -170,7 +170,7 @@ public:
 
     void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
 
-    void patch_reinit(PatchElementsList patch_elements) override {}
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -263,12 +263,12 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
-        fe_values_edge_.reinit(patch_elements);
-        fe_values_vb_.reinit(patch_elements);
-        fe_values_side_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
+        fe_values_edge_.reinit(patch_elements[dim]);
+        fe_values_vb_.reinit(patch_elements[dim-1]);
+        fe_values_side_.reinit(patch_elements[dim]);
     }
 
 
@@ -513,7 +513,7 @@ public:
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
                         {
                             fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s1], edge_values_map_.side_idx_[s1]);
-                            jumps[0][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,k);
+                            jumps[0][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,p1);
                             waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*fe_values_edge_.shape_grad(i,k),nv)*omega[0];
                             fe_values_edge_.get_side(edge_values_map_.element_patch_idx_[s2], edge_values_map_.side_idx_[s2]);
                             jumps[1][k*fe_->n_dofs()+i] = - fe_values_edge_.shape_value(i,k);
@@ -808,9 +808,9 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
     }
 
 

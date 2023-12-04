@@ -95,11 +95,11 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
-        fe_values_side_.reinit(patch_elements);
-        fe_values_sub_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
+        fe_values_side_.reinit(patch_elements[dim]);
+        fe_values_sub_.reinit(patch_elements[dim-1]);
     }
 
 
@@ -357,12 +357,12 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
-        fe_values_bdr_side_.reinit(patch_elements);
-        fe_values_side_.reinit(patch_elements);
-        fe_values_sub_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
+        fe_values_bdr_side_.reinit(patch_elements[dim]);
+        fe_values_side_.reinit(patch_elements[dim]);
+        fe_values_sub_.reinit(patch_elements[dim-1]);
     }
 
 
@@ -634,10 +634,10 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fv_.reinit(patch_elements);
-        fsv_.reinit(patch_elements);
+        fv_.reinit(patch_elements[dim]);
+        fsv_.reinit(patch_elements[dim]);
     }
 
 
@@ -794,9 +794,9 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_side_.reinit(patch_elements);
+        fe_values_side_.reinit(patch_elements[dim]);
     }
 
 

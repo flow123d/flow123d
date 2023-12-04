@@ -70,7 +70,7 @@ public:
     virtual void end() {}
 
     /// Method prepares object before computing on patch (typically reinitialize PatchFEValues objects).
-    virtual void patch_reinit(FMT_UNUSED PatchElementsList patch_elements) {}
+    virtual void patch_reinit(FMT_UNUSED std::array<PatchElementsList, 4> &patch_elements) {}
 
     /// Getter of active_integrals.
     inline int n_active_integrals() const {

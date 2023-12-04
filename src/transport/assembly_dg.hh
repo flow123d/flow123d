@@ -247,10 +247,10 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
-        fe_values_edge_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
+        fe_values_edge_.reinit(patch_elements[dim]);
     }
 
 
