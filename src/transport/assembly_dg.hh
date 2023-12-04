@@ -72,9 +72,9 @@ public:
 
 
     /// Reinit PatchFEValues objects (all computed elements in one step).
-    void patch_reinit(PatchElementsList patch_elements) override
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        fe_values_.reinit(patch_elements[dim]);
     }
 
 
@@ -83,9 +83,6 @@ public:
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        unsigned int k;
-
-        fe_values_.get_cell(element_patch_idx);
         cell.get_dof_indices(dof_indices_);
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
@@ -96,12 +93,10 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
                     local_matrix_[i*ndofs_+j] = 0;
-                    k=0;
                     for (auto p : this->bulk_points(element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
-                                fe_values_.shape_value(j,k)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                        k++;
+                                fe_values_.shape_value(j,p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
                     }
                 }
             }
@@ -110,12 +105,10 @@ public:
             {
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
-                k=0;
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                    k++;
+                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
+                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
                 }
             }
 
@@ -670,7 +663,8 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_values_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -697,16 +691,21 @@ public:
     }
 
 
+    /// Reinit PatchFEValues objects (all computed elements in one step).
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
+    {
+        fe_values_.reinit(patch_elements[dim]);
+    }
+
+
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> elm = cell.elm();
-        unsigned int k;
         double source;
 
-        fe_values_.reinit(elm);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -716,24 +715,20 @@ public:
             local_source_balance_vector_.assign(ndofs_, 0);
             local_source_balance_rhs_.assign(ndofs_, 0);
 
-            k=0;
             for (auto p : this->bulk_points(element_patch_idx) )
             {
-                source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*fe_values_.JxW(k);
+                source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*fe_values_.JxW(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
-                    local_rhs_[i] += source*fe_values_.shape_value(i,k);
-                k++;
+                    local_rhs_[i] += source*fe_values_.shape_value(i,p);
             }
             eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
-                k=0;
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,k)*fe_values_.JxW(k);
-                    k++;
+                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
                 }
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
@@ -768,7 +763,7 @@ public:
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
