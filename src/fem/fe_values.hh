@@ -46,7 +46,7 @@ template<class FV, unsigned int dim> class MapTensor;
 template<class FV, unsigned int dim> class MapSystem;
 
 template<unsigned int spcedim> class FEValues;
-template<unsigned int spcedim> class PatchFEValues;
+template<unsigned int spcedim> class PatchFEValues_TEMP;
 
 
 
@@ -213,7 +213,7 @@ protected:
     /// Initialize ElementValues separately in descendants.
     virtual void initialize_in(Quadrature &, unsigned int) =0;
 
-    /// Initialize @p fe_values_vec only in PatchFEValues.
+    /// Initialize @p fe_values_vec only in PatchFEValues_TEMP.
     virtual void init_fe_val_vec() =0;
 
     /// Precompute finite element data on reference element.
@@ -496,10 +496,10 @@ protected:
 
 
 template<unsigned int spacedim = 3>
-class PatchFEValues : public FEValuesBase<PatchFEValues<spacedim>, spacedim> {
+class PatchFEValues_TEMP : public FEValuesBase<PatchFEValues_TEMP<spacedim>, spacedim> {
 public:
     /// Constructor, set maximal number of elements on patch
-	PatchFEValues(unsigned int max_size=0);
+	PatchFEValues_TEMP(unsigned int max_size=0);
 
     /// Reinit data.
     void reinit(PatchElementsList patch_elements);
@@ -788,16 +788,16 @@ protected:
     /// Maximal number of elements on patch.
     unsigned int max_n_elem_;
 
-    /// Distinguishes using of PatchFEValues for storing data of elements or sides.
+    /// Distinguishes using of PatchFEValues_TEMP for storing data of elements or sides.
     MeshObjectType object_type_;
 
 
-    friend class MapScalar<PatchFEValues<spacedim>, spacedim>;
-    friend class MapPiola<PatchFEValues<spacedim>, spacedim>;
-    friend class MapContravariant<PatchFEValues<spacedim>, spacedim>;
-    friend class MapVector<PatchFEValues<spacedim>, spacedim>;
-    friend class MapTensor<PatchFEValues<spacedim>, spacedim>;
-    friend class MapSystem<PatchFEValues<spacedim>, spacedim>;
+    friend class MapScalar<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapPiola<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapContravariant<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapVector<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapTensor<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapSystem<PatchFEValues_TEMP<spacedim>, spacedim>;
 };
 
 

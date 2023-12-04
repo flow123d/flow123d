@@ -71,7 +71,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_.reinit(patch_elements[dim]);
@@ -143,7 +143,7 @@ public:
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
@@ -239,7 +239,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_.reinit(patch_elements[dim]);
@@ -628,10 +628,10 @@ private:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+    PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
-    PatchFEValues<3> fe_values_edge_;                         ///< FEValues of object (of P disc finite element type)
+    PatchFEValues_TEMP<3> fe_values_edge_;                         ///< FEValues of object (of P disc finite element type)
     vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
@@ -691,7 +691,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_.reinit(patch_elements[dim]);
@@ -763,7 +763,7 @@ public:
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.

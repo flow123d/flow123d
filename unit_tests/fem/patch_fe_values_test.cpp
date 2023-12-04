@@ -52,7 +52,7 @@ public:
     }
 
     void compute_and_check_values( PatchElementsList patch_elements, shared_ptr<FiniteElement<DIM>> fe) {
-        PatchFEValues<3> patch_fe_values(mesh_->n_elements());
+        PatchFEValues_TEMP<3> patch_fe_values(mesh_->n_elements());
         FEValues<3> fe_values;
         patch_fe_values.initialize(*quad_, *fe, u);
         fe_values.initialize(*quad_, *fe, u);

@@ -33,7 +33,7 @@
 
 template<unsigned int dim> class FESystem;
 template<unsigned int spacedim> class FEValues;
-template<unsigned int spacedim> class PatchFEValues;
+template<unsigned int spacedim> class PatchFEValues_TEMP;
 template<class FV, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FE_P_disc;
 
@@ -392,9 +392,9 @@ protected:
     
     friend class FESystem<dim>;
     friend class FEValues<3>;
-    friend class PatchFEValues<3>;
+    friend class PatchFEValues_TEMP<3>;
     friend class FEValuesBase<FEValues<3>, 3>;
-    friend class FEValuesBase<PatchFEValues<3>, 3>;
+    friend class FEValuesBase<PatchFEValues_TEMP<3>, 3>;
     friend class FE_P_disc<dim>;
     friend class SubDOFHandlerMultiDim;
 };

@@ -94,7 +94,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_.reinit(patch_elements[dim]);
@@ -271,17 +271,17 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    PatchFEValues<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues<3> fe_values_side_;                                   ///< FEValues of side object
-    PatchFEValues<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
+    PatchFEValues_TEMP<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
+    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
+    PatchFEValues_TEMP<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -356,7 +356,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_.reinit(patch_elements[dim]);
@@ -564,19 +564,19 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    PatchFEValues<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues<3> fe_values_bdr_side_;                               ///< FEValues of side (boundary integral) object
-    PatchFEValues<3> fe_values_side_;                                   ///< FEValues of side (neighbour integral) object
-    PatchFEValues<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
+    PatchFEValues_TEMP<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
+    PatchFEValues_TEMP<3> fe_values_bdr_side_;                               ///< FEValues of side (boundary integral) object
+    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side (neighbour integral) object
+    PatchFEValues_TEMP<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
     vector<vector<PetscScalar>> local_rhs_ngh_;                         ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_bdr_;   ///< Vector view in boundary calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_bdr_;   ///< Vector view in boundary calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
 
 
     template < template<IntDim...> class DimAssembly>
@@ -633,7 +633,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fv_.reinit(patch_elements[dim]);
@@ -726,14 +726,14 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues<3> fv_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues<3> fsv_;                                              ///< FEValues of side (neighbour integral) object
+    PatchFEValues_TEMP<3> fv_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
+    PatchFEValues_TEMP<3> fsv_;                                              ///< FEValues of side (neighbour integral) object
 
     LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
     LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
     LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
 
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
@@ -793,7 +793,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues objects (all computed elements in one step).
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         fe_values_side_.reinit(patch_elements[dim]);
@@ -855,12 +855,12 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues<3> fe_values_side_;                                   ///< FEValues of side object
+    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-    const FEValuesViews::Vector<PatchFEValues<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
