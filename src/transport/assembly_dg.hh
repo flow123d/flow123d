@@ -23,6 +23,7 @@
 #include "transport/transport_dg.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
@@ -60,6 +61,8 @@ public:
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
+        JxW_ = fe_values_.JxW( {this->quad_} );
+        shape_value_ = fe_values_.scalar_shape( {this->quad_} );
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
@@ -96,7 +99,7 @@ public:
                     for (auto p : this->bulk_points(element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
-                                fe_values_.shape_value(j,p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
+                                shape_value_(j,p)*shape_value_(i,p)*JxW_(p);
                     }
                 }
             }
@@ -107,8 +110,8 @@ public:
                 local_retardation_balance_vector_[i] = 0;
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
-                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
+                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*shape_value_(i,p)*JxW_(p);
+                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*shape_value_(i,p)*JxW_(p);
                 }
             }
 
@@ -143,12 +146,15 @@ public:
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
+
+        ElQ<Scalar> JxW_;
+        FeQ<Scalar> shape_value_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
