@@ -54,16 +54,14 @@ public:
     ElQ(PatchFEValues<3> *fe_values, unsigned int begin)
     : fe_values_(fe_values), begin_(begin) {}
 
-    ValueType operator()(FMT_UNUSED const BulkPoint &point)
-    {
-    	return 0.0;
-    }
+    ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
 private:
     // attributes:
     PatchFEValues<3> *fe_values_;
     unsigned int begin_;    /// Index of the first component of the Quantity. Size is given by ValueType
 };
+
 
 template <class ValueType>
 class FeQ {
@@ -76,10 +74,7 @@ public:
     : fe_values_(fe_values), begin_(begin) {}
 
 
-    ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point)
-    {
-    	return 0.0;
-    }
+    ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point);
 
     // Implementation for EdgePoint, SidePoint, and JoinPoint shoud have a common implementation
     // resolving to side values
@@ -89,7 +84,6 @@ private:
     PatchFEValues<3> *fe_values_;
     unsigned int begin_;    /// Index of the first component of the Quantity. Size is given by ValueType
 };
-
 
 
 template<unsigned int spacedim = 3>
@@ -150,6 +144,41 @@ private:
     uint n_columns_;  ///< Number of columns
 
 };
+
+
+template <class ValueType>
+ValueType ElQ<ValueType>::operator()(FMT_UNUSED const BulkPoint &point) {
+    return 0.0;
+}
+
+template <>
+inline Vector ElQ<Vector>::operator()(FMT_UNUSED const BulkPoint &point) {
+    Vector vect; vect.zeros();
+    return vect;
+}
+
+template <>
+inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
+
+template <class ValueType>
+ValueType FeQ<ValueType>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+    return 0.0;
+}
+
+template <>
+inline Vector FeQ<Vector>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+    Vector vect; vect.zeros();
+    return vect;
+}
+
+template <>
+inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
 
 
 #endif /* PATCH_FE_VALUES_HH_ */
