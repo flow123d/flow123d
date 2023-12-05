@@ -176,8 +176,14 @@ public:
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()),
-	  fe_values_edge_(CacheMapElementNumber::get()) {
+      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
+      ndofs_(fe_->n_dofs()),
+      fe_values_(CacheMapElementNumber::get()),
+      fe_values_edge_(CacheMapElementNumber::get()),
+      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
+	  normal_( fe_values_.normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
+	  pressure_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
+	  pressure_grad_( fe_values_.grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -200,7 +206,6 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
@@ -271,13 +276,13 @@ public:
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*fe_values_.shape_grad(i,p);
-                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_.shape_grad(i,p));
+                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*pressure_grad_(i,p);
+                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), pressure_grad_(i,p));
 
                     for (unsigned int j=0; j<ndofs_; j++)
-                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, fe_values_.shape_grad(j,p))
-                                                  -fe_values_.shape_value(j,p)*ad_dot_grad_i
-                                                  +eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(j,p)*fe_values_.shape_value(i,p))*fe_values_.JxW(p);
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, pressure_grad_(j,p))
+                                                  -pressure_shape_(j,p)*ad_dot_grad_i
+                                                  +eq_fields_->sources_sigma_out[sbi](p)*pressure_shape_(j,p)*pressure_shape_(i,p))*JxW_(p);
                 }
             }
             eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
@@ -307,7 +312,7 @@ public:
             double side_flux = 0;
             k=0;
             for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_edge_.normal_vector(p))*fe_values_edge_.JxW(p);
+                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p);
                 k++;
             }
             double transport_flux = side_flux/side.measure();
@@ -324,7 +329,7 @@ public:
                     k++;
                 }
                 auto p = *( this->boundary_points(cell_side).begin() );
-                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_edge_.normal_vector(p), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
+                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, normal_(p), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
                 eq_data_->gamma[sbi][side.cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
@@ -338,30 +343,30 @@ public:
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*fe_values_edge_.JxW(p);
+                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*JxW_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_edge_.JxW(p);
+                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
-                    flux_times_JxW = transport_flux*fe_values_edge_.JxW(p);
+                    flux_times_JxW = transport_flux*JxW_(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
                     for (unsigned int j=0; j<ndofs_; j++)
                     {
                         // flux due to advection and penalty
-                        local_matrix_[i*ndofs_+j] += flux_times_JxW*fe_values_edge_.shape_value(i,p)*fe_values_edge_.shape_value(j,p);
+                        local_matrix_[i*ndofs_+j] += flux_times_JxW*pressure_shape_(i,p)*pressure_shape_(j,p);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_edge_.shape_grad(j,p),fe_values_edge_.normal_vector(p))*fe_values_edge_.shape_value(i,p)
-                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_edge_.shape_grad(i,p),fe_values_edge_.normal_vector(p))*fe_values_edge_.shape_value(j,p)*eq_data_->dg_variant
-                                    )*fe_values_edge_.JxW(p);
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(j,p),normal_(p))*pressure_shape_(i,p)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(i,p),normal_(p))*pressure_shape_(j,p)*eq_data_->dg_variant
+                                    )*JxW_(p);
                     }
                 }
                 k++;
@@ -621,19 +626,19 @@ public:
 
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-
     /// Data objects shared with TransportDG
     EqFields *eq_fields_;
     EqData *eq_data_;
+
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+    PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
     PatchFEValues_TEMP<3> fe_values_edge_;                         ///< FEValues of object (of P disc finite element type)
@@ -647,6 +652,11 @@ private:
     vector<double*> averages;                                 ///< Auxiliary storage for averages of shape functions.
     vector<double*> waverages;                                ///< Auxiliary storage for weighted averages of shape functions.
     vector<double*> jumps;                                    ///< Auxiliary storage for jumps of shape functions.
+
+    ElQ<Scalar> JxW_;
+    ElQ<Vector> normal_;
+    FeQ<Scalar> pressure_shape_;
+    FeQ<Vector> pressure_grad_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

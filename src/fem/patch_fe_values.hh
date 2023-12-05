@@ -126,6 +126,19 @@ public:
     }
 
     /**
+     * @brief Returns the normal vector to a side at given quadrature point.
+     *
+     * @param quad_list List of quadratures.
+     */
+	inline ElQ<Vector> normal_vector(FMT_UNUSED std::vector<Quadrature *> quad_list)
+	{
+        uint begin = this->n_columns_;
+        n_columns_ += 3; // Vector needs 3 columns
+        // TODO store to map?? shape_value will be pre-computed to column 'begin'.
+        return ElQ<Vector>(this, begin);
+	}
+
+    /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p p quadrature point.
      *
@@ -138,6 +151,14 @@ public:
         n_columns_ += n_comp; // scalar needs one column x n_comp
         // TODO store to map?? shape_value will be pre-computed to column 'begin'.
         return FeQ<Scalar>(this, begin);
+    }
+
+    inline FeQ<Vector> grad_scalar_shape(FMT_UNUSED std::vector<Quadrature *> quad_list, unsigned int n_comp)
+    {
+        uint begin = this->n_columns_;
+        n_columns_ += 3 * n_comp; // scalar needs one column x n_comp
+        // TODO store to map?? shape_value will be pre-computed to column 'begin'.
+        return FeQ<Vector>(this, begin);
     }
 
 private:
