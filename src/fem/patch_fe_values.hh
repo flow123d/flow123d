@@ -47,25 +47,17 @@ using Tensor = arma::mat33;
 template <class ValueType>
 class ElQ {
 public:
-    /// Constructor
-    ElQ()
-    : fe_values_(nullptr), begin_(0) {}
+    /// Forbidden default constructor
+    ElQ() = delete;
 
     /// Constructor
     ElQ(PatchFEValues<3> *fe_values, unsigned int begin)
     : fe_values_(fe_values), begin_(begin) {}
 
-    ValueType operator()(const BulkPoint &point)
+    ValueType operator()(FMT_UNUSED const BulkPoint &point)
     {
     	return 0.0;
     }
-
-
-    ValueType operator()(const SidePoint &point)
-    {
-    	return 0.0;
-    }
-
 
 private:
     // attributes:
@@ -76,21 +68,15 @@ private:
 template <class ValueType>
 class FeQ {
 public:
-    /// Constructor
-    FeQ()
-    : fe_values_(nullptr), begin_(0) {}
+    /// Forbidden default constructor
+    FeQ() = delete;
 
     // Class similar to current FeView
     FeQ(PatchFEValues<3> *fe_values, unsigned int begin)
     : fe_values_(fe_values), begin_(begin) {}
 
 
-    ValueType operator()(unsigned int shape_idx, const BulkPoint &point)
-    {
-    	return 0.0;
-    }
-
-    ValueType operator()(unsigned int shape_idx, const SidePoint &point)
+    ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point)
     {
     	return 0.0;
     }
@@ -110,7 +96,7 @@ template<unsigned int spacedim = 3>
 class PatchFEValues {
 public:
 
-    PatchFEValues(unsigned int n_quad_points=0)
+    PatchFEValues(FMT_UNUSED unsigned int n_quad_points=0)
     : n_columns_(0) {}
 
     /**
@@ -122,13 +108,13 @@ public:
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
-    void initialize(Quadrature &_quadrature,
-                    FiniteElement<DIM> &_fe,
-                    UpdateFlags _flags)
+    void initialize(FMT_UNUSED Quadrature &_quadrature,
+                    FMT_UNUSED FiniteElement<DIM> &_fe,
+                    FMT_UNUSED UpdateFlags _flags)
     {}
 
     /// Reinit data.
-    void reinit(PatchElementsList patch_elements)
+    void reinit(FMT_UNUSED PatchElementsList patch_elements)
     {}
 
     /**
@@ -137,12 +123,12 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-    inline ElQ<Scalar> JxW(std::vector<Quadrature *> quad_list)
+    inline ElQ<Scalar> JxW(FMT_UNUSED std::vector<Quadrature *> quad_list)
     {
         uint begin = this->n_columns_;
         n_columns_++; // scalar needs one column
         // TODO store to map?? JxW will be pre-computed to column 'begin'.
-        return ElQ<Scalar>(&this, begin);
+        return ElQ<Scalar>(this, begin);
     }
 
     /**
@@ -152,12 +138,12 @@ public:
      * @param quad_list List of quadratures.
      * @param function_no Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(std::vector<Quadrature *> quad_list, unsigned int n_comp)
+    inline FeQ<Scalar> scalar_shape(FMT_UNUSED std::vector<Quadrature *> quad_list, unsigned int n_comp)
     {
         uint begin = this->n_columns_;
         n_columns_ += n_comp; // scalar needs one column x n_comp
         // TODO store to map?? shape_value will be pre-computed to column 'begin'.
-        return FeQ<Scalar>(&this, begin);
+        return FeQ<Scalar>(this, begin);
     }
 
 private:

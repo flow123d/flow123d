@@ -45,7 +45,11 @@ public:
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()) {
+      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
+      fe_values_(CacheMapElementNumber::get()),
+      ndofs_(fe_->n_dofs()),
+      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_} ) ),
+      conc_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -58,14 +62,10 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
-        JxW_ = fe_values_.JxW( {this->quad_} );
-        shape_value_ = fe_values_.scalar_shape( {this->quad_} );
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -99,7 +99,7 @@ public:
                     for (auto p : this->bulk_points(element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
-                                shape_value_(j,p)*shape_value_(i,p)*JxW_(p);
+                                conc_shape_(j,p)*conc_shape_(i,p)*JxW_(p);
                     }
                 }
             }
@@ -110,8 +110,8 @@ public:
                 local_retardation_balance_vector_[i] = 0;
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*shape_value_(i,p)*JxW_(p);
-                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*shape_value_(i,p)*JxW_(p);
+                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_(i,p)*JxW_(p);
+                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_(i,p)*JxW_(p);
                 }
             }
 
@@ -136,8 +136,6 @@ public:
     }
 
     private:
-        shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
-
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
         EqData *eq_data_;
@@ -145,8 +143,9 @@ public:
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
-        unsigned int ndofs_;                                      ///< Number of dofs
+        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
         PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
+        unsigned int ndofs_;                                      ///< Number of dofs
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
@@ -154,7 +153,7 @@ public:
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
         ElQ<Scalar> JxW_;
-        FeQ<Scalar> shape_value_;
+        FeQ<Scalar> conc_shape_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
