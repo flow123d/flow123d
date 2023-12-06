@@ -679,7 +679,11 @@ public:
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()) {
+      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
+      fe_values_(CacheMapElementNumber::get()),
+	  ndofs_(fe_->n_dofs()),
+      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_} ) ),
+      conc_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -693,12 +697,10 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
@@ -732,10 +734,10 @@ public:
 
             for (auto p : this->bulk_points(element_patch_idx) )
             {
-                source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*fe_values_.JxW(p);
+                source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*JxW_(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
-                    local_rhs_[i] += source*fe_values_.shape_value(i,p);
+                    local_rhs_[i] += source*conc_shape_(i,p);
             }
             eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
 
@@ -743,7 +745,7 @@ public:
             {
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*fe_values_.shape_value(i,p)*fe_values_.JxW(p);
+                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*conc_shape_(i,p)*JxW_(p);
                 }
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
@@ -768,22 +770,25 @@ public:
 
 
     private:
-        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
         EqData *eq_data_;
+
+        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
+        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
         unsigned int ndofs_;                                      ///< Number of dofs
-        PatchFEValues_TEMP<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
+
+        ElQ<Scalar> JxW_;
+        FeQ<Scalar> conc_shape_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
