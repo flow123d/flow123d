@@ -113,7 +113,7 @@ public:
     /// Reinit data.
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
-        for (unsigned int i=0; i<4; ++i) {
+        for (unsigned int i=1; i<4; ++i) {
             dim_fe_vals_[i].reinit(patch_elements[i]);
         }
     }

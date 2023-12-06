@@ -195,6 +195,8 @@ std::shared_ptr<typename PatchFEValues<spacedim>::FEInternalData> PatchFEValues<
 template<unsigned int spacedim>
 void PatchFEValues<spacedim>::DimPatchFEValues::reinit(PatchElementsList patch_elements)
 {
+    if (dim_ == 0) return; // Temporary skip, remove if PatchFEValues objects will be merge to common object of GenericAssembly
+
     element_patch_map_.clear();
     if (object_type_ == ElementFE)
         used_size_ = patch_elements.size();
