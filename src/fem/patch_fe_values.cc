@@ -24,30 +24,30 @@
 
 
 
-template<unsigned int spacedim>
-PatchFEValues<spacedim>::FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
-    : n_points(np),
-      n_dofs(nd)
-{
-    ref_shape_values.resize(np, vector<arma::vec>(nd));
-    ref_shape_grads.resize(np, vector<arma::mat>(nd));
-}
-
-
-template<unsigned int spacedim>
-PatchFEValues<spacedim>::FEInternalData::FEInternalData(const PatchFEValues<spacedim>::FEInternalData &fe_system_data,
-                               const std::vector<unsigned int> &dof_indices,
-                               unsigned int first_component_idx,
-                               unsigned int ncomps)
-    : FEInternalData(fe_system_data.n_points, dof_indices.size())
-{
-    for (unsigned int ip=0; ip<n_points; ip++)
-        for (unsigned int id=0; id<dof_indices.size(); id++)
-        {
-            ref_shape_values[ip][id] = fe_system_data.ref_shape_values[ip][dof_indices[id]].subvec(first_component_idx, first_component_idx+ncomps-1);
-            ref_shape_grads[ip][id] = fe_system_data.ref_shape_grads[ip][dof_indices[id]].cols(first_component_idx, first_component_idx+ncomps-1);
-        }
-}
+//template<unsigned int spacedim>
+//PatchFEValues<spacedim>::FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
+//    : n_points(np),
+//      n_dofs(nd)
+//{
+//    ref_shape_values.resize(np, vector<arma::vec>(nd));
+//    ref_shape_grads.resize(np, vector<arma::mat>(nd));
+//}
+//
+//
+//template<unsigned int spacedim>
+//PatchFEValues<spacedim>::FEInternalData::FEInternalData(const PatchFEValues<spacedim>::FEInternalData &fe_system_data,
+//                               const std::vector<unsigned int> &dof_indices,
+//                               unsigned int first_component_idx,
+//                               unsigned int ncomps)
+//    : FEInternalData(fe_system_data.n_points, dof_indices.size())
+//{
+//    for (unsigned int ip=0; ip<n_points; ip++)
+//        for (unsigned int id=0; id<dof_indices.size(); id++)
+//        {
+//            ref_shape_values[ip][id] = fe_system_data.ref_shape_values[ip][dof_indices[id]].subvec(first_component_idx, first_component_idx+ncomps-1);
+//            ref_shape_grads[ip][id] = fe_system_data.ref_shape_grads[ip][dof_indices[id]].cols(first_component_idx, first_component_idx+ncomps-1);
+//        }
+//}
 
 
 template<unsigned int spacedim>
@@ -157,7 +157,7 @@ void PatchFEValues<spacedim>::DimPatchFEValues::allocate(
 
 template<unsigned int spacedim>
 template<unsigned int DIM>
-std::shared_ptr<typename PatchFEValues<spacedim>::FEInternalData> PatchFEValues<spacedim>::DimPatchFEValues::init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q)
+std::shared_ptr<FEInternalData> PatchFEValues<spacedim>::DimPatchFEValues::init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q)
 {
     ASSERT( DIM == dim_ );
     ASSERT( q.dim() == DIM );

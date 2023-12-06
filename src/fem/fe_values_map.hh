@@ -31,11 +31,11 @@ class MapScalar {
 public:
     /// Empty method.
     inline void fill_values_vec(FMT_UNUSED FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            FMT_UNUSED const typename FV::FEInternalData &fe_data) {}
+            FMT_UNUSED const FEInternalData &fe_data) {}
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEScalar);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -46,7 +46,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEScalar);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -64,11 +64,11 @@ class MapPiola {
 public:
     /// Empty method.
     inline void fill_values_vec(FMT_UNUSED FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            FMT_UNUSED const typename FV::FEInternalData &fe_data) {}
+            FMT_UNUSED const FEInternalData &fe_data) {}
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVectorPiola);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -82,7 +82,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVectorPiola);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -105,11 +105,11 @@ class MapContravariant {
 public:
     /// Empty method.
     inline void fill_values_vec(FMT_UNUSED FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            FMT_UNUSED const typename FV::FEInternalData &fe_data) {}
+            FMT_UNUSED const FEInternalData &fe_data) {}
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVectorContravariant);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -123,7 +123,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVectorContravariant);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -145,11 +145,11 @@ class MapVector {
 public:
     /// Empty method.
     inline void fill_values_vec(FMT_UNUSED FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            FMT_UNUSED const typename FV::FEInternalData &fe_data) {}
+            FMT_UNUSED const FEInternalData &fe_data) {}
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVector);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -163,7 +163,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEVector);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -185,11 +185,11 @@ class MapTensor {
 public:
     /// Empty method.
     inline void fill_values_vec(FMT_UNUSED FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            FMT_UNUSED const typename FV::FEInternalData &fe_data) {}
+            FMT_UNUSED const FEInternalData &fe_data) {}
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FETensor);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -203,7 +203,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FETensor);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
@@ -225,14 +225,14 @@ class MapSystem {
 public:
     /// Fill fe_values_vec of components of mixed system FEValues object.
     inline void fill_values_vec(FV &fe_values, const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         unsigned int comp_offset = 0;
         for (unsigned int f=0; f<fe_values.fe_sys_dofs_.size(); f++)
         {
             // fill fe_values for base FE
-            typename FV::FEInternalData vec_fe_data(fe_data, fe_values.fe_sys_dofs_[f], comp_offset, fe_values.fe_sys_n_components_[f]);
+            FEInternalData vec_fe_data(fe_data, fe_values.fe_sys_dofs_[f], comp_offset, fe_values.fe_sys_n_components_[f]);
             fe_values.fe_values_vec[f].fill_data(elm_values, vec_fe_data);
 
             comp_offset += fe_values.fe_sys_n_components_[f];
@@ -241,7 +241,7 @@ public:
 
     /// Update shape_values of given FEValues object.
     inline void update_values(FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         arma::vec fv_vec;
@@ -263,7 +263,7 @@ public:
 
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FV &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
-            const typename FV::FEInternalData &fe_data) {
+            const FEInternalData &fe_data) {
         ASSERT(fe_values.fe_type_ == FEMixedSystem);
 
         arma::mat grads;
