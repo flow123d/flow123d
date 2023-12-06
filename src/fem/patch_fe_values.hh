@@ -90,8 +90,9 @@ template<unsigned int spacedim = 3>
 class PatchFEValues {
 public:
 
-    PatchFEValues(FMT_UNUSED unsigned int n_quad_points=0)
-    : n_columns_(0) {}
+    PatchFEValues(unsigned int n_quad_points)
+    : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+	  n_columns_(0) {}
 
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
@@ -102,10 +103,12 @@ public:
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
-    void initialize(FMT_UNUSED Quadrature &_quadrature,
-                    FMT_UNUSED FiniteElement<DIM> &_fe,
-                    FMT_UNUSED UpdateFlags _flags)
-    {}
+    void initialize(Quadrature &_quadrature,
+                    FiniteElement<DIM> &_fe,
+                    UpdateFlags _flags)
+    {
+        dim_fe_vals_[DIM].initialize(_quadrature, _fe, _flags);
+    }
 
     /// Reinit data.
     void reinit(FMT_UNUSED PatchElementsList patch_elements)
@@ -162,6 +165,176 @@ public:
     }
 
 private:
+    enum MeshObjectType {
+        ElementFE = 0,
+		SideFE = 1
+    };
+
+
+    /// Structure for storing the precomputed finite element data.
+    class FEInternalData
+    {
+    public:
+
+        FEInternalData(unsigned int np, unsigned int nd);
+
+        /// Create a new instance of FEInternalData for a FESystem component or subvector.
+        FEInternalData(const FEInternalData &fe_system_data,
+                       const std::vector<unsigned int> &dof_indices,
+                       unsigned int first_component_idx,
+                       unsigned int ncomps = 1);
+
+        /**
+         * @brief Precomputed values of basis functions at the quadrature points.
+         *
+         * Dimensions:   (no. of quadrature points)
+         *             x (no. of dofs)
+         *             x (no. of components in ref. cell)
+         */
+        std::vector<std::vector<arma::vec> > ref_shape_values;
+
+        /**
+         * @brief Precomputed gradients of basis functions at the quadrature points.
+         *
+         * Dimensions:   (no. of quadrature points)
+         *             x (no. of dofs)
+         *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
+         */
+        std::vector<std::vector<arma::mat> > ref_shape_grads;
+
+        /// Number of quadrature points.
+        unsigned int n_points;
+
+        /// Number of dofs (shape functions).
+        unsigned int n_dofs;
+    };
+
+
+    class ElementFEData
+    {
+    public:
+        ElementFEData() {}
+
+        /// Shape functions evaluated at the quadrature points.
+        std::vector<std::vector<double> > shape_values_;
+
+        /// Gradients of shape functions evaluated at the quadrature points.
+        /// Each row of the matrix contains the gradient of one shape function.
+        std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients_;
+
+        /// Auxiliary object for calculation of element-dependent data.
+        std::shared_ptr<ElementValues<spacedim> > elm_values_;
+
+    };
+
+
+    /// Subobject holds FE data of one dimension (0,1,2,3)
+    class DimPatchFEValues {
+    public:
+        /// Constructor
+        DimPatchFEValues(unsigned int max_size)
+        : used_size_(0), max_n_elem_(max_size) {}
+
+
+    	inline unsigned int used_size() const {
+    	    return used_size_;
+    	}
+
+    	inline unsigned int max_size() const {
+    	    return element_data_.size();
+    	}
+
+        /**
+    	 * @brief Initialize structures and calculates cell-independent data.
+    	 *
+    	 * @param _quadrature The quadrature rule for the cell associated
+         *                    to given finite element or for the cell side.
+    	 * @param _fe The finite element.
+    	 * @param _flags The update flags.
+    	 */
+        template<unsigned int DIM>
+        void initialize(Quadrature &_quadrature,
+                        FiniteElement<DIM> &_fe,
+                        UpdateFlags _flags);
+
+        /**
+         * @brief Allocates space for computed data.
+         *
+         * @param n_points    Number of quadrature points.
+         * @param _fe         The finite element.
+         * @param flags       The update flags.
+         */
+        template<unsigned int DIM>
+        void allocate(Quadrature &_quadrature,
+                      FiniteElement<DIM> &_fe,
+                      UpdateFlags flags);
+
+        /// Precompute finite element data on reference element.
+        template<unsigned int DIM>
+        std::shared_ptr<typename PatchFEValues<spacedim>::FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
+
+
+        /// Dimension of reference space.
+        unsigned int dim_;
+
+        /// Number of integration points.
+        unsigned int n_points_;
+
+        /// Number of finite element dofs.
+        unsigned int n_dofs_;
+
+        /// Type of finite element (scalar, vector, tensor).
+        FEType fe_type_;
+
+        /// Dof indices of FESystem sub-elements.
+        std::vector<std::vector<unsigned int>> fe_sys_dofs_;
+
+        /// Numbers of components of FESystem sub-elements in reference space.
+        std::vector<unsigned int> fe_sys_n_components_;
+
+        /// Numbers of components of FESystem sub-elements in real space.
+        std::vector<unsigned int> fe_sys_n_space_components_;
+
+        /// Flags that indicate which finite element quantities are to be computed.
+        UpdateFlags update_flags;
+
+//        /// Vector of FEValues for sub-elements of FESystem.
+//        std::vector<PatchFEValues<spacedim>::DimPatchFEValues> fe_values_vec;
+
+        /// Number of components of the FE.
+        unsigned int n_components_;
+
+//        /// Auxiliary storage of FEValuesViews accessors.
+//        ViewsCache views_cache_;
+
+        /// Precomputed finite element data.
+        std::shared_ptr<FEInternalData> fe_data_;
+
+        /// Precomputed FE data (shape functions on reference element) for all side quadrature points.
+        std::vector<shared_ptr<FEInternalData> > side_fe_data_;
+
+        /// Patch index of processed element / side.
+        unsigned int patch_data_idx_;
+
+        /// Map of element patch indexes to element_data_.
+        std::map<unsigned int, unsigned int> element_patch_map_;
+
+        /// Data of elements / sides on patch
+        std::vector<ElementFEData> element_data_;
+
+        /// Number of elements / sides on patch. Must be less or equal to size of element_data vector
+        unsigned int used_size_;
+
+        /// Maximal number of elements on patch.
+        unsigned int max_n_elem_;
+
+        /// Distinguishes using of PatchFEValues for storing data of elements or sides.
+        MeshObjectType object_type_;
+    };
+
+    /// Sub objects of dimensions 0,1,2,3
+    std::array<DimPatchFEValues, 4> dim_fe_vals_;
+
     uint n_columns_;  ///< Number of columns
 
 };
