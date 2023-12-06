@@ -21,6 +21,7 @@
 #include "fem/patch_fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"
+#include "fem/fe_values_map.hh"
 
 
 
@@ -65,16 +66,17 @@ void PatchFEValues<spacedim>::DimPatchFEValues::initialize(
         element_data_[i].elm_values_ = std::make_shared<ElementValues<spacedim> >(q, this->update_flags, DIM);
 
     // In case of mixed system allocate data for sub-elements.
-//    if (fe_type_ == FEMixedSystem)
-//    {
-//        FESystem<DIM> *fe = dynamic_cast<FESystem<DIM>*>(&_fe);
-//        ASSERT(fe != nullptr).error("Mixed system must be represented by FESystem.");
-//
-//        fe_values_vec.resize(fe->fe().size());
-//        init_fe_val_vec();
-//        for (unsigned int f=0; f<fe->fe().size(); f++)
-//            fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
-//    }
+    if (fe_type_ == FEMixedSystem)
+    {
+        FESystem<DIM> *fe = dynamic_cast<FESystem<DIM>*>(&_fe);
+        ASSERT(fe != nullptr).error("Mixed system must be represented by FESystem.");
+
+        fe_values_vec.resize(fe->fe().size());
+        for (unsigned int f=0; f<fe->fe().size(); f++) {
+            fe_values_vec[f].resize( this->max_size() );
+            fe_values_vec[f].initialize(q, *fe->fe()[f], update_flags);
+        }
+    }
 
     // precompute finite element data
     if ( q.dim() == DIM )
@@ -210,19 +212,58 @@ void PatchFEValues<spacedim>::DimPatchFEValues::reinit(PatchElementsList patch_e
             patch_data_idx_ = i;
             element_patch_map_[it->second] = i;
             element_data_[i].elm_values_->reinit(it->first);
-            //this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+            this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
         } else {
             element_patch_map_[it->second] = i * (this->dim_+1);
             for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
                 patch_data_idx_ = i * (this->dim_+1) + sid;
                 element_data_[patch_data_idx_].elm_values_->reinit( *it->first.side(sid) );
-                //this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
+                this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
 
             }
         }
     }
 }
 
+
+template<unsigned int spacedim>
+void PatchFEValues<spacedim>::DimPatchFEValues::fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data)
+{
+    switch (this->fe_type_) {
+        case FEScalar:
+            this->fill_data_specialized<MapScalar<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVector:
+            this->fill_data_specialized<MapVector<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVectorContravariant:
+            this->fill_data_specialized<MapContravariant<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        case FEVectorPiola:
+            this->fill_data_specialized<MapPiola<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        case FETensor:
+            this->fill_data_specialized<MapTensor<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        case FEMixedSystem:
+            this->fill_data_specialized<MapSystem<PatchFEValues<spacedim>::DimPatchFEValues, spacedim>>(elm_values, fe_data);
+            break;
+        default:
+            ASSERT_PERMANENT(false).error("Not implemented.");
+    }
+}
+
+
+template<unsigned int spacedim>
+template<class MapType>
+inline void PatchFEValues<spacedim>::DimPatchFEValues::fill_data_specialized(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data) {
+	MapType map_type;
+	map_type.fill_values_vec(*this, elm_values, fe_data);
+    if (this->update_flags & update_values)
+    	map_type.update_values(*this, elm_values, fe_data);
+    if (this->update_flags & update_gradients)
+    	map_type.update_gradients(*this, elm_values, fe_data);
+}
 
 
 // explicit instantiation

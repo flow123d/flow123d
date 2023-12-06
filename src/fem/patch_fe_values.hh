@@ -236,7 +236,7 @@ private:
     class DimPatchFEValues {
     public:
         /// Constructor
-        DimPatchFEValues(unsigned int max_size)
+        DimPatchFEValues(unsigned int max_size=0)
         : used_size_(0), max_n_elem_(max_size) {}
 
 
@@ -279,6 +279,77 @@ private:
         template<unsigned int DIM>
         std::shared_ptr<FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
 
+        /**
+         * @brief Computes the shape function values and gradients on the actual cell
+         * and fills the FEValues structure.
+         *
+         * @param fe_data Precomputed finite element data.
+         */
+        void fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
+
+        /**
+         * @brief Computes the shape function values and gradients on the actual cell
+         * and fills the FEValues structure. Specialized variant of previous method for
+         * different FETypes given by template parameter.
+         */
+        template<class MapType>
+        void fill_data_specialized(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
+
+        /**
+         * Temporary function. Use in fill_data.
+         * Set shape value @p val of the @p i_point and @p i_func_comp.
+         */
+        inline void set_shape_value(unsigned int i_point, unsigned int i_func_comp, double val)
+        {
+            element_data_[patch_data_idx_].shape_values_[i_point][i_func_comp] = val;
+        }
+
+        /**
+         * Temporary function. Use in fill_data.
+         * Set shape gradient @p val of the @p i_point and @p i_func_comp.
+         */
+        inline void set_shape_gradient(unsigned int i_point, unsigned int i_func_comp, arma::vec::fixed<spacedim> val)
+        {
+            element_data_[patch_data_idx_].shape_gradients_[i_point][i_func_comp] = val;
+        }
+
+        /**
+         * Temporary function. Use in fill_data.
+         * @brief Return the value of the @p function_no-th shape function at
+         * the @p point_no-th quadrature point.
+         *
+         * @param function_no Number of the shape function.
+         * @param point_no Number of the quadrature point.
+         */
+        inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
+        {
+            // TODO: obsolete method, will be replaced with following two methods.
+            ASSERT_LT(function_no, this->n_dofs_);
+            ASSERT_LT(point_no, this->n_points_);
+            return element_data_[patch_data_idx_].shape_values_[point_no][function_no];
+        }
+
+        /**
+         * Temporary function. Use in fill_data.
+         * @brief Return the gradient of the @p function_no-th shape function at
+         * the @p point_no-th quadrature point.
+         *
+         * @param function_no Number of the shape function.
+         * @param point_no Number of the quadrature point.
+         */
+        inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
+    	{
+            // TODO: obsolete method, will be replaced with following two methods.
+            ASSERT_LT(function_no, this->n_dofs_);
+            ASSERT_LT(point_no, this->n_points_);
+            return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no];
+        }
+
+        /// Set size of ElementFEData. Important: Use only during the initialization of FESystem !
+        void resize(unsigned int max_size) {
+            element_data_.resize(max_size);
+        }
+
 
         /// Dimension of reference space.
         unsigned int dim_;
@@ -304,8 +375,8 @@ private:
         /// Flags that indicate which finite element quantities are to be computed.
         UpdateFlags update_flags;
 
-//        /// Vector of FEValues for sub-elements of FESystem.
-//        std::vector<PatchFEValues<spacedim>::DimPatchFEValues> fe_values_vec;
+        /// Vector of FEValues for sub-elements of FESystem.
+        std::vector<PatchFEValues<spacedim>::DimPatchFEValues> fe_values_vec;
 
         /// Number of components of the FE.
         unsigned int n_components_;
