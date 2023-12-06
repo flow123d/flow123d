@@ -192,6 +192,36 @@ std::shared_ptr<typename PatchFEValues<spacedim>::FEInternalData> PatchFEValues<
 }
 
 
+template<unsigned int spacedim>
+void PatchFEValues<spacedim>::DimPatchFEValues::reinit(PatchElementsList patch_elements)
+{
+    element_patch_map_.clear();
+    if (object_type_ == ElementFE)
+        used_size_ = patch_elements.size();
+    else
+        used_size_ = patch_elements.size() * (this->dim_+1);
+    ASSERT_LE(used_size_, max_size());
+
+    unsigned int i=0;
+    for (auto it=patch_elements.begin(); it!=patch_elements.end(); ++it, ++i) {
+        if (object_type_ == ElementFE) {
+            patch_data_idx_ = i;
+            element_patch_map_[it->second] = i;
+            element_data_[i].elm_values_->reinit(it->first);
+            //this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+        } else {
+            element_patch_map_[it->second] = i * (this->dim_+1);
+            for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
+                patch_data_idx_ = i * (this->dim_+1) + sid;
+                element_data_[patch_data_idx_].elm_values_->reinit( *it->first.side(sid) );
+                //this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
+
+            }
+        }
+    }
+}
+
+
 
 // explicit instantiation
 template void PatchFEValues<3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
@@ -199,3 +229,4 @@ template void PatchFEValues<3>::initialize<1>(Quadrature&, FiniteElement<1>&, Up
 template void PatchFEValues<3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
 template void PatchFEValues<3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
 
+template class PatchFEValues<3>;

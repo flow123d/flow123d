@@ -111,8 +111,12 @@ public:
     }
 
     /// Reinit data.
-    void reinit(FMT_UNUSED PatchElementsList patch_elements)
-    {}
+    void reinit(std::array<PatchElementsList, 4> patch_elements)
+    {
+        for (unsigned int i=0; i<4; ++i) {
+            dim_fe_vals_[i].reinit(patch_elements[i]);
+        }
+    }
 
     /**
      * @brief Return the product of Jacobian determinant and the quadrature
@@ -243,6 +247,8 @@ private:
     	inline unsigned int max_size() const {
     	    return element_data_.size();
     	}
+
+        void reinit(PatchElementsList patch_elements);
 
         /**
     	 * @brief Initialize structures and calculates cell-independent data.

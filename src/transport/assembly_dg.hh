@@ -77,7 +77,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements[dim]);
+        fe_values_.reinit(patch_elements);
     }
 
 
@@ -252,7 +252,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements[dim]);
+        fe_values_.reinit(patch_elements);
         fe_values_edge_.reinit(patch_elements[dim]);
     }
 
@@ -711,7 +711,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements[dim]);
+        fe_values_.reinit(patch_elements);
     }
 
 
