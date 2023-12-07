@@ -91,7 +91,7 @@ class PatchFEValues {
 public:
 
     PatchFEValues(unsigned int n_quad_points)
-    : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+    : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
 	  n_columns_(0) {}
 
     /**
@@ -107,14 +107,14 @@ public:
                     FiniteElement<DIM> &_fe,
                     UpdateFlags _flags)
     {
-        dim_fe_vals_[DIM].initialize(_quadrature, _fe, _flags);
+        dim_fe_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
     }
 
     /// Reinit data.
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
-        for (unsigned int i=1; i<4; ++i) {
-            dim_fe_vals_[i].reinit(patch_elements[i]);
+        for (unsigned int i=0; i<3; ++i) {
+            dim_fe_vals_[i].reinit(patch_elements[i+1]);
         }
     }
 
@@ -409,8 +409,8 @@ private:
         MeshObjectType object_type_;
     };
 
-    /// Sub objects of dimensions 0,1,2,3
-    std::array<DimPatchFEValues, 4> dim_fe_vals_;
+    /// Sub objects of dimensions 1,2,3
+    std::array<DimPatchFEValues, 3> dim_fe_vals_;
 
     uint n_columns_;  ///< Number of columns
 
