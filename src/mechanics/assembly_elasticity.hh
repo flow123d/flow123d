@@ -44,7 +44,7 @@ public:
     StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->output_cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
         this->used_fields_ += eq_fields_->dirichlet_penalty;
@@ -112,7 +112,7 @@ public:
             for (unsigned int i=0; i<n_dofs_; i++)
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
-                    local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
+                    local_matrix_[i*n_dofs_+j] += eq_fields_->output_cross_section(p)*(
                                                 2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
                                                 + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
                                                )*fe_values_.JxW(k);
@@ -220,7 +220,7 @@ public:
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
                                      arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
+                                      2/eq_fields_->output_cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
                                       + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
                                       + eq_fields_->lame_lambda(p_low)*divuft*nv
                                      )
@@ -293,7 +293,7 @@ public:
     RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
-        this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->output_cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
         this->used_fields_ += eq_fields_->ref_potential_load;
@@ -368,7 +368,7 @@ public:
                                  arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
                                  -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
                                  -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
-                                )*eq_fields_->cross_section(p)*fe_values_.JxW(k);
+                                )*eq_fields_->output_cross_section(p)*fe_values_.JxW(k);
             ++k;
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
@@ -409,7 +409,7 @@ public:
         for (auto p : this->boundary_points(cell_side) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
-                local_rhs_[i] += eq_fields_->cross_section(p) *
+                local_rhs_[i] += eq_fields_->output_cross_section(p) *
                         arma::dot(( eq_fields_->initial_stress(p) * fe_values_bdr_side_.normal_vector(k)),
                                     vec_view_bdr_->value(i,k)) *
                         fe_values_bdr_side_.JxW(k);
@@ -450,7 +450,7 @@ public:
             {
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
-                    local_rhs_[i] += eq_fields_->cross_section(p) *
+                    local_rhs_[i] += eq_fields_->output_cross_section(p) *
                             arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(k)) *
                             fe_values_bdr_side_.JxW(k);
                 ++k;
@@ -463,7 +463,7 @@ public:
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     // stress is multiplied by inward normal to obtain traction
-                    local_rhs_[i] += eq_fields_->cross_section(p) *
+                    local_rhs_[i] += eq_fields_->output_cross_section(p) *
                             arma::dot(vec_view_bdr_->value(i,k), -eq_fields_->bc_stress(p_bdr)*fe_values_bdr_side_.normal_vector(k)
                             + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(k))
                             * fe_values_bdr_side_.JxW(k);
@@ -517,7 +517,7 @@ public:
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
 
-                    local_rhs_ngh_[n][i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
+                    local_rhs_ngh_[n][i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->output_cross_section(p_high) *
                             arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * fe_values_sub_.JxW(k);
                 }
             }
