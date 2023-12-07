@@ -138,10 +138,8 @@ public:
     {
         uint begin = this->n_columns_;
         n_columns_++; // scalar needs one column
-        // TODO store to map?? JxW will be pre-computed to column 'begin'.
-        for (auto q : quad_list)
-        	std::cout << "JxW quad dim: " << q->dim() << std::endl;
-            // Call  dim_fe_vals_[q->dim()-1].JxW(p);
+        // storing to temporary map
+        func_map_[begin] = std::make_pair<DimPatchFEValues *, string>(&dim_fe_vals_[quad_list[0]->dim()-1], "JxW");
         return ElQ<Scalar>(this, begin);
     }
 
@@ -165,11 +163,12 @@ public:
      * @param quad_list List of quadratures.
      * @param function_no Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(FMT_UNUSED std::vector<Quadrature *> quad_list, unsigned int n_comp)
+    inline FeQ<Scalar> scalar_shape(std::vector<Quadrature *> quad_list, unsigned int n_comp)
     {
         uint begin = this->n_columns_;
         n_columns_ += n_comp; // scalar needs one column x n_comp
-        // TODO store to map?? shape_value will be pre-computed to column 'begin'.
+        // storing to temporary map
+        func_map_[begin] = std::make_pair<DimPatchFEValues *, string>(&dim_fe_vals_[quad_list[0]->dim()-1], "shape_value");
         return FeQ<Scalar>(this, begin);
     }
 
@@ -368,6 +367,20 @@ private:
             return element_data_[patch_data_idx].elm_values_->JxW(p.eval_point_idx());
         }
 
+        /**
+         * @brief Return the value of the @p function_no-th shape function at
+         * the @p p quadrature point.
+         *
+         * @param function_no Number of the shape function.
+         * @param p BulkPoint corresponds to the quadrature point.
+         */
+        inline double shape_value(const unsigned int function_no, const BulkPoint &p) const
+        {
+            ASSERT_LT(function_no, this->n_dofs_);
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+            return element_data_[patch_data_idx].shape_values_[p.eval_point_idx()][function_no];
+        }
+
         /// Set size of ElementFEData. Important: Use only during the initialization of FESystem !
         void resize(unsigned int max_size) {
             element_data_.resize(max_size);
@@ -438,14 +451,27 @@ private:
 
     uint n_columns_;  ///< Number of columns
 
-    bool used_quads_[2]; ///<Temporary flags in step between
+    ///< Temporary helper objects used in step between usage old a new implementation
+    typedef std::pair<DimPatchFEValues *, string> FuncDef;
+    bool used_quads_[2];
+    std::map<unsigned int, FuncDef> func_map_;
 
+    template <class ValueType>
+    friend class ElQ;
+    template <class ValueType>
+    friend class FeQ;
 };
 
 
 template <class ValueType>
-ValueType ElQ<ValueType>::operator()(FMT_UNUSED const BulkPoint &point) {
-    return 0.0;
+ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.second == "JxW") {
+        return it->second.first->JxW(point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
 }
 
 template <>
@@ -461,8 +487,14 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
-    return 0.0;
+ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.second == "shape_value") {
+        return it->second.first->shape_value(shape_idx, point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
 }
 
 template <>
