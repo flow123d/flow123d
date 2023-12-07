@@ -92,7 +92,10 @@ public:
 
     PatchFEValues(unsigned int n_quad_points)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  n_columns_(0) {}
+	  dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+	  n_columns_(0) {
+        used_quads_[0] = false; used_quads_[1] = false;
+    }
 
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
@@ -107,14 +110,21 @@ public:
                     FiniteElement<DIM> &_fe,
                     UpdateFlags _flags)
     {
-        dim_fe_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
+        if ( _quadrature.dim() == DIM ) {
+            dim_fe_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
+            used_quads_[0] = true;
+        } else {
+            dim_fe_side_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
+            used_quads_[1] = true;
+        }
     }
 
     /// Reinit data.
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
         for (unsigned int i=0; i<3; ++i) {
-            dim_fe_vals_[i].reinit(patch_elements[i+1]);
+            if (used_quads_[0]) dim_fe_vals_[i].reinit(patch_elements[i+1]);
+            if (used_quads_[1]) dim_fe_side_vals_[i].reinit(patch_elements[i+1]);
         }
     }
 
@@ -124,11 +134,14 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-    inline ElQ<Scalar> JxW(FMT_UNUSED std::vector<Quadrature *> quad_list)
+    inline ElQ<Scalar> JxW(std::vector<Quadrature *> quad_list)
     {
         uint begin = this->n_columns_;
         n_columns_++; // scalar needs one column
         // TODO store to map?? JxW will be pre-computed to column 'begin'.
+        for (auto q : quad_list)
+        	std::cout << "JxW quad dim: " << q->dim() << std::endl;
+            // Call  dim_fe_vals_[q->dim()-1].JxW(p);
         return ElQ<Scalar>(this, begin);
     }
 
@@ -296,7 +309,7 @@ private:
         void fill_data_specialized(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
 
         /**
-         * Temporary function. Use in fill_data.
+         * !! Temporary function. Use in fill_data.
          * Set shape value @p val of the @p i_point and @p i_func_comp.
          */
         inline void set_shape_value(unsigned int i_point, unsigned int i_func_comp, double val)
@@ -305,7 +318,7 @@ private:
         }
 
         /**
-         * Temporary function. Use in fill_data.
+         * !! Temporary function. Use in fill_data.
          * Set shape gradient @p val of the @p i_point and @p i_func_comp.
          */
         inline void set_shape_gradient(unsigned int i_point, unsigned int i_func_comp, arma::vec::fixed<spacedim> val)
@@ -314,7 +327,7 @@ private:
         }
 
         /**
-         * Temporary function. Use in fill_data.
+         * !! Temporary function. Use in fill_data.
          * @brief Return the value of the @p function_no-th shape function at
          * the @p point_no-th quadrature point.
          *
@@ -323,14 +336,13 @@ private:
          */
         inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
         {
-            // TODO: obsolete method, will be replaced with following two methods.
             ASSERT_LT(function_no, this->n_dofs_);
             ASSERT_LT(point_no, this->n_points_);
             return element_data_[patch_data_idx_].shape_values_[point_no][function_no];
         }
 
         /**
-         * Temporary function. Use in fill_data.
+         * !! Temporary function. Use in fill_data.
          * @brief Return the gradient of the @p function_no-th shape function at
          * the @p point_no-th quadrature point.
          *
@@ -339,10 +351,21 @@ private:
          */
         inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
     	{
-            // TODO: obsolete method, will be replaced with following two methods.
             ASSERT_LT(function_no, this->n_dofs_);
             ASSERT_LT(point_no, this->n_points_);
             return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no];
+        }
+
+        /**
+         * @brief Return the product of Jacobian determinant and the quadrature
+         * weight at given quadrature point.
+         *
+         * @param p BulkPoint corresponds to the quadrature point.
+         */
+        inline double JxW(const BulkPoint &p)
+        {
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+            return element_data_[patch_data_idx].elm_values_->JxW(p.eval_point_idx());
         }
 
         /// Set size of ElementFEData. Important: Use only during the initialization of FESystem !
@@ -411,8 +434,11 @@ private:
 
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
+    std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
 
     uint n_columns_;  ///< Number of columns
+
+    bool used_quads_[2]; ///<Temporary flags in step between
 
 };
 
