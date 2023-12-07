@@ -46,10 +46,9 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-      fe_values_(CacheMapElementNumber::get()),
       ndofs_(fe_->n_dofs()),
-      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_} ) ),
-      conc_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -63,7 +62,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        fe_values_.initialize(*this->quad_, *fe_, u);
+        this->fe_values_->initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
         dof_indices_.resize(ndofs_);
@@ -77,7 +76,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        this->fe_values_->reinit(patch_elements);
     }
 
 
@@ -144,7 +143,6 @@ public:
         FieldSet used_fields_;
 
         shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
-        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
         unsigned int ndofs_;                                      ///< Number of dofs
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
@@ -680,10 +678,9 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-      fe_values_(CacheMapElementNumber::get()),
 	  ndofs_(fe_->n_dofs()),
-      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_} ) ),
-      conc_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -698,7 +695,7 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        fe_values_.initialize(*this->quad_, *fe_, u);
+        this->fe_values_->initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         dof_indices_.resize(ndofs_);
@@ -711,7 +708,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        this->fe_values_->reinit(patch_elements);
     }
 
 
@@ -775,7 +772,6 @@ public:
         EqData *eq_data_;
 
         shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
-        PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
 
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
