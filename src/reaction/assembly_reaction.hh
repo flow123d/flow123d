@@ -23,7 +23,7 @@
 #include "reaction/dual_porosity.hh"
 #include "reaction/isotherm.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 //#include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
@@ -40,8 +40,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(0, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -96,8 +96,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(0, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -208,8 +208,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblySorp"; }
 
     /// Constructor.
-    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(0, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -264,8 +264,8 @@ public:
     static constexpr const char * name() { return "ReactionAssemblySorp"; }
 
     /// Constructor.
-    ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(0, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;

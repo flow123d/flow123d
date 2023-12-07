@@ -25,8 +25,8 @@ public:
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_values_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
@@ -191,8 +191,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_values_(CacheMapElementNumber::get()),
 	  fe_values_edge_(CacheMapElementNumber::get()),
 	  fe_values_vb_(CacheMapElementNumber::get()),
@@ -780,8 +780,8 @@ public:
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_values_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;

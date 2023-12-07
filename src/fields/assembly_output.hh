@@ -23,7 +23,7 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
@@ -44,8 +44,8 @@ public:
     typedef EquationOutput EqData;
 
     /// Constructor.
-    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(quad_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
@@ -107,8 +107,8 @@ public:
     static constexpr const char * name() { return "AssemblyOutputElemData"; }
 
     /// Constructor.
-    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
+    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyOutputBase<dim>(0, eq_fields, eq_data, fe_values) {}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}
@@ -149,7 +149,7 @@ public:
     static constexpr const char * name() { return "AssemblyOutputNodeData"; }
 
     /// Constructor.
-    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
+    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data, FMT_UNUSED PatchFEValues<3> *fe_values)
     : AssemblyOutputBase<dim>(eq_fields, eq_data) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)

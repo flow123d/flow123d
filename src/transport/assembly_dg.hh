@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
       fe_values_(CacheMapElementNumber::get()),
       ndofs_(fe_->n_dofs()),
@@ -174,8 +174,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
       ndofs_(fe_->n_dofs()),
       fe_values_(CacheMapElementNumber::get()),
@@ -677,8 +677,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
       fe_values_(CacheMapElementNumber::get()),
 	  ndofs_(fe_->n_dofs()),
@@ -809,8 +809,8 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -1031,8 +1031,8 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
@@ -1130,7 +1130,7 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, FMT_UNUSED PatchFEValues<3> *fe_values)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
