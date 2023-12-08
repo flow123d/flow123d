@@ -56,6 +56,8 @@ public:
 
     ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
+    ValueType operator()(FMT_UNUSED const SidePoint &point);
+
 private:
     // attributes:
     PatchFEValues<3> *fe_values_;
@@ -75,6 +77,8 @@ public:
 
 
     ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point);
+
+    ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point);
 
     // Implementation for EdgePoint, SidePoint, and JoinPoint shoud have a common implementation
     // resolving to side values
@@ -276,6 +280,18 @@ private:
         }
 
         /**
+         * @brief Return the product of Jacobian determinant and the quadrature
+         * weight at given quadrature point.
+         *
+         * @param p SidePoint corresponds to the quadrature point.
+         */
+        inline double JxW(const SidePoint &p)
+        {
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+            return element_data_[patch_data_idx].elm_values_->side_JxW(p.local_point_idx());
+        }
+
+        /**
          * @brief Return the value of the @p function_no-th shape function at
          * the @p p quadrature point.
          *
@@ -287,6 +303,20 @@ private:
             ASSERT_LT(function_no, this->n_dofs_);
             unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
             return element_data_[patch_data_idx].shape_values_[p.eval_point_idx()][function_no];
+        }
+
+        /**
+         * @brief Return the value of the @p function_no-th shape function at
+         * the @p p quadrature point.
+         *
+         * @param function_no Number of the shape function.
+         * @param p SidePoint corresponds to the quadrature point.
+         */
+        inline double shape_value(const unsigned int function_no, const SidePoint &p) const
+        {
+            ASSERT_LT(function_no, this->n_dofs_);
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+            return element_data_[patch_data_idx].shape_values_[p.local_point_idx()][function_no];
         }
 
         /**
@@ -302,6 +332,31 @@ private:
             unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
             return element_data_[patch_data_idx].shape_gradients_[p.eval_point_idx()][function_no];;
         }
+
+        /**
+         * @brief Return the gradient of the @p function_no-th shape function at
+         * the @p p quadrature point.
+         *
+         * @param function_no Number of the shape function.
+         * @param p SidePoint corresponds to the quadrature point.
+         */
+        inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const SidePoint &p) const
+    	{
+            ASSERT_LT(function_no, this->n_dofs_);
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+            return element_data_[patch_data_idx].shape_gradients_[p.local_point_idx()][function_no];;
+        }
+
+        /**
+         * @brief Returns the normal vector to a side at given quadrature point.
+         *
+         * @param p SidePoint corresponds to the quadrature point.
+         */
+    	inline arma::vec::fixed<spacedim> normal_vector(const SidePoint &p)
+    	{
+            unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+            return element_data_[patch_data_idx].elm_values_->normal_vector(p.local_point_idx());
+    	}
 
         /// Set size of ElementFEData. Important: Use only during the initialization of FESystem !
         void resize(unsigned int max_size) {
@@ -429,7 +484,7 @@ public:
         n_columns_++; // scalar needs one column
         // storing to temporary map
         DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "JxW");
         return ElQ<Scalar>(this, begin);
     }
@@ -439,11 +494,13 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-	inline ElQ<Vector> normal_vector(FMT_UNUSED std::vector<Quadrature *> quad_list)
+	inline ElQ<Vector> normal_vector(std::vector<Quadrature *> quad_list)
 	{
         uint begin = this->n_columns_;
         n_columns_ += 3; // Vector needs 3 columns
-        // TODO store to map?? shape_value will be pre-computed to column 'begin'.
+        // storing to temporary map
+        DimPatchFEValues *side_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[0]->dim()];
+        func_map_[begin] = FuncDef(nullptr, side_data, "normal_vector");
         return ElQ<Vector>(this, begin);
 	}
 
@@ -460,7 +517,7 @@ public:
         n_columns_ += n_comp; // scalar needs one column x n_comp
         // storing to temporary map
         DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "shape_value");
         return FeQ<Scalar>(this, begin);
     }
@@ -471,7 +528,7 @@ public:
         n_columns_ += 3 * n_comp; // scalar needs one column x n_comp
         // storing to temporary map
         DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "shape_grad");
         return FeQ<Vector>(this, begin);
     }
@@ -518,6 +575,35 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 }
 
 template <class ValueType>
+ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "JxW") {
+        return it->second.side_data_->JxW(point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
+}
+
+template <>
+inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "normal_vector") {
+        return it->second.side_data_->normal_vector(point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        Vector vect; vect.zeros();
+        return vect;
+    }
+}
+
+template <>
+inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const SidePoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
+
+template <class ValueType>
 ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
 	auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "shape_value") {
@@ -542,6 +628,35 @@ inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const BulkPoint &p
 
 template <>
 inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
+
+template <class ValueType>
+ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const SidePoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "shape_value") {
+        return it->second.side_data_->shape_value(shape_idx, point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
+}
+
+template <>
+inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const SidePoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "shape_grad") {
+        return it->second.side_data_->shape_grad(shape_idx, point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        Vector vect; vect.zeros();
+        return vect;
+    }
+}
+
+template <>
+inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point) {
 	Tensor tens; tens.zeros();
     return tens;
 }
