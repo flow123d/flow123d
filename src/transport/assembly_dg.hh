@@ -172,16 +172,15 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data,  PatchFEValues<3> *fe_values)
     : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-      ndofs_(fe_->n_dofs()),
-      fe_values_(CacheMapElementNumber::get()),
-      fe_values_edge_(CacheMapElementNumber::get()),
-      JxW_( fe_values_.JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
-	  normal_( fe_values_.normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
-	  pressure_shape_( fe_values_.scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
-	  pressure_grad_( fe_values_.grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
+      fe_(std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order)),
+	  ndofs_(fe_->n_dofs()),
+	  fe_values_edge_(CacheMapElementNumber::get()),
+      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
+      normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
+      pressure_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
+      pressure_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -207,7 +206,7 @@ public:
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        fe_values_.initialize(*this->quad_, *fe_, u);
+        this->fe_values_->initialize(*this->quad_, *fe_, u);
         if (dim>1) {
             fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
@@ -216,7 +215,6 @@ public:
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
         }
-        ndofs_ = fe_->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
@@ -227,6 +225,7 @@ public:
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
         }
         fe_values_edge_.initialize(*this->quad_low_, *fe_, u_side);
+        this->fe_values_->initialize(*this->quad_low_, *fe_, u_side);
 
         // index 0 = element with lower dimension,
         // index 1 = side of element with higher dimension
@@ -250,7 +249,7 @@ public:
     /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
-        fe_values_.reinit(patch_elements);
+        this->fe_values_->reinit(patch_elements);
         fe_values_edge_.reinit(patch_elements[dim]);
     }
 
@@ -636,7 +635,6 @@ private:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    PatchFEValues<3> fe_values_;                              ///< FEValues of object (of P disc finite element type)
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
     PatchFEValues_TEMP<3> fe_values_edge_;                         ///< FEValues of object (of P disc finite element type)
