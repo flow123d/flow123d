@@ -176,7 +176,6 @@ public:
     : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_(std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order)),
 	  ndofs_(fe_->n_dofs()),
-	  fe_values_edge_(CacheMapElementNumber::get()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
       pressure_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
@@ -207,6 +206,7 @@ public:
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->initialize(*this->quad_, *fe_, u);
+        this->fe_values_->initialize(*this->quad_low_, *fe_, u_side);
         if (dim>1) {
             fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
@@ -224,8 +224,6 @@ public:
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
         }
-        fe_values_edge_.initialize(*this->quad_low_, *fe_, u_side);
-        this->fe_values_->initialize(*this->quad_low_, *fe_, u_side);
 
         // index 0 = element with lower dimension,
         // index 1 = side of element with higher dimension
@@ -250,7 +248,6 @@ public:
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
-        fe_values_edge_.reinit(patch_elements[dim]);
     }
 
 
@@ -391,7 +388,7 @@ public:
         }
         auto zero_edge_side = *edge_side_range.begin();
         auto p = *( this->edge_points(zero_edge_side).begin() );
-        arma::vec3 normal_vector = fe_values_edge_.normal_vector(p);
+        arma::vec3 normal_vector = normal_(p);
 
         // fluxes and penalty
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
@@ -403,7 +400,7 @@ public:
             {
                 fluxes[sid] = 0;
                 for (auto p : this->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_edge_.normal_vector(p))*fe_values_edge_.JxW(p);
+                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p);
                 }
                 fluxes[sid] /= edge_side.measure();
                 if (fluxes[sid] > 0)
@@ -421,7 +418,7 @@ public:
                 for (auto p : this->edge_points(edge_side) )
                 {
                     for (unsigned int i=0; i<fe_->n_dofs(); i++)
-                        averages[s1][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,p)*0.5;
+                        averages[s1][k*fe_->n_dofs()+i] = pressure_shape_(i,p)*0.5;
                     k++;
                 }
                 s1++;
@@ -440,7 +437,7 @@ public:
                     ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
                     auto p = *( this->edge_points(edge_side1).begin() );
-                    arma::vec3 nv = fe_values_edge_.normal_vector(p);
+                    arma::vec3 nv = normal_(p);
 
                     // set up the parameters for DG method
                     // calculate the flux from edge_side1 to edge_side2
@@ -492,10 +489,10 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
                         {
-                            jumps[0][k*fe_->n_dofs()+i] = fe_values_edge_.shape_value(i,p1);
-                            jumps[1][k*fe_->n_dofs()+i] = - fe_values_edge_.shape_value(i,p2);
-                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*fe_values_edge_.shape_grad(i,p1),nv)*omega[0];
-                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*fe_values_edge_.shape_grad(i,p2),nv)*omega[1];
+                            jumps[0][k*fe_->n_dofs()+i] = pressure_shape_(i,p1);
+                            jumps[1][k*fe_->n_dofs()+i] = - pressure_shape_(i,p2);
+                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*pressure_grad_(i,p1),nv)*omega[0];
+                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*pressure_grad_(i,p2),nv)*omega[1];
                         }
                         k++;
                     }
@@ -507,19 +504,19 @@ public:
 
                         for (int m=0; m<2; m++)
                         {
-                            for (unsigned int i=0; i<fe_values_edge_.n_dofs(); i++)
-                                for (unsigned int j=0; j<fe_values_edge_.n_dofs(); j++)
-                                    local_matrix_[i*fe_values_edge_.n_dofs()+j] = 0;
+                            for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
+                                for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
+                                    local_matrix_[i*this->fe_values_->n_dofs(dim)+j] = 0;
 
                             k=0;
                             for (auto p1 : this->edge_points(zero_edge_side) )
                             //for (k=0; k<this->quad_low_->size(); ++k)
                             {
-                                for (unsigned int i=0; i<fe_values_edge_.n_dofs(); i++)
+                                for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
                                 {
-                                    for (unsigned int j=0; j<fe_values_edge_.n_dofs(); j++)
+                                    for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
                                     {
-                                        int index = i*fe_values_edge_.n_dofs()+j;
+                                        int index = i*this->fe_values_->n_dofs(dim)+j;
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
@@ -531,12 +528,12 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
                                             - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_edge_.JxW(p1) + LocalSystem::almost_zero;
+                                            )*JxW_(p1) + LocalSystem::almost_zero;
                                     }
                                 }
                                 k++;
                             }
-                            eq_data_->ls[sbi]->mat_set_values(fe_values_edge_.n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_edge_.n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
+                            eq_data_->ls[sbi]->mat_set_values(this->fe_values_->n_dofs(dim), &(side_dof_indices_[sd[n]][0]), this->fe_values_->n_dofs(dim), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
                     }
                 }
@@ -637,7 +634,6 @@ private:
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
     FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
     FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
-    PatchFEValues_TEMP<3> fe_values_edge_;                         ///< FEValues of object (of P disc finite element type)
     vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices

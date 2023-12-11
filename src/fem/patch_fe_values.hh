@@ -473,6 +473,15 @@ public:
     }
 
     /**
+     * @brief Returns the number of shape functions.
+     */
+    inline unsigned int n_dofs(unsigned int dim) const
+    {
+        ASSERT( (dim>0) && (dim<=3) )(dim).error("Invalid dimension!");
+        return dim_fe_vals_[dim-1].n_dofs_;
+    }
+
+    /**
      * @brief Return the product of Jacobian determinant and the quadrature
      * weight at given quadrature point.
      *
