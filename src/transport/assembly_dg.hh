@@ -800,7 +800,13 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+	  fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
+	  ndofs_(fe_->n_dofs()),
+      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{nullptr, this->quad_low_} ) ),
+      normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
+      pressure_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ),
+      pressure_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -818,28 +824,29 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        this->fe_values_->initialize(*this->quad_low_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
     }
 
 
+    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
+    {
+        this->fe_values_->reinit(patch_elements);
+    }
+
+
     /// Implements @p AssemblyBase::boundary_side_integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
-        unsigned int k;
-
         const unsigned int cond_idx = cell_side.side().cond_idx();
 
         ElementAccessor<3> bc_elm = cell_side.cond().element_accessor();
-
-        fe_values_side_.reinit(cell_side.side());
 
         const DHCellAccessor &cell = cell_side.cell();
         cell.get_dof_indices(dof_indices_);
@@ -851,10 +858,8 @@ public:
             local_flux_balance_rhs_ = 0;
 
             double side_flux = 0;
-            k=0;
             for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k);
-                k++;
+                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p);
             }
             double transport_flux = side_flux/cell_side.measure();
 
@@ -863,41 +868,35 @@ public:
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
             {
-                k=0;
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
+                    double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
-                    k++;
+                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
                 }
                 for (unsigned int i=0; i<ndofs_; i++)
                     local_flux_balance_rhs_ -= local_rhs_[i];
             }
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
-                k=0;
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
-                    double bc_term = eq_data_->gamma[sbi][cond_idx]*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k);
-                    arma::vec3 bc_grad = -eq_fields_->bc_dirichlet_value[sbi](p_bdr)*fe_values_side_.JxW(k)*eq_data_->dg_variant*(arma::trans(eq_fields_->diffusion_coef[sbi](p))*fe_values_side_.normal_vector(k));
+                    double bc_term = eq_data_->gamma[sbi][cond_idx]*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
+                    arma::vec3 bc_grad = -eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p)*eq_data_->dg_variant*(arma::trans(eq_fields_->diffusion_coef[sbi](p))*normal_(p));
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k)
-                                + arma::dot(bc_grad,fe_values_side_.shape_grad(i,k));
-                    k++;
+                        local_rhs_[i] += bc_term*pressure_shape_(i,p)
+                                + arma::dot(bc_grad,pressure_grad_(i,p));
                 }
-                k=0;
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                        local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
-                                - arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))
-                                + eq_data_->gamma[sbi][cond_idx]*fe_values_side_.shape_value(i,k))*fe_values_side_.JxW(k);
+                        local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*pressure_shape_(i,p)
+                                - arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(i,p),normal_(p))
+                                + eq_data_->gamma[sbi][cond_idx]*pressure_shape_(i,p))*JxW_(p);
                     }
-                    k++;
                 }
                 if (eq_data_->time_->step().index() > 0)
                     for (unsigned int i=0; i<ndofs_; i++)
@@ -905,62 +904,52 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_total_flux)
             {
-            	k=0;
             	for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
-                    		eq_fields_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
+                    		eq_fields_->bc_flux[sbi](p_bdr)) * JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
-                    k++;
+                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
                 }
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    k=0;
                     for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p) * eq_fields_->bc_robin_sigma[sbi](p_bdr) *
-                                fe_values_side_.JxW(k) * fe_values_side_.shape_value(i,k);
-                        k++;
+                                JxW_(p) * pressure_shape_(i,p);
                 	}
                     local_flux_balance_rhs_ -= local_rhs_[i];
                 }
             }
             else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
             {
-            	k=0;
             	for (auto p : this->boundary_points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
-                    		eq_fields_->bc_flux[sbi](p_bdr)) * fe_values_side_.JxW(k);
+                    		eq_fields_->bc_flux[sbi](p_bdr)) * JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*fe_values_side_.shape_value(i,k);
-                    k++;
+                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
                 }
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    k=0;
                     for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
-                        local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k)) +
-                        		eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
-                        k++;
+                        local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p)) +
+                        		eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p)*pressure_shape_(i,p);
                 	}
                     local_flux_balance_rhs_ -= local_rhs_[i];
                 }
             }
             else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
             {
-                k=0;
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), fe_values_side_.normal_vector(k))*fe_values_side_.JxW(k)*fe_values_side_.shape_value(i,k);
-                    k++;
+                        local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p)*pressure_shape_(i,p);
                 }
             }
             eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
@@ -985,22 +974,25 @@ public:
 
 
     private:
-        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
         EqData *eq_data_;
 
+        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
+        unsigned int ndofs_;                                      ///< Number of dofs
+
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
-
-        unsigned int ndofs_;                                      ///< Number of dofs
-        FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
 
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
         PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
+
+        ElQ<Scalar> JxW_;
+        ElQ<Vector> normal_;
+        FeQ<Scalar> pressure_shape_;
+        FeQ<Vector> pressure_grad_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
