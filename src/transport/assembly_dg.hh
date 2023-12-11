@@ -178,8 +178,8 @@ public:
 	  ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
-      pressure_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
-      pressure_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
+      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
+      conc_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -270,13 +270,13 @@ public:
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*pressure_grad_(i,p);
-                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), pressure_grad_(i,p));
+                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*conc_grad_(i,p);
+                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), conc_grad_(i,p));
 
                     for (unsigned int j=0; j<ndofs_; j++)
-                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, pressure_grad_(j,p))
-                                                  -pressure_shape_(j,p)*ad_dot_grad_i
-                                                  +eq_fields_->sources_sigma_out[sbi](p)*pressure_shape_(j,p)*pressure_shape_(i,p))*JxW_(p);
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, conc_grad_(j,p))
+                                                  -conc_shape_(j,p)*ad_dot_grad_i
+                                                  +eq_fields_->sources_sigma_out[sbi](p)*conc_shape_(j,p)*conc_shape_(i,p))*JxW_(p);
                 }
             }
             eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
@@ -354,12 +354,12 @@ public:
                     for (unsigned int j=0; j<ndofs_; j++)
                     {
                         // flux due to advection and penalty
-                        local_matrix_[i*ndofs_+j] += flux_times_JxW*pressure_shape_(i,p)*pressure_shape_(j,p);
+                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_(i,p)*conc_shape_(j,p);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(j,p),normal_(p))*pressure_shape_(i,p)
-                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(i,p),normal_(p))*pressure_shape_(j,p)*eq_data_->dg_variant
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(j,p),normal_(p))*conc_shape_(i,p)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(i,p),normal_(p))*conc_shape_(j,p)*eq_data_->dg_variant
                                     )*JxW_(p);
                     }
                 }
@@ -418,7 +418,7 @@ public:
                 for (auto p : this->edge_points(edge_side) )
                 {
                     for (unsigned int i=0; i<fe_->n_dofs(); i++)
-                        averages[s1][k*fe_->n_dofs()+i] = pressure_shape_(i,p)*0.5;
+                        averages[s1][k*fe_->n_dofs()+i] = conc_shape_(i,p)*0.5;
                     k++;
                 }
                 s1++;
@@ -489,10 +489,10 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<fe_->n_dofs(); i++)
                         {
-                            jumps[0][k*fe_->n_dofs()+i] = pressure_shape_(i,p1);
-                            jumps[1][k*fe_->n_dofs()+i] = - pressure_shape_(i,p2);
-                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*pressure_grad_(i,p1),nv)*omega[0];
-                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*pressure_grad_(i,p2),nv)*omega[1];
+                            jumps[0][k*fe_->n_dofs()+i] = conc_shape_(i,p1);
+                            jumps[1][k*fe_->n_dofs()+i] = - conc_shape_(i,p2);
+                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_(i,p1),nv)*omega[0];
+                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_(i,p2),nv)*omega[1];
                         }
                         k++;
                     }
@@ -647,8 +647,8 @@ private:
 
     ElQ<Scalar> JxW_;
     ElQ<Vector> normal_;
-    FeQ<Scalar> pressure_shape_;
-    FeQ<Vector> pressure_grad_;
+    FeQ<Scalar> conc_shape_;
+    FeQ<Vector> conc_grad_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -805,8 +805,8 @@ public:
 	  ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{nullptr, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
-      pressure_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ),
-      pressure_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ) {
+      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ),
+      conc_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -873,7 +873,7 @@ public:
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
+                        local_rhs_[i] += bc_term*conc_shape_(i,p);
                 }
                 for (unsigned int i=0; i<ndofs_; i++)
                     local_flux_balance_rhs_ -= local_rhs_[i];
@@ -886,16 +886,16 @@ public:
                     double bc_term = eq_data_->gamma[sbi][cond_idx]*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
                     arma::vec3 bc_grad = -eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p)*eq_data_->dg_variant*(arma::trans(eq_fields_->diffusion_coef[sbi](p))*normal_(p));
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*pressure_shape_(i,p)
-                                + arma::dot(bc_grad,pressure_grad_(i,p));
+                        local_rhs_[i] += bc_term*conc_shape_(i,p)
+                                + arma::dot(bc_grad,conc_grad_(i,p));
                 }
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
-                        local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*pressure_shape_(i,p)
-                                - arma::dot(eq_fields_->diffusion_coef[sbi](p)*pressure_grad_(i,p),normal_(p))
-                                + eq_data_->gamma[sbi][cond_idx]*pressure_shape_(i,p))*JxW_(p);
+                        local_flux_balance_vector_[i] += (arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*conc_shape_(i,p)
+                                - arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(i,p),normal_(p))
+                                + eq_data_->gamma[sbi][cond_idx]*conc_shape_(i,p))*JxW_(p);
                     }
                 }
                 if (eq_data_->time_->step().index() > 0)
@@ -910,7 +910,7 @@ public:
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
                     		eq_fields_->bc_flux[sbi](p_bdr)) * JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
+                        local_rhs_[i] += bc_term*conc_shape_(i,p);
                 }
 
                 for (unsigned int i=0; i<ndofs_; i++)
@@ -918,7 +918,7 @@ public:
                     for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p) * eq_fields_->bc_robin_sigma[sbi](p_bdr) *
-                                JxW_(p) * pressure_shape_(i,p);
+                                JxW_(p) * conc_shape_(i,p);
                 	}
                     local_flux_balance_rhs_ -= local_rhs_[i];
                 }
@@ -931,7 +931,7 @@ public:
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
                     		eq_fields_->bc_flux[sbi](p_bdr)) * JxW_(p);
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_rhs_[i] += bc_term*pressure_shape_(i,p);
+                        local_rhs_[i] += bc_term*conc_shape_(i,p);
                 }
 
                 for (unsigned int i=0; i<ndofs_; i++)
@@ -939,7 +939,7 @@ public:
                     for (auto p : this->boundary_points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p)) +
-                        		eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p)*pressure_shape_(i,p);
+                        		eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p)*conc_shape_(i,p);
                 	}
                     local_flux_balance_rhs_ -= local_rhs_[i];
                 }
@@ -949,7 +949,7 @@ public:
                 for (auto p : this->boundary_points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
-                        local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p)*pressure_shape_(i,p);
+                        local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p)*conc_shape_(i,p);
                 }
             }
             eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
@@ -991,8 +991,8 @@ public:
 
         ElQ<Scalar> JxW_;
         ElQ<Vector> normal_;
-        FeQ<Scalar> pressure_shape_;
-        FeQ<Vector> pressure_grad_;
+        FeQ<Scalar> conc_shape_;
+        FeQ<Vector> conc_grad_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
