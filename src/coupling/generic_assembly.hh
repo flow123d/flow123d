@@ -143,8 +143,7 @@ public:
 	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 	};
 
-    GenericAssemblyBase()
-    : fe_values_(CacheMapElementNumber::get()) {}
+    GenericAssemblyBase() {}
 
     virtual ~GenericAssemblyBase(){}
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
@@ -158,7 +157,6 @@ protected:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
-    PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
 };
 
 
@@ -184,16 +182,20 @@ public:
 	  coupling_integral_data_(12, 6),
 	  boundary_integral_data_(8, 4)
     {
-        eval_points_ = std::make_shared<EvalPoints>();
-        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(&element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&element_cache_map_);
-        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
+    	initialize();
+    }
+
+    /// Constructor
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
+    : fe_values_(CacheMapElementNumber::get(), dh->ds()->fe()),
+      multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
+      min_edge_sides_(2),
+      bulk_integral_data_(20, 10),
+      edge_integral_data_(12, 6),
+      coupling_integral_data_(12, 6),
+      boundary_integral_data_(8, 4)
+    {
+    	initialize();
     }
 
     /// Getter to set of assembly objects
@@ -269,6 +271,20 @@ public:
     }
 
 private:
+    /// Common part of GenericAssemblz constructors.
+    void initialize() {
+        eval_points_ = std::make_shared<EvalPoints>();
+        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
+        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
+        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
+        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
+        element_cache_map_.init(eval_points_);
+        multidim_assembly_[1_d]->initialize(&element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
+    }
+
     /// Call assemblations when patch is filled
     void assemble_integrals(std::shared_ptr<DOFHandlerMultiDim> dh) {
         START_TIMER("create_patch");
@@ -437,8 +453,8 @@ private:
     }
 
 
-    /// Assembly object
-    MixedPtr<DimAssembly, 1> multidim_assembly_;
+    PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
+    MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 
     /// Holds mask of active integrals.
     int active_integrals_;

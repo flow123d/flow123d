@@ -34,7 +34,7 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
-class MassAssemblyDG : public AssemblyBase<dim>
+class MassAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW( {this->quad_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_}) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -163,7 +163,7 @@ public:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
-class StiffnessAssemblyDG : public AssemblyBase<dim>
+class StiffnessAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
@@ -172,8 +172,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW( {this->quad_, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
@@ -660,7 +660,7 @@ private:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class Model>
-class SourcesAssemblyDG : public AssemblyBase<dim>
+class SourcesAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
@@ -669,8 +669,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW( {this->quad_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -790,7 +790,7 @@ public:
  * Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions..
  */
 template <unsigned int dim, class Model>
-class BdrConditionAssemblyDG : public AssemblyBase<dim>
+class BdrConditionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
@@ -799,8 +799,8 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW( {nullptr, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( {nullptr, this->quad_low_} ) ),
@@ -1004,7 +1004,7 @@ public:
  * Auxiliary container class sets the initial condition.
  */
 template <unsigned int dim, class Model>
-class InitProjectionAssemblyDG : public AssemblyBase<dim>
+class InitProjectionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TransportDG<Model>::EqFields EqFields;
@@ -1013,8 +1013,8 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW( {this->quad_} ) ),
       init_shape_( this->fe_values_->scalar_shape( {this->quad_} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;

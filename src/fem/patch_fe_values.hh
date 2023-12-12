@@ -434,10 +434,17 @@ private:
     };
 public:
 
-    PatchFEValues(unsigned int n_quad_points)
+    PatchFEValues()
+    : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
+	  dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
+	  n_columns_(0) {
+        used_quads_[0] = false; used_quads_[1] = false;
+    }
+
+    PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
 	  dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  n_columns_(0) {
+	  n_columns_(0), fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
@@ -552,7 +559,8 @@ private:
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
     std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
 
-    uint n_columns_;  ///< Number of columns
+    uint n_columns_;               ///< Number of columns
+    MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
 
     ///< Temporary helper objects used in step between usage old a new implementation
     bool used_quads_[2];
