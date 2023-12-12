@@ -41,8 +41,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(1, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_values_(CacheMapElementNumber::get()),
 	  fe_values_side_(CacheMapElementNumber::get()),
 	  fe_values_sub_(CacheMapElementNumber::get()) {
@@ -299,8 +299,8 @@ public:
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(1, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_values_(CacheMapElementNumber::get()),
 	  fe_values_bdr_side_(CacheMapElementNumber::get()),
 	  fe_values_side_(CacheMapElementNumber::get()),
@@ -594,8 +594,8 @@ public:
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(0, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fv_(CacheMapElementNumber::get()),
 	  fsv_(CacheMapElementNumber::get()) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
@@ -766,8 +766,8 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(1, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_values_side_(CacheMapElementNumber::get()) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;

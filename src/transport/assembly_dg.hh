@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
       ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
@@ -172,10 +172,10 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data,  PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      fe_(std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order)),
-	  ndofs_(fe_->n_dofs()),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
+      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
+      ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
@@ -669,8 +669,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
       fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
 	  ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
@@ -799,8 +799,8 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
 	  ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{nullptr, this->quad_low_} ) ),
@@ -1013,8 +1013,8 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBase<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
 	  fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
 	  ndofs_(fe_->n_dofs()),
       JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
@@ -1117,7 +1117,7 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, FMT_UNUSED PatchFEValues<3> *fe_values)
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;

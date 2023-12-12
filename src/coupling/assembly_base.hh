@@ -40,8 +40,7 @@ public:
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
 	/// Constructor
-	AssemblyBase(unsigned int quad_order, PatchFEValues<3> *fe_values)
-    : fe_values_(fe_values) {
+	AssemblyBase(unsigned int quad_order) {
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
 	}
@@ -181,7 +180,7 @@ protected:
 	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
 	 */
 	AssemblyBase()
-	: quad_(nullptr), quad_low_(nullptr), fe_values_(nullptr) {}
+	: quad_(nullptr), quad_low_(nullptr) {}
 
     /// Print update flags to string format.
     std::string print_update_flags(UpdateFlags u) const {
@@ -195,7 +194,6 @@ protected:
     int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
     ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
-    PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions
 };
 
 
