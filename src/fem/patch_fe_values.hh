@@ -487,13 +487,14 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-    inline ElQ<Scalar> JxW(std::vector<Quadrature *> quad_list)
+    inline ElQ<Scalar> JxW(std::initializer_list<Quadrature *> quad_list)
     {
         uint begin = this->n_columns_;
         n_columns_++; // scalar needs one column
         // storing to temporary map
-        DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
+        std::vector<Quadrature *> quad_vec(quad_list);
+        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "JxW");
         return ElQ<Scalar>(this, begin);
     }
@@ -503,12 +504,13 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-	inline ElQ<Vector> normal_vector(std::vector<Quadrature *> quad_list)
+	inline ElQ<Vector> normal_vector(std::initializer_list<Quadrature *> quad_list)
 	{
         uint begin = this->n_columns_;
         n_columns_ += 3; // Vector needs 3 columns
         // storing to temporary map
-        DimPatchFEValues *side_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[0]->dim()];
+        std::vector<Quadrature *> quad_vec(quad_list);
+        DimPatchFEValues *side_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[0]->dim()];
         func_map_[begin] = FuncDef(nullptr, side_data, "normal_vector");
         return ElQ<Vector>(this, begin);
 	}
@@ -520,24 +522,27 @@ public:
      * @param quad_list List of quadratures.
      * @param function_no Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(std::vector<Quadrature *> quad_list, unsigned int n_comp)
+    inline FeQ<Scalar> scalar_shape(std::initializer_list<Quadrature *> quad_list)
     {
         uint begin = this->n_columns_;
-        n_columns_ += n_comp; // scalar needs one column x n_comp
+        n_columns_++; // scalar needs one column
         // storing to temporary map
-        DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
+        std::vector<Quadrature *> quad_vec(quad_list);
+        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "shape_value");
         return FeQ<Scalar>(this, begin);
     }
 
-    inline FeQ<Vector> grad_scalar_shape(std::vector<Quadrature *> quad_list, unsigned int n_comp)
+    inline FeQ<Vector> grad_scalar_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
     {
+        ASSERT_PERMANENT(i_comp < 3);
         uint begin = this->n_columns_;
-        n_columns_ += 3 * n_comp; // scalar needs one column x n_comp
+        n_columns_ += 3; // Vector needs 3 columns
         // storing to temporary map
-        DimPatchFEValues *cell_data = (quad_list[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_list[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_list[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_list[1]->dim()];
+        std::vector<Quadrature *> quad_vec(quad_list);
+        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
         func_map_[begin] = FuncDef(cell_data, side_data, "shape_grad");
         return FeQ<Vector>(this, begin);
     }

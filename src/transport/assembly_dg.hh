@@ -45,10 +45,8 @@ public:
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-      ndofs_(fe_->n_dofs()),
-      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
-      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( {this->quad_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( {this->quad_}) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -61,10 +59,12 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         this->fe_values_->initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
+        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -174,12 +174,10 @@ public:
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-      ndofs_(fe_->n_dofs()),
-      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_, this->quad_low_} ) ),
-      normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
-      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{this->quad_, this->quad_low_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( {this->quad_, this->quad_low_} ) ),
+      normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
+      conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -202,6 +200,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
@@ -215,6 +214,7 @@ public:
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
         }
+        ndofs_ = fe_->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
@@ -671,10 +671,8 @@ public:
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-      fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-	  ndofs_(fe_->n_dofs()),
-      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
-      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( {this->quad_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( {this->quad_} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -688,10 +686,12 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         this->fe_values_->initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
+        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
@@ -801,12 +801,10 @@ public:
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-	  ndofs_(fe_->n_dofs()),
-      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{nullptr, this->quad_low_} ) ),
-      normal_( this->fe_values_->normal_vector( std::vector<Quadrature *>{this->quad_low_} ) ),
-      conc_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape( std::vector<Quadrature *>{nullptr, this->quad_low_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( {nullptr, this->quad_low_} ) ),
+      normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape( {nullptr, this->quad_low_} ) ),
+      conc_grad_( this->fe_values_->grad_scalar_shape( {nullptr, this->quad_low_} ) ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -824,10 +822,12 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->initialize(*this->quad_low_, *fe_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
+        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
@@ -1015,10 +1015,8 @@ public:
     /// Constructor.
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_( std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order) ),
-	  ndofs_(fe_->n_dofs()),
-      JxW_( this->fe_values_->JxW( std::vector<Quadrature *>{this->quad_} ) ),
-      init_shape_( this->fe_values_->scalar_shape( std::vector<Quadrature *>{this->quad_}, ndofs_ ) ) {
+      JxW_( this->fe_values_->JxW( {this->quad_} ) ),
+      init_shape_( this->fe_values_->scalar_shape( {this->quad_} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
@@ -1031,9 +1029,11 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         this->fe_values_->initialize(*this->quad_, *fe_, u);
         // if (dim==1) // print to log only one time
             // DebugOut() << "List of InitProjectionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
+        ndofs_ = fe_->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);
