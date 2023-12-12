@@ -23,6 +23,7 @@
 #include "fields/eval_points.hh"
 #include "fields/field_value_cache.hh"
 #include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
 
@@ -142,7 +143,9 @@ public:
 	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 	};
 
-    GenericAssemblyBase(){}
+    GenericAssemblyBase()
+    : fe_values_(CacheMapElementNumber::get()) {}
+
     virtual ~GenericAssemblyBase(){}
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
 
@@ -155,6 +158,7 @@ protected:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
+    PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
 };
 
 
