@@ -458,14 +458,13 @@ public:
 	 */
     template<unsigned int DIM>
     void initialize(Quadrature &_quadrature,
-                    FiniteElement<DIM> &_fe,
                     UpdateFlags _flags)
     {
         if ( _quadrature.dim() == DIM ) {
-            dim_fe_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
+            dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
         } else {
-            dim_fe_side_vals_[DIM-1].initialize(_quadrature, _fe, _flags);
+            dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
         }
     }

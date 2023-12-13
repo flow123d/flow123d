@@ -267,9 +267,9 @@ inline void PatchFEValues<spacedim>::DimPatchFEValues::fill_data_specialized(con
 
 
 // explicit instantiation
-template void PatchFEValues<3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
-template void PatchFEValues<3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
-template void PatchFEValues<3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
-template void PatchFEValues<3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
+template void PatchFEValues<3>::initialize<0>(Quadrature&, UpdateFlags);
+template void PatchFEValues<3>::initialize<1>(Quadrature&, UpdateFlags);
+template void PatchFEValues<3>::initialize<2>(Quadrature&, UpdateFlags);
+template void PatchFEValues<3>::initialize<3>(Quadrature&, UpdateFlags);
 
 template class PatchFEValues<3>;

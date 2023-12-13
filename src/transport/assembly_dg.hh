@@ -59,12 +59,11 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        this->fe_values_->initialize(*this->quad_, *fe_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
+        ndofs_ = this->fe_values_->n_dofs(dim);
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -142,9 +141,7 @@ public:
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
-        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
         unsigned int ndofs_;                                      ///< Number of dofs
-
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
@@ -204,8 +201,8 @@ public:
         fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        this->fe_values_->initialize(*this->quad_, *fe_, u);
-        this->fe_values_->initialize(*this->quad_low_, *fe_, u_side);
+        this->fe_values_->template initialize<dim>(*this->quad_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
         if (dim>1) {
             fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
@@ -214,7 +211,7 @@ public:
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
         }
-        ndofs_ = fe_->n_dofs();
+        ndofs_ = this->fe_values_->n_dofs(dim);
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
@@ -686,12 +683,11 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        this->fe_values_->initialize(*this->quad_, *fe_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
+        ndofs_ = this->fe_values_->n_dofs(dim);
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
@@ -765,8 +761,6 @@ public:
         EqFields *eq_fields_;
         EqData *eq_data_;
 
-        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
-
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
@@ -824,7 +818,7 @@ public:
 
         fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        this->fe_values_->initialize(*this->quad_low_, *fe_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_low_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
         ndofs_ = fe_->n_dofs();
@@ -1029,11 +1023,10 @@ public:
         this->element_cache_map_ = element_cache_map;
 
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        this->fe_values_->initialize(*this->quad_, *fe_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_, u);
         // if (dim==1) // print to log only one time
             // DebugOut() << "List of InitProjectionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
+        ndofs_ = this->fe_values_->n_dofs(dim);
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1088,9 +1081,7 @@ public:
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
-        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
         unsigned int ndofs_;                                      ///< Number of dofs
-
         vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
