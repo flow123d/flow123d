@@ -90,6 +90,55 @@ private:
 };
 
 
+class JoinShapeAccessor {
+public:
+    /// Default constructor
+    JoinShapeAccessor()
+    : join_idx_(-1) {}
+
+    /// Constructor
+    JoinShapeAccessor(unsigned int n_dofs_high, unsigned int n_dofs_low, unsigned int join_idx)
+    : n_dofs_high_(n_dofs_high), n_dofs_low_(n_dofs_low), join_idx_(join_idx) {}
+
+    /// Return global index of DOF
+    inline unsigned int join_idx() const {
+        return join_idx_;
+    }
+
+    /// Return local index of DOF (on low / high-dim)
+    inline unsigned int local_idx() const {
+        if (this->is_high_dim()) return join_idx_;
+        else return (join_idx_ - n_dofs_high_);
+    }
+
+    inline unsigned int n_dofs_low() const {
+        return n_dofs_low_;
+    }
+
+    inline unsigned int n_dofs_high() const {
+        return n_dofs_high_;
+    }
+
+    inline unsigned int n_dofs_both() const {
+        return n_dofs_high_ + n_dofs_low_;
+    }
+
+    inline bool is_high_dim() const {
+        return (join_idx_ < n_dofs_high_);
+    }
+
+    /// Iterates to next item.
+    inline void inc() {
+        join_idx_++;
+    }
+
+private:
+    unsigned int n_dofs_high_;
+    unsigned int n_dofs_low_;
+    unsigned int join_idx_;
+};
+
+
 template<unsigned int spacedim = 3>
 class PatchFEValues {
 private:
