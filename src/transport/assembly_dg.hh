@@ -568,11 +568,11 @@ public:
         fe_values_side_.reinit(neighb_side.side());
         n_dofs[1] = fv_sb_[1]->n_dofs();
 
-//        // Testing element if they belong to local partition.
-//        bool own_element_id[2];
-//        own_element_id[0] = cell_lower_dim.is_own();
-//        own_element_id[1] = cell_higher_dim.is_own();
-//
+        // Testing element if they belong to local partition.
+        bool own_element_id[2];
+        own_element_id[0] = cell_lower_dim.is_own();
+        own_element_id[1] = cell_higher_dim.is_own();
+
 //        unsigned int k;
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
