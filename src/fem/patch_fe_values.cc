@@ -51,6 +51,15 @@
 //}
 
 
+template <class ValueType>
+JoinShapeAccessor<ValueType>::JoinShapeAccessor(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int lower_dim, unsigned int join_idx)
+: fe_values_(fe_values), begin_(begin), join_idx_(join_idx) {
+    ASSERT( (lower_dim==1) || (lower_dim==2) )(lower_dim).error("Invalid lower dimension, must be 1 or 2!");
+    n_dofs_high_ = fe_values_->n_dofs(lower_dim+1);
+    n_dofs_low_ = fe_values_->n_dofs(lower_dim);
+}
+
+
 template<unsigned int spacedim>
 template<unsigned int DIM>
 void PatchFEValues<spacedim>::DimPatchFEValues::initialize(

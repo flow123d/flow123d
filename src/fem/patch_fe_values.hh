@@ -90,22 +90,29 @@ private:
 };
 
 
+template <class ValueType>
 class JoinShapeAccessor {
 public:
     /// Default constructor
     JoinShapeAccessor()
     : join_idx_(-1) {}
 
-    /// Constructor
-    JoinShapeAccessor(unsigned int n_dofs_high, unsigned int n_dofs_low, unsigned int join_idx)
-    : n_dofs_high_(n_dofs_high), n_dofs_low_(n_dofs_low), join_idx_(join_idx) {}
+    /**
+     * Constructor
+     *
+     * @param fe_values  Pointer to PatchFEValues object.
+     * @param begin      Index of the first component of the Quantity.
+     * @param lower_dim  Dimension of bulk (lower-dim) element.
+     * @param join_idx   Index function.
+     */
+    JoinShapeAccessor(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int lower_dim, unsigned int join_idx);
 
     /// Return global index of DOF
     inline unsigned int join_idx() const {
         return join_idx_;
     }
 
-    /// Return local index of DOF (on low / high-dim)
+    /// Return local index of DOF (on low / high-dim) - should be private method
     inline unsigned int local_idx() const {
         if (this->is_high_dim()) return join_idx_;
         else return (join_idx_ - n_dofs_high_);
@@ -132,7 +139,20 @@ public:
         join_idx_++;
     }
 
+    /// Comparison of accessors.
+    bool operator==(const JoinShapeAccessor<ValueType>& other) const {
+    	return (join_idx_ == other.join_idx_);
+    }
+
+
+    ValueType operator()(FMT_UNUSED const BulkPoint &point);
+
+    ValueType operator()(FMT_UNUSED const SidePoint &point);
+
 private:
+    // attributes:
+    PatchFEValues<3> *fe_values_;
+    unsigned int begin_;          ///< Index of the first component of the Quantity. Size is given by ValueType
     unsigned int n_dofs_high_;
     unsigned int n_dofs_low_;
     unsigned int join_idx_;
@@ -602,6 +622,22 @@ public:
         return FeQ<Vector>(this, begin);
     }
 
+    inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(std::initializer_list<Quadrature *> quad_list)
+    {
+        uint begin = this->n_columns_;
+        n_columns_++;
+        // storing to temporary map
+        std::vector<Quadrature *> quad_vec(quad_list);
+        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
+        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
+        func_map_[begin] = FuncDef(cell_data, side_data, "scalar_join_shape");
+
+        auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, quad_vec[0]->dim(), 0) );
+        unsigned int end_idx = bgn_it->n_dofs_high() + bgn_it->n_dofs_low();
+        auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, quad_vec[0]->dim(), end_idx) );
+        return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
+    }
+
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
@@ -618,6 +654,8 @@ private:
     friend class ElQ;
     template <class ValueType>
     friend class FeQ;
+    template <class ValueType>
+    friend class JoinShapeAccessor;
 };
 
 
@@ -727,6 +765,55 @@ inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const SidePoint &p
 
 template <>
 inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
+
+
+template <class ValueType>
+ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "scalar_join_shape") {
+        if (this->is_high_dim()) return 0.0;
+        else return it->second.side_data_->shape_value(this->local_idx(), point);
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
+}
+
+template <>
+inline Vector JoinShapeAccessor<Vector>::operator()(FMT_UNUSED const BulkPoint &point) {
+    Vector vect; vect.zeros();
+    return vect;
+}
+
+template <>
+inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
+	Tensor tens; tens.zeros();
+    return tens;
+}
+
+template <class ValueType>
+ValueType JoinShapeAccessor<ValueType>::operator()(const SidePoint &point) {
+	auto it = fe_values_->func_map_.find(begin_);
+    if (it->second.func_name_ == "scalar_join_shape") {
+        if (this->is_high_dim()) return it->second.side_data_->shape_value(this->local_idx(), point);
+        else return 0.0;
+    } else {
+        //ASSERT_PERMANENT(false).error("Should not happen.");
+        return 0.0;
+    }
+}
+
+template <>
+inline Vector JoinShapeAccessor<Vector>::operator()(FMT_UNUSED const SidePoint &point) {
+    Vector vect; vect.zeros();
+    return vect;
+}
+
+template <>
+inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const SidePoint &point) {
 	Tensor tens; tens.zeros();
     return tens;
 }
