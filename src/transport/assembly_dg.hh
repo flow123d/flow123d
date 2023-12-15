@@ -174,7 +174,10 @@ public:
       JxW_( this->fe_values_->JxW( {this->quad_, this->quad_low_} ) ),
       normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ) {
+      conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ),
+      conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
+        if (dim>1)
+            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -547,7 +550,7 @@ public:
 
         // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
 
-        double comm_flux[2][2];
+        //double comm_flux[2][2];
         unsigned int n_dofs[2];
         ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
@@ -565,12 +568,12 @@ public:
         fe_values_side_.reinit(neighb_side.side());
         n_dofs[1] = fv_sb_[1]->n_dofs();
 
-        // Testing element if they belong to local partition.
-        bool own_element_id[2];
-        own_element_id[0] = cell_lower_dim.is_own();
-        own_element_id[1] = cell_higher_dim.is_own();
-
-        unsigned int k;
+//        // Testing element if they belong to local partition.
+//        bool own_element_id[2];
+//        own_element_id[0] = cell_lower_dim.is_own();
+//        own_element_id[1] = cell_higher_dim.is_own();
+//
+//        unsigned int k;
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
@@ -578,7 +581,7 @@ public:
                     local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
             // set transmission conditions
-            k=0;
+//            k=0;
             for (auto p_high : this->coupling_points(neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
@@ -589,27 +592,39 @@ public:
                 // The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
                 // than b and A in the manual.
                 // In calculation of sigma there appears one more csection_lower in the denominator.
-                double sigma = eq_fields_->fracture_sigma[sbi](p_low)*arma::dot(eq_fields_->diffusion_coef[sbi](p_low)*fe_values_side_.normal_vector(k),fe_values_side_.normal_vector(k))*
+                double sigma = eq_fields_->fracture_sigma[sbi](p_low)*arma::dot(eq_fields_->diffusion_coef[sbi](p_low)*normal_(p_high),normal_(p_high))*
                         2*eq_fields_->cross_section(p_high)*eq_fields_->cross_section(p_high)/(eq_fields_->cross_section(p_low)*eq_fields_->cross_section(p_low));
 
-                double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), fe_values_side_.normal_vector(k));
+                double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_(p_high));
 
-                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
-                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb_[0]->JxW(k);
-                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb_[0]->JxW(k);
-                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb_[0]->JxW(k);
-
-                for (int n=0; n<2; n++)
-                {
-                    if (!own_element_id[n]) continue;
-
-                    for (unsigned int i=0; i<n_dofs[n]; i++)
-                        for (int m=0; m<2; m++)
-                            for (unsigned int j=0; j<n_dofs[m]; j++)
-                                local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
+//                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*JxW_(p_low);
+//                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*JxW_(p_low);
+//                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*JxW_(p_low);
+//                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*JxW_(p_low);
+//
+//                for (int n=0; n<2; n++)
+//                {
+//                    if (!own_element_id[n]) continue;
+//
+//                    for (unsigned int i=0; i<n_dofs[n]; i++)
+//                        for (int m=0; m<2; m++)
+//                            for (unsigned int j=0; j<n_dofs[m]; j++)
+//                                local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
+//                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
+//                }
+//                k++;
+                for( auto conc_shape_i : conc_join_shape_) {
+                    //bool is_high_i = conc_shape_i.is_high_dim();
+                    uint i_mat_idx = conc_shape_i.join_idx(); // i + is_high * n_dofs_low
+                    double diff_shape_i = conc_shape_i(p_high) - conc_shape_i(p_low);
+                    for( auto conc_shape_j : conc_join_shape_) {
+                        uint j_mat_idx = conc_shape_j.join_idx();
+                        local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
+                                sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low))
+                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) - min(0.,transport_flux) * conc_shape_j(p_low))
+						    )*JxW_(p_low) + LocalSystem::almost_zero;
+                    }
                 }
-                k++;
             }
             eq_data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));
         }
@@ -646,6 +661,7 @@ private:
     ElQ<Vector> normal_;
     FeQ<Scalar> conc_shape_;
     FeQ<Vector> conc_grad_;
+    Range< JoinShapeAccessor<Scalar> > conc_join_shape_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
