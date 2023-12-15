@@ -176,8 +176,6 @@ public:
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
       conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ),
       conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
-        if (dim>1)
-            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -206,6 +204,8 @@ public:
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
+        if (dim>1)
+            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
         if (dim>1) {
             fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
         }
@@ -597,10 +597,10 @@ public:
 
                 double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_(p_high));
 
-//                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*JxW_(p_low);
-//                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*JxW_(p_low);
-//                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*JxW_(p_low);
-//                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*JxW_(p_low);
+//                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*JxW_(p_high);
+//                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*JxW_(p_high);
+//                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*JxW_(p_high);
+//                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*JxW_(p_high);
 //
 //                for (int n=0; n<2; n++)
 //                {
@@ -614,7 +614,8 @@ public:
 //                }
 //                k++;
                 for( auto conc_shape_i : conc_join_shape_) {
-                    //bool is_high_i = conc_shape_i.is_high_dim();
+                    uint is_high_i = conc_shape_i.is_high_dim();
+                    if (!own_element_id[is_high_i]) continue;
                     uint i_mat_idx = conc_shape_i.join_idx(); // i + is_high * n_dofs_low
                     double diff_shape_i = conc_shape_i(p_high) - conc_shape_i(p_low);
                     for( auto conc_shape_j : conc_join_shape_) {
@@ -622,7 +623,7 @@ public:
                         local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
                                 sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low))
                                 + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) - min(0.,transport_flux) * conc_shape_j(p_low))
-						    )*JxW_(p_low) + LocalSystem::almost_zero;
+						    )*JxW_(p_high) + LocalSystem::almost_zero;
                     }
                 }
             }

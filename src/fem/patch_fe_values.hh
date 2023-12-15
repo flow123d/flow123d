@@ -775,7 +775,7 @@ ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
 	auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "scalar_join_shape") {
         if (this->is_high_dim()) return 0.0;
-        else return it->second.side_data_->shape_value(this->local_idx(), point);
+        else return it->second.cell_data_->shape_value(this->local_idx(), point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
