@@ -585,6 +585,7 @@ public:
             for (auto p_high : this->coupling_points(neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
+                auto p_low_conv = p_high.lower_dim_converted(cell_lower_dim);
                 // The communication flux has two parts:
                 // - "diffusive" term containing sigma
                 // - "advective" term representing usual upwind
@@ -617,12 +618,12 @@ public:
                     uint is_high_i = conc_shape_i.is_high_dim();
                     if (!own_element_id[is_high_i]) continue;
                     uint i_mat_idx = conc_shape_i.join_idx(); // i + is_high * n_dofs_low
-                    double diff_shape_i = conc_shape_i(p_high) - conc_shape_i(p_low);
+                    double diff_shape_i = conc_shape_i(p_high) - conc_shape_i(p_low_conv);
                     for( auto conc_shape_j : conc_join_shape_) {
                         uint j_mat_idx = conc_shape_j.join_idx();
                         local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
-                                sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low))
-                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) - min(0.,transport_flux) * conc_shape_j(p_low))
+                                sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low_conv))
+                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) - min(0.,transport_flux) * conc_shape_j(p_low_conv))
 						    )*JxW_(p_high) + LocalSystem::almost_zero;
                     }
                 }
