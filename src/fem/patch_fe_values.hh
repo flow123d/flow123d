@@ -114,8 +114,8 @@ public:
 
     /// Return local index of DOF (on low / high-dim) - should be private method
     inline unsigned int local_idx() const {
-        if (this->is_high_dim()) return join_idx_;
-        else return (join_idx_ - n_dofs_high_);
+        if (this->is_high_dim()) return (join_idx_ - n_dofs_low_);
+        else return join_idx_;
     }
 
     inline unsigned int n_dofs_low() const {
@@ -131,7 +131,7 @@ public:
     }
 
     inline bool is_high_dim() const {
-        return (join_idx_ < n_dofs_high_);
+        return (join_idx_ >= n_dofs_low_);
     }
 
     /// Iterates to next item.
