@@ -206,10 +206,6 @@ public:
         this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
         if (dim>1)
             conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
-        if (dim>1) {
-            fe_values_vb_.initialize(*this->quad_low_, *fe_low_, u);
-        }
-        fe_values_side_.initialize(*this->quad_low_, *fe_, u_side);
         if (dim==1) { // print to log only one time
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
@@ -224,12 +220,6 @@ public:
         {
             side_dof_indices_.push_back( vector<LongIdx>(ndofs_) );
         }
-
-        // index 0 = element with lower dimension,
-        // index 1 = side of element with higher dimension
-        fv_sb_.resize(2);
-        fv_sb_[0] = &fe_values_vb_;
-        fv_sb_[1] = &fe_values_side_;
 
         averages.resize(eq_data_->max_edg_sides);
         for (unsigned int s=0; s<eq_data_->max_edg_sides; s++)
@@ -550,30 +540,25 @@ public:
 
         // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
 
-        //double comm_flux[2][2];
         unsigned int n_dofs[2];
-        ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i] = dof_indices_[i];
         }
-        fe_values_vb_.reinit(elm_lower_dim);
-        n_dofs[0] = fv_sb_[0]->n_dofs();
+        n_dofs[0] = conc_join_shape_.begin()->n_dofs_low();
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
         }
-        fe_values_side_.reinit(neighb_side.side());
-        n_dofs[1] = fv_sb_[1]->n_dofs();
+        n_dofs[1] = conc_join_shape_.begin()->n_dofs_high();
 
         // Testing element if they belong to local partition.
         bool own_element_id[2];
         own_element_id[0] = cell_lower_dim.is_own();
         own_element_id[1] = cell_higher_dim.is_own();
 
-//        unsigned int k;
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
@@ -581,7 +566,6 @@ public:
                     local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
             // set transmission conditions
-//            k=0;
             for (auto p_high : this->coupling_points(neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
@@ -598,22 +582,6 @@ public:
 
                 double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_(p_high));
 
-//                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*JxW_(p_high);
-//                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*JxW_(p_high);
-//                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*JxW_(p_high);
-//                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*JxW_(p_high);
-//
-//                for (int n=0; n<2; n++)
-//                {
-//                    if (!own_element_id[n]) continue;
-//
-//                    for (unsigned int i=0; i<n_dofs[n]; i++)
-//                        for (int m=0; m<2; m++)
-//                            for (unsigned int j=0; j<n_dofs[m]; j++)
-//                                local_matrix_[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-//                                        comm_flux[m][n]*fv_sb_[m]->shape_value(j,k)*fv_sb_[n]->shape_value(i,k) + LocalSystem::almost_zero;
-//                }
-//                k++;
                 for( auto conc_shape_i : conc_join_shape_) {
                     uint is_high_i = conc_shape_i.is_high_dim();
                     if (!own_element_id[is_high_i]) continue;
@@ -646,9 +614,6 @@ private:
 
     unsigned int ndofs_;                                      ///< Number of dofs
     unsigned int qsize_lower_dim_;                            ///< Size of quadrature of dim-1
-    FEValues<3> fe_values_vb_;                                ///< FEValues of dim-1 object (of P disc finite element type)
-    FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
-    vector<FEValues<3>*> fv_sb_;                              ///< Auxiliary vector, holds FEValues objects for assemble element-side
 
     vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
     vector< vector<LongIdx> > side_dof_indices_;              ///< Vector of vectors of side DOF indices
