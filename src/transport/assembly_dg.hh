@@ -623,7 +623,7 @@ public:
                         uint j_mat_idx = conc_shape_j.join_idx();
                         local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
                                 sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low_conv))
-                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) - min(0.,transport_flux) * conc_shape_j(p_low_conv))
+                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) + min(0.,transport_flux) * conc_shape_j(p_low_conv))
 						    )*JxW_(p_high) + LocalSystem::almost_zero;
                     }
                 }
