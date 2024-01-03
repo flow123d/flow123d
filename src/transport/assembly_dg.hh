@@ -197,8 +197,6 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_, u);
@@ -222,13 +220,13 @@ public:
 
         averages.resize(eq_data_->max_edg_sides);
         for (unsigned int s=0; s<eq_data_->max_edg_sides; s++)
-            averages[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
+            averages[s] = new double[qsize_lower_dim_*ndofs_];
         waverages.resize(2);
         jumps.resize(2);
         for (unsigned int s=0; s<2; s++)
         {
-            waverages[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
-            jumps[s] = new double[qsize_lower_dim_*fe_->n_dofs()];
+            waverages[s] = new double[qsize_lower_dim_*ndofs_];
+            jumps[s] = new double[qsize_lower_dim_*ndofs_];
         }
     }
 
@@ -406,8 +404,8 @@ public:
                 k=0;
                 for (auto p : this->edge_points(edge_side) )
                 {
-                    for (unsigned int i=0; i<fe_->n_dofs(); i++)
-                        averages[s1][k*fe_->n_dofs()+i] = conc_shape_(i,p)*0.5;
+                    for (unsigned int i=0; i<ndofs_; i++)
+                        averages[s1][k*ndofs_+i] = conc_shape_(i,p)*0.5;
                     k++;
                 }
                 s1++;
@@ -476,12 +474,12 @@ public:
                     for (auto p1 : this->edge_points(edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
-                        for (unsigned int i=0; i<fe_->n_dofs(); i++)
+                        for (unsigned int i=0; i<ndofs_; i++)
                         {
-                            jumps[0][k*fe_->n_dofs()+i] = conc_shape_(i,p1);
-                            jumps[1][k*fe_->n_dofs()+i] = - conc_shape_(i,p2);
-                            waverages[0][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_(i,p1),nv)*omega[0];
-                            waverages[1][k*fe_->n_dofs()+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_(i,p2),nv)*omega[1];
+                            jumps[0][k*ndofs_+i] = conc_shape_(i,p1);
+                            jumps[1][k*ndofs_+i] = - conc_shape_(i,p2);
+                            waverages[0][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_(i,p1),nv)*omega[0];
+                            waverages[1][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_(i,p2),nv)*omega[1];
                         }
                         k++;
                     }
@@ -509,20 +507,20 @@ public:
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
-                                            transport_flux*jumps[n][k*fe_->n_dofs()+i]*averages[sd[m]][k*fe_->n_dofs()+j]
+                                            transport_flux*jumps[n][k*ndofs_+i]*averages[sd[m]][k*ndofs_+j]
 
                                             // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
-                                            + gamma_l*jumps[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
+                                            + gamma_l*jumps[n][k*ndofs_+i]*jumps[m][k*ndofs_+j]
 
                                         // terms due to diffusion
-                                            - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
-                                            - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
+                                            - jumps[n][k*ndofs_+i]*waverages[m][k*ndofs_+j]
+                                            - eq_data_->dg_variant*waverages[n][k*ndofs_+i]*jumps[m][k*ndofs_+j]
                                             )*JxW_(p1) + LocalSystem::almost_zero;
                                     }
                                 }
                                 k++;
                             }
-                            eq_data_->ls[sbi]->mat_set_values(this->fe_values_->n_dofs(dim), &(side_dof_indices_[sd[n]][0]), this->fe_values_->n_dofs(dim), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
+                            eq_data_->ls[sbi]->mat_set_values(ndofs_, &(side_dof_indices_[sd[n]][0]), ndofs_, &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
                     }
                 }
@@ -604,9 +602,6 @@ private:
     /// Data objects shared with TransportDG
     EqFields *eq_fields_;
     EqData *eq_data_;
-
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
