@@ -22,7 +22,6 @@
 #include "coupling/assembly_base.hh"
 #include "transport/transport_dg.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
@@ -72,7 +71,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    /// Reinit PatchFEValues object (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
@@ -234,7 +233,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    /// Reinit PatchFEValues object (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
@@ -678,7 +677,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    /// Reinit PatchFEValues object (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
@@ -811,7 +810,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    /// Reinit PatchFEValues object (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
@@ -1016,7 +1015,7 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
+    /// Reinit PatchFEValues object (all computed elements in one step).
     void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
     {
         this->fe_values_->reinit(patch_elements);
