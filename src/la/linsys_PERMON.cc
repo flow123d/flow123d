@@ -438,7 +438,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // convert to MATAIJ
         Mat matrix_aij;
         chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
+        chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
+        // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
         chkerr(QPSetOperator(system, matrix_aij));
+        chkerr(MatDestroy(&matrix_aij));
 
         if (ineq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
