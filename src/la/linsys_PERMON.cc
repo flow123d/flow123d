@@ -229,8 +229,13 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     } else if (l2g_) {
         Mat matrix_aij;
         chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
+        chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
+        // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
         chkerr(QPSetOperator(system, matrix_aij));
+        chkerr(MatDestroy(&matrix_aij));
     } else {
+      // chkerr(MatSetOption(matrix_,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
+      chkerr(MatSetOption(matrix_,MAT_SPD,PETSC_TRUE)); // avoid null space computation
       chkerr(QPSetOperator(system, matrix_));
     }
     chkerr(QPSetRhs(system, rhs_));
