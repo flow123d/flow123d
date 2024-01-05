@@ -590,6 +590,12 @@ public:
         return ElQ<Vector>(this, begin);
 	}
 
+//    inline ElQ<Vector> coords(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
+//    inline ElQ<Tenor> jacobian(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
     /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p p quadrature point.
@@ -609,6 +615,12 @@ public:
         return FeQ<Scalar>(this, begin);
     }
 
+//    inline FeQ<Vector> vector_shape(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
+//    inline FeQ<Tensor> tensor_shape(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
     inline FeQ<Vector> grad_scalar_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
     {
         ASSERT_PERMANENT(i_comp < 3);
@@ -621,6 +633,9 @@ public:
         func_map_[begin] = FuncDef(cell_data, side_data, "shape_grad");
         return FeQ<Vector>(this, begin);
     }
+
+//    inline FeQ<Tensor> grad_vector_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
+//    {}
 
     inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(std::initializer_list<Quadrature *> quad_list)
     {
