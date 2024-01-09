@@ -175,7 +175,8 @@ class GenericAssembly : public GenericAssemblyBase
 public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
-    : multidim_assembly_(eq_fields, eq_data),
+    : use_patch_fe_values_(false),
+	  multidim_assembly_(eq_fields, eq_data),
 	  min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -188,6 +189,7 @@ public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : fe_values_(CacheMapElementNumber::get(), dh->ds()->fe()),
+      use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
       min_edge_sides_(2),
       bulk_integral_data_(20, 10),
@@ -290,9 +292,11 @@ private:
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
-        START_TIMER("patch_reinit");
-        patch_reinit(dh);
-        END_TIMER("patch_reinit");
+        if (use_patch_fe_values_) {
+            START_TIMER("patch_reinit");
+            patch_reinit(dh);
+            END_TIMER("patch_reinit");
+        }
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
@@ -347,9 +351,7 @@ private:
             ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
             patch_elements[elm.dim()].push_back(std::make_pair(elm, i));
         }
-        multidim_assembly_[1_d]->patch_reinit(patch_elements);
-        multidim_assembly_[2_d]->patch_reinit(patch_elements);
-        multidim_assembly_[3_d]->patch_reinit(patch_elements);
+        this->fe_values_.reinit(patch_elements);
     }
 
     /**
@@ -454,6 +456,7 @@ private:
 
 
     PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
+    bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 
     /// Holds mask of active integrals.

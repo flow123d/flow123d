@@ -52,13 +52,6 @@ public:
     }
 
 
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
-    }
-
-
     /// Assemble integral over element
     inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
@@ -168,8 +161,6 @@ public:
 
     void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
 
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override {}
-
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -249,13 +240,6 @@ public:
             waverages[s] = new double[qsize_lower_dim_*ndofs_];
             jumps[s] = new double[qsize_lower_dim_*ndofs_];
         }
-    }
-
-
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
     }
 
 
@@ -777,13 +761,6 @@ public:
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
         local_source_balance_rhs_.resize(ndofs_);
-    }
-
-
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
     }
 
 

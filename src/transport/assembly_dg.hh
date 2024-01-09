@@ -71,13 +71,6 @@ public:
     }
 
 
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
-    }
-
-
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
@@ -228,13 +221,6 @@ public:
             waverages[s] = new double[qsize_lower_dim_*ndofs_];
             jumps[s] = new double[qsize_lower_dim_*ndofs_];
         }
-    }
-
-
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
     }
 
 
@@ -672,13 +658,6 @@ public:
     }
 
 
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
-    }
-
-
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
@@ -802,13 +781,6 @@ public:
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
-    }
-
-
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
     }
 
 
@@ -1007,13 +979,6 @@ public:
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);
-    }
-
-
-    /// Reinit PatchFEValues object (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        this->fe_values_->reinit(patch_elements);
     }
 
 
