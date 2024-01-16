@@ -5,6 +5,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
 #include <mesh_constructor.hh>
+#include "system/sys_profiler.hh"
 
 
 
@@ -49,6 +50,7 @@ TEST(BCMesh, test_all) {
     //  |   /   2   \   |
     //  | /           \ |
     //  1---------------2
+    Profiler::instance();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh.msh\", optimize_mesh=false }");
     BCMesh * bcmesh = mesh->bc_mesh();
@@ -118,6 +120,7 @@ TEST(BCMesh, test_all) {
     delete mesh;
 
   }
+  Profiler::uninitialize();
 }
 
 
