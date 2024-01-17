@@ -75,6 +75,7 @@ TEST(ReaderCache, get_bulk_element_) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -120,6 +121,7 @@ TEST(ReaderCache, get_boundary_element_) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -189,6 +191,7 @@ TEST(ReaderCache, find_header) {
     EXPECT_EQ( header.time, 1.0 );
     }
 
+    Profiler::uninitialize();
 }
 
 
@@ -240,4 +243,5 @@ TEST(ReaderCache, get_reader) {
             delete mesh;
         }
     }*/
+    Profiler::uninitialize();
 }

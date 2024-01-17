@@ -545,4 +545,5 @@ TEST(SurfaceDepth, base_test) {
 	EXPECT_DOUBLE_EQ( sd.compute_distance( arma::vec3("-1 0.5 0.9") ), 0.1 );
 
 	delete mesh;
+    Profiler::uninitialize();
 }
