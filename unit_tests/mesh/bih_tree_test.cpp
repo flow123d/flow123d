@@ -306,6 +306,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	}
 
 	delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -353,5 +354,6 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 	}
 
 	delete mesh;
+    Profiler::uninitialize();
 }
 

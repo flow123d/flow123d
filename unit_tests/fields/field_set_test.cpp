@@ -99,6 +99,7 @@ public:
 
 	~SomeEquation() {
 		delete mesh_;
+        Profiler::uninitialize();
 	}
 
 	Mesh * mesh_;
@@ -405,6 +406,7 @@ public:
 
     ~TestDependency() {
         delete mesh_;
+        Profiler::uninitialize();
     }
 
     void read_input(const string &input) {
