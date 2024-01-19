@@ -29,6 +29,8 @@
 
 
 
+namespace fe_tools {
+
 
 
 /**
@@ -204,6 +206,7 @@ template<> inline arma::mat::fixed<3,3> inverse(const arma::mat::fixed<3,3> &A)
 
 
 
+} // closing namespace fe_tools
 
 
 

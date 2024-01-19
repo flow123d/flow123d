@@ -45,6 +45,8 @@ public:
 
 /// Check correct implementation of 'determinant()' and 'inverse()' function
 TEST(FemToolsDevelopTest, functions_test) {
+	using namespace fe_tools;
+
     arma::mat::fixed<1,1> mat11 = {2};
     arma::mat::fixed<2,2> mat22 = { {2, 3}, {4, 5} };
     arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} };
@@ -125,6 +127,8 @@ TEST(FemToolsDevelopTest, functions_test) {
  *  pinv 2x3        1.9312     66.5879
  */
 TEST_F(FemToolsTest, speed_test) {
+	using namespace fe_tools;
+
     static const uint N_RUNS = 1e7;
 
     std::vector< arma::mat::fixed<3,3> > mat33_vec = {

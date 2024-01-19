@@ -306,7 +306,7 @@ void ElementValues<spacedim>::fill_data()
         if ((data.update_flags & update_volume_elements) |
             (data.update_flags & update_JxW_values))
         {
-            double det = fabs(::determinant(jac));
+            double det = fabs(fe_tools::determinant(jac));
 
             // update determinants
             if (data.update_flags & update_volume_elements)
@@ -323,7 +323,7 @@ void ElementValues<spacedim>::fill_data()
         if (data.update_flags & update_inverse_jacobians)
         {
             arma::mat::fixed<dim,spacedim> ijac;
-            ijac = inverse(jac);
+            ijac = fe_tools::inverse(jac);
 //            if (dim==spacedim)
 //            {
 //                ijac = inv(jac);
@@ -390,7 +390,7 @@ void ElementValues<spacedim>::fill_side_data()
             side_jac = MappingP1<MatrixSizes<dim>::dim_minus_one,spacedim>::jacobian(side_coords);
 
             // calculation of JxW
-            side_det = fabs(::determinant(side_jac));
+            side_det = fabs(fe_tools::determinant(side_jac));
         }
         for (unsigned int i=0; i<n_points_; i++)
             data.side_JxW_values[i] = side_det*side_ref_data[side_idx]->weights[i];
