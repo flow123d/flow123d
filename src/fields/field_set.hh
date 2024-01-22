@@ -161,13 +161,25 @@ public:
     TYPEDEF_ERR_INFO( EI_FieldType, std::string);
     DECLARE_INPUT_EXCEPTION(ExcUnknownField,
             << "Unknown field " << FieldCommon::EI_Field::qval << " in the " << EI_FieldType::val << ": \n");
-    DECLARE_INPUT_EXCEPTION(ExcFieldNotSet,
-            << "Field " << FieldCommon::EI_Field::qval << " is not set. Please set key 'scalar_field', 'vector_field' or 'tensor_field' at: \n");
     DECLARE_INPUT_EXCEPTION(ExcFieldExists,
             << "Field " << FieldCommon::EI_Field::qval << " exists in equation. You cannot set user field of same name.\n");
 
 	/// Default constructor.
 	FieldSet();
+
+    /**
+     * Possible shapes of user fields.
+     */
+    enum UserFieldShape
+    {
+        scalar,
+        vector,
+        tensor
+    };
+
+
+	/// Input selection of user field shape.
+	static const Input::Type::Selection & get_user_field_shape_selection();
 
     /**
      * @brief Declare input record type of field defined by user.

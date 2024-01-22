@@ -236,6 +236,7 @@ public:
 	}
 	virtual ~TestOutputTime() {
 	    delete my_mesh;
+        Profiler::uninitialize();
 	}
 	int write_data(void) override {return 0;};
 	//int write_head(void) override {return 0;};
@@ -248,7 +249,7 @@ public:
 	    typedef typename Value::element_type ElemType;
 
 	    // make field init it form the init string
-	    Field<spacedim, Value> field("test_field", false); // bulk field
+	    Field<spacedim, Value> field("test_field"); // bulk field
 		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);

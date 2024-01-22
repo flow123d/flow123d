@@ -101,6 +101,7 @@ public:
 
 	void TearDown() {
 		delete my_mesh;
+        Profiler::uninitialize();
 	}
 
 	Input::Array input_list(const string& str) {
@@ -590,10 +591,10 @@ TEST(Field, init_from_input) {
 //    conductivity.set_mesh(*mesh);
 //    conductivity_3d.set_mesh(*mesh);
 
-    eq_fields += sorption_type.name("sorption_type").units( UnitSI().m() );
-    eq_fields += init_conc.name("init_conc").units( UnitSI().m() );
-    eq_fields += conductivity.name("conductivity").units( UnitSI().m() );
-    eq_fields += conductivity_3d.name("conductivity_3d").units( UnitSI().m() );
+    eq_fields += sorption_type.name("sorption_type").units( UnitSI().m() ).input_default("\"none\"");
+    eq_fields += init_conc.name("init_conc").units( UnitSI().m() ).input_default("0.0");
+    eq_fields += conductivity.name("conductivity").units( UnitSI().m() ).input_default("0.0");
+    eq_fields += conductivity_3d.name("conductivity_3d").units( UnitSI().m() ).input_default("0.0");
     eq_fields.set_mesh(*mesh);
     eq_fields.add_coords_field();
     eq_fields.set_default_fieldset();
@@ -639,6 +640,7 @@ TEST(Field, init_from_input) {
    }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -678,9 +680,9 @@ class TestFieldSet : public FieldSet
 {
 public:
     TestFieldSet() {
-        *this += scalar.name("scalar").units(UnitSI::dimensionless());
-        *this += vector.name("vector").units(UnitSI::dimensionless());
-        *this += tensor.name("tensor").units(UnitSI::dimensionless());
+        *this += scalar.name("scalar").units(UnitSI::dimensionless()).input_default("0.0");
+        *this += vector.name("vector").units(UnitSI::dimensionless()).input_default("0.0");
+        *this += tensor.name("tensor").units(UnitSI::dimensionless()).input_default("0.0");
     }
     Field<3, FieldValue<3>::Scalar > scalar;
     Field<3, FieldValue<3>::VectorFixed > vector;
@@ -747,12 +749,20 @@ TEST(Field, field_result) {
     EXPECT_EQ( result_other, data.tensor.field_result({diagonal_1d, diagonal_2d}) );
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
 
 
 
+static const it::Selection &get_bc_type_selection() {
+	return it::Selection("BcType")
+				.add_value(0,"dirichlet")
+				.add_value(1,"neumann")
+				.add_value(2,"robin")
+				.close();
+}
 
 
 /// Test optional fields dependent e.g. on BC type
@@ -765,20 +775,23 @@ TEST(Field, disable_where) {
         robin
     };
     // test optional checking in the set_time method
-    Field<3, FieldValue<3>::Enum > bc_type("bc_type", true);
+    Field<3, FieldValue<3>::Enum > bc_type("bc_type");
+    bc_type.input_selection( get_bc_type_selection() );
+    bc_type.input_default("\"dirichlet\"");
+    bc_type.units( UnitSI::dimensionless() );
 
     std::vector<FieldEnum> list;
-    Field<3, FieldValue<3>::Scalar > bc_value("bc_value", true);
+    Field<3, FieldValue<3>::Scalar > bc_value("bc_value");
     bc_value.disable_where( bc_type, {neumann} );
     bc_value.input_default("0.0");
     bc_value.units( UnitSI().m() );
 
-    Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux", true);
+    Field<3, FieldValue<3>::Scalar > bc_flux("bc_flux");
     bc_flux.disable_where( bc_type, {dirichlet, robin} );
     bc_flux.input_default("0.0");
     bc_flux.units( UnitSI().kg().m().s(-1).md() );
 
-    Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma", true);
+    Field<3, FieldValue<3>::Scalar > bc_sigma("bc_sigma");
     bc_sigma.disable_where( bc_type, {dirichlet, neumann} );
     bc_sigma.input_default("0.0");
     bc_sigma.units( UnitSI().s(-1) );
@@ -910,11 +923,11 @@ TEST(Field, field_values) {
     vector_field.set_mesh(*mesh);
     tensor_field.set_mesh(*mesh);
 
-    color_field.units( UnitSI().m() );
-    int_field.units( UnitSI().m() );
-    scalar_field.units( UnitSI().m() );
-    vector_field.units( UnitSI().m() );
-    tensor_field.units( UnitSI().m() );
+    color_field.units( UnitSI().m() ).input_default("\"red\"");
+    int_field.units( UnitSI().m() ).input_default("0");
+    scalar_field.units( UnitSI().m() ).input_default("0.0");
+    vector_field.units( UnitSI().m() ).input_default("0.0");
+    tensor_field.units( UnitSI().m() ).input_default("0.0");
 
     auto region_set = mesh->region_db().get_region_set("BULK");
     std::vector<std::string> region_set_names = {"BULK"};
@@ -961,6 +974,7 @@ TEST(Field, field_values) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 

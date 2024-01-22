@@ -57,14 +57,13 @@ Field<spacedim,Value>::Field()
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(const string &name, bool bc)
+Field<spacedim,Value>::Field(const string &name)
 : data_(std::make_shared<SharedData>()),
   value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
 		// n_comp is nonzero only for variable size vectors Vector, VectorEnum, ..
 		// this invariant is kept also by n_comp setter
 		shared_->n_comp_ = (Value::NRows_ ? 0 : 1);
-		shared_->bc_=bc;
 		this->name( name );
 		this->add_factory( std::make_shared<FactoryBase>() );
 		unsigned int cache_size = CacheMapElementNumber::get();
@@ -78,7 +77,7 @@ Field<spacedim,Value>::Field(const string &name, bool bc)
 
 
 template<int spacedim, class Value>
-Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name, bool bc)
+Field<spacedim,Value>::Field(unsigned int component_index, string input_name, string name)
 : data_(std::make_shared<SharedData>()),
   value_cache_( FieldValueCache<typename Value::element_type>(Value::NRows_, Value::NCols_) )
 {
@@ -88,7 +87,6 @@ Field<spacedim,Value>::Field(unsigned int component_index, string input_name, st
 	this->set_component_index(component_index);
 	this->name_ = (name=="") ? input_name : name;
 	this->shared_->input_name_ = input_name;
-    shared_->bc_ = bc;
 
 	unsigned int cache_size = CacheMapElementNumber::get();
 	value_cache_.reinit(cache_size);
@@ -250,7 +248,7 @@ void Field<spacedim, Value>::set(
 
 	ASSERT_PTR( mesh() ).error("Null mesh pointer, set_mesh() has to be called before set().\n");
     ASSERT_EQ( field->n_comp() , shared_->n_comp_);
-    field->set_mesh( mesh() , is_bc() );
+    field->set_mesh( mesh() );
 
 	for (auto set_name : region_set_names) {
 		RegionSet domain = mesh()->region_db().get_region_set(set_name);
@@ -321,9 +319,6 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     for(const Region &reg: mesh()->region_db().get_region_set("ALL") ) {
     	auto rh = data_->region_history_[reg.idx()];
 
-    	// skip regions with no matching BC flag
-    	if (reg.is_boundary() != is_bc()) continue;
-
     	// Check regions with empty history, possibly set default.
     	if ( rh.empty()) continue;
 
@@ -384,10 +379,8 @@ template<int spacedim, class Value>
 void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace type)
 {
 	// currently we cannot output boundary fields
-	if (!is_bc()) {
-	    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
-	    this->compute_field_data( type, stream);
-	}
+    ASSERT_LT( type, OutputTime::N_DISCRETE_SPACES ).error();
+    this->compute_field_data( type, stream);
 }
 
 
@@ -472,7 +465,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 				{
 					// add to history
 					ASSERT_EQ( field_instance->n_comp() , shared_->n_comp_);
-					field_instance->set_mesh( mesh() , is_bc() );
+					field_instance->set_mesh( mesh() );
 					for(const Region &reg: domain) {
                         // if region history is empty, add new field
                         // or if region history is not empty and the input_time is higher, add new field
@@ -508,11 +501,10 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     // check there are no empty field pointers, collect regions to be initialized from default value
     RegionSet regions_to_init; // empty vector
 
-    for(const Region &reg : mesh()->region_db().get_region_set("ALL") )
-        if (reg.is_boundary() == is_bc()) {      		// for regions that match type of the field domain
-            RegionHistory &rh = data_->region_history_[reg.idx()];
-        	if ( rh.empty() ||	! rh[0].second)   // empty region history
-            {
+    for(const Region &reg : mesh()->region_db().get_region_set("ALL") ) {
+        RegionHistory &rh = data_->region_history_[reg.idx()];
+        if ( rh.empty() ||	! rh[0].second)   // empty region history
+        {
         		// test if check is turned on and control field is FieldConst
 //                if (no_check_control_field_ && no_check_control_field_->is_constant(reg) ) {
 //                	// get constant enum value
@@ -523,14 +515,14 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
 //                             != shared_->no_check_values_.end() )
 //                        continue;                  // the field is not needed on this region
 //                }
-                if (shared_->input_default_ != "") {    // try to use default
-                    regions_to_init.push_back( reg );
-                } else {
-                	THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
-                	        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
-                }
+            if (shared_->input_default_ != "") {    // try to use default
+                regions_to_init.push_back( reg );
+            } else {
+                THROW( ExcMissingFieldValue() << EI_FieldInputName(input_name()) << EI_FieldName(name())
+                        << EI_RegId(reg.id()) << EI_RegLabel(reg.label()) );
             }
         }
+    }
 
     // possibly set from default value
     if ( regions_to_init.size() ) {
@@ -543,7 +535,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
     	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
-        field_ptr->set_mesh( mesh(), is_bc() );
+        field_ptr->set_mesh( mesh() );
         for(const Region &reg: regions_to_init) {
     		data_->region_history_[reg.idx()]
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
@@ -684,7 +676,7 @@ void Field<spacedim,Value>::fill_observe_value(std::shared_ptr<ElementDataCacheB
 template<int spacedim, class Value>
 std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
 	ASSERT_EQ(this->mesh()->region_db().size(), region_fields_.size()).error();
-	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+	//ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
 
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
 

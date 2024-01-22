@@ -102,7 +102,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, FMT_UNUSED bool boundary_domain) {
+void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh) {
     // create SurfaceDepth object if surface region is set
     std::string surface_region;
     if ( in_rec_.opt_val("surface_region", surface_region) ) {

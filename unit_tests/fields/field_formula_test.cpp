@@ -53,6 +53,7 @@ public:
             *this += scalar_field
                         .name("scalar_field")
                         .description("Pressure head")
+                        .input_default("0.0")
                         .units( UnitSI().m() );
             *this += scalar_z
                         .name("scalar_z")
@@ -67,6 +68,7 @@ public:
             *this += tensor_field
                         .name("tensor_field")
                         .description("")
+                        .input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
             *this += const_scalar
@@ -543,4 +545,5 @@ TEST(SurfaceDepth, base_test) {
 	EXPECT_DOUBLE_EQ( sd.compute_distance( arma::vec3("-1 0.5 0.9") ), 0.1 );
 
 	delete mesh;
+    Profiler::uninitialize();
 }

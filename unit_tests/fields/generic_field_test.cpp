@@ -92,7 +92,9 @@ public:
         eq_output_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
     }
 
-    ~GenericFieldTest() {}
+    ~GenericFieldTest() {
+        Profiler::uninitialize();
+    }
 
     void initialize() {
         TimeGovernor tg(0.0, 0.5);

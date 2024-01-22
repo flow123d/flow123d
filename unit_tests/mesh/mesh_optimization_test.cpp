@@ -292,6 +292,7 @@ public:
 
 TEST(Spacefilling, space_filling) {
 
+    Profiler::instance();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     
 //     const std::array<std::string, 2> shapes = {"square", "lshape"};
@@ -328,6 +329,6 @@ TEST(Spacefilling, space_filling) {
 //            }
 //        }
 //    }
-    
+    Profiler::uninitialize();
 }
 

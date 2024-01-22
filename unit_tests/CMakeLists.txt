@@ -27,9 +27,10 @@ add_dependencies(gtest_mpi_obj gtest gtest_main)
 # some test files in its source directory, while the binary of the test is created
 # elsewhere.
 add_definitions(-DUNIT_TESTS_SRC_DIR="${CMAKE_SOURCE_DIR}/unit_tests")
+add_definitions(-DUNIT_TESTS_BIN_DIR="${CMAKE_BINARY_DIR}/unit_tests")
 
 # target to make all unit tests
-add_custom_target(all-unit-test)
+#add_custom_target(all-unit-test)
 
 ######################################################################################################
 # Macro to make default targets and operations in current unit tests subdirectory, namely:
@@ -41,9 +42,11 @@ macro(add_test_directory libs)
 
   string(REPLACE "${CMAKE_SOURCE_DIR}/unit_tests/" "" subdir "${CMAKE_CURRENT_SOURCE_DIR}")
   #message("IN: ${CMAKE_CURRENT_SOURCE_DIR} SUBDIR: ${subdir}")
-  set(super_test "${subdir}-test")
-  add_custom_target( ${super_test} )
-  set(super_test_libs ${libs})
+  set(dir_test_target "${subdir}-test")
+  set(dir_bench_target "${subdir}-bench")
+  add_custom_target( ${dir_test_target} )
+  add_custom_target( ${dir_bench_target} )
+  set(dir_test_target_libs ${libs})
   #message("SUBDIR LIBS: ${libs}")
 
   if (ALLOW_DUPLICATE_CUSTOM_TARGETS)
@@ -51,16 +54,16 @@ macro(add_test_directory libs)
 
     # default all_test target
     add_custom_target(all-test
-                    DEPENDS ${super_test}
+                    DEPENDS ${dir_test_target}
                     )
 
     # default all_bench target
     add_custom_target(all-bench
-                    #DEPENDS ${test_name}
+                    DEPENDS ${dir_bench_target}
                     )
   endif()
 
-  add_dependencies(all-unit-test ${super_test})
+  #add_dependencies(all-unit-test ${dir_test_target})
 
   make_link_in_source("${CMAKE_CURRENT_SOURCE_DIR}/Makefile")
 endmacro()
@@ -69,14 +72,14 @@ endmacro()
 
 #################################
 # MACRO define_test
-#
-# Creates build targets for particular source file containing one test.
-#
 # For given parameter 'class_name', it assumes class_name_test.cpp source
 # and creates:
 # target 'class_name_test' which builds corresponding binary and run the test
 # target 'class_name_valgrind' which builds the binary and runs it under valgrind
-# use libraries in ${super_test_libs}
+#
+# Creates build targets for particular source file containing one test.
+#
+# use libraries in ${dir_test_target_libs}
 #
 # We want to run tests from source dir, but since there is no portable way
 # how to make link from source dir to Makefile generated in build dir
@@ -101,7 +104,7 @@ macro(define_test class_name)
   # executable rule
   add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
-  target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main)
+  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
 
 
@@ -118,8 +121,8 @@ macro(define_test class_name)
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-  # register the test into super_test
-  add_dependencies(${super_test} ${test_name})
+  # register the test into dir_test_target
+  add_dependencies(${dir_test_target} ${test_name})
 
   # let ctest call make with appropriate  target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
@@ -155,7 +158,7 @@ macro(define_mpi_test class_name n_proc)
   if(TARGET ${test_binary})
   else()
   	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
-  	target_link_libraries(${test_binary} ${super_test_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
@@ -175,13 +178,74 @@ macro(define_mpi_test class_name n_proc)
       DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-  # register the test into super_test
-  add_dependencies(${super_test} ${test_name})
+  # register the test into dir_test_target
+  add_dependencies(${dir_test_target} ${test_name})
 
   # let ctest call make with appropriate  target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
 endmacro()
 
+#################################
+# MACRO define_mpi_benchmark
+#
+# Like define_mpi_test, but with following differences:
+# - is executed in the directory of the benchmark binary
+# - is not part of all_test
+# - accepts additional parameter specifying the python postprocessing script for collecting and possibly publissing the benchmark results
+#   namely from the profiler output
+#
+# It has one more parameter for number of processors N. It provides similar targets as the macro 'define_test'
+# like: 'class_name_N_test' and 'class_name_N_valgrind' which builds the test binary and run it in parallel using bin/mpiexec
+#
+# To get meaningful output from the parallel tests you should include <gtest_flow.hh> instead of <gtest/gtest.h>
+macro(define_mpi_benchmark class_name n_proc postproc_script)
+  set(test_source "${class_name}_bench.cpp")
+  set(test_binary "${class_name}_bench_bin")
+  set(test_name "${class_name}-${n_proc}-bench")
+  set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
+
+  set (extra_args ${ARGN})
+  # Did we get any optional args?
+  list(LENGTH extra_args extra_count)
+  if (${extra_count} GREATER 0)
+      list(GET extra_args 0 test_timeout)
+  else () 
+      set(test_timeout ${TEST_TIMEOUT})
+  endif ()
+  math(EXPR valgrind_timeout "${test_timeout} * 1000")
+
+  # executable rule
+  if(TARGET ${test_binary})
+  else()
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
+  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+  	# add_dependencies(${test_binary} mpiexec_link)      # make
+  endif()
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+
+  # rule to run the test
+  # set(RUN_COMMAND ulimit -t 300\; )
+  # message(STATUS "BASH_COMMAND=${BASH_COMMAND}")
+  add_custom_target(${test_name}
+      # BENCHMARK_N_RUNS variable can be used to specify number of repetition
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/run_benchmark.sh -t=${test_timeout} -np=${n_proc}  ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} 
+      DEPENDS ${test_binary}
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+
+  # rule to run the test under valgrind
+  #add_custom_target(${test_valgrind}
+  #    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} ${CMAKE_BINARY_DIR}/bin/mpiexec -np ${n_proc} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/#python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+  #    DEPENDS ${test_binary}
+  #    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+
+  # register the test into dir_test_target
+  add_dependencies(${dir_bench_target} ${test_name})
+
+  # let ctest call make with appropriate  target
+  add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
+endmacro()
 
 
 #######################################################################################################

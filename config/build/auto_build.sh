@@ -95,10 +95,6 @@ dexec="docker exec -u $(id -u):$(id -g) ${build_container}"      # execute comma
 
 
 ######################################################################################################### build flow123d install container
-git_hash=`git rev-parse --short=6 HEAD`
-git_branch=`git rev-parse --abbrev-ref HEAD`
-build_dir_host=build-${git_branch}
-
 
 # copy config
 #${dexec} ls ${flow_repo_location}
@@ -117,9 +113,3 @@ echo "build result: $?"
 
 # Basic test of working binary.
 ${dexec} bin/flow123d --version
-
-# Tarball the build dir for reuse.
-cp config.cmake ${build_dir_host}/_config.cmake
-tar -cvf build_dir.tar ${build_dir_host}/* 
-
-

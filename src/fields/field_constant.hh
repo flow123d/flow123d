@@ -59,6 +59,11 @@ public:
     static const Input::Type::Record & get_input_type();
 
     /**
+     *
+     */
+    static Input::Type::Array get_tensor_input_type();
+
+    /**
      * Smart setter from the given value to return.
      */
     FieldConstant<spacedim, Value> &set_value(const typename Value::return_type &val);

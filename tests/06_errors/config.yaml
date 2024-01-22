@@ -113,3 +113,23 @@ test_cases:
     - regex:
         files: [job_output.log]
         substr: "/problem/flow_equation"
+        
+- files: 15_bparser_invalid_shape.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Invalid result shape"
+#    - regex:
+#        files: [job_output.log]
+#        substr: "/problem/flow_equation/input_fields/0/conductivity"
+        
+- files: 16_bparser_invalid_user_shape.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Invalid result shape"
+#    - regex:
+#        files: [job_output.log]
+#        substr: "/problem/flow_equation/user_fields/0"

@@ -233,11 +233,11 @@ void ProfilerTest::test_absolute_time() {
     std::stringstream sout;
     PI->output(MPI_COMM_WORLD, sout);
     PI->output(MPI_COMM_WORLD, cout);
-    
+
     // try to transform profiler data using python
     PI->output(MPI_COMM_WORLD);
     PI->transform_profiler_data (".txt", "SimpleTableFormatter");
-    
+
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
@@ -251,8 +251,8 @@ void ProfilerTest::test_absolute_time() {
     } else {
         EXPECT_TRUE( sout.str().empty() );
     }
-    
-    
+
+
 
     Profiler::uninitialize();
 }
@@ -294,7 +294,7 @@ void ProfilerTest::test_structure() {
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
-    
+
     // 0 processor will have valid profiler report
     // other processors should have empty string only
     if (mpi_rank == 0) {
@@ -304,7 +304,7 @@ void ProfilerTest::test_structure() {
     } else {
         EXPECT_TRUE( sout.str().empty() );
     }
-    
+
     Profiler::uninitialize();
 
 }
@@ -360,8 +360,9 @@ void ProfilerTest::test_petsc_memory() {
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
-    
-    Profiler::instance(); {
+
+    Profiler::instance();
+    {
         PetscLogDouble mem;
         START_TIMER("A");
             PetscInt size = 100*1000;
@@ -371,7 +372,7 @@ void ProfilerTest::test_petsc_memory() {
             VecSet(tmp_vector, value);
             // VecSetRandom(tmp_vector, NULL);
         END_TIMER("A");
-        
+
         START_TIMER("A");
             // allocated memory MUST be greater or equal to size * size of double
 
@@ -380,16 +381,16 @@ void ProfilerTest::test_petsc_memory() {
 
             EXPECT_GE(AN.petsc_memory_difference, 0.9*size*sizeof(double));
         END_TIMER("A");
-        
+
         START_TIMER("B");
             PetscScalar sum;
             VecSum(tmp_vector, &sum);
         END_TIMER("B");
-        
+
         START_TIMER("C");
             VecDestroy(&tmp_vector);
         END_TIMER("C");
-        
+
         START_TIMER("C");
             // since we are destroying vector, we expect to see negative memory difference
             EXPECT_LE(AN.petsc_memory_difference, 0);
@@ -408,30 +409,30 @@ void ProfilerTest::test_memory_propagation(){
     int allocated_B = 0;
     int allocated_C = 0;
     int allocated_D = 0;
-    
+
     Profiler::instance();
     {
         allocated_whole = MALLOC;
         allocated_whole += alloc_and_dealloc<int>(SIZE);
         EXPECT_EQ(MALLOC, allocated_whole);
-        
+
         START_TIMER("A");
             allocated_A += alloc_and_dealloc<int>(10 * SIZE);
             EXPECT_EQ(MALLOC, allocated_A);
-            
+
             START_TIMER("B");
                 allocated_B += alloc_and_dealloc<int>(100 * SIZE);
-                
+
                 START_TIMER("C");
                     EXPECT_EQ(MALLOC, allocated_C);
                 END_TIMER("C");
                 allocated_B += allocated_C;
-                
+
             END_TIMER("B");
             allocated_A += allocated_B;
-            
+
             allocated_A += alloc_and_dealloc<int>(10 * SIZE);
-            
+
             for(int i = 0; i < 5; i++) {
                 START_TIMER("D");
                     allocated_D += alloc_and_dealloc<int>(1 * SIZE);
@@ -441,8 +442,8 @@ void ProfilerTest::test_memory_propagation(){
                 END_TIMER("D");
             }
             allocated_A += allocated_D;
-            
-            
+
+
         END_TIMER("A");
         allocated_whole += allocated_A;
     }
@@ -459,17 +460,18 @@ void ProfilerTest::test_petsc_memory_monitor() {
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
     EXPECT_EQ( ierr, 0 );
 
-    Profiler::instance(); {
+    Profiler::instance();
+    {
         PetscInt size = 10000;
         START_TIMER("A");
             Vec tmp_vector;
             VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector);
             VecDestroy(&tmp_vector);
-            
+
             START_TIMER("C");
             END_TIMER("C");
         END_TIMER("A");
-        
+
         START_TIMER("B");
             Vec tmp_vector1, tmp_vector2;
             VecCreateSeq(PETSC_COMM_SELF, size, &tmp_vector1);
@@ -500,7 +502,7 @@ void ProfilerTest::test_multiple_instances() {
     Profiler::uninitialize();
 }
 
-// testing memory propagation with manual propagate_values call 
+// testing memory propagation with manual propagate_values call
 TEST_F(ProfilerTest, test_propagate_values) {test_propagate_values();}
 void ProfilerTest::test_propagate_values() {
     int allocated = 0;
@@ -511,10 +513,10 @@ void ProfilerTest::test_propagate_values() {
                         allocated += alloc_and_dealloc<int>(25);
                     END_TIMER("C");
                 END_TIMER("B");
-                
+
                 START_TIMER("D");
                 END_TIMER("D");
-                
+
                 PI->propagate_timers();
                 EXPECT_EQ(MALLOC, allocated);
             END_TIMER("A");
@@ -528,9 +530,9 @@ TEST_F(ProfilerTest, test_calibrate) {test_calibrate();}
 void ProfilerTest::test_calibrate() {
     Profiler * prof = Profiler::instance();
     double resolution = prof->get_resolution();
-    START_TIMER("calibrate");
+//    START_TIMER("calibrate");
     prof->calibrate();
-    END_TIMER("calibrate");
+//    END_TIMER("calibrate");
     // Just test that we change it from default value -1.
     EXPECT_GT(prof->calibration_time(), 0);
     // Calibration should by design take about 0.1 s.
@@ -538,6 +540,7 @@ void ProfilerTest::test_calibrate() {
 
     EXPECT_GT(Profiler::instance()->calibration_time(), 0);
 
+    Profiler::uninitialize();
 }
 
 // optional test only for testing merging of inconsistent profiler trees

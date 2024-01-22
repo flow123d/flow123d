@@ -26,11 +26,35 @@ jobs:
         name: Flow123d debug main build
      
         steps:
-        - uses: actions/checkout@v3
+        - name: Checkout
+          uses: actions/checkout@v3
+        - name: Set variables
+          id: vars
+          run: |            
+            # create build_dir variable
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+            echo ${build_dir}
+    
+            # can not use environment variables in github actions
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+
+        - name: Check vars
+          run: |
+              echo builddir="${{ steps.vars.outputs.builddir }}"
+        
         - name: Build flow123d, verify, tarball.
           run: |
             release_tag=`cat version`
             config/build/auto_build.sh dbg gnu ci ${release_tag} 
+        - name: Benchmark meshes
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+        - name: Tarball build dir
+          run: |
+              build_dir="${{ steps.vars.outputs.builddir }}"
+              config/build/tar_build_dir.sh ${build_dir}                
         - uses: actions/upload-artifact@v3
           with:         
             name: build_dir

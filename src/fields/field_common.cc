@@ -34,7 +34,6 @@ FieldCommon::FieldCommon()
   is_jump_time_(true),
   component_index_(std::numeric_limits<unsigned int>::max())
 {
-    shared_->bc_=false;
     shared_->input_default_="";
     shared_->n_comp_ = 0;
     shared_->mesh_ = nullptr;

@@ -105,7 +105,7 @@ const IT::Selection &EquationOutput::create_output_field_selection(const string 
     for( FieldCommon * field : field_list)
     {
         //DebugOut().fmt("type for field: {}\n", field->name());
-        if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
+        if ( field->flags().match( FieldFlag::allow_output) )
         {
             string desc = "(($[" + field->units().format_latex()+"]$)) "; + "Output of: the field " + field->name() + " ";
             if (field->flags().match(FieldFlag::equation_input))

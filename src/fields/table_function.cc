@@ -15,6 +15,7 @@
  * @brief
  */
 
+#include "fields/field_constant.hh"
 #include "fields/table_function.hh"
 #include "tools/time_governor.hh"
 #include "input/input_type.hh"
@@ -35,7 +36,7 @@ const it::Tuple & TableFunction<Value>::get_input_type_val()
         .declare_key("t", TimeGovernor::get_input_time_type( 0.0 ), it::Default::obligatory(),
                                     "Time stamp." )
                                   //"Independent variable of stamp."
-		.declare_key("value", Value::get_input_type(), it::Default::obligatory(),
+		.declare_key("value", FieldConstant<3, Value>::get_tensor_input_type(), it::Default::obligatory(),
 									"Value of the field in given stamp." )
 		.close();
 }
@@ -76,7 +77,7 @@ void TableFunction<Value>::init_from_input(const Input::Record &rec, const TimeS
 
         	typename Value::return_type r_value;
         	Value value(r_value);
-        	value.init_from_input( it->val<typename Value::AccessType>("value") );
+        	value.init_from_input( it->val<Input::Array>("value") );
         	table_values_.push_back( TableValue(t, value) );
     	}
     }
@@ -138,7 +139,7 @@ template class TableFunction<FieldValue<0>::Enum >;
 template class TableFunction<FieldValue<0>::Integer >;
 template class TableFunction<FieldValue<0>::Scalar >;
 template class TableFunction<FieldValue<0>::Vector >; // temporary solution for computing more fields at once in python
-template class TableFunction<FieldValue<2>::VectorFixed >;
-template class TableFunction<FieldValue<2>::TensorFixed >;
+//template class TableFunction<FieldValue<2>::VectorFixed >;
+//template class TableFunction<FieldValue<2>::TensorFixed >;
 template class TableFunction<FieldValue<3>::VectorFixed >;
 template class TableFunction<FieldValue<3>::TensorFixed >;

@@ -1,13 +1,20 @@
-# Usage: run_with_build_dir.sh <environment> <command> [args]
+# Usage: run_with_build_dir.sh [-c] <environment> <command> [args]
 #
 # environment= dbg_gnu | rel_gnu | dbg_intel ....
 #
-# Assumes coloned repository set to correct branch. 
+# Assumes cloned repository set to correct branch. 
 # Extract the build_dir tar ball.
 # Run the <command> within the build container with the extracted build dir.
+#
+# -c .. Continue with curent build_dir, do not extract the tarball.
 
 set -e
 set -x
+
+if [ "$1" == "-c" ];then
+    PRESERVE_BUILD_DIR=1
+    shift
+fi
 
 env=$1;shift
 case $env in
@@ -25,13 +32,18 @@ git_branch=`git rev-parse --abbrev-ref HEAD`
 build_dir_host=build-${git_branch}
 
 # Recreate build files and dirs
-rm -rf ${build_dir_host}
-mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
-rm -f build_tree
-ln -s ${build_dir_host} build_tree
-cp ${build_dir_host}/_config.cmake config.cmake
+if [ -z "$PRESERVE_BUILD_DIR" ]; then
+    rm -rf ${build_dir_host}
+    mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
+    rm -f build_tree
+    ln -s ${build_dir_host} build_tree
+    cp --preserve=timestamps ${build_dir_host}/_config.cmake config.cmake
+fi
 make update-submodules
-    
+echo "Make dry run."
+bin/fterm ${env} --no-term  exec make --dry-run fast-flow123d
+
+echo "Payload command"
 # run the command
 bin/fterm ${env} --no-term  exec ${command_with_args}
 

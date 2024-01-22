@@ -170,11 +170,8 @@ public:
 
        /**
         * Is used only by some Field implementations, but can be used to check validity of incoming ElementAccessor in value methods.
-        *
-        * Optional parameter @p boundary_domain can be used to specify, that the field will be evaluated only on the boundary part of the mesh.
-        * TODO: make separate mesh for the boundary, then we can drop this parameter.
         */
-       virtual void set_mesh(const Mesh *mesh, bool boundary_domain);
+       virtual void set_mesh(const Mesh *mesh);
 
        /**
         * Sets @p component_idx_

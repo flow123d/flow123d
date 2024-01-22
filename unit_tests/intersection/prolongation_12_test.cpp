@@ -13,6 +13,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -117,6 +118,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<std::vector<arma::ve
 
 
 TEST(intersection_prolongation_12d, all) {
+    Profiler::instance();
 //     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_12d/";
@@ -142,4 +144,5 @@ TEST(intersection_prolongation_12d, all) {
         
         compute_intersection_12d(mesh, solution[s]);
     }
+    Profiler::uninitialize();
 }

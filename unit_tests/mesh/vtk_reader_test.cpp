@@ -19,6 +19,7 @@
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
 #include "system/tokenizer.hh"
+#include "system/sys_profiler.hh"
 
 
 class VtkMeshReaderTest : public VtkMeshReader {
@@ -114,6 +115,8 @@ TEST(PugiXml, read_simple_xml) {
 
 // test of reading of VTU file
 TEST(VtkReaderTest, read_ascii_vtu) {
+    Profiler::instance();
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
     auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
@@ -150,10 +153,13 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     }
 
     //delete mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(VtkReaderTest, read_binary_vtu) {
+    Profiler::instance();
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("output/test_output_vtk_binary_ref.vtu", FilePath::input_file);
 
@@ -229,10 +235,13 @@ TEST(VtkReaderTest, read_binary_vtu) {
     }
 
    // delete mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(VtkReaderTest, read_compressed_vtu) {
+    Profiler::instance();
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_zlib_ref.vtu\"}";
     auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
@@ -256,10 +265,13 @@ TEST(VtkReaderTest, read_compressed_vtu) {
     }
 
     //delete mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(VtkReaderTest, read_mesh) {
+    Profiler::instance();
+
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     std::string mesh_in_string = "{ mesh_file=\"output/test_output_vtk_ascii_ref.vtu\", optimize_mesh=false }";
     auto reader = reader_constructor(mesh_in_string);
@@ -270,4 +282,5 @@ TEST(VtkReaderTest, read_mesh) {
 
     EXPECT_EQ(8, mesh->n_nodes());
     EXPECT_EQ(6, mesh->n_elements());
+    Profiler::uninitialize();
 }

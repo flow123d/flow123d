@@ -57,19 +57,19 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-	return fmt::format("R{:d}_to_{}", spacedim, Value::type_name() );
+	return ""; //fmt::format("R{:d}_to_{}", spacedim, Value::type_name() ); // maybe change template name
 }
 
 
 
 template <int spacedim, class Value>
 Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
-	stringstream ss;
-	ss << "[" << Value::NRows_  << ", " << Value::NCols_  << "]";
+	//stringstream ss;
+	//ss << "[" << Value::NRows_  << ", " << Value::NCols_  << "]";
     return it::Abstract("Field_"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
-			.add_attribute(FlowAttribute::field_value_shape(), ss.str() )
+			//.add_attribute(FlowAttribute::field_value_shape(), ss.str() )
 			.close();
 }
 
@@ -124,7 +124,7 @@ bool FieldAlgorithmBase<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *,  bool) {
+void FieldAlgorithmBase<spacedim, Value>::set_mesh(const Mesh *) {
 }
 
 
