@@ -9,6 +9,7 @@ on:
         - JB_release_tests
         - 3.9.1
         - DF_benchmark_asm
+        - build_with_4.0.3
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
