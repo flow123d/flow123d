@@ -117,8 +117,8 @@ class ProfilerFormatter(object):
             raise IOError('Empty json file {:s}'.format(json_location))
 
         try:
-            with open(json_location, 'r') as fp:
-                json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
+            with open(json_location, 'r', encoding='utf-8') as fp:
+                json_data = json.load(fp, cls=ProfilerJSONDecoder)
 
                 if not json_data:
                     Logger.instance().error('Empty json file "%s"', json_location)
