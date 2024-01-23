@@ -341,7 +341,7 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
             }
         }
         i_history=min(i_history, history_size - 1);
-        ASSERT(i_history >= 0).error("Empty field history.");
+        ASSERT(i_history > 0).error("Empty field history.");
         // possibly update field pointer
 
         auto new_ptr = rh.at(i_history).second;
