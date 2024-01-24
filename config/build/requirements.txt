@@ -5,5 +5,5 @@
 # - github packages (packages not on PyPi), auxiliary tools not part of the Flow123d direct dependencies, not expected to be modified during Flow123d development
 #   Prefered in the install-<env>.
 # - submodules and possibly some github packages, could be installed during build of the release image
-# yamlconv @ git+https://github.com/flow123d/yaml_converter@v4.0.0a02
-yamlconv @ https://github.com/flow123d/yaml_converter/tree/v4.0.0a02
+
+ymlconv @ git+https://github.com/flow123d/yaml_converter@v4.0.0a02
