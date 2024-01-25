@@ -14,8 +14,10 @@ Package contains:
 """
 
 import os
+import io
 import json
 import datetime
+import time
 import importlib
 from utils.logger import Logger
 import collections
@@ -76,6 +78,36 @@ class ProfilerJSONDecoder(json.JSONDecoder):
                 pass
 
 
+class FileSafe(io.TextIOWrapper):
+    """
+    Context manager for openning and reading Profiler files with some timeout
+    amd retrying of getting acces.creation and usage of a workspace dir.
+
+    Usage:
+    with FileSafe(filename, mode='w', timeout=60) as fp:
+        json_data = json.load(fp, ...)
+    .. automaticaly closed
+    """
+    pass
+
+    def __init__(self, filename:str, timeout=60, **kwargs):
+        """
+        :param filename:
+        :param timeout: time to try acquire the lock
+        """
+        end_time = time.time() + timeout
+        while time.time() < end_time:
+            try:
+                super().__init__(open(filename, 'rb'))
+                return
+            except BlockingIOError as e:
+                time.sleep(0.01)
+                continue
+            break
+        logging.exception(f"Unable to lock access to Profiler file: {filename}, give up after: {timeout}s.")
+        raise BlockingIOError(f"Unable to lock access to Profiler file: {filename}, give up after: {timeout}s.")
+
+
 class ProfilerFormatter(object):
     """
     Class which dynamically loads formatter and perform conversion
@@ -117,7 +149,7 @@ class ProfilerFormatter(object):
             raise IOError('Empty json file {:s}'.format(json_location))
 
         try:
-            with open(json_location, 'r') as fp:
+            with FileSafe(json_location, timeout=30) as fp:
                 json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
 
                 if not json_data:
