@@ -34,6 +34,7 @@ class ProfilerJSONDecoder(json.JSONDecoder):
     returned object has all values properly typed so
     formatters can make mathematical or other operation without worries
     """
+    pass
 
     def decode(self, json_string):
         """Decodes json_string which is string that is given to json.loads method"""
