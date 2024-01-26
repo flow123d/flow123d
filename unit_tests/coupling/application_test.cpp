@@ -15,7 +15,6 @@ protected:
 		ASSERT_PERMANENT(false).error("testing error...\n");
 	}
 
-	
 	void seg_fault() {
       // Attempt to read from unallocated memory.
       petsc_initialize(0, nullptr);
