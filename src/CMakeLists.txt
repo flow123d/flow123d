@@ -89,22 +89,20 @@ endif()
 #    ADD_PRECOMPILED_HEADER(system_lib "pre_system.hh")
 #endif()
 
-# system_lib_basic 
-# used in system_lib and fieldproxypy
-add_library(system_lib_basic OBJECT
+# util_lib 
+add_library(util_lib STATIC
     system/asserts.cc
     system/exceptions.cc
+    system/stack_trace.cc
 )
 
 # system_lib
 add_library(system_lib 
-    $<TARGET_OBJECTS:system_lib_basic>
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-    system/stack_trace.cc
     system/file_path.cc
     system/tokenizer.cc
     system/logger.cc
@@ -115,6 +113,7 @@ add_library(system_lib
     system/fmt/posix.cc
 )
 target_link_libraries(system_lib PUBLIC 
+    util_lib 
 	MPI::MPI_CXX
     pybind11::embed 
     ${PERMON_LIBRARY}
@@ -295,7 +294,7 @@ pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
 #pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
 #add_executable(flow123dpy fields/python_field_proxy.cc)
 target_link_libraries(fieldproxypy PUBLIC 
-    $<TARGET_OBJECTS:system_lib_basic>
+    util_lib
     armadillo 
 )
 
