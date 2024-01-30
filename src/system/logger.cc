@@ -19,9 +19,10 @@
 #include "system/logger.hh"
 #include "system/logger_options.hh"
 #include "system/global_defs.h"
-#include "system/file_path.hh"
 
 #include <iomanip>
+
+using namespace std;
 
 
 /// Helper function, use for shorten the code point path
