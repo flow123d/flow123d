@@ -16,6 +16,8 @@
  */
 
 
+#include <mpi.h>
+
 #include "system/logger_options.hh"
 #include "system/logger.hh"
 #include "system/global_defs.h"
