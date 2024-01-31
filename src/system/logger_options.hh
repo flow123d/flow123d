@@ -69,15 +69,26 @@ public:
 	/// Set rank of actual process by MPI communicator.
 	int setup_mpi(MPI_Comm comm);
 
-    /// Initialize instance object in format 'log_file_base.process.log'.
-	void set_log_file(std::string log_file_base);
-
     /// Reset MPI rank and log file name
 	void reset();
 
     /// Check if singleton instance object is initialize.
 	inline bool is_init()
 	{ return init_; }
+
+	/// Set flags of initialization without Logger file.
+	inline void set_no_log() {
+	    LoggerOptions::get_instance().set_init();
+	    no_log_ = true;
+	}
+
+	/// Set \p init_ flag.
+	void set_init();
+
+	/// Return reference of Logger file stream.
+	inline std::ofstream &file_stream() {
+		return this->file_stream_;
+	}
 
 	/// Destructor
 	~LoggerOptions();

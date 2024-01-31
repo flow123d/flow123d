@@ -19,10 +19,9 @@
 #include "system/logger_options.hh"
 #include "system/logger.hh"
 #include "system/global_defs.h"
-#include "system/file_path.hh"
 #include "system/time_point.hh"
-#include <time.h>
-#include <random>
+
+using namespace std;
 
 /*******************************************************************
  * implementation of LoggerOptions
@@ -94,25 +93,9 @@ int LoggerOptions::setup_mpi(MPI_Comm comm) {
 }
 
 
-void LoggerOptions::set_log_file(std::string log_file_base) {
-	ASSERT(!init_).error("Recurrent initialization of logger file stream.");
-
-	if (log_file_base.size() == 0) { // empty string > no_log
-		no_log_ = true;
-	} else {
-		int mpi_rank = LoggerOptions::get_mpi_rank();
-		if (mpi_rank == -1) { // MPI is not set, random value is used
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<int> dis(0, 999999);
-			mpi_rank = dis(gen);
-			WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
-		}
-		std::stringstream file_name;
-		file_name << log_file_base << "." << mpi_rank << ".log";
-		FilePath(file_name.str(), FilePath::output_file).open_stream(file_stream_);
-	}
-	init_ = true;
+void LoggerOptions::set_init() {
+    ASSERT(!init_).error("Recurrent initialization of logger file stream.");
+    init_ = true;
 }
 
 

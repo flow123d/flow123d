@@ -38,6 +38,8 @@
 
 #include <iostream>                                    // for cout
 #include <sstream>                                     // for operator<<, endl
+#include <time.h>
+#include <random>
 #include "mpi.h"                                       // for MPI_Comm_size
 #include "petscerror.h"                                // for CHKERRQ, Petsc...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
@@ -120,7 +122,7 @@ void Application::system_init( MPI_Comm comm, const string &log_filename ) {
     if ( log_filename == "//" ) {
     	// -l option without given name -> turn logging off
     	sys_info.log=NULL;
-    	LoggerOptions::get_instance().set_log_file("");
+    	LoggerOptions::get_instance().set_no_log();
     } else	{
     	// construct full log name
     	//log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
@@ -128,7 +130,18 @@ void Application::system_init( MPI_Comm comm, const string &log_filename ) {
     	//sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file);
     	//sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
 
-    	LoggerOptions::get_instance().set_log_file(log_filename);
+    	int mpi_rank = LoggerOptions::get_instance().get_mpi_rank();
+    	if (mpi_rank == -1) { // MPI is not set, random value is used
+    	    std::random_device rd;
+    	    std::mt19937 gen(rd());
+    	    std::uniform_int_distribution<int> dis(0, 999999);
+    	    mpi_rank = dis(gen);
+    	    WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
+    	}
+    	std::stringstream file_name;
+    	file_name << log_file_base << "." << mpi_rank << ".log";
+    	FilePath(file_name.str(), FilePath::output_file).open_stream( LoggerOptions::get_instance().file_stream() );
+    	LoggerOptions::get_instance().set_init();
     }
 
     sys_info.verbosity=0;

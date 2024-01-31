@@ -94,6 +94,9 @@ add_library(util_lib STATIC
     system/asserts.cc
     system/exceptions.cc
     system/stack_trace.cc
+    system/time_point.cc
+    system/logger.cc
+    system/logger_options.cc
 )
 
 # system_lib
@@ -101,12 +104,9 @@ add_library(system_lib
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
-    system/time_point.cc
     system/system.cc
     system/file_path.cc
     system/tokenizer.cc
-    system/logger.cc
-    system/logger_options.cc
     system/armadillo_tools.cc
     system/fmt/format.cc
     system/fmt/ostream.cc
