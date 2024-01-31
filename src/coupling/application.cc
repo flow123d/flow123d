@@ -139,7 +139,7 @@ void Application::system_init( MPI_Comm comm, const string &log_filename ) {
     	    WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
     	}
     	std::stringstream file_name;
-    	file_name << log_file_base << "." << mpi_rank << ".log";
+    	file_name << log_filename << "." << mpi_rank << ".log";
     	FilePath(file_name.str(), FilePath::output_file).open_stream( LoggerOptions::get_instance().file_stream() );
     	LoggerOptions::get_instance().set_init();
     }
