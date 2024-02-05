@@ -113,7 +113,7 @@ void Application::system_init( MPI_Comm comm, const string &log_filename ) {
 
     ierr=MPI_Comm_rank(comm, &(sys_info.my_proc));
     ierr+=MPI_Comm_size(comm, &(sys_info.n_proc));
-    LoggerOptions::get_instance().setup_mpi(comm);
+    LoggerOptions::get_instance().set_mpi_rank(sys_info.my_proc);
     ASSERT_PERMANENT( ierr == MPI_SUCCESS ).error("MPI not initialized.\n");
 
     // determine logfile name or switch it off

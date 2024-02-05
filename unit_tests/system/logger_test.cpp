@@ -12,6 +12,7 @@
 
 #include <time.h>
 #include <random>
+#include <mpi.h>
 
 #include "system/logger.hh"
 #include "system/logger_options.hh"
@@ -73,11 +74,17 @@ void set_log_file(std::string log_file_base) {
     }
 }
 
+int get_mpi_rank(MPI_Comm comm) {
+	int rank;
+	MPI_Comm_rank(comm, &rank);
+	return rank;
+}
+
 
 TEST(Logger, no_log_file) {
 	// log file is set to empty
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 	set_log_file("");
 
 	logger_messages();
@@ -87,7 +94,7 @@ TEST(Logger, no_log_file) {
 TEST(Logger, without_init_log_file) {
 	// log file is not set > Log and Debug messages are redirect to screen output
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 
 	logger_messages();
     Profiler::uninitialize();
@@ -105,7 +112,7 @@ TEST(Logger, log_file_without_mpi) {
 TEST(Logger, log_file_with_mpi) {
 	// full usage of log
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 	set_log_file("with_mpi");
 
 	logger_messages();
@@ -114,7 +121,7 @@ TEST(Logger, log_file_with_mpi) {
 
 TEST(Logger, mask_manipulator) {
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 	set_log_file("manip");
 
 	MessageOut() << "First message to cout and file.\n"
@@ -128,7 +135,7 @@ TEST(Logger, mask_manipulator) {
 
 TEST(Logger, fmt_lib) {
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 	set_log_file("");
 
 	int i=1;
@@ -143,7 +150,7 @@ TEST(Logger, fmt_lib) {
 
 TEST(FealAssert, warning) {
 	Profiler::instance();
-	LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+	LoggerOptions::get_instance().set_mpi_rank( get_mpi_rank(MPI_COMM_WORLD) );
 	set_log_file("assert_warn");
 
 	std::string s1 = "feal";

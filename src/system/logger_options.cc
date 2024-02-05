@@ -16,8 +16,6 @@
  */
 
 
-#include <mpi.h>
-
 #include "system/logger_options.hh"
 #include "system/logger.hh"
 #include "system/global_defs.h"
@@ -88,10 +86,10 @@ int LoggerOptions::get_mpi_rank() {
 }
 
 
-int LoggerOptions::setup_mpi(MPI_Comm comm) {
+void LoggerOptions::set_mpi_rank(int mpi_rank) {
 	ASSERT(!init_).error("Setup MPI must be performed before setting logger file.");
 
-	return MPI_Comm_rank(comm, &mpi_rank_);
+	this->mpi_rank_ = mpi_rank;
 }
 
 

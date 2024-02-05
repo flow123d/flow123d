@@ -47,8 +47,10 @@ class TimePoint;
  *
  @code
    std::string log_file_prefix;
+   int mpi_rank;
    // ... set value of log_file_prefix
-   LoggerOptions::get_instance().setup_mpi(MPI_COMM_WORLD);
+   MPI_Comm_rank(comm, &mpi_rank);
+   LoggerOptions::get_instance().setup_mpi(mpi_rank);
    LoggerOptions::get_instance().set_log_file(log_file_prefix);
  @endcode
  */
@@ -66,8 +68,8 @@ public:
     /// Returns number of actual process, if MPI is not supported returns -1.
 	int get_mpi_rank();
 
-	/// Set rank of actual process by MPI communicator.
-	int setup_mpi(MPI_Comm comm);
+	/// Set rank of actual process.
+	void set_mpi_rank(int mpi_rank);
 
     /// Reset MPI rank and log file name
 	void reset();

@@ -98,9 +98,6 @@ add_library(util_lib STATIC
     system/logger.cc
     system/logger_options.cc
 )
-target_link_libraries(util_lib
-    MPI::MPI_CXX
-)
 
 # system_lib
 add_library(system_lib 
