@@ -82,11 +82,8 @@ rm -f build_tree
 ln -s ${build_dir_host} build_tree
 cp ${build_dir_host}/_config.cmake config.cmake
 
-${dexec} make -C ${flow_repo_location} set-safe-directory
-${dexec} git config --global --add safe.directory '*'
 
 make update-submodules
-
 
 
 # docker rm -f  || echo "container not running"
@@ -107,7 +104,7 @@ function dexec_setvars_make {
 
 ######################################################################################################### build flow123d install container
 
-
+${dexec} echo "HOME=$HOME"
 ${dexec} make -C ${flow_repo_location} set-safe-directory
 ${dexec} git config --global --add safe.directory '*'
 
