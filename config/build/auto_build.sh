@@ -87,7 +87,7 @@ bin/fterm ${build_type}_${environment} --detach ${build_container}
 
 # we do not know why it later fails at "git config --global --add safe.directory" cmd
 # when user is passed
-dexec="docker exec -u $(id -u):$(id -g) ${build_container}"      # execute command which will follow
+dexec="docker exec -u $(id -u):$(id -g) -eHOME=/home/flow ${build_container}"      # execute command which will follow
 #dexec="docker exec ${build_container}"      # execute command which will follow
 
 #dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
