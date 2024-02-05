@@ -85,7 +85,8 @@ echo "target_image: '${target_image}'"
 bin/fterm update
 bin/fterm ${build_type}_${environment} --detach ${build_container} 
 
-dexec="docker exec -u $(id -u):$(id -g) ${build_container}"      # execute command which will follow
+#dexec="docker exec -u $(id -u):$(id -g) ${build_container}"      # execute command which will follow
+dexec="docker exec ${build_container}"      # execute command which will follow
 #dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
 
 # function dexec_setvars_make {
@@ -102,7 +103,8 @@ cp config/config-jenkins-docker-${build_type}.cmake config.cmake
 
 # add full version
 echo "set(FLOW_MANUAL_VERSION ${release_tag})" >> config.cmake
-${dexec} echo "HOME=$HOME"
+${dexec} printenv "HOME"
+${dexec} whoami
 ${dexec} make -C ${flow_repo_location} set-safe-directory
 ${dexec} git config --global --add safe.directory '*'
 
