@@ -48,7 +48,7 @@ public:
 	TestOutputMSH()
     : OutputMSH()
     {
-        LoggerOptions::get_instance().set_no_log();
+        LoggerOptions::get_instance().log_file_name("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
         this->_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");

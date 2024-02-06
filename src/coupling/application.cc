@@ -38,8 +38,6 @@
 
 #include <iostream>                                    // for cout
 #include <sstream>                                     // for operator<<, endl
-#include <time.h>
-#include <random>
 #include "mpi.h"                                       // for MPI_Comm_size
 #include "petscerror.h"                                // for CHKERRQ, Petsc...
 #include "system/exc_common.hh"                        // for ExcAssertMsg
@@ -116,32 +114,10 @@ void Application::system_init( MPI_Comm comm, const string &log_filename ) {
     LoggerOptions::get_instance().set_mpi_rank(sys_info.my_proc);
     ASSERT_PERMANENT( ierr == MPI_SUCCESS ).error("MPI not initialized.\n");
 
-    // determine logfile name or switch it off
-    stringstream log_name;
-
-    if ( log_filename == "//" ) {
-    	// -l option without given name -> turn logging off
-    	sys_info.log=NULL;
-    	LoggerOptions::get_instance().set_no_log();
-    } else	{
-    	// construct full log name
-    	//log_name << log_filename <<  "." << sys_info.my_proc << ".old.log";
-
-    	//sys_info.log_fname = FilePath(log_name.str(), FilePath::output_file);
-    	//sys_info.log=xfopen(sys_info.log_fname.c_str(),"wt");
-
-    	int mpi_rank = LoggerOptions::get_instance().get_mpi_rank();
-    	if (mpi_rank == -1) { // MPI is not set, random value is used
-    	    std::random_device rd;
-    	    std::mt19937 gen(rd());
-    	    std::uniform_int_distribution<int> dis(0, 999999);
-    	    mpi_rank = dis(gen);
-    	    WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
-    	}
-    	std::stringstream file_name;
-    	file_name << log_filename << "." << mpi_rank << ".log";
-    	FilePath(file_name.str(), FilePath::output_file).open_stream( LoggerOptions::get_instance().file_stream() );
-    	LoggerOptions::get_instance().set_init();
+    std::string full_file_name = LoggerOptions::get_instance().log_file_name(log_filename);
+    if ( full_file_name.size() > 0 ) { // else case: empty string > no_log
+    	FilePath fp(full_file_name, FilePath::output_file);
+    	LoggerOptions::get_instance().set_stream( (fp.parent_path() + "/" + fp.filename()) );
     }
 
     sys_info.verbosity=0;

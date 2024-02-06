@@ -78,7 +78,7 @@ Logger::~Logger()
 	// print output to streams
 	print_to_screen(std::cout, cout_stream_, StreamMask::cout);
 	print_to_screen(std::cerr, cerr_stream_, StreamMask::cerr);
-	if (LoggerOptions::get_instance().is_init())
+	if (LoggerOptions::get_instance().init_flag() == LoggerOptions::InitFlag::initialize)
 		print_to_file(LoggerOptions::get_instance().file_stream_, this->file_stream_, StreamMask::log);
 }
 
@@ -120,8 +120,8 @@ void Logger::set_mask()
 {
 	if ( !every_process_ && (mpi_rank_ > 0) ) return;
 
-	bool no_log = LoggerOptions::get_instance().no_log_;
-	bool log_ready = LoggerOptions::get_instance().is_init();
+	bool no_log = LoggerOptions::get_instance().init_flag() == LoggerOptions::InitFlag::no_log;
+	bool log_ready = LoggerOptions::get_instance().init_flag() == LoggerOptions::InitFlag::initialize;
 
 	switch (type_) {
 	case MsgType::warning:

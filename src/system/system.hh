@@ -73,7 +73,6 @@ typedef struct SystemInfo {
     int  verbosity;             // system printf verbosity
     int pause_after_run;        // to keep terminal open on Windows
     string log_fname;           // name of the master log file
-    FILE *log;                  // log file handle
 
     int n_proc;                 // number of processors
     int my_proc;                // self processor number

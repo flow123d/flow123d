@@ -57,8 +57,15 @@ class TimePoint;
 class LoggerOptions
 {
 public:
+    /// Initialization flag of Logger.
+    enum InitFlag {
+        uninitialize,
+        no_log,
+        initialize
+    };
+
     /// Getter of singleton instance object
-	static LoggerOptions& get_instance();
+    static LoggerOptions& get_instance();
 
     /**
      * Return actual time from the beginning of application runtime in format HH:MM:SS.SSS
@@ -66,7 +73,9 @@ public:
     static std::string format_hh_mm_ss();
 
     /// Returns number of actual process, if MPI is not supported returns -1.
-	int get_mpi_rank();
+	inline int get_mpi_rank() const {
+		return mpi_rank_;
+	}
 
 	/// Set rank of actual process.
 	void set_mpi_rank(int mpi_rank);
@@ -75,22 +84,14 @@ public:
 	void reset();
 
     /// Check if singleton instance object is initialize.
-	inline bool is_init()
-	{ return init_; }
-
-	/// Set flags of initialization without Logger file.
-	inline void set_no_log() {
-	    LoggerOptions::get_instance().set_init();
-	    no_log_ = true;
-	}
+	inline LoggerOptions::InitFlag init_flag()
+	{ return init_flag_; }
 
 	/// Set \p init_ flag.
-	void set_init();
+	void set_stream(std::string abs_path);
 
-	/// Return reference of Logger file stream.
-	inline std::ofstream &file_stream() {
-		return this->file_stream_;
-	}
+	/// Create unique log file name
+	std::string log_file_name(std::string log_file_base);
 
 	/// Destructor
 	~LoggerOptions();
@@ -114,11 +115,8 @@ private:
 	 */
 	int mpi_rank_;
 
-	/// Turn off logger file output
-	bool no_log_;
-
-	/// Flag sign if logger is initialized by set_log_file method
-	bool init_;
+	/// Flag sign if logger is initialized
+	InitFlag init_flag_;
 
 	friend class Logger;
 };

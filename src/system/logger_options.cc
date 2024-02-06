@@ -20,6 +20,8 @@
 #include "system/logger.hh"
 #include "system/global_defs.h"
 #include "system/time_point.hh"
+#include <time.h>
+#include <random>
 
 using namespace std;
 
@@ -70,7 +72,7 @@ LoggerOptions* LoggerOptions::instance_ = new LoggerOptions();
 
 
 LoggerOptions::LoggerOptions()
-: mpi_rank_(-1), no_log_(false), init_(false) {}
+: mpi_rank_(-1), init_flag_(InitFlag::uninitialize) {}
 
 
 LoggerOptions::~LoggerOptions() {
@@ -81,28 +83,49 @@ LoggerOptions::~LoggerOptions() {
 }
 
 
-int LoggerOptions::get_mpi_rank() {
-	return mpi_rank_;
-}
-
-
 void LoggerOptions::set_mpi_rank(int mpi_rank) {
-	ASSERT(!init_).error("Setup MPI must be performed before setting logger file.");
+	ASSERT(init_flag_ == InitFlag::uninitialize).error("Setup MPI must be performed before setting logger file.");
 
 	this->mpi_rank_ = mpi_rank;
 }
 
 
-void LoggerOptions::set_init() {
-    ASSERT(!init_).error("Recurrent initialization of logger file stream.");
-    init_ = true;
+std::string LoggerOptions::log_file_name(std::string log_file_base) {
+    ASSERT(init_flag_ == InitFlag::uninitialize).error("Recurrent initialization of logger file stream.");
+
+    if ( (log_file_base.size()) == 0 || (log_file_base == "//") ) {
+        init_flag_ = InitFlag::no_log;
+        return "";
+    }
+
+    int mpi_rank = this->mpi_rank_;
+	if (mpi_rank == -1) { // MPI is not set, random value is used
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<int> dis(0, 999999);
+		mpi_rank = dis(gen);
+		WarningOut() << "Unset MPI rank, random value '" << mpi_rank << "' of rank will be used.\n";
+	}
+	std::stringstream file_name;
+	file_name << log_file_base << "." << mpi_rank << ".log";
+	return file_name.str();
+}
+
+
+void LoggerOptions::set_stream(std::string abs_path) {
+    ASSERT(!init_flag_ == InitFlag::uninitialize).error("Recurrent initialization of logger file stream.");
+
+    file_stream_.open(abs_path, ios_base::out);
+    if (! file_stream_.is_open())
+        THROW( ExcMessage() << EI_Message("Can not open logger file: '" + abs_path + "'!") );
+
+    init_flag_ = InitFlag::initialize;
 }
 
 
 void LoggerOptions::reset() {
 	mpi_rank_ = -1;
-	no_log_ = false;
-	init_ = false;
+	init_flag_ = InitFlag::uninitialize;
 	if (file_stream_.is_open()) {
 		file_stream_ << std::flush;
 		file_stream_.close();

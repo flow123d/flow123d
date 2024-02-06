@@ -59,7 +59,7 @@ public:
     TestOutputVTK()
     : OutputVTK()
     {
-        LoggerOptions::get_instance().set_no_log();
+        LoggerOptions::get_instance().log_file_name("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/../tests/00_mesh/square_1x1_frac_fork.msh", FilePath::input_file);
         this->_mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\" }");
