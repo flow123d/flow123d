@@ -113,7 +113,7 @@ std::string LoggerOptions::log_file_name(std::string log_file_base) {
 
 
 void LoggerOptions::set_stream(std::string abs_path) {
-    ASSERT(!init_flag_ == InitFlag::uninitialize).error("Recurrent initialization of logger file stream.");
+    ASSERT(init_flag_ == InitFlag::uninitialize).error("Recurrent initialization of logger file stream.");
 
     file_stream_.open(abs_path, ios_base::out);
     if (! file_stream_.is_open())
