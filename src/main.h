@@ -20,7 +20,7 @@
 #include "input/accessors.hh"
 #include "input/type_output.hh"
 #include "input/input_exception.hh"
-#include "system/application.hh"
+#include "coupling/application.hh"
 #include "system/exceptions.hh"
 class HC_ExplicitSequential;
 
