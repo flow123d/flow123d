@@ -90,7 +90,7 @@ endif()
 #endif()
 
 # system_lib
-add_library(system_lib 
+add_library(system_lib SHARED
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc

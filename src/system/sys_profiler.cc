@@ -717,14 +717,6 @@ void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
   chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
 
     if (mpi_rank == 0) {
-//        if (profiler_path == "") {
-//        	profiler_path ="profiler_info.log.json"
-//          output(comm, *get_default_output_stream());
-//        } else {
-//          json_filepath = profiler_path;
-//          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-//
-//        }
         output(comm, *get_output_stream(profiler_path));
     } else {
       ostringstream os;
@@ -804,13 +796,6 @@ void Profiler::output(ostream &os) {
 
 
 void Profiler::output(string profiler_path /* = "" */) {
-//    if(profiler_path == "") {
-//        output();
-//    } else {
-//        json_filepath = profiler_path;
-//        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-//
-//    }
     output(*get_output_stream(profiler_path));
 }
 
