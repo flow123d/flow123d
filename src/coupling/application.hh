@@ -18,16 +18,9 @@
 #ifndef APPLICATION_BASE_HH_
 #define APPLICATION_BASE_HH_
 
-#include "system/application.hh"
-//#include <mpi.hh>
-//#include "system/system.hh"
-//#include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
 #include "coupling/balance.hh"
-//#include "input/accessors.hh"
-//#include "input/reader_to_storage.hh"
-//#include "input/reader_internal_base.hh"
 #include "system/armadillo_tools.hh"
 //
 #include <iostream>
@@ -36,15 +29,10 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
-//#include <boost/filesystem.hpp>
 
 
 #include <string>
-//#include <sstream>
 #include <mpi.h>
-//#include "global_defs.h"
-//#include "system/file_path.hh"
-
 #include <stdarg.h>                  // for va_list
 #include <stdio.h>                   // for FILE
 
