@@ -24,7 +24,7 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#include <pybind11/pybind11.h>
+//#include <pybind11/pybind11.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
@@ -305,7 +305,7 @@ Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
   start_time( time(NULL) ),
-  json_filepath(""),
+  //json_filepath(""),
   none_timer_(CODE_POINT("NONE TIMER"), 0),
   calibration_time_(-1)
 
@@ -615,12 +615,15 @@ void save_nonmpi_metric (nlohmann::json &node, T * ptr, string name) {
     node[name + "-sum"] = *ptr;
 }
 
-std::shared_ptr<std::ostream> Profiler::get_output_stream(string path) {
-    if (path == "") path = "profiler_info.log.json";
-    json_filepath = FilePath(path, FilePath::output_file);
 
-    //LogOut() << "output into: " << json_filepath << std::endl;
-    return make_shared<ofstream>(json_filepath.c_str());
+
+string _profiler_output_path(string path) {
+    if (path == "") path = "profiler_info.log.json";
+    return FilePath(path, FilePath::output_file);
+}
+
+std::shared_ptr<std::ostream> _profiler_output_stream(const string &path) {
+	return make_shared<ofstream>(path.c_str());
 }
 
 
@@ -712,15 +715,19 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
 }
 
 
-void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
-  int mpi_rank;
-  chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
+string Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
+    int mpi_rank;
+    chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
 
+    // all processes must call output, but only rank 0 would use the output stream
     if (mpi_rank == 0) {
-        output(comm, *get_output_stream(profiler_path));
+        string out_path = _profiler_output_path(profiler_path);
+    	output(comm, *_profiler_output_stream(out_path));
+        return out_path;
     } else {
       ostringstream os;
       output(comm, os);
+      return "";
     }
 }
 
@@ -795,8 +802,10 @@ void Profiler::output(ostream &os) {
 }
 
 
-void Profiler::output(string profiler_path /* = "" */) {
-    output(*get_output_stream(profiler_path));
+string Profiler::output(string profiler_path /* = "" */) {
+    string out_path = _profiler_output_path(profiler_path);
+	output(*_profiler_output_stream(out_path));
+    return out_path;
 }
 
 void Profiler::output_header (nlohmann::json &root, int mpi_size) {
@@ -831,28 +840,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["run-finished-at"] =     end_time_string;
 }
 
-void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-	namespace py = pybind11;
 
-    if (json_filepath == "") return;
-
-    // error under CYGWIN environment : more details in this repo 
-    // https://github.com/x3mSpeedy/cygwin-python-issue
-    // 
-    // For now we only support profiler report conversion in UNIX environment
-    // Windows users will have to use a python script located in bin folder
-    // 
-
-    // grab module and function by importing module profiler_formatter_module.py
-    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
-    //
-    // def convert (json_location, output_file, formatter):
-    //
-    auto convert_method = python_module.attr("convert");
-    // execute method with arguments
-    convert_method(json_filepath, (json_filepath + output_file_suffix), formatter);
-
-}
 
 
 void Profiler::uninitialize() {
