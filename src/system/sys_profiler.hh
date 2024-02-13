@@ -885,16 +885,16 @@ public:
     {}
     void notify_free(const size_t )
     {}
-    string output(MPI_Comm, ostream &)
+    void output(MPI_Comm, ostream &)
     {}
     string output(MPI_Comm, string)
-    {}
+    {return ""}
     void output(std::ostream &)
     {}
     string output(string)
-    {}
-    void output(MPI_Comm)
-    {}
+    {return ""}
+//    void output(MPI_Comm)
+//    {}
 //    string output()
 //    {}
 //    void transform_profiler_data(const string &, const string &)
