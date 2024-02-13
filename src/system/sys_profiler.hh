@@ -888,11 +888,11 @@ public:
     void output(MPI_Comm, ostream &)
     {}
     string output(MPI_Comm, string)
-    {return ""}
+    {return "";}
     void output(std::ostream &)
     {}
     string output(string)
-    {return ""}
+    {return "";}
 //    void output(MPI_Comm)
 //    {}
 //    string output()
