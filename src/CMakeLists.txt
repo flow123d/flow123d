@@ -90,7 +90,7 @@ endif()
 #endif()
 
 # system_lib
-add_library(system_lib 
+add_library(system_lib SHARED
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
@@ -117,6 +117,12 @@ target_link_libraries(system_lib PUBLIC
     ${Boost_LIBRARIES} 
     ${PYTHON_LIBRARIES}
     nlohmann_json::nlohmann_json)
+set_target_properties(system_lib 
+    PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
+               BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+               INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
+#    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
+)    
 add_dependencies(system_lib update_source_tree)
 
 
@@ -164,7 +170,7 @@ add_library(la_lib
     la/vector_mpi.cc
 )
 target_link_libraries(la_lib 
-    input_lib system_lib
+    input_lib
     armadillo 
     ${PERMON_LIBRARY}
     ${PETSC_LIBRARIES}  
@@ -185,7 +191,7 @@ add_library(tools_lib
     tools/unit_converter.cc
 )
 target_link_libraries(tools_lib
-    system_lib input_lib )
+    input_lib )
   
 
 
@@ -230,7 +236,7 @@ add_library(mesh_lib
 )
 
 target_link_libraries(mesh_lib
-    input_lib system_lib la_lib
+    input_lib la_lib
     armadillo 
     ${Boost_LIBRARIES}
     ${PugiXml_LIBRARY}
@@ -253,7 +259,7 @@ add_library(fem_lib
     fem/mapping_p1.cc
 )
 target_link_libraries(fem_lib
-    system_lib mesh_lib 
+    mesh_lib 
     armadillo 
     ${Boost_LIBRARIES})
 
@@ -277,7 +283,7 @@ add_library(io_lib
 )
 
 target_link_libraries(io_lib
-    system_lib input_lib mesh_lib fem_lib la_lib
+    input_lib mesh_lib fem_lib la_lib
     armadillo 
     ${Boost_LIBRARIES}
     ${PugiXml_LIBRARY}
@@ -288,7 +294,7 @@ target_link_libraries(io_lib
 pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
 #pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
 #add_executable(flow123dpy fields/python_field_proxy.cc)
-target_link_libraries(fieldproxypy PUBLIC armadillo system_lib)
+target_link_libraries(fieldproxypy system_lib armadillo) 
 
 
 
@@ -322,7 +328,7 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib tools_lib fem_lib io_lib
+    input_lib mesh_lib tools_lib fem_lib io_lib
     fieldproxypy
     bparser  
     armadillo
@@ -370,7 +376,8 @@ add_library(flow123d_lib SHARED
     
 target_link_libraries(flow123d_lib 
     fem_lib mesh_lib la_lib input_lib io_lib
-    system_lib tools_lib coupling_lib
+    tools_lib coupling_lib
+    system_lib 
     bparser
     armadillo 
 #    ${TBB_LIBRARIES}
