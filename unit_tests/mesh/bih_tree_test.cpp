@@ -149,7 +149,7 @@ public:
 		//test_insec_points();
 
         //Profiler::instance()->output(MPI_COMM_WORLD, cout);
-		Profiler::instance()->output();
+		Profiler::instance()->output(std::cout);
 
 		bt->test_tree_params();
 		//bt->BIH_output();

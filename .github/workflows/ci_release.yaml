@@ -6,7 +6,8 @@ on:
     push:
         branches:
         - master
-        - JB_release_tests
+        - JB_shared_system
+        - JB_release_tests        
         - 3.9.1
         - DF_benchmark_asm
         - build_with_4.0.3

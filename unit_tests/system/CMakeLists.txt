@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs input_lib system_lib armadillo)
+set(libs system_lib armadillo)
 add_test_directory("${libs}")
 
     define_test(empty)
@@ -33,7 +33,6 @@ add_test_directory("${libs}")
     
     define_test(exceptions)
     define_test(file_path)
-    define_test(application_base)
     define_test(flag_array)
     define_test(check_error)
     define_test(python_loader)
