@@ -7,6 +7,7 @@ on:
         branches:
         - master
         - JB_release_tests
+        - JB_release_tests_merge
         - 3.9.1
         - DF_variant_benchmark_asm
         - DF_asm_optimization

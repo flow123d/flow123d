@@ -101,7 +101,6 @@ add_library(system_lib
     system/asserts.cc
     system/file_path.cc
     system/tokenizer.cc
-    system/application.cc
     system/logger.cc
     system/logger_options.cc
     system/armadillo_tools.cc
@@ -187,7 +186,7 @@ add_library(tools_lib
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
-
+  
 
 
 # mesh_lib
@@ -365,6 +364,8 @@ add_library(flow123d_lib SHARED
 
     coupling/hc_explicit_sequential.cc
     coupling/hm_iterative.cc
+    coupling/application.cc
+
 )    
     
 target_link_libraries(flow123d_lib 
@@ -386,6 +387,7 @@ set_target_properties(flow123d_lib
                INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )
+add_dependencies(flow123d_lib rev_num_always)    
 
 #add_dependencies(flow123d_lib tbb)
 
