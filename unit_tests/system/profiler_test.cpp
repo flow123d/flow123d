@@ -155,8 +155,9 @@ void ProfilerTest::test_str_hash() {
     for(unsigned int i=0; i<n_pairs; i++) {
         random_string(a);
         random_string(b);
-        if (string(a) != string(b) )
+        if (string(a) != string(b) ){
             EXPECT_NE( str_hash(a, PROFILER_HASH_DEFAULT) , str_hash(b, PROFILER_HASH_DEFAULT) );
+        }
     }
 }
 
@@ -382,8 +383,8 @@ void ProfilerTest::test_petsc_memory() {
     EXPECT_EQ( ierr, 0 );
 
     Profiler::instance();
+    EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
     {
-        PetscLogDouble mem;
         START_TIMER("A");
             PetscInt size = 100*1000;
             PetscScalar value = 0.1;
@@ -431,6 +432,7 @@ void ProfilerTest::test_memory_propagation(){
     int allocated_D = 0;
 
     Profiler::instance();
+    EXPECT_TRUE(Profiler::get_global_memory_monitoring());
     {
         allocated_whole = MALLOC;
         allocated_whole += alloc_and_dealloc<int>(SIZE);
@@ -481,6 +483,7 @@ void ProfilerTest::test_petsc_memory_monitor() {
     EXPECT_EQ( ierr, 0 );
 
     Profiler::instance();
+    EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
     {
         PetscInt size = 10000;
         START_TIMER("A");
@@ -507,10 +510,11 @@ void ProfilerTest::test_petsc_memory_monitor() {
 // testing multiple initialization and uninitialization of Profiler
 TEST_F(ProfilerTest, test_multiple_instances) {test_multiple_instances();}
 void ProfilerTest::test_multiple_instances() {
-    int allocated = 0;
     for (int i = 0; i < 5; i++) {
         Profiler::uninitialize();
+        EXPECT_FALSE(Profiler::get_global_memory_monitoring());
         Profiler::instance();
+        EXPECT_TRUE(Profiler::get_global_memory_monitoring());
         EXPECT_EQ(MALLOC, 0);
         {
             EXPECT_EQ(
@@ -549,7 +553,7 @@ void ProfilerTest::test_propagate_values() {
 TEST_F(ProfilerTest, test_calibrate) {test_calibrate();}
 void ProfilerTest::test_calibrate() {
     Profiler * prof = Profiler::instance();
-    double resolution = prof->get_resolution();
+    prof->get_resolution();
 //    START_TIMER("calibrate");
     prof->calibrate();
 //    END_TIMER("calibrate");
