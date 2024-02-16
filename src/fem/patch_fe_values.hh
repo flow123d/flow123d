@@ -753,8 +753,10 @@ private:
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
-    //unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-	auto it = fe_values_->func_map_.find(begin_);
+    // unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+    // auto &dpt_row = this->fe_values_->dim_point_table_[value_cache_idx];
+    // return ( this->fe_values_->patch_data_[0][dpt_row[0]] )[this->begin_][dpt_row[2]];
+    auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "JxW") {
         return it->second.point_data_->JxW(point);
     } else {
