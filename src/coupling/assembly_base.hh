@@ -166,6 +166,68 @@ public:
         }
     }
 
+    /// Fill column dim and bulk/side of dim_point_table of eval points in bulk integrals
+    inline void add_patch_bulk_points(DimPointTable &dim_point_table, const RevertableList<BulkIntegralData> &bulk_integral_data) {
+        for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
+            if (bulk_integral_data[i].cell.dim() != dim) continue;
+            unsigned int element_patch_idx = element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
+        	for (auto p : this->bulk_points(element_patch_idx) ) {
+        	    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+        	    dim_point_table[value_cache_idx][0] = dim-1;
+        	    dim_point_table[value_cache_idx][1] = 0; // bulk point
+            }
+        }
+    }
+
+    /// Fill column dim and bulk/side of dim_point_table of side eval points in boundary side integrals
+    inline void add_patch_bdr_side_points(DimPointTable &dim_point_table, const RevertableList<BoundaryIntegralData> &boundary_integral_data) {
+        for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
+            if (boundary_integral_data[i].side.dim() != dim) continue;
+            for (auto p : this->boundary_points(boundary_integral_data[i].side) ) {
+        	    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+        	    dim_point_table[value_cache_idx][0] = dim-1;
+        	    dim_point_table[value_cache_idx][1] = 1; // side point
+            }
+        }
+    }
+
+    /// Fill column dim and bulk/side of dim_point_table of eval points in edge integrals
+    inline void add_patch_edge_points(DimPointTable &dim_point_table, const RevertableList<EdgeIntegralData> &edge_integral_data) {
+        for (unsigned int i=0; i<edge_integral_data.permanent_size(); ++i) {
+        	auto range = edge_integral_data[i].edge_side_range;
+            if (range.begin()->dim() != dim) continue;
+            for( DHCellSide edge_side : range )
+            {
+                for (auto p1 : this->edge_points(edge_side) ) {
+            	    unsigned int value_cache_idx = p1.elm_cache_map()->element_eval_point(p1.elem_patch_idx(), p1.eval_point_idx());
+            	    dim_point_table[value_cache_idx][0] = dim-1;
+            	    dim_point_table[value_cache_idx][1] = 1; // side point
+                    auto p2 = p1.point_on(edge_side);
+            	    value_cache_idx = p2.elm_cache_map()->element_eval_point(p2.elem_patch_idx(), p2.eval_point_idx());
+            	    dim_point_table[value_cache_idx][0] = dim-1;
+            	    dim_point_table[value_cache_idx][1] = 1; // side point
+                }
+            }
+        }
+    }
+
+    /// Fill column dim and bulk/side of dim_point_table of eval points in coupling integrals
+    inline void add_patch_coupling_integrals(DimPointTable &dim_point_table, const RevertableList<CouplingIntegralData> &coupling_integral_data) {
+        for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
+            if (coupling_integral_data[i].side.dim() != dim) continue;
+            for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
+            {
+        	    unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
+        	    dim_point_table[value_cache_idx][0] = dim-1;
+        	    dim_point_table[value_cache_idx][1] = 1; // side point
+                auto p_low = p_high.lower_dim(coupling_integral_data[i].cell);
+        	    value_cache_idx = p_low.elm_cache_map()->element_eval_point(p_low.elem_patch_idx(), p_low.eval_point_idx());
+        	    dim_point_table[value_cache_idx][0] = dim-2;
+        	    dim_point_table[value_cache_idx][1] = 0; // bulk point
+            }
+        }
+    }
+
 protected:
     /// Set of integral of given dimension necessary in assemblation
     struct DimIntegrals {

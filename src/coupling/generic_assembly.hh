@@ -341,6 +341,38 @@ private:
     }
 
     void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
+        // NEW
+        DimPointTable &dim_point_table = this->fe_values_.dim_point_table(element_cache_map_.n_eval_points());
+        if (bulk_integral_data_.permanent_size() > 0) {
+            multidim_assembly_[1_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
+            multidim_assembly_[2_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
+            multidim_assembly_[3_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
+        }
+        if (boundary_integral_data_.permanent_size() > 0) {
+            multidim_assembly_[1_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
+            multidim_assembly_[2_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
+            multidim_assembly_[3_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
+        }
+        if (edge_integral_data_.permanent_size() > 0) {
+            multidim_assembly_[1_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
+            multidim_assembly_[2_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
+            multidim_assembly_[3_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
+        }
+        if (coupling_integral_data_.permanent_size() > 0) {
+            multidim_assembly_[2_d]->add_patch_coupling_integrals(dim_point_table, coupling_integral_data_);
+            multidim_assembly_[3_d]->add_patch_coupling_integrals(dim_point_table, coupling_integral_data_);
+        }
+
+        // set indexes to subtables in dim_point_table structure (last column)
+        std::vector< std::vector<uint> > dpt_init(3, std::vector<uint>(2,0));
+        for (uint i=0; i<element_cache_map_.n_eval_points(); ++i) {
+            if (dim_point_table[i][0] < 3) { // column 0 contains (dim-1)
+                dim_point_table[i][2] = dpt_init[ dim_point_table[i][0] ][ dim_point_table[i][1] ];
+                dpt_init[ dim_point_table[i][0] ][ dim_point_table[i][1] ]++;
+            }
+        }
+
+        // OLD
         const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
         std::array<PatchElementsList, 4> patch_elements;
 

@@ -294,6 +294,11 @@ public:
         return eval_point_data_[point_idx];
     }
 
+    /// Return number of stored items in eval_point_data_
+    inline std::size_t n_eval_points() const {
+        return eval_point_data_.permanent_size();
+    }
+
     /// Return value of evaluation point given by idx of element in patch and local point idx in EvalPoints from cache.
     template<class Value>
     inline typename Value::return_type get_value(const FieldValueCache<typename Value::element_type> &field_cache,
