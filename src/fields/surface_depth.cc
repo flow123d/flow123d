@@ -136,14 +136,24 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
 			// check snap distance point - triangle
+
+            // compute `x` - local element coordinates of `point`
 			prepare_distance_solve( (*it), point, x );
 
+            // project `point` to the surface plane of the found element
 			proj_to_surface_plane = point - x(2)*surface_norm_vec_;
+
+            // get local x,y coordinates inside the found element
 			arma::vec local_point = x.subvec(0,1);
+            // transform to barycentric coords and clip
 			auto bary_point = RefElement<2>::local_to_bary(local_point);
 			auto clip_point = RefElement<2>::clip(bary_point);
 			auto proj_ref = RefElement<2>::bary_to_local(clip_point);
-			auto proj_3d = inv_projection_[*it].submat(0,0,2,1) * proj_ref;
+            // get the element map and map from unit to real (like in mapping)
+            arma::mat M = inv_projection_[*it].i();
+            auto proj_3d = M.submat(0,0,2,1) * proj_ref + b_vecs_[*it];
+
+            // difference between snap and projected point
 			double new_snap_dist = arma::norm(proj_3d - proj_to_surface_plane, 2);
 			if (new_snap_dist<snap_dist) {
 				snap_dist = new_snap_dist;
