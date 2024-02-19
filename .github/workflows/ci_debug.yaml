@@ -173,7 +173,7 @@ jobs:
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             run: |
-                echo "run_id: ${{ github.run_id }}""
+                echo "run_id: ${{ github.run_id }}"
                 echo "run_number: ${{ github.run_number }}"
                 echo "run_attempt: ${{ github.run_attempt }}"
                 
