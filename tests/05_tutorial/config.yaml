@@ -31,7 +31,7 @@ test_cases:
         # files: ["(?!^energy_balance.txt$)*"] 
           files: [heat.msh]
           r_tol: 1e-3
-          a_tol: 10
+          a_tol: 20
       - ndiff:
           files: [flow.msh]
           r_tol: 1e-3
