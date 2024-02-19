@@ -63,4 +63,4 @@ problem: !Coupling_Sequential
             #bc_traction: [0,-20,0]
           - region: .top_y
             bc_type: stress
-            bc_stress: [100,20,300]
+            bc_stress: [-100,-20,-300] # change sign
