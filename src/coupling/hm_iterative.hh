@@ -161,14 +161,12 @@ public:
         
         /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
         Field<3, FieldValue<3>::Scalar> pressure_potential;
-        Field<3, FieldValue<3>::Scalar> ref_pressure_potential; ///< Potential of reference (prescribed) pressure from flow b.c. TODO: Swith to BCField when possible.
         Field<3, FieldValue<3>::Scalar> flow_source;
         Field<3, FieldValue<3>::Scalar> old_pressure;
         Field<3, FieldValue<3>::Scalar> old_iter_pressure;
         Field<3, FieldValue<3>::Scalar> old_div_u;
         
         /// FieldFE for pressure_potential field.
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > ref_potential_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_iter_pressure_ptr_;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
@@ -198,7 +196,6 @@ private:
     
     static const int registrar;
 
-    GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
     GenericAssembly<ResidualAssemblyHM> *residual_assembly_;
     
     std::shared_ptr<EqFields> eq_fields_;
