@@ -120,12 +120,49 @@ public:
 };
 
 
+template<unsigned int spacedim>
+class RefElementValues
+{
+public:
+    RefElementValues(Quadrature &_quadrature,
+             unsigned int dim);
+
+    /// Correct deallocation of objects created by 'initialize' methods.
+    ~RefElementValues();
+
+    /// Returns the number of quadrature points.
+    inline unsigned int n_points()
+    { return n_points_; }
+
+protected:
+    /// Precompute data on reference element.
+    RefElementData *init_ref_data(const Quadrature &q);
+
+
+
+    /// Dimension of space of reference cell.
+    const unsigned int dim_;
+
+    /// Number of integration points.
+    const unsigned int n_points_;
+
+    /// Number of sides in reference cell.
+    const unsigned int n_sides_;
+
+    /// Data on reference element.
+    RefElementData *ref_data;
+
+    /// Data on reference element (for each side ).
+    std::vector<RefElementData*> side_ref_data;
+
+};
+
 
 /**
  * @brief Class for computation of data on cell and side.
  */
 template<unsigned int spacedim>
-class ElementValues
+class ElementValues : public RefElementValues<spacedim>
 {
 public:
 
@@ -146,7 +183,8 @@ public:
              unsigned int dim);
     
     /// Correct deallocation of objects created by 'initialize' methods.
-    ~ElementValues();
+    virtual ~ElementValues()
+    {}
 
 
 
@@ -181,21 +219,21 @@ public:
      */
     inline double determinant(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.determinants[point_no];
     }
     
     /// Return Jacobian matrix at point @p point_no.
     inline arma::mat jacobian(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.jacobians.arma_mat(point_no);
     }
     
     /// Return inverse Jacobian matrix at point @p point_no.
     inline arma::mat inverse_jacobian(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.inverse_jacobians.arma_mat(point_no);
     }
 
@@ -207,7 +245,7 @@ public:
      */
     inline double JxW(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.JxW_values[point_no];
     }
 
@@ -219,7 +257,7 @@ public:
      */
     inline double side_JxW(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.side_JxW_values[point_no];
     }
 
@@ -230,7 +268,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no) const
     {
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
         return data.points.template vec<spacedim>(point_no);
     }
 
@@ -248,14 +286,10 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
-        ASSERT_LT(point_no, n_points_);
+        ASSERT_LT(point_no, this->n_points_);
 	    return data.normal_vectors.template vec<spacedim>(point_no);
 	}
 	
-    /// Returns the number of quadrature points.
-    inline unsigned int n_points()
-    { return n_points_; }
-    
     /// Return cell at which the values were reinited.
     const ElementAccessor<spacedim> &cell() const
     { return data.cell; }
@@ -267,10 +301,6 @@ public:
 
 
 protected:
-    
-    /// Precompute data on reference element.
-    RefElementData *init_ref_data(const Quadrature &q);
-
     /// Compute data from reference cell and using MappingP1.
     template<unsigned int dim>
     void fill_data();
@@ -279,22 +309,6 @@ protected:
     template<unsigned int dim>
     void fill_side_data();
 
-    
-
-    /// Dimension of space of reference cell.
-    const unsigned int dim_;
-
-    /// Number of integration points.
-    const unsigned int n_points_;
-
-    /// Number of sides in reference cell.
-    const unsigned int n_sides_;
-
-    /// Data on reference element.
-    RefElementData *ref_data;
-
-    /// Data on reference element (for each side ).
-    std::vector<RefElementData*> side_ref_data;
 
     /// Data computed by the mapping.
     ElementData<spacedim> data;
