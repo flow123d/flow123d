@@ -282,12 +282,9 @@ jobs:
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             run: |
-                # get the current workflow run ID
-                run_id=$(jq --raw-output .run_id "$GITHUB_EVENT_PATH")
-                echo ${run_id}
-                echo ${{ github.run_id }}
-                echo ${{ github.run_number }}
-                echo ${{ github.run_attempt }}
+                echo "run_id: ${{ github.run_id }}""
+                echo "run_number: ${{ github.run_number }}"
+                echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
                 #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
