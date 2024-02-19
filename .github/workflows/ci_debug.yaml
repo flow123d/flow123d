@@ -162,6 +162,10 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
           - name: Install gh command
+            # Fixed on the last workflow update. Works but seems fragile.
+            # But so prooved to be the previous solution:
+            # sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+            # sudo apt-add-repository https://cli.github.com/packages
             run: |
                 type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
                 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
