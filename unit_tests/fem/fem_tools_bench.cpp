@@ -24,7 +24,7 @@ class FemToolsTest : public testing::Test {
 public:
 	FemToolsTest()
     {
-		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/fem";
+        string root_dir=string(UNIT_TESTS_BIN_DIR) + "/fem";
         FilePath::set_io_dirs(".",root_dir,"",".");
         Profiler::instance();
         Profiler::set_memory_monitoring(false, false);
@@ -50,7 +50,7 @@ TEST(FemToolsDevelopTest, functions_test) {
 
     arma::mat::fixed<1,1> mat11 = {2};
     arma::mat::fixed<2,2> mat22 = { {2, 3}, {4, 5} };
-    arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} };
+    arma::mat::fixed<3,3> mat33 = { {1, 2, 3}, {5, 4, 5}, {2, 3, 6} };
     arma::mat::fixed<1,2> mat12 = { {2, 5} };
     arma::mat::fixed<2,1> mat21; mat21(0,0) = 2; mat21(1,0) = 5;
     arma::mat::fixed<1,3> mat13 = { {2, 4, 5} };
@@ -169,7 +169,7 @@ TEST_F(FemToolsTest, speed_test) {
     {
         // Fill arma and Eigen mats and vectors
         std::vector< arma::mat::fixed<3,3> > mat33_tmp = {
-                { {1, 2, 3}, {2, 4, 5}, {3, 5, 6} },
+                { {1, 2, 3}, {5, 4, 5}, {2, 3, 6} },
                 { {2, 4, 5}, {3, 2, 1}, {0, 6, 4} },
                 { {1, 4, 2}, {5, 1, 3}, {2, 3, 4} },
                 { {9, 7, 5}, {2, 4, 6}, {1, 3, 8} }
