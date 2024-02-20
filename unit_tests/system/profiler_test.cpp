@@ -236,7 +236,7 @@ void ProfilerTest::test_absolute_time() {
 
     // try to transform profiler data using python
     PI->output(MPI_COMM_WORLD);
-    PI->transform_profiler_data (".txt", "SimpleTableFormatter");
+    //PI->transform_profiler_data (".txt", "SimpleTableFormatter");
 
     int ierr, mpi_rank;
     ierr = MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);

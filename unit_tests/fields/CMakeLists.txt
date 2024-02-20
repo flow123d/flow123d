@@ -37,7 +37,7 @@ define_mpi_test(field_set 1)
 
 define_mpi_test(field_const 1)
 define_mpi_test(field_formula 1)
-# define_mpi_test(field_python 1)
+define_mpi_test(field_python 1)
 define_mpi_test(field_fe 1)
 define_mpi_test(multi_field 1)
 define_mpi_test(field_time_function 1)
