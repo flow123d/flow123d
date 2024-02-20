@@ -30,7 +30,7 @@
 #include "fem/element_values.hh"              // for ElementValues
 #include "fem/fe_values.hh"                   // for FEValuesBase
 #include "fem/fe_values_views.hh"             // for FEValuesViews
-#include "fem/patch_data_table.hh"
+#include "fem/eigen_tools.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags

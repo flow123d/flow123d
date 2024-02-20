@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    patch_data_table.hh
+ * @file    eigen_tools.hh
  * @brief   Store finite element data on the actual patch
  *          such as shape function values, gradients, Jacobian
  *          of the mapping from the reference cell etc.
