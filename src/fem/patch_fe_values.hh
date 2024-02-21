@@ -52,8 +52,8 @@ public:
     ElQ() = delete;
 
     /// Constructor
-    ElQ(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int begin_side)
-    : fe_values_(fe_values), begin_(begin), begin_side_(begin_side) {}
+    ElQ(PatchFEValues<3> *fe_values, unsigned int begin)
+    : fe_values_(fe_values), begin_(begin) {}
 
     ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
@@ -63,7 +63,6 @@ private:
     // attributes:
     PatchFEValues<3> *fe_values_;
     unsigned int begin_;       /// Index of the first component of the bulk Quantity. Size is given by ValueType
-    unsigned int begin_side_;  /// Index of the first component of the side Quantity. Size is given by ValueType
 };
 
 
@@ -508,15 +507,14 @@ public:
 
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  n_columns_( {0, 0, 0} ), n_columns_side_( {0, 0, 0} ) {
+      dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  n_columns_( {0, 0, 0} ), n_columns_side_( {0, 0, 0} ), fe_(fe) {
+      dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+      fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
@@ -540,12 +538,12 @@ public:
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
             // new data storing
-            patch_point_vals_[0][DIM-1].initialize(DIM, PointType::bulk_point, n_columns_[DIM-1], 2); // bulk
+            patch_point_vals_[0][DIM-1].initialize(DIM, PointType::bulk_point, 2); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
             // new data storing
-            patch_point_vals_[1][DIM-1].initialize(DIM-1, PointType::side_point, n_columns_side_[DIM-1], 3); // side
+            patch_point_vals_[1][DIM-1].initialize(DIM-1, PointType::side_point, 3); // side
         }
     }
 
@@ -573,26 +571,22 @@ public:
      * weight at given quadrature point.
      *
      * @param quad_list List of quadratures.
+     * @param is_bulk Create accessor to bulk / side points
      */
-    inline ElQ<Scalar> JxW(std::initializer_list<Quadrature *> quad_list)
+    inline ElQ<Scalar> JxW(Quadrature *quad, bool is_bulk = true)
     {
-    	std::vector<Quadrature *> quad_vec(quad_list);
-        uint begin=-1, begin_side=-1;
+        uint begin=-1;
+        uint dim = quad->dim();
 
-        if (quad_vec[0] != nullptr) {
-            uint dim = quad_vec[0]->dim();
-            begin = this->n_columns_[dim-1];
-            n_columns_[dim-1]++; // scalar needs one column
+        if (is_bulk) {
+            begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "JxW"); // storing to temporary map
-        }
-        if (quad_vec[1] != nullptr) {
-            uint dim = quad_vec[1]->dim();
-            begin_side = this->n_columns_side_[dim];
-            n_columns_side_[dim]++; // scalar needs one column
-            func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
+        } else {
+            begin = patch_point_vals_[1][dim].add_columns(1);  // scalar needs one column
+            func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
         }
 
-        return ElQ<Scalar>(this, begin, begin_side);
+        return ElQ<Scalar>(this, begin);
     }
 
     /**
@@ -600,37 +594,30 @@ public:
      *
      * @param quad_list List of quadratures.
      */
-	inline ElQ<Vector> normal_vector(std::initializer_list<Quadrature *> quad_list)
+	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
-        std::vector<Quadrature *> quad_vec(quad_list);
-        uint dim = quad_vec[0]->dim();  // side quadrature
+        uint dim = quad->dim();  // side quadrature
 
-        uint begin_side = this->n_columns_side_[dim];
-        n_columns_side_[dim] += 3; // Vector needs 3 columns
+        uint begin = patch_point_vals_[1][dim].add_columns(3); // Vector needs 3 columns
         // storing to temporary map
-        func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
-        return ElQ<Vector>(this, -1, begin_side);
+        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
+        return ElQ<Vector>(this, begin);
 	}
 
-    inline ElQ<Vector> coords(std::initializer_list<Quadrature *> quad_list)
+    inline ElQ<Vector> coords(Quadrature *quad, bool is_bulk = true)
     {
-    	std::vector<Quadrature *> quad_vec(quad_list);
-        uint begin=-1, begin_side=-1;
+        uint begin=-1;
+        uint dim = quad->dim();
 
-        if (quad_vec[0] != nullptr) {
-            uint dim = quad_vec[0]->dim();
-            begin = this->n_columns_[dim-1];
-            n_columns_[dim-1] += 3; // vector needs 3 columns
+        if (is_bulk) {
+            begin = patch_point_vals_[0][dim-1].add_columns(3); // vector needs 3 columns
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "coords"); // storing to temporary map
-        }
-        if (quad_vec[1] != nullptr) {
-            uint dim = quad_vec[1]->dim();
-            begin_side = this->n_columns_side_[dim];
-            n_columns_side_[dim] += 3; // vector needs 3 columns
-            func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "coords");
+        } else {
+            begin = patch_point_vals_[1][dim].add_columns(3); // Vector needs 3 columns
+            func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "coords");
         }
 
-        return ElQ<Vector>(this, begin, begin_side);
+        return ElQ<Vector>(this, begin);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -650,14 +637,12 @@ public:
 
         if (quad_vec[0] != nullptr) {
             uint dim = quad_vec[0]->dim();
-            begin = this->n_columns_[dim-1];
-            n_columns_[dim-1] += this->n_dofs(dim); // scalar needs one column * n_dofs
+            begin = patch_point_vals_[0][dim-1].add_columns(this->n_dofs(dim)); // scalar needs one column * n_dofs
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
         }
         if (quad_vec[1] != nullptr) {
             uint dim = quad_vec[1]->dim();
-            begin_side = this->n_columns_side_[dim];
-            n_columns_side_[dim] += this->n_dofs(dim+1); // scalar needs one column * n_dofs
+            begin_side = patch_point_vals_[1][dim].add_columns(this->n_dofs(dim+1));  // scalar needs one column * n_dofs
             func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "shape_value"); // storing to temporary map
         }
 
@@ -678,14 +663,12 @@ public:
 
         if (quad_vec[0] != nullptr) {
             uint dim = quad_vec[0]->dim();
-            begin = this->n_columns_[dim-1];
-            n_columns_[dim-1] += 3 * this->n_dofs(dim); // Vector needs 3 columns
+            begin = patch_point_vals_[0][dim-1].add_columns(3 * this->n_dofs(dim)); // Vector needs 3 columns * n_dofs
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
         }
         if (quad_vec[1] != nullptr) {
             uint dim = quad_vec[1]->dim();
-            begin_side = this->n_columns_side_[dim];
-            n_columns_side_[dim] += 3 * this->n_dofs(dim+1); // Vector needs 3 columns
+            begin_side = patch_point_vals_[1][dim].add_columns(3 * this->n_dofs(dim+1));  // Vector needs 3 columns * n_dofs
             func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad"); // storing to temporary map
         }
 
@@ -702,13 +685,11 @@ public:
         uint begin=-1, begin_side=-1;
 
         if (quad_vec[0] != nullptr) {
-            begin = this->n_columns_[dim-1];
-            n_columns_[dim-1]++;
+            begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "scalar_join_shape"); // storing to temporary map
         }
         if (quad_vec[1] != nullptr) {
-            begin_side = this->n_columns_side_[dim-1];
-            n_columns_side_[dim-1]++;
+            begin_side = patch_point_vals_[1][dim-1].add_columns(1); // scalar needs one column
             func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "scalar_join_shape"); // storing to temporary map
         }
 
@@ -732,8 +713,6 @@ private:
     std::array< std::array<PatchPointValues<spacedim>, 3>, 2 > patch_point_vals_;
     DimPointTable dim_point_table_;
 
-    std::array<uint,3> n_columns_;       ///< Number of columns
-    std::array<uint,3> n_columns_side_;  ///< Number of columns
     MixedPtr<FiniteElement> fe_;         ///< Mixed of shared pointers of FiniteElement object
 
     ///< Temporary helper objects used in step between usage old a new implementation
@@ -779,7 +758,7 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
     //unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-	auto it = fe_values_->func_map_side_.find(begin_side_);
+	auto it = fe_values_->func_map_side_.find(begin_);
     if (it->second.func_name_ == "JxW") {
         return it->second.point_data_->JxW(point);
     } else {
@@ -790,7 +769,7 @@ ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
 
 template <>
 inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_side_.find(begin_side_);
+	auto it = fe_values_->func_map_side_.find(begin_);
     if (it->second.func_name_ == "normal_vector") {
         return it->second.point_data_->normal_vector(point);
     } else {

@@ -41,10 +41,10 @@ class PatchPointValues
 public:
     /// Default constructor, set invalid dim (uninitialized object)
     PatchPointValues()
-    : dim_(10) {}
+    : dim_(10), n_columns_(0) {}
 
     /// Initialize object, set number of columns (quantities) in tables
-    void initialize(uint dim, PointType point_type, uint point_cols, uint int_cols) {
+    void initialize(uint dim, PointType point_type, uint int_cols) {
         ASSERT_EQ(dim_, 10).error("Multiple initialization!\n");
         ASSERT(dim <= 3)(dim).error("Dimension must be 0, 1, 2 or 3!\n");
 
@@ -52,7 +52,7 @@ public:
         dim_ = dim;
     	point_type_ = point_type;
 
-    	point_vals_.resize(point_cols);
+    	point_vals_.resize(n_columns_);
     	int_vals_.resize(int_cols);
     	el_vals_.resize( (dim_+1) * spacedim );
     }
@@ -64,6 +64,18 @@ public:
         n_elems_ = 0;
     }
 
+    /// Getter of n_columns_
+    inline uint n_columns() const {
+        return n_columns_;
+    }
+
+    /// Adds the number of columns equal to n_added, returns index of first of them
+    inline uint add_columns(uint n_added) {
+        uint old_size = n_columns_;
+        n_columns_ += n_added;
+        return old_size;
+    }
+
 private:
     TableDbl point_vals_;
     TableInt int_vals_;
@@ -72,6 +84,7 @@ private:
     uint dim_;
     PointType point_type_;
 
+    uint n_columns_;       ///< Number of columns of \p point_vals table
     uint n_points_;
     uint n_elems_;
 };

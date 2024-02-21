@@ -44,7 +44,7 @@ public:
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW( {this->quad_, nullptr} ) ),
+      JxW_( this->fe_values_->JxW(this->quad_) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr}) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
@@ -163,8 +163,9 @@ public:
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW( {this->quad_, this->quad_low_} ) ),
-      normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
+      JxW_( this->fe_values_->JxW(this->quad_) ),
+      JxW_side_( this->fe_values_->JxW(this->quad_low_, false) ),
+      normal_( this->fe_values_->normal_vector(this->quad_low_) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
       conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ),
       conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
@@ -279,7 +280,7 @@ public:
             double side_flux = 0;
             k=0;
             for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p);
+                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_side_(p);
                 k++;
             }
             double transport_flux = side_flux/side.measure();
@@ -310,17 +311,17 @@ public:
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*JxW_(p);
+                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*JxW_side_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p);
+                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_side_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
-                    flux_times_JxW = transport_flux*JxW_(p);
+                    flux_times_JxW = transport_flux*JxW_side_(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -333,7 +334,7 @@ public:
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
                             local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(j,p),normal_(p))*conc_shape_(i,p)
                                     + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(i,p),normal_(p))*conc_shape_(j,p)*eq_data_->dg_variant
-                                    )*JxW_(p);
+                                    )*JxW_side_(p);
                     }
                 }
                 k++;
@@ -373,7 +374,7 @@ public:
             {
                 fluxes[sid] = 0;
                 for (auto p : this->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p);
+                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_side_(p);
                 }
                 fluxes[sid] /= edge_side.measure();
                 if (fluxes[sid] > 0)
@@ -501,7 +502,7 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*ndofs_+i]*waverages[m][k*ndofs_+j]
                                             - eq_data_->dg_variant*waverages[n][k*ndofs_+i]*jumps[m][k*ndofs_+j]
-                                            )*JxW_(p1) + LocalSystem::almost_zero;
+                                            )*JxW_side_(p1) + LocalSystem::almost_zero;
                                     }
                                 }
                                 k++;
@@ -575,7 +576,7 @@ public:
                         local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
                                 sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low_conv))
                                 + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) + min(0.,transport_flux) * conc_shape_j(p_low_conv))
-						    )*JxW_(p_high) + LocalSystem::almost_zero;
+						    )*JxW_side_(p_high) + LocalSystem::almost_zero;
                     }
                 }
             }
@@ -605,6 +606,7 @@ private:
     vector<double*> jumps;                                    ///< Auxiliary storage for jumps of shape functions.
 
     ElQ<Scalar> JxW_;
+    ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQ<Scalar> conc_shape_;
     FeQ<Vector> conc_grad_;
@@ -631,7 +633,7 @@ public:
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW( {this->quad_, nullptr} ) ),
+      JxW_( this->fe_values_->JxW(this->quad_) ),
       conc_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
@@ -751,8 +753,8 @@ public:
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW( {nullptr, this->quad_low_} ) ),
-      normal_( this->fe_values_->normal_vector( {this->quad_low_} ) ),
+      JxW_( this->fe_values_->JxW(this->quad_low_, false) ),
+      normal_( this->fe_values_->normal_vector(this->quad_low_) ),
       conc_shape_( this->fe_values_->scalar_shape( {nullptr, this->quad_low_} ) ),
       conc_grad_( this->fe_values_->grad_scalar_shape( {nullptr, this->quad_low_} ) ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
@@ -958,7 +960,7 @@ public:
     /// Constructor.
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW( {this->quad_, nullptr} ) ),
+      JxW_( this->fe_values_->JxW(this->quad_) ),
       init_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr} ) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
