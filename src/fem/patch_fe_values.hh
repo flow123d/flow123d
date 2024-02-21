@@ -45,8 +45,6 @@ using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
 
-//typedef Eigen::Vector<VectorCol<300>,Eigen::Dynamic> PatchData;
-typedef Eigen::Vector<ColData<300>,Eigen::Dynamic> PatchData;
 typedef typename std::vector< std::array<uint, 3> > DimPointTable;  ///< Holds triplet (dim; bulk/side; idx of point in subtable)
 
 
@@ -525,12 +523,16 @@ public:
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
+
+    /// Destructor
+    ~PatchFEValues()
+    {}
+
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
 	 *
 	 * @param _quadrature The quadrature rule for the cell associated
      *                    to given finite element or for the cell side.
-	 * @param _fe The finite element.
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
@@ -540,9 +542,13 @@ public:
         if ( _quadrature.dim() == DIM ) {
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
+            // new data storing
+            patch_point_vals_[0][DIM-1].initialize(DIM, PointType::bulk_point, n_columns_[DIM-1], 2); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
+            // new data storing
+            patch_point_vals_[1][DIM-1].initialize(DIM-1, PointType::side_point, n_columns_side_[DIM-1], 3); // side
         }
     }
 
@@ -553,10 +559,6 @@ public:
             // old data storing
             if (used_quads_[0]) dim_fe_vals_[i].reinit(patch_elements[i+1]);
             if (used_quads_[1]) dim_fe_side_vals_[i].reinit(patch_elements[i+1]);
-
-            // new data storing
-            patch_data_[0][i].resize(n_columns_[i]); // bulk
-            patch_data_[1][i].resize(n_columns_side_[i]); // side
         }
     }
 
@@ -730,7 +732,7 @@ private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
     std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
-    std::array< std::array<PatchData, 3>, 2 > patch_data_;
+    std::array< std::array<PatchPointValues, 3>, 2 > patch_point_vals_;
     DimPointTable dim_point_table_;
 
     std::array<uint,3> n_columns_;       ///< Number of columns
