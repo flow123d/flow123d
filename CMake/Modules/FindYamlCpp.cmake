@@ -28,9 +28,16 @@ find_path(YamlCpp_INCLUDE_DIR yaml-cpp/yaml.h
               /usr/include/
           )
 
+# Assuming CMAKE_BUILD_TYPE is already set
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(LIB_NAME "yaml-cpp")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(LIB_NAME "yaml-cppd")
+endif()
+          
 # find the yaml-cpp library
 find_library(YamlCpp_LIBRARY
-             NAMES ${YamlCpp_STATIC} yaml-cpp
+             NAMES ${YamlCpp_STATIC} ${LIB_NAME}
              PATH_SUFFIXES lib64 lib
              HINTS
                  ${YamlCpp_ROOT_HINT}/lib/

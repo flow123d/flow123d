@@ -124,8 +124,8 @@ def convert(json_location, output_file, formatter, styles=[]):
     n_tries = 0
     while time.time() < end_time and n_tries < 2:
         try:
-            with open(json_location, 'r') as f_in:
-                json_data = json.load(f_in, encoding="utf-8", cls=ProfilerJSONDecoder)
+            with open(json_location, 'r', encoding='utf-8') as f_in:
+                json_data = json.load(f_in, cls=ProfilerJSONDecoder)
             Logger.instance().info('File "%s" read', json_location)
             output = fmt.format(json_data)
             with open(output_file, "w") as fp:
