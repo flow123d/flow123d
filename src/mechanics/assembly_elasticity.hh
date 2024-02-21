@@ -667,8 +667,9 @@ public:
 
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
-            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t()) / eq_fields_->cross_section(p_low);
+            normal_displacement_ -= eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
+            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t())
+                                * eq_fields_->cross_section(p_high) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
         }
 
@@ -679,6 +680,7 @@ public:
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], normal_stress_(i,j) );
         output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
         output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
+        output_mean_stress_vec_.add( dof_indices_scalar_[0], arma::trace(normal_stress_) / 3 );
     }
 
 
