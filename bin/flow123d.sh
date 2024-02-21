@@ -28,7 +28,7 @@
 # alow mem parameter in different units
 
 # Uncomment following line, when you want to debug bash script
-# set -x 
+#set -x 
 
 # Relative path to mpiexec from the directory, where this script is placed
 MPIEXEC="./mpiexec"
@@ -227,7 +227,12 @@ function call_flow() {
       if [ -x "${FLOW123D}" ]
       then
               (
-              ulimit -S -v ${MEM_LIMIT} >/dev/null
+              if [ -n "${MEM_LIMIT}" ]
+              then 
+                  echo "X${MEM_LIMIT}X"      
+                  prlimit --pid $$ --as=${MEM_LIMIT}:
+              fi
+              #ulimit -S -v ${MEM_LIMIT} >/dev/null
               nice --adjustment="${NICE}" ${CALL_TIME_LIMIT_SH} "${MPIEXEC}" -np ${NP} "${FLOW123D}" ${FLOW_PARAMS}
               exit $?
               )
@@ -240,9 +245,9 @@ function call_flow() {
 
 
 # 
-function run_flow()
-{
-        EXIT_STATUS=0
+function run_flow() {
+    
+    EXIT_STATUS=0
         
 
 	
@@ -254,6 +259,8 @@ function run_flow()
 		# ulimit is bash commad, it accepts limit specified in kB
 		MEM_LIMIT=`expr ${MEM} \* 1024`
 		#echo "MEMORY LIMIT: ${MEM_LIMIT}"
+    else
+        MEM_LIMIT=''
 	fi
 	
 

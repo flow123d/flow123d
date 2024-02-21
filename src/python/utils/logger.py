@@ -7,6 +7,7 @@ import traceback
 import datetime
 import sys
 import os
+import io
 
 
 class Logger(object):
@@ -64,6 +65,8 @@ class Logger(object):
         stream_logger.setFormatter(fmt)
         self.logger.addHandler(stream_logger)
 
+        self.memory_stream = None
+
         # f = os.path.join(os.getcwd(), 'python.log')
         # file_logger = logging.FileHandler(f)
         # file_logger.setLevel(level)
@@ -106,3 +109,20 @@ class Logger(object):
     def warning(self, msg, *args, **kwargs):
         msg = self._get_msg(self.__loc(), msg)
         self.logger.warning(msg, *args, **kwargs)
+    
+    def add_memory_handler(self):
+        # Create an in-memory stream
+        self.memory_stream = io.StringIO()
+
+        # Create a StreamHandler that logs to the in-memory stream
+        stream_handler = logging.StreamHandler(log_stream)
+        stream_logger.setLevel(level)
+        stream_logger.setFormatter(fmt)
+        logger.addHandler(stream_handler)
+    
+    def get_memory_stream(self):
+        """
+        If the momory stream was added, read the log and return it.
+        """
+        if self.memory_stream is not None:
+            return self.memory_stream

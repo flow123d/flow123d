@@ -15,6 +15,7 @@ set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.10.0")
 set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.10.0")
 include_directories( ${GTEST_SOURCE_DIR}/googletest/include ${CMAKE_SOURCE_DIR}/unit_tests )
 add_subdirectory( ${GTEST_SOURCE_DIR} ${GTEST_BINARY_DIR} )
+target_compile_options(gtest PRIVATE -Wno-error=maybe-uninitialized)
 message(STATUS "Gtest tests allowed")
 
 # sources for our mpi gtest extension
