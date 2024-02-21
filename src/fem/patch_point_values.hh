@@ -24,6 +24,11 @@
 #include "fem/eigen_tools.hh"
 
 
+using Scalar = double;
+using Vector = arma::vec3;
+using Tensor = arma::mat33;
+
+
 enum PointType {
     bulk_point,
     side_point
@@ -75,20 +80,21 @@ private:
 /**
  * Base class of all FE operations.
  */
+template<unsigned int spacedim = 3>
 class FeOp {
 public:
-    FeOp(bool enabled, bool input_column, PatchPointValues &point_vals)
+    FeOp(bool enabled, uint input_column, PatchPointValues<spacedim> &point_vals)
     : enabled_(enabled), input_column_(input_column), point_vals_(point_vals)
     {}
 
     inline Scalar scalar_val(uint point_idx) const {
-        return point_vals_[input_column_][point_vals];
+        return point_vals_[input_column_][point_idx];
     }
 
     inline Vector vector_val(uint point_idx) const {
         Vector val;
         for (uint i=0; i<3; ++i)
-            val(i) = point_vals_[input_column_+i][point_vals];
+            val(i) = point_vals_[input_column_+i][point_idx];
         return val;
     }
 
@@ -96,15 +102,15 @@ public:
         Tensor val;
         for (uint i=0; i<3; ++i)
             for (uint j=0; j<3; ++j)
-                val(i,j) = point_vals_[input_column_+3*i+j][point_vals];
+                val(i,j) = point_vals_[input_column_+3*i+j][point_idx];
         return val;
     }
 
 
 private:
-    bool enabled_;                  ///< if the operation is active, column will be updated
-    bool input_column_;             ///< first column to scalar, vector or matrix inputs
-    PatchPointValues &point_vals_;  ///< Reference to data table
+    bool enabled_;                            ///< if the operation is active, column will be updated
+    uint input_column_;                       ///< first column to scalar, vector or matrix inputs
+    PatchPointValues<spacedim> &point_vals_;  ///< Reference to data table
 };
 
 #endif /* PATCH_POINT_VALUES_HH_ */

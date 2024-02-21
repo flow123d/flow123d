@@ -31,6 +31,7 @@
 #include "fem/fe_values.hh"                   // for FEValuesBase
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "fem/eigen_tools.hh"
+#include "fem/patch_point_values.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
@@ -40,10 +41,6 @@
 template<unsigned int spacedim> class PatchFEValues;
 
 
-
-using Scalar = double;
-using Vector = arma::vec3;
-using Tensor = arma::mat33;
 
 typedef typename std::vector< std::array<uint, 3> > DimPointTable;  ///< Holds triplet (dim; bulk/side; idx of point in subtable)
 
@@ -732,7 +729,7 @@ private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
     std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
-    std::array< std::array<PatchPointValues, 3>, 2 > patch_point_vals_;
+    std::array< std::array<PatchPointValues<spacedim>, 3>, 2 > patch_point_vals_;
     DimPointTable dim_point_table_;
 
     std::array<uint,3> n_columns_;       ///< Number of columns
