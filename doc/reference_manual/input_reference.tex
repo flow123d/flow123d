@@ -755,36 +755,19 @@ Includes raw output and some experimental functionality.}%
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Flow-Darcy-LMH-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Flow-Darcy-LMH-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Flow-Darcy-LMH-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Flow-Darcy-LMH-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Flow-Darcy-LMH-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Flow-Darcy-LMH-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-UserData::unit}
@@ -794,9 +777,30 @@ See above for details.}%
 			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
 }}
 \end{RecordType}
+\begin{SelectionType}
+	{IT::User-fields-shape}
+	{User{\_}fields{\_}shape}
+	{{{Allowed shapes of user fields.}% 
+}}
+		\SelectionItem
+			{User-fields-shape::scalar}
+			{scalar}
+			{{{Scalar user field.}% 
+}}
+		\SelectionItem
+			{User-fields-shape::vector}
+			{vector}
+			{{{Vector user field.}% 
+}}
+		\SelectionItem
+			{User-fields-shape::tensor}
+			{tensor}
+			{{{Tensor user field.}% 
+}}
+\end{SelectionType}
 \begin{AbstractType}
-	{IT::Field-R3-to-R}
-	{Field{\_}R3{\_}to{\_}R}
+	{IT::Field-}
+	{Field{\_}}
 	{\TypeLink{IT::FieldConstant}{FieldConstant}}
 	{{{Abstract for all time-space functions.}% 
 }}
@@ -809,9 +813,9 @@ See above for details.}%
 \begin{RecordType}
 	{IT::FieldPython}
 	{FieldPython}
-	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{IT::Field-}{Field{\_}}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R Field given by a Python script.}% 
+	{{{Field given by a Python script.}% 
 }}
 		\RecKey
 			{FieldPython::unit}
@@ -846,9 +850,9 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}%
 \begin{RecordType}
 	{IT::FieldConstant}
 	{FieldConstant}
-	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{IT::Field-}{Field{\_}}}% implements
 	{\TypeLink{FieldConstant::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R Field constant in space.}% 
+	{{{Field constant in space.}% 
 }}
 		\RecKey
 			{FieldConstant::unit}
@@ -860,7 +864,7 @@ For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}%
 		\RecKey
 			{FieldConstant::value}
 			{value}
-			{{parameter: element{\_}input{\_}type}}{}
+			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
 			{ \it{Obligatory}}
 			{{{{Value of the constant field.
 For vector values, you can use scalar value to enter constant vector.
@@ -876,9 +880,9 @@ For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{
 \begin{RecordType}
 	{IT::FieldFormula}
 	{FieldFormula}
-	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{IT::Field-}{Field{\_}}}% implements
 	{\TypeLink{FieldFormula::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R Field given by runtime interpreted formula.}% 
+	{{{Field given by runtime interpreted formula.}% 
 }}
 		\RecKey
 			{FieldFormula::unit}
@@ -923,9 +927,9 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 \begin{RecordType}
 	{IT::FieldTimeFunction}
 	{FieldTimeFunction}
-	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{IT::Field-}{Field{\_}}}% implements
 	{\TypeLink{FieldTimeFunction::time-function}{time{\_}function}}% reducible to key
-	{{{R3{\_}to{\_}R Field time-dependent function in space.}% 
+	{{{Field time-dependent function in space.}% 
 }}
 		\RecKey
 			{FieldTimeFunction::unit}
@@ -974,7 +978,7 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 		\RecKey
 			{IndependentValue::value}
 			{value}
-			{{parameter: element{\_}input{\_}type}}{}
+			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
 			{ \it{Obligatory}}
 			{{{Value of the field in given stamp.}% 
 }}
@@ -982,9 +986,9 @@ You have to set surface region if you want to use formula variable }\begin{ttfam
 \begin{RecordType}
 	{IT::FieldFE}
 	{FieldFE}
-	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{\TypeLink{IT::Field-}{Field{\_}}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R Field given by finite element approximation.}% 
+	{{{Field given by finite element approximation.}% 
 }}
 		\RecKey
 			{FieldFE::unit}
@@ -1050,6 +1054,13 @@ The default value 'equivalent{\_}mesh' assumes the data being constant on elemen
 In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
 Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
 }}
+		\RecKey
+			{FieldFE::is-boundary}
+			{is{\_}boundary}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Distinguishes bulk / boundary FieldFE.}% 
+}}
 \end{RecordType}
 \begin{SelectionType}
 	{IT::FE-discretization}
@@ -1100,520 +1111,6 @@ For every (boundary) element of the computational mesh the intersection with the
 Constant values on the elements of the computational mesh are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.}% 
 }}
 \end{SelectionType}
-\begin{AbstractType}
-	{IT::Field-R3-to-R-3-}
-	{Field{\_}R3{\_}to{\_}R[3]}
-	{\TypeLink{IT::FieldConstant-2}{FieldConstant}}
-	{{{Abstract for all time-space functions.}% 
-}}
-		\Descendant{\TypeLink{IT::FieldPython-2}{FieldPython}}% 
-		\Descendant{\TypeLink{IT::FieldConstant-2}{FieldConstant}}% 
-		\Descendant{\TypeLink{IT::FieldFormula-2}{FieldFormula}}% 
-		\Descendant{\TypeLink{IT::FieldTimeFunction-2}{FieldTimeFunction}}% 
-		\Descendant{\TypeLink{IT::FieldFE-2}{FieldFE}}% 
-\end{AbstractType}
-\begin{RecordType}
-	{IT::FieldPython-2}
-	{FieldPython}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by a Python script.}% 
-}}
-		\RecKey
-			{FieldPython-2::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldPython-2::source-file}
-			{source{\_}file}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{Python script given as external file in format 'dir'.'file{\_}name' without .py extension}% 
-}}
-		\RecKey
-			{FieldPython-2::class}
-			{class}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{Function in the given script that returns tuple containing components of the return type.}\\{
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
-}}
-		\RecKey
-			{FieldPython-2::used-fields}
-			{used{\_}fields}
-			{{array [0, UINT] of }{String}}{}
-			{ \ValueDefault{[]}}
-			{{{Defines list of fields necessary in evaluation of actual field.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldConstant-2}
-	{FieldConstant}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldConstant-2::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field constant in space.}% 
-}}
-		\RecKey
-			{FieldConstant-2::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldConstant-2::value}
-			{value}
-			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
-% 
-}
-\begin{itemize}
-\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {scalar to enter multiple of the unit matrix.}
-\end{itemize}
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldFormula-2}
-	{FieldFormula}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldFormula-2::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by runtime interpreted formula.}% 
-}}
-		\RecKey
-			{FieldFormula-2::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFormula-2::value}
-			{value}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
-For vector values, you can use just one string to enter homogeneous vector.}\\{
-For square }{$N\times N$}{-matrix values, you can use:}
-% 
-}
-\begin{itemize}
-\item {array of strings of size }{$N$}{ to enter diagonal matrix}
-\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
-Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
-\end{itemize}
-}}
-		\RecKey
-			{FieldFormula-2::surface-direction}
-			{surface{\_}direction}
-			{{String}}{}
-			{ \ValueDefault{"0 0 1"}}
-			{{{The vector used to project evaluation point onto the surface.}% 
-}}
-		\RecKey
-			{FieldFormula-2::surface-region}
-			{surface{\_}region}
-			{{String}}{}
-			{ \it{Optional}}
-			{{{The name of region set considered as the surface.
-You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldTimeFunction-2}
-	{FieldTimeFunction}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{\TypeLink{FieldTimeFunction-2::time-function}{time{\_}function}}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field time-dependent function in space.}% 
-}}
-		\RecKey
-			{FieldTimeFunction-2::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldTimeFunction-2::time-function}
-			{time{\_}function}
-			{{record: }\TypeLink{IT::TableFunction-2}{TableFunction}}{}
-			{ \it{Obligatory}}
-			{{{Values of time series initialization of Field.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::TableFunction-2}
-	{TableFunction}
-	{}% implements
-	{\TypeLink{TableFunction-2::values}{values}}% reducible to key
-	{{{Allow set variable series initialization of Fields.}% 
-}}
-		\RecKey
-			{TableFunction-2::values}
-			{values}
-			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue-2}{IndependentValue}}{}
-			{ \it{Obligatory}}
-			{{{Initizaliation values of Field.}% 
-}}
-\end{RecordType}
-\begin{TupleType}
-	{IT::IndependentValue-2}
-	{IndependentValue}
-	{}% implements
-	{}% reducible to key
-	{{{Value of Field for time variable.}% 
-}}
-		\RecKey
-			{IndependentValue-2::t}
-			{t}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{ \it{Obligatory}}
-			{{{Time stamp.}% 
-}}
-		\RecKey
-			{IndependentValue-2::value}
-			{value}
-			{{array [1, 3] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{Value of the field in given stamp.}% 
-}}
-\end{TupleType}
-\begin{RecordType}
-	{IT::FieldFE-2}
-	{FieldFE}
-	{\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3] Field given by finite element approximation.}% 
-}}
-		\RecKey
-			{FieldFE-2::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFE-2::mesh-data-file}
-			{mesh{\_}data{\_}file}
-			{{Filename}}{}
-			{ \it{Obligatory}}
-			{{{GMSH mesh with data.
-Can be different from actual computational mesh.}% 
-}}
-		\RecKey
-			{FieldFE-2::input-discretization}
-			{input{\_}discretization}
-			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
-			{ \it{Optional}}
-			{{{Section where to find the field.}\\{
- Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
-If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
-}}
-		\RecKey
-			{FieldFE-2::field-name}
-			{field{\_}name}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
-}}
-		\RecKey
-			{FieldFE-2::default-value}
-			{default{\_}value}
-			{{Double (-inf, +inf)}}{}
-			{ \it{Optional}}
-			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-2::time-unit}
-			{time{\_}unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{implicit value: "{Common time unit of the equation's Time Governor.
-See the key 'common{\_}time{\_}unit'.}"}
-			{{{Definition of the unit of all times defined in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-2::read-time-shift}
-			{read{\_}time{\_}shift}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{This key allows reading field data from the mesh data file shifted in time.
-Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
-}}
-		\RecKey
-			{FieldFE-2::interpolation}
-			{interpolation}
-			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
-			{ \ValueDefault{"equivalent{\_}mesh"}}
-			{{{Type of interpolation applied to the input spatial data.}\\{
-The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
-In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
-Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
-}}
-\end{RecordType}
-\begin{AbstractType}
-	{IT::Field-R3-to-R-3-3-}
-	{Field{\_}R3{\_}to{\_}R[3,3]}
-	{\TypeLink{IT::FieldConstant-3}{FieldConstant}}
-	{{{Abstract for all time-space functions.}% 
-}}
-		\Descendant{\TypeLink{IT::FieldPython-3}{FieldPython}}% 
-		\Descendant{\TypeLink{IT::FieldConstant-3}{FieldConstant}}% 
-		\Descendant{\TypeLink{IT::FieldFormula-3}{FieldFormula}}% 
-		\Descendant{\TypeLink{IT::FieldTimeFunction-3}{FieldTimeFunction}}% 
-		\Descendant{\TypeLink{IT::FieldFE-3}{FieldFE}}% 
-\end{AbstractType}
-\begin{RecordType}
-	{IT::FieldPython-3}
-	{FieldPython}
-	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field given by a Python script.}% 
-}}
-		\RecKey
-			{FieldPython-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldPython-3::source-file}
-			{source{\_}file}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{Python script given as external file in format 'dir'.'file{\_}name' without .py extension}% 
-}}
-		\RecKey
-			{FieldPython-3::class}
-			{class}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{Function in the given script that returns tuple containing components of the return type.}\\{
-For NxM tensor values: tensor(row,col) = tuple( M*row + col ).}% 
-}}
-		\RecKey
-			{FieldPython-3::used-fields}
-			{used{\_}fields}
-			{{array [0, UINT] of }{String}}{}
-			{ \ValueDefault{[]}}
-			{{{Defines list of fields necessary in evaluation of actual field.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldConstant-3}
-	{FieldConstant}
-	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
-	{\TypeLink{FieldConstant-3::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field constant in space.}% 
-}}
-		\RecKey
-			{FieldConstant-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldConstant-3::value}
-			{value}
-			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{{Value of the constant field.
-For vector values, you can use scalar value to enter constant vector.
-For square }{$N\times N$}{-matrix values, you can use:  - vector of size }{$N$}{ to enter diagonal matrix}
-% 
-}
-\begin{itemize}
-\item {vector of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {scalar to enter multiple of the unit matrix.}
-\end{itemize}
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldFormula-3}
-	{FieldFormula}
-	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
-	{\TypeLink{FieldFormula-3::value}{value}}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field given by runtime interpreted formula.}% 
-}}
-		\RecKey
-			{FieldFormula-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFormula-3::value}
-			{value}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{{String, array of strings, or matrix of strings with formulas for individual entries of scalar, vector, or tensor value respectively.}\\{
-For vector values, you can use just one string to enter homogeneous vector.}\\{
-For square }{$N\times N$}{-matrix values, you can use:}
-% 
-}
-\begin{itemize}
-\item {array of strings of size }{$N$}{ to enter diagonal matrix}
-\item {array of strings of size }{$\frac12N(N+1)$}{ to enter symmetric matrix (upper triangle, row by row)}
-\item {just one string to enter (spatially variable) multiple of the unit matrix.}\\{
-Formula can contain variables }\begin{ttfamily}x,y,z,t,d\end{ttfamily}{ and usual operators and functions.}
-\end{itemize}
-}}
-		\RecKey
-			{FieldFormula-3::surface-direction}
-			{surface{\_}direction}
-			{{String}}{}
-			{ \ValueDefault{"0 0 1"}}
-			{{{The vector used to project evaluation point onto the surface.}% 
-}}
-		\RecKey
-			{FieldFormula-3::surface-region}
-			{surface{\_}region}
-			{{String}}{}
-			{ \it{Optional}}
-			{{{The name of region set considered as the surface.
-You have to set surface region if you want to use formula variable }\begin{ttfamily}d\end{ttfamily}{.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::FieldTimeFunction-3}
-	{FieldTimeFunction}
-	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
-	{\TypeLink{FieldTimeFunction-3::time-function}{time{\_}function}}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field time-dependent function in space.}% 
-}}
-		\RecKey
-			{FieldTimeFunction-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldTimeFunction-3::time-function}
-			{time{\_}function}
-			{{record: }\TypeLink{IT::TableFunction-3}{TableFunction}}{}
-			{ \it{Obligatory}}
-			{{{Values of time series initialization of Field.}% 
-}}
-\end{RecordType}
-\begin{RecordType}
-	{IT::TableFunction-3}
-	{TableFunction}
-	{}% implements
-	{\TypeLink{TableFunction-3::values}{values}}% reducible to key
-	{{{Allow set variable series initialization of Fields.}% 
-}}
-		\RecKey
-			{TableFunction-3::values}
-			{values}
-			{{array [2, UINT] of }{tuple: }\TypeLink{IT::IndependentValue-3}{IndependentValue}}{}
-			{ \it{Obligatory}}
-			{{{Initizaliation values of Field.}% 
-}}
-\end{RecordType}
-\begin{TupleType}
-	{IT::IndependentValue-3}
-	{IndependentValue}
-	{}% implements
-	{}% reducible to key
-	{{{Value of Field for time variable.}% 
-}}
-		\RecKey
-			{IndependentValue-3::t}
-			{t}
-			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
-			{ \it{Obligatory}}
-			{{{Time stamp.}% 
-}}
-		\RecKey
-			{IndependentValue-3::value}
-			{value}
-			{{array [1, UINT] of }{array [1, UINT] of }{parameter: element{\_}input{\_}type}}{}
-			{ \it{Obligatory}}
-			{{{Value of the field in given stamp.}% 
-}}
-\end{TupleType}
-\begin{RecordType}
-	{IT::FieldFE-3}
-	{FieldFE}
-	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
-	{}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field given by finite element approximation.}% 
-}}
-		\RecKey
-			{FieldFE-3::unit}
-			{unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{ \it{Optional}}
-			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
-}}
-		\RecKey
-			{FieldFE-3::mesh-data-file}
-			{mesh{\_}data{\_}file}
-			{{Filename}}{}
-			{ \it{Obligatory}}
-			{{{GMSH mesh with data.
-Can be different from actual computational mesh.}% 
-}}
-		\RecKey
-			{FieldFE-3::input-discretization}
-			{input{\_}discretization}
-			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
-			{ \it{Optional}}
-			{{{Section where to find the field.}\\{
- Some sections are specific to file format: point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
-If not given by a user, we try to find the field in all sections, but we report an error if it is found in more than one section.}% 
-}}
-		\RecKey
-			{FieldFE-3::field-name}
-			{field{\_}name}
-			{{String}}{}
-			{ \it{Obligatory}}
-			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
-}}
-		\RecKey
-			{FieldFE-3::default-value}
-			{default{\_}value}
-			{{Double (-inf, +inf)}}{}
-			{ \it{Optional}}
-			{{{Default value is set on elements which values have not been listed in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-3::time-unit}
-			{time{\_}unit}
-			{{record: }\TypeLink{IT::Unit}{Unit}}{}
-			{implicit value: "{Common time unit of the equation's Time Governor.
-See the key 'common{\_}time{\_}unit'.}"}
-			{{{Definition of the unit of all times defined in the mesh data file.}% 
-}}
-		\RecKey
-			{FieldFE-3::read-time-shift}
-			{read{\_}time{\_}shift}
-			{{tuple: }\TypeLink{IT::TimeValue}{TimeValue}}{}
-			{ \ValueDefault{0.0}}
-			{{{This key allows reading field data from the mesh data file shifted in time.
-Considering the time 't', field descriptor with time 'T', time shift 'S', then if 't {\textgreater} T', we read the time frame 't + S'.}% 
-}}
-		\RecKey
-			{FieldFE-3::interpolation}
-			{interpolation}
-			{{selection: }\TypeLink{IT::interpolation}{interpolation}}{}
-			{ \ValueDefault{"equivalent{\_}mesh"}}
-			{{{Type of interpolation applied to the input spatial data.}\\{
-The default value 'equivalent{\_}mesh' assumes the data being constant on elements living on the same mesh as the computational mesh, but possibly with different numbering.
-In the case of the same numbering, the user can set 'identical{\_}mesh' to omit algorithm for guessing node and element renumbering.
-Alternatively, in case of different input mesh, several interpolation algorithms are available.}% 
-}}
-\end{RecordType}
 \begin{RecordType}
 	{IT::Flow-Darcy-LMH-Data}
 	{Flow{\_}Darcy{\_}LMH{\_}Data}
@@ -1649,49 +1146,49 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Flow-Darcy-LMH-Data::anisotropy}
 			{anisotropy}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::cross-section}
 			{cross{\_}section}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::conductivity}
 			{conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::sigma}
 			{sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transition coefficient between dimensions. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::water-source-density}
 			{water{\_}source{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Water source density. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-type}
 			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Boundary condition type. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-pressure}
 			{bc{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed pressure value on the boundary.
 Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
@@ -1699,7 +1196,7 @@ Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-flux}
 			{bc{\_}flux}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Incoming water boundary flux.
 Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
@@ -1707,63 +1204,63 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-switch-pressure}
 			{bc{\_}switch{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::init-pressure}
 			{init{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::storativity}
 			{storativity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::gravity}
 			{gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Gravity vector. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-gravity}
 			{bc{\_}gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary gravity vector. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::init-piezo-head}
 			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial condition for the pressure given as the piezometric head.}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-piezo-head}
 			{bc{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
 }}
 		\RecKey
 			{Flow-Darcy-LMH-Data::bc-switch-piezo-head}
 			{bc{\_}switch{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
 }}
@@ -2317,6 +1814,33 @@ Its main purpose is to read/write results repeatedly with minimal loss of accura
 			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
 }}
 		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-type}
+			{bc{\_}type}
+			{{{}{$[-]$}{ Input field: Boundary condition type.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-pressure}
+			{bc{\_}pressure}
+			{{{}{$[m]$}{ Input field: Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-flux}
+			{bc{\_}flux}
+			{{{}{$[ms^{-1}]$}{ Input field: Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{{}{$[s^{-1}]$}{ Input field: Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{{}{$[m]$}{ Input field: Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions.}% 
+}}
+		\SelectionItem
 			{Flow-Darcy-LMH-OutputFields::init-pressure}
 			{init{\_}pressure}
 			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
@@ -2332,9 +1856,24 @@ Its main purpose is to read/write results repeatedly with minimal loss of accura
 			{{{}{$[-]$}{ Input field: Gravity vector.}% 
 }}
 		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-gravity}
+			{bc{\_}gravity}
+			{{{}{$[-]$}{ Input field: Boundary gravity vector.}% 
+}}
+		\SelectionItem
 			{Flow-Darcy-LMH-OutputFields::init-piezo-head}
 			{init{\_}piezo{\_}head}
 			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Boundary piezo head.}% 
+}}
+		\SelectionItem
+			{Flow-Darcy-LMH-OutputFields::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Boundary switch piezo head.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-LMH-OutputFields::ref-pressure}
@@ -2631,49 +2170,49 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Flow-Richards-LMH-Data::anisotropy}
 			{anisotropy}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Anisotropy of the conductivity tensor. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::cross-section}
 			{cross{\_}section}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Complement dimension parameter (cross section for 1D, thickness for 2D). }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::conductivity}
 			{conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Isotropic conductivity scalar. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::sigma}
 			{sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transition coefficient between dimensions. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::water-source-density}
 			{water{\_}source{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Water source density. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-type}
 			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Flow-Darcy-BC-Type}{Flow{\_}Darcy{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Boundary condition type. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-pressure}
 			{bc{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed pressure value on the boundary.
 Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types. }{$[m]$}% 
@@ -2681,7 +2220,7 @@ Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-flux}
 			{bc{\_}flux}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Incoming water boundary flux.
 Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{. }{$[ms^{-1}]$}% 
@@ -2689,70 +2228,70 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-switch-pressure}
 			{bc{\_}switch{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions. }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::init-pressure}
 			{init{\_}pressure}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial condition for pressure in time dependent problems. }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::storativity}
 			{storativity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Storativity (in time dependent problems). }{$[m^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::gravity}
 			{gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Gravity vector. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-gravity}
 			{bc{\_}gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary gravity vector. }{$[-]$}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::init-piezo-head}
 			{init{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial condition for the pressure given as the piezometric head.}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-piezo-head}
 			{bc{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary piezometric head for BC types: dirichlet, robin, and river.}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::bc-switch-piezo-head}
 			{bc{\_}switch{\_}piezo{\_}head}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary switch piezometric head for BC types: seepage, river.}% 
 }}
 		\RecKey
 			{Flow-Richards-LMH-Data::water-content-saturated}
 			{water{\_}content{\_}saturated}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Saturated water content }{$ \theta_s $}{.}\\{
                 Relative volume of water in a reference volume of a saturated porous media. }{$[-]$}% 
@@ -2760,7 +2299,7 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 		\RecKey
 			{Flow-Richards-LMH-Data::water-content-residual}
 			{water{\_}content{\_}residual}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Residual water content }{$ \theta_r $}{.}\\{
                 Relative volume of water in a reference volume of an ideally dry porous media. }{$[-]$}% 
@@ -2768,7 +2307,7 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 		\RecKey
 			{Flow-Richards-LMH-Data::genuchten-p-head-scale}
 			{genuchten{\_}p{\_}head{\_}scale}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{The van Genuchten pressure head scaling parameter }{$ \alpha $}{.}\\{
                 It is related to the inverse of the air entry pressure, i.e. the pressure}\\{
@@ -2777,7 +2316,7 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 		\RecKey
 			{Flow-Richards-LMH-Data::genuchten-n-exponent}
 			{genuchten{\_}n{\_}exponent}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{The van Genuchten exponent parameter }{$ n $}{. }{$[-]$}% 
 }}
@@ -2843,6 +2382,33 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
 }}
 		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-type}
+			{bc{\_}type}
+			{{{}{$[-]$}{ Input field: Boundary condition type.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-pressure}
+			{bc{\_}pressure}
+			{{{}{$[m]$}{ Input field: Prescribed pressure value on the boundary.
+Used for all values of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ except }\begin{ttfamily}none\end{ttfamily}{ and }\begin{ttfamily}seepage\end{ttfamily}{. See documentation of }\begin{ttfamily}bc{\_}type\end{ttfamily}{ for exact meaning of }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ in individual boundary condition types.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-flux}
+			{bc{\_}flux}
+			{{{}{$[ms^{-1}]$}{ Input field: Incoming water boundary flux.
+Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{ttfamily}seepage\end{ttfamily}{, }\begin{ttfamily}river\end{ttfamily}{.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{{}{$[s^{-1}]$}{ Input field: Conductivity coefficient in the }\begin{ttfamily}total{\_}flux\end{ttfamily}{ or the }\begin{ttfamily}river\end{ttfamily}{ boundary condition type.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-switch-pressure}
+			{bc{\_}switch{\_}pressure}
+			{{{}{$[m]$}{ Input field: Critical switch pressure for }\begin{ttfamily}seepage\end{ttfamily}{ and }\begin{ttfamily}river\end{ttfamily}{ boundary conditions.}% 
+}}
+		\SelectionItem
 			{Flow-Richards-LMH-OutputFields::init-pressure}
 			{init{\_}pressure}
 			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
@@ -2858,9 +2424,24 @@ Used for bc{\_}types : }\begin{ttfamily}total{\_}flux\end{ttfamily}{, }\begin{tt
 			{{{}{$[-]$}{ Input field: Gravity vector.}% 
 }}
 		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-gravity}
+			{bc{\_}gravity}
+			{{{}{$[-]$}{ Input field: Boundary gravity vector.}% 
+}}
+		\SelectionItem
 			{Flow-Richards-LMH-OutputFields::init-piezo-head}
 			{init{\_}piezo{\_}head}
 			{{{}{$[m]$}{ Input field: Init piezo head.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-piezo-head}
+			{bc{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Boundary piezo head.}% 
+}}
+		\SelectionItem
+			{Flow-Richards-LMH-OutputFields::bc-switch-piezo-head}
+			{bc{\_}switch{\_}piezo{\_}head}
+			{{{}{$[m]$}{ Input field: Boundary switch piezo head.}% 
 }}
 		\SelectionItem
 			{Flow-Richards-LMH-OutputFields::ref-pressure}
@@ -3047,36 +2628,19 @@ Its default value corresponds to a theoretically optimal value with fastest conv
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Coupling-Iterative-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Coupling-Iterative-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Coupling-Iterative-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Coupling-Iterative-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Coupling-Iterative-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Coupling-Iterative-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Coupling-Iterative-UserData::unit}
@@ -3165,36 +2729,19 @@ See above for details.}%
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Mechanics-LinearElasticity-FE-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Mechanics-LinearElasticity-FE-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Mechanics-LinearElasticity-FE-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Mechanics-LinearElasticity-FE-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Mechanics-LinearElasticity-FE-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-UserData::unit}
@@ -3239,91 +2786,91 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::bc-type}
 			{bc{\_}type}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Elasticity-BC-Type}{Elasticity{\_}BC{\_}Type}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Elasticity-BC-Type}{Elasticity{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Type of boundary condition. }{$[-]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::bc-displacement}
 			{bc{\_}displacement}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed displacement on boundary. }{$[m]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::bc-traction}
 			{bc{\_}traction}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed traction on boundary. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::bc-stress}
 			{bc{\_}stress}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed stress on boundary. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::load}
 			{load}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed bulk load. }{$[m^{-3}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::young-modulus}
 			{young{\_}modulus}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Young's modulus. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::poisson-ratio}
 			{poisson{\_}ratio}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Poisson's ratio. }{$[-]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::fracture-sigma}
 			{fracture{\_}sigma}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of transfer of forces through fractures. }{$[-]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::initial-stress}
 			{initial{\_}stress}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial stress tensor. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::cross-section-min}
 			{cross{\_}section{\_}min}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Minimal cross-section of fractures. }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::lame-mu}
 			{lame{\_}mu}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Field lame{\_}mu. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::lame-lambda}
 			{lame{\_}lambda}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Field lame{\_}lambda. }{$[m^{-1}kgs^{-2}]$}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::dirichlet-penalty}
 			{dirichlet{\_}penalty}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Field dirichlet{\_}penalty. }{$[m^{-1}kgs^{-2}]$}% 
 }}
@@ -3358,6 +2905,26 @@ These times have to form an increasing sequence.}%
 	{IT::Mechanics-LinearElasticity-FE-OutputFields}
 	{Mechanics{\_}LinearElasticity{\_}FE:OutputFields}
 	{{{Selection of output fields for the Mechanics{\_}LinearElasticity{\_}FE model.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::bc-type}
+			{bc{\_}type}
+			{{{}{$[-]$}{ Input field: Type of boundary condition.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::bc-displacement}
+			{bc{\_}displacement}
+			{{{}{$[m]$}{ Input field: Prescribed displacement on boundary.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::bc-traction}
+			{bc{\_}traction}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Prescribed traction on boundary.}% 
+}}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::bc-stress}
+			{bc{\_}stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ Input field: Prescribed stress on boundary.}% 
 }}
 		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::load}
@@ -3480,21 +3047,21 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Coupling-Iterative-Data::biot-alpha}
 			{biot{\_}alpha}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Biot poroelastic coefficient. }{$[-]$}% 
 }}
 		\RecKey
 			{Coupling-Iterative-Data::fluid-density}
 			{fluid{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Volumetric mass density of the fluid. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Coupling-Iterative-Data::gravity}
 			{gravity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Gravitational acceleration constant. }{$[ms^{-2}]$}% 
 }}
@@ -3636,36 +3203,19 @@ coupled with reaction and adsorption model (ODE per element)}\\{
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Solute-Advection-FV-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Solute-Advection-FV-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Solute-Advection-FV-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Solute-Advection-FV-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Solute-Advection-FV-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Solute-Advection-FV-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-UserData::unit}
@@ -3710,42 +3260,42 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Solute-Advection-FV-Data::porosity}
 			{porosity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Porosity of the mobile phase. }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::sources-density}
 			{sources{\_}density}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::sources-sigma}
 			{sources{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration flux. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::sources-conc}
 			{sources{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::bc-conc}
 			{bc{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary condition for concentration of substances. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::init-conc}
 			{init{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial values for concentration of substances. }{$[m^{-3}kg]$}% 
 }}
@@ -3779,6 +3329,11 @@ These times have to form an increasing sequence.}%
 			{Solute-Advection-FV-OutputFields::sources-conc}
 			{sources{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
+}}
+		\SelectionItem
+			{Solute-Advection-FV-OutputFields::bc-conc}
+			{bc{\_}conc}
+			{{{}{$[m^{-3}kg]$}{ Input field: Boundary condition for concentration of substances.}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::init-conc}
@@ -3881,36 +3436,19 @@ Otherwise, evaluate initial condition field directly (well suited for reading na
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Solute-AdvectionDiffusion-DG-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Solute-AdvectionDiffusion-DG-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Solute-AdvectionDiffusion-DG-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Solute-AdvectionDiffusion-DG-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Solute-AdvectionDiffusion-DG-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Solute-AdvectionDiffusion-DG-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-UserData::unit}
@@ -3955,168 +3493,168 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::porosity}
 			{porosity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Porosity of the mobile phase. }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-density}
 			{sources{\_}density}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-sigma}
 			{sources{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration flux. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-conc}
 			{sources{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-type}
 			{bc{\_}type}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-BC-Type}{Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-BC-Type}{Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Type of boundary condition. }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-conc}
 			{bc{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Dirichlet boundary condition (for each substance). }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-flux}
 			{bc{\_}flux}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::init-conc}
 			{init{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial values for concentration of substances. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-l}
 			{disp{\_}l}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Longitudinal dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-t}
 			{disp{\_}t}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transverse dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::diff-m}
 			{diff{\_}m}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Molecular diffusivity in the liquid (for each substance). }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::rock-density}
 			{rock{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Rock matrix density. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sorption-coefficient}
 			{sorption{\_}coefficient}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of linear sorption. }{$[m^{3}kg^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::v-norm}
 			{v{\_}norm}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Velocity norm field. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::mass-matrix-coef}
 			{mass{\_}matrix{\_}coef}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Matrix coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::retardation-coef}
 			{retardation{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Retardation coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-density-out}
 			{sources{\_}density{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources output - density of substance source, only positive part is used.. }{$[m^{-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-sigma-out}
 			{sources{\_}sigma{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc). }{$[m^{3-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-conc-out}
 			{sources{\_}conc{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources output. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::advection-coef}
 			{advection{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Advection coefficients model. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::diffusion-coef}
 			{diffusion{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Diffusion coefficients model. }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}
 			{fracture{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::dg-penalty}
 			{dg{\_}penalty}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps. }{$[-]$}% 
@@ -4202,6 +3740,26 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 			{Solute-AdvectionDiffusion-DG-OutputFields::sources-conc}
 			{sources{\_}conc}
 			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::bc-type}
+			{bc{\_}type}
+			{{{}{$[-]$}{ Input field: Type of boundary condition.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::bc-conc}
+			{bc{\_}conc}
+			{{{}{$[m^{-3}kg]$}{ Input field: Dirichlet boundary condition (for each substance).}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::bc-flux}
+			{bc{\_}flux}
+			{{{}{$[m^{1-d}kgs^{-1}]$}{ Input field: Flux in Neumann boundary condition.}% 
+}}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{{}{$[m^{4-d}s^{-1}]$}{ Input field: Conductivity coefficient in Robin boundary condition.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::init-conc}
@@ -4314,7 +3872,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -4399,7 +3957,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
@@ -4579,14 +4137,14 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Sorption-Data::rock-density}
 			{rock{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Rock matrix density. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Sorption-Data::sorption-type}
 			{sorption{\_}type}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::SorptionType}{SorptionType}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::SorptionType}{SorptionType}}
 			{ \it{Optional}}
 			{{{Considered sorption is described by selected isotherm.}\\{
 If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically. }{$[-]$}% 
@@ -4594,21 +4152,21 @@ If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing s
 		\RecKey
 			{Sorption-Data::distribution-coefficient}
 			{distribution{\_}coefficient}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Distribution coefficient }{ $k_l, k_F, k_L $}{ of linear, Freundlich or Langmuir isotherm respectively. }{$[m^{3}kg^{-1}]$}% 
 }}
 		\RecKey
 			{Sorption-Data::isotherm-other}
 			{isotherm{\_}other}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Additional parameter }{$ \alpha $}{ of nonlinear isotherms. }{$[-]$}% 
 }}
 		\RecKey
 			{Sorption-Data::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial solid concentration of substances.
 It is a vector: one value for every substance. }{$[-]$}% 
@@ -4766,21 +4324,21 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{DualPorosity-Data::diffusion-rate-immobile}
 			{diffusion{\_}rate{\_}immobile}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{DualPorosity-Data::porosity-immobile}
 			{porosity{\_}immobile}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Porosity of the immobile zone. }{$[-]$}% 
 }}
 		\RecKey
 			{DualPorosity-Data::init-conc-immobile}
 			{init{\_}conc{\_}immobile}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial concentration of substances in the immobile zone. }{$[m^{-3}kg]$}% 
 }}
@@ -5145,36 +4703,19 @@ Otherwise, evaluate initial condition field directly (well suited for reading na
 			{{{Name of user defined field.}% 
 }}
 		\RecKey
-			{Heat-AdvectionDiffusion-DG-UserData::is-boundary}
-			{is{\_}boundary}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Type of field: boundary or bulk.}% 
+			{Heat-AdvectionDiffusion-DG-UserData::shape-type}
+			{shape{\_}type}
+			{{selection: }\TypeLink{IT::User-fields-shape}{User{\_}fields{\_}shape}}{}
+			{ \ValueDefault{"scalar"}}
+			{{{Shape of user field.}% 
 }}
 		\RecKey
-			{Heat-AdvectionDiffusion-DG-UserData::scalar-field}
-			{scalar{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase ScalarField descendant.}\\{
-One of keys 'scalar{\_}field', 'vector{\_}field', 'tensor{\_}field' must be set.}\\{
-If you set more than one of these keys, only first key is accepted.}% 
-}}
-		\RecKey
-			{Heat-AdvectionDiffusion-DG-UserData::vector-field}
-			{vector{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase VectorField descendant.
-See above for details.}% 
-}}
-		\RecKey
-			{Heat-AdvectionDiffusion-DG-UserData::tensor-field}
-			{tensor{\_}field}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Instance of FieldAlgoBase TensorField descendant.
-See above for details.}% 
+			{Heat-AdvectionDiffusion-DG-UserData::field}
+			{field}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Obligatory}}
+			{{{Instance of FieldAlgoBase descendant.}\\{
+Please specify shape of field in 'shape{\_}type' key.}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-UserData::unit}
@@ -5219,210 +4760,210 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-type}
 			{bc{\_}type}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Heat-BC-Type}{Heat{\_}BC{\_}Type}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Heat-BC-Type}{Heat{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Type of boundary condition. }{$[-]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-temperature}
 			{bc{\_}temperature}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary value of temperature. }{$[K]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-flux}
 			{bc{\_}flux}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::init-temperature}
 			{init{\_}temperature}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial temperature. }{$[K]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::porosity}
 			{porosity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Porosity. }{$[-]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-density}
 			{fluid{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of fluid. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-capacity}
 			{fluid{\_}heat{\_}capacity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat capacity of fluid. }{$[m^{2}s^{-2}K^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-conductivity}
 			{fluid{\_}heat{\_}conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat conductivity of fluid. }{$[mkgs^{-3}K^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-density}
 			{solid{\_}density}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of solid (rock). }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-heat-capacity}
 			{solid{\_}heat{\_}capacity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat capacity of solid (rock). }{$[m^{2}s^{-2}K^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-heat-conductivity}
 			{solid{\_}heat{\_}conductivity}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat conductivity of solid (rock). }{$[mkgs^{-3}K^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::disp-l}
 			{disp{\_}l}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Longitudinal heat dispersivity in fluid. }{$[m]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::disp-t}
 			{disp{\_}t}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transverse heat dispersivity in fluid. }{$[m]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-thermal-source}
 			{fluid{\_}thermal{\_}source}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of thermal source in fluid. }{$[m^{-1}kgs^{-3}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-thermal-source}
 			{solid{\_}thermal{\_}source}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of thermal source in solid. }{$[m^{-1}kgs^{-3}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-exchange-rate}
 			{fluid{\_}heat{\_}exchange{\_}rate}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat exchange rate of source in fluid. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-heat-exchange-rate}
 			{solid{\_}heat{\_}exchange{\_}rate}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Heat exchange rate of source in solid. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-ref-temperature}
 			{fluid{\_}ref{\_}temperature}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Reference temperature of source in fluid. }{$[K]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-ref-temperature}
 			{solid{\_}ref{\_}temperature}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Reference temperature in solid. }{$[K]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::v-norm}
 			{v{\_}norm}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Velocity norm field. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::mass-matrix-coef}
 			{mass{\_}matrix{\_}coef}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Matrix coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::retardation-coef}
 			{retardation{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Retardation coefficients computed by model in mass assemblation. }{$[m^{3-d}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::sources-conc-out}
 			{sources{\_}conc{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources output. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::sources-density-out}
 			{sources{\_}density{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources output - density of substance source, only positive part is used.. }{$[m^{-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::sources-sigma-out}
 			{sources{\_}sigma{\_}out}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources - Robin type, in{\_}flux = sources{\_}sigma * (sources{\_}conc - mobile{\_}conc). }{$[m^{3-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::advection-coef}
 			{advection{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-}{Field{\_}R3{\_}to{\_}R[3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Advection coefficients model. }{$[ms^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::diffusion-coef}
 			{diffusion{\_}coef}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Diffusion coefficients model. }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fracture-sigma}
 			{fracture{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::dg-penalty}
 			{dg{\_}penalty}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-}{Field{\_}}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps. }{$[-]$}% 
@@ -5462,6 +5003,26 @@ The prescribed incoming energy flux due to diffusion can have the general form }
 	{IT::Heat-AdvectionDiffusion-DG-OutputFields}
 	{Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}
 	{{{Selection of output fields for the Heat{\_}AdvectionDiffusion{\_}DG model.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::bc-type}
+			{bc{\_}type}
+			{{{}{$[-]$}{ Input field: Type of boundary condition.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::bc-temperature}
+			{bc{\_}temperature}
+			{{{}{$[K]$}{ Input field: Boundary value of temperature.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::bc-flux}
+			{bc{\_}flux}
+			{{{}{$[m^{1-d}kgs^{-1}]$}{ Input field: Flux in Neumann boundary condition.}% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::bc-robin-sigma}
+			{bc{\_}robin{\_}sigma}
+			{{{}{$[m^{4-d}s^{-1}]$}{ Input field: Conductivity coefficient in Robin boundary condition.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::init-temperature}
