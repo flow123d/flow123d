@@ -199,7 +199,7 @@ endmacro()
 # like: 'class_name_N_test' and 'class_name_N_valgrind' which builds the test binary and run it in parallel using bin/mpiexec
 #
 # To get meaningful output from the parallel tests you should include <gtest_flow.hh> instead of <gtest/gtest.h>
-macro(define_mpi_benchmark class_name n_proc postproc_script)
+macro(define_mpi_benchmark class_name n_proc)
   set(test_source "${class_name}_bench.cpp")
   set(test_binary "${class_name}_bench_bin")
   set(test_name "${class_name}-${n_proc}-bench")

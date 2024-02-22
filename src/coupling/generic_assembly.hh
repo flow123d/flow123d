@@ -145,6 +145,11 @@ public:
     virtual ~GenericAssemblyBase(){}
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
 
+    /// Getter to EvalPoints object
+    inline std::shared_ptr<EvalPoints> eval_points() const {
+        return eval_points_;
+    }
+
 protected:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
@@ -191,11 +196,6 @@ public:
         return multidim_assembly_;
     }
 
-    /// Geter to EvalPoints object
-    inline std::shared_ptr<EvalPoints> eval_points() const {
-        return eval_points_;
-    }
-
     void set_min_edge_sides(unsigned int val) {
         min_edge_sides_ = val;
     }
@@ -205,6 +205,11 @@ public:
 	 *
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
+	 *
+	 * TODO:
+	 * - make estimate of the cache fill for combination of (integral_type x element dimension)
+	 * - add next cell to patch if current_patch_size + next_element_size <= fixed_cache_size
+	 * - avoid reverting the integral data lists.
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
@@ -220,9 +225,9 @@ public:
         	    add_into_patch = true;
             }
 
-            //START_TIMER("add_integrals_to_patch");
+            START_TIMER("add_integrals_to_patch");
             this->add_integrals_of_computing_step(*cell_it);
-            //END_TIMER("add_integrals_to_patch");
+            END_TIMER("add_integrals_to_patch");
 
             if (element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();
