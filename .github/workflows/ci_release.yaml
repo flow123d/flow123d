@@ -95,11 +95,27 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
+
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
+            echo ${release_tag}
+
+            # can not use environment variables in github actions
+            echo "pubdir=publish_${environment}" >> $GITHUB_OUTPUT
+            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
+
+        - name: Check vars
+          run: |
+              echo pubdir="${{ steps.vars.outputs.pubdir }}"
+              echo reltag="${{ steps.vars.outputs.reltag }}"
+
         - run: |
             # Login for finall push to docker hub
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-            git_commit=`git rev-parse --short=6 HEAD`
-            release_tag=`cat version`_${git_commit}
+            release_tag="${{ steps.vars.outputs.reltag }}"
             config/build/make_packages.sh ${environment} ci ${release_tag} push
     
         - name: upload artifacts
@@ -115,7 +131,8 @@ jobs:
         - name: SCP upload to Share
           run: |
             release_tag="${{ steps.vars.outputs.reltag }}"
-            config/build/ssh_upload.sh ${{ steps.vars.outputs.pubdir }} ci-packages/${release_tag} \
+            publish_dir="${{ steps.vars.outputs.pubdir }}"
+            config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
             ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
     # Run unit tests with release build, similar to the debug build
@@ -274,22 +291,25 @@ jobs:
         steps:
           - name: Install gh command
             run: |
-                sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-                sudo apt-add-repository https://cli.github.com/packages
-                sudo apt update
-                sudo apt install gh    
+                type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+                curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+                  && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+                  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+                  && sudo apt update \
+                  && sudo apt install gh -y
           - name: Check status of all jobs
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             run: |
-                # get the current workflow run ID
-                run_id=$(jq --raw-output .run_id "$GITHUB_EVENT_PATH")
+                echo "run_id: ${{ github.run_id }}"
+                echo "run_number: ${{ github.run_number }}"
+                echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
                 #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
                 
                 # get the status of all jobs
-                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[].conclusion')
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
 
                 # check if any job has failed
                 if echo "$statuses" | grep -q failure; then
@@ -297,4 +317,4 @@ jobs:
                     exit 1
                 else
                     echo "All jobs have succeeded"
-                fi    
+                fi

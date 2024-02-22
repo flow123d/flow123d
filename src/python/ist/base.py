@@ -79,9 +79,9 @@ class Field(object):
         for name in self.names:
             if name in json_data:
                 # parsable classes will handle parsing by themselves
-                if isinstance(getattr(self.type, 'parse', None), collections.Callable):
+                if isinstance(getattr(self.type, 'parse', None), collections.abc.Callable):
                     instance = self.type()
-                    if isinstance(getattr(self.type, 'set_subtype', None), collections.Callable):
+                    if isinstance(getattr(self.type, 'set_subtype', None), collections.abc.Callable):
                         instance.set_subtype(self.subtype)
                     return instance.parse(json_data[name])
 
@@ -300,7 +300,7 @@ class List(list):
 
     def parse(self, json_data):
         if self.subtype:
-            if isinstance(getattr(self.subtype, 'parse', None), collections.Callable):
+            if isinstance(getattr(self.subtype, 'parse', None), collections.abc.Callable):
                 for item in json_data:
                     self.append(self.subtype().parse(item))
             else:
