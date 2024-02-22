@@ -45,7 +45,7 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW(this->quad_) ),
-      conc_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr}) ) {
+      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -164,10 +164,12 @@ public:
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW(this->quad_) ),
-      JxW_side_( this->fe_values_->JxW(this->quad_low_, false) ),
+      JxW_side_( this->fe_values_->JxW_side(this->quad_low_) ),
       normal_( this->fe_values_->normal_vector(this->quad_low_) ),
-      conc_shape_( this->fe_values_->scalar_shape( {this->quad_, this->quad_low_} ) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape( {this->quad_, this->quad_low_} ) ),
+      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ),
+      conc_shape_side_( this->fe_values_->scalar_shape_side(this->quad_low_) ),
+      conc_grad_( this->fe_values_->grad_scalar_shape(this->quad_) ),
+      conc_grad_sidw_( this->fe_values_->grad_scalar_shape_side(this->quad_low_) ),
       conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
@@ -328,12 +330,12 @@ public:
                     for (unsigned int j=0; j<ndofs_; j++)
                     {
                         // flux due to advection and penalty
-                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_(i,p)*conc_shape_(j,p);
+                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_side_(i,p)*conc_shape_side_(j,p);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(j,p),normal_(p))*conc_shape_(i,p)
-                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_(i,p),normal_(p))*conc_shape_(j,p)*eq_data_->dg_variant
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_sidw_(j,p),normal_(p))*conc_shape_side_(i,p)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_sidw_(i,p),normal_(p))*conc_shape_side_(j,p)*eq_data_->dg_variant
                                     )*JxW_side_(p);
                     }
                 }
@@ -392,7 +394,7 @@ public:
                 for (auto p : this->edge_points(edge_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
-                        averages[s1][k*ndofs_+i] = conc_shape_(i,p)*0.5;
+                        averages[s1][k*ndofs_+i] = conc_shape_side_(i,p)*0.5;
                     k++;
                 }
                 s1++;
@@ -463,10 +465,10 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<ndofs_; i++)
                         {
-                            jumps[0][k*ndofs_+i] = conc_shape_(i,p1);
-                            jumps[1][k*ndofs_+i] = - conc_shape_(i,p2);
-                            waverages[0][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_(i,p1),nv)*omega[0];
-                            waverages[1][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_(i,p2),nv)*omega[1];
+                            jumps[0][k*ndofs_+i] = conc_shape_side_(i,p1);
+                            jumps[1][k*ndofs_+i] = - conc_shape_side_(i,p2);
+                            waverages[0][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_sidw_(i,p1),nv)*omega[0];
+                            waverages[1][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_sidw_(i,p2),nv)*omega[1];
                         }
                         k++;
                     }
@@ -609,7 +611,9 @@ private:
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQ<Scalar> conc_shape_;
+    FeQ<Scalar> conc_shape_side_;
     FeQ<Vector> conc_grad_;
+    FeQ<Vector> conc_grad_sidw_;
     Range< JoinShapeAccessor<Scalar> > conc_join_shape_;
 
     template < template<IntDim...> class DimAssembly>
@@ -634,7 +638,7 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW(this->quad_) ),
-      conc_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr} ) ) {
+      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -753,10 +757,10 @@ public:
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW(this->quad_low_, false) ),
+      JxW_( this->fe_values_->JxW_side(this->quad_low_) ),
       normal_( this->fe_values_->normal_vector(this->quad_low_) ),
-      conc_shape_( this->fe_values_->scalar_shape( {nullptr, this->quad_low_} ) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape( {nullptr, this->quad_low_} ) ) {
+      conc_shape_( this->fe_values_->scalar_shape_side(this->quad_low_) ),
+	  conc_grad_( this->fe_values_->grad_scalar_shape_side(this->quad_low_) ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -961,7 +965,7 @@ public:
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(eq_data->dg_order, fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->JxW(this->quad_) ),
-      init_shape_( this->fe_values_->scalar_shape( {this->quad_, nullptr} ) ) {
+      init_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
