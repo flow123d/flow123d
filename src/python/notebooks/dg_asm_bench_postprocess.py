@@ -9,10 +9,11 @@ import sys
 import os
 import json
 import csv
-
+from pathlib import Path
 import numpy as np
 import pandas as pd
-from zipfile import ZipFile, Path
+import zipfile
+
 
 
 class ProcessTag:
@@ -106,9 +107,8 @@ Hold processed profiler data and helper variables.
 Object is used during processing of profiler JSON input.
 """
 class ProfilerHandler:
-    def __init__(self, profiler_file, program_branch, program_revision, run_id):
-        self.profiler_file = profiler_file
-        
+    def __init__(self, program_branch, program_revision, run_id):
+
         # Define name of columns 
         self.column_names = ['branch', 'commit', 'run_id', 'domain_shape', 'mesh_size', 'spacedim', 'uniformity', 'n_mesh_elements', 'n_repeats', 'field_variant',   
             'assembly_variant',
@@ -198,6 +198,10 @@ class ProfilerHandler:
         """
         return ' > '.join([node['tag'] for node in self.node_path])
 
+    def child_nodes(self):
+        if self.current_node['tag'] == "ZERO-TIME STEP":
+            return []
+        return self.current_node.get('children', [])
 def process_node(json_node, ph, df):
     """
     Process one tag and call recursivelly processing of children
@@ -205,9 +209,9 @@ def process_node(json_node, ph, df):
     ph.node_path.append(json_node)
     #print(ph.location())
     df = ph.process_node_item(df)
-    if 'children' in json_node:
-        for i in json_node['children']:
-            df = process_node(i, ph, df)
+
+    for i in ph.child_nodes():
+        df = process_node(i, ph, df)
     ph.node_path.pop()
     return df
 
@@ -228,6 +232,17 @@ def unify_df_values(df):
     
     return df
 
+def profiler_path(profiler_files):
+    prof_path = Path(profiler_files)
+    if prof_path.suffix == '.zip':
+        # path in Zip archive
+        path = zipfile.Path(zipfile.ZipFile(prof_path)).iterdir()
+        basename = prof_path.stem
+    else:
+        # path from glob pattern
+        path = prof_path.parent.glob(prof_path.name)
+        basename = prof_path.stem.rstrip("_*")
+    return path, basename
 
 """
 Load data from set of profiler JSON files.
@@ -236,16 +251,14 @@ Name of files must be in format '<profiler_file>_<n>.json' where:
     <profiler_file> Same for all files in set, it is given by arg 'profiler_file'
     <n> Order of file in set 1,2,3,... Number of files is given by arg 'n_runs'
 """
-def load_profiler_data(profiler_zip):
-
+def load_profiler_data_(file_gen):
     # Create ProfilerHandler and DataFrame
-
-    df = None
-    
-    run_id = 1
-    zf = ZipFile(profiler_zip)
-    path = Path(zf)
-    for file in path.iterdir():
+    df = None # directory - list representation of the data table
+    files = list(file_gen)
+    print("Input profiler files: ", files)
+    if len(files) == 0:
+        raise IOError("Empty set of profiler files.")
+    for run_id, file in enumerate(files):
         with file.open() as f_in:
             profiler_data = json.load(f_in)
         
@@ -253,14 +266,17 @@ def load_profiler_data(profiler_zip):
         whole_program = profiler_data['children'][0]
         program_branch = profiler_data['program-branch']
         program_revision = profiler_data['program-revision']
-        ph = ProfilerHandler(profiler_zip, program_branch, program_revision, run_id)
+        ph = ProfilerHandler(program_branch, program_revision, run_id)
     
         df = process_node(whole_program, ph, df)
-        run_id += 1
+
     df = pd.DataFrame(df)
     df = unify_df_values(df)
     return df
 
+def load_profiler_data(profiler_pattern_or_zip):
+    file_gen, basename = profiler_path(profiler_pattern_or_zip)
+    return load_profiler_data_(file_gen)
 
 # Perform outout to CSV file
 def csv_output(csv_file, df):
@@ -271,14 +287,13 @@ def main():
     pass
     
     # store names of input zip archive and output csv file from arg
-    profiler_zip = sys.argv[1]
-    csv_file = profiler_zip + '.csv'
-
-    # load and process JSON
-    df = load_profiler_data(profiler_zip)
-
+    profiler_pattern_or_zip = sys.argv[1]
+    # make faile generator and basename
+    file_gen, basename = profiler_path(profiler_pattern_or_zip)
+    df =  load_profiler_data_(file_gen)
 
     # output to CSV
+    csv_file = basename + '.csv'
     csv_output(csv_file, df)
 
 

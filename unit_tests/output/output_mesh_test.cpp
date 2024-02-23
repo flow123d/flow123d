@@ -17,6 +17,7 @@
 
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
+#include "system/sys_profiler.hh"
 
 
 class OutputMeshTest : public OutputMesh {
@@ -47,6 +48,7 @@ public:
 
 TEST(OutputMesh, create_identical)
 {
+    Profiler::instance();
     // read mesh - simplest cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
     Mesh *mesh = mesh_full_constructor("{ mesh_file=\"" + (string)mesh_file + "\", optimize_mesh=false }");
@@ -119,6 +121,7 @@ public:
                                                               Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
+        Profiler::instance();
     }
     
     template<int dim> void refine_single_element(AuxElement &el)
@@ -235,6 +238,7 @@ public:
     
     ~TestOutputMesh()
     {
+        Profiler::uninitialize();
     }
 
     Mesh * mesh_;
@@ -243,17 +247,17 @@ public:
 
 
 TEST_F(TestOutputMesh, refine) {
-    
+
     const double a = 3.0;
-    
+
     AuxElement el1;
     el1.nodes = {{0, 0, 0}, {a, 0, 0}};
     this->refine_single_element<1>(el1);
-    
+
     AuxElement el2;
     el2.nodes = {{0, 0, 0}, {a, 0, 0}, {0, a, 0}};
     this->refine_single_element<2>(el2);
-   
+
     AuxElement el3;
     el3.nodes = {{0, 0, 0}, {a, 0, 0}, {0, a, 0}, {0, 0, a}};
     this->refine_single_element<3>(el3);

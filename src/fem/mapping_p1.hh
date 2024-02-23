@@ -21,7 +21,7 @@
 #define MAPPING_P1_HH_
 
 #include <armadillo>
-#include "fem/mapping.hh"                      // for MappingInternalData (p...
+#include "fem/fem_tools.hh"                      // for MappingInternalData (p...
 #include "fem/update_flags.hh"                 // for operator&, operator|
 #include "mesh/accessors.hh"                     // for ElementAccessor
 
