@@ -100,7 +100,6 @@ public:
 
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
 

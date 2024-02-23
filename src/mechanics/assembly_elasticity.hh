@@ -603,7 +603,6 @@ public:
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
-        output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
     }
@@ -636,13 +635,11 @@ public:
         }
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
-        double mean_stress = arma::trace(stress) / 3;
         output_div_vec_.add(dof_indices_scalar_[0], div);
 
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<3; j++)
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
-        output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
 
         output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
     }
@@ -680,7 +677,6 @@ public:
                 output_stress_vec_.add( dof_indices_tensor_[i*3+j], normal_stress_(i,j) );
         output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
         output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
-        output_mean_stress_vec_.add( dof_indices_scalar_[0], arma::trace(normal_stress_) / 3 );
     }
 
 
@@ -711,7 +707,6 @@ private:
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
     VectorMPI output_stress_vec_;
-    VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
 

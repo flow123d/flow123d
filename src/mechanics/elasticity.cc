@@ -402,10 +402,6 @@ void Elasticity::initialize()
     eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
-    // setup output mean stress
-    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
-    eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
-    
     // setup output cross-section
     eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
     eq_fields_->output_cross_section.set(eq_fields_->output_cross_section_ptr, 0.);
@@ -431,6 +427,7 @@ void Elasticity::initialize()
     eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
     eq_fields_->output_total_stress.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_total_stress(), eq_fields_->output_stress, eq_fields_->potential_load), 0.0);
+    eq_fields_->output_mean_stress.set(Model<3, FieldValue<3>::Scalar>::create(fn_mean_stress(), eq_fields_->output_stress), 0.0);
     eq_fields_->output_mean_total_stress.set(Model<3, FieldValue<3>::Scalar>::create(fn_mean_stress(), eq_fields_->output_total_stress), 0.0);
     eq_fields_->output_von_mises_stress.set(Model<3, FieldValue<3>::Scalar>::create(fn_von_mises(), eq_fields_->output_stress), 0.0);
 
@@ -514,11 +511,9 @@ void Elasticity::update_output_fields()
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
-    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
-    eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
 }
