@@ -506,13 +506,17 @@ public:
 
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-      dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}) {
+      dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
+	  patch_point_vals_{ { {PatchPointValues(1, PointType::bulk_point), PatchPointValues(2, PointType::bulk_point), PatchPointValues(3, PointType::bulk_point)},
+                           {PatchPointValues(0, PointType::side_point), PatchPointValues(1, PointType::side_point), PatchPointValues(2, PointType::side_point)} } } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+	  patch_point_vals_{ { {PatchPointValues(1, PointType::bulk_point), PatchPointValues(2, PointType::bulk_point), PatchPointValues(3, PointType::bulk_point)},
+                           {PatchPointValues(0, PointType::side_point), PatchPointValues(1, PointType::side_point), PatchPointValues(2, PointType::side_point)} } },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -537,12 +541,12 @@ public:
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
             // new data storing
-            patch_point_vals_[0][DIM-1].initialize(DIM, PointType::bulk_point, 2); // bulk
+            patch_point_vals_[0][DIM-1].initialize(2); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
             // new data storing
-            patch_point_vals_[1][DIM-1].initialize(DIM-1, PointType::side_point, 3); // side
+            patch_point_vals_[1][DIM-1].initialize(3); // side
         }
     }
 

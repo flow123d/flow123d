@@ -24,6 +24,7 @@
 #include "fem/eigen_tools.hh"
 
 
+template<unsigned int spacedim> class ElOp;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
@@ -40,26 +41,13 @@ class PatchPointValues
 {
 public:
     /// Default constructor, set invalid dim (uninitialized object)
-    PatchPointValues()
-    : dim_(10), n_columns_(0) {}
+    PatchPointValues(uint dim, PointType point_type);
 
     /// Initialize object, set number of columns (quantities) in tables
-    void initialize(uint dim, PointType point_type, uint int_cols) {
-        ASSERT_EQ(dim_, 10).error("Multiple initialization!\n");
-        ASSERT(dim <= 3)(dim).error("Dimension must be 0, 1, 2 or 3!\n");
-
-        this->reset();
-        dim_ = dim;
-    	point_type_ = point_type;
-
-    	point_vals_.resize(n_columns_);
-    	int_vals_.resize(int_cols);
-    	el_vals_.resize( (dim_+1) * spacedim );
-    }
+    void initialize(uint int_cols);
 
     /// Reset number of rows (points)
-    void reset() {
-    	ASSERT(dim_ <= 3).error("Uninitialized PatchPointValues object!\n");
+    inline void reset() {
         n_points_ = 0;
         n_elems_ = 0;
     }
@@ -81,6 +69,8 @@ private:
     TableInt int_vals_;
     TableDbl el_vals_;
 
+    std::vector<ElOp<spacedim>> operation_columns_;
+
     uint dim_;
     PointType point_type_;
 
@@ -94,11 +84,15 @@ private:
  * Base class of all FE operations.
  */
 template<unsigned int spacedim = 3>
-class FeOp {
+class ElOp {
 public:
-    FeOp(bool enabled, uint input_column, PatchPointValues<spacedim> &point_vals)
-    : enabled_(enabled), input_column_(input_column), point_vals_(point_vals)
+	/// Constructor
+	ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
+    : dim_(dim), shape_(shape), input_column_(-1), point_vals_(point_vals)
     {}
+
+	/// Reinit data on all patch points.
+	virtual void reinit_data() =0;
 
     inline Scalar scalar_val(uint point_idx) const {
         return point_vals_[input_column_][point_idx];
@@ -120,10 +114,38 @@ public:
     }
 
 
-private:
-    bool enabled_;                            ///< if the operation is active, column will be updated
-    uint input_column_;                       ///< first column to scalar, vector or matrix inputs
+protected:
+    uint dim_;                                ///< Dimension
+    std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
+    uint result_col_;                         ///< Result column.
+    uint input_column_;                       ///< First column to scalar, vector or matrix inputs
     PatchPointValues<spacedim> &point_vals_;  ///< Reference to data table
 };
+
+template<unsigned int spacedim = 3>
+class OpJacBulk : public ElOp<spacedim> {
+public:
+	/// Constructor
+	OpJacBulk(uint dim, PatchPointValues<spacedim> &point_vals)
+    : ElOp<spacedim>(dim, {spacedim, dim}, point_vals)
+    {}
+
+
+	/// Implement ElOp::reinit_data
+	void reinit_data() override;
+};
+
+template<unsigned int spacedim = 3>
+class OpJacDetBulk : public ElOp<spacedim> {
+public:
+	/// Constructor
+	OpJacDetBulk(uint dim, PatchPointValues<spacedim> &point_vals)
+    : ElOp<spacedim>(dim, {1}, point_vals)
+    {}
+
+	/// Implement ElOp::reinit_data
+	void reinit_data() override;
+};
+
 
 #endif /* PATCH_POINT_VALUES_HH_ */
