@@ -82,8 +82,10 @@ public:
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::TensorFixed> output_total_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
+        Field<3, FieldValue<3>::Scalar> output_mean_total_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         

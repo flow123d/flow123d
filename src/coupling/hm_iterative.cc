@@ -237,8 +237,10 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     eq_data_->mechanics_->eq_fields()["cross_section"].copy_from(eq_data_->flow_->eq_fields()["cross_section"]);
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["cross_section_updated"];
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["effective_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["total_stress"];
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["von_mises_stress"];
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_effective_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_total_stress"];
     eq_data_->flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )

@@ -109,6 +109,18 @@ struct fn_dirichlet_penalty {
     }
 };
 
+struct fn_total_stress {
+    inline arma::mat33 operator() (arma::mat33 stress, double pressure) {
+        return stress - pressure*arma::eye(3,3);
+    }
+};
+
+struct fn_mean_stress {
+    inline double operator() (arma::mat33 stress) {
+        return arma::trace(stress) / 3;
+    }
+};
+
 struct fn_von_mises {
     inline double operator() (arma::mat33 stress) {
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
@@ -239,6 +251,12 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
+    *this += output_total_stress
+            .name("total_stress")
+            .description("Total poroelastic stress output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
     *this += output_von_mises_stress
             .name("von_mises_stress")
             .description("von Mises stress output.")
@@ -248,6 +266,12 @@ Elasticity::EqFields::EqFields()
     *this += output_mean_stress
             .name("mean_effective_stress")
             .description("Mean effective stress output.")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+
+    *this += output_mean_total_stress
+            .name("mean_total_stress")
+            .description("Mean total stress output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
 
@@ -406,6 +430,8 @@ void Elasticity::initialize()
     eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
+    eq_fields_->output_total_stress.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_total_stress(), eq_fields_->output_stress, eq_fields_->potential_load), 0.0);
+    eq_fields_->output_mean_total_stress.set(Model<3, FieldValue<3>::Scalar>::create(fn_mean_stress(), eq_fields_->output_total_stress), 0.0);
     eq_fields_->output_von_mises_stress.set(Model<3, FieldValue<3>::Scalar>::create(fn_von_mises(), eq_fields_->output_stress), 0.0);
 
     // equation default PETSc solver options
