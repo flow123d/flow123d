@@ -81,12 +81,14 @@ When contact conditions are active, the mechanical model is solved as a quadrati
 The mechanics equation provides several fields for output:
 \begin{itemize}
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement}{displacement}: The computed displacement vector field $\uu$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::stress}{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-stress}{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::effective-stress}{effective\_stress}: The effective (mechanical) stress tensor $\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::total-stress}{total\_stress}: The total (poroelastic) stress tensor $\widehat\sigma(\uu,h)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-effective-stress}{mean\_effective\_stress}: The mean of the principal effective stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-total-stress}{mean\_total\_stress}: The mean of the principal total stresses, i.e. $\widehat\sigma_m:=\frac13\tn I:\widehat\sigma(\uu,h)$;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\sigma_m\tn I$ is the deviatoric stress.
     Equivalently, von Mises stress can be expressed as
     \[ \sigma_{VM} = \sqrt{\frac12\left((\sigma_1-\sigma_2)^2+(\sigma_1-\sigma_3)^2+(\sigma_2-\sigma_3)^2\right)}, \]
-    where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$;
+    where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$ (or equivalently $\widehat\sigma(\uu,h)$);
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}{cross\_section\_updated}: The cross-section $\tilde\delta_d(\uu)$ after deformation;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}{displacement\_divergence}: $\widetilde\div\uu_d$.
 \end{itemize}
