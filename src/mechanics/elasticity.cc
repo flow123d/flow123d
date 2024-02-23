@@ -234,8 +234,8 @@ Elasticity::EqFields::EqFields()
             .flags(equation_result);
     
     *this += output_stress
-            .name("stress")
-            .description("Stress tensor output.")
+            .name("effective_stress")
+            .description("Effective (mechanical) stress tensor output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
     
@@ -246,8 +246,8 @@ Elasticity::EqFields::EqFields()
             .flags(equation_result);
     
     *this += output_mean_stress
-            .name("mean_stress")
-            .description("mean stress output.")
+            .name("mean_effective_stress")
+            .description("Mean effective stress output.")
             .units( UnitSI().Pa() )
             .flags(equation_result);
 
