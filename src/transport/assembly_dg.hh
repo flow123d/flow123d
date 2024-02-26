@@ -403,7 +403,7 @@ public:
 //                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_edge_.normal_vector(p), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
 //                eq_data_->gamma[sbi][side.cond_idx()] = gamma_l;
 //=======
-                auto p = *( this->boundary_points(cell_side).begin() );
+//                auto p = *( this->boundary_points(cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
                                               diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(0)),
                                               transport_flux,
