@@ -14,8 +14,10 @@ Package contains:
 """
 
 import os
+import io
 import json
 import datetime
+import time
 import importlib
 from utils.logger import Logger
 import collections
@@ -32,6 +34,7 @@ class ProfilerJSONDecoder(json.JSONDecoder):
     returned object has all values properly typed so
     formatters can make mathematical or other operation without worries
     """
+    pass
 
     def decode(self, json_string):
         """Decodes json_string which is string that is given to json.loads method"""
@@ -74,102 +77,70 @@ class ProfilerJSONDecoder(json.JSONDecoder):
                     self.convert_fields(child, fields, fun)
             except:
                 pass
+            
+
+def get_formater_instance(cls, styles=[]):
+    """Method returns class instance upon given name in profiler.formatters.* ns"""
+    module = importlib.import_module("profiler.formatters." + cls)
+    class_ = getattr(module, cls)
+    instance = class_()
+
+    styles = [value.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') for value in styles]
+    styles = dict(item.split(":", 1) for item in styles)
+    instance.set_styles(styles)
+    return instance
 
 
-class ProfilerFormatter(object):
+def list_formatters():
+    """Method return list of all available formatters.
+    Formatter is every class in profiler.formatters.* ns which possesses method format
     """
-    Class which dynamically loads formatter and perform conversion
+    result = []
+    import pkgutil
+
+    for module_loader, name, ispkg in pkgutil.iter_modules(['formatters']):
+        try:
+            module = importlib.import_module("formatters." + name)
+            class_ = getattr(module, name)
+            if getattr(class_, 'format') is not None and isinstance(getattr(class_, 'format'), collections.Callable):
+                result.append(name)
+        except:
+            pass
+    return result
+
+
+
+def convert(json_location, output_file, formatter, styles=[]):
     """
-
-    @staticmethod
-    def get_class_instance(cls):
-        """Method returns class instance upon given name in profiler.formatters.* ns"""
-        module = importlib.import_module("profiler.formatters." + cls)
-        class_ = getattr(module, cls)
-        instance = class_()
-        return instance
-
-    @staticmethod
-    def list_formatters():
-        """Method return list of all available formatters.
-        Formatter is every class in profiler.formatters.* ns which possesses method format
-        """
-        result = []
-        import pkgutil
-
-        for module_loader, name, ispkg in pkgutil.iter_modules(['formatters']):
-            try:
-                module = importlib.import_module("formatters." + name)
-                class_ = getattr(module, name)
-                if getattr(class_, 'format') is not None and isinstance(getattr(class_, 'format'), collections.Callable):
-                    result.append(name)
-            except:
-                pass
-        return result
-
-    def convert(self, json_location, output_file=None, formatter="SimpleTableFormatter", styles=[]):
-        """Converts file @ json_location to output_file (if set) using given formatter name"""
-        # read file to JSON
-        Logger.instance().info('Processing file "%s"', json_location)
-
-        if not os.path.exists(json_location):
-            Logger.instance().error('File "%s" does not exists', json_location)
-            raise IOError('Empty json file {:s}'.format(json_location))
-
+    Simple iface method for c api
+    - it never fails, just tries to log operations and exceptions
+    - retries in order to deal with some communication delays
+    """
+    fmt = get_formater_instance(formatter, styles)
+    
+    # 
+    timeout = 2
+    end_time = time.time() + timeout
+    n_tries = 0
+    while time.time() < end_time and n_tries < 2:
         try:
-            with open(json_location, 'r') as fp:
-                json_data = json.load(fp, encoding="utf-8", cls=ProfilerJSONDecoder)
-
-                if not json_data:
-                    Logger.instance().error('Empty json file "%s"', json_location)
-                    raise IOError('Empty json file {:s}'.format(json_location))
-
-                if 'program-name' not in json_data:
-                    Logger.instance().error('No "program-name" field in json file "%s"', json_location)
-                    raise IOError('No "program-name" field in json file {:s}'.format(json_location))
-
-                if json_data['program-name'] != 'Flow123d':
-                    Logger.instance().debug(str(json_data))
-                    Logger.instance().warning('File "%s" does not exists', json_location)
-
-        except Exception as ex:
-            # return string with message on error
-            Logger.instance().exception('Error while parsing json file ' + json_location, ex)
-            Logger.instance().error("File size: %d %s", os.stat(json_location).st_size, str(os.stat(json_location)))
-            raise ex
-
-        try:
-            # split styles fields declaration
-            styles = [value.replace('\\n', '\n').replace('\\t', '\t').replace('\\r', '\r') for value in styles]
-            styles = dict(item.split(":", 1) for item in styles)
-            # grab instance and hand over styles
-            instance = ProfilerFormatter.get_class_instance(formatter)
-            instance.set_styles(styles)
-            # format json object
-            output = instance.format(json_data)
-        except Exception as ex:
-            # return string with message on error
-            Logger.instance().exception('Error while formatting file ' + json_location, ex)
-            raise ex
-
-        try:
-            # if output file is specified write result there
-            if output_file is not None:
-                with open(output_file, "w") as fp:
-                    fp.write(output)
-                Logger.instance().info('File "%s" generated', output_file)
-            # otherwise just print result to stdout
-            else:
-                print(output)
-        except Exception as ex:
-            # return string with message on error
-            Logger.instance().exception('Cannot save file ' + output_file, ex)
-            raise ex
-
-        return True
-
-
-def convert(json_location, output_file, formatter):
-    """Simple iface method for c api"""
-    fmt = ProfilerFormatter()
-    return fmt.convert(json_location, output_file, formatter)
+            with open(json_location, 'r', encoding='utf-8') as f_in:
+                json_data = json.load(f_in, cls=ProfilerJSONDecoder)
+            Logger.instance().info('File "%s" read', json_location)
+            output = fmt.format(json_data)
+            with open(output_file, "w") as fp:
+                fp.write(output)
+            Logger.instance().info('File "%s" generated', output_file)
+            return True
+        except FileExistsError as e:
+            Logger.instance().exception(r"Can not open the file: {json_location}. Waiting.")
+            time.sleep(0.2)
+            continue
+        except Exception as e:
+            Logger.instance().exception("Error in profiler JSON. Retrying.", e)
+            n_tries += 1
+            continue
+        break
+    Logger.instance().error("Unable to format the profiler output.")
+    print(Logger.instance().get_memory_stream())
+    return False

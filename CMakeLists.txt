@@ -917,6 +917,7 @@ if( PETSC_FOUND )
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d 
         flow123d_lib 
+        system_lib
         ${PETSC_ADDITIONAL_LIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}

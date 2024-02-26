@@ -615,7 +615,7 @@ public:
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
-    void output(MPI_Comm comm, string profiler_path = "");
+    string output(MPI_Comm comm, string profiler_path = "");
 
 #endif /* FLOW123D_HAVE_MPI */
     /**
@@ -634,12 +634,12 @@ public:
      * Same as previous, but output to the file with default name: "profiler_info_YYMMDD_HH::MM:SS.log".
      * Empty body if macro FLOW123D_DEBUG_PROFILER is not defined.
      */
-    void output(string profiler_path = "");
+    string output(string profiler_path = "");
 
     /**
      * Method will transform last profiler json file to desired format
      */
-    void transform_profiler_data (const string &output_file_suffix, const string &formatter);
+//    void transform_profiler_data (const string &output_file_suffix, const string &formatter);
     /**
      * Stop all timers and destroys the Profiler object.
      * If you want some output call @p output method just before.
@@ -753,7 +753,7 @@ protected:
      * Open a new file for profiler output with default name based on the
      * actual time and date. Returns a pointer to the stream of the output file.
      */
-    std::shared_ptr<std::ostream> get_output_stream(string path);
+    //std::shared_ptr<std::ostream> get_output_stream(string path);
 
     /// Vector of all timers. Whole tree is stored in this array.
     vector<Timer, internal::SimpleAllocator<Timer>> timers_;
@@ -792,7 +792,7 @@ protected:
     /// Build date and time.
     string flow_build_;
     /// Variable which stores last json log filepath
-    string json_filepath;
+    //string json_filepath;
 
     Timer none_timer_;
 
@@ -887,18 +887,18 @@ public:
     {}
     void output(MPI_Comm, ostream &)
     {}
-    void output(MPI_Comm, string)
-    {}
+    string output(MPI_Comm, string)
+    {return "";}
     void output(std::ostream &)
     {}
-    void output(string)
-    {}
-    void output(MPI_Comm)
-    {}
-    void output()
-    {}
-    void transform_profiler_data(const string &, const string &)
-    {}
+    string output(string)
+    {return "";}
+//    void output(MPI_Comm)
+//    {}
+//    string output()
+//    {}
+//    void transform_profiler_data(const string &, const string &)
+//    {}
     double get_resolution () const
     { return 0.0; }
     const char *actual_tag() const

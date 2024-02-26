@@ -163,6 +163,7 @@ public:
 
 	~MultiFieldTest() {
     	delete mesh_;
+        Profiler::uninitialize();
     }
 
     void read_input(const string &input) {
@@ -515,4 +516,5 @@ TEST(Operators, assignment) {
 	}
 
 	delete mesh;
+    Profiler::uninitialize();
 }

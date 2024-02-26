@@ -162,23 +162,30 @@ jobs:
         # continue-on-error jobs always reports sucess to the workflow
         steps:
           - name: Install gh command
+            # Fixed on the last workflow update. Works but seems fragile.
+            # But so prooved to be the previous solution:
+            # sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+            # sudo apt-add-repository https://cli.github.com/packages
             run: |
-                sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-                sudo apt-add-repository https://cli.github.com/packages
-                sudo apt update
-                sudo apt install gh    
+                type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+                curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+                  && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+                  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+                  && sudo apt update \
+                  && sudo apt install gh -y
           - name: Check status of all jobs
             env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             run: |
-                # get the current workflow run ID
-                run_id=$(jq --raw-output .run_id "$GITHUB_EVENT_PATH")
+                echo "run_id: ${{ github.run_id }}"
+                echo "run_number: ${{ github.run_number }}"
+                echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
-                #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name | startswith("Integration"))  | .conclusion')
+                #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
                 
                 # get the status of all jobs
-                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[].conclusion')
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
 
                 # check if any job has failed
                 if echo "$statuses" | grep -q failure; then

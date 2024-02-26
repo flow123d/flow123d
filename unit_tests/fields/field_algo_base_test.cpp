@@ -101,6 +101,7 @@ public:
 
 	void TearDown() {
 		delete my_mesh;
+        Profiler::uninitialize();
 	}
 
 	Input::Array input_list(const string& str) {
@@ -639,6 +640,7 @@ TEST(Field, init_from_input) {
    }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -747,6 +749,7 @@ TEST(Field, field_result) {
     EXPECT_EQ( result_other, data.tensor.field_result({diagonal_1d, diagonal_2d}) );
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -971,6 +974,7 @@ TEST(Field, field_values) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
