@@ -219,6 +219,18 @@ double DG_penalty_boundary(Side side,
  * @return double 
  */
 template <class PointType>
+double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Range<PointType> pts, FEValues<3> &fv)
+{
+    double side_flux = 0;
+    unsigned int k=0;
+    for (auto p : pts) {
+        side_flux += arma::dot(advection_coef(p), fv.normal_vector(k))*fv.JxW(k);
+        k++;
+    }
+    return side_flux;
+}
+/// Same as previous but pass PatchFEValues_TEMP as last argument
+template <class PointType>
 double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Range<PointType> pts, PatchFEValues_TEMP<3> &fv)
 {
     double side_flux = 0;
@@ -393,7 +405,7 @@ public:
 //=======
                 auto p = *( this->boundary_points(cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(0)),
                                               transport_flux,
                                               eq_fields_->dg_penalty[sbi](p_side));
 //>>>>>>> DF_patch_fevalues
