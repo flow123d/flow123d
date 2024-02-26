@@ -30,18 +30,13 @@ using Vector = arma::vec3;
 using Tensor = arma::mat33;
 
 
-enum PointType {
-    bulk_point,
-    side_point
-};
-
 
 template<unsigned int spacedim = 3>
 class PatchPointValues
 {
 public:
-    /// Default constructor, set invalid dim (uninitialized object)
-    PatchPointValues(uint dim, PointType point_type);
+    /// Default constructor
+    PatchPointValues(uint dim);
 
     /// Initialize object, set number of columns (quantities) in tables
     void initialize(uint int_cols);
@@ -64,7 +59,9 @@ public:
         return old_size;
     }
 
-private:
+    ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
+
+protected:
     TableDbl point_vals_;
     TableInt int_vals_;
     TableDbl el_vals_;
@@ -72,11 +69,12 @@ private:
     std::vector<ElOp<spacedim>> operation_columns_;
 
     uint dim_;
-    PointType point_type_;
 
     uint n_columns_;       ///< Number of columns of \p point_vals table
     uint n_points_;
     uint n_elems_;
+
+    friend class ElOp<spacedim>;
 };
 
 
@@ -88,20 +86,22 @@ class ElOp {
 public:
 	/// Constructor
 	ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
-    : dim_(dim), shape_(shape), input_column_(-1), point_vals_(point_vals)
+    : dim_(dim), shape_(shape), result_col_(-1), input_column_(-1), point_vals_(point_vals)
     {}
 
 	/// Reinit data on all patch points.
-	virtual void reinit_data() =0;
+	virtual void reinit_data() {
+		ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
+	}
 
     inline Scalar scalar_val(uint point_idx) const {
-        return point_vals_[input_column_][point_idx];
+        return point_vals_.point_vals_[input_column_][point_idx];
     }
 
     inline Vector vector_val(uint point_idx) const {
         Vector val;
         for (uint i=0; i<3; ++i)
-            val(i) = point_vals_[input_column_+i][point_idx];
+            val(i) = point_vals_.point_vals_[input_column_+i][point_idx];
         return val;
     }
 
@@ -109,7 +109,7 @@ public:
         Tensor val;
         for (uint i=0; i<3; ++i)
             for (uint j=0; j<3; ++j)
-                val(i,j) = point_vals_[input_column_+3*i+j][point_idx];
+                val(i,j) = point_vals_.point_vals_[input_column_+3*i+j][point_idx];
         return val;
     }
 
@@ -122,11 +122,22 @@ protected:
     PatchPointValues<spacedim> &point_vals_;  ///< Reference to data table
 };
 
+
+namespace FeBulk {
+
 template<unsigned int spacedim = 3>
-class OpJacBulk : public ElOp<spacedim> {
+class PatchPointValues : public ::PatchPointValues<spacedim> {
+public:
+    /// Default constructor
+    PatchPointValues(uint dim);
+};
+
+
+template<unsigned int spacedim = 3>
+class OpJac : public ElOp<spacedim> {
 public:
 	/// Constructor
-	OpJacBulk(uint dim, PatchPointValues<spacedim> &point_vals)
+	OpJac(uint dim, PatchPointValues<spacedim> &point_vals)
     : ElOp<spacedim>(dim, {spacedim, dim}, point_vals)
     {}
 
@@ -135,17 +146,35 @@ public:
 	void reinit_data() override;
 };
 
+
 template<unsigned int spacedim = 3>
-class OpJacDetBulk : public ElOp<spacedim> {
+class OpJacDet : public ElOp<spacedim> {
 public:
 	/// Constructor
-	OpJacDetBulk(uint dim, PatchPointValues<spacedim> &point_vals)
-    : ElOp<spacedim>(dim, {1}, point_vals)
+	OpJacDet(uint dim, PatchPointValues<spacedim> &point_vals, ElOp<spacedim> &jac_op)
+    : ElOp<spacedim>(dim, {1}, point_vals), jac_operator_(jac_op)
     {}
 
-	/// Implement ElOp::reinit_data
-	void reinit_data() override;
+    /// Implement ElOp::reinit_data
+    void reinit_data() override;
+
+private:
+	ElOp<spacedim> &jac_operator_;
 };
+
+} // closing namespace FeBulk
+
+
+namespace FeSide {
+
+template<unsigned int spacedim = 3>
+class PatchPointValues : public ::PatchPointValues<spacedim> {
+public:
+    /// Default constructor
+    PatchPointValues(uint dim);
+};
+
+} // closing namespace FeSide
 
 
 #endif /* PATCH_POINT_VALUES_HH_ */

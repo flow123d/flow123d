@@ -21,7 +21,7 @@
 #ifndef PATCH_DATA_TABLE_HH_
 #define PATCH_DATA_TABLE_HH_
 
-#include "system/fmt/posix.h"                          // for FMT_UNUSED
+#include "system/asserts.hh"
 #include <armadillo>
 #include <Eigen/Core>
 #include <Eigen/Dense>

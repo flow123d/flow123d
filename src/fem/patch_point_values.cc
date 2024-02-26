@@ -22,8 +22,8 @@
 
 
 template<unsigned int spacedim>
-PatchPointValues<spacedim>::PatchPointValues(uint dim, PointType point_type)
-: dim_(dim), point_type_(point_type), n_columns_(0) {}
+PatchPointValues<spacedim>::PatchPointValues(uint dim)
+: dim_(dim), n_columns_(0) {}
 
 
 template<unsigned int spacedim>
@@ -35,15 +35,48 @@ void PatchPointValues<spacedim>::initialize(uint int_cols) {
 	el_vals_.resize( (dim_+1) * spacedim );
 }
 
+template<unsigned int spacedim>
+ElOp<spacedim> &PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> op_accessor) {
+	operation_columns_.push_back(op_accessor);
+	return operation_columns_.back();
+}
+
+namespace FeBulk {
 
 template<unsigned int spacedim>
-void OpJacBulk<spacedim>::reinit_data() {
+PatchPointValues<spacedim>::PatchPointValues(uint dim)
+: ::PatchPointValues<spacedim>(dim) {
+    // add instances of ElOp descendants to operation_columns_ vector
+    ElOp<spacedim> jac_bulk = this->add_accessor( OpJac(this->dim_, *this) );
+    this->add_accessor( OpJacDet(this->dim_, *this, jac_bulk) );
+}
+
+template<unsigned int spacedim>
+void OpJac<spacedim>::reinit_data() {
     // compute data
 }
 
 template<unsigned int spacedim>
-void OpJacDetBulk<spacedim>::reinit_data() {
+void OpJacDet<spacedim>::reinit_data() {
     // compute data
 }
+
+} // closing namespace FeBulk
+
+
+namespace FeSide {
+
+template<unsigned int spacedim>
+PatchPointValues<spacedim>::PatchPointValues(uint dim)
+: ::PatchPointValues<spacedim>(dim) {
+    // add instances of ElOp descendants to operation_columns_ vector
+}
+
+} // closing namespace FeSide
 
 template class PatchPointValues<3>;
+template class ElOp<3>;
+template class FeBulk::PatchPointValues<3>;
+template class FeBulk::OpJac<3>;
+template class FeBulk::OpJacDet<3>;
+template class FeSide::PatchPointValues<3>;

@@ -507,16 +507,16 @@ public:
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
       dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_{ { {PatchPointValues(1, PointType::bulk_point), PatchPointValues(2, PointType::bulk_point), PatchPointValues(3, PointType::bulk_point)},
-                           {PatchPointValues(0, PointType::side_point), PatchPointValues(1, PointType::side_point), PatchPointValues(2, PointType::side_point)} } } {
+	  patch_point_vals_{ { {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)},
+                           {FeSide::PatchPointValues(0), FeSide::PatchPointValues(1), FeSide::PatchPointValues(2)} } } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  patch_point_vals_{ { {PatchPointValues(1, PointType::bulk_point), PatchPointValues(2, PointType::bulk_point), PatchPointValues(3, PointType::bulk_point)},
-                           {PatchPointValues(0, PointType::side_point), PatchPointValues(1, PointType::side_point), PatchPointValues(2, PointType::side_point)} } },
+	  patch_point_vals_{ { {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)},
+                           {FeSide::PatchPointValues(0), FeSide::PatchPointValues(1), FeSide::PatchPointValues(2)} } },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
