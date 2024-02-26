@@ -39,7 +39,7 @@ problem: !Coupling_Sequential
         output:
           fields:
             - displacement
-            - stress
+            - effective_stress
             - displacement_divergence
         solver: !Petsc
           a_tol: 1e-20
