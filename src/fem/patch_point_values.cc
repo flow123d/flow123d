@@ -69,13 +69,8 @@ void OpJac<spacedim>::reinit_data() {
 }
 
 template<unsigned int spacedim>
-void OpJac<spacedim>::update_result_col(uint res_col) {
-    this->result_col_ = res_col;
-    uint begin = coords_operator_.result_col();
-    if (begin == INVALID_COLUMN) {
-        begin = this->point_vals_.add_columns( coords_operator_.n_comp() );
-        coords_operator_.update_result_col(begin);
-    }
+void OpJac<spacedim>::check_op_dependency() {
+    coords_operator_.register_columns();
 }
 
 
@@ -86,13 +81,8 @@ void OpJacDet<spacedim>::reinit_data() {
 }
 
 template<unsigned int spacedim>
-void OpJacDet<spacedim>::update_result_col(uint res_col) {
-    this->result_col_ = res_col;
-    uint begin = jac_operator_.result_col();
-    if (begin == INVALID_COLUMN) {
-        begin = this->point_vals_.add_columns( jac_operator_.n_comp() );
-        jac_operator_.update_result_col(begin);
-    }
+void OpJacDet<spacedim>::check_op_dependency() {
+    jac_operator_.register_columns();
 }
 
 } // closing namespace FeBulk

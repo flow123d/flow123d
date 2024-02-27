@@ -613,12 +613,7 @@ public:
     inline ElQ<Vector> coords(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].result_col();
-        if (begin == INVALID_COLUMN) {
-            begin = patch_point_vals_[0][dim-1].add_columns(3); // vector needs 3 columns
-            patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].update_result_col(begin);
-        }
-
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].register_columns();
         return ElQ<Vector>(this, begin);
     }
 
@@ -638,12 +633,7 @@ public:
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].result_col();
-        if (begin == INVALID_COLUMN) {
-            begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
-            patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].update_result_col(begin);
-        }
-
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].register_columns();
         return ElQ<Scalar>(this, begin);
     }
 

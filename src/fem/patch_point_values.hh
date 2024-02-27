@@ -89,29 +89,34 @@ protected:
 template<unsigned int spacedim = 3>
 class ElOp {
 public:
-	/// Constructor
-	ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
+    /// Constructor
+    ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
     : dim_(dim), shape_(shape), result_col_(INVALID_COLUMN), input_column_(INVALID_COLUMN), point_vals_(point_vals)
     {}
 
-	/// Reinit data on all patch points.
-	virtual void reinit_data() {
-	    ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
-	}
+    /// Reinit data on all patch points.
+    virtual void reinit_data() {
+        ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
+    }
 
-	/// Number of components computed from shape_ vector
-	inline uint n_comp() const {
-	    if (shape_.size() == 1) return shape_[0];
-	    else return shape_[0] * shape_[1];
-	}
+    /// Number of components computed from shape_ vector
+    inline uint n_comp() const {
+        if (shape_.size() == 1) return shape_[0];
+        else return shape_[0] * shape_[1];
+    }
 
-	inline uint result_col() const {
-	    return result_col_;
-	}
-
-	virtual void update_result_col(uint res_col) {
-	    result_col_ = res_col;
-	}
+    /**
+     * Register operation columns if result_col_ is not set.
+     *
+     * Return index of first column it point values table.
+     */
+    inline uint register_columns() {
+        if (result_col_ == INVALID_COLUMN) {
+            this->check_op_dependency();
+            result_col_ = point_vals_.add_columns(this->n_comp());
+        }
+        return result_col_;
+    }
 
     inline Scalar scalar_val(uint point_idx) const {
         return point_vals_.point_vals_[input_column_][point_idx];
@@ -134,6 +139,9 @@ public:
 
 
 protected:
+    /// Check and register dependency of operations, can be implemented in descendants.
+    virtual void check_op_dependency() {}
+
     uint dim_;                                ///< Dimension
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_col_;                         ///< Result column.
@@ -183,7 +191,7 @@ public:
 	/// Implement ElOp::reinit_data
 	void reinit_data() override;
 
-	void update_result_col(uint res_col) override;
+	void check_op_dependency() override;
 private:
 	ElOp<spacedim> &coords_operator_;
 };
@@ -200,7 +208,7 @@ public:
     /// Implement ElOp::reinit_data
     void reinit_data() override;
 
-	void update_result_col(uint res_col) override;
+	void check_op_dependency() override;
 
 private:
 	ElOp<spacedim> &jac_operator_;
