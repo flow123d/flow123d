@@ -609,26 +609,43 @@ public:
         return ElQ<Vector>(this, begin);
 	}
 
+	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].add_columns(3); // vector needs 3 columns
-        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "coords"); // storing to temporary map
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].result_col();
+        if (begin == INVALID_COLUMN) {
+            begin = patch_point_vals_[0][dim-1].add_columns(3); // vector needs 3 columns
+            patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].update_result_col(begin);
+        }
 
         return ElQ<Vector>(this, begin);
     }
 
+	/// Create side accessor of coords entity
     inline ElQ<Vector> coords_side(Quadrature *quad)
     {
         uint dim = quad->dim();
         uint begin = patch_point_vals_[1][dim].add_columns(3); // Vector needs 3 columns
-        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "coords");
 
         return ElQ<Vector>(this, begin);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
 //    {}
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant(Quadrature *quad)
+    {
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].result_col();
+        if (begin == INVALID_COLUMN) {
+            begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
+            patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].update_result_col(begin);
+        }
+
+        return ElQ<Scalar>(this, begin);
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at

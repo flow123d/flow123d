@@ -24,10 +24,14 @@
 #include "fem/eigen_tools.hh"
 
 
+template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int spacedim> class ElOp;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
+
+
+static const uint INVALID_COLUMN = -1;
 
 
 
@@ -74,6 +78,7 @@ protected:
     uint n_points_;
     uint n_elems_;
 
+    friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
 };
 
@@ -86,12 +91,26 @@ class ElOp {
 public:
 	/// Constructor
 	ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
-    : dim_(dim), shape_(shape), result_col_(-1), input_column_(-1), point_vals_(point_vals)
+    : dim_(dim), shape_(shape), result_col_(INVALID_COLUMN), input_column_(INVALID_COLUMN), point_vals_(point_vals)
     {}
 
 	/// Reinit data on all patch points.
 	virtual void reinit_data() {
-		ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
+	    ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
+	}
+
+	/// Number of components computed from shape_ vector
+	inline uint n_comp() const {
+	    if (shape_.size() == 1) return shape_[0];
+	    else return shape_[0] * shape_[1];
+	}
+
+	inline uint result_col() const {
+	    return result_col_;
+	}
+
+	virtual void update_result_col(uint res_col) {
+	    result_col_ = res_col;
 	}
 
     inline Scalar scalar_val(uint point_idx) const {
@@ -125,6 +144,13 @@ protected:
 
 namespace FeBulk {
 
+enum BulkOps
+{
+	opCoords,
+	opJac,
+	opJacDet
+};
+
 template<unsigned int spacedim = 3>
 class PatchPointValues : public ::PatchPointValues<spacedim> {
 public:
@@ -134,16 +160,32 @@ public:
 
 
 template<unsigned int spacedim = 3>
-class OpJac : public ElOp<spacedim> {
+class OpCoords : public ElOp<spacedim> {
 public:
 	/// Constructor
-	OpJac(uint dim, PatchPointValues<spacedim> &point_vals)
-    : ElOp<spacedim>(dim, {spacedim, dim}, point_vals)
+	OpCoords(uint dim, PatchPointValues<spacedim> &point_vals)
+    : ElOp<spacedim>(dim, {spacedim}, point_vals)
     {}
-
 
 	/// Implement ElOp::reinit_data
 	void reinit_data() override;
+};
+
+
+template<unsigned int spacedim = 3>
+class OpJac : public ElOp<spacedim> {
+public:
+	/// Constructor
+	OpJac(uint dim, PatchPointValues<spacedim> &point_vals, ElOp<spacedim> &coords_op)
+    : ElOp<spacedim>(dim, {spacedim, dim}, point_vals), coords_operator_(coords_op)
+    {}
+
+	/// Implement ElOp::reinit_data
+	void reinit_data() override;
+
+	void update_result_col(uint res_col) override;
+private:
+	ElOp<spacedim> &coords_operator_;
 };
 
 
@@ -157,6 +199,8 @@ public:
 
     /// Implement ElOp::reinit_data
     void reinit_data() override;
+
+	void update_result_col(uint res_col) override;
 
 private:
 	ElOp<spacedim> &jac_operator_;

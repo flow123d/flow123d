@@ -21,6 +21,7 @@
 #include "fem/patch_point_values.hh"
 
 
+
 template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : dim_(dim), n_columns_(0) {}
@@ -43,22 +44,55 @@ ElOp<spacedim> &PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> op_acces
 
 namespace FeBulk {
 
+/** Implementation of PatchPointValues methods **/
 template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operation_columns_ vector
-    ElOp<spacedim> jac_bulk = this->add_accessor( OpJac(this->dim_, *this) );
+    ElOp<spacedim> coords_bulk = this->add_accessor( OpCoords(this->dim_, *this) );
+    ElOp<spacedim> jac_bulk = this->add_accessor( OpJac(this->dim_, *this, coords_bulk) );
     this->add_accessor( OpJacDet(this->dim_, *this, jac_bulk) );
 }
 
+
+/** Implementation of OpCoords methods **/
+template<unsigned int spacedim>
+void OpCoords<spacedim>::reinit_data() {
+    // compute data
+}
+
+
+/** Implementation of OpJac methods **/
 template<unsigned int spacedim>
 void OpJac<spacedim>::reinit_data() {
     // compute data
 }
 
 template<unsigned int spacedim>
+void OpJac<spacedim>::update_result_col(uint res_col) {
+    this->result_col_ = res_col;
+    uint begin = coords_operator_.result_col();
+    if (begin == INVALID_COLUMN) {
+        begin = this->point_vals_.add_columns( coords_operator_.n_comp() );
+        coords_operator_.update_result_col(begin);
+    }
+}
+
+
+/** Implementation of OpJacDet methods **/
+template<unsigned int spacedim>
 void OpJacDet<spacedim>::reinit_data() {
     // compute data
+}
+
+template<unsigned int spacedim>
+void OpJacDet<spacedim>::update_result_col(uint res_col) {
+    this->result_col_ = res_col;
+    uint begin = jac_operator_.result_col();
+    if (begin == INVALID_COLUMN) {
+        begin = this->point_vals_.add_columns( jac_operator_.n_comp() );
+        jac_operator_.update_result_col(begin);
+    }
 }
 
 } // closing namespace FeBulk
