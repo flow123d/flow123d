@@ -22,6 +22,7 @@
 #define PATCH_POINT_VALUES_HH_
 
 #include "fem/eigen_tools.hh"
+#include "fem/dh_cell_accessor.hh"
 
 
 template<unsigned int spacedim> class PatchFEValues;
@@ -61,6 +62,12 @@ public:
         uint old_size = n_columns_;
         n_columns_ += n_added;
         return old_size;
+    }
+
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED uint element_patch_idx) {
+        // register cell.elm_idx() and element_patch_idx to structure ??, maybe compute coords
+        return n_elems_++;
     }
 
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);

@@ -721,6 +721,13 @@ public:
         return dim_point_table_;
     }
 
+    /** Following methods are used during update of patch. **/
+
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+        return patch_point_vals_[0][cell.dim()-1].register_element(cell, element_patch_idx);
+    }
+
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
