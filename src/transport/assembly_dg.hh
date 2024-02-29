@@ -393,22 +393,11 @@ public:
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-// <<<<<<< HEAD
-//                k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
-//                for (auto p : this->boundary_points(cell_side) ) {
-//                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
-//                    k++;
-//                }
-//                auto p = *( this->boundary_points(cell_side).begin() );
-//                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, fe_values_edge_.normal_vector(p), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
-//                eq_data_->gamma[sbi][side.cond_idx()] = gamma_l;
-//=======
-//                auto p = *( this->boundary_points(cell_side).begin() );
+                auto p = *( this->boundary_points(cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_side_.normal_vector(0)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), fe_values_edge_.normal_vector(p)),
                                               transport_flux,
                                               eq_fields_->dg_penalty[sbi](p_side));
-//>>>>>>> DF_patch_fevalues
                 transport_flux += gamma_l;
             }
 
