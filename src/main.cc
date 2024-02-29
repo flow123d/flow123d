@@ -16,7 +16,7 @@
  */
 
 
-#include "system/application.hh"
+#include "coupling/application.hh"
 #include <mpi.h>
 //#include "system/system.hh"
 //#include "system/sys_profiler.hh"

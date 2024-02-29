@@ -41,12 +41,24 @@ format: !vtk
 )YAML";
 
 
+class TestVTK : public testing::Test {
+protected:
+	TestVTK()
+    {
+        Profiler::instance();
+    }
+
+    ~TestVTK()
+    {
+        Profiler::uninitialize();
+    }
+};
+
 class TestOutputVTK : public OutputVTK {
 public:
     TestOutputVTK()
     : OutputVTK()
     {
-        Profiler::instance();
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/../tests/00_mesh/square_1x1_frac_fork.msh", FilePath::input_file);
@@ -112,7 +124,7 @@ public:
 };
 
 
-TEST(TestOutputVTK, hilbert) {
+TEST_F(TestVTK, hilbert) {
     std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
     output_vtk->init_mesh(test_output_time);

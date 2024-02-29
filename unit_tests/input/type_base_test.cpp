@@ -314,8 +314,10 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_TRUE( (it=attributes_->find("numeric")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"5\"" );
 
+#ifdef FLOW123D_DEBUG_ASSERTS
     EXPECT_THROW_WHAT( { this->add_attribute_("invalid_attr", "non quotation attribute"); }, feal::Exc_assert,
             "Invalid JSON format of attribute" );
+#endif
 }
 
 /*TEST(InputTypeAttributes, complete_test) {

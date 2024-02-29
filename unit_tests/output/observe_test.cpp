@@ -237,6 +237,7 @@ TEST(ObservePoint, find_observe_point) {
     //DebugOut() << "obs2";
     auto obs2 = TestObservePoint("1 1 1.001", 4, "3D front");
     obs2.check(*mesh,"0 0 0", "1 1 1", 8);
+    Profiler::uninitialize();
 }
 
 
@@ -307,5 +308,6 @@ TEST(Observe, all) {
 
 //    if (mesh->get_el_ds()->myp()==0)
 //        EXPECT_EQ(str_obs_file_ref.str(), str_obs_file.str());
+    Profiler::uninitialize();
 }
 

@@ -588,7 +588,21 @@ void Application::after_run() {
 }
 
 
+void _transform_profiler_data (const string &json_filepath, const string &output_file_suffix, const string &formatter) {
+	namespace py = pybind11;
 
+    if (json_filepath == "") return;
+
+    // grab module and function by importing module profiler_formatter_module.py
+    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    //
+    // def convert (json_location, output_file, formatter):
+    //
+    auto convert_method = python_module.attr("convert");
+    // execute method with arguments
+    convert_method(json_filepath, (json_filepath + output_file_suffix), formatter);
+
+}
 
 
 
@@ -599,17 +613,17 @@ Application::~Application() {
 
     if (use_profiler) {
     	// TODO: make a static output method that does nothing if the instance does not exist yet.
-
+    	string profiler_json;
         if (petsc_initialized) {
             // log profiler data to this stream
-            Profiler::instance()->output (PETSC_COMM_WORLD, profiler_path);
+            profiler_json = Profiler::instance()->output(PETSC_COMM_WORLD, profiler_path);
         } else {
-            Profiler::instance()->output(profiler_path);
+        	profiler_json = Profiler::instance()->output(profiler_path);
         }
 
         // call python script which transforms json file at given location
         // Profiler::instance()->transform_profiler_data (".csv", "CSVFormatter");
-        Profiler::instance()->transform_profiler_data (".txt", "SimpleTableFormatter2");
+        _transform_profiler_data (profiler_json, ".txt", "SimpleTableFormatter2");
 
         // finally uninitialize
         Profiler::uninitialize();

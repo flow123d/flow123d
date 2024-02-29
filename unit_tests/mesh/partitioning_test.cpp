@@ -68,4 +68,5 @@ TEST(Partitioning, all) {
     }*/
 
     delete mesh;
+    Profiler::uninitialize();
 }

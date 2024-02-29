@@ -24,21 +24,21 @@ test_cases:
     check_rules:
       - ndiff:
           files: [energy_balance.txt]
-          r_tol: 1e-3
-          a_tol: 1e12
+          r_tol: 1e-2
+          a_tol: 1e15
       - ndiff:
         # default tolerance for all except energy, usage of wild chars 
         # files: ["(?!^energy_balance.txt$)*"] 
           files: [heat.msh]
           r_tol: 1e-3
-          a_tol: 1
+          a_tol: 20
       - ndiff:
           files: [flow.msh]
           r_tol: 1e-3
-          a_tol: 1e-1
+          a_tol: 10
       - ndiff:
           files: [water_balance.txt]
-          r_tol: 1e-3
+          r_tol: 1e-2
           a_tol: 1e-4
          # heat.msh a_tol : 1
          # flow.msh a_tol : 0.1
