@@ -318,18 +318,18 @@ private:
 
     void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
         const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
-        std::array<PatchElementsList, 3> patch_elements;
+        std::array<PatchElementsList, 4> patch_elements;
 
         for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
             // Skip invalid element indices.
             if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
 
             ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
-            patch_elements[elm.dim()-1].push_back(std::make_pair(elm, i));
+            patch_elements[elm.dim()].push_back(std::make_pair(elm, i));
         }
-        multidim_assembly_[1_d]->patch_reinit(patch_elements[0]);
-        multidim_assembly_[2_d]->patch_reinit(patch_elements[1]);
-        multidim_assembly_[3_d]->patch_reinit(patch_elements[2]);
+        multidim_assembly_[1_d]->patch_reinit(patch_elements);
+        multidim_assembly_[2_d]->patch_reinit(patch_elements);
+        multidim_assembly_[3_d]->patch_reinit(patch_elements);
     }
 
     /**

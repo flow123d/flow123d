@@ -33,6 +33,7 @@
 #include "fem/update_flags.hh"                // for UpdateFlags
 #include "tools/mixed.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "fields/eval_subset.hh"
 
 class Quadrature;
 template<unsigned int dim> class FiniteElement;
@@ -45,7 +46,7 @@ template<class FV, unsigned int dim> class MapTensor;
 template<class FV, unsigned int dim> class MapSystem;
 
 template<unsigned int spcedim> class FEValues;
-template<unsigned int spcedim> class PatchFEValues;
+template<unsigned int spcedim> class PatchFEValues_TEMP;
 
 
 
@@ -212,7 +213,7 @@ protected:
     /// Initialize ElementValues separately in descendants.
     virtual void initialize_in(Quadrature &, unsigned int) =0;
 
-    /// Initialize @p fe_values_vec only in PatchFEValues.
+    /// Initialize @p fe_values_vec only in PatchFEValues_TEMP.
     virtual void init_fe_val_vec() =0;
 
     /// Precompute finite element data on reference element.
@@ -495,10 +496,10 @@ protected:
 
 
 template<unsigned int spacedim = 3>
-class PatchFEValues : public FEValuesBase<PatchFEValues<spacedim>, spacedim> {
+class PatchFEValues_TEMP : public FEValuesBase<PatchFEValues_TEMP<spacedim>, spacedim> {
 public:
     /// Constructor, set maximal number of elements on patch
-	PatchFEValues(unsigned int max_size=0);
+	PatchFEValues_TEMP(unsigned int max_size=0);
 
     /// Reinit data.
     void reinit(PatchElementsList patch_elements);
@@ -518,7 +519,7 @@ public:
 
 	/// Set element and side that are selected for processing. Element is given by index on patch.
 	inline void get_side(unsigned int patch_cell_idx, unsigned int side_idx) {
-	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second * (this->dim_+1) + side_idx;
+	    patch_data_idx_ = element_patch_map_.find(patch_cell_idx)->second + side_idx;
 	}
 
     /**
@@ -530,9 +531,40 @@ public:
      */
     inline double shape_value(const unsigned int function_no, const unsigned int point_no) const
     {
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
         return element_data_[patch_data_idx_].shape_values_[point_no][function_no];
+    }
+
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline double shape_value(const unsigned int function_no, const BulkPoint &p) const
+    {
+        ASSERT_LT(function_no, this->n_dofs_);
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].shape_values_[p.eval_point_idx()][function_no];
+    }
+
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline double shape_value(const unsigned int function_no, const SidePoint &p) const
+    {
+        ASSERT_LT(function_no, this->n_dofs_);
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].shape_values_[p.local_point_idx()][function_no];
     }
 
 
@@ -545,9 +577,38 @@ public:
      */
     inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no) const
 	{
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(function_no, this->n_dofs_);
         ASSERT_LT(point_no, this->n_points_);
         return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no];
+    }
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const BulkPoint &p) const
+	{
+        ASSERT_LT(function_no, this->n_dofs_);
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].shape_gradients_[p.eval_point_idx()][function_no];;
+    }
+
+    /**
+     * @brief Return the gradient of the @p function_no-th shape function at
+     * the @p p quadrature point.
+     *
+     * @param function_no Number of the shape function.
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const SidePoint &p) const
+	{
+        ASSERT_LT(function_no, this->n_dofs_);
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].shape_gradients_[p.local_point_idx()][function_no];;
     }
 
     /**
@@ -621,10 +682,34 @@ public:
      */
     inline double JxW(const unsigned int point_no)
     {
+        // TODO: obsolete method, will be replaced with following two methods.
         ASSERT_LT(point_no, this->n_points_);
-        // TODO: This is temporary solution only for JxW on element.
         return (object_type_==ElementFE) ? element_data_[patch_data_idx_].elm_values_->JxW(point_no)
                                          : element_data_[patch_data_idx_].elm_values_->side_JxW(point_no);
+    }
+
+    /**
+     * @brief Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param p BulkPoint corresponds to the quadrature point.
+     */
+    inline double JxW(const BulkPoint &p)
+    {
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second;
+        return element_data_[patch_data_idx].elm_values_->JxW(p.eval_point_idx());
+    }
+
+    /**
+     * @brief Return the product of Jacobian determinant and the quadrature
+     * weight at given quadrature point.
+     *
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+    inline double JxW(const SidePoint &p)
+    {
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].elm_values_->side_JxW(p.local_point_idx());
     }
 
     /**
@@ -634,8 +719,20 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
+        // TODO: obsolete method, will be replaced with following method.
         ASSERT_LT(point_no, this->n_points_);
 	    return element_data_[patch_data_idx_].elm_values_->normal_vector(point_no);
+	}
+
+    /**
+     * @brief Returns the normal vector to a side at given quadrature point.
+     *
+     * @param p SidePoint corresponds to the quadrature point.
+     */
+	inline arma::vec::fixed<spacedim> normal_vector(const SidePoint &p)
+	{
+        unsigned int patch_data_idx = element_patch_map_.find(p.elem_patch_idx())->second + p.side_idx();
+        return element_data_[patch_data_idx].elm_values_->normal_vector(p.local_point_idx());
 	}
 
 
@@ -691,16 +788,16 @@ protected:
     /// Maximal number of elements on patch.
     unsigned int max_n_elem_;
 
-    /// Distinguishes using of PatchFEValues for storing data of elements or sides.
+    /// Distinguishes using of PatchFEValues_TEMP for storing data of elements or sides.
     MeshObjectType object_type_;
 
 
-    friend class MapScalar<PatchFEValues<spacedim>, spacedim>;
-    friend class MapPiola<PatchFEValues<spacedim>, spacedim>;
-    friend class MapContravariant<PatchFEValues<spacedim>, spacedim>;
-    friend class MapVector<PatchFEValues<spacedim>, spacedim>;
-    friend class MapTensor<PatchFEValues<spacedim>, spacedim>;
-    friend class MapSystem<PatchFEValues<spacedim>, spacedim>;
+    friend class MapScalar<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapPiola<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapContravariant<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapVector<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapTensor<PatchFEValues_TEMP<spacedim>, spacedim>;
+    friend class MapSystem<PatchFEValues_TEMP<spacedim>, spacedim>;
 };
 
 
