@@ -24,7 +24,7 @@
 
 template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
-: dim_(dim), n_columns_(0) {}
+: dim_(dim), n_columns_(0), elements_map_(300, 0), points_map_(300, 0) {}
 
 
 template<unsigned int spacedim>

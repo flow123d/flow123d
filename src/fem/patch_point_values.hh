@@ -65,8 +65,9 @@ public:
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED uint element_patch_idx) {
+    uint register_element(FMT_UNUSED DHCellAccessor cell, uint element_patch_idx) {
         // register cell.elm_idx() and element_patch_idx to structure ??, maybe compute coords
+        elements_map_[element_patch_idx] = n_elems_;
         return n_elems_++;
     }
 
@@ -79,11 +80,13 @@ protected:
 
     std::vector<ElOp<spacedim>> operation_columns_;
 
-    uint dim_;
+    uint dim_;                        ///< Dimension
+    uint n_columns_;                  ///< Number of columns of \p point_vals table
+    uint n_points_;                   ///< Number of points in patch
+    uint n_elems_;                    ///< Number of elements in patch
 
-    uint n_columns_;       ///< Number of columns of \p point_vals table
-    uint n_points_;
-    uint n_elems_;
+    std::vector<uint> elements_map_;  ///< Map of element patch indices to el_vals_ table
+    std::vector<uint> points_map_;    ///< Map of point patch indices  to point_vals_ and int_vals_ tables
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
