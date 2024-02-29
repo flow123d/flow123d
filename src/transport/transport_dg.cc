@@ -147,59 +147,6 @@ TransportDG<Model>::EqFields::EqFields() : Model::ModelEqFields()
 
 
 
-// return the ratio of longest and shortest edge
-template<class Model>
-double TransportDG<Model>::EqData::elem_anisotropy(ElementAccessor<3> e) const
-{
-    double h_max = 0, h_min = numeric_limits<double>::infinity();
-    for (unsigned int i=0; i<e->n_nodes(); i++)
-        for (unsigned int j=i+1; j<e->n_nodes(); j++)
-        {
-            double dist = arma::norm(*e.node(i) - *e.node(j));
-            h_max = max(h_max, dist);
-            h_min = min(h_min, dist);
-        }
-    return h_max/h_min;
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::EqData::set_DG_parameters_boundary(Side side,
-            const int K_size,
-            const vector<arma::mat33> &K,
-            const double flux,
-            const arma::vec3 &normal_vector,
-            const double alpha,
-            double &gamma)
-{
-    double delta = 0, h = 0;
-
-    // calculate the side diameter
-    if (side.dim() == 0)
-    {
-        h = 1;
-    }
-    else
-    {
-        for (unsigned int i=0; i<side.n_nodes(); i++)
-            for (unsigned int j=i+1; j<side.n_nodes(); j++) {
-                double dist = arma::norm(*side.node(i) - *side.node(j));
-                h = max(h, dist);
-            }
-
-    }
-
-    // delta is set to the average value of Kn.n on the side
-    for (int k=0; k<K_size; k++)
-        delta += dot(K[k]*normal_vector,normal_vector);
-    delta /= K_size;
-
-    gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side.element());
-}
-
-
-
 template<typename Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
@@ -248,11 +195,6 @@ void TransportDG<Model>::initialize()
     eq_data_->set_time_governor(Model::time_);
     eq_data_->balance_ = this->balance();
     eq_fields_->initialize();
-
-    // DG stabilization parameters on boundary edges
-    eq_data_->gamma.resize(eq_data_->n_substances());
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-        eq_data_->gamma[sbi].resize(Model::mesh_->boundary_.size());
 
     // Resize coefficient arrays
     eq_data_->max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
@@ -335,13 +277,6 @@ void TransportDG<Model>::initialize()
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
 
-    int qsize = mass_assembly_->eval_points()->max_size();
-    eq_data_->dif_coef.resize(eq_data_->n_substances());
-    for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
-    {
-        eq_data_->dif_coef[sbi].resize(qsize);
-    }
-
     eq_fields_->init_condition.setup_components();
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
@@ -355,7 +290,7 @@ TransportDG<Model>::~TransportDG()
 {
     delete Model::time_;
 
-    if (eq_data_->gamma.size() > 0) {
+    if (rhs.size() > 0) {
         // initialize called
 
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)

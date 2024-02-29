@@ -46,7 +46,9 @@ public:
         this->init(eval_points);
     }
 
-    ~FieldValueCacheTest() {}
+    ~FieldValueCacheTest() {
+        Profiler::uninitialize();
+    }
 
     void add_bulk_points(DHCellAccessor cell) {
         unsigned int reg_idx = cell.elm().region_idx().idx();

@@ -301,6 +301,7 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ("label_1", mesh->element_accessor(4).region().label() );
 
 	delete mesh;
+	Profiler::uninitialize();
 }
 
 
@@ -357,6 +358,7 @@ TEST(Region, read_regions_error_messages) {
 	}
 
 //	delete mesh;
+	Profiler::uninitialize();
 }
 
 
@@ -417,8 +419,21 @@ void init_map(std::map<unsigned int, Item> &map,unsigned int size) {
 #define STEPS (10*1000*1000)
 #endif
 
+class RegionDBTest : public testing::Test {
+protected:
+	RegionDBTest()
+    {
+        Profiler::instance();
+    }
+
+    ~RegionDBTest()
+    {
+        Profiler::uninitialize();
+    }
+};
+
 // RegionDB add_item(id, dim) overhead.
-TEST(RegionDB, speed_get_region_id) {
+TEST_F(RegionDBTest, speed_get_region_id) {
     START_TIMER("speed_get_region_id");
         RegionDB region_db;
         init_db(region_db,50,50);
@@ -434,7 +449,7 @@ TEST(RegionDB, speed_get_region_id) {
 }
 
 // boost multi index overhead
-TEST(RegionDB, speed_find_id) {
+TEST_F(RegionDBTest, speed_find_id) {
     START_TIMER("speed_find_id");
         RegionDB region_db;
         init_db(region_db,50,50);
@@ -450,7 +465,7 @@ TEST(RegionDB, speed_find_id) {
 }
 
 // Simplest implementation for ID lookup.
-TEST(RegionDB, speed_map) {
+TEST_F(RegionDBTest, speed_map) {
     START_TIMER("speed_map");
         std::map<unsigned int, Item> map;
         init_map(map, 100);

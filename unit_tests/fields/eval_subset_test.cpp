@@ -176,6 +176,7 @@ TEST(IntegralTest, integrals_3d) {
             ++i_side;
         }
     }
+    Profiler::uninitialize();
 }
 
 

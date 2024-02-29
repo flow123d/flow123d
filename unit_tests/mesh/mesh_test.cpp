@@ -86,6 +86,7 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(6, mesh->n_vb_neighbours() );
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -110,6 +111,7 @@ optimize_mesh: false
 )YAML";
 
 TEST(Mesh, init_from_input) {
+    Profiler::instance();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_full_constructor(mesh_input, Input::FileFormat::format_YAML);
@@ -131,10 +133,12 @@ TEST(Mesh, init_from_input) {
     EXPECT_EQ( 40, set[1].id() );
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(Mesh, decompose_problem) {
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	std::string mesh_in_string = "{mesh_file=\"mesh/decompose_problem.msh\"}";
@@ -151,10 +155,12 @@ TEST(Mesh, decompose_problem) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(Mesh, check_compatible_mesh) {
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
@@ -189,10 +195,12 @@ TEST(Mesh, check_compatible_mesh) {
     }
 
     delete target_mesh;
+    Profiler::uninitialize();
 }
 
 
 TEST(BCMesh, element_ranges) {
+    Profiler::instance();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
 	std::string mesh_in_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
@@ -215,4 +223,5 @@ TEST(BCMesh, element_ranges) {
 
     //delete bc_mesh;
     delete mesh;
+    Profiler::uninitialize();
 }

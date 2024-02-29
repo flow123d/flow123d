@@ -1,0 +1,7 @@
+# Neccesary Pyton packages
+
+numpy
+matplotlib
+pandas
+seaborn
+
