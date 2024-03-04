@@ -71,14 +71,14 @@ public:
         return n_elems_++;
     }
 
-    ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
+    ElOp<spacedim> *add_accessor(ElOp<spacedim> *op_accessor);
 
 protected:
     TableDbl point_vals_;
     TableInt int_vals_;
     TableDbl el_vals_;
 
-    std::vector<ElOp<spacedim>> operation_columns_;
+    std::vector<ElOp<spacedim> *> operation_columns_;
 
     uint dim_;                        ///< Dimension
     uint n_columns_;                  ///< Number of columns of \p point_vals table
@@ -100,14 +100,12 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, PatchPointValues<spacedim> &point_vals)
-    : dim_(dim), shape_(shape), result_col_(INVALID_COLUMN), input_column_(INVALID_COLUMN), point_vals_(point_vals)
+    ElOp(uint dim, std::initializer_list<uint> shape)
+    : dim_(dim), shape_(shape), result_col_(INVALID_COLUMN), input_column_(INVALID_COLUMN)
     {}
 
     /// Reinit data on all patch points.
-    virtual void reinit_data() {
-        ASSERT_PERMANENT(false).error("Method must be implemented in descendants");
-    }
+    virtual void reinit_data() =0;
 
     /// Number of components computed from shape_ vector
     inline uint n_comp() const {
@@ -120,43 +118,43 @@ public:
      *
      * Return index of first column it point values table.
      */
-    inline uint register_columns() {
+    inline uint register_columns(PatchPointValues<spacedim> &point_vals) {
+        ASSERT_EQ(dim_, point_vals.dim_);
         if (result_col_ == INVALID_COLUMN) {
-            this->check_op_dependency();
-            result_col_ = point_vals_.add_columns(this->n_comp());
+            this->check_op_dependency(point_vals);
+            result_col_ = point_vals.add_columns(this->n_comp());
         }
         return result_col_;
     }
 
-    inline Scalar scalar_val(uint point_idx) const {
-        return point_vals_.point_vals_[input_column_][point_idx];
-    }
-
-    inline Vector vector_val(uint point_idx) const {
-        Vector val;
-        for (uint i=0; i<3; ++i)
-            val(i) = point_vals_.point_vals_[input_column_+i][point_idx];
-        return val;
-    }
-
-    inline Tensor tensor_val(uint point_idx) const {
-        Tensor val;
-        for (uint i=0; i<3; ++i)
-            for (uint j=0; j<3; ++j)
-                val(i,j) = point_vals_.point_vals_[input_column_+3*i+j][point_idx];
-        return val;
-    }
+//    inline Scalar scalar_val(uint point_idx) const {
+//        return point_vals_->point_vals_[input_column_][point_idx];
+//    }
+//
+//    inline Vector vector_val(uint point_idx) const {
+//        Vector val;
+//        for (uint i=0; i<3; ++i)
+//            val(i) = point_vals_->point_vals_[input_column_+i][point_idx];
+//        return val;
+//    }
+//
+//    inline Tensor tensor_val(uint point_idx) const {
+//        Tensor val;
+//        for (uint i=0; i<3; ++i)
+//            for (uint j=0; j<3; ++j)
+//                val(i,j) = point_vals_->point_vals_[input_column_+3*i+j][point_idx];
+//        return val;
+//    }
 
 
 protected:
     /// Check and register dependency of operations, can be implemented in descendants.
-    virtual void check_op_dependency() {}
+    virtual void check_op_dependency(FMT_UNUSED PatchPointValues<spacedim> &point_vals) {}
 
     uint dim_;                                ///< Dimension
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_col_;                         ///< Result column.
     uint input_column_;                       ///< First column to scalar, vector or matrix inputs
-    PatchPointValues<spacedim> &point_vals_;  ///< Reference to data table
 };
 
 
@@ -165,6 +163,7 @@ namespace FeBulk {
 enum BulkOps
 {
 	opCoords,
+	opElCoords,
 	opJac,
 	opJacDet
 };
@@ -181,8 +180,21 @@ template<unsigned int spacedim = 3>
 class OpCoords : public ElOp<spacedim> {
 public:
 	/// Constructor
-	OpCoords(uint dim, PatchPointValues<spacedim> &point_vals)
-    : ElOp<spacedim>(dim, {spacedim}, point_vals)
+	OpCoords(uint dim)
+    : ElOp<spacedim>(dim, {spacedim})
+    {}
+
+	/// Implement ElOp::reinit_data
+	void reinit_data() override;
+};
+
+
+template<unsigned int spacedim = 3>
+class OpElCoords : public ElOp<spacedim> {
+public:
+    /// Constructor
+    OpElCoords(uint dim)
+    : ElOp<spacedim>(dim, {spacedim, dim+1})
     {}
 
 	/// Implement ElOp::reinit_data
@@ -193,35 +205,35 @@ public:
 template<unsigned int spacedim = 3>
 class OpJac : public ElOp<spacedim> {
 public:
-	/// Constructor
-	OpJac(uint dim, PatchPointValues<spacedim> &point_vals, ElOp<spacedim> &coords_op)
-    : ElOp<spacedim>(dim, {spacedim, dim}, point_vals), coords_operator_(coords_op)
+    /// Constructor
+    OpJac(uint dim, ElOp<spacedim> *coords_op)
+    : ElOp<spacedim>(dim, {spacedim, dim}), coords_operator_(coords_op)
     {}
 
 	/// Implement ElOp::reinit_data
 	void reinit_data() override;
 
-	void check_op_dependency() override;
+	void check_op_dependency(::PatchPointValues<spacedim> &point_vals) override;
 private:
-	ElOp<spacedim> &coords_operator_;
+	ElOp<spacedim> *coords_operator_;
 };
 
 
 template<unsigned int spacedim = 3>
 class OpJacDet : public ElOp<spacedim> {
 public:
-	/// Constructor
-	OpJacDet(uint dim, PatchPointValues<spacedim> &point_vals, ElOp<spacedim> &jac_op)
-    : ElOp<spacedim>(dim, {1}, point_vals), jac_operator_(jac_op)
+    /// Constructor
+    OpJacDet(uint dim, ElOp<spacedim> *jac_op)
+    : ElOp<spacedim>(dim, {1}), jac_operator_(jac_op)
     {}
 
     /// Implement ElOp::reinit_data
     void reinit_data() override;
 
-	void check_op_dependency() override;
+	void check_op_dependency(::PatchPointValues<spacedim> &point_vals) override;
 
 private:
-	ElOp<spacedim> &jac_operator_;
+	ElOp<spacedim> *jac_operator_;
 };
 
 } // closing namespace FeBulk

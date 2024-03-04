@@ -613,7 +613,7 @@ public:
     inline ElQ<Vector> coords(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords].register_columns();
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords]->register_columns(patch_point_vals_[0][dim-1]);
         return ElQ<Vector>(this, begin);
     }
 
@@ -633,7 +633,7 @@ public:
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet].register_columns();
+        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet]->register_columns(patch_point_vals_[0][dim-1]);
         return ElQ<Scalar>(this, begin);
     }
 
