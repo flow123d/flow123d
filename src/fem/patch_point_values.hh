@@ -65,11 +65,7 @@ public:
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(FMT_UNUSED DHCellAccessor cell, uint element_patch_idx) {
-        // register cell.elm_idx() and element_patch_idx to structure ??, maybe compute coords
-        elements_map_[element_patch_idx] = n_elems_;
-        return n_elems_++;
-    }
+    uint register_element(DHCellAccessor cell, uint element_patch_idx);
 
     ElOp<spacedim> *add_accessor(ElOp<spacedim> *op_accessor);
 

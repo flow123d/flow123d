@@ -725,7 +725,21 @@ public:
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        return patch_point_vals_[0][cell.dim()-1].register_element(cell, element_patch_idx);
+        switch (cell.dim()) {
+        case 1:
+            return patch_point_vals_[0][0].register_element(cell, element_patch_idx);
+            break;
+        case 2:
+            return patch_point_vals_[0][1].register_element(cell, element_patch_idx);
+            break;
+        case 3:
+            return patch_point_vals_[0][2].register_element(cell, element_patch_idx);
+            break;
+        default:
+        	ASSERT(false);
+        	return 0;
+            break;
+        }
     }
 
 private:

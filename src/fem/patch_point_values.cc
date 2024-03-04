@@ -19,6 +19,7 @@
  */
 
 #include "fem/patch_point_values.hh"
+#include "fem/mapping_p1.hh"
 
 
 
@@ -41,6 +42,15 @@ ElOp<spacedim> *PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> *op_acce
 	operation_columns_.push_back(op_accessor);
 	return op_accessor;
 }
+
+template<unsigned int spacedim>
+uint PatchPointValues<spacedim>::register_element(DHCellAccessor cell, uint element_patch_idx) {
+    //typename MappingP1<dim,spacedim>::ElementMap coords = MappingP1<dim,spacedim>::element_map(cell.elm());
+    std::cout << cell.dim() << " ---------" << std::endl;
+    elements_map_[element_patch_idx] = n_elems_;
+    return n_elems_++;
+}
+
 
 namespace FeBulk {
 
@@ -112,3 +122,7 @@ template class FeBulk::PatchPointValues<3>;
 template class FeBulk::OpJac<3>;
 template class FeBulk::OpJacDet<3>;
 template class FeSide::PatchPointValues<3>;
+
+//template uint PatchPointValues<3>::register_element<1>(DHCellAccessor, uint);
+//template uint PatchPointValues<3>::register_element<2>(DHCellAccessor, uint);
+//template uint PatchPointValues<3>::register_element<3>(DHCellAccessor, uint);
