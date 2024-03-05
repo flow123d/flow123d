@@ -32,6 +32,7 @@
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "fem/eigen_tools.hh"
 #include "fem/patch_point_values.hh"
+#include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
@@ -725,15 +726,19 @@ public:
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+        arma::mat coords;
         switch (cell.dim()) {
         case 1:
-            return patch_point_vals_[0][0].register_element(cell, element_patch_idx);
+            coords = MappingP1<1,spacedim>::element_map(cell.elm());
+            return patch_point_vals_[0][0].register_element(coords, element_patch_idx);
             break;
         case 2:
-            return patch_point_vals_[0][1].register_element(cell, element_patch_idx);
+        	coords = MappingP1<2,spacedim>::element_map(cell.elm());
+            return patch_point_vals_[0][1].register_element(coords, element_patch_idx);
             break;
         case 3:
-            return patch_point_vals_[0][2].register_element(cell, element_patch_idx);
+        	coords = MappingP1<3,spacedim>::element_map(cell.elm());
+            return patch_point_vals_[0][2].register_element(coords, element_patch_idx);
             break;
         default:
         	ASSERT(false);

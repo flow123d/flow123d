@@ -65,7 +65,7 @@ public:
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(DHCellAccessor cell, uint element_patch_idx);
+    uint register_element(arma::mat coords, uint element_patch_idx);
 
     ElOp<spacedim> *add_accessor(ElOp<spacedim> *op_accessor);
 

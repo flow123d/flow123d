@@ -19,7 +19,6 @@
  */
 
 #include "fem/patch_point_values.hh"
-#include "fem/mapping_p1.hh"
 
 
 
@@ -44,9 +43,8 @@ ElOp<spacedim> *PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> *op_acce
 }
 
 template<unsigned int spacedim>
-uint PatchPointValues<spacedim>::register_element(DHCellAccessor cell, uint element_patch_idx) {
-    //typename MappingP1<dim,spacedim>::ElementMap coords = MappingP1<dim,spacedim>::element_map(cell.elm());
-    std::cout << cell.dim() << " ---------" << std::endl;
+uint PatchPointValues<spacedim>::register_element(arma::mat coords, uint element_patch_idx) {
+    DebugOut() << "\n" << coords;
     elements_map_[element_patch_idx] = n_elems_;
     return n_elems_++;
 }
