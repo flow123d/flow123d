@@ -32,8 +32,6 @@ using Vector = arma::vec3;
 using Tensor = arma::mat33;
 
 
-static const uint INVALID_COLUMN = -1;
-
 
 
 template<unsigned int spacedim = 3>
@@ -96,9 +94,15 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col)
-    : dim_(dim), shape_(shape), result_col_(result_col), input_column_(INVALID_COLUMN)
-    {}
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ElOp<spacedim> *input_op = nullptr)
+    : dim_(dim), shape_(shape), result_col_(result_col)
+    {
+        if (input_op != nullptr) {
+            uint first_col = input_op->result_col();
+            for (uint i=0; i<input_op->n_comp(); ++i)
+                input_column_.push_back(i+first_col);
+        }
+    }
 
     /// Reinit data on all patch points.
     virtual void reinit_data() =0;
@@ -137,8 +141,8 @@ public:
 protected:
     uint dim_;                                ///< Dimension
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
-    uint result_col_;                         ///< Result column.
-    uint input_column_;                       ///< First column to scalar, vector or matrix inputs
+    uint result_col_;                         ///< First column to scalar, vector or matrix result
+    std::vector<uint> input_column_;          ///< Vector of column on which ElOp is depended
 };
 
 
@@ -191,13 +195,11 @@ class OpJac : public ElOp<spacedim> {
 public:
     /// Constructor
     OpJac(uint dim, uint result_col, ElOp<spacedim> *coords_op)
-    : ElOp<spacedim>(dim, {spacedim, dim}, result_col), coords_operator_(coords_op)
+    : ElOp<spacedim>(dim, {spacedim, dim}, result_col, coords_op)
     {}
 
 	/// Implement ElOp::reinit_data
 	void reinit_data() override;
-private:
-	ElOp<spacedim> *coords_operator_;
 };
 
 
@@ -206,14 +208,11 @@ class OpJacDet : public ElOp<spacedim> {
 public:
     /// Constructor
     OpJacDet(uint dim, uint result_col, ElOp<spacedim> *jac_op)
-    : ElOp<spacedim>(dim, {1}, result_col), jac_operator_(jac_op)
+    : ElOp<spacedim>(dim, {1}, result_col, jac_op)
     {}
 
     /// Implement ElOp::reinit_data
     void reinit_data() override;
-
-private:
-	ElOp<spacedim> *jac_operator_;
 };
 
 } // closing namespace FeBulk
