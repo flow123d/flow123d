@@ -38,8 +38,8 @@ void PatchPointValues<spacedim>::initialize(uint int_cols) {
 
 template<unsigned int spacedim>
 ElOp<spacedim> &PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> op_accessor) {
-	operation_columns_.push_back(op_accessor);
-	return operation_columns_[operation_columns_.size()-1];
+	operations_.push_back(op_accessor);
+	return operations_[operations_.size()-1];
 }
 
 template<unsigned int spacedim>
@@ -56,7 +56,7 @@ namespace FeBulk {
 template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
-    // add instances of ElOp descendants to operation_columns_ vector
+    // add instances of ElOp descendants to operations_ vector
     ElOp<spacedim> &coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, &bulk_ops::reinit_ptop_coords) );
     this->n_columns_ += coords_bulk.n_comp();
     ElOp<spacedim> &el_coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, &bulk_ops::reinit_ptop_coords) );
@@ -75,7 +75,7 @@ namespace FeSide {
 template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
-    // add instances of ElOp descendants to operation_columns_ vector
+    // add instances of ElOp descendants to operations_ vector
 }
 
 } // closing namespace FeSide

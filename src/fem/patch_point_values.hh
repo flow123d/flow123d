@@ -34,20 +34,31 @@ using Tensor = arma::mat33;
 
 
 
+/**
+ * @brief Class for storing FE data of quadrature points.
+ *
+ * Store data of bulk or side quadrature points of one dimension.
+ */
 template<unsigned int spacedim = 3>
 class PatchPointValues
 {
 public:
-    /// Type for conciseness
-    typedef void (*ReinitFunction)(std::vector<ElOp<spacedim> *> &, TableDbl &);
-
-    /// Default constructor
+    /**
+     * Constructor
+     *
+     * Set dimension
+     */
     PatchPointValues(uint dim);
 
-    /// Initialize object, set number of columns (quantities) in tables
+    /**
+     * Initialize object, set number of columns (quantities) in tables.
+     *
+     * Number of columns of int_vals_ table is passed by argument, number of columns
+     * of other tables is given by n_columns_ value.
+     */
     void initialize(uint int_cols);
 
-    /// Reset number of rows (points)
+    /// Reset number of rows (points and elements)
     inline void reset() {
         n_points_ = 0;
         n_elems_ = 0;
@@ -59,6 +70,7 @@ public:
     }
 
     /// Adds the number of columns equal to n_added, returns index of first of them
+    /// Temporary method allow acces to old structure PatchFEValues::DimPatchFEValues
     inline uint add_columns(uint n_added) {
         uint old_size = n_columns_;
         n_columns_ += n_added;
@@ -68,14 +80,33 @@ public:
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(arma::mat coords, uint element_patch_idx);
 
+    /// Add accessor to operations_ vector
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
 
 protected:
+    /**
+     * Store data of bulk or side quadrature points of one dimension
+     *
+     * Number of columns is given by n_columns_, number of used rows by n_points_.
+     */
     TableDbl point_vals_;
+    /**
+     * Hold integer values of quadrature points of previous table.
+     *
+     * Table contains 2 columns for bulk point table (index of point on patch, element_idx)
+     * and 3 columns for side point table (index of point on patch, element_idx, side_idx).
+     * Number of used rows is given by n_points_.
+     */
     TableInt int_vals_;
+    /**
+     * Store data of elements. Elements are given by quadrature points stored in point_vals_
+     *
+     * Number of columns is given by n_columns_, number of used rows by n_elems_.
+     */
     TableDbl el_vals_;
 
-    std::vector<ElOp<spacedim>> operation_columns_;
+    /// Vector of all defined operations
+    std::vector<ElOp<spacedim>> operations_;
 
     uint dim_;                        ///< Dimension
     uint n_columns_;                  ///< Number of columns of \p point_vals table
@@ -91,13 +122,16 @@ protected:
 
 
 /**
- * Base class of all FE operations.
+ * @brief Class represents FE operations.
  */
 template<unsigned int spacedim = 3>
 class ElOp {
 public:
+    /// Type for conciseness
+    typedef void (*ReinitFunction)(std::vector<ElOp<spacedim> *> &, TableDbl &);
+
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, typename PatchPointValues<spacedim>::ReinitFunction r_func, ElOp<spacedim> *input_op = nullptr)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ReinitFunction r_func, ElOp<spacedim> *input_op = nullptr)
     : dim_(dim), shape_(shape), result_col_(result_col), reinit_func(r_func)
     {
         if (input_op != nullptr) {
@@ -145,12 +179,13 @@ protected:
     std::vector<uint> input_column_;          ///< Vector of column on which ElOp is depended
 
     /// Pointer to patch reinit function specialized by operation
-    typename PatchPointValues<spacedim>::ReinitFunction reinit_func;
+    ReinitFunction reinit_func;
 };
 
 
 namespace FeBulk {
 
+/// enum of bulk operation
 enum BulkOps
 {
 	opCoords,
@@ -159,10 +194,11 @@ enum BulkOps
 	opJacDet
 };
 
+/// Bulk data specialization, order of item in operations_ vector corresponds to the BulkOps enum
 template<unsigned int spacedim = 3>
 class PatchPointValues : public ::PatchPointValues<spacedim> {
 public:
-    /// Default constructor
+    /// Constructor fill operations_ vector.
     PatchPointValues(uint dim);
 };
 
