@@ -251,7 +251,7 @@ public:
                 edge_integral_data_.make_permanent();
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
-                element_cache_map_.eval_point_data_.make_permanent();
+                element_cache_map_.make_paermanent_eval_points();
                 if (element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals(dh);
                     add_into_patch = false;
