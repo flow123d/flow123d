@@ -57,10 +57,14 @@ template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operation_columns_ vector
-    this->add_accessor( new OpCoords(this->dim_) );
-    ElOp<spacedim> *el_coords_bulk = this->add_accessor( new OpElCoords(this->dim_) );
-    ElOp<spacedim> *jac_bulk = this->add_accessor( new OpJac(this->dim_, el_coords_bulk) );
-    this->add_accessor( new OpJacDet(this->dim_, jac_bulk) );
+    ElOp<spacedim> *coords_bulk = this->add_accessor( new OpCoords(this->dim_, this->n_columns_) );
+    this->n_columns_ += coords_bulk->n_comp();
+    ElOp<spacedim> *el_coords_bulk = this->add_accessor( new OpElCoords(this->dim_, this->n_columns_) );
+    this->n_columns_ += el_coords_bulk->n_comp();
+    ElOp<spacedim> *jac_bulk = this->add_accessor( new OpJac(this->dim_, this->n_columns_, el_coords_bulk) );
+    this->n_columns_ += jac_bulk->n_comp();
+    ElOp<spacedim> *jac_det_bulk = this->add_accessor( new OpJacDet(this->dim_, this->n_columns_, jac_bulk) );
+    this->n_columns_ += jac_det_bulk->n_comp();
 }
 
 
@@ -84,21 +88,11 @@ void OpJac<spacedim>::reinit_data() {
     // compute data
 }
 
-template<unsigned int spacedim>
-void OpJac<spacedim>::check_op_dependency(::PatchPointValues<spacedim> &point_vals) {
-    coords_operator_->register_columns(point_vals);
-}
-
 
 /** Implementation of OpJacDet methods **/
 template<unsigned int spacedim>
 void OpJacDet<spacedim>::reinit_data() {
     // compute data
-}
-
-template<unsigned int spacedim>
-void OpJacDet<spacedim>::check_op_dependency(::PatchPointValues<spacedim> &point_vals) {
-    jac_operator_->register_columns(point_vals);
 }
 
 } // closing namespace FeBulk

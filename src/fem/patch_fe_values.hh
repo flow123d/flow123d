@@ -613,8 +613,7 @@ public:
 	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords(Quadrature *quad)
     {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opCoords]->register_columns(patch_point_vals_[0][dim-1]);
+        uint begin = patch_point_vals_[0][quad->dim()-1].operation_columns_[FeBulk::BulkOps::opCoords]->result_col();
         return ElQ<Vector>(this, begin);
     }
 
@@ -633,8 +632,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].operation_columns_[FeBulk::BulkOps::opJacDet]->register_columns(patch_point_vals_[0][dim-1]);
+        uint begin = patch_point_vals_[0][quad->dim()-1].operation_columns_[FeBulk::BulkOps::opJacDet]->result_col();
         return ElQ<Scalar>(this, begin);
     }
 

@@ -96,8 +96,8 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape)
-    : dim_(dim), shape_(shape), result_col_(INVALID_COLUMN), input_column_(INVALID_COLUMN)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col)
+    : dim_(dim), shape_(shape), result_col_(result_col), input_column_(INVALID_COLUMN)
     {}
 
     /// Reinit data on all patch points.
@@ -109,17 +109,8 @@ public:
         else return shape_[0] * shape_[1];
     }
 
-    /**
-     * Register operation columns if result_col_ is not set.
-     *
-     * Return index of first column it point values table.
-     */
-    inline uint register_columns(PatchPointValues<spacedim> &point_vals) {
-        ASSERT_EQ(dim_, point_vals.dim_);
-        if (result_col_ == INVALID_COLUMN) {
-            this->check_op_dependency(point_vals);
-            result_col_ = point_vals.add_columns(this->n_comp());
-        }
+    /// Getter of result_col_
+    inline uint result_col() const {
         return result_col_;
     }
 
@@ -144,9 +135,6 @@ public:
 
 
 protected:
-    /// Check and register dependency of operations, can be implemented in descendants.
-    virtual void check_op_dependency(FMT_UNUSED PatchPointValues<spacedim> &point_vals) {}
-
     uint dim_;                                ///< Dimension
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_col_;                         ///< Result column.
@@ -176,8 +164,8 @@ template<unsigned int spacedim = 3>
 class OpCoords : public ElOp<spacedim> {
 public:
 	/// Constructor
-	OpCoords(uint dim)
-    : ElOp<spacedim>(dim, {spacedim})
+	OpCoords(uint dim, uint result_col)
+    : ElOp<spacedim>(dim, {spacedim}, result_col)
     {}
 
 	/// Implement ElOp::reinit_data
@@ -189,8 +177,8 @@ template<unsigned int spacedim = 3>
 class OpElCoords : public ElOp<spacedim> {
 public:
     /// Constructor
-    OpElCoords(uint dim)
-    : ElOp<spacedim>(dim, {spacedim, dim+1})
+    OpElCoords(uint dim, uint result_col)
+    : ElOp<spacedim>(dim, {spacedim, dim+1}, result_col)
     {}
 
 	/// Implement ElOp::reinit_data
@@ -202,14 +190,12 @@ template<unsigned int spacedim = 3>
 class OpJac : public ElOp<spacedim> {
 public:
     /// Constructor
-    OpJac(uint dim, ElOp<spacedim> *coords_op)
-    : ElOp<spacedim>(dim, {spacedim, dim}), coords_operator_(coords_op)
+    OpJac(uint dim, uint result_col, ElOp<spacedim> *coords_op)
+    : ElOp<spacedim>(dim, {spacedim, dim}, result_col), coords_operator_(coords_op)
     {}
 
 	/// Implement ElOp::reinit_data
 	void reinit_data() override;
-
-	void check_op_dependency(::PatchPointValues<spacedim> &point_vals) override;
 private:
 	ElOp<spacedim> *coords_operator_;
 };
@@ -219,14 +205,12 @@ template<unsigned int spacedim = 3>
 class OpJacDet : public ElOp<spacedim> {
 public:
     /// Constructor
-    OpJacDet(uint dim, ElOp<spacedim> *jac_op)
-    : ElOp<spacedim>(dim, {1}), jac_operator_(jac_op)
+    OpJacDet(uint dim, uint result_col, ElOp<spacedim> *jac_op)
+    : ElOp<spacedim>(dim, {1}, result_col), jac_operator_(jac_op)
     {}
 
     /// Implement ElOp::reinit_data
     void reinit_data() override;
-
-	void check_op_dependency(::PatchPointValues<spacedim> &point_vals) override;
 
 private:
 	ElOp<spacedim> *jac_operator_;
