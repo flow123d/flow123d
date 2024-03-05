@@ -94,9 +94,9 @@ public:
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
             uint elm_pos = fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
-        	for (auto p : this->bulk_points(dim, element_patch_idx) ) {
-        	    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-        	    //fe_values_.register_point(elm_pos, bulk_integral_data_[i].cell, value_cache_idx, ...)
+            for (auto p : this->bulk_points(dim, element_patch_idx) ) {
+                unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+                //fe_values_.register_point(elm_pos, bulk_integral_data_[i].cell, value_cache_idx, ...)
             }
         }
 
@@ -133,5 +133,7 @@ TEST(PatchFeTest, bulk_points) {
     	patch_fe.add_integrals(*cell_it);
     }
     patch_fe.bulk_integral_data_.make_permanent();
+    patch_fe.element_cache_map_.make_paermanent_eval_points();
     patch_fe.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+    patch_fe.update_patch();
 }
