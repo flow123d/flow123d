@@ -38,6 +38,9 @@ template<unsigned int spacedim = 3>
 class PatchPointValues
 {
 public:
+    /// Type for conciseness
+    typedef void (*ReinitFunction)(std::vector<ElOp<spacedim> *> &, TableDbl &);
+
     /// Default constructor
     PatchPointValues(uint dim);
 
@@ -65,14 +68,14 @@ public:
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(arma::mat coords, uint element_patch_idx);
 
-    ElOp<spacedim> *add_accessor(ElOp<spacedim> *op_accessor);
+    ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
 
 protected:
     TableDbl point_vals_;
     TableInt int_vals_;
     TableDbl el_vals_;
 
-    std::vector<ElOp<spacedim> *> operation_columns_;
+    std::vector<ElOp<spacedim>> operation_columns_;
 
     uint dim_;                        ///< Dimension
     uint n_columns_;                  ///< Number of columns of \p point_vals table
@@ -94,8 +97,8 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ElOp<spacedim> *input_op = nullptr)
-    : dim_(dim), shape_(shape), result_col_(result_col)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, typename PatchPointValues<spacedim>::ReinitFunction r_func, ElOp<spacedim> *input_op = nullptr)
+    : dim_(dim), shape_(shape), result_col_(result_col), reinit_func(r_func)
     {
         if (input_op != nullptr) {
             uint first_col = input_op->result_col();
@@ -103,9 +106,6 @@ public:
                 input_column_.push_back(i+first_col);
         }
     }
-
-    /// Reinit data on all patch points.
-    virtual void reinit_data() =0;
 
     /// Number of components computed from shape_ vector
     inline uint n_comp() const {
@@ -143,6 +143,9 @@ protected:
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_col_;                         ///< First column to scalar, vector or matrix result
     std::vector<uint> input_column_;          ///< Vector of column on which ElOp is depended
+
+    /// Pointer to patch reinit function specialized by operation
+    typename PatchPointValues<spacedim>::ReinitFunction reinit_func;
 };
 
 
@@ -163,59 +166,24 @@ public:
     PatchPointValues(uint dim);
 };
 
-
-template<unsigned int spacedim = 3>
-class OpCoords : public ElOp<spacedim> {
-public:
-	/// Constructor
-	OpCoords(uint dim, uint result_col)
-    : ElOp<spacedim>(dim, {spacedim}, result_col)
-    {}
-
-	/// Implement ElOp::reinit_data
-	void reinit_data() override;
-};
-
-
-template<unsigned int spacedim = 3>
-class OpElCoords : public ElOp<spacedim> {
-public:
-    /// Constructor
-    OpElCoords(uint dim, uint result_col)
-    : ElOp<spacedim>(dim, {spacedim, dim+1}, result_col)
-    {}
-
-	/// Implement ElOp::reinit_data
-	void reinit_data() override;
-};
-
-
-template<unsigned int spacedim = 3>
-class OpJac : public ElOp<spacedim> {
-public:
-    /// Constructor
-    OpJac(uint dim, uint result_col, ElOp<spacedim> *coords_op)
-    : ElOp<spacedim>(dim, {spacedim, dim}, result_col, coords_op)
-    {}
-
-	/// Implement ElOp::reinit_data
-	void reinit_data() override;
-};
-
-
-template<unsigned int spacedim = 3>
-class OpJacDet : public ElOp<spacedim> {
-public:
-    /// Constructor
-    OpJacDet(uint dim, uint result_col, ElOp<spacedim> *jac_op)
-    : ElOp<spacedim>(dim, {1}, result_col, jac_op)
-    {}
-
-    /// Implement ElOp::reinit_data
-    void reinit_data() override;
-};
-
 } // closing namespace FeBulk
+
+/// Defines reinit operations on bulk points.
+struct bulk_ops {
+    static inline void reinit_elop_coords(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
+        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    }
+    static inline void reinit_ptop_coords(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
+        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    }
+    static inline void reinit_elop_jac(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
+        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    }
+    static inline void reinit_elop_jac_det(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
+        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    }
+};
+
 
 
 namespace FeSide {
