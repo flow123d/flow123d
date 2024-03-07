@@ -750,6 +750,15 @@ public:
         return patch_point_vals_[0][cell.dim()-1].register_point(elem_table_row, value_patch_idx, cell.elm_idx());
     }
 
+    /// Temporary development method
+    void print(bool points, bool ints, bool elems, bool only_bulk=true) const {
+        for (uint i=0; i<3; ++i)
+            patch_point_vals_[0][i].print(points, ints, elems);
+        if (!only_bulk)
+            for (uint i=0; i<3; ++i)
+                patch_point_vals_[1][i].print(points, ints, elems);
+    }
+
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;

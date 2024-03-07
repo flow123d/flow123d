@@ -86,6 +86,39 @@ public:
     /// Add accessor to operations_ vector
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
 
+    /// Temporary development method
+    void print(bool points, bool ints, bool elems) const {
+        std::cout << "** Dimension: " << dim_ << std::endl;
+        if (points) {
+            std::cout << "Point vals: " << point_vals_.rows() << " - " << point_vals_.cols() << std::endl;
+	        for (uint i_row=0; i_row<n_points_; ++i_row) {
+                for (uint i_col=0; i_col<n_columns_; ++i_col)
+                	std::cout << point_vals_(i_col)(i_row) << " ";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        if (ints) {
+            std::cout << "Int vals: " << int_vals_.rows() << " - " << int_vals_.cols() << std::endl;
+	        for (uint i_row=0; i_row<n_points_; ++i_row) {
+                for (uint i_col=0; i_col<3; ++i_col)
+                	std::cout << int_vals_(i_col)(i_row) << " ";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        if (elems) {
+            std::cout << "El vals: " << el_vals_.rows() << " - " << el_vals_.cols() << std::endl;
+	        for (uint i_row=0; i_row<n_elems_; ++i_row) {
+                for (uint i_col=0; i_col<n_columns_; ++i_col)
+                	std::cout << el_vals_(i_col)(i_row) << " ";
+                std::cout << std::endl;
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "*****************" << std::endl;
+    }
+
 protected:
     /**
      * Store data of bulk or side quadrature points of one dimension
