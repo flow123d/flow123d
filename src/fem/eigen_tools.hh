@@ -29,7 +29,7 @@
 
 /// Definitions of Eigen structures
 typedef Eigen::Array<double,300,1>             ArrayDbl;
-typedef Eigen::Array<int,300,1>                ArrayInt;
+typedef Eigen::Array<uint,300,1>               ArrayInt;
 typedef Eigen::Vector<ArrayDbl,Eigen::Dynamic> TableDbl;
 typedef Eigen::Vector<ArrayInt,Eigen::Dynamic> TableInt;
 

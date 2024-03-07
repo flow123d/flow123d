@@ -77,8 +77,11 @@ public:
         return old_size;
     }
 
-    /// Register element to patch_point_vals_ table by dimension of element
+    /// Register element to el_vals_ table
     uint register_element(arma::mat coords, uint element_patch_idx);
+
+    /// Register point to point_vals_ and int_vals_ table
+    uint register_point(uint elem_table_row, uint value_patch_idx, uint elem_idx);
 
     /// Add accessor to operations_ vector
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
@@ -93,8 +96,11 @@ protected:
     /**
      * Hold integer values of quadrature points of previous table.
      *
-     * Table contains 2 columns for bulk point table (index of point on patch, element_idx)
-     * and 3 columns for side point table (index of point on patch, element_idx, side_idx).
+     * Table contains following columns:
+     *  0: Index of quadrature point on patch
+     *  1: Row of element/side in el_vals_ table
+     *  2: Element idx in Mesh
+     *  3: Index of side in element (column is allocated only for side point table)
      * Number of used rows is given by n_points_.
      */
     TableInt int_vals_;
