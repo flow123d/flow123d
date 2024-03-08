@@ -215,6 +215,16 @@ template<> inline Eigen::Matrix<ArrayDbl,3,2> inverse<2,3>(const Eigen::Matrix<A
 }
 
 
+template<unsigned int spacedim, unsigned int dim>
+Eigen::Matrix<ArrayDbl, spacedim, dim> jacobian(const Eigen::Matrix<ArrayDbl, spacedim, dim+1> &coords)
+{
+    Eigen::Matrix<ArrayDbl, spacedim, dim> jac;
+    for (unsigned int i=0; i<spacedim; i++)
+        for (unsigned int j=0; j<dim; j++)
+            jac(i,j) = coords(i,j+1) - coords(i,0);
+    return jac;
+}
+
 } // closing namespace eigen_tools
 
 //template <unsigned int size>
