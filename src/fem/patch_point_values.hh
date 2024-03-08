@@ -21,6 +21,8 @@
 #ifndef PATCH_POINT_VALUES_HH_
 #define PATCH_POINT_VALUES_HH_
 
+#include <Eigen/Dense>
+
 #include "fem/eigen_tools.hh"
 #include "fem/dh_cell_accessor.hh"
 
@@ -85,6 +87,13 @@ public:
 
     /// Add accessor to operations_ vector
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
+
+    /// Reinit data.
+    void reinit_patch() {
+        // Doesn't need call reinit_functions with el_vals_ directly, should be point_vals_ in some cases
+        for (uint i=0; i<operations_.size(); ++i)
+            operations_[i].reinit_function(operations_, el_vals_);
+    }
 
     /// Temporary development method
     void print(bool points, bool ints, bool elems) const {
@@ -167,7 +176,7 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Type for conciseness
-    typedef void (*ReinitFunction)(std::vector<ElOp<spacedim> *> &, TableDbl &);
+    typedef void (*ReinitFunction)(std::vector<ElOp<spacedim>> &, TableDbl &);
 
     /// Constructor
     ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ReinitFunction r_func, ElOp<spacedim> *input_op = nullptr)
@@ -186,9 +195,18 @@ public:
         else return shape_[0] * shape_[1];
     }
 
+    /// Getter of dimension
+    inline uint dim() const {
+        return dim_;
+    }
+
     /// Getter of result_col_
     inline uint result_col() const {
         return result_col_;
+    }
+
+    void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
+    	reinit_func(operations, data_table);
     }
 
 //    inline Scalar scalar_val(uint point_idx) const {
@@ -245,17 +263,61 @@ public:
 
 /// Defines reinit operations on bulk points.
 struct bulk_ops {
-    static inline void reinit_elop_coords(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
-        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+	static inline void reinit_elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
     }
-    static inline void reinit_ptop_coords(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
-        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    static inline void reinit_ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
     }
-    static inline void reinit_elop_jac(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
-        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    static inline void reinit_elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
+        uint dim = operations[FeBulk::BulkOps::opJac].dim();
+        uint result_begin_col = operations[FeBulk::BulkOps::opJac].result_col();
+        uint input_begin_col = operations[FeBulk::BulkOps::opElCoords].result_col();
+        switch (dim) {
+            case 1: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_col, 3, 1);
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_col, 3, 2);
+                result_mat = eigen_tools::jacobian<3,1>(input_mat);
+                break;
+            }
+            case 2: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> result_mat(op_results.data() + result_begin_col, 3, 2);
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_col, 3, 3);
+                result_mat = eigen_tools::jacobian<3,2>(input_mat);
+                break;
+            }
+            case 3: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> result_mat(op_results.data() + result_begin_col, 3, 3);
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 4>> input_mat(op_results.data() + input_begin_col, 3, 4);
+                result_mat = eigen_tools::jacobian<3,3>(input_mat);
+                break;
+            }
+        }
     }
-    static inline void reinit_elop_jac_det(std::vector<ElOp<3> *> &operations, TableDbl &op_results) {
-        std::cout << operations.size() << " - " << op_results[0][0] << std::endl;
+    static inline void reinit_elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+        // result double, input matrix(spacedim, dim)
+        uint dim = operations[FeBulk::BulkOps::opJacDet].dim();
+        uint result_begin_col = operations[FeBulk::BulkOps::opJacDet].result_col();
+        uint input_begin_col = operations[FeBulk::BulkOps::opJac].result_col();
+        ArrayDbl &result_vec = op_results(result_begin_col);
+        switch (dim) {
+            case 1: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> input_mat(op_results.data() + input_begin_col, 3, 1);
+                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 1>>(input_mat);
+                break;
+            }
+            case 2: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_col, 3, 2);
+                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 2>>(input_mat);
+                break;
+            }
+            case 3: {
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_col, 3, 3);
+                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 3>>(input_mat);
+                break;
+            }
+        }
     }
 };
 

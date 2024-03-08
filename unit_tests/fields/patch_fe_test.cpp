@@ -99,7 +99,7 @@ public:
                 fe_values_.register_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx);
             }
         }
-
+        fe_values_.reinit_patch();
     }
 
 

@@ -551,13 +551,21 @@ public:
         }
     }
 
-    /// Reinit data.
+    /// Reinit data - old data storing, temporary
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
         for (unsigned int i=0; i<3; ++i) {
-            // old data storing
             if (used_quads_[0]) dim_fe_vals_[i].reinit(patch_elements[i+1]);
             if (used_quads_[1]) dim_fe_side_vals_[i].reinit(patch_elements[i+1]);
+        }
+    }
+
+    /// Reinit data.
+    void reinit_patch()
+    {
+        for (unsigned int i=0; i<3; ++i) {
+            // updates only bulk structures now, needs to add side update
+            patch_point_vals_[0][i].reinit_patch();
         }
     }
 
