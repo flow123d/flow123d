@@ -564,8 +564,8 @@ public:
     void reinit_patch()
     {
         for (unsigned int i=0; i<3; ++i) {
-            // updates only bulk structures now, needs to add side update
             patch_point_vals_[0][i].reinit_patch();
+            if (used_quads_[1]) patch_point_vals_[1][i].reinit_patch();
         }
     }
 
@@ -641,6 +641,13 @@ public:
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
         uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_col();
+        return ElQ<Scalar>(this, begin);
+    }
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant_side(Quadrature *quad)
+    {
+        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeBulk::BulkOps::opJacDet].result_col();
         return ElQ<Scalar>(this, begin);
     }
 
@@ -731,20 +738,20 @@ public:
     /** Following methods are used during update of patch. **/
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+    uint register_element(DHCellAccessor cell, uint element_patch_idx, uint from_side=0) {
         arma::mat coords;
         switch (cell.dim()) {
         case 1:
             coords = MappingP1<1,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][0].register_element(coords, element_patch_idx);
+            return patch_point_vals_[from_side][0].register_element(coords, element_patch_idx);
             break;
         case 2:
         	coords = MappingP1<2,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][1].register_element(coords, element_patch_idx);
+            return patch_point_vals_[from_side][1].register_element(coords, element_patch_idx);
             break;
         case 3:
         	coords = MappingP1<3,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][2].register_element(coords, element_patch_idx);
+            return patch_point_vals_[from_side][2].register_element(coords, element_patch_idx);
             break;
         default:
         	ASSERT(false);
@@ -754,8 +761,8 @@ public:
     }
 
     /// Register point to patch_point_vals_ table by dimension of element
-    uint register_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx) {
-        return patch_point_vals_[0][cell.dim()-1].register_point(elem_table_row, value_patch_idx, cell.elm_idx());
+    uint register_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx, uint from_side=0) {
+        return patch_point_vals_[from_side][cell.dim()-1].register_point(elem_table_row, value_patch_idx, cell.elm_idx());
     }
 
     /// Temporary development method

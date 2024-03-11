@@ -44,7 +44,6 @@ ElOp<spacedim> &PatchPointValues<spacedim>::add_accessor(ElOp<spacedim> op_acces
 
 template<unsigned int spacedim>
 uint PatchPointValues<spacedim>::register_element(arma::mat coords, uint element_patch_idx) {
-    DebugOut() << "\n" << coords;
     uint res_column = operations_[FeBulk::BulkOps::opElCoords].result_col();
     for (uint i_col=0; i_col<coords.n_cols; ++i_col)
         for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
@@ -99,6 +98,14 @@ template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operations_ vector
+    ElOp<spacedim> &coords_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, &side_ops::reinit_ptop_coords) );
+    this->n_columns_ += coords_side.n_comp();
+    ElOp<spacedim> &el_coords_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+2}, this->n_columns_, &side_ops::reinit_ptop_coords) );
+    this->n_columns_ += el_coords_side.n_comp();
+    ElOp<spacedim> &jac_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, &side_ops::reinit_elop_jac, &el_coords_side) );
+    this->n_columns_ += jac_side.n_comp();
+    ElOp<spacedim> &jac_det_side = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, &side_ops::reinit_elop_jac_det, &jac_side) );
+    this->n_columns_ += jac_det_side.n_comp();
 }
 
 } // closing namespace FeSide
