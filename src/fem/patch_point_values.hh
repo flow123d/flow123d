@@ -71,6 +71,16 @@ public:
         return n_columns_;
     }
 
+    /// Getter of n_elems_
+    inline uint n_elems() const {
+        return n_elems_;
+    }
+
+    /// Getter of n_points_
+    inline uint n_points() const {
+        return n_points_;
+    }
+
     /// Adds the number of columns equal to n_added, returns index of first of them
     /// Temporary method allow acces to old structure PatchFEValues::DimPatchFEValues
     inline uint add_columns(uint n_added) {
@@ -82,8 +92,14 @@ public:
     /// Register element to el_vals_ table
     uint register_element(arma::mat coords, uint element_patch_idx);
 
-    /// Register point to point_vals_ and int_vals_ table
-    uint register_point(uint elem_table_row, uint value_patch_idx, uint elem_idx);
+    /// Register side to el_vals_ table
+    uint register_side(arma::mat coords);
+
+    /// Register bulk point to point_vals_ and int_vals_ table
+    uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx);
+
+    /// Register side point to point_vals_ and int_vals_ table
+    uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx);
 
     /// Add accessor to operations_ vector
     ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor);
@@ -360,28 +376,23 @@ struct side_reinit {
 	static inline void elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
-    static inline void elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+    static inline void elop_jac(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         uint dim = operations[FeSide::SideOps::opJac].dim();
         uint result_begin_col = operations[FeSide::SideOps::opJac].result_col();
         uint input_begin_col = operations[FeSide::SideOps::opElCoords].result_col();
         switch (dim) {
-            case 0: {
+            // no evaluation for dim=0, shape of Jacobian (spacedim,0)
+            case 1: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_col, 3, 1);
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_col, 3, 2);
                 result_mat = eigen_tools::jacobian<3,1>(input_mat);
                 break;
             }
-            case 1: {
+            case 2: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> result_mat(op_results.data() + result_begin_col, 3, 2);
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_col, 3, 3);
                 result_mat = eigen_tools::jacobian<3,2>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> result_mat(op_results.data() + result_begin_col, 3, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 4>> input_mat(op_results.data() + input_begin_col, 3, 4);
-                result_mat = eigen_tools::jacobian<3,3>(input_mat);
                 break;
             }
         }
@@ -394,18 +405,18 @@ struct side_reinit {
         ArrayDbl &result_vec = op_results(result_begin_col);
         switch (dim) {
             case 0: {
+                for (uint i=0;i<300; ++i)
+                    result_vec(i) = 1.0;
+                break;
+            }
+            case 1: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> input_mat(op_results.data() + input_begin_col, 3, 1);
                 result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 1>>(input_mat);
                 break;
             }
-            case 1: {
+            case 2: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_col, 3, 2);
                 result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 2>>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_col, 3, 3);
-                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 3>>(input_mat);
                 break;
             }
         }

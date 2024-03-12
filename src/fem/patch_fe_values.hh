@@ -738,20 +738,20 @@ public:
     /** Following methods are used during update of patch. **/
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(DHCellAccessor cell, uint element_patch_idx, uint from_side=0) {
+    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
         arma::mat coords;
         switch (cell.dim()) {
         case 1:
             coords = MappingP1<1,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[from_side][0].register_element(coords, element_patch_idx);
+            return patch_point_vals_[0][0].register_element(coords, element_patch_idx);
             break;
         case 2:
         	coords = MappingP1<2,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[from_side][1].register_element(coords, element_patch_idx);
+            return patch_point_vals_[0][1].register_element(coords, element_patch_idx);
             break;
         case 3:
         	coords = MappingP1<3,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[from_side][2].register_element(coords, element_patch_idx);
+            return patch_point_vals_[0][2].register_element(coords, element_patch_idx);
             break;
         default:
         	ASSERT(false);
@@ -760,9 +760,23 @@ public:
         }
     }
 
-    /// Register point to patch_point_vals_ table by dimension of element
-    uint register_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx, uint from_side=0) {
-        return patch_point_vals_[from_side][cell.dim()-1].register_point(elem_table_row, value_patch_idx, cell.elm_idx());
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side) {
+        arma::mat side_coords(spacedim, cell_side.dim());
+        for (unsigned int n=0; n<cell_side.dim(); n++)
+            for (unsigned int c=0; c<spacedim; c++)
+                side_coords(c,n) = (*cell_side.side().node(n))[c];
+        return patch_point_vals_[1][cell_side.dim()-1].register_side(side_coords);
+    }
+
+    /// Register bulk point to patch_point_vals_ table by dimension of element
+    uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx) {
+        return patch_point_vals_[0][cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx());
+    }
+
+    /// Register side point to patch_point_vals_ table by dimension of side
+    uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx) {
+        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(), cell_side.side_idx());
     }
 
     /// Temporary development method

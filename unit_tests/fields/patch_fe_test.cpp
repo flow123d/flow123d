@@ -147,7 +147,7 @@ public:
             uint elm_pos = fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
             for (auto p : this->bulk_points(dim, element_patch_idx) ) {
                 unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                fe_values_.register_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx);
+                fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx);
             }
         }
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
@@ -155,11 +155,10 @@ public:
             uint dim = range.begin()->dim();
             for( DHCellSide edge_side : range )
             {
-                uint element_patch_idx = element_cache_map_.position_in_cache(edge_side.cell().elm_idx());
-            	uint elm_pos = fe_values_.register_element(edge_side.cell(), element_patch_idx, 1);
+            	uint side_pos = fe_values_.register_side(edge_side);
                 for (auto p : this->edge_points(dim, edge_side) ) {
-            	    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                    fe_values_.register_point(edge_side.cell(), elm_pos, value_cache_idx, 1);
+                    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+                    fe_values_.register_side_point(edge_side, side_pos, value_cache_idx);
                 }
             }
         }
