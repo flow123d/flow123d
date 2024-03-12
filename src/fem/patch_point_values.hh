@@ -179,7 +179,7 @@ public:
     typedef void (*ReinitFunction)(std::vector<ElOp<spacedim>> &, TableDbl &);
 
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ReinitFunction r_func, ElOp<spacedim> *input_op = nullptr)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ReinitFunction r_func = nullptr, ElOp<spacedim> *input_op = nullptr)
     : dim_(dim), shape_(shape), result_col_(result_col), reinit_func(r_func)
     {
         if (input_op != nullptr) {
@@ -205,8 +205,8 @@ public:
         return result_col_;
     }
 
-    void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
-    	reinit_func(operations, data_table);
+    inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
+    	if (reinit_func != nullptr) reinit_func(operations, data_table);
     }
 
 //    inline Scalar scalar_val(uint point_idx) const {
@@ -262,14 +262,12 @@ public:
 } // closing namespace FeBulk
 
 /// Defines reinit operations on bulk points.
-struct bulk_ops {
-	static inline void reinit_elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+struct bulk_reinit {
+	// element operations
+	static inline void elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
-    static inline void reinit_ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
-    static inline void reinit_elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+    static inline void elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         uint dim = operations[FeBulk::BulkOps::opJac].dim();
         uint result_begin_col = operations[FeBulk::BulkOps::opJac].result_col();
@@ -295,7 +293,7 @@ struct bulk_ops {
             }
         }
     }
-    static inline void reinit_elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
         // result double, input matrix(spacedim, dim)
         uint dim = operations[FeBulk::BulkOps::opJacDet].dim();
         uint result_begin_col = operations[FeBulk::BulkOps::opJacDet].result_col();
@@ -318,6 +316,17 @@ struct bulk_ops {
                 break;
             }
         }
+    }
+
+    // point operations
+    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_jac(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_jac_det(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
     }
 };
 
@@ -346,14 +355,12 @@ public:
 
 
 /// Defines reinit operations on side points.
-struct side_ops {
-	static inline void reinit_elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+struct side_reinit {
+	// element operations
+	static inline void elop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
-    static inline void reinit_ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
-    static inline void reinit_elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+    static inline void elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         uint dim = operations[FeSide::SideOps::opJac].dim();
         uint result_begin_col = operations[FeSide::SideOps::opJac].result_col();
@@ -379,7 +386,7 @@ struct side_ops {
             }
         }
     }
-    static inline void reinit_elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
+    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results) {
         // result double, input matrix(spacedim, dim)
         uint dim = operations[FeSide::SideOps::opJacDet].dim();
         uint result_begin_col = operations[FeSide::SideOps::opJacDet].result_col();
@@ -402,6 +409,17 @@ struct side_ops {
                 break;
             }
         }
+    }
+
+    // Point operations
+    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_jac(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_jac_det(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
     }
 };
 
