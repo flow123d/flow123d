@@ -142,7 +142,7 @@ namespace eigen_tools_test {
 
 // use only one of the following typedef
 //typedef VectorCol<200> UserVec;
-typedef Eigen::Array<double,200,1> UserVec;
+typedef Eigen::Array<double,Eigen::Dynamic,1> UserVec;
 
 
 
@@ -216,12 +216,14 @@ template<> inline UserVec determinant(const Eigen::Matrix<UserVec,3,3> &M)
 
 template<> inline UserVec determinant(FMT_UNUSED const Eigen::Matrix<UserVec,0,3> &M)
 {
-    return UserVec();
+    UserVec vec; vec.resize(200);
+    return vec;
 }
 
 template<> inline UserVec determinant(FMT_UNUSED const Eigen::Matrix<UserVec,3,0> &M)
 {
-    return UserVec();
+    UserVec vec; vec.resize(200);
+    return vec;
 }
 
 template<> inline UserVec determinant(const Eigen::Matrix<UserVec,1,2> &M)
@@ -468,12 +470,20 @@ TEST_F(FemToolsTest, speed_test) {
     std::vector< arma::mat::fixed<3,3> > mat33_vec(200);      // vector of armadillo objects
     std::vector< arma::mat::fixed<2,3> > mat23_vec(200);
     std::vector< arma::vec::fixed<3> > vec3_vec(200);
-    Eigen::Matrix<eigen_tools_test::UserVec,3,1> vec3_eigen;             // Eigen matrix of vector items
-    Eigen::Matrix<eigen_tools_test::UserVec,2,3> mat23_eigen;
-    Eigen::Matrix<eigen_tools_test::UserVec,3,3> mat33_eigen;
     std::vector< Eigen::Matrix<double,3,3> > eigen33_vec(200);  // vector of Eigen objects
     std::vector< Eigen::Matrix<double,2,3> > eigen23_vec(200);
     std::vector< Eigen::Matrix<double,3,1> > eigen3_vec(200);
+    Eigen::Matrix<eigen_tools_test::UserVec,3,1> vec3_eigen;             // Eigen matrix of vector items
+    Eigen::Matrix<eigen_tools_test::UserVec,2,3> mat23_eigen;
+    Eigen::Matrix<eigen_tools_test::UserVec,3,3> mat33_eigen;
+    for (uint i=0; i<vec3_eigen.size(); ++i)
+        vec3_eigen(i).resize(200);
+    for (uint r=0; r<mat23_eigen.rows(); ++r)
+        for (uint c=0; c<mat23_eigen.cols(); ++c)
+            mat23_eigen(r,c).resize(200);
+    for (uint r=0; r<mat33_eigen.rows(); ++r)
+        for (uint c=0; c<mat33_eigen.cols(); ++c)
+            mat33_eigen(r,c).resize(200);
     {
         // Fill arma and Eigen mats and vectors
         std::vector< arma::mat::fixed<3,3> > mat33_tmp = {
