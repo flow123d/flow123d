@@ -108,7 +108,7 @@ public:
     void reinit_patch() {
         // precompute data on el_vals_ table
         for (uint i=0; i<operations_.size(); ++i)
-            operations_[i].reinit_function(operations_, el_vals_);
+            operations_[i].reinit_elements(operations_, el_vals_);
 
         // copy data from el_vals_ to point_vals_
         std::vector<uint> copied; // list of columns that will be copied
@@ -124,7 +124,9 @@ public:
                 point_vals_(copied[i_q])(i_pt) = el_vals_(copied[i_q])(el_table_idx);
         }
 
-        // call reinit on point vals
+        // precompute data on point_vals_ table
+        for (uint i=0; i<operations_.size(); ++i)
+            operations_[i].reinit_points(operations_, point_vals_);
     }
 
     /// Temporary development method
@@ -211,8 +213,9 @@ public:
     typedef void (*ReinitFunction)(std::vector<ElOp<spacedim>> &, TableDbl &);
 
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, bool copy_vals, ReinitFunction r_func = nullptr, ElOp<spacedim> *input_op = nullptr)
-    : dim_(dim), shape_(shape), result_col_(result_col), copy_vals_(copy_vals), reinit_func(r_func)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, bool copy_vals, ReinitFunction el_func = nullptr,
+            ReinitFunction pt_func = nullptr, ElOp<spacedim> *input_op = nullptr)
+    : dim_(dim), shape_(shape), result_col_(result_col), copy_vals_(copy_vals), reinit_els_func(el_func), reinit_pts_func(pt_func)
     {
         if (input_op != nullptr) {
             uint first_col = input_op->result_col();
@@ -242,8 +245,14 @@ public:
         return copy_vals_;
     }
 
-    inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
-    	if (reinit_func != nullptr) reinit_func(operations, data_table);
+    /// Call reinit function on element table if function is defined
+    inline void reinit_elements(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
+    	if (reinit_els_func != nullptr) reinit_els_func(operations, data_table);
+    }
+
+    /// Call reinit function on point table if function is defined
+    inline void reinit_points(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
+    	if (reinit_pts_func != nullptr) reinit_pts_func(operations, data_table);
     }
 
 //    inline Scalar scalar_val(uint point_idx) const {
@@ -273,8 +282,8 @@ protected:
     std::vector<uint> input_column_;          ///< Vector of column on which ElOp is depended
     bool copy_vals_;                          ///< Flag marks if values of result columns are copied from el_vals to point_vals table
 
-    /// Pointer to patch reinit function specialized by operation
-    ReinitFunction reinit_func;
+    ReinitFunction reinit_els_func;           ///< Pointer to patch reinit function of element data table specialized by operation
+    ReinitFunction reinit_pts_func;           ///< Pointer to patch reinit function of point data table specialized by operation
 };
 
 
@@ -360,12 +369,6 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
-    static inline void ptop_jac(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
-    static inline void ptop_jac_det(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
 };
 
 
@@ -446,12 +449,6 @@ struct side_reinit {
 
     // Point operations
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
-    static inline void ptop_jac(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
-        // Implement
-    }
-    static inline void ptop_jac_det(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
 };

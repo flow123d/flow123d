@@ -96,13 +96,14 @@ template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operations_ vector
-    ElOp<spacedim> &coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false) );
+    ElOp<spacedim> &coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false, nullptr, &bulk_reinit::ptop_coords) );
     this->n_columns_ += coords_bulk.n_comp();
     ElOp<spacedim> &el_coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, true) );
     this->n_columns_ += el_coords_bulk.n_comp();
-    ElOp<spacedim> &jac_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &bulk_reinit::elop_jac, &el_coords_bulk) );
+    ElOp<spacedim> &jac_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &bulk_reinit::elop_jac,
+            nullptr, &el_coords_bulk) );
     this->n_columns_ += jac_bulk.n_comp();
-    ElOp<spacedim> &jac_det_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &bulk_reinit::elop_jac_det, &jac_bulk) );
+    ElOp<spacedim> &jac_det_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &bulk_reinit::elop_jac_det, nullptr, &jac_bulk) );
     this->n_columns_ += jac_det_bulk.n_comp();
 }
 
@@ -115,13 +116,14 @@ template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operations_ vector
-    ElOp<spacedim> &coords_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false) );
+    ElOp<spacedim> &coords_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false, nullptr, &side_reinit::ptop_coords) );
     this->n_columns_ += coords_side.n_comp();
     ElOp<spacedim> &el_coords_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, true) );
     this->n_columns_ += el_coords_side.n_comp();
-    ElOp<spacedim> &jac_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &side_reinit::elop_jac, &el_coords_side) );
+    ElOp<spacedim> &jac_side = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &side_reinit::elop_jac,
+            nullptr,  &el_coords_side) );
     this->n_columns_ += jac_side.n_comp();
-    ElOp<spacedim> &jac_det_side = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &side_reinit::elop_jac_det, &jac_side) );
+    ElOp<spacedim> &jac_det_side = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &side_reinit::elop_jac_det, nullptr, &jac_side) );
     this->n_columns_ += jac_det_side.n_comp();
 }
 
