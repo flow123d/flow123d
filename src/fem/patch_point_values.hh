@@ -106,9 +106,25 @@ public:
 
     /// Reinit data.
     void reinit_patch() {
-        // Doesn't need call reinit_functions with el_vals_ directly, should be point_vals_ in some cases
+        // precompute data on el_vals_ table
         for (uint i=0; i<operations_.size(); ++i)
             operations_[i].reinit_function(operations_, el_vals_);
+
+        // copy data from el_vals_ to point_vals_
+        std::vector<uint> copied; // list of columns that will be copied
+        for (uint i_op=0; i_op<operations_.size(); ++i_op)
+            if (operations_[i_op].copy_vals()) {
+            	uint res_col = operations_[i_op].result_col();
+            	for (uint i_col=res_col; i_col<res_col+operations_[i_op].n_comp(); ++i_col)
+            		copied.push_back(i_col);
+            }
+        for (uint i_pt=0; i_pt<n_points_; ++i_pt) {
+            uint el_table_idx = int_vals_(1)(i_pt);
+            for (uint i_q=0; i_q<copied.size(); ++i_q)
+                point_vals_(copied[i_q])(i_pt) = el_vals_(copied[i_q])(el_table_idx);
+        }
+
+        // call reinit on point vals
     }
 
     /// Temporary development method
@@ -195,8 +211,8 @@ public:
     typedef void (*ReinitFunction)(std::vector<ElOp<spacedim>> &, TableDbl &);
 
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, ReinitFunction r_func = nullptr, ElOp<spacedim> *input_op = nullptr)
-    : dim_(dim), shape_(shape), result_col_(result_col), reinit_func(r_func)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_col, bool copy_vals, ReinitFunction r_func = nullptr, ElOp<spacedim> *input_op = nullptr)
+    : dim_(dim), shape_(shape), result_col_(result_col), copy_vals_(copy_vals), reinit_func(r_func)
     {
         if (input_op != nullptr) {
             uint first_col = input_op->result_col();
@@ -219,6 +235,11 @@ public:
     /// Getter of result_col_
     inline uint result_col() const {
         return result_col_;
+    }
+
+    /// Getter of copy_vals_
+    inline bool copy_vals() const {
+        return copy_vals_;
     }
 
     inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table) {
@@ -250,6 +271,7 @@ protected:
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_col_;                         ///< First column to scalar, vector or matrix result
     std::vector<uint> input_column_;          ///< Vector of column on which ElOp is depended
+    bool copy_vals_;                          ///< Flag marks if values of result columns are copied from el_vals to point_vals table
 
     /// Pointer to patch reinit function specialized by operation
     ReinitFunction reinit_func;
