@@ -32,6 +32,7 @@
 #include "fem/dh_cell_accessor.hh"            // for DHCellAccessor, DHCellSide
 
 class Quadrature;
+template<unsigned int spacedim> class PatchPointValues;
 
 
 
@@ -134,10 +135,12 @@ public:
     inline unsigned int n_points()
     { return n_points_; }
 
+    /// Initialize ref_data or side_ref_data
+    void ref_initialize(Quadrature &_quadrature, unsigned int dim);
+
 protected:
     /// Precompute data on reference element.
     RefElementData *init_ref_data(const Quadrature &q);
-
 
 
     /// Dimension of space of reference cell.
@@ -155,6 +158,7 @@ protected:
     /// Data on reference element (for each side ).
     std::vector<RefElementData*> side_ref_data;
 
+    friend class PatchPointValues<spacedim>;
 };
 
 

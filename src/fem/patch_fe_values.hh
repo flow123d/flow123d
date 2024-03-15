@@ -542,12 +542,12 @@ public:
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
             // new data storing
-            patch_point_vals_[0][DIM-1].initialize(3); // bulk
+            patch_point_vals_[0][DIM-1].initialize(_quadrature, 3); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
             // new data storing
-            patch_point_vals_[1][DIM-1].initialize(4); // side
+            patch_point_vals_[1][DIM-1].initialize(_quadrature, 4); // side
         }
     }
 

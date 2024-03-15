@@ -28,12 +28,15 @@ PatchPointValues<spacedim>::PatchPointValues(uint dim)
 
 
 template<unsigned int spacedim>
-void PatchPointValues<spacedim>::initialize(uint int_cols) {
+void PatchPointValues<spacedim>::initialize(Quadrature &quad, uint int_cols) {
     this->reset();
 
 	point_vals_.resize(n_columns_);
 	int_vals_.resize(int_cols);
 	el_vals_.resize(n_columns_);
+
+	ref_elm_values_ = std::make_shared<RefElementValues<spacedim> >(quad, dim_);
+	ref_elm_values_ ->ref_initialize(quad, dim_);
 }
 
 template<unsigned int spacedim>

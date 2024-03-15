@@ -178,6 +178,12 @@ ElementValues<spacedim>::ElementValues(
 : RefElementValues<spacedim>(_quadrature, dim),
   data(this->n_points_, update_each(_flags), dim)
 {
+    this->ref_initialize(_quadrature, dim);
+}
+
+template<unsigned int spacedim>
+void RefElementValues<spacedim>::ref_initialize(Quadrature &_quadrature, unsigned int dim)
+{
     //if (dim == 0) return; // avoid unnecessary allocation of dummy 0 dimensional objects
     if ( _quadrature.dim() == dim )
     {
@@ -420,5 +426,6 @@ void ElementValues<spacedim>::fill_side_data()
 
 
 
+template class RefElementValues<3>;
 template class ElementValues<3>;
 

@@ -25,6 +25,7 @@
 
 #include "fem/eigen_tools.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/element_values.hh"
 
 
 template<unsigned int spacedim> class PatchFEValues;
@@ -58,7 +59,7 @@ public:
      * Number of columns of int_vals_ table is passed by argument, number of columns
      * of other tables is given by n_columns_ value.
      */
-    void initialize(uint int_cols);
+    void initialize(Quadrature &quad, uint int_cols);
 
     /// Reset number of rows (points and elements)
     inline void reset() {
@@ -205,6 +206,9 @@ protected:
 
     std::vector<uint> elements_map_;  ///< Map of element patch indices to el_vals_ table
     std::vector<uint> points_map_;    ///< Map of point patch indices  to point_vals_ and int_vals_ tables
+
+    /// Auxiliary object for calculation of element-dependent data.
+    std::shared_ptr<RefElementValues<spacedim> > ref_elm_values_;
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
