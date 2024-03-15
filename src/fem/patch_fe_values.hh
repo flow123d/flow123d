@@ -737,6 +737,17 @@ public:
 
     /** Following methods are used during update of patch. **/
 
+    /// Resize tables of patch_point_vals_
+    void resize_tables(std::vector<std::vector<uint> > dim_sizes) {
+        ASSERT_EQ(dim_sizes.size(), 4);
+        ASSERT_EQ(dim_sizes[0].size(), 3);
+
+        for (uint i=0; i<3; ++i) {
+        	patch_point_vals_[0][i].resize_tables(dim_sizes[0][i], dim_sizes[2][i]);
+        	patch_point_vals_[1][i].resize_tables(dim_sizes[1][i], dim_sizes[3][i]);
+        }
+    }
+
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
         arma::mat coords;

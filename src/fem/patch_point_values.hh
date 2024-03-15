@@ -89,6 +89,13 @@ public:
         return old_size;
     }
 
+    /// Resize data tables
+    void resize_tables(uint n_elems, uint n_points) {
+        eigen_tools::resize_table(point_vals_, n_points);
+        eigen_tools::resize_table(int_vals_, n_points);
+        eigen_tools::resize_table(el_vals_, n_elems);
+    }
+
     /// Register element to el_vals_ table
     uint register_element(arma::mat coords, uint element_patch_idx);
 
@@ -106,6 +113,7 @@ public:
 
     /// Reinit data.
     void reinit_patch() {
+        if (n_elems_ == 0) return; // skip if tables are empty
         // precompute data on el_vals_ table
         for (uint i=0; i<operations_.size(); ++i)
             operations_[i].reinit_elements(operations_, el_vals_);

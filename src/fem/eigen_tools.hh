@@ -28,13 +28,22 @@
 
 
 /// Definitions of Eigen structures
-typedef Eigen::Array<double,300,1>             ArrayDbl;
-typedef Eigen::Array<uint,300,1>               ArrayInt;
+typedef Eigen::Array<double,Eigen::Dynamic,1>  ArrayDbl;
+typedef Eigen::Array<uint,Eigen::Dynamic,1>    ArrayInt;
 typedef Eigen::Vector<ArrayDbl,Eigen::Dynamic> TableDbl;
 typedef Eigen::Vector<ArrayInt,Eigen::Dynamic> TableInt;
 
 
 namespace eigen_tools {
+
+/// Resize vector of Eigen::Array to given size
+template<class ET>
+void resize_table(typename Eigen::Vector<ET,Eigen::Dynamic> &table, uint size) {
+	for (uint i=0; i<table.rows(); ++i) {
+	    table(i).resize(size);
+	    table(i).setZero(size,1);
+	}
+}
 
 
 /**

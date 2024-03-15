@@ -72,7 +72,8 @@ public:
 	  jac_det_3d_( this->fe_values_.determinant(this->quad_[3]) ),
 	  jac_det_side_1d_( this->fe_values_.determinant_side(this->quad_[0]) ),
 	  jac_det_side_2d_( this->fe_values_.determinant_side(this->quad_[1]) ),
-	  jac_det_side_3d_( this->fe_values_.determinant_side(this->quad_[2]) )
+	  jac_det_side_3d_( this->fe_values_.determinant_side(this->quad_[2]) ),
+	  table_sizes_(4, std::vector<uint>(3, 0))
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -116,6 +117,9 @@ public:
         // Bulk integral
         uint subset_idx = bulk_integrals_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
+        uint dim = cell.dim();
+        table_sizes_[0][dim-1]++; // add rows for elements and bulk points to table
+        table_sizes_[2][dim-1] += eval_points_->subset_size(dim, subset_idx);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -125,12 +129,17 @@ public:
             element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
         }
 
+        // Edge integral
         for( DHCellSide cell_side : cell.side_range() ) {
             if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                 auto range = cell_side.edge_sides();
-                edge_integral_data_.emplace_back(range, edge_integrals_[range.begin()->dim()-1]->get_subset_idx());
+                uint subset_idx = edge_integrals_[range.begin()->dim()-1]->get_subset_idx();
+                edge_integral_data_.emplace_back(range, subset_idx);
 
                 for( DHCellSide edge_side : range ) {
+                    uint dim = edge_side.dim();
+                    table_sizes_[1][dim-1]++; // add rows for sides and sides points to table
+                    table_sizes_[3][dim-1] += eval_points_->subset_size(dim, subset_idx) / (dim+1);
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integrals_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
                         element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
@@ -141,6 +150,7 @@ public:
     }
 
     void update_patch() {
+    	fe_values_.resize_tables(table_sizes_);
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -181,6 +191,18 @@ public:
     ElQ<Scalar> jac_det_side_1d_;
     ElQ<Scalar> jac_det_side_2d_;
     ElQ<Scalar> jac_det_side_3d_;
+
+    /**
+     * STruct for pre-computing number of elements, sides, bulk points and side points on each dimension.
+     * Format:
+     *  { {n_elements_1D,    2D, 3D },
+     *    {n_sides_1D,       2D, 3D },
+     *    {n_bulk_points_1D, 2D, 3D },
+     *    {n_side_points_1D, 2D, 3D } }
+     *
+     * Passes its to PatchFEValues and sets size of tables in this object
+     */
+    std::vector<std::vector<uint> > table_sizes_;
 };
 
 TEST(PatchFeTest, bulk_points) {
