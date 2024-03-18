@@ -99,18 +99,33 @@ template<unsigned int spacedim>
 PatchPointValues<spacedim>::PatchPointValues(uint dim)
 : ::PatchPointValues<spacedim>(dim) {
     // add instances of ElOp descendants to operations_ vector
-    ElOp<spacedim> &coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false, nullptr, &bulk_reinit::ptop_coords) );
+    ElOp<spacedim> &coords_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {spacedim}, this->n_columns_, false,
+    				nullptr, &bulk_reinit::ptop_coords) );
+
     this->n_columns_ += coords_bulk.n_comp();
-    ElOp<spacedim> &el_coords_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, true) );
+    ElOp<spacedim> &el_coords_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {spacedim, this->dim_+1}, this->n_columns_, true) );
+
     this->n_columns_ += el_coords_bulk.n_comp();
-    ElOp<spacedim> &jac_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &bulk_reinit::elop_jac,
-            nullptr, &el_coords_bulk) );
+    ElOp<spacedim> &jac_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {spacedim, this->dim_}, this->n_columns_, true, &bulk_reinit::elop_jac,
+    				nullptr, &el_coords_bulk) );
+
     this->n_columns_ += jac_bulk.n_comp();
-    ElOp<spacedim> &jac_det_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &bulk_reinit::elop_jac_det, nullptr, &jac_bulk) );
+    ElOp<spacedim> &jac_det_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {1}, this->n_columns_, true, &bulk_reinit::elop_jac_det,
+    				nullptr, &jac_bulk) );
+
     this->n_columns_ += jac_det_bulk.n_comp();
-    ElOp<spacedim> &weights_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, false, nullptr, &bulk_reinit::ptop_weights) );
+    ElOp<spacedim> &weights_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {1}, this->n_columns_, false,
+    				nullptr, &bulk_reinit::ptop_weights) );
+
     this->n_columns_ += weights_bulk.n_comp();
-    ElOp<spacedim> &JxW_bulk = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_columns_, false, nullptr, &bulk_reinit::ptop_JxW, &weights_bulk) );
+    ElOp<spacedim> &JxW_bulk = this->add_accessor(
+    		ElOp<spacedim>(this->dim_, {1}, this->n_columns_, false,
+    				nullptr, &bulk_reinit::ptop_JxW, &weights_bulk) );
     this->n_columns_ += JxW_bulk.n_comp();
 }
 
