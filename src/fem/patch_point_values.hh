@@ -307,7 +307,9 @@ enum BulkOps
 	opCoords,
 	opElCoords,
 	opJac,
-	opJacDet
+	opJacDet,
+	opWeights,
+	opJxW
 };
 
 /// Bulk data specialization, order of item in operations_ vector corresponds to the BulkOps enum
@@ -381,6 +383,12 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
+    static inline void ptop_weights(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_JxW(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
 };
 
 
@@ -393,7 +401,9 @@ enum SideOps
 	opCoords,
 	opElCoords,
 	opJac,
-	opJacDet
+	opJacDet,
+	opWeights,
+	opJxW
 };
 
 template<unsigned int spacedim = 3>
@@ -461,6 +471,12 @@ struct side_reinit {
 
     // Point operations
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_weights(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
+        // Implement
+    }
+    static inline void ptop_JxW(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results) {
         // Implement
     }
 };
