@@ -647,7 +647,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant_side(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeBulk::BulkOps::opJacDet].result_col();
+        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeSide::SideOps::opJacDet].result_col();
         return ElQ<Scalar>(this, begin);
     }
 
