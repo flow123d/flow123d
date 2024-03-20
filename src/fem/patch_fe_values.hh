@@ -743,8 +743,8 @@ public:
         ASSERT_EQ(dim_sizes[0].size(), 3);
 
         for (uint i=0; i<3; ++i) {
-        	patch_point_vals_[0][i].resize_tables(dim_sizes[0][i], dim_sizes[2][i]);
-        	patch_point_vals_[1][i].resize_tables(dim_sizes[1][i], dim_sizes[3][i]);
+        	patch_point_vals_[0][i].resize_tables(dim_sizes[2][i]);
+        	patch_point_vals_[1][i].resize_tables(dim_sizes[3][i]);
         }
     }
 
@@ -791,12 +791,12 @@ public:
     }
 
     /// Temporary development method
-    void print(bool points, bool ints, bool elems, bool only_bulk=true) const {
+    void print(bool points, bool ints, bool only_bulk=true) const {
         for (uint i=0; i<3; ++i)
-            patch_point_vals_[0][i].print(points, ints, elems);
+            patch_point_vals_[0][i].print(points, ints);
         if (!only_bulk)
             for (uint i=0; i<3; ++i)
-                patch_point_vals_[1][i].print(points, ints, elems);
+                patch_point_vals_[1][i].print(points, ints);
     }
 
 private:

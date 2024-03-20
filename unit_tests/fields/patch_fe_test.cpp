@@ -228,5 +228,5 @@ TEST(PatchFeTest, bulk_points) {
     patch_fe.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
     patch_fe.update_patch();
 
-    patch_fe.fe_values_.print(true, true, true, false);
+    patch_fe.fe_values_.print(true, true, false);
 }
