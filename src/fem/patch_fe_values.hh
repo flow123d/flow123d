@@ -587,7 +587,7 @@ public:
     inline ElQ<Scalar> JxW(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
+        uint begin = patch_point_vals_[0][dim-1].add_rows(1); // scalar needs one column
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "JxW"); // storing to temporary map
 
         return ElQ<Scalar>(this, begin);
@@ -597,7 +597,7 @@ public:
     inline ElQ<Scalar> JxW_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[1][dim].add_columns(1);  // scalar needs one column
+        uint begin = patch_point_vals_[1][dim].add_rows(1);  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
 
         return ElQ<Scalar>(this, begin);
@@ -611,7 +611,7 @@ public:
 	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
         uint dim = quad->dim();  // side quadrature
-        uint begin = patch_point_vals_[1][dim].add_columns(3); // Vector needs 3 columns
+        uint begin = patch_point_vals_[1][dim].add_rows(3); // Vector needs 3 columns
         // storing to temporary map
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
 
@@ -621,7 +621,7 @@ public:
 	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opCoords].result_col();
+        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opCoords].result_row();
         return ElQ<Vector>(this, begin);
     }
 
@@ -629,7 +629,7 @@ public:
     inline ElQ<Vector> coords_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[1][dim].add_columns(3); // Vector needs 3 columns
+        uint begin = patch_point_vals_[1][dim].add_rows(3); // Vector needs 3 columns
 
         return ElQ<Vector>(this, begin);
     }
@@ -640,14 +640,14 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_col();
+        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
         return ElQ<Scalar>(this, begin);
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant_side(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeSide::SideOps::opJacDet].result_col();
+        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeSide::SideOps::opJacDet].result_row();
         return ElQ<Scalar>(this, begin);
     }
 
@@ -661,7 +661,7 @@ public:
     inline FeQ<Scalar> scalar_shape(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].add_columns(this->n_dofs(dim)); // scalar needs one column
+        uint begin = patch_point_vals_[0][dim-1].add_rows(this->n_dofs(dim)); // scalar needs one column
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
 
         return FeQ<Scalar>(this, begin);
@@ -671,7 +671,7 @@ public:
     inline FeQ<Scalar> scalar_shape_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[1][dim].add_columns(this->n_dofs(dim+1));  // scalar needs one column
+       	uint begin = patch_point_vals_[1][dim].add_rows(this->n_dofs(dim+1));  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_value");
 
         return FeQ<Scalar>(this, begin);
@@ -687,7 +687,7 @@ public:
     {
         ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[0][dim-1].add_columns(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_[0][dim-1].add_rows(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
 
         return FeQ<Vector>(this, begin);
@@ -698,7 +698,7 @@ public:
     {
         ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[1][dim].add_columns(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_[1][dim].add_rows(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad");
 
         return FeQ<Vector>(this, begin);
@@ -714,11 +714,11 @@ public:
         uint begin=-1, begin_side=-1;
 
         if (quad_vec[0] != nullptr) {
-            begin = patch_point_vals_[0][dim-1].add_columns(1); // scalar needs one column
+            begin = patch_point_vals_[0][dim-1].add_rows(1); // scalar needs one column
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "scalar_join_shape"); // storing to temporary map
         }
         if (quad_vec[1] != nullptr) {
-            begin_side = patch_point_vals_[1][dim-1].add_columns(1); // scalar needs one column
+            begin_side = patch_point_vals_[1][dim-1].add_rows(1); // scalar needs one column
             func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "scalar_join_shape"); // storing to temporary map
         }
 
