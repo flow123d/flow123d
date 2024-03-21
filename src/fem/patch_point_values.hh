@@ -190,12 +190,6 @@ public:
         return n_points_++;
     }
 
-    /// Add accessor to operations_ vector - temporary method
-    ElOp<spacedim> &add_accessor(ElOp<spacedim> op_accessor) {
-    	operations_.push_back(op_accessor);
-    	return operations_[operations_.size()-1];
-    }
-
     /// Add accessor to operations_ vector
     ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_func, std::vector<uint> input_ops_vec) {
     	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_func, input_ops_vec);
@@ -578,20 +572,14 @@ namespace FeBulk {
                     el_jac_det, {1}, &bulk_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            ElOp<spacedim> &coords = this->add_accessor(
-            		ElOp<spacedim>(this->dim_, {spacedim}, this->n_rows_,
-            				&bulk_reinit::ptop_coords) );
-            this->n_rows_ += coords.n_comp();
+            /*auto &pt_coords =*/ this->make_new_op(
+                    {spacedim}, &bulk_reinit::ptop_coords, {} );
 
-            ElOp<spacedim> &weights = this->add_accessor(
-            		ElOp<spacedim>(this->dim_, {1}, this->n_rows_,
-            				&bulk_reinit::ptop_weights) );
-            this->n_rows_ += weights.n_comp();
+            /*auto &weights =*/ this->make_new_op(
+                    {1}, &bulk_reinit::ptop_weights, {} );
 
-            ElOp<spacedim> &JxW = this->add_accessor(
-            		ElOp<spacedim>(this->dim_, {1}, this->n_rows_,
-            				&bulk_reinit::ptop_JxW, {BulkOps::opWeights}) );
-            this->n_rows_ += JxW.n_comp();
+            /*auto &JxW =*/ this->make_new_op(
+                    {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
         }
     };
 
@@ -626,14 +614,14 @@ namespace FeSide {
                     el_jac_det, {1}, &side_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            ElOp<spacedim> &coords = this->add_accessor( ElOp<spacedim>(this->dim_, {spacedim}, this->n_rows_, &side_reinit::ptop_coords) );
-            this->n_rows_ += coords.n_comp();
+            /*auto &coords =*/ this->make_new_op(
+                    {spacedim}, &side_reinit::ptop_coords, {} );
 
-            ElOp<spacedim> &weights = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_rows_, &side_reinit::ptop_weights) );
-            this->n_rows_ += weights.n_comp();
+            /*auto &weights =*/ this->make_new_op(
+                    {1}, &side_reinit::ptop_weights, {} );
 
-            ElOp<spacedim> &JxW = this->add_accessor( ElOp<spacedim>(this->dim_, {1}, this->n_rows_, &side_reinit::ptop_JxW, {SideOps::opWeights}) );
-            this->n_rows_ += JxW.n_comp();
+            /*auto &JxW =*/ this->make_new_op(
+                    {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opJacDet} );
         }
     };
 
