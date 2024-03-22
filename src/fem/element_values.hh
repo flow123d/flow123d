@@ -138,10 +138,6 @@ public:
     /// Initialize ref_data or side_ref_data
     void ref_initialize(Quadrature &_quadrature, unsigned int dim);
 
-protected:
-    /// Precompute data on reference element.
-    RefElementData *init_ref_data(const Quadrature &q);
-
 
     /// Dimension of space of reference cell.
     const unsigned int dim_;
@@ -157,6 +153,11 @@ protected:
 
     /// Data on reference element (for each side ).
     std::vector<RefElementData*> side_ref_data;
+
+protected:
+    /// Precompute data on reference element.
+    RefElementData *init_ref_data(const Quadrature &q);
+
 
     friend class PatchPointValues<spacedim>;
 };

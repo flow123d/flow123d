@@ -38,7 +38,7 @@ using Tensor = arma::mat33;
 
 
 /// Type for conciseness
-typedef void (*ReinitFunction)(std::vector<ElOp<3>> &, TableDbl &, TableInt &);
+using ReinitFunction = std::function<void(std::vector<ElOp<3>> &, TableDbl &, TableInt &)>;
 
 
 namespace FeBulk {
@@ -102,11 +102,13 @@ public:
     void initialize(Quadrature &quad, uint int_cols) {
         this->reset();
 
-    	point_vals_.resize(n_rows_);
-    	int_vals_.resize(int_cols);
-
     	ref_elm_values_ = std::make_shared<RefElementValues<spacedim> >(quad, dim_);
     	ref_elm_values_->ref_initialize(quad, dim_);
+
+    	this->postponed_reinit_functions();
+
+    	point_vals_.resize(n_rows_);
+    	int_vals_.resize(int_cols);
     }
 
     /// Reset number of rows (points and elements)
@@ -191,16 +193,16 @@ public:
     }
 
     /// Add accessor to operations_ vector
-    ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_func, std::vector<uint> input_ops_vec) {
-    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_func, input_ops_vec);
+    ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, std::vector<uint> input_ops_vec) {
+    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, input_ops_vec);
     	this->n_rows_ += op_accessor.n_comp();
     	operations_.push_back(op_accessor);
     	return operations_[operations_.size()-1];
     }
 
     /// Add accessor to operations_ vector
-    ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape, ReinitFunction reinit_func) {
-        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row(), reinit_func);
+    ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape) {
+        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row());
         // shape passed from el_op throws:
         // C++ exception with description "std::bad_alloc" thrown in the test body.
         operations_.push_back(op_accessor);
@@ -213,7 +215,7 @@ public:
         if (n_elems_ == 0) return; // skip if tables are empty
         // precompute data on point_vals_ table
         for (uint i=0; i<operations_.size(); ++i)
-            operations_[i].reinit_funtionc(operations_, point_vals_, int_vals_);
+            operations_[i].reinit_function(operations_, point_vals_, int_vals_);
 
 //        // copy data from el_vals_ to point_vals_
 //        std::vector<uint> copied; // list of columns that will be copied
@@ -259,6 +261,11 @@ public:
     }
 
 protected:
+    /// Set posponed reinit functions.
+    virtual void postponed_reinit_functions() {
+        ASSERT_PERMANENT(false).error("Must be define in descendant!");
+    }
+
     /**
      * Store data of bulk or side quadrature points of one dimension
      *
@@ -303,9 +310,8 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_fn,
-            std::vector<uint> input_ops = {})
-    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), reinit_func(reinit_fn)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, std::vector<uint> input_ops = {})
+    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops)
     {}
 
     /// Number of components computed from shape_ vector
@@ -330,8 +336,14 @@ public:
     }
 
     /// Call reinit function on element table if function is defined
-    inline void reinit_funtionc(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table, TableInt &int_table) {
+    inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table, TableInt &int_table) {
     	if (reinit_func != nullptr) reinit_func(operations, data_table, int_table);
+    }
+
+    /// Set reinit function of the operation.
+    ElOp<spacedim> &reinit_function(ReinitFunction reinit_func) {
+    	this->reinit_func = reinit_func;
+    	return *this;
     }
 
 //    inline Scalar scalar_val(uint point_idx) const {
@@ -456,8 +468,12 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-        // Implement
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, std::vector<double> point_weights) {
+        auto &op = operations[FeBulk::BulkOps::opWeights];
+        ArrayDbl &result_row = op_results( op.result_row() );
+        auto n_points = point_weights.size();
+        for (uint i=0; i<result_row.rows(); ++i)
+            result_row(i) = point_weights[i%n_points];
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeBulk::BulkOps::opJxW];
@@ -480,13 +496,13 @@ struct side_reinit {
         uint input_begin_row = operations[op.input_ops()[0]].result_row();
         switch (op.dim()) {
             // no evaluation for dim=0, shape of Jacobian (spacedim,0)
-            case 1: {
+            case 2: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
                 result_mat = eigen_tools::jacobian<3,1>(input_mat);
                 break;
             }
-            case 2: {
+            case 3: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> result_mat(op_results.data() + result_begin_row, 3, 2);
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
                 result_mat = eigen_tools::jacobian<3,2>(input_mat);
@@ -501,17 +517,17 @@ struct side_reinit {
         uint input_begin_row = operations[op.input_ops()[0]].result_row();
         ArrayDbl &result_vec = op_results(result_begin_row);
         switch (op.dim()) {
-            case 0: {
+            case 1: {
                 for (uint i=0;i<300; ++i)
                     result_vec(i) = 1.0;
                 break;
             }
-            case 1: {
+            case 2: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> input_mat(op_results.data() + input_begin_row, 3, 1);
                 result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 1>>(input_mat);
                 break;
             }
-            case 2: {
+            case 3: {
                 Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
                 result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 2>>(input_mat);
                 break;
@@ -537,8 +553,14 @@ struct side_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-        // Implement
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table, std::vector<RefElementData*> side_ref_data) {
+        auto &op = operations[FeSide::SideOps::opWeights];
+        ArrayDbl &result_row = op_results( op.result_row() );
+        auto n_points = side_ref_data[0]->weights.size(); // side_idx in third column of element table
+        for (uint i=0; i<result_row.rows(); ++i) {
+            uint i_side = el_table(3)(i);
+            result_row(i) = side_ref_data[i_side]->weights[i%n_points];
+        }
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opJxW];
@@ -556,38 +578,48 @@ namespace FeBulk {
     template<unsigned int spacedim = 3>
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
-        /// Constructor fills operations_ vector.
+        /// Constructor
         PatchPointValues(uint dim)
         : ::PatchPointValues<spacedim>(dim) {
             // First step: adds element values operations
-            auto &el_coords = this->make_new_op(
-                    {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
+            auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, {} )
+                    .reinit_function( &common_reinit::op_base );
 
-            auto &el_jac = this->make_new_op(
-                    {spacedim, this->dim_}, &bulk_reinit::elop_jac, {BulkOps::opElCoords} );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, {BulkOps::opElCoords} )
+                    .reinit_function( &bulk_reinit::elop_jac );
 
-            auto &el_jac_det = this->make_new_op(
-                    {1}, &bulk_reinit::elop_jac_det, {BulkOps::opJac} );
+            auto &el_jac_det = this->make_new_op( {1}, {BulkOps::opJac} )
+                    .reinit_function( &bulk_reinit::elop_jac_det );
 
             // Second step: adds expand operations (element values to point values)
-            this->make_expansion(
-                    el_coords, {spacedim, this->dim_+1}, &bulk_reinit::expd_coords );
+            this->make_expansion( el_coords, {spacedim, this->dim_+1} )
+                    .reinit_function( &bulk_reinit::expd_coords );
 
-            this->make_expansion(
-                    el_jac, {spacedim, this->dim_}, &bulk_reinit::expd_jac );
+            this->make_expansion( el_jac, {spacedim, this->dim_} )
+                    .reinit_function( &bulk_reinit::expd_jac );
 
-            this->make_expansion(
-                    el_jac_det, {1}, &bulk_reinit::expd_jac_det );
+            this->make_expansion( el_jac_det, {1} )
+                    .reinit_function( &bulk_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            /*auto &pt_coords =*/ this->make_new_op(
-                    {spacedim}, &bulk_reinit::ptop_coords, {} );
+            /*auto &pt_coords =*/ this->make_new_op( {spacedim}, {} )
+                    .reinit_function( &bulk_reinit::ptop_coords );
 
-            /*auto &weights =*/ this->make_new_op(
-                    {1}, &bulk_reinit::ptop_weights, {} );
+            // postponed setting of reinit function
+            /*auto &weights =*/ this->make_new_op( {1}, {} );
 
-            /*auto &JxW =*/ this->make_new_op(
-                    {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
+            /*auto &JxW =*/ this->make_new_op( {1}, {BulkOps::opWeights, BulkOps::opJacDet} )
+                    .reinit_function( &bulk_reinit::ptop_JxW );
+        }
+
+    protected:
+        /// Implement ::PatchPointValues::postponed_reinit_functions
+        void postponed_reinit_functions() override {
+            std::vector<double> point_weights = this->ref_elm_values_->ref_data->weights;
+            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                    bulk_reinit::ptop_weights(operations, op_results, point_weights);
+                };
+            this->operations_[BulkOps::opWeights].reinit_function( lambda_weights );
         }
     };
 
@@ -601,35 +633,48 @@ namespace FeSide {
     template<unsigned int spacedim = 3>
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
-        /// Constructor fills operations_ vector.
+        /// Constructor
         PatchPointValues(uint dim)
         : ::PatchPointValues<spacedim>(dim) {
             // First step: adds element values operations
-            auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
+            auto &el_coords = this->make_new_op( {spacedim, this->dim_}, {} )
+                    .reinit_function( &common_reinit::op_base );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &side_reinit::elop_jac, {SideOps::opElCoords} );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_-1}, {SideOps::opElCoords} )
+                    .reinit_function( &side_reinit::elop_jac );
 
-            auto &el_jac_det = this->make_new_op( {1}, &side_reinit::elop_jac_det, {SideOps::opJac} );
+            auto &el_jac_det = this->make_new_op( {1}, {SideOps::opJac} )
+                    .reinit_function( &side_reinit::elop_jac_det );
 
             // Second step: adds expand operations (element values to point values)
-            this->make_expansion(
-                    el_coords, {spacedim, this->dim_+1}, &side_reinit::expd_coords );
+            this->make_expansion( el_coords, {spacedim, this->dim_} )
+                    .reinit_function( &side_reinit::expd_coords );
 
-            this->make_expansion(
-                    el_jac, {spacedim, this->dim_}, &side_reinit::expd_jac );
+            this->make_expansion( el_jac, {spacedim, this->dim_-1} )
+                    .reinit_function( &side_reinit::expd_jac );
 
-            this->make_expansion(
-                    el_jac_det, {1}, &side_reinit::expd_jac_det );
+            this->make_expansion( el_jac_det, {1} )
+                    .reinit_function( &side_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            /*auto &coords =*/ this->make_new_op(
-                    {spacedim}, &side_reinit::ptop_coords, {} );
+            /*auto &coords =*/ this->make_new_op( {spacedim}, {} )
+                    .reinit_function( &side_reinit::ptop_coords );
 
-            /*auto &weights =*/ this->make_new_op(
-                    {1}, &side_reinit::ptop_weights, {} );
+            // postponed setting of reinit function
+            /*auto &weights =*/ this->make_new_op( {1}, {} );
 
-            /*auto &JxW =*/ this->make_new_op(
-                    {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opJacDet} );
+            /*auto &JxW =*/ this->make_new_op( {1}, {SideOps::opWeights, SideOps::opJacDet} )
+                    .reinit_function( &side_reinit::ptop_JxW );
+        }
+
+    protected:
+        /// Implement ::PatchPointValues::postponed_reinit_functions
+        void postponed_reinit_functions() override {
+            std::vector<RefElementData*> side_ref_data = this->ref_elm_values_->side_ref_data;
+            auto lambda_weights = [side_ref_data](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+                    side_reinit::ptop_weights(operations, op_results, el_table, side_ref_data);
+                };
+            this->operations_[SideOps::opWeights].reinit_function( lambda_weights );
         }
     };
 

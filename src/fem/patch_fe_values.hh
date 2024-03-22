@@ -508,16 +508,16 @@ public:
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
       dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_{ { {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)},
-                           {FeSide::PatchPointValues(0), FeSide::PatchPointValues(1), FeSide::PatchPointValues(2)} } } {
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1), FeSide::PatchPointValues(2), FeSide::PatchPointValues(3)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  patch_point_vals_{ { {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)},
-                           {FeSide::PatchPointValues(0), FeSide::PatchPointValues(1), FeSide::PatchPointValues(2)} } },
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1), FeSide::PatchPointValues(2), FeSide::PatchPointValues(3)} },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -542,12 +542,12 @@ public:
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
             // new data storing
-            patch_point_vals_[0][DIM-1].initialize(_quadrature, 3); // bulk
+            patch_point_vals_bulk_[DIM-1].initialize(_quadrature, 3); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
             // new data storing
-            patch_point_vals_[1][DIM-1].initialize(_quadrature, 4); // side
+            patch_point_vals_side_[DIM-1].initialize(_quadrature, 4); // side
         }
     }
 
@@ -564,8 +564,8 @@ public:
     void reinit_patch()
     {
         for (unsigned int i=0; i<3; ++i) {
-            patch_point_vals_[0][i].reinit_patch();
-            if (used_quads_[1]) patch_point_vals_[1][i].reinit_patch();
+            patch_point_vals_bulk_[i].reinit_patch();
+            if (used_quads_[1]) patch_point_vals_side_[i].reinit_patch();
         }
     }
 
@@ -587,7 +587,7 @@ public:
     inline ElQ<Scalar> JxW(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].add_rows(1); // scalar needs one column
+        uint begin = patch_point_vals_bulk_[dim-1].add_rows(1); // scalar needs one column
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "JxW"); // storing to temporary map
 
         return ElQ<Scalar>(this, begin);
@@ -597,7 +597,7 @@ public:
     inline ElQ<Scalar> JxW_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[1][dim].add_rows(1);  // scalar needs one column
+        uint begin = patch_point_vals_side_[dim].add_rows(1);  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
 
         return ElQ<Scalar>(this, begin);
@@ -611,7 +611,7 @@ public:
 	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
         uint dim = quad->dim();  // side quadrature
-        uint begin = patch_point_vals_[1][dim].add_rows(3); // Vector needs 3 columns
+        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
         // storing to temporary map
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
 
@@ -621,7 +621,7 @@ public:
 	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opCoords].result_row();
+        uint begin = patch_point_vals_bulk_[quad->dim()-1].operations_[FeBulk::BulkOps::opCoords].result_row();
         return ElQ<Vector>(this, begin);
     }
 
@@ -629,7 +629,7 @@ public:
     inline ElQ<Vector> coords_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[1][dim].add_rows(3); // Vector needs 3 columns
+        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
 
         return ElQ<Vector>(this, begin);
     }
@@ -640,14 +640,14 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[0][quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
+        uint begin = patch_point_vals_bulk_[quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
         return ElQ<Scalar>(this, begin);
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant_side(Quadrature *quad)
     {
-        uint begin = patch_point_vals_[1][quad->dim()].operations_[FeSide::SideOps::opJacDet].result_row();
+        uint begin = patch_point_vals_side_[quad->dim()].operations_[FeSide::SideOps::opJacDet].result_row();
         return ElQ<Scalar>(this, begin);
     }
 
@@ -661,7 +661,7 @@ public:
     inline FeQ<Scalar> scalar_shape(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_[0][dim-1].add_rows(this->n_dofs(dim)); // scalar needs one column
+        uint begin = patch_point_vals_bulk_[dim-1].add_rows(this->n_dofs(dim)); // scalar needs one column
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
 
         return FeQ<Scalar>(this, begin);
@@ -671,7 +671,7 @@ public:
     inline FeQ<Scalar> scalar_shape_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[1][dim].add_rows(this->n_dofs(dim+1));  // scalar needs one column
+       	uint begin = patch_point_vals_side_[dim].add_rows(this->n_dofs(dim+1));  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_value");
 
         return FeQ<Scalar>(this, begin);
@@ -687,7 +687,7 @@ public:
     {
         ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[0][dim-1].add_rows(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_bulk_[dim-1].add_rows(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
 
         return FeQ<Vector>(this, begin);
@@ -698,7 +698,7 @@ public:
     {
         ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_[1][dim].add_rows(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_side_[dim].add_rows(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad");
 
         return FeQ<Vector>(this, begin);
@@ -714,11 +714,11 @@ public:
         uint begin=-1, begin_side=-1;
 
         if (quad_vec[0] != nullptr) {
-            begin = patch_point_vals_[0][dim-1].add_rows(1); // scalar needs one column
+            begin = patch_point_vals_bulk_[dim-1].add_rows(1); // scalar needs one column
             func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "scalar_join_shape"); // storing to temporary map
         }
         if (quad_vec[1] != nullptr) {
-            begin_side = patch_point_vals_[1][dim-1].add_rows(1); // scalar needs one column
+            begin_side = patch_point_vals_side_[dim-1].add_rows(1); // scalar needs one column
             func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "scalar_join_shape"); // storing to temporary map
         }
 
@@ -743,8 +743,8 @@ public:
         ASSERT_EQ(dim_sizes[0].size(), 3);
 
         for (uint i=0; i<3; ++i) {
-        	patch_point_vals_[0][i].resize_tables(dim_sizes[2][i]);
-        	patch_point_vals_[1][i].resize_tables(dim_sizes[3][i]);
+        	patch_point_vals_bulk_[i].resize_tables(dim_sizes[2][i]);
+        	patch_point_vals_side_[i].resize_tables(dim_sizes[3][i]);
         }
     }
 
@@ -754,15 +754,15 @@ public:
         switch (cell.dim()) {
         case 1:
             coords = MappingP1<1,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][0].register_element(coords, element_patch_idx);
+            return patch_point_vals_bulk_[0].register_element(coords, element_patch_idx);
             break;
         case 2:
         	coords = MappingP1<2,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][1].register_element(coords, element_patch_idx);
+            return patch_point_vals_bulk_[1].register_element(coords, element_patch_idx);
             break;
         case 3:
         	coords = MappingP1<3,spacedim>::element_map(cell.elm());
-            return patch_point_vals_[0][2].register_element(coords, element_patch_idx);
+            return patch_point_vals_bulk_[2].register_element(coords, element_patch_idx);
             break;
         default:
         	ASSERT(false);
@@ -777,33 +777,34 @@ public:
         for (unsigned int n=0; n<cell_side.dim(); n++)
             for (unsigned int c=0; c<spacedim; c++)
                 side_coords(c,n) = (*cell_side.side().node(n))[c];
-        return patch_point_vals_[1][cell_side.dim()-1].register_side(side_coords);
+        return patch_point_vals_side_[cell_side.dim()-1].register_side(side_coords);
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
     uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx) {
-        return patch_point_vals_[0][cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx());
+        return patch_point_vals_bulk_[cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx());
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
     uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx) {
-        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(), cell_side.side_idx());
+        return patch_point_vals_side_[cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(), cell_side.side_idx());
     }
 
     /// Temporary development method
     void print(bool points, bool ints, bool only_bulk=true) const {
         for (uint i=0; i<3; ++i)
-            patch_point_vals_[0][i].print(points, ints);
+            patch_point_vals_bulk_[i].print(points, ints);
         if (!only_bulk)
             for (uint i=0; i<3; ++i)
-                patch_point_vals_[1][i].print(points, ints);
+                patch_point_vals_side_[i].print(points, ints);
     }
 
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
     std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
-    std::array< std::array<PatchPointValues<spacedim>, 3>, 2 > patch_point_vals_;
+    std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;
+    std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;
     DimPointTable dim_point_table_;
 
     MixedPtr<FiniteElement> fe_;         ///< Mixed of shared pointers of FiniteElement object
