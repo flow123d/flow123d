@@ -850,15 +850,8 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
-//    //unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-//	auto it = fe_values_->func_map_side_.find(begin_);
-//    if (it->second.func_name_ == "JxW") {
-//        return it->second.point_data_->JxW(point);
-//    } else {
-//        //ASSERT_PERMANENT(false).error("Should not happen.");
-//        return 0.0;
-//    }
-    return 0.0;
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
 }
 
 template <>

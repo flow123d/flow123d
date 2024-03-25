@@ -244,6 +244,27 @@ TEST(PatchFeTest, bulk_points) {
             jac_det = patch_fe.jac_det_3d_(p);
             break;
         }
-        std::cout << " element " << p.elem_patch_idx() << ", jac determinant: " << jac_det << std::endl;
+        std::cout << " element " << dh_cell.elm_idx() << ", jac determinant: " << jac_det << std::endl;
+    }
+
+    for (unsigned int i=0; i<patch_fe.edge_integral_data_.permanent_size(); ++i) {
+    	auto range = patch_fe.edge_integral_data_[i].edge_side_range;
+
+        auto zero_edge_side = *range.begin();
+        auto p = *( patch_fe.edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &patch_fe.element_cache_map_).begin() );
+
+        double jac_det = 0.0;
+        switch (zero_edge_side.dim()) {
+        case 1:
+            jac_det = patch_fe.jac_det_side_1d_(p);
+            break;
+        case 2:
+            jac_det = patch_fe.jac_det_side_2d_(p);
+            break;
+        case 3:
+            jac_det = patch_fe.jac_det_side_3d_(p);
+            break;
+        }
+        std::cout << " element " << zero_edge_side.elem_idx() << ", side " << zero_edge_side.side_idx() << ", jac determinant: " << jac_det << std::endl;
     }
 }
