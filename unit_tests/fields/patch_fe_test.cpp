@@ -229,4 +229,21 @@ TEST(PatchFeTest, bulk_points) {
     patch_fe.update_patch();
 
     patch_fe.fe_values_.print(true, true, false);
+
+    for(auto dh_cell : patch_fe.dh_->local_range() ) {
+        auto p = *( patch_fe.bulk_integrals_[dh_cell.dim()-1]->points(patch_fe.element_cache_map_.position_in_cache(dh_cell.elm_idx()), &patch_fe.element_cache_map_).begin() );
+        double jac_det = 0.0;
+        switch (dh_cell.dim()) {
+        case 1:
+            jac_det = patch_fe.jac_det_1d_(p);
+            break;
+        case 2:
+            jac_det = patch_fe.jac_det_2d_(p);
+            break;
+        case 3:
+            jac_det = patch_fe.jac_det_3d_(p);
+            break;
+        }
+        std::cout << " element " << p.elem_patch_idx() << ", jac determinant: " << jac_det << std::endl;
+    }
 }
