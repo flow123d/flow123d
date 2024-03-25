@@ -53,8 +53,8 @@ public:
     ElQ() = delete;
 
     /// Constructor
-    ElQ(PatchFEValues<3> *fe_values, unsigned int begin)
-    : fe_values_(fe_values), begin_(begin) {}
+    ElQ(PatchPointValues<3> &patch_point_vals, unsigned int begin)
+    : patch_point_vals_(patch_point_vals), begin_(begin) {}
 
     ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
@@ -62,7 +62,7 @@ public:
 
 private:
     // attributes:
-    PatchFEValues<3> *fe_values_;
+    PatchPointValues<3> &patch_point_vals_;
     unsigned int begin_;       /// Index of the first component of the bulk Quantity. Size is given by ValueType
 };
 
@@ -586,21 +586,23 @@ public:
      */
     inline ElQ<Scalar> JxW(Quadrature *quad)
     {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_bulk_[dim-1].add_rows(1); // scalar needs one column
-        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "JxW"); // storing to temporary map
+        // old access to FE data structures -  TODO apply new
+        uint dim = quad->dim()-1;
+        uint begin = patch_point_vals_bulk_[dim].add_rows(1); // scalar needs one column
+        func_map_[begin] = FuncDef( &dim_fe_vals_[dim], "JxW"); // storing to temporary map
 
-        return ElQ<Scalar>(this, begin);
+        return ElQ<Scalar>(patch_point_vals_bulk_[dim], begin);
     }
 
     /// Same as previous but register at side quadrature points.
     inline ElQ<Scalar> JxW_side(Quadrature *quad)
     {
+        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();
         uint begin = patch_point_vals_side_[dim].add_rows(1);  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
 
-        return ElQ<Scalar>(this, begin);
+        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
     }
 
     /**
@@ -610,28 +612,31 @@ public:
      */
 	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
+        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();  // side quadrature
         uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
         // storing to temporary map
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
 
-        return ElQ<Vector>(this, begin);
+        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
 	}
 
 	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords(Quadrature *quad)
     {
-        uint begin = patch_point_vals_bulk_[quad->dim()-1].operations_[FeBulk::BulkOps::opCoords].result_row();
-        return ElQ<Vector>(this, begin);
+        uint dim = quad->dim()-1;
+        uint begin = patch_point_vals_bulk_[dim].operations_[FeBulk::BulkOps::opCoords].result_row();
+        return ElQ<Vector>(patch_point_vals_bulk_[dim], begin);
     }
 
 	/// Create side accessor of coords entity
     inline ElQ<Vector> coords_side(Quadrature *quad)
     {
+        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();
         uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
 
-        return ElQ<Vector>(this, begin);
+        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -640,15 +645,17 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant(Quadrature *quad)
     {
-        uint begin = patch_point_vals_bulk_[quad->dim()-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
-        return ElQ<Scalar>(this, begin);
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_bulk_[dim-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_bulk_[dim-1], begin);
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant_side(Quadrature *quad)
     {
-        uint begin = patch_point_vals_side_[quad->dim()].operations_[FeSide::SideOps::opJacDet].result_row();
-        return ElQ<Scalar>(this, begin);
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
     }
 
     /**
@@ -825,16 +832,8 @@ private:
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
-    // unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-    // auto &dpt_row = this->fe_values_->dim_point_table_[value_cache_idx];
-    // return ( this->fe_values_->patch_data_[0][dpt_row[0]] )[this->begin_][dpt_row[2]];
-    auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "JxW") {
-        return it->second.point_data_->JxW(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        return 0.0;
-    }
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
 }
 
 template <>
@@ -851,26 +850,27 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
-    //unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-	auto it = fe_values_->func_map_side_.find(begin_);
-    if (it->second.func_name_ == "JxW") {
-        return it->second.point_data_->JxW(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        return 0.0;
-    }
+//    //unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
+//	auto it = fe_values_->func_map_side_.find(begin_);
+//    if (it->second.func_name_ == "JxW") {
+//        return it->second.point_data_->JxW(point);
+//    } else {
+//        //ASSERT_PERMANENT(false).error("Should not happen.");
+//        return 0.0;
+//    }
+    return 0.0;
 }
 
 template <>
-inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_side_.find(begin_);
-    if (it->second.func_name_ == "normal_vector") {
-        return it->second.point_data_->normal_vector(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
+inline Vector ElQ<Vector>::operator()(FMT_UNUSED const SidePoint &point) {
+//	auto it = fe_values_->func_map_side_.find(begin_);
+//    if (it->second.func_name_ == "normal_vector") {
+//        return it->second.point_data_->normal_vector(point);
+//    } else {
+//        //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
         return vect;
-    }
+//    }
 }
 
 template <>

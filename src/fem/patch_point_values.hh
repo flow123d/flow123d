@@ -236,6 +236,25 @@ public:
 //            operations_[i].reinit_points(operations_, point_vals_);
     }
 
+    inline Scalar scalar_val(uint result_row, uint point_idx) const {
+        return point_vals_(result_row)(elements_map_[point_idx]);
+    }
+
+//    inline Vector vector_val(uint point_idx) const {
+//        Vector val;
+//        for (uint i=0; i<3; ++i)
+//            val(i) = point_vals_->point_vals_[result_row_+i][point_idx];
+//        return val;
+//    }
+//
+//    inline Tensor tensor_val(uint point_idx) const {
+//        Tensor val;
+//        for (uint i=0; i<3; ++i)
+//            for (uint j=0; j<3; ++j)
+//                val(i,j) = point_vals_->point_vals_[result_row_+3*i+j][point_idx];
+//        return val;
+//    }
+
     /// Temporary development method
     void print(bool points, bool ints) const {
         std::cout << "** Dimension: " << dim_ << std::endl;
@@ -345,25 +364,6 @@ public:
     	this->reinit_func = reinit_func;
     	return *this;
     }
-
-//    inline Scalar scalar_val(uint point_idx) const {
-//        return point_vals_->point_vals_[result_row_][point_idx];
-//    }
-//
-//    inline Vector vector_val(uint point_idx) const {
-//        Vector val;
-//        for (uint i=0; i<3; ++i)
-//            val(i) = point_vals_->point_vals_[result_row_+i][point_idx];
-//        return val;
-//    }
-//
-//    inline Tensor tensor_val(uint point_idx) const {
-//        Tensor val;
-//        for (uint i=0; i<3; ++i)
-//            for (uint j=0; j<3; ++j)
-//                val(i,j) = point_vals_->point_vals_[result_row_+3*i+j][point_idx];
-//        return val;
-//    }
 
 
 protected:
