@@ -151,7 +151,6 @@ public:
 
     void update_patch() {
     	fe_values_.resize_tables(table_sizes_);
-        std::cout << "update_patch 1" << std::endl;
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -161,7 +160,6 @@ public:
                 fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx);
             }
         }
-        std::cout << "update_patch 2" << std::endl;
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
         	auto range = edge_integral_data_[i].edge_side_range;
             uint dim = range.begin()->dim();
@@ -174,9 +172,7 @@ public:
                 }
             }
         }
-        std::cout << "update_patch 3" << std::endl;
         fe_values_.reinit_patch();
-        std::cout << "update_patch 4" << std::endl;
     }
 
 

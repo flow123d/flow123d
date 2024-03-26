@@ -194,16 +194,16 @@ public:
     }
 
     /// Add accessor to operations_ vector
-    ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, std::vector<uint> input_ops_vec) {
-    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, input_ops_vec);
+    ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec) {
+    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec);
     	this->n_rows_ += op_accessor.n_comp();
     	operations_.push_back(op_accessor);
     	return operations_[operations_.size()-1];
     }
 
     /// Add accessor to operations_ vector
-    ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape) {
-        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row());
+    ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape, ReinitFunction reinit_f) {
+        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row(), reinit_f);
         // shape passed from el_op throws:
         // C++ exception with description "std::bad_alloc" thrown in the test body.
         operations_.push_back(op_accessor);
@@ -323,8 +323,8 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, std::vector<uint> input_ops = {})
-    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, std::vector<uint> input_ops = {})
+    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), reinit_func(reinit_f)
     {}
 
     /// Number of components computed from shape_ vector
@@ -350,13 +350,7 @@ public:
 
     /// Call reinit function on element table if function is defined
     inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table, TableInt &int_table) {
-    	if (reinit_func != nullptr) reinit_func(operations, data_table, int_table);
-    }
-
-    /// Set reinit function of the operation.
-    ElOp<spacedim> &reinit_function(ReinitFunction reinit_func) {
-    	this->reinit_func = reinit_func;
-    	return *this;
+        reinit_func(operations, data_table, int_table);
     }
 
 
@@ -576,39 +570,30 @@ namespace FeBulk {
             this->quad_ = new QGauss(dim, 2*quad_order);
 
             // First step: adds element values operations
-            auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, {} )
-                    .reinit_function( &common_reinit::op_base );
+            auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, {BulkOps::opElCoords} )
-                    .reinit_function( &bulk_reinit::elop_jac );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac, {BulkOps::opElCoords} );
 
-            auto &el_jac_det = this->make_new_op( {1}, {BulkOps::opJac} )
-                    .reinit_function( &bulk_reinit::elop_jac_det );
+            auto &el_jac_det = this->make_new_op( {1}, &bulk_reinit::elop_jac_det, {BulkOps::opJac} );
 
             // Second step: adds expand operations (element values to point values)
-            this->make_expansion( el_coords, {spacedim, this->dim_+1} )
-                    .reinit_function( &bulk_reinit::expd_coords );
+            this->make_expansion( el_coords, {spacedim, this->dim_+1}, &bulk_reinit::expd_coords );
 
-            this->make_expansion( el_jac, {spacedim, this->dim_} )
-                    .reinit_function( &bulk_reinit::expd_jac );
+            this->make_expansion( el_jac, {spacedim, this->dim_}, &bulk_reinit::expd_jac );
 
-            this->make_expansion( el_jac_det, {1} )
-                    .reinit_function( &bulk_reinit::expd_jac_det );
+            this->make_expansion( el_jac_det, {1}, &bulk_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            /*auto &pt_coords =*/ this->make_new_op( {spacedim}, {} )
-                    .reinit_function( &bulk_reinit::ptop_coords );
+            /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
 
             // use lambda reinit function
             std::vector<double> point_weights = this->quad_->get_weights();
             auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
                     bulk_reinit::ptop_weights(operations, op_results, point_weights);
                 };
-            /*auto &weights =*/ this->make_new_op( {1}, {} )
-                    .reinit_function( lambda_weights );
+            /*auto &weights =*/ this->make_new_op( {1}, lambda_weights, {} );
 
-            /*auto &JxW =*/ this->make_new_op( {1}, {BulkOps::opWeights, BulkOps::opJacDet} )
-                    .reinit_function( &bulk_reinit::ptop_JxW );
+            /*auto &JxW =*/ this->make_new_op( {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
         }
     };
 
@@ -628,39 +613,30 @@ namespace FeSide {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
 
             // First step: adds element values operations
-            auto &el_coords = this->make_new_op( {spacedim, this->dim_}, {} )
-                    .reinit_function( &common_reinit::op_base );
+            auto &el_coords = this->make_new_op( {spacedim, this->dim_}, &common_reinit::op_base, {} );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_-1}, {SideOps::opElCoords} )
-                    .reinit_function( &side_reinit::elop_jac );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_-1}, &side_reinit::elop_jac, {SideOps::opElCoords} );
 
-            auto &el_jac_det = this->make_new_op( {1}, {SideOps::opJac} )
-                    .reinit_function( &side_reinit::elop_jac_det );
+            auto &el_jac_det = this->make_new_op( {1}, &side_reinit::elop_jac_det, {SideOps::opJac} );
 
             // Second step: adds expand operations (element values to point values)
-            this->make_expansion( el_coords, {spacedim, this->dim_} )
-                    .reinit_function( &side_reinit::expd_coords );
+            this->make_expansion( el_coords, {spacedim, this->dim_}, &side_reinit::expd_coords );
 
-            this->make_expansion( el_jac, {spacedim, this->dim_-1} )
-                    .reinit_function( &side_reinit::expd_jac );
+            this->make_expansion( el_jac, {spacedim, this->dim_-1}, &side_reinit::expd_jac );
 
-            this->make_expansion( el_jac_det, {1} )
-                    .reinit_function( &side_reinit::expd_jac_det );
+            this->make_expansion( el_jac_det, {1}, &side_reinit::expd_jac_det );
 
             // Third step: adds point values operations
-            /*auto &coords =*/ this->make_new_op( {spacedim}, {} )
-                    .reinit_function( &side_reinit::ptop_coords );
+            /*auto &coords =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_coords, {} );
 
             // use lambda reinit function
             std::vector<double> point_weights = this->quad_->get_weights();
             auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
                     side_reinit::ptop_weights(operations, op_results, point_weights);
                 };
-            /*auto &weights =*/ this->make_new_op( {1}, {} )
-                    .reinit_function( lambda_weights );
+            /*auto &weights =*/ this->make_new_op( {1}, lambda_weights, {} );
 
-            /*auto &JxW =*/ this->make_new_op( {1}, {SideOps::opWeights, SideOps::opJacDet} )
-                    .reinit_function( &side_reinit::ptop_JxW );
+            /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opJacDet} );
         }
     };
 
