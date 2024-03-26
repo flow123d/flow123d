@@ -72,7 +72,7 @@ public:
 	  jac_det_side_1d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(1,false)) ),
 	  jac_det_side_2d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(2,false)) ),
 	  jac_det_side_3d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(3,false)) ),
-	  table_sizes_(4, std::vector<uint>(3, 0))
+	  table_sizes_(2, std::vector<uint>(3, 0))
     {
         std::cout << "Constructor 1" << std::endl;
         eval_points_ = std::make_shared<EvalPoints>();
@@ -118,8 +118,7 @@ public:
         uint subset_idx = bulk_integrals_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
         uint dim = cell.dim();
-        table_sizes_[0][dim-1]++; // add rows for elements and bulk points to table
-        table_sizes_[2][dim-1] += eval_points_->subset_size(dim, subset_idx);
+        table_sizes_[0][dim-1] += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -138,8 +137,7 @@ public:
 
                 for( DHCellSide edge_side : range ) {
                     uint dim = edge_side.dim();
-                    table_sizes_[1][dim-1]++; // add rows for sides and sides points to table
-                    table_sizes_[3][dim-1] += eval_points_->subset_size(dim, subset_idx) / (dim+1);
+                    table_sizes_[1][dim-1] += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integrals_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
                         element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
@@ -218,9 +216,7 @@ TEST(PatchFeTest, bulk_points) {
     dh->distribute_dofs(ds);
     unsigned int quad_order = 1;
 
-    std::cout << "Test 1" << std::endl;
     PatchFETest patch_fe(quad_order, dh);
-    std::cout << "Test 2" << std::endl;
     for(auto cell_it = dh->local_range().begin(); cell_it != dh->local_range().end(); ++cell_it) {
     	patch_fe.add_integrals(*cell_it);
     }
@@ -228,9 +224,7 @@ TEST(PatchFeTest, bulk_points) {
     patch_fe.edge_integral_data_.make_permanent();
     patch_fe.element_cache_map_.make_paermanent_eval_points();
     patch_fe.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
-    std::cout << "Test 3" << std::endl;
     patch_fe.update_patch();
-    std::cout << "Test 4" << std::endl;
 
     patch_fe.fe_values_.print(true, true, false);
 

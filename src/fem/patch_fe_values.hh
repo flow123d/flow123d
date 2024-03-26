@@ -752,12 +752,12 @@ public:
 
     /// Resize tables of patch_point_vals_
     void resize_tables(std::vector<std::vector<uint> > dim_sizes) {
-        ASSERT_EQ(dim_sizes.size(), 4);
+        ASSERT_EQ(dim_sizes.size(), 2);
         ASSERT_EQ(dim_sizes[0].size(), 3);
 
         for (uint i=0; i<3; ++i) {
-        	patch_point_vals_bulk_[i].resize_tables(dim_sizes[2][i]);
-        	patch_point_vals_side_[i].resize_tables(dim_sizes[3][i]);
+        	patch_point_vals_bulk_[i].resize_tables(dim_sizes[0][i]);
+        	patch_point_vals_side_[i].resize_tables(dim_sizes[1][i]);
         }
     }
 
