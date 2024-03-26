@@ -264,8 +264,11 @@ template <unsigned int dim>
 class AssemblyBasePatch : public AssemblyBase<dim>
 {
 public:
-	AssemblyBasePatch(unsigned int quad_order, PatchFEValues<3> *fe_values)
-	: AssemblyBase<dim>(quad_order), fe_values_(fe_values) {}
+	AssemblyBasePatch(PatchFEValues<3> *fe_values)
+	: AssemblyBase<dim>(), fe_values_(fe_values) {
+	    this->quad_ = fe_values_->get_quadrature(dim, true); // bulk quadrature
+	    this->quad_low_  = fe_values_->get_quadrature(dim, false); // side quadrature
+	}
 
 protected:
     PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions

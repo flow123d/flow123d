@@ -527,6 +527,10 @@ public:
 
     EqData() {}
 
+	inline unsigned int quad_order() const {
+	    return dg_order;
+	}
+
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
     unsigned int dg_order;                    ///< Polynomial order of finite elements.

@@ -26,6 +26,7 @@
 #include "fem/eigen_tools.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/element_values.hh"
+#include "quadrature/quadrature_lib.hh"
 
 
 template<unsigned int spacedim> class PatchFEValues;
@@ -99,13 +100,8 @@ public:
      * Number of columns of int_vals_ table is passed by argument, number of columns
      * of other tables is given by n_rows_ value.
      */
-    void initialize(Quadrature &quad, uint int_cols) {
+    void initialize(uint int_cols) {
         this->reset();
-
-    	ref_elm_values_ = std::make_shared<RefElementValues<spacedim> >(quad, dim_);
-    	ref_elm_values_->ref_initialize(quad, dim_);
-
-    	this->postponed_reinit_functions();
 
     	point_vals_.resize(n_rows_);
     	int_vals_.resize(int_cols);
@@ -132,7 +128,12 @@ public:
         return n_points_;
     }
 
-    /// Adds the number of rows equal to n_added, returns index of first of them
+    /// Return quadrature
+    Quadrature *get_quadrature() const {
+        return quad_;
+    }
+
+   /// Adds the number of rows equal to n_added, returns index of first of them
     /// Temporary method allow acces to old structure PatchFEValues::DimPatchFEValues
     inline uint add_rows(uint n_added) {
         uint old_size = n_rows_;
@@ -280,11 +281,6 @@ public:
     }
 
 protected:
-    /// Set posponed reinit functions.
-    virtual void postponed_reinit_functions() {
-        ASSERT_PERMANENT(false).error("Must be define in descendant!");
-    }
-
     /**
      * Store data of bulk or side quadrature points of one dimension
      *
@@ -310,12 +306,10 @@ protected:
     uint n_rows_;                     ///< Number of columns of \p point_vals table
     uint n_points_;                   ///< Number of points in patch
     uint n_elems_;                    ///< Number of elements in patch
+    Quadrature *quad_;                ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;  ///< Map of element patch indices to el_vals_ table
     std::vector<uint> points_map_;    ///< Map of point patch indices  to point_vals_ and int_vals_ tables
-
-    /// Auxiliary object for calculation of element-dependent data.
-    std::shared_ptr<RefElementValues<spacedim> > ref_elm_values_;
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
@@ -553,14 +547,12 @@ struct side_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table, std::vector<RefElementData*> side_ref_data) {
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, std::vector<double> point_weights) {
         auto &op = operations[FeSide::SideOps::opWeights];
         ArrayDbl &result_row = op_results( op.result_row() );
-        auto n_points = side_ref_data[0]->weights.size(); // side_idx in third column of element table
-        for (uint i=0; i<result_row.rows(); ++i) {
-            uint i_side = el_table(3)(i);
-            result_row(i) = side_ref_data[i_side]->weights[i%n_points];
-        }
+        auto n_points = point_weights.size();
+        for (uint i=0; i<result_row.rows(); ++i)
+            result_row(i) = point_weights[i%n_points];
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opJxW];
@@ -579,8 +571,10 @@ namespace FeBulk {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim)
+        PatchPointValues(uint dim, uint quad_order)
         : ::PatchPointValues<spacedim>(dim) {
+            this->quad_ = new QGauss(dim, 2*quad_order);
+
             // First step: adds element values operations
             auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, {} )
                     .reinit_function( &common_reinit::op_base );
@@ -605,21 +599,16 @@ namespace FeBulk {
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, {} )
                     .reinit_function( &bulk_reinit::ptop_coords );
 
-            // postponed setting of reinit function
-            /*auto &weights =*/ this->make_new_op( {1}, {} );
-
-            /*auto &JxW =*/ this->make_new_op( {1}, {BulkOps::opWeights, BulkOps::opJacDet} )
-                    .reinit_function( &bulk_reinit::ptop_JxW );
-        }
-
-    protected:
-        /// Implement ::PatchPointValues::postponed_reinit_functions
-        void postponed_reinit_functions() override {
-            std::vector<double> point_weights = this->ref_elm_values_->ref_data->weights;
+            // use lambda reinit function
+            std::vector<double> point_weights = this->quad_->get_weights();
             auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
                     bulk_reinit::ptop_weights(operations, op_results, point_weights);
                 };
-            this->operations_[BulkOps::opWeights].reinit_function( lambda_weights );
+            /*auto &weights =*/ this->make_new_op( {1}, {} )
+                    .reinit_function( lambda_weights );
+
+            /*auto &JxW =*/ this->make_new_op( {1}, {BulkOps::opWeights, BulkOps::opJacDet} )
+                    .reinit_function( &bulk_reinit::ptop_JxW );
         }
     };
 
@@ -634,8 +623,10 @@ namespace FeSide {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim)
+        PatchPointValues(uint dim, uint quad_order)
         : ::PatchPointValues<spacedim>(dim) {
+            this->quad_ = new QGauss(dim-1, 2*quad_order);
+
             // First step: adds element values operations
             auto &el_coords = this->make_new_op( {spacedim, this->dim_}, {} )
                     .reinit_function( &common_reinit::op_base );
@@ -660,21 +651,16 @@ namespace FeSide {
             /*auto &coords =*/ this->make_new_op( {spacedim}, {} )
                     .reinit_function( &side_reinit::ptop_coords );
 
-            // postponed setting of reinit function
-            /*auto &weights =*/ this->make_new_op( {1}, {} );
+            // use lambda reinit function
+            std::vector<double> point_weights = this->quad_->get_weights();
+            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                    side_reinit::ptop_weights(operations, op_results, point_weights);
+                };
+            /*auto &weights =*/ this->make_new_op( {1}, {} )
+                    .reinit_function( lambda_weights );
 
             /*auto &JxW =*/ this->make_new_op( {1}, {SideOps::opWeights, SideOps::opJacDet} )
                     .reinit_function( &side_reinit::ptop_JxW );
-        }
-
-    protected:
-        /// Implement ::PatchPointValues::postponed_reinit_functions
-        void postponed_reinit_functions() override {
-            std::vector<RefElementData*> side_ref_data = this->ref_elm_values_->side_ref_data;
-            auto lambda_weights = [side_ref_data](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-                    side_reinit::ptop_weights(operations, op_results, el_table, side_ref_data);
-                };
-            this->operations_[SideOps::opWeights].reinit_function( lambda_weights );
         }
     };
 

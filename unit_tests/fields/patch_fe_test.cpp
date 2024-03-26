@@ -62,19 +62,19 @@ public:
 	};
 
 
-    PatchFETest(std::shared_ptr<DOFHandlerMultiDim> dh)
-    : dh_(dh), fe_values_(CacheMapElementNumber::get(), dh_->ds()->fe()),
-	  quad_({new QGauss(0, 2), new QGauss(1, 2), new QGauss(2, 2), new QGauss(3, 2)}),
+    PatchFETest(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : dh_(dh), fe_values_(CacheMapElementNumber::get(), quad_order, dh_->ds()->fe()),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
-	  jac_det_1d_( this->fe_values_.determinant(this->quad_[1]) ),
-	  jac_det_2d_( this->fe_values_.determinant(this->quad_[2]) ),
-	  jac_det_3d_( this->fe_values_.determinant(this->quad_[3]) ),
-	  jac_det_side_1d_( this->fe_values_.determinant_side(this->quad_[0]) ),
-	  jac_det_side_2d_( this->fe_values_.determinant_side(this->quad_[1]) ),
-	  jac_det_side_3d_( this->fe_values_.determinant_side(this->quad_[2]) ),
+	  jac_det_1d_( this->fe_values_.determinant(fe_values_.get_quadrature(1,true)) ),
+	  jac_det_2d_( this->fe_values_.determinant(fe_values_.get_quadrature(2,true)) ),
+	  jac_det_3d_( this->fe_values_.determinant(fe_values_.get_quadrature(3,true)) ),
+	  jac_det_side_1d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(1,false)) ),
+	  jac_det_side_2d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(2,false)) ),
+	  jac_det_side_3d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(3,false)) ),
 	  table_sizes_(4, std::vector<uint>(3, 0))
     {
+        std::cout << "Constructor 1" << std::endl;
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
         this->create_integrals();
@@ -85,22 +85,22 @@ public:
     ~PatchFETest() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk<1>(*quad_[1]);
-        bulk_integrals_[1] = eval_points_->add_bulk<2>(*quad_[2]);
-        bulk_integrals_[2] = eval_points_->add_bulk<3>(*quad_[3]);
-        edge_integrals_[0] = eval_points_->add_edge<1>(*quad_[0]);
-        edge_integrals_[1] = eval_points_->add_edge<2>(*quad_[1]);
-        edge_integrals_[2] = eval_points_->add_edge<3>(*quad_[2]);
+        bulk_integrals_[0] = eval_points_->add_bulk<1>(*fe_values_.get_quadrature(1,true));
+        bulk_integrals_[1] = eval_points_->add_bulk<2>(*fe_values_.get_quadrature(2,true));
+        bulk_integrals_[2] = eval_points_->add_bulk<3>(*fe_values_.get_quadrature(3,true));
+        edge_integrals_[0] = eval_points_->add_edge<1>(*fe_values_.get_quadrature(1,false));
+        edge_integrals_[1] = eval_points_->add_edge<2>(*fe_values_.get_quadrature(2,false));
+        edge_integrals_[2] = eval_points_->add_edge<3>(*fe_values_.get_quadrature(3,false));
     }
 
     void initialize() {
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        this->fe_values_.initialize<1>(*this->quad_[1], u);
-        this->fe_values_.initialize<2>(*this->quad_[2], u);
-        this->fe_values_.initialize<3>(*this->quad_[3], u);
-        this->fe_values_.initialize<1>(*this->quad_[0], u);
-        this->fe_values_.initialize<2>(*this->quad_[1], u);
-        this->fe_values_.initialize<3>(*this->quad_[2], u);
+        this->fe_values_.initialize<1>(*fe_values_.get_quadrature(1,true), u);
+        this->fe_values_.initialize<2>(*fe_values_.get_quadrature(2,true), u);
+        this->fe_values_.initialize<3>(*fe_values_.get_quadrature(3,true), u);
+        this->fe_values_.initialize<1>(*fe_values_.get_quadrature(1,false), u);
+        this->fe_values_.initialize<2>(*fe_values_.get_quadrature(2,false), u);
+        this->fe_values_.initialize<3>(*fe_values_.get_quadrature(3,false), u);
     }
 
     /// Return BulkPoint range of appropriate dimension
@@ -151,6 +151,7 @@ public:
 
     void update_patch() {
     	fe_values_.resize_tables(table_sizes_);
+        std::cout << "update_patch 1" << std::endl;
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -160,6 +161,7 @@ public:
                 fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx);
             }
         }
+        std::cout << "update_patch 2" << std::endl;
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
         	auto range = edge_integral_data_[i].edge_side_range;
             uint dim = range.begin()->dim();
@@ -172,7 +174,9 @@ public:
                 }
             }
         }
+        std::cout << "update_patch 3" << std::endl;
         fe_values_.reinit_patch();
+        std::cout << "update_patch 4" << std::endl;
     }
 
 
@@ -182,7 +186,6 @@ public:
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_; ///< Bulk integrals of dim 1,2,3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_; ///< Edge integrals of dim 1,2,3
-    std::array<Quadrature*, 4> quad_;                             ///< Quadratures of dim 0,1,2,3
     RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
     RevertableList<EdgeIntegralData> edge_integral_data_;         ///< Holds data for computing edge integrals.
     ElQ<Scalar> jac_det_1d_;
@@ -217,8 +220,11 @@ TEST(PatchFeTest, bulk_points) {
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
+    unsigned int quad_order = 1;
 
-    PatchFETest patch_fe(dh);
+    std::cout << "Test 1" << std::endl;
+    PatchFETest patch_fe(quad_order, dh);
+    std::cout << "Test 2" << std::endl;
     for(auto cell_it = dh->local_range().begin(); cell_it != dh->local_range().end(); ++cell_it) {
     	patch_fe.add_integrals(*cell_it);
     }
@@ -226,7 +232,9 @@ TEST(PatchFeTest, bulk_points) {
     patch_fe.edge_integral_data_.make_permanent();
     patch_fe.element_cache_map_.make_paermanent_eval_points();
     patch_fe.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+    std::cout << "Test 3" << std::endl;
     patch_fe.update_patch();
+    std::cout << "Test 4" << std::endl;
 
     patch_fe.fe_values_.print(true, true, false);
 

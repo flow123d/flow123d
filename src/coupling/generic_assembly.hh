@@ -188,7 +188,7 @@ public:
 
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : fe_values_(CacheMapElementNumber::get(), dh->ds()->fe()),
+    : fe_values_(CacheMapElementNumber::get(), eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
       min_edge_sides_(2),

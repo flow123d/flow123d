@@ -508,16 +508,16 @@ public:
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
       dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1), FeSide::PatchPointValues(2), FeSide::PatchPointValues(3)} } {
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
+    PatchFEValues(unsigned int n_quad_points, unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1), FeBulk::PatchPointValues(2), FeBulk::PatchPointValues(3)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1), FeSide::PatchPointValues(2), FeSide::PatchPointValues(3)} },
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order), FeBulk::PatchPointValues(2, quad_order), FeBulk::PatchPointValues(3, quad_order)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order), FeSide::PatchPointValues(2, quad_order), FeSide::PatchPointValues(3, quad_order)} },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -526,6 +526,12 @@ public:
     /// Destructor
     ~PatchFEValues()
     {}
+
+    /// Return bulk or side quadrature of given dimension
+    Quadrature *get_quadrature(uint dim, bool is_bulk) const {
+        if (is_bulk) return patch_point_vals_bulk_[dim-1].get_quadrature();
+        else return patch_point_vals_side_[dim-1].get_quadrature();
+    }
 
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
@@ -542,12 +548,12 @@ public:
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
             // new data storing
-            patch_point_vals_bulk_[DIM-1].initialize(_quadrature, 3); // bulk
+            patch_point_vals_bulk_[DIM-1].initialize(3); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
             // new data storing
-            patch_point_vals_side_[DIM-1].initialize(_quadrature, 4); // side
+            patch_point_vals_side_[DIM-1].initialize(4); // side
         }
     }
 
