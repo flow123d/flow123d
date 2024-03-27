@@ -30,6 +30,9 @@
 #include "fem/element_values.hh"              // for ElementValues
 #include "fem/fe_values.hh"                   // for FEValuesBase
 #include "fem/fe_values_views.hh"             // for FEValuesViews
+#include "fem/eigen_tools.hh"
+#include "fem/patch_point_values.hh"
+#include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
@@ -40,9 +43,8 @@ template<unsigned int spacedim> class PatchFEValues;
 
 
 
-using Scalar = double;
-using Vector = arma::vec3;
-using Tensor = arma::mat33;
+typedef typename std::vector< std::array<uint, 3> > DimPointTable;  ///< Holds triplet (dim; bulk/side; idx of point in subtable)
+
 
 template <class ValueType>
 class ElQ {
@@ -51,8 +53,8 @@ public:
     ElQ() = delete;
 
     /// Constructor
-    ElQ(PatchFEValues<3> *fe_values, unsigned int begin)
-    : fe_values_(fe_values), begin_(begin) {}
+    ElQ(PatchPointValues<3> &patch_point_vals, unsigned int begin)
+    : patch_point_vals_(patch_point_vals), begin_(begin) {}
 
     ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
@@ -60,8 +62,8 @@ public:
 
 private:
     // attributes:
-    PatchFEValues<3> *fe_values_;
-    unsigned int begin_;    /// Index of the first component of the Quantity. Size is given by ValueType
+    PatchPointValues<3> &patch_point_vals_;
+    unsigned int begin_;       /// Index of the first component of the bulk Quantity. Size is given by ValueType
 };
 
 
@@ -86,7 +88,7 @@ public:
 private:
     // attributes:
     PatchFEValues<3> *fe_values_;
-    unsigned int begin_;    /// Index of the first component of the Quantity. Size is given by ValueType
+    unsigned int begin_;       /// Index of the first component of the Quantity. Size is given by ValueType
 };
 
 
@@ -105,7 +107,7 @@ public:
      * @param lower_dim  Dimension of bulk (lower-dim) element.
      * @param join_idx   Index function.
      */
-    JoinShapeAccessor(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int lower_dim, unsigned int join_idx);
+    JoinShapeAccessor(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int begin_side, unsigned int lower_dim, unsigned int join_idx);
 
     /// Return global index of DOF
     inline unsigned int join_idx() const {
@@ -152,7 +154,8 @@ public:
 private:
     // attributes:
     PatchFEValues<3> *fe_values_;
-    unsigned int begin_;          ///< Index of the first component of the Quantity. Size is given by ValueType
+    unsigned int begin_;          ///< Index of the first component of the bulk Quantity. Size is given by ValueType
+    unsigned int begin_side_;     ///< Index of the first component of the side Quantity. Size is given by ValueType
     unsigned int n_dofs_high_;
     unsigned int n_dofs_low_;
     unsigned int join_idx_;
@@ -495,26 +498,39 @@ private:
 	class FuncDef {
     public:
     	FuncDef() {}
-        FuncDef(DimPatchFEValues *cell_data, DimPatchFEValues *side_data, string func_name)
-        : cell_data_(cell_data), side_data_(side_data), func_name_(func_name) {}
-        DimPatchFEValues *cell_data_;
-        DimPatchFEValues *side_data_;
+        FuncDef(DimPatchFEValues *data, string func_name)
+        : point_data_(data), func_name_(func_name) {}
+        DimPatchFEValues *point_data_;
 	    string func_name_;
     };
 public:
 
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  n_columns_(0) {
+      dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int n_quad_points, MixedPtr<FiniteElement> fe)
+    PatchFEValues(unsigned int n_quad_points, unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  n_columns_(0), fe_(fe) {
+      dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order), FeBulk::PatchPointValues(2, quad_order), FeBulk::PatchPointValues(3, quad_order)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order), FeSide::PatchPointValues(2, quad_order), FeSide::PatchPointValues(3, quad_order)} },
+      fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
+    }
+
+
+    /// Destructor
+    ~PatchFEValues()
+    {}
+
+    /// Return bulk or side quadrature of given dimension
+    Quadrature *get_quadrature(uint dim, bool is_bulk) const {
+        if (is_bulk) return patch_point_vals_bulk_[dim-1].get_quadrature();
+        else return patch_point_vals_side_[dim-1].get_quadrature();
     }
 
     /**
@@ -522,7 +538,6 @@ public:
 	 *
 	 * @param _quadrature The quadrature rule for the cell associated
      *                    to given finite element or for the cell side.
-	 * @param _fe The finite element.
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
@@ -532,18 +547,31 @@ public:
         if ( _quadrature.dim() == DIM ) {
             dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
+            // new data storing
+            patch_point_vals_bulk_[DIM-1].initialize(3); // bulk
         } else {
             dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
+            // new data storing
+            patch_point_vals_side_[DIM-1].initialize(4); // side
         }
     }
 
-    /// Reinit data.
+    /// Reinit data - old data storing, temporary
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
         for (unsigned int i=0; i<3; ++i) {
             if (used_quads_[0]) dim_fe_vals_[i].reinit(patch_elements[i+1]);
             if (used_quads_[1]) dim_fe_side_vals_[i].reinit(patch_elements[i+1]);
+        }
+    }
+
+    /// Reinit data.
+    void reinit_patch()
+    {
+        for (unsigned int i=0; i<3; ++i) {
+            patch_point_vals_bulk_[i].reinit_patch();
+            if (used_quads_[1]) patch_point_vals_side_[i].reinit_patch();
         }
     }
 
@@ -557,44 +585,84 @@ public:
     }
 
     /**
-     * @brief Return the product of Jacobian determinant and the quadrature
-     * weight at given quadrature point.
+     * @brief Register the product of Jacobian determinant and the quadrature
+     * weight at bulk quadrature points.
      *
-     * @param quad_list List of quadratures.
+     * @param quad Quadrature.
      */
-    inline ElQ<Scalar> JxW(std::initializer_list<Quadrature *> quad_list)
+    inline ElQ<Scalar> JxW(Quadrature *quad)
     {
-        uint begin = this->n_columns_;
-        n_columns_++; // scalar needs one column
-        // storing to temporary map
-        std::vector<Quadrature *> quad_vec(quad_list);
-        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
-        func_map_[begin] = FuncDef(cell_data, side_data, "JxW");
-        return ElQ<Scalar>(this, begin);
+        // old access to FE data structures -  TODO apply new
+        uint dim = quad->dim()-1;
+        uint begin = patch_point_vals_bulk_[dim].add_rows(1); // scalar needs one column
+        func_map_[begin] = FuncDef( &dim_fe_vals_[dim], "JxW"); // storing to temporary map
+
+        return ElQ<Scalar>(patch_point_vals_bulk_[dim], begin);
+    }
+
+    /// Same as previous but register at side quadrature points.
+    inline ElQ<Scalar> JxW_side(Quadrature *quad)
+    {
+        // old access to FE data structures -  TODO apply new
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_side_[dim].add_rows(1);  // scalar needs one column
+        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
+
+        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
     }
 
     /**
-     * @brief Returns the normal vector to a side at given quadrature point.
+     * @brief Register the normal vector to a side at side quadrature points.
      *
-     * @param quad_list List of quadratures.
+     * @param quad Quadrature.
      */
-	inline ElQ<Vector> normal_vector(std::initializer_list<Quadrature *> quad_list)
+	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
-        uint begin = this->n_columns_;
-        n_columns_ += 3; // Vector needs 3 columns
+        // old access to FE data structures -  TODO apply new
+        uint dim = quad->dim();  // side quadrature
+        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
         // storing to temporary map
-        std::vector<Quadrature *> quad_vec(quad_list);
-        DimPatchFEValues *side_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[0]->dim()];
-        func_map_[begin] = FuncDef(nullptr, side_data, "normal_vector");
-        return ElQ<Vector>(this, begin);
+        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
+
+        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
 	}
 
-//    inline ElQ<Vector> coords(std::initializer_list<Quadrature *> quad_list)
+	/// Create bulk accessor of coords entity
+    inline ElQ<Vector> coords(Quadrature *quad)
+    {
+        uint dim = quad->dim()-1;
+        uint begin = patch_point_vals_bulk_[dim].operations_[FeBulk::BulkOps::opCoords].result_row();
+        return ElQ<Vector>(patch_point_vals_bulk_[dim], begin);
+    }
+
+	/// Create side accessor of coords entity
+    inline ElQ<Vector> coords_side(Quadrature *quad)
+    {
+        // old access to FE data structures -  TODO apply new
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
+
+        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
+    }
+
+//    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
 //    {}
 
-//    inline ElQ<Tenor> jacobian(std::initializer_list<Quadrature *> quad_list)
-//    {}
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant(Quadrature *quad)
+    {
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_bulk_[dim-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_bulk_[dim-1], begin);
+    }
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant_side(Quadrature *quad)
+    {
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
+    }
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -603,15 +671,22 @@ public:
      * @param quad_list List of quadratures.
      * @param function_no Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(std::initializer_list<Quadrature *> quad_list)
+    inline FeQ<Scalar> scalar_shape(Quadrature *quad)
     {
-        uint begin = this->n_columns_;
-        n_columns_++; // scalar needs one column
-        // storing to temporary map
-        std::vector<Quadrature *> quad_vec(quad_list);
-        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
-        func_map_[begin] = FuncDef(cell_data, side_data, "shape_value");
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_bulk_[dim-1].add_rows(this->n_dofs(dim)); // scalar needs one column
+        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
+
+        return FeQ<Scalar>(this, begin);
+    }
+
+    /// Same as previous but register at side quadrature points.
+    inline FeQ<Scalar> scalar_shape_side(Quadrature *quad)
+    {
+        uint dim = quad->dim();
+       	uint begin = patch_point_vals_side_[dim].add_rows(this->n_dofs(dim+1));  // scalar needs one column
+        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_value");
+
         return FeQ<Scalar>(this, begin);
     }
 
@@ -621,16 +696,24 @@ public:
 //    inline FeQ<Tensor> tensor_shape(std::initializer_list<Quadrature *> quad_list)
 //    {}
 
-    inline FeQ<Vector> grad_scalar_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
+    inline FeQ<Vector> grad_scalar_shape(Quadrature *quad, unsigned int i_comp=0)
     {
         ASSERT_PERMANENT(i_comp < 3);
-        uint begin = this->n_columns_;
-        n_columns_ += 3; // Vector needs 3 columns
-        // storing to temporary map
-        std::vector<Quadrature *> quad_vec(quad_list);
-        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
-        func_map_[begin] = FuncDef(cell_data, side_data, "shape_grad");
+        uint dim = quad->dim();
+       	uint begin = patch_point_vals_bulk_[dim-1].add_rows(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
+        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
+
+        return FeQ<Vector>(this, begin);
+    }
+
+    /// Same as previous but register at side quadrature points.
+    inline FeQ<Vector> grad_scalar_shape_side(Quadrature *quad, unsigned int i_comp=0)
+    {
+        ASSERT_PERMANENT(i_comp < 3);
+        uint dim = quad->dim();
+       	uint begin = patch_point_vals_side_[dim].add_rows(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
+        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad");
+
         return FeQ<Vector>(this, begin);
     }
 
@@ -639,31 +722,110 @@ public:
 
     inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(std::initializer_list<Quadrature *> quad_list)
     {
-        uint begin = this->n_columns_;
-        n_columns_++;
-        // storing to temporary map
         std::vector<Quadrature *> quad_vec(quad_list);
-        DimPatchFEValues *cell_data = (quad_vec[0] == nullptr) ? nullptr : &dim_fe_vals_[quad_vec[0]->dim()-1];
-        DimPatchFEValues *side_data = (quad_vec[1] == nullptr) ? nullptr : &dim_fe_side_vals_[quad_vec[1]->dim()];
-        func_map_[begin] = FuncDef(cell_data, side_data, "scalar_join_shape");
+        uint dim = quad_vec[0]->dim();
+        uint begin=-1, begin_side=-1;
 
-        auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, quad_vec[0]->dim(), 0) );
+        if (quad_vec[0] != nullptr) {
+            begin = patch_point_vals_bulk_[dim-1].add_rows(1); // scalar needs one column
+            func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "scalar_join_shape"); // storing to temporary map
+        }
+        if (quad_vec[1] != nullptr) {
+            begin_side = patch_point_vals_side_[dim-1].add_rows(1); // scalar needs one column
+            func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "scalar_join_shape"); // storing to temporary map
+        }
+
+        auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, begin_side, quad_vec[0]->dim(), 0) );
         unsigned int end_idx = bgn_it->n_dofs_high() + bgn_it->n_dofs_low();
-        auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, quad_vec[0]->dim(), end_idx) );
+        auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, begin_side, quad_vec[0]->dim(), end_idx) );
         return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
+    }
+
+    /// Resize \p dim_point_table_ if actual size is less than new_size and return reference
+    inline DimPointTable &dim_point_table(unsigned int new_size) {
+        if (dim_point_table_.size() < new_size) dim_point_table_.resize(new_size);
+        for (uint i=0; i<new_size; ++i) dim_point_table_[i][0] = 10; // set invalid dim
+        return dim_point_table_;
+    }
+
+    /** Following methods are used during update of patch. **/
+
+    /// Resize tables of patch_point_vals_
+    void resize_tables(std::vector<std::vector<uint> > dim_sizes) {
+        ASSERT_EQ(dim_sizes.size(), 2);
+        ASSERT_EQ(dim_sizes[0].size(), 3);
+
+        for (uint i=0; i<3; ++i) {
+        	patch_point_vals_bulk_[i].resize_tables(dim_sizes[0][i]);
+        	patch_point_vals_side_[i].resize_tables(dim_sizes[1][i]);
+        }
+    }
+
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+        arma::mat coords;
+        switch (cell.dim()) {
+        case 1:
+            coords = MappingP1<1,spacedim>::element_map(cell.elm());
+            return patch_point_vals_bulk_[0].register_element(coords, element_patch_idx);
+            break;
+        case 2:
+        	coords = MappingP1<2,spacedim>::element_map(cell.elm());
+            return patch_point_vals_bulk_[1].register_element(coords, element_patch_idx);
+            break;
+        case 3:
+        	coords = MappingP1<3,spacedim>::element_map(cell.elm());
+            return patch_point_vals_bulk_[2].register_element(coords, element_patch_idx);
+            break;
+        default:
+        	ASSERT(false);
+        	return 0;
+            break;
+        }
+    }
+
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side) {
+        arma::mat side_coords(spacedim, cell_side.dim());
+        for (unsigned int n=0; n<cell_side.dim(); n++)
+            for (unsigned int c=0; c<spacedim; c++)
+                side_coords(c,n) = (*cell_side.side().node(n))[c];
+        return patch_point_vals_side_[cell_side.dim()-1].register_side(side_coords);
+    }
+
+    /// Register bulk point to patch_point_vals_ table by dimension of element
+    uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx) {
+        return patch_point_vals_bulk_[cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx());
+    }
+
+    /// Register side point to patch_point_vals_ table by dimension of side
+    uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx) {
+        return patch_point_vals_side_[cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(), cell_side.side_idx());
+    }
+
+    /// Temporary development method
+    void print(bool points, bool ints, bool only_bulk=true) const {
+        for (uint i=0; i<3; ++i)
+            patch_point_vals_bulk_[i].print(points, ints);
+        if (!only_bulk)
+            for (uint i=0; i<3; ++i)
+                patch_point_vals_side_[i].print(points, ints);
     }
 
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
     std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
+    std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;
+    std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;
+    DimPointTable dim_point_table_;
 
-    uint n_columns_;               ///< Number of columns
-    MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
+    MixedPtr<FiniteElement> fe_;         ///< Mixed of shared pointers of FiniteElement object
 
     ///< Temporary helper objects used in step between usage old a new implementation
     bool used_quads_[2];
     std::map<unsigned int, FuncDef> func_map_;
+    std::map<unsigned int, FuncDef> func_map_side_;
 
     template <class ValueType>
     friend class ElQ;
@@ -676,13 +838,8 @@ private:
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "JxW") {
-        return it->second.cell_data_->JxW(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        return 0.0;
-    }
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
 }
 
 template <>
@@ -699,25 +856,20 @@ inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "JxW") {
-        return it->second.side_data_->JxW(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        return 0.0;
-    }
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
 }
 
 template <>
-inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "normal_vector") {
-        return it->second.side_data_->normal_vector(point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
+inline Vector ElQ<Vector>::operator()(FMT_UNUSED const SidePoint &point) {
+//	auto it = fe_values_->func_map_side_.find(begin_);
+//    if (it->second.func_name_ == "normal_vector") {
+//        return it->second.point_data_->normal_vector(point);
+//    } else {
+//        //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
         return vect;
-    }
+//    }
 }
 
 template <>
@@ -730,7 +882,7 @@ template <class ValueType>
 ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
 	auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "shape_value") {
-        return it->second.cell_data_->shape_value(shape_idx, point);
+        return it->second.point_data_->shape_value(shape_idx, point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
@@ -741,7 +893,7 @@ template <>
 inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const BulkPoint &point) {
 	auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "shape_grad") {
-        return it->second.cell_data_->shape_grad(shape_idx, point);
+        return it->second.point_data_->shape_grad(shape_idx, point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
@@ -757,9 +909,9 @@ inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNU
 
 template <class ValueType>
 ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const SidePoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
+	auto it = fe_values_->func_map_side_.find(begin_);
     if (it->second.func_name_ == "shape_value") {
-        return it->second.side_data_->shape_value(shape_idx, point);
+        return it->second.point_data_->shape_value(shape_idx, point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
@@ -768,9 +920,9 @@ ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const SidePoint &po
 
 template <>
 inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const SidePoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
+	auto it = fe_values_->func_map_side_.find(begin_);
     if (it->second.func_name_ == "shape_grad") {
-        return it->second.side_data_->shape_grad(shape_idx, point);
+        return it->second.point_data_->shape_grad(shape_idx, point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
@@ -790,7 +942,7 @@ ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
 	auto it = fe_values_->func_map_.find(begin_);
     if (it->second.func_name_ == "scalar_join_shape") {
         if (this->is_high_dim()) return 0.0;
-        else return it->second.cell_data_->shape_value(this->local_idx(), point);
+        else return it->second.point_data_->shape_value(this->local_idx(), point);
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
@@ -811,9 +963,9 @@ inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const BulkPoint &
 
 template <class ValueType>
 ValueType JoinShapeAccessor<ValueType>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
+	auto it = fe_values_->func_map_side_.find(begin_side_);
     if (it->second.func_name_ == "scalar_join_shape") {
-        if (this->is_high_dim()) return it->second.side_data_->shape_value(this->local_idx(), point);
+        if (this->is_high_dim()) return it->second.point_data_->shape_value(this->local_idx(), point);
         else return 0.0;
     } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
