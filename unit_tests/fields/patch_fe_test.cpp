@@ -190,11 +190,9 @@ public:
     ElQ<Scalar> jac_det_side_3d_;
 
     /**
-     * STruct for pre-computing number of elements, sides, bulk points and side points on each dimension.
+     * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
      * Format:
-     *  { {n_elements_1D,    2D, 3D },
-     *    {n_sides_1D,       2D, 3D },
-     *    {n_bulk_points_1D, 2D, 3D },
+     *  { {n_bulk_points_1D, 2D, 3D },
      *    {n_side_points_1D, 2D, 3D } }
      *
      * Passes its to PatchFEValues and sets size of tables in this object

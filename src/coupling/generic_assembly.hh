@@ -181,7 +181,8 @@ public:
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),
-	  boundary_integral_data_(8, 4)
+	  boundary_integral_data_(8, 4),
+	  table_sizes_(2, std::vector<uint>(3, 0))
     {
     	initialize();
     }
@@ -195,7 +196,8 @@ public:
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6),
-      boundary_integral_data_(8, 4)
+      boundary_integral_data_(8, 4),
+	  table_sizes_(2, std::vector<uint>(3, 0))
     {
     	initialize();
     }
@@ -342,34 +344,26 @@ private:
 
     void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
         // NEW
-        DimPointTable &dim_point_table = this->fe_values_.dim_point_table(element_cache_map_.n_eval_points());
+        // TODO clear patch here or at the end of assembly
+    	fe_values_.resize_tables(table_sizes_);
         if (bulk_integral_data_.permanent_size() > 0) {
-            multidim_assembly_[1_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
-            multidim_assembly_[2_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
-            multidim_assembly_[3_d]->add_patch_bulk_points(dim_point_table, bulk_integral_data_);
+            multidim_assembly_[1_d]->add_patch_bulk_points(bulk_integral_data_);
+            multidim_assembly_[2_d]->add_patch_bulk_points(bulk_integral_data_);
+            multidim_assembly_[3_d]->add_patch_bulk_points(bulk_integral_data_);
         }
         if (boundary_integral_data_.permanent_size() > 0) {
-            multidim_assembly_[1_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
-            multidim_assembly_[2_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
-            multidim_assembly_[3_d]->add_patch_bdr_side_points(dim_point_table, boundary_integral_data_);
+            multidim_assembly_[1_d]->add_patch_bdr_side_points(boundary_integral_data_);
+            multidim_assembly_[2_d]->add_patch_bdr_side_points(boundary_integral_data_);
+            multidim_assembly_[3_d]->add_patch_bdr_side_points(boundary_integral_data_);
         }
         if (edge_integral_data_.permanent_size() > 0) {
-            multidim_assembly_[1_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
-            multidim_assembly_[2_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
-            multidim_assembly_[3_d]->add_patch_edge_points(dim_point_table, edge_integral_data_);
+            multidim_assembly_[1_d]->add_patch_edge_points(edge_integral_data_);
+            multidim_assembly_[2_d]->add_patch_edge_points(edge_integral_data_);
+            multidim_assembly_[3_d]->add_patch_edge_points(edge_integral_data_);
         }
         if (coupling_integral_data_.permanent_size() > 0) {
-            multidim_assembly_[2_d]->add_patch_coupling_integrals(dim_point_table, coupling_integral_data_);
-            multidim_assembly_[3_d]->add_patch_coupling_integrals(dim_point_table, coupling_integral_data_);
-        }
-
-        // set indexes to subtables in dim_point_table structure (last column)
-        std::vector< std::vector<uint> > dpt_init(3, std::vector<uint>(2,0));
-        for (uint i=0; i<element_cache_map_.n_eval_points(); ++i) {
-            if (dim_point_table[i][0] < 3) { // column 0 contains (dim-1)
-                dim_point_table[i][2] = dpt_init[ dim_point_table[i][0] ][ dim_point_table[i][1] ];
-                dpt_init[ dim_point_table[i][0] ][ dim_point_table[i][1] ]++;
-            }
+            multidim_assembly_[2_d]->add_patch_coupling_integrals(coupling_integral_data_);
+            multidim_assembly_[3_d]->add_patch_coupling_integrals(coupling_integral_data_);
         }
 
         // OLD
@@ -431,18 +425,21 @@ private:
         for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
                   i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
             element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+            table_sizes_[0][cell.dim()-1]++;
         }
     }
 
     /// Add data of edge integral to appropriate data structure.
     inline void add_edge_integral(const DHCellSide &cell_side) {
         auto range = cell_side.edge_sides();
-        edge_integral_data_.emplace_back(range, integrals_.edge_[range.begin()->dim()-1]->get_subset_idx());
+        uint dim = range.begin()->dim();
+        edge_integral_data_.emplace_back(range, integrals_.edge_[dim-1]->get_subset_idx());
 
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
-            for (auto p : integrals_.edge_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
+            for (auto p : integrals_.edge_[dim-1]->points(edge_side, &element_cache_map_) ) {
                 element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                table_sizes_[1][dim-1]++;
             }
         }
     }
@@ -456,10 +453,12 @@ private:
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
         for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
             element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
+            table_sizes_[1][cell.dim()-1]++;
 
         	if (add_low) {
                 auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                 element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                table_sizes_[0][cell.dim()-1]++;
         	}
         }
     }
@@ -472,6 +471,7 @@ private:
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
             element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+            table_sizes_[1][bdr_side.dim()-1]++;
 
         	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
@@ -508,6 +508,16 @@ private:
     RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+
+    /**
+     * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
+     * Format:
+     *  { {n_bulk_points_1D, 2D, 3D },
+     *    {n_side_points_1D, 2D, 3D } }
+     *
+     * Passes its to PatchFEValues and sets size of tables in this object
+     */
+    std::vector<std::vector<uint> > table_sizes_;
 };
 
 
