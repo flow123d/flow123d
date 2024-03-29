@@ -557,6 +557,15 @@ public:
         }
     }
 
+    /// Reset PatchpointValues structures
+    void reset()
+    {
+        for (unsigned int i=0; i<3; ++i) {
+            if (used_quads_[0]) patch_point_vals_bulk_[i].reset();
+            if (used_quads_[1]) patch_point_vals_side_[i].reset();
+        }
+    }
+
     /// Reinit data - old data storing, temporary
     void reinit(std::array<PatchElementsList, 4> patch_elements)
     {
@@ -570,7 +579,7 @@ public:
     void reinit_patch()
     {
         for (unsigned int i=0; i<3; ++i) {
-            patch_point_vals_bulk_[i].reinit_patch();
+            if (used_quads_[0]) patch_point_vals_bulk_[i].reinit_patch();
             if (used_quads_[1]) patch_point_vals_side_[i].reinit_patch();
         }
     }
@@ -592,22 +601,16 @@ public:
      */
     inline ElQ<Scalar> JxW(Quadrature *quad)
     {
-        // old access to FE data structures -  TODO apply new
-        uint dim = quad->dim()-1;
-        uint begin = patch_point_vals_bulk_[dim].add_rows(1); // scalar needs one column
-        func_map_[begin] = FuncDef( &dim_fe_vals_[dim], "JxW"); // storing to temporary map
-
+        uint dim = quad->dim();
+        uint begin = patch_point_vals_bulk_[dim-1].operations_[FeBulk::BulkOps::opJxW].result_row();
         return ElQ<Scalar>(patch_point_vals_bulk_[dim], begin);
     }
 
     /// Same as previous but register at side quadrature points.
     inline ElQ<Scalar> JxW_side(Quadrature *quad)
     {
-        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].add_rows(1);  // scalar needs one column
-        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "JxW");
-
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opJxW].result_row();
         return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
     }
 
@@ -660,7 +663,7 @@ public:
     inline ElQ<Scalar> determinant_side(Quadrature *quad)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opJacDet].result_row();
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opSdJacDet].result_row();
         return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
     }
 
@@ -790,7 +793,27 @@ public:
         for (unsigned int n=0; n<cell_side.dim(); n++)
             for (unsigned int c=0; c<spacedim; c++)
                 side_coords(c,n) = (*cell_side.side().node(n))[c];
-        return patch_point_vals_side_[cell_side.dim()-1].register_side(side_coords);
+
+        arma::mat elm_coords;
+        DHCellAccessor cell = cell_side.cell();
+        switch (cell.dim()) {
+        case 1:
+            elm_coords = MappingP1<1,spacedim>::element_map(cell.elm());
+            return patch_point_vals_side_[0].register_side(elm_coords, side_coords);
+            break;
+        case 2:
+            elm_coords = MappingP1<2,spacedim>::element_map(cell.elm());
+            return patch_point_vals_side_[1].register_side(elm_coords, side_coords);
+            break;
+        case 3:
+            elm_coords = MappingP1<3,spacedim>::element_map(cell.elm());
+            return patch_point_vals_side_[2].register_side(elm_coords, side_coords);
+            break;
+        default:
+            ASSERT(false);
+            return 0;
+            break;
+        }
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element

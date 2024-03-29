@@ -74,7 +74,6 @@ public:
 	  jac_det_side_3d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(3,false)) ),
 	  table_sizes_(2, std::vector<uint>(3, 0))
     {
-        std::cout << "Constructor 1" << std::endl;
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
         this->create_integrals();
