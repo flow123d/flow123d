@@ -621,12 +621,8 @@ public:
      */
 	inline ElQ<Vector> normal_vector(Quadrature *quad)
 	{
-        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();  // side quadrature
-        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
-        // storing to temporary map
-        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "normal_vector");
-
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opNormalVec].result_row();
         return ElQ<Vector>(patch_point_vals_side_[dim], begin);
 	}
 
@@ -641,10 +637,8 @@ public:
 	/// Create side accessor of coords entity
     inline ElQ<Vector> coords_side(Quadrature *quad)
     {
-        // old access to FE data structures -  TODO apply new
         uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].add_rows(3); // Vector needs 3 columns
-
+        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opCoords].result_row();
         return ElQ<Vector>(patch_point_vals_side_[dim], begin);
     }
 
@@ -884,15 +878,9 @@ ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
 }
 
 template <>
-inline Vector ElQ<Vector>::operator()(FMT_UNUSED const SidePoint &point) {
-//	auto it = fe_values_->func_map_side_.find(begin_);
-//    if (it->second.func_name_ == "normal_vector") {
-//        return it->second.point_data_->normal_vector(point);
-//    } else {
-//        //ASSERT_PERMANENT(false).error("Should not happen.");
-        Vector vect; vect.zeros();
-        return vect;
-//    }
+inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.vector_val(begin_, value_cache_idx);
 }
 
 template <>

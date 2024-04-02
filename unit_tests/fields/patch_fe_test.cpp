@@ -72,6 +72,9 @@ public:
 	  jac_det_side_1d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(1,false)) ),
 	  jac_det_side_2d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(2,false)) ),
 	  jac_det_side_3d_( this->fe_values_.determinant_side(fe_values_.get_quadrature(3,false)) ),
+	  normal_vec_1d_( this->fe_values_.normal_vector(fe_values_.get_quadrature(1,false)) ),
+	  normal_vec_2d_( this->fe_values_.normal_vector(fe_values_.get_quadrature(2,false)) ),
+	  normal_vec_3d_( this->fe_values_.normal_vector(fe_values_.get_quadrature(3,false)) ),
 	  table_sizes_(2, std::vector<uint>(3, 0))
     {
         eval_points_ = std::make_shared<EvalPoints>();
@@ -187,6 +190,9 @@ public:
     ElQ<Scalar> jac_det_side_1d_;
     ElQ<Scalar> jac_det_side_2d_;
     ElQ<Scalar> jac_det_side_3d_;
+    ElQ<Vector> normal_vec_1d_;
+    ElQ<Vector> normal_vec_2d_;
+    ElQ<Vector> normal_vec_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
@@ -249,17 +255,22 @@ TEST(PatchFeTest, bulk_points) {
         auto p = *( patch_fe.edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &patch_fe.element_cache_map_).begin() );
 
         double jac_det = 0.0;
+        arma::vec3 normal_vec = {0.0, 0.0, 0.0};
         switch (zero_edge_side.dim()) {
         case 1:
             jac_det = patch_fe.jac_det_side_1d_(p);
+            normal_vec = patch_fe.normal_vec_1d_(p);
             break;
         case 2:
             jac_det = patch_fe.jac_det_side_2d_(p);
+            normal_vec = patch_fe.normal_vec_2d_(p);
             break;
         case 3:
             jac_det = patch_fe.jac_det_side_3d_(p);
+            normal_vec = patch_fe.normal_vec_3d_(p);
             break;
         }
         std::cout << " element " << zero_edge_side.elem_idx() << ", side " << zero_edge_side.side_idx() << ", jac determinant: " << jac_det << std::endl;
+        std::cout << "  normal vector: " << normal_vec << std::endl;
     }
 }
