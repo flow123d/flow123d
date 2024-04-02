@@ -77,6 +77,8 @@
 #include <armadillo>
 #include "system/armor.hh"
 #include "system/asserts.hh"
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 
 /*
@@ -349,6 +351,9 @@ public:
     typedef Armor::ArmaVec<double, dim+1> BaryPoint;
     typedef Armor::ArmaVec<double, dim> FaceBaryPoint;
 
+    //// For computing vectorized normal_vector
+    typedef Eigen::Array<double,Eigen::Dynamic,1>  ArrayDbl;
+
     DECLARE_EXCEPTION( ExcInvalidPermutation, << "Side permutation not found.\n" );
         
 	/**
@@ -364,6 +369,13 @@ public:
 	 * @param sid Side number.
 	 */
 	static LocalPoint normal_vector(unsigned int sid);
+
+
+	/**
+	 * Compute normal vector to a given side.
+	 * @param sid Side number.
+	 */
+	static Eigen::Vector<ArrayDbl,dim> normal_vector_array(Eigen::Array<uint,Eigen::Dynamic,1> loc_side_idx_array);
 
 
 	/**

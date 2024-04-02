@@ -646,37 +646,21 @@ struct side_reinit {
 
         switch (op.dim()) {
             case 1: {
-                for (uint i_point=0; i_point<op_results(result_begin_row).rows(); ++i_point) {
-                    arma::vec::fixed<3> input_val;
-                    for (uint i=0; i<input_val.n_rows; ++i)
-                        input_val(i) = op_results(input_begin_row+i)(i_point);
-                    arma::vec::fixed<3> result_val = input_val*RefElement<1>::normal_vector(  el_table(3)(i_point) );
-                    for (uint i=0; i<3; ++i) result_mat(i)(i_point) = result_val(i, 1);
-                }
+                Eigen::Vector<ArrayDbl,1> ref_nermal_vec = RefElement<1>::normal_vector_array( el_table(3) );
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 1, 3>> input_mat(op_results.data() + input_begin_row, 1, 3);
+                result_mat = input_mat.transpose() * ref_nermal_vec;
                 break;
             }
             case 2: {
-                for (uint i_point=0; i_point<op_results(result_begin_row).rows(); ++i_point) {
-                    arma::mat::fixed<3, 2> input_val;
-                    uint input_row = input_begin_row;
-                    for (uint r=0; r<input_val.n_rows; ++r)
-                        for (uint c=0; c<input_val.n_cols; ++c, ++input_row)
-                            input_val(c, r) = op_results(input_row)(i_point); // transpose
-                    arma::vec::fixed<3> result_val = input_val*RefElement<2>::normal_vector(  el_table(3)(i_point) );
-                    for (uint i=0; i<3; ++i) result_mat(i)(i_point) = result_val(i, 1);
-                }
+                Eigen::Vector<ArrayDbl,2> ref_nermal_vec = RefElement<2>::normal_vector_array( el_table(3) );
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 2, 3>> input_mat(op_results.data() + input_begin_row, 2, 3);
+                result_mat = input_mat.transpose() * ref_nermal_vec;
                 break;
             }
             case 3: {
-                for (uint i_point=0; i_point<op_results(result_begin_row).rows(); ++i_point) {
-                    arma::mat::fixed<3, 3> input_val;
-                    uint input_row = input_begin_row;
-                    for (uint r=0; r<input_val.n_rows; ++r)
-                        for (uint c=0; c<input_val.n_cols; ++c, ++input_row)
-                            input_val(c, r) = op_results(input_row)(i_point); // transpose
-                    arma::vec::fixed<3> result_val = input_val*RefElement<3>::normal_vector(  el_table(3)(i_point) );
-                    for (uint i=0; i<3; ++i) result_mat(i)(i_point) = result_val(i, 1);
-                }
+                Eigen::Vector<ArrayDbl,3> ref_nermal_vec = RefElement<3>::normal_vector_array( el_table(3) );
+                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
+                result_mat = input_mat.transpose() * ref_nermal_vec;
                 break;
             }
         }
