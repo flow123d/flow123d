@@ -508,16 +508,20 @@ public:
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
       dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, 1), FeBulk::PatchPointValues(2, 0, 1), FeBulk::PatchPointValues(3, 0, 1)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, 1), FeSide::PatchPointValues(2, 0, 1), FeSide::PatchPointValues(3, 0, 1)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order), FeBulk::PatchPointValues(2, quad_order), FeBulk::PatchPointValues(3, quad_order)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order), FeSide::PatchPointValues(2, quad_order), FeSide::PatchPointValues(3, quad_order)} },
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, fe[Dim<1>{}]->n_dofs()),
+    	                       FeBulk::PatchPointValues(2, quad_order, fe[Dim<2>{}]->n_dofs()),
+                               FeBulk::PatchPointValues(3, quad_order, fe[Dim<3>{}]->n_dofs())} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, fe[Dim<0>{}]->n_dofs()),
+                               FeSide::PatchPointValues(2, quad_order, fe[Dim<1>{}]->n_dofs()),
+                               FeSide::PatchPointValues(3, quad_order, fe[Dim<2>{}]->n_dofs())} },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
