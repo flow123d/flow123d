@@ -407,55 +407,27 @@ struct common_reinit {
 /// Defines reinit operations on bulk points.
 struct bulk_reinit {
 	// element operations
+    template<unsigned int dim>
     static inline void elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeBulk::BulkOps::opJac];
         uint result_begin_row = op.result_row();
-        uint input_begin_row = operations[op.input_ops()[0]].result_row();
-        switch (op.dim()) {
-            case 1: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
-                result_mat = eigen_tools::jacobian<3,1>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> result_mat(op_results.data() + result_begin_row, 3, 2);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
-                result_mat = eigen_tools::jacobian<3,2>(input_mat);
-                break;
-            }
-            case 3: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> result_mat(op_results.data() + result_begin_row, 3, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 4>> input_mat(op_results.data() + input_begin_row, 3, 4);
-                result_mat = eigen_tools::jacobian<3,3>(input_mat);
-                break;
-            }
-        }
+        uint coords_begin_row = operations[op.input_ops()[0]].result_row();
+
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim>> result_mat(op_results.data() + result_begin_row, 3, dim);
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim+1>> coords_mat(op_results.data() + coords_begin_row, 3, dim+1);
+        result_mat = eigen_tools::jacobian<3,dim>(coords_mat);
     }
+    template<unsigned int dim>
     static inline void elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeBulk::BulkOps::opJacDet];
         uint result_begin_row = op.result_row();
-        uint input_begin_row = operations[op.input_ops()[0]].result_row();
+        uint jac_begin_row = operations[op.input_ops()[0]].result_row();
+
         ArrayDbl &result_vec = op_results(result_begin_row);
-        switch (op.dim()) {
-            case 1: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> input_mat(op_results.data() + input_begin_row, 3, 1);
-                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 1>>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
-                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 2>>(input_mat);
-                break;
-            }
-            case 3: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
-                result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, 3>>(input_mat);
-                break;
-            }
-        }
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim>> jac_mat(op_results.data() + jac_begin_row, 3, dim);
+        result_vec = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, dim>>(jac_mat);
     }
 
     // expansion operations
@@ -497,56 +469,26 @@ struct bulk_reinit {
 /// Defines reinit operations on side points.
 struct side_reinit {
 	// element operations
+    template<unsigned int dim>
     static inline void elop_el_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeSide::SideOps::opElJac];
         uint result_begin_row = op.result_row();
-        uint input_begin_row = operations[op.input_ops()[0]].result_row();
-        switch (op.dim()) {
-            case 1: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
-                result_mat = eigen_tools::jacobian<3,1>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> result_mat(op_results.data() + result_begin_row, 3, 2);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
-                result_mat = eigen_tools::jacobian<3,2>(input_mat);
-                break;
-            }
-            case 3: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> result_mat(op_results.data() + result_begin_row, 3, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 4>> input_mat(op_results.data() + input_begin_row, 3, 4);
-                result_mat = eigen_tools::jacobian<3,3>(input_mat);
-                break;
-            }
-        }
+        uint coords_begin_row = operations[op.input_ops()[0]].result_row();
+
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim>> result_mat(op_results.data() + result_begin_row, 3, dim);
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim+1>> coords_mat(op_results.data() + coords_begin_row, 3, dim+1);
+        result_mat = eigen_tools::jacobian<3,dim>(coords_mat);
     }
+    template<unsigned int dim>
     static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opElInvJac];
         uint result_begin_row = op.result_row();
-        uint input_begin_row = operations[op.input_ops()[0]].result_row();
-        switch (op.dim()) {
-            case 1: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 1, 3>> result_mat(op_results.data() + result_begin_row, 1, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> input_mat(op_results.data() + input_begin_row, 3, 1);
-                result_mat = eigen_tools::inverse<3,1>(input_mat);
-                break;
-            }
-            case 2: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 2, 3>> result_mat(op_results.data() + result_begin_row, 2, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 2>> input_mat(op_results.data() + input_begin_row, 3, 2);
-                result_mat = eigen_tools::inverse<3,2>(input_mat);
-                break;
-            }
-            case 3: {
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> result_mat(op_results.data() + result_begin_row, 3, 3);
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
-                result_mat = eigen_tools::inverse<3,3>(input_mat);
-                break;
-            }
-        }
+        uint jac_begin_row = operations[op.input_ops()[0]].result_row();
+
+        Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 3>> result_mat(op_results.data() + result_begin_row, dim, 3);
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, dim>> jac_mat(op_results.data() + jac_begin_row, 3, dim);
+        result_mat = eigen_tools::inverse<3,dim>(jac_mat);
     }
     static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
@@ -639,32 +581,16 @@ struct side_reinit {
         ArrayDbl &result_row = op_results( op.result_row() );
         result_row = jac_det_row * weights_row;
     }
+    template<unsigned int dim>
     static inline void ptop_normal_vec(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opNormalVec];
         uint result_begin_row = op.result_row();
-        uint input_begin_row = operations[op.input_ops()[0]].result_row();
-        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
+        uint inv_jac_begin_row = operations[op.input_ops()[0]].result_row();
 
-        switch (op.dim()) {
-            case 1: {
-                Eigen::Vector<ArrayDbl,1> ref_nermal_vec = RefElement<1>::normal_vector_array( el_table(3) );
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 1, 3>> input_mat(op_results.data() + input_begin_row, 1, 3);
-                result_mat = input_mat.transpose() * ref_nermal_vec;
-                break;
-            }
-            case 2: {
-                Eigen::Vector<ArrayDbl,2> ref_nermal_vec = RefElement<2>::normal_vector_array( el_table(3) );
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 2, 3>> input_mat(op_results.data() + input_begin_row, 2, 3);
-                result_mat = input_mat.transpose() * ref_nermal_vec;
-                break;
-            }
-            case 3: {
-                Eigen::Vector<ArrayDbl,3> ref_nermal_vec = RefElement<3>::normal_vector_array( el_table(3) );
-                Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 3>> input_mat(op_results.data() + input_begin_row, 3, 3);
-                result_mat = input_mat.transpose() * ref_nermal_vec;
-                break;
-            }
-        }
+        Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
+        Eigen::Vector<ArrayDbl,dim> ref_nermal_vec = RefElement<dim>::normal_vector_array( el_table(3) );
+        Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 3>> inv_jac_mat(op_results.data() + inv_jac_begin_row, dim, 3);
+        result_mat = inv_jac_mat.transpose() * ref_nermal_vec;
     }
 };
 
@@ -679,13 +605,29 @@ namespace FeBulk {
         PatchPointValues(uint dim, uint quad_order, uint n_dofs)
         : ::PatchPointValues<spacedim>(dim, n_dofs) {
             this->quad_ = new QGauss(dim, 2*quad_order);
+            switch (dim) {
+            case 1:
+            	init<1>();
+            	break;
+            case 2:
+            	init<2>();
+            	break;
+            case 3:
+            	init<3>();
+            	break;
+            }
+        }
 
+    private:
+        /// Initialize operations vector
+        template<unsigned int dim>
+        void init() {
             // First step: adds element values operations
             auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac, {BulkOps::opElCoords} );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, {BulkOps::opElCoords} );
 
-            auto &el_jac_det = this->make_new_op( {1}, &bulk_reinit::elop_jac_det, {BulkOps::opJac} );
+            auto &el_jac_det = this->make_new_op( {1}, &bulk_reinit::elop_jac_det<dim>, {BulkOps::opJac} );
 
             // Second step: adds expand operations (element values to point values)
             this->make_expansion( el_coords, {spacedim, this->dim_+1}, &bulk_reinit::expd_coords );
@@ -722,13 +664,29 @@ namespace FeSide {
         PatchPointValues(uint dim, uint quad_order, uint n_dofs)
         : ::PatchPointValues<spacedim>(dim, n_dofs) {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
+            switch (dim) {
+            case 1:
+            	init<1>();
+            	break;
+            case 2:
+            	init<2>();
+            	break;
+            case 3:
+            	init<3>();
+            	break;
+            }
+        }
 
+    private:
+        /// Initialize operations vector
+        template<unsigned int dim>
+        void init() {
 			// First step: adds element values operations
             auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &side_reinit::elop_el_jac, {SideOps::opElCoords} );
+            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, {SideOps::opElCoords} );
 
-            auto &el_inv_jac = this->make_new_op( {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac, {SideOps::opElJac} );
+            auto &el_inv_jac = this->make_new_op( {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, {SideOps::opElJac} );
 
             auto &sd_coords = this->make_new_op( {spacedim, this->dim_}, &common_reinit::op_base, {} );
 
@@ -761,7 +719,7 @@ namespace FeSide {
 
             /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSdJacDet} );
 
-            /*auto &normal_vec =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_normal_vec, {SideOps::opElInvJac} );
+            /*auto &normal_vec =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_normal_vec<dim>, {SideOps::opElInvJac} );
         }
     };
 
