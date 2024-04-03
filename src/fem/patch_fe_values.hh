@@ -170,46 +170,6 @@ private:
 		SideFE = 1
     };
 
-
-//    /// Structure for storing the precomputed finite element data.
-//    class FEInternalData
-//    {
-//    public:
-//
-//        FEInternalData(unsigned int np, unsigned int nd);
-//
-//        /// Create a new instance of FEInternalData for a FESystem component or subvector.
-//        FEInternalData(const FEInternalData &fe_system_data,
-//                       const std::vector<unsigned int> &dof_indices,
-//                       unsigned int first_component_idx,
-//                       unsigned int ncomps = 1);
-//
-//        /**
-//         * @brief Precomputed values of basis functions at the quadrature points.
-//         *
-//         * Dimensions:   (no. of quadrature points)
-//         *             x (no. of dofs)
-//         *             x (no. of components in ref. cell)
-//         */
-//        std::vector<std::vector<arma::vec> > ref_shape_values;
-//
-//        /**
-//         * @brief Precomputed gradients of basis functions at the quadrature points.
-//         *
-//         * Dimensions:   (no. of quadrature points)
-//         *             x (no. of dofs)
-//         *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
-//         */
-//        std::vector<std::vector<arma::mat> > ref_shape_grads;
-//
-//        /// Number of quadrature points.
-//        unsigned int n_points;
-//
-//        /// Number of dofs (shape functions).
-//        unsigned int n_dofs;
-//    };
-
-
     class ElementFEData
     {
     public:
@@ -226,7 +186,6 @@ private:
         std::shared_ptr<ElementValues<spacedim> > elm_values_;
 
     };
-
 
     /// Subobject holds FE data of one dimension (0,1,2,3)
     class DimPatchFEValues {
