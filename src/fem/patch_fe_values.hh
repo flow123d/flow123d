@@ -162,6 +162,107 @@ private:
 };
 
 
+template<unsigned int Dim>
+class BulkValues
+{
+public:
+	/// Constructor
+	BulkValues(PatchPointValues<3> &patch_point_vals)
+	: patch_point_vals_(patch_point_vals) {
+	    ASSERT_EQ(patch_point_vals.dim(), Dim);
+	}
+
+	/// Return dimension
+	inline unsigned int dim() const {
+	    return Dim;
+	}
+
+    /**
+     * @brief Register the product of Jacobian determinant and the quadrature
+     * weight at bulk quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+    inline ElQ<Scalar> JxW()
+    {
+        uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opJxW].result_row();
+        return ElQ<Scalar>(patch_point_vals_, begin);
+    }
+
+	/// Create bulk accessor of coords entity
+    inline ElQ<Vector> coords()
+    {
+        uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opCoords].result_row();
+        return ElQ<Vector>(patch_point_vals_, begin);
+    }
+
+//    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant()
+    {
+        uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_, begin);
+    }
+
+private:
+    PatchPointValues<3> &patch_point_vals_;
+};
+
+
+template<unsigned int Dim>
+class SideValues
+{
+public:
+	/// Constructor
+	SideValues(PatchPointValues<3> &patch_point_vals)
+	: patch_point_vals_(patch_point_vals) {
+	    ASSERT_EQ(patch_point_vals.dim(), Dim);
+	}
+
+	/// Return dimension
+	inline unsigned int dim() const {
+	    return Dim;
+	}
+
+    /// Same as BulkValues::JxW but register at side quadrature points.
+    inline ElQ<Scalar> JxW()
+    {
+        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opJxW].result_row();
+        return ElQ<Scalar>(patch_point_vals_, begin);
+    }
+
+    /**
+     * @brief Register the normal vector to a side at side quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+	inline ElQ<Vector> normal_vector()
+	{
+        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opNormalVec].result_row();
+        return ElQ<Vector>(patch_point_vals_, begin);
+	}
+
+	/// Create side accessor of coords entity
+    inline ElQ<Vector> coords()
+    {
+        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opCoords].result_row();
+        return ElQ<Vector>(patch_point_vals_, begin);
+    }
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant()
+    {
+        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opSdJacDet].result_row();
+        return ElQ<Scalar>(patch_point_vals_, begin);
+    }
+
+private:
+    PatchPointValues<3> &patch_point_vals_;
+};
+
+
 template<unsigned int spacedim = 3>
 class PatchFEValues {
 private:
@@ -550,78 +651,22 @@ public:
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs(unsigned int dim) const
+    inline unsigned int n_dofs(unsigned int dim, FMT_UNUSED uint component_idx = 0) const
     {
         ASSERT( (dim>0) && (dim<=3) )(dim).error("Invalid dimension!");
         return dim_fe_vals_[dim-1].n_dofs_;
     }
 
-    /**
-     * @brief Register the product of Jacobian determinant and the quadrature
-     * weight at bulk quadrature points.
-     *
-     * @param quad Quadrature.
-     */
-    inline ElQ<Scalar> JxW(Quadrature *quad)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_bulk_[dim-1].operations_[FeBulk::BulkOps::opJxW].result_row();
-        return ElQ<Scalar>(patch_point_vals_bulk_[dim], begin);
+    /// Return BulkValue object of dimension given by template parameter
+    template<unsigned int dim>
+    BulkValues<dim> bulk_values() {
+        return BulkValues<dim>(patch_point_vals_bulk_[dim-1]);
     }
 
-    /// Same as previous but register at side quadrature points.
-    inline ElQ<Scalar> JxW_side(Quadrature *quad)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opJxW].result_row();
-        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
-    }
-
-    /**
-     * @brief Register the normal vector to a side at side quadrature points.
-     *
-     * @param quad Quadrature.
-     */
-	inline ElQ<Vector> normal_vector(Quadrature *quad)
-	{
-        uint dim = quad->dim();  // side quadrature
-        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opNormalVec].result_row();
-        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
-	}
-
-	/// Create bulk accessor of coords entity
-    inline ElQ<Vector> coords(Quadrature *quad)
-    {
-        uint dim = quad->dim()-1;
-        uint begin = patch_point_vals_bulk_[dim].operations_[FeBulk::BulkOps::opCoords].result_row();
-        return ElQ<Vector>(patch_point_vals_bulk_[dim], begin);
-    }
-
-	/// Create side accessor of coords entity
-    inline ElQ<Vector> coords_side(Quadrature *quad)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opCoords].result_row();
-        return ElQ<Vector>(patch_point_vals_side_[dim], begin);
-    }
-
-//    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
-//    {}
-
-    /// Create bulk accessor of jac determinant entity
-    inline ElQ<Scalar> determinant(Quadrature *quad)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_bulk_[dim-1].operations_[FeBulk::BulkOps::opJacDet].result_row();
-        return ElQ<Scalar>(patch_point_vals_bulk_[dim-1], begin);
-    }
-
-    /// Create bulk accessor of jac determinant entity
-    inline ElQ<Scalar> determinant_side(Quadrature *quad)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_side_[dim].operations_[FeSide::SideOps::opSdJacDet].result_row();
-        return ElQ<Scalar>(patch_point_vals_side_[dim], begin);
+    /// Return SideValue object of dimension given by template parameter
+    template<unsigned int dim>
+    SideValues<dim> side_values() {
+        return SideValues<dim>(patch_point_vals_side_[dim-1]);
     }
 
     /**
@@ -631,20 +676,20 @@ public:
      * @param quad_list List of quadratures.
      * @param function_no Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(Quadrature *quad)
+    inline FeQ<Scalar> scalar_shape(Quadrature *quad, uint component_idx = 0)
     {
         uint dim = quad->dim();
-        uint begin = patch_point_vals_bulk_[dim-1].add_rows(this->n_dofs(dim)); // scalar needs one column
+        uint begin = patch_point_vals_bulk_[dim-1].add_rows(this->n_dofs(dim, component_idx)); // scalar needs one column
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
 
         return FeQ<Scalar>(this, begin);
     }
 
     /// Same as previous but register at side quadrature points.
-    inline FeQ<Scalar> scalar_shape_side(Quadrature *quad)
+    inline FeQ<Scalar> scalar_shape_side(Quadrature *quad, uint component_idx = 0)
     {
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_side_[dim].add_rows(this->n_dofs(dim+1));  // scalar needs one column
+       	uint begin = patch_point_vals_side_[dim].add_rows(this->n_dofs(dim+1, component_idx));  // scalar needs one column
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_value");
 
         return FeQ<Scalar>(this, begin);
@@ -656,22 +701,20 @@ public:
 //    inline FeQ<Tensor> tensor_shape(std::initializer_list<Quadrature *> quad_list)
 //    {}
 
-    inline FeQ<Vector> grad_scalar_shape(Quadrature *quad, unsigned int i_comp=0)
+    inline FeQ<Vector> grad_scalar_shape(Quadrature *quad, uint component_idx=0)
     {
-        ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_bulk_[dim-1].add_rows(3 * this->n_dofs(dim)); // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_bulk_[dim-1].add_rows(3 * this->n_dofs(dim, component_idx)); // Vector needs 3 columns column * n_dofs
         func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
 
         return FeQ<Vector>(this, begin);
     }
 
     /// Same as previous but register at side quadrature points.
-    inline FeQ<Vector> grad_scalar_shape_side(Quadrature *quad, unsigned int i_comp=0)
+    inline FeQ<Vector> grad_scalar_shape_side(Quadrature *quad, uint component_idx=0)
     {
-        ASSERT_PERMANENT(i_comp < 3);
         uint dim = quad->dim();
-       	uint begin = patch_point_vals_side_[dim].add_rows(3 * this->n_dofs(dim+1));  // Vector needs 3 columns column * n_dofs
+       	uint begin = patch_point_vals_side_[dim].add_rows(3 * this->n_dofs(dim+1, component_idx));  // Vector needs 3 columns column * n_dofs
         func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad");
 
         return FeQ<Vector>(this, begin);

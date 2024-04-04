@@ -27,7 +27,7 @@ public:
     /// Constructor.
     Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW(this->quad_) ),
+      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
       conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
@@ -182,9 +182,9 @@ public:
     /// Constructor.
     Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW(this->quad_) ),
-      JxW_side_( this->fe_values_->JxW_side(this->quad_low_) ),
-      normal_( this->fe_values_->normal_vector(this->quad_low_) ),
+      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
+      JxW_side_( this->fe_values_->template side_values<dim>().JxW() ),
+      normal_( this->fe_values_->template side_values<dim>().normal_vector() ),
       conc_shape_( this->fe_values_->scalar_shape(this->quad_) ),
       conc_shape_side_( this->fe_values_->scalar_shape_side(this->quad_low_) ),
       conc_grad_( this->fe_values_->grad_scalar_shape(this->quad_) ),
@@ -745,7 +745,7 @@ public:
     /// Constructor.
     Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->JxW(this->quad_) ),
+      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
       conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;

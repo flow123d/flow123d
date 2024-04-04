@@ -31,6 +31,8 @@
 
 template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int spacedim> class ElOp;
+template<unsigned int Dim> class BulkValues;
+template<unsigned int Dim> class SideValues;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
@@ -83,7 +85,6 @@ namespace FeSide {
 }
 
 
-
 /**
  * @brief Class for storing FE data of quadrature points.
  *
@@ -118,6 +119,11 @@ public:
     inline void reset() {
         n_points_ = 0;
         n_elems_ = 0;
+    }
+
+    /// Getter of dim_
+    inline uint dim() const {
+        return dim_;
     }
 
     /// Getter of n_rows_
@@ -224,6 +230,14 @@ public:
         return operations_[operations_.size()-1];
     }
 
+    /// Add accessor to operations_ vector
+    ElOp<spacedim> &make_fe_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs) {
+    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec, n_dofs);
+    	this->n_rows_ += op_accessor.n_comp() * n_dofs;
+    	operations_.push_back(op_accessor);
+    	return operations_[operations_.size()-1];
+    }
+
 
     /// Reinit data.
     void reinit_patch() {
@@ -328,8 +342,11 @@ protected:
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
+    template<unsigned int Dim>
+    friend class BulkValues;
+    template<unsigned int Dim>
+    friend class SideValues;
 };
-
 
 /**
  * @brief Class represents FE operations.
@@ -338,8 +355,8 @@ template<unsigned int spacedim = 3>
 class ElOp {
 public:
     /// Constructor
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, std::vector<uint> input_ops = {})
-    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), reinit_func(reinit_f)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, std::vector<uint> input_ops = {}, uint n_dofs = 1)
+    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), n_dofs_(n_dofs), reinit_func(reinit_f)
     {}
 
     /// Number of components computed from shape_ vector
@@ -379,6 +396,7 @@ protected:
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     uint result_row_;                         ///< First row to scalar, vector or matrix result
     std::vector<uint> input_ops_;             ///< Indices of operations in PatchPointValues::operations_ vector on which ElOp is depended
+    uint n_dofs_;                             ///< Number of DOFs of FE operations (or 1 in case of element operations)
 
     ReinitFunction reinit_func;               ///< Pointer to patch reinit function of element data table specialized by operation
 };
