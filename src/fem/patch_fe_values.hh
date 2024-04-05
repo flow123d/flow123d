@@ -866,15 +866,15 @@ ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
 }
 
 template <>
-inline Vector ElQ<Vector>::operator()(FMT_UNUSED const BulkPoint &point) {
-    Vector vect; vect.zeros();
-    return vect;
+inline Vector ElQ<Vector>::operator()(const BulkPoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.vector_val(begin_, value_cache_idx);
 }
 
 template <>
-inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+inline Tensor ElQ<Tensor>::operator()(const BulkPoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.tensor_val(begin_, value_cache_idx);
 }
 
 template <class ValueType>
@@ -890,9 +890,9 @@ inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
 }
 
 template <>
-inline Tensor ElQ<Tensor>::operator()(FMT_UNUSED const SidePoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.tensor_val(begin_, value_cache_idx);
 }
 
 template <class ValueType>

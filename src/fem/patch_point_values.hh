@@ -276,13 +276,13 @@ public:
         return val;
     }
 
-//    inline Tensor tensor_val(uint result_row, uint point_idx) const {
-//        Tensor val;
-//        for (uint i=0; i<3; ++i)
-//            for (uint j=0; j<3; ++j)
-//                val(i,j) = point_vals_->point_vals_[result_row+3*i+j][point_idx];
-//        return val;
-//    }
+    inline Tensor tensor_val(uint result_row, uint point_idx) const {
+        Tensor val;
+        for (uint i=0; i<3; ++i)
+            for (uint j=0; j<3; ++j)
+                val(i,j) = point_vals_(result_row+3*i+j)(elements_map_[point_idx]);
+        return val;
+    }
 
     /// Temporary development method
     void print(bool points, bool ints) const {
