@@ -31,8 +31,8 @@
 
 template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int spacedim> class ElOp;
-template<unsigned int Dim> class BulkValues;
-template<unsigned int Dim> class SideValues;
+template<unsigned int dim> class BulkValues;
+template<unsigned int dim> class SideValues;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
@@ -99,8 +99,8 @@ public:
      *
      * Set dimension
      */
-    PatchPointValues(uint dim, uint n_dofs)
-    : dim_(dim), n_rows_(0), n_dofs_(n_dofs), elements_map_(300, 0), points_map_(300, 0) {}
+    PatchPointValues(uint dim)
+    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0) {}
 
     /**
      * Initialize object, set number of columns (quantities) in tables.
@@ -334,7 +334,6 @@ protected:
     uint n_rows_;                     ///< Number of columns of \p point_vals table
     uint n_points_;                   ///< Number of points in patch
     uint n_elems_;                    ///< Number of elements in patch
-    uint n_dofs_;                     ///< Number of DOFs
     Quadrature *quad_;                ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;  ///< Map of element patch indices to el_vals_ table
@@ -342,9 +341,9 @@ protected:
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
-    template<unsigned int Dim>
+    template<unsigned int dim>
     friend class BulkValues;
-    template<unsigned int Dim>
+    template<unsigned int dim>
     friend class SideValues;
 };
 
@@ -620,8 +619,8 @@ namespace FeBulk {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, uint n_dofs)
-        : ::PatchPointValues<spacedim>(dim, n_dofs) {
+        PatchPointValues(uint dim, uint quad_order)
+        : ::PatchPointValues<spacedim>(dim) {
             this->quad_ = new QGauss(dim, 2*quad_order);
             switch (dim) {
             case 1:
@@ -679,8 +678,8 @@ namespace FeSide {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, uint n_dofs)
-        : ::PatchPointValues<spacedim>(dim, n_dofs) {
+        PatchPointValues(uint dim, uint quad_order)
+        : ::PatchPointValues<spacedim>(dim) {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
             switch (dim) {
             case 1:

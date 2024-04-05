@@ -162,19 +162,15 @@ private:
 };
 
 
-template<unsigned int Dim>
+template<unsigned int dim>
 class BulkValues
 {
 public:
 	/// Constructor
-	BulkValues(PatchPointValues<3> &patch_point_vals)
+	BulkValues(PatchPointValues<3> &patch_point_vals, MixedPtr<FiniteElement> fe)
 	: patch_point_vals_(patch_point_vals) {
-	    ASSERT_EQ(patch_point_vals.dim(), Dim);
-	}
-
-	/// Return dimension
-	inline unsigned int dim() const {
-	    return Dim;
+	    ASSERT_EQ(patch_point_vals.dim(), dim);
+	    fe_ = fe[Dim<dim>{}];
 	}
 
     /**
@@ -208,22 +204,19 @@ public:
 
 private:
     PatchPointValues<3> &patch_point_vals_;
+    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 
-template<unsigned int Dim>
+template<unsigned int dim>
 class SideValues
 {
 public:
 	/// Constructor
-	SideValues(PatchPointValues<3> &patch_point_vals)
+	SideValues(PatchPointValues<3> &patch_point_vals, MixedPtr<FiniteElement> fe)
 	: patch_point_vals_(patch_point_vals) {
-	    ASSERT_EQ(patch_point_vals.dim(), Dim);
-	}
-
-	/// Return dimension
-	inline unsigned int dim() const {
-	    return Dim;
+	    ASSERT_EQ(patch_point_vals.dim(), dim);
+	    fe_ = fe[Dim<dim>{}];
 	}
 
     /// Same as BulkValues::JxW but register at side quadrature points.
@@ -260,6 +253,7 @@ public:
 
 private:
     PatchPointValues<3> &patch_point_vals_;
+    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 
@@ -568,20 +562,20 @@ public:
     PatchFEValues()
     : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
       dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, 1), FeBulk::PatchPointValues(2, 0, 1), FeBulk::PatchPointValues(3, 0, 1)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, 1), FeSide::PatchPointValues(2, 0, 1), FeSide::PatchPointValues(3, 0, 1)} } {
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int n_quad_points, unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
       dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, fe[Dim<1>{}]->n_dofs()),
-    	                       FeBulk::PatchPointValues(2, quad_order, fe[Dim<2>{}]->n_dofs()),
-                               FeBulk::PatchPointValues(3, quad_order, fe[Dim<3>{}]->n_dofs())} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, fe[Dim<0>{}]->n_dofs()),
-                               FeSide::PatchPointValues(2, quad_order, fe[Dim<1>{}]->n_dofs()),
-                               FeSide::PatchPointValues(3, quad_order, fe[Dim<2>{}]->n_dofs())} },
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
+    	                       FeBulk::PatchPointValues(2, quad_order),
+                               FeBulk::PatchPointValues(3, quad_order)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order),
+                               FeSide::PatchPointValues(2, quad_order),
+                               FeSide::PatchPointValues(3, quad_order)} },
       fe_(fe) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -660,13 +654,13 @@ public:
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
     BulkValues<dim> bulk_values() {
-        return BulkValues<dim>(patch_point_vals_bulk_[dim-1]);
+        return BulkValues<dim>(patch_point_vals_bulk_[dim-1], fe_);
     }
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
     SideValues<dim> side_values() {
-        return SideValues<dim>(patch_point_vals_side_[dim-1]);
+        return SideValues<dim>(patch_point_vals_side_[dim-1], fe_);
     }
 
     /**
