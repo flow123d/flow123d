@@ -45,7 +45,7 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
+      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -240,10 +240,10 @@ public:
       JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
       JxW_side_( this->fe_values_->template side_values<dim>().JxW() ),
       normal_( this->fe_values_->template side_values<dim>().normal_vector() ),
-      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ),
-      conc_shape_side_( this->fe_values_->scalar_shape_side(this->quad_low_) ),
-      conc_grad_( this->fe_values_->grad_scalar_shape(this->quad_) ),
-      conc_grad_sidw_( this->fe_values_->grad_scalar_shape_side(this->quad_low_) ),
+      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ),
+      conc_shape_side_( this->fe_values_->template side_values<dim>().scalar_shape() ),
+      conc_grad_( this->fe_values_->template bulk_values<dim>().grad_scalar_shape() ),
+      conc_grad_sidw_( this->fe_values_->template side_values<dim>().grad_scalar_shape() ),
       conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
@@ -700,7 +700,7 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      conc_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
+      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -821,8 +821,8 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->template side_values<dim>().JxW() ),
       normal_( this->fe_values_->template side_values<dim>().normal_vector() ),
-      conc_shape_( this->fe_values_->scalar_shape_side(this->quad_low_) ),
-	  conc_grad_( this->fe_values_->grad_scalar_shape_side(this->quad_low_) ) {
+      conc_shape_( this->fe_values_->template side_values<dim>().scalar_shape() ),
+	  conc_grad_( this->fe_values_->template side_values<dim>().grad_scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -1032,7 +1032,7 @@ public:
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      init_shape_( this->fe_values_->scalar_shape(this->quad_) ) {
+      init_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }

@@ -61,9 +61,8 @@ public:
     ValueType operator()(FMT_UNUSED const SidePoint &point);
 
 private:
-    // attributes:
-    PatchPointValues<3> &patch_point_vals_;
-    unsigned int begin_;       /// Index of the first component of the bulk Quantity. Size is given by ValueType
+    PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
+    unsigned int begin_;                    /// Index of the first component of the bulk Quantity. Size is given by ValueType
 };
 
 
@@ -74,8 +73,8 @@ public:
     FeQ() = delete;
 
     // Class similar to current FeView
-    FeQ(PatchFEValues<3> *fe_values, unsigned int begin)
-    : fe_values_(fe_values), begin_(begin) {}
+    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int begin, unsigned int n_dofs)
+    : patch_point_vals_(patch_point_vals), begin_(begin), n_dofs_(n_dofs) {}
 
 
     ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point);
@@ -86,9 +85,9 @@ public:
     // resolving to side values
 
 private:
-    // attributes:
-    PatchFEValues<3> *fe_values_;
-    unsigned int begin_;       /// Index of the first component of the Quantity. Size is given by ValueType
+    PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
+    unsigned int begin_;                    ///< Index of the first component of the Quantity. Size is given by ValueType
+    unsigned int n_dofs_;                   ///< Number of DOFs
 };
 
 
@@ -202,7 +201,55 @@ public:
         return ElQ<Scalar>(patch_point_vals_, begin);
     }
 
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
+    {
+        uint n_dofs = this->n_dofs(component_idx);
+        auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, &common_reinit::op_base, {}, n_dofs);
+        uint begin = scalar_shape_bulk_op.result_row();
+
+        return FeQ<Scalar>(patch_point_vals_, begin, n_dofs);
+    }
+
+//    inline FeQ<Vector> vector_shape(uint component_idx = 0)
+//    {}
+
+//    inline FeQ<Tensor> tensor_shape(uint component_idx = 0)
+//    {}
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
+    {
+        uint n_dofs = this->n_dofs(component_idx);
+        auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, n_dofs);
+        uint begin = grad_scalar_shape_bulk_op.result_row();
+
+        return FeQ<Vector>(patch_point_vals_, begin, n_dofs);
+    }
+
+//    inline FeQ<Tensor> grad_vector_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
+//    {}
+
 private:
+    uint n_dofs(uint component_idx) {
+        FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe_.get() );
+        if (fe_sys != nullptr) {
+            return fe_sys->fe()[component_idx]->n_dofs();
+        } else {
+        	return fe_->n_dofs();
+        }
+    }
+
     PatchPointValues<3> &patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
@@ -251,7 +298,36 @@ public:
         return ElQ<Scalar>(patch_point_vals_, begin);
     }
 
+    /// Same as BulkValues::scalar_shape but register at side quadrature points.
+    inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
+    {
+        uint n_dofs = this->n_dofs(component_idx);
+        auto &scalar_shape_side_op = patch_point_vals_.make_fe_op({1}, &common_reinit::op_base, {}, n_dofs);
+        uint begin = scalar_shape_side_op.result_row();
+
+        return FeQ<Scalar>(patch_point_vals_, begin, n_dofs);
+    }
+
+    /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
+    inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
+    {
+        uint n_dofs = this->n_dofs(component_idx);
+        auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, n_dofs);
+        uint begin = grad_scalar_shape_bulk_op.result_row();
+
+        return FeQ<Vector>(patch_point_vals_, begin, n_dofs);
+    }
+
 private:
+    uint n_dofs(uint component_idx) {
+        FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe_.get() );
+        if (fe_sys != nullptr) {
+            return fe_sys->fe()[component_idx]->n_dofs();
+        } else {
+        	return fe_->n_dofs();
+        }
+    }
+
     PatchPointValues<3> &patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
@@ -663,60 +739,6 @@ public:
         return SideValues<dim>(patch_point_vals_side_[dim-1], fe_);
     }
 
-    /**
-     * @brief Return the value of the @p function_no-th shape function at
-     * the @p p quadrature point.
-     *
-     * @param quad_list List of quadratures.
-     * @param function_no Number of the shape function.
-     */
-    inline FeQ<Scalar> scalar_shape(Quadrature *quad, uint component_idx = 0)
-    {
-        uint dim = quad->dim();
-        uint begin = patch_point_vals_bulk_[dim-1].add_rows(this->n_dofs(dim, component_idx)); // scalar needs one column
-        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_value"); // storing to temporary map
-
-        return FeQ<Scalar>(this, begin);
-    }
-
-    /// Same as previous but register at side quadrature points.
-    inline FeQ<Scalar> scalar_shape_side(Quadrature *quad, uint component_idx = 0)
-    {
-        uint dim = quad->dim();
-       	uint begin = patch_point_vals_side_[dim].add_rows(this->n_dofs(dim+1, component_idx));  // scalar needs one column
-        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_value");
-
-        return FeQ<Scalar>(this, begin);
-    }
-
-//    inline FeQ<Vector> vector_shape(std::initializer_list<Quadrature *> quad_list)
-//    {}
-
-//    inline FeQ<Tensor> tensor_shape(std::initializer_list<Quadrature *> quad_list)
-//    {}
-
-    inline FeQ<Vector> grad_scalar_shape(Quadrature *quad, uint component_idx=0)
-    {
-        uint dim = quad->dim();
-       	uint begin = patch_point_vals_bulk_[dim-1].add_rows(3 * this->n_dofs(dim, component_idx)); // Vector needs 3 columns column * n_dofs
-        func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "shape_grad"); // storing to temporary map
-
-        return FeQ<Vector>(this, begin);
-    }
-
-    /// Same as previous but register at side quadrature points.
-    inline FeQ<Vector> grad_scalar_shape_side(Quadrature *quad, uint component_idx=0)
-    {
-        uint dim = quad->dim();
-       	uint begin = patch_point_vals_side_[dim].add_rows(3 * this->n_dofs(dim+1, component_idx));  // Vector needs 3 columns column * n_dofs
-        func_map_side_[begin] = FuncDef( &dim_fe_side_vals_[dim], "shape_grad");
-
-        return FeQ<Vector>(this, begin);
-    }
-
-//    inline FeQ<Tensor> grad_vector_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
-//    {}
-
     inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(std::initializer_list<Quadrature *> quad_list)
     {
         std::vector<Quadrature *> quad_vec(quad_list);
@@ -890,26 +912,26 @@ inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) {
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "shape_value") {
-        return it->second.point_data_->shape_value(shape_idx, point);
-    } else {
+ValueType FeQ<ValueType>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+//	auto it = fe_values_->func_map_.find(begin_);
+//    if (it->second.func_name_ == "shape_value") {
+//        return it->second.point_data_->shape_value(shape_idx, point);
+//    } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
-    }
+//    }
 }
 
 template <>
-inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const BulkPoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "shape_grad") {
-        return it->second.point_data_->shape_grad(shape_idx, point);
-    } else {
+inline Vector FeQ<Vector>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
+//	auto it = fe_values_->func_map_.find(begin_);
+//    if (it->second.func_name_ == "shape_grad") {
+//        return it->second.point_data_->shape_grad(shape_idx, point);
+//    } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
         return vect;
-    }
+//    }
 }
 
 template <>
@@ -919,26 +941,26 @@ inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNU
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const SidePoint &point) {
-	auto it = fe_values_->func_map_side_.find(begin_);
-    if (it->second.func_name_ == "shape_value") {
-        return it->second.point_data_->shape_value(shape_idx, point);
-    } else {
+ValueType FeQ<ValueType>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point) {
+//	auto it = fe_values_->func_map_side_.find(begin_);
+//    if (it->second.func_name_ == "shape_value") {
+//        return it->second.point_data_->shape_value(shape_idx, point);
+//    } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
-    }
+//    }
 }
 
 template <>
-inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const SidePoint &point) {
-	auto it = fe_values_->func_map_side_.find(begin_);
-    if (it->second.func_name_ == "shape_grad") {
-        return it->second.point_data_->shape_grad(shape_idx, point);
-    } else {
+inline Vector FeQ<Vector>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point) {
+//	auto it = fe_values_->func_map_side_.find(begin_);
+//    if (it->second.func_name_ == "shape_grad") {
+//        return it->second.point_data_->shape_grad(shape_idx, point);
+//    } else {
         //ASSERT_PERMANENT(false).error("Should not happen.");
         Vector vect; vect.zeros();
         return vect;
-    }
+//    }
 }
 
 template <>
