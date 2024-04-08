@@ -605,9 +605,15 @@ struct side_reinit {
         uint inv_jac_begin_row = operations[op.input_ops()[0]].result_row();
 
         Eigen::Map<Eigen::Matrix<ArrayDbl, 3, 1>> result_mat(op_results.data() + result_begin_row, 3, 1);
-        Eigen::Vector<ArrayDbl,dim> ref_nermal_vec = RefElement<dim>::normal_vector_array( el_table(3) );
+        Eigen::Vector<ArrayDbl,dim> ref_normal_vec = RefElement<dim>::normal_vector_array( el_table(3) );
+
         Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 3>> inv_jac_mat(op_results.data() + inv_jac_begin_row, dim, 3);
-        result_mat = inv_jac_mat.transpose() * ref_nermal_vec;
+        // TODO:
+        //Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 3>> inv_jac_mat(op_results.data() + inv_jac_begin_row);
+
+        auto inv_jac_mat = op_results.get<dim, 3>(operations[op.input_ops()[0]]);
+
+        result_mat = inv_jac_mat.transpose() * ref_normal_vec;
     }
 };
 
