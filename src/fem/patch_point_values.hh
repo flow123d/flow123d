@@ -50,9 +50,11 @@ namespace FeBulk {
     {
         opElCoords,
         opJac,
+        opInvJac,
         opJacDet,
         opExpdCoords,
         opExpdJac,
+        opExpdInvJac,
         opExpdJacDet,
         opCoords,
         opWeights,
@@ -391,8 +393,8 @@ public:
 
     /// Return map referenced Eigen::Matrix of given dimension
     template<unsigned int dim1, unsigned int dim2>
-    Eigen::Map<Eigen::Matrix<ArrayDbl, dim1, dim2>> value(TableDbl &op_results) const {
-        return Eigen::Map<Eigen::Matrix<ArrayDbl, dim1, dim2>>(op_results.data() + result_row_, dim1, dim2);
+    Eigen::Map<Eigen::Matrix<ArrayDbl, dim1, dim2>> value(TableDbl &op_results, uint i_dof = 0) const {
+        return Eigen::Map<Eigen::Matrix<ArrayDbl, dim1, dim2>>(op_results.data() + result_row_ + i_dof * n_comp(), dim1, dim2);
     }
 
 
@@ -439,6 +441,14 @@ struct bulk_reinit {
         jac_value = eigen_tools::jacobian<3,dim>(coords_value);
     }
     template<unsigned int dim>
+    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
+        auto &op = operations[FeBulk::BulkOps::opInvJac];
+        auto inv_jac_value = op.value<dim, 3>(op_results);
+        auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
+        inv_jac_value = eigen_tools::inverse<3, dim>(jac_value);
+    }
+    template<unsigned int dim>
     static inline void elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeBulk::BulkOps::opJacDet];
@@ -454,6 +464,10 @@ struct bulk_reinit {
     }
     static inline void expd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
         auto &op = operations[FeBulk::BulkOps::opExpdJac];
+        common_reinit::expand_data(op, op_results, el_table);
+    }
+    static inline void expd_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+        auto &op = operations[FeBulk::BulkOps::opExpdInvJac];
         common_reinit::expand_data(op, op_results, el_table);
     }
     static inline void expd_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
@@ -478,6 +492,43 @@ struct bulk_reinit {
         ArrayDbl &jac_det_row = op_results( operations[op.input_ops()[1]].result_row() );
         ArrayDbl &result_row = op_results( op.result_row() );
         result_row = jac_det_row * weights_row;
+    }
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, TableDbl &op_results,
+            std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
+        auto &op = operations[scalar_shape_op_idx];
+        uint n_points = shape_values.size();
+
+        for (uint i_row=0; i_row<shape_values[0].size(); ++i_row) {
+            ArrayDbl &result_row = op_results( op.result_row()+i_row );
+            for (uint i_pt=0; i_pt<result_row.rows(); ++i_pt)
+                result_row(i_pt) = shape_values[i_pt % n_points][i_row];
+        }
+    }
+    template<unsigned int dim>
+    static inline void ptop_scalar_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, TableDbl &op_results,
+            std::vector< std::vector<arma::mat> > ref_shape_grads, uint scalar_shape_grads_op_idx) {
+        auto &op = operations[scalar_shape_grads_op_idx];
+        uint n_points = ref_shape_grads.size();
+        uint n_dofs = ref_shape_grads[0].size();
+
+        Eigen::Vector<ArrayDbl, Eigen::Dynamic> ref_shape_grads_expd;
+        ref_shape_grads_expd.resize(dim*n_dofs);
+        for (uint i=0; i<ref_shape_grads_expd.rows(); ++i)
+        	ref_shape_grads_expd(i).resize(op_results(0).rows());
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_c=0; i_c<dim; ++i_c) {
+                ArrayDbl &shape_grad_row = ref_shape_grads_expd(i_dof*dim+i_c);
+                for (uint i_pt=0; i_pt<shape_grad_row.rows(); ++i_pt)
+                    shape_grad_row(i_pt) = ref_shape_grads[i_pt % n_points][i_dof][i_c];
+            }
+
+        auto inv_jac_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            auto shape_grad_value = op.value<3, 1>(op_results, i_dof);
+            Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 1>> ref_shape_grads_dof_value(ref_shape_grads_expd.data() + dim*i_dof, dim, 1);
+            shape_grad_value = inv_jac_value.transpose() * ref_shape_grads_dof_value;
+        }
     }
 };
 
@@ -606,12 +657,16 @@ namespace FeBulk {
 
             auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, {BulkOps::opElCoords} );
 
+            auto &el_inv_jac = this->make_new_op( {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, {BulkOps::opJac} );
+
             auto &el_jac_det = this->make_new_op( {1}, &bulk_reinit::elop_jac_det<dim>, {BulkOps::opJac} );
 
             // Second step: adds expand operations (element values to point values)
             this->make_expansion( el_coords, {spacedim, this->dim_+1}, &bulk_reinit::expd_coords );
 
             this->make_expansion( el_jac, {spacedim, this->dim_}, &bulk_reinit::expd_jac );
+
+            this->make_expansion( el_inv_jac, {this->dim_, spacedim}, &bulk_reinit::expd_inv_jac );
 
             this->make_expansion( el_jac_det, {1}, &bulk_reinit::expd_jac_det );
 

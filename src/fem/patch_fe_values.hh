@@ -30,6 +30,7 @@
 #include "fem/element_values.hh"              // for ElementValues
 #include "fem/fe_values.hh"                   // for FEValuesBase
 #include "fem/fe_values_views.hh"             // for FEValuesViews
+#include "fem/fe_system.hh"                   // for FESystem
 #include "fem/eigen_tools.hh"
 #include "fem/patch_point_values.hh"
 #include "fem/mapping_p1.hh"
@@ -209,11 +210,24 @@ public:
      */
     inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
     {
-        uint n_dofs = this->n_dofs(component_idx);
-        auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, &common_reinit::op_base, {}, n_dofs);
+        auto fe_component = this->fe_comp(component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        // use lambda reinit function
+        std::vector< std::vector<double> > shape_values( patch_point_vals_.get_quadrature()->size(), vector<double>(fe_component->n_dofs()) );
+        auto ref_shape_vals = this->ref_shape_values(fe_component);
+        for (unsigned int i = 0; i < patch_point_vals_.get_quadrature()->size(); i++)
+            for (unsigned int j = 0; j < fe_component->n_dofs(); j++) {
+            	shape_values[i][j] = ref_shape_vals[i][j][0];
+            }
+        uint scalar_shape_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
+        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, op_results, shape_values, scalar_shape_op_idx);
+            };
+        auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         uint begin = scalar_shape_bulk_op.result_row();
 
-        return FeQ<Scalar>(patch_point_vals_, begin, n_dofs);
+        return FeQ<Scalar>(patch_point_vals_, begin, fe_component->n_dofs());
     }
 
 //    inline FeQ<Vector> vector_shape(uint component_idx = 0)
@@ -230,24 +244,87 @@ public:
      */
     inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        uint n_dofs = this->n_dofs(component_idx);
-        auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, n_dofs);
+        auto fe_component = this->fe_comp(component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+
+        // use lambda reinit function
+        auto ref_shape_grads = this->ref_shape_gradients(fe_component);
+        uint scalar_shape_grads_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
+        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, op_results, ref_shape_grads, scalar_shape_grads_op_idx);
+            };
+        auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
 
-        return FeQ<Vector>(patch_point_vals_, begin, n_dofs);
+        return FeQ<Vector>(patch_point_vals_, begin, fe_component->n_dofs());
     }
 
 //    inline FeQ<Tensor> grad_vector_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
 //    {}
 
 private:
-    uint n_dofs(uint component_idx) {
+    /// Return FiniteElement of \p component_idx for FESystem or \p fe_ for other types
+    std::shared_ptr<FiniteElement<dim>> fe_comp(uint component_idx) {
         FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe_.get() );
         if (fe_sys != nullptr) {
-            return fe_sys->fe()[component_idx]->n_dofs();
+            return fe_sys->fe()[component_idx];
         } else {
-        	return fe_->n_dofs();
+            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
+            return fe_;
         }
+    }
+
+    /**
+     * @brief Precomputed values of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    std::vector<std::vector<arma::vec> > ref_shape_values(std::shared_ptr<FiniteElement<dim>> fe) {
+        Quadrature *q = patch_point_vals_.get_quadrature();
+        std::vector<std::vector<arma::vec> > ref_shape_vals( q->size(), vector<arma::vec>(fe->n_dofs()) );
+
+        arma::mat shape_values(fe->n_dofs(), fe->n_components());
+        for (unsigned int i=0; i<q->size(); i++)
+        {
+            for (unsigned int j=0; j<fe->n_dofs(); j++)
+            {
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    shape_values(j,c) = fe->shape_value(j, q->point<dim>(i), c);
+
+                ref_shape_vals[i][j] = trans(shape_values.row(j));
+            }
+        }
+
+        return ref_shape_vals;
+    }
+
+    /**
+     * @brief Precomputed gradients of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
+     */
+    std::vector<std::vector<arma::mat> > ref_shape_gradients(std::shared_ptr<FiniteElement<dim>> fe) {
+        Quadrature *q = patch_point_vals_.get_quadrature();
+    	std::vector<std::vector<arma::mat> > ref_shape_grads( q->size(), vector<arma::mat>(fe->n_dofs()) );
+
+        arma::mat grad(dim, fe->n_components());
+        for (unsigned int i=0; i<q->size(); i++)
+        {
+            for (unsigned int j=0; j<fe->n_dofs(); j++)
+            {
+                grad.zeros();
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    grad.col(c) += fe->shape_grad(j, q->point<dim>(i), c);
+
+                ref_shape_grads[i][j] = grad;
+            }
+        }
+
+        return ref_shape_grads;
     }
 
     PatchPointValues<3> &patch_point_vals_;
