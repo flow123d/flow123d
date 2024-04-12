@@ -505,7 +505,7 @@ struct bulk_reinit {
         }
     }
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, TableDbl &op_results,
+    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, TableDbl &op_results,
             std::vector< std::vector<arma::mat> > ref_shape_grads, uint scalar_shape_grads_op_idx) {
         auto &op = operations[scalar_shape_grads_op_idx];
         uint n_points = ref_shape_grads.size();
@@ -620,6 +620,17 @@ struct side_reinit {
         auto normal_value = op.value<3, 1>(op_results);
         auto inv_jac_mat_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
         normal_value = inv_jac_mat_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
+    }
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table,
+    		std::vector< std::vector< std::vector<double> > > shape_values, uint scalar_shape_op_idx) {
+        auto &op = operations[scalar_shape_op_idx];
+        uint n_points = shape_values[0].size();
+
+        for (uint i_row=0; i_row<shape_values[0][0].size(); ++i_row) {
+            ArrayDbl &result_row = op_results( op.result_row()+i_row );
+            for (uint i_pt=0; i_pt<result_row.rows(); ++i_pt)
+                result_row(i_pt) = shape_values[el_table(3)(i_pt)][i_pt % n_points][i_row];
+        }
     }
 };
 
