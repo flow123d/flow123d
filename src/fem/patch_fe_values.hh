@@ -989,26 +989,15 @@ inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) {
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
-//	auto it = fe_values_->func_map_.find(begin_);
-//    if (it->second.func_name_ == "shape_value") {
-//        return it->second.point_data_->shape_value(shape_idx, point);
-//    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        return 0.0;
-//    }
+ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.scalar_val(begin_+shape_idx, value_cache_idx);
 }
 
 template <>
-inline Vector FeQ<Vector>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
-//	auto it = fe_values_->func_map_.find(begin_);
-//    if (it->second.func_name_ == "shape_grad") {
-//        return it->second.point_data_->shape_grad(shape_idx, point);
-//    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
-        Vector vect; vect.zeros();
-        return vect;
-//    }
+inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const BulkPoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.vector_val(begin_+3*shape_idx, value_cache_idx);
 }
 
 template <>
