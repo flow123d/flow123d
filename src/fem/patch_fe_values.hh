@@ -406,7 +406,6 @@ public:
     inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(component_idx);
-        uint n_dofs = this->n_dofs(component_idx);
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
 
@@ -441,12 +440,13 @@ private:
 
         for (unsigned int sid=0; sid<dim+1; sid++) {
             auto quad = q->make_from_side<dim>(sid);
-        	for (unsigned int i=0; i<quad->size(); i++)
+        	for (unsigned int i=0; i<quad.size(); i++)
             {
                 for (unsigned int j=0; j<fe->n_dofs(); j++)
                 {
-                    for (unsigned int c=0; c<fe->n_components(); c++)
-                        shape_values(j,c) = fe->shape_value(j, quad->point<dim>(i), c);
+                    for (unsigned int c=0; c<fe->n_components(); c++) {
+                        shape_values(j,c) = fe->shape_value(j, quad.template point<dim>(i), c);
+                    }
 
                     ref_shape_vals[sid][i][j] = trans(shape_values.row(j));
                 }
