@@ -272,7 +272,7 @@ public:
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
         if (dim>1)
-            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
+            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->template join_values<dim>().scalar_join_shape() );
         if (dim==1) { // print to log only one time
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);

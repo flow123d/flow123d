@@ -97,17 +97,25 @@ class JoinShapeAccessor {
 public:
     /// Default constructor
     JoinShapeAccessor()
-    : join_idx_(-1) {}
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), join_idx_(-1) {}
 
     /**
      * Constructor
      *
-     * @param fe_values  Pointer to PatchFEValues object.
-     * @param begin      Index of the first component of the Quantity.
-     * @param lower_dim  Dimension of bulk (lower-dim) element.
-     * @param join_idx   Index function.
+     * @param patch_point_vals_bulk  Pointer to PatchPointValues bulk object.
+     * @param patch_point_vals_side  Pointer to PatchPointValues side object.
+     * @param begin                  Index of the first component of the bulk Quantity.
+     * @param begin_side             Index of the first component of the side Quantity.
+     * @param n_dofs_bulk            Number of DOFs of bulk (lower-dim) element.
+     * @param n_dofs_side            Number of DOFs of side (higher-dim) element.
+     * @param join_idx               Index function.
      */
-    JoinShapeAccessor(PatchFEValues<3> *fe_values, unsigned int begin, unsigned int begin_side, unsigned int lower_dim, unsigned int join_idx);
+    JoinShapeAccessor(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side,
+            unsigned int begin, unsigned int begin_side, unsigned int n_dofs_bulk, unsigned int n_dofs_side, unsigned int join_idx)
+    : patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side), begin_(begin),
+	  begin_side_(begin_side), n_dofs_high_(n_dofs_side), n_dofs_low_(n_dofs_bulk), join_idx_(join_idx) {
+        ASSERT( (patch_point_vals_bulk->dim()==2) || (patch_point_vals_bulk->dim()==3) )(patch_point_vals_bulk->dim() ).error("Invalid dimension, must be 2 or 3!");
+    }
 
     /// Return global index of DOF
     inline unsigned int join_idx() const {
@@ -147,18 +155,19 @@ public:
     }
 
 
-    ValueType operator()(FMT_UNUSED const BulkPoint &point);
+    ValueType operator()(const BulkPoint &point);
 
-    ValueType operator()(FMT_UNUSED const SidePoint &point);
+    ValueType operator()(const SidePoint &point);
 
 private:
     // attributes:
-    PatchFEValues<3> *fe_values_;
-    unsigned int begin_;          ///< Index of the first component of the bulk Quantity. Size is given by ValueType
-    unsigned int begin_side_;     ///< Index of the first component of the side Quantity. Size is given by ValueType
-    unsigned int n_dofs_high_;
-    unsigned int n_dofs_low_;
-    unsigned int join_idx_;
+    PatchPointValues<3> *patch_point_vals_bulk_;  ///< Pointer to bulk PatchPointValues
+    PatchPointValues<3> *patch_point_vals_side_;  ///< Pointer to side PatchPointValues
+    unsigned int begin_;                          ///< Index of the first component of the bulk Quantity. Size is given by ValueType
+    unsigned int begin_side_;                     ///< Index of the first component of the side Quantity. Size is given by ValueType
+    unsigned int n_dofs_high_;                    ///< Number of DOFs on high-dim element
+    unsigned int n_dofs_low_;                     ///< Number of DOFs on low-dim element
+    unsigned int join_idx_;                       ///< Index of processed DOF
 };
 
 
@@ -459,6 +468,59 @@ private:
 
     PatchPointValues<3> &patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
+};
+
+
+template<unsigned int dim>
+class JoinValues
+{
+public:
+	/// Constructor
+	JoinValues(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, MixedPtr<FiniteElement> fe)
+	: patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
+	    ASSERT_EQ(patch_point_vals_bulk->dim(), dim-1);
+	    ASSERT_EQ(patch_point_vals_side->dim(), dim);
+	    fe_high_dim_ = fe[Dim<dim>{}];
+	    fe_low_dim_ = fe[Dim<dim-1>{}];
+	}
+
+    inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(uint component_idx = 0)
+    {
+    	// element of lower dim (bulk points)
+        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
+        auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, &common_reinit::op_base, {}, fe_component_low->n_dofs());
+        uint begin_bulk = grad_scalar_shape_bulk_op.result_row();
+
+    	// element of higher dim (side points)
+        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
+        auto &grad_scalar_shape_side_op = patch_point_vals_side_->make_fe_op({1}, &common_reinit::op_base, {}, fe_component_high->n_dofs());
+        uint begin_side = grad_scalar_shape_side_op.result_row();
+
+        auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_,
+                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), 0) );
+        unsigned int end_idx = fe_component_low->n_dofs() + fe_component_high->n_dofs();
+        auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_,
+                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), end_idx) );
+        return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
+    }
+
+private:
+    /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
+    template<unsigned int FE_dim>
+    std::shared_ptr<FiniteElement<FE_dim>> fe_comp(std::shared_ptr< FiniteElement<FE_dim> > fe, uint component_idx) {
+        FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
+        if (fe_sys != nullptr) {
+            return fe_sys->fe()[component_idx];
+        } else {
+            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
+            return fe;
+        }
+    }
+
+    PatchPointValues<3> *patch_point_vals_bulk_;
+    PatchPointValues<3> *patch_point_vals_side_;
+    std::shared_ptr< FiniteElement<dim> > fe_high_dim_;
+    std::shared_ptr< FiniteElement<dim-1> > fe_low_dim_;
 };
 
 
@@ -868,25 +930,11 @@ public:
         return SideValues<dim>(patch_point_vals_side_[dim-1], fe_);
     }
 
-    inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(std::initializer_list<Quadrature *> quad_list)
-    {
-        std::vector<Quadrature *> quad_vec(quad_list);
-        uint dim = quad_vec[0]->dim();
-        uint begin=-1, begin_side=-1;
-
-        if (quad_vec[0] != nullptr) {
-            begin = patch_point_vals_bulk_[dim-1].add_rows(1); // scalar needs one column
-            func_map_[begin] = FuncDef( &dim_fe_vals_[dim-1], "scalar_join_shape"); // storing to temporary map
-        }
-        if (quad_vec[1] != nullptr) {
-            begin_side = patch_point_vals_side_[dim-1].add_rows(1); // scalar needs one column
-            func_map_side_[begin_side] = FuncDef( &dim_fe_side_vals_[dim], "scalar_join_shape"); // storing to temporary map
-        }
-
-        auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, begin_side, quad_vec[0]->dim(), 0) );
-        unsigned int end_idx = bgn_it->n_dofs_high() + bgn_it->n_dofs_low();
-        auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(this, begin, begin_side, quad_vec[0]->dim(), end_idx) );
-        return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
+    /// Return JoinValue object of dimension given by template parameter
+    template<unsigned int dim>
+    JoinValues<dim> join_values() {
+        //static_assert(dim > 1, "Dimension must be 2 or 3.");
+        return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], fe_);
     }
 
     /// Resize \p dim_point_table_ if actual size is less than new_size and return reference
@@ -1079,13 +1127,11 @@ inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNU
 
 template <class ValueType>
 ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
-	auto it = fe_values_->func_map_.find(begin_);
-    if (it->second.func_name_ == "scalar_join_shape") {
-        if (this->is_high_dim()) return 0.0;
-        else return it->second.point_data_->shape_value(this->local_idx(), point);
-    } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
+    if (this->is_high_dim()) {
         return 0.0;
+    } else {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_bulk_->scalar_val(begin_+this->local_idx(), value_cache_idx);
     }
 }
 
@@ -1103,12 +1149,10 @@ inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const BulkPoint &
 
 template <class ValueType>
 ValueType JoinShapeAccessor<ValueType>::operator()(const SidePoint &point) {
-	auto it = fe_values_->func_map_side_.find(begin_side_);
-    if (it->second.func_name_ == "scalar_join_shape") {
-        if (this->is_high_dim()) return it->second.point_data_->shape_value(this->local_idx(), point);
-        else return 0.0;
+    if (this->is_high_dim()) {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_side_->scalar_val(begin_side_+this->local_idx(), value_cache_idx);
     } else {
-        //ASSERT_PERMANENT(false).error("Should not happen.");
         return 0.0;
     }
 }
