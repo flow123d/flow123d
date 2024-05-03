@@ -75,6 +75,12 @@ public:
 	  normal_vec_1d_( this->fe_values_.side_values<1>().normal_vector() ),
 	  normal_vec_2d_( this->fe_values_.side_values<2>().normal_vector() ),
 	  normal_vec_3d_( this->fe_values_.side_values<3>().normal_vector() ),
+	  scalar_shape_1d_( this->fe_values_.bulk_values<1>().scalar_shape() ),
+	  scalar_shape_2d_( this->fe_values_.bulk_values<2>().scalar_shape() ),
+	  scalar_shape_3d_( this->fe_values_.bulk_values<3>().scalar_shape() ),
+	  grad_scalar_shape_1d_( this->fe_values_.bulk_values<1>().grad_scalar_shape() ),
+	  grad_scalar_shape_2d_( this->fe_values_.bulk_values<2>().grad_scalar_shape() ),
+	  grad_scalar_shape_3d_( this->fe_values_.bulk_values<3>().grad_scalar_shape() ),
 	  table_sizes_(2, std::vector<uint>(3, 0))
     {
         eval_points_ = std::make_shared<EvalPoints>();
@@ -193,6 +199,12 @@ public:
     ElQ<Vector> normal_vec_1d_;
     ElQ<Vector> normal_vec_2d_;
     ElQ<Vector> normal_vec_3d_;
+    FeQ<Scalar> scalar_shape_1d_;
+    FeQ<Scalar> scalar_shape_2d_;
+    FeQ<Scalar> scalar_shape_3d_;
+    FeQ<Vector> grad_scalar_shape_1d_;
+    FeQ<Vector> grad_scalar_shape_2d_;
+    FeQ<Vector> grad_scalar_shape_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
