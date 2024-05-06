@@ -172,12 +172,35 @@ private:
 
 
 template<unsigned int dim>
-class BulkValues
+class BaseValues
+{
+protected:
+	// Default constructor
+	BaseValues()
+	{}
+
+    /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
+    template<unsigned int FE_dim>
+    std::shared_ptr<FiniteElement<FE_dim>> fe_comp(std::shared_ptr< FiniteElement<FE_dim> > fe, uint component_idx) {
+        FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
+        if (fe_sys != nullptr) {
+            return fe_sys->fe()[component_idx];
+        } else {
+            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
+            return fe;
+        }
+    }
+
+
+};
+
+template<unsigned int dim>
+class BulkValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
 	BulkValues(PatchPointValues<3> &patch_point_vals, MixedPtr<FiniteElement> fe)
-	: patch_point_vals_(patch_point_vals) {
+	: BaseValues<dim>(), patch_point_vals_(patch_point_vals) {
 	    ASSERT_EQ(patch_point_vals.dim(), dim);
 	    fe_ = fe[Dim<dim>{}];
 	}
@@ -219,7 +242,7 @@ public:
      */
     inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(component_idx);
+        auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
@@ -253,7 +276,7 @@ public:
      */
     inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(component_idx);
+        auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
@@ -272,17 +295,6 @@ public:
 //    {}
 
 private:
-    /// Return FiniteElement of \p component_idx for FESystem or \p fe_ for other types
-    std::shared_ptr<FiniteElement<dim>> fe_comp(uint component_idx) {
-        FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe_.get() );
-        if (fe_sys != nullptr) {
-            return fe_sys->fe()[component_idx];
-        } else {
-            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
-            return fe_;
-        }
-    }
-
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
      *
@@ -342,12 +354,12 @@ private:
 
 
 template<unsigned int dim>
-class SideValues
+class SideValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
 	SideValues(PatchPointValues<3> &patch_point_vals, MixedPtr<FiniteElement> fe)
-	: patch_point_vals_(patch_point_vals) {
+	: BaseValues<dim>(), patch_point_vals_(patch_point_vals) {
 	    ASSERT_EQ(patch_point_vals.dim(), dim);
 	    fe_ = fe[Dim<dim>{}];
 	}
@@ -387,7 +399,7 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(component_idx);
+        auto fe_component = this->fe_comp<dim>(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
@@ -414,7 +426,7 @@ public:
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(component_idx);
+        auto fe_component = this->fe_comp<dim>(fe_, component_idx);
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
 
@@ -422,17 +434,6 @@ public:
     }
 
 private:
-    /// Return FiniteElement of \p component_idx for FESystem or \p fe_ for other types
-    std::shared_ptr<FiniteElement<dim>> fe_comp(uint component_idx) {
-        FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe_.get() );
-        if (fe_sys != nullptr) {
-            return fe_sys->fe()[component_idx];
-        } else {
-            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
-            return fe_;
-        }
-    }
-
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
      *
@@ -472,12 +473,12 @@ private:
 
 
 template<unsigned int dim>
-class JoinValues
+class JoinValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
 	JoinValues(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, MixedPtr<FiniteElement> fe)
-	: patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
+	: BaseValues<dim>(), patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
 	    ASSERT_EQ(patch_point_vals_bulk->dim(), dim-1);
 	    ASSERT_EQ(patch_point_vals_side->dim(), dim);
 	    fe_high_dim_ = fe[Dim<dim>{}];
@@ -505,18 +506,6 @@ public:
     }
 
 private:
-    /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
-    template<unsigned int FE_dim>
-    std::shared_ptr<FiniteElement<FE_dim>> fe_comp(std::shared_ptr< FiniteElement<FE_dim> > fe, uint component_idx) {
-        FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
-        if (fe_sys != nullptr) {
-            return fe_sys->fe()[component_idx];
-        } else {
-            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
-            return fe;
-        }
-    }
-
     PatchPointValues<3> *patch_point_vals_bulk_;
     PatchPointValues<3> *patch_point_vals_side_;
     std::shared_ptr< FiniteElement<dim> > fe_high_dim_;
