@@ -178,8 +178,16 @@ public:
                 }
             }
         }
+        START_TIMER("reinit_patch");
         fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
     }
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
 
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -217,6 +225,8 @@ public:
     std::vector<std::vector<uint> > table_sizes_;
 };
 
+
+
 TEST(PatchFeTest, bulk_points) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Profiler::instance();
@@ -225,7 +235,7 @@ TEST(PatchFeTest, bulk_points) {
     std::string input_str = "{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }";
     Mesh* mesh = mesh_full_constructor(input_str);
 
-    MixedPtr<FE_P_disc> fe(0);
+    MixedPtr<FE_P_disc> fe(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
@@ -285,4 +295,27 @@ TEST(PatchFeTest, bulk_points) {
         std::cout << " element " << zero_edge_side.elem_idx() << ", side " << zero_edge_side.side_idx() << ", jac determinant: " << jac_det << std::endl;
         std::cout << "  normal vector: " << normal_vec << std::endl;
     }
+
+    arma::vec3 grad_scalar("0 0 0");
+    double result_sum = 0.0;
+    for(auto dh_cell : patch_fe.dh_->local_range() ) {
+        auto p = *( patch_fe.bulk_integrals_[dh_cell.dim()-1]->points(patch_fe.element_cache_map_.position_in_cache(dh_cell.elm_idx()), &patch_fe.element_cache_map_).begin() );
+        switch (dh_cell.dim()) {
+        case 1:
+        	grad_scalar = patch_fe.grad_scalar_shape_1d_(0, p);
+            break;
+        case 2:
+        	grad_scalar = patch_fe.grad_scalar_shape_2d_(0, p);
+            break;
+        case 3:
+        	grad_scalar = patch_fe.grad_scalar_shape_3d_(0, p);
+            break;
+        }
+        result_sum += grad_scalar(0) + grad_scalar(1) + grad_scalar(2);
+        std::cout << " element " << dh_cell.elm_idx() << ", grad scalar: " << grad_scalar << std::endl;
+    }
+    std::cout << " result sum: " << result_sum << std::endl;
+
+    patch_fe.profiler_output("patch_fe");
+
 }
