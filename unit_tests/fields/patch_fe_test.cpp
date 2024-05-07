@@ -14,6 +14,19 @@
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
 
+#include "fields/outer_prod_vec.hh"
+
+
+TEST(PatchFeTest, outer_product) {
+    test_add_operator_simple();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_simple();
+    std::cout << "==============" << std::endl;
+    test_add_operator();
+    std::cout << "==============" << std::endl;
+    test_multi_operator();
+}
+
 
 class PatchFETest {
 public:
