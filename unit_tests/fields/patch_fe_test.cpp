@@ -74,11 +74,35 @@ public:
         unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
 	};
 
+	/**
+	 * Helper structzre holds data of neighbour (coupling) integral
+	 *
+	 * Data is specified by cell, side and their subset indices in EvalPoint object
+	 */
+    struct CouplingIntegralData {
+    	/// Default constructor
+       	CouplingIntegralData() {}
+
+        /// Constructor with data mebers initialization
+       	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
+        : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
+
+        /// Copy constructor
+       	CouplingIntegralData(const CouplingIntegralData &other)
+        : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+
+        DHCellAccessor cell;
+	    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
+        DHCellSide side;                   ///< Specified cell side (higher dim element)
+	    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
+    };
+
 
     PatchFETest(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : dh_(dh), fe_values_(CacheMapElementNumber::get(), quad_order, dh_->ds()->fe()),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
+	  coupling_integral_data_(12, 6),
 	  jac_det_1d_( this->fe_values_.bulk_values<1>().determinant() ),
 	  jac_det_2d_( this->fe_values_.bulk_values<2>().determinant() ),
 	  jac_det_3d_( this->fe_values_.bulk_values<3>().determinant() ),
@@ -94,6 +118,8 @@ public:
 	  grad_scalar_shape_1d_( this->fe_values_.bulk_values<1>().grad_scalar_shape() ),
 	  grad_scalar_shape_2d_( this->fe_values_.bulk_values<2>().grad_scalar_shape() ),
 	  grad_scalar_shape_3d_( this->fe_values_.bulk_values<3>().grad_scalar_shape() ),
+	  conc_join_shape_2d_( Range< JoinShapeAccessor<Scalar> >( this->fe_values_.template join_values<2>().scalar_join_shape() ) ),
+	  conc_join_shape_3d_( Range< JoinShapeAccessor<Scalar> >( this->fe_values_.template join_values<3>().scalar_join_shape() ) ),
 	  table_sizes_(2, std::vector<uint>(3, 0))
     {
         eval_points_ = std::make_shared<EvalPoints>();
@@ -112,6 +138,8 @@ public:
         edge_integrals_[0] = eval_points_->add_edge<1>(*fe_values_.get_quadrature(1,false));
         edge_integrals_[1] = eval_points_->add_edge<2>(*fe_values_.get_quadrature(2,false));
         edge_integrals_[2] = eval_points_->add_edge<3>(*fe_values_.get_quadrature(3,false));
+        coupling_integrals_[0] = eval_points_->add_coupling<2>(*fe_values_.get_quadrature(1,true));
+        coupling_integrals_[1] = eval_points_->add_coupling<3>(*fe_values_.get_quadrature(2,true));
     }
 
     void initialize() {
@@ -132,6 +160,12 @@ public:
     /// Return EdgePoint range of appropriate dimension
     inline Range< EdgePoint > edge_points(unsigned int dim, const DHCellSide &cell_side) const {
 	    return edge_integrals_[dim-1]->points(cell_side, &element_cache_map_);
+    }
+
+    /// Return CouplingPoint range of appropriate dimension
+    inline Range< CouplingPoint > coupling_points(unsigned int dim, const DHCellSide &cell_side) const {
+        ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
+	    return coupling_integrals_[dim-2]->points(cell_side, &element_cache_map_);
     }
 
     void add_integrals(DHCellAccessor cell) {
@@ -165,6 +199,28 @@ public:
                     }
                 }
             }
+        }
+
+        // Coupling integral
+        bool add_low = true;
+    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+            if (cell.dim() != neighb_side.dim()-1) continue;
+            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
+                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
+
+            unsigned int reg_idx_low = cell.elm().region_idx().idx();
+            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
+            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
+                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
+                table_sizes_[1][cell.dim()-1]++;
+
+                if (add_low) {
+                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                    table_sizes_[0][cell.dim()-1]++;
+                }
+            }
+            add_low = false;
         }
     }
 
@@ -204,13 +260,15 @@ public:
 
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
-    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
-    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_; ///< Bulk integrals of dim 1,2,3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_; ///< Edge integrals of dim 1,2,3
-    RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
-    RevertableList<EdgeIntegralData> edge_integral_data_;         ///< Holds data for computing edge integrals.
+    PatchFEValues<3> fe_values_;                                           ///< Common FEValues object over all dimensions
+    std::shared_ptr<EvalPoints> eval_points_;                              ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                                    ///< ElementCacheMap according to EvalPoints
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;          ///< Bulk integrals of dim 1,2,3
+    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;          ///< Edge integrals of dim 1,2,3
+    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;  ///< Coupling integrals of dim 1-2,2-3
+    RevertableList<BulkIntegralData> bulk_integral_data_;                  ///< Holds data for computing bulk integrals.
+    RevertableList<EdgeIntegralData> edge_integral_data_;                  ///< Holds data for computing edge integrals.
+    RevertableList<CouplingIntegralData> coupling_integral_data_;          ///< Holds data for computing couplings integrals.
     ElQ<Scalar> jac_det_1d_;
     ElQ<Scalar> jac_det_2d_;
     ElQ<Scalar> jac_det_3d_;
@@ -226,6 +284,8 @@ public:
     FeQ<Vector> grad_scalar_shape_1d_;
     FeQ<Vector> grad_scalar_shape_2d_;
     FeQ<Vector> grad_scalar_shape_3d_;
+    Range< JoinShapeAccessor<Scalar> > conc_join_shape_2d_;
+    Range< JoinShapeAccessor<Scalar> > conc_join_shape_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
@@ -260,6 +320,7 @@ TEST(PatchFeTest, bulk_points) {
     }
     patch_fe.bulk_integral_data_.make_permanent();
     patch_fe.edge_integral_data_.make_permanent();
+    patch_fe.coupling_integral_data_.make_permanent();
     patch_fe.element_cache_map_.make_paermanent_eval_points();
     patch_fe.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
     patch_fe.update_patch();
@@ -307,6 +368,32 @@ TEST(PatchFeTest, bulk_points) {
         }
         std::cout << " element " << zero_edge_side.elem_idx() << ", side " << zero_edge_side.side_idx() << ", jac determinant: " << jac_det << std::endl;
         std::cout << "  normal vector: " << normal_vec << std::endl;
+    }
+
+    for (unsigned int i=0; i<patch_fe.coupling_integral_data_.permanent_size(); ++i) {
+        DHCellAccessor cell_lower_dim = patch_fe.coupling_integral_data_[i].cell;
+        DHCellSide neighb_side = patch_fe.coupling_integral_data_[i].side;;
+        std::cout << " el high " << neighb_side.elem_idx() << ", el low: " << cell_lower_dim.elm_idx() << std::endl;
+
+        auto p_high = *( patch_fe.coupling_points(neighb_side.dim(), neighb_side).begin() );
+        auto p_low = p_high.lower_dim(cell_lower_dim);
+
+        double val_high=0.0, val_low=0.0;
+        switch (neighb_side.dim()) {
+        case 2:
+            for( auto conc_shape_i : patch_fe.conc_join_shape_2d_) {
+                if (conc_shape_i.is_high_dim()) val_high += conc_shape_i(p_high);
+                else val_low += conc_shape_i(p_low);
+            }
+            break;
+        case 3:
+            for( auto conc_shape_i : patch_fe.conc_join_shape_3d_) {
+            	if (conc_shape_i.is_high_dim()) val_high += conc_shape_i(p_high);
+            	else val_low += conc_shape_i(p_low);
+            }
+            break;
+        }
+        std::cout << " val_high " << val_high << ", val_low: " << val_low << std::endl;
     }
 
     arma::vec3 grad_scalar("0 0 0");
