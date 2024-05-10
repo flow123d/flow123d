@@ -347,6 +347,8 @@ protected:
     friend class BulkValues;
     template<unsigned int dim>
     friend class SideValues;
+    template<unsigned int dim>
+    friend class JoinValues;
 };
 
 /**

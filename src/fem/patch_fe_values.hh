@@ -191,6 +191,63 @@ protected:
         }
     }
 
+    /**
+     * @brief Precomputed values of basis functions at the bulk quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    template<unsigned int FE_dim>
+    std::vector<std::vector<arma::vec> > ref_shape_values_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
+        std::vector<std::vector<arma::vec> > ref_shape_vals( q->size(), vector<arma::vec>(fe->n_dofs()) );
+
+        arma::mat shape_values(fe->n_dofs(), fe->n_components());
+        for (unsigned int i=0; i<q->size(); i++)
+        {
+            for (unsigned int j=0; j<fe->n_dofs(); j++)
+            {
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    shape_values(j,c) = fe->shape_value(j, q->point<FE_dim>(i), c);
+
+                ref_shape_vals[i][j] = trans(shape_values.row(j));
+            }
+        }
+
+        return ref_shape_vals;
+    }
+
+    /**
+     * @brief Precomputed values of basis functions at the side quadrature points.
+     *
+     * Dimensions:   (sides)
+     *             x (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    template<unsigned int FE_dim>
+    std::vector< std::vector<std::vector<arma::vec> > > ref_shape_values_side(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
+        std::vector< std::vector<std::vector<arma::vec> > > ref_shape_vals( FE_dim+1, std::vector<std::vector<arma::vec> >(q->size(), vector<arma::vec>(fe->n_dofs())) );
+
+        arma::mat shape_values(fe->n_dofs(), fe->n_components());
+
+        for (unsigned int sid=0; sid<FE_dim+1; sid++) {
+            auto quad = q->make_from_side<dim>(sid);
+        	for (unsigned int i=0; i<quad.size(); i++)
+            {
+                for (unsigned int j=0; j<fe->n_dofs(); j++)
+                {
+                    for (unsigned int c=0; c<fe->n_components(); c++) {
+                        shape_values(j,c) = fe->shape_value(j, quad.template point<FE_dim>(i), c);
+                    }
+
+                    ref_shape_vals[sid][i][j] = trans(shape_values.row(j));
+                }
+            }
+        }
+
+        return ref_shape_vals;
+    }
 
 };
 
@@ -247,7 +304,7 @@ public:
 
         // use lambda reinit function
         std::vector< std::vector<double> > shape_values( patch_point_vals_.get_quadrature()->size(), vector<double>(fe_component->n_dofs()) );
-        auto ref_shape_vals = this->ref_shape_values(fe_component);
+        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_.get_quadrature(), fe_component);
         for (unsigned int i = 0; i < patch_point_vals_.get_quadrature()->size(); i++)
             for (unsigned int j = 0; j < fe_component->n_dofs(); j++) {
             	shape_values[i][j] = ref_shape_vals[i][j][0];
@@ -296,32 +353,6 @@ public:
 
 private:
     /**
-     * @brief Precomputed values of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    std::vector<std::vector<arma::vec> > ref_shape_values(std::shared_ptr<FiniteElement<dim>> fe) {
-        Quadrature *q = patch_point_vals_.get_quadrature();
-        std::vector<std::vector<arma::vec> > ref_shape_vals( q->size(), vector<arma::vec>(fe->n_dofs()) );
-
-        arma::mat shape_values(fe->n_dofs(), fe->n_components());
-        for (unsigned int i=0; i<q->size(); i++)
-        {
-            for (unsigned int j=0; j<fe->n_dofs(); j++)
-            {
-                for (unsigned int c=0; c<fe->n_components(); c++)
-                    shape_values(j,c) = fe->shape_value(j, q->point<dim>(i), c);
-
-                ref_shape_vals[i][j] = trans(shape_values.row(j));
-            }
-        }
-
-        return ref_shape_vals;
-    }
-
-    /**
      * @brief Precomputed gradients of basis functions at the quadrature points.
      *
      * Dimensions:   (no. of quadrature points)
@@ -333,15 +364,15 @@ private:
     	std::vector<std::vector<arma::mat> > ref_shape_grads( q->size(), vector<arma::mat>(fe->n_dofs()) );
 
         arma::mat grad(dim, fe->n_components());
-        for (unsigned int i=0; i<q->size(); i++)
+        for (unsigned int i_pt=0; i_pt<q->size(); i_pt++)
         {
-            for (unsigned int j=0; j<fe->n_dofs(); j++)
+            for (unsigned int i_dof=0; i_dof<fe->n_dofs(); i_dof++)
             {
                 grad.zeros();
                 for (unsigned int c=0; c<fe->n_components(); c++)
-                    grad.col(c) += fe->shape_grad(j, q->point<dim>(i), c);
+                    grad.col(c) += fe->shape_grad(i_dof, q->point<dim>(i_pt), c);
 
-                ref_shape_grads[i][j] = grad;
+                ref_shape_grads[i_pt][i_dof] = grad;
             }
         }
 
@@ -407,7 +438,7 @@ public:
                 dim+1,
                 std::vector< std::vector<double> >(patch_point_vals_.get_quadrature()->size(), vector<double>(fe_component->n_dofs()) )
 				);
-        auto ref_shape_vals = this->ref_shape_values(fe_component);
+        auto ref_shape_vals = this->ref_shape_values_side(patch_point_vals_.get_quadrature(), fe_component);
         for (unsigned int s=0; s<dim+1; ++s)
             for (unsigned int i = 0; i < patch_point_vals_.get_quadrature()->size(); i++)
                 for (unsigned int j = 0; j < fe_component->n_dofs(); j++) {
@@ -434,39 +465,6 @@ public:
     }
 
 private:
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
-     *
-     * Dimensions:   (sides)
-     *             x (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    std::vector< std::vector<std::vector<arma::vec> > > ref_shape_values(std::shared_ptr<FiniteElement<dim>> fe) {
-        Quadrature *q = patch_point_vals_.get_quadrature();
-        std::vector< std::vector<std::vector<arma::vec> > > ref_shape_vals( dim+1, std::vector<std::vector<arma::vec> >(q->size(), vector<arma::vec>(fe->n_dofs())) );
-
-        arma::mat shape_values(fe->n_dofs(), fe->n_components());
-
-        for (unsigned int sid=0; sid<dim+1; sid++) {
-            auto quad = q->make_from_side<dim>(sid);
-        	for (unsigned int i=0; i<quad.size(); i++)
-            {
-                for (unsigned int j=0; j<fe->n_dofs(); j++)
-                {
-                    for (unsigned int c=0; c<fe->n_components(); c++) {
-                        shape_values(j,c) = fe->shape_value(j, quad.template point<dim>(i), c);
-                    }
-
-                    ref_shape_vals[sid][i][j] = trans(shape_values.row(j));
-                }
-            }
-        }
-
-        return ref_shape_vals;
-    }
-
-
     PatchPointValues<3> &patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
@@ -489,12 +487,40 @@ public:
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, &common_reinit::op_base, {}, fe_component_low->n_dofs());
+        ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+        // use lambda reinit function
+        std::vector< std::vector<double> > shape_values_bulk( patch_point_vals_bulk_->get_quadrature()->size(), vector<double>(fe_component_low->n_dofs()) );
+        auto ref_shape_vals_bulk = this->ref_shape_values_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
+        for (unsigned int i = 0; i < patch_point_vals_bulk_->get_quadrature()->size(); i++)
+            for (unsigned int j = 0; j < fe_component_low->n_dofs(); j++) {
+            	shape_values_bulk[i][j] = ref_shape_vals_bulk[i][j][0];
+            }
+        uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
+        auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, op_results, shape_values_bulk, scalar_shape_op_idx_bulk);
+            };
+        auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {}, fe_component_low->n_dofs());
         uint begin_bulk = grad_scalar_shape_bulk_op.result_row();
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        auto &grad_scalar_shape_side_op = patch_point_vals_side_->make_fe_op({1}, &common_reinit::op_base, {}, fe_component_high->n_dofs());
+        ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+        // use lambda reinit function
+        std::vector< std::vector< std::vector<double> > > shape_values_side(
+                dim+1,
+                std::vector< std::vector<double> >(patch_point_vals_side_->get_quadrature()->size(), vector<double>(fe_component_high->n_dofs()) )
+				);
+        auto ref_shape_vals_side = this->ref_shape_values_side(patch_point_vals_side_->get_quadrature(), fe_component_high);
+        for (unsigned int s=0; s<dim+1; ++s)
+            for (unsigned int i = 0; i < patch_point_vals_side_->get_quadrature()->size(); i++)
+                for (unsigned int j = 0; j < fe_component_high->n_dofs(); j++) {
+            	    shape_values_side[s][i][j] = ref_shape_vals_side[s][i][j][0];
+                }
+        uint scalar_shape_op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
+        auto lambda_scalar_shape_side = [shape_values_side, scalar_shape_op_idx_side](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+                side_reinit::ptop_scalar_shape(operations, op_results, el_table, shape_values_side, scalar_shape_op_idx_side);
+            };
+        auto &grad_scalar_shape_side_op = patch_point_vals_side_->make_fe_op({1}, lambda_scalar_shape_side, {}, fe_component_high->n_dofs());
         uint begin_side = grad_scalar_shape_side_op.result_row();
 
         auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_,
