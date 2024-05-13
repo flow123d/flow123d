@@ -25,6 +25,8 @@ TEST(PatchFeTest, outer_product) {
     test_add_operator();
     std::cout << "==============" << std::endl;
     test_multi_operator();
+    std::cout << "==============" << std::endl;
+    test_multi_mat_vec_operator();
 }
 
 

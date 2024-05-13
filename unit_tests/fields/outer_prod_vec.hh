@@ -135,4 +135,45 @@ int test_multi_operator()
     return 0;
 }
 
+int test_multi_mat_vec_operator()
+{
+    Eigen::Matrix<OuterProdVec, 3, 3> arr1;
+    Eigen::Matrix<OuterProdVec, 3, 1> arr2;
+
+    // Initialize arrays with some values
+    for (uint i=0; i<3; ++i) {
+    	for (uint j=0; j<3; ++j) {
+            arr1(i,j).data.resize(3, 1);
+            arr1(i,j).data << (i+j+1), (i+j+2), (i+j+3);/*,
+                              (i+j+3), (i+j+4), (i+j+5),
+		                      (i+j+5), (i+j+6), (i+j+7);*/
+    	}
+        arr2(i).data.resize(3, 1);
+        arr2(i).data << (2*i+1), (2*i+2), (2*i+3);
+    }
+
+    // Multiple arrays using overridden operator*
+    auto result = arr1 * arr2;
+
+    // Output the result
+    std::cout << "Array1 0,0:\n" << arr1(0,0).data << std::endl;
+    std::cout << "Array1 1,0:\n" << arr1(1,0).data << std::endl;
+    std::cout << "Array1 2,0:\n" << arr1(2,0).data << std::endl;
+    std::cout << "Array1 0,1:\n" << arr1(0,1).data << std::endl;
+    std::cout << "Array1 1,1:\n" << arr1(1,1).data << std::endl;
+    std::cout << "Array1 2,1:\n" << arr1(2,1).data << std::endl;
+    std::cout << "Array1 0,2:\n" << arr1(0,2).data << std::endl;
+    std::cout << "Array1 1,2:\n" << arr1(1,2).data << std::endl;
+    std::cout << "Array1 2,2:\n" << arr1(2,2).data << std::endl;
+    std::cout << "Array2 0:\n" << arr2(0).data << std::endl;
+    std::cout << "Array2 1:\n" << arr2(1).data << std::endl;
+    std::cout << "Array2 2:\n" << arr2(2).data << std::endl;
+    std::cout << "Result:" << result.rows() << ", " << result.cols() << std::endl;
+    std::cout << "Result 0:\n" << result(0).data << std::endl;
+    std::cout << "Result 1:\n" << result(1).data << std::endl;
+    std::cout << "Result 2:\n" << result(2).data << std::endl;
+
+    return 0;
+}
+
 #endif /* OUTER_PRODUCT_HH_ */
