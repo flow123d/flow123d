@@ -538,6 +538,23 @@ private:
     std::shared_ptr< FiniteElement<dim-1> > fe_low_dim_;
 };
 
+/// Template specialization of dim = 1
+template <>
+class JoinValues<1> : public BaseValues<1>
+{
+public:
+	/// Constructor
+	JoinValues(FMT_UNUSED PatchPointValues<3> *patch_point_vals_bulk, FMT_UNUSED PatchPointValues<3> *patch_point_vals_side, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	: BaseValues<1>() {}
+
+    inline Range< JoinShapeAccessor<Scalar> > scalar_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return Range<JoinShapeAccessor<Scalar>>(
+                make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()),
+                make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()) );
+    }
+};
+
 
 template<unsigned int spacedim = 3>
 class PatchFEValues {
