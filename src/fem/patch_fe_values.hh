@@ -430,7 +430,7 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp<dim>(fe_, component_idx);
+        auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
@@ -457,7 +457,7 @@ public:
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp<dim>(fe_, component_idx);
+        auto fe_component = this->fe_comp(fe_, component_idx);
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, &common_reinit::op_base, {}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
 
