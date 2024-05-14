@@ -294,6 +294,21 @@ public:
         }
     }
 
+    /// Return BulkValues object
+    inline BulkValues<dim> bulk_values() {
+        return fe_values_->template bulk_values<dim>();
+    }
+
+    /// Return SideValues object
+    inline SideValues<dim> side_values() {
+        return fe_values_->template side_values<dim>();
+    }
+
+    /// Return JoinValues object
+    inline JoinValues<dim> join_values() {
+        return fe_values_->template join_values<dim>();
+    }
+
 protected:
     PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions
 };

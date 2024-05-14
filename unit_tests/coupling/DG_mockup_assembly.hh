@@ -27,8 +27,8 @@ public:
     /// Constructor.
     Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ) {
+      JxW_( this->bulk_values().JxW() ),
+      conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -182,14 +182,14 @@ public:
     /// Constructor.
     Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      JxW_side_( this->fe_values_->template side_values<dim>().JxW() ),
-      normal_( this->fe_values_->template side_values<dim>().normal_vector() ),
-      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ),
-      conc_shape_side_( this->fe_values_->template side_values<dim>().scalar_shape() ),
-      conc_grad_( this->fe_values_->template bulk_values<dim>().grad_scalar_shape() ),
-	  conc_grad_side_( this->fe_values_->template side_values<dim>().grad_scalar_shape_side() ),
-      conc_join_shape_(make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()), make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>())) {
+      JxW_( this->bulk_values().JxW() ),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ),
+      conc_shape_( this->bulk_values().scalar_shape() ),
+      conc_shape_side_( this->side_values().scalar_shape() ),
+      conc_grad_( this->bulk_values().grad_scalar_shape() ),
+	  conc_grad_side_( this->side_values().grad_scalar_shape_side() ),
+      conc_join_shape_( Range< JoinShapeAccessor<Scalar> >( this->join_values().scalar_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -745,8 +745,8 @@ public:
     /// Constructor.
     Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->fe_values_->template bulk_values<dim>().JxW() ),
-      conc_shape_( this->fe_values_->template bulk_values<dim>().scalar_shape() ) {
+      JxW_( this->bulk_values().JxW() ),
+      conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
