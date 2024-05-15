@@ -246,7 +246,7 @@ public:
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
                 element_cache_map_.eval_point_data_.revert_temporary();
-                this->assemble_integrals(dh);
+                this->assemble_integrals();
                 add_into_patch = false;
             } else {
                 bulk_integral_data_.make_permanent();
@@ -255,14 +255,14 @@ public:
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.make_paermanent_eval_points();
                 if (element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
-                    this->assemble_integrals(dh);
+                    this->assemble_integrals();
                     add_into_patch = false;
                 }
                 ++cell_it;
             }
         }
         if (add_into_patch) {
-            this->assemble_integrals(dh);
+            this->assemble_integrals();
         }
 
         multidim_assembly_[1_d]->end();
@@ -290,13 +290,13 @@ private:
     }
 
     /// Call assemblations when patch is filled
-    void assemble_integrals(std::shared_ptr<DOFHandlerMultiDim> dh) {
+    void assemble_integrals() {
         START_TIMER("create_patch");
         element_cache_map_.create_patch();
         END_TIMER("create_patch");
         if (use_patch_fe_values_) {
             START_TIMER("patch_reinit");
-            patch_reinit(dh);
+            patch_reinit();
             END_TIMER("patch_reinit");
         }
         START_TIMER("cache_update");
@@ -340,15 +340,15 @@ private:
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
-        if (use_patch_fe_values_)
+        if (use_patch_fe_values_) {
             for (uint i=0; i<table_sizes_.size(); ++i)
                 for (uint j=0; j<table_sizes_[i].size(); ++j)
                     table_sizes_[i][j] = 0;
+            fe_values_.reset();
+        }
     }
 
-    void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
-        // NEW
-        // TODO clear patch here or at the end of assembly
+    void patch_reinit() {
     	fe_values_.resize_tables(table_sizes_);
         if (bulk_integral_data_.permanent_size() > 0) {
             multidim_assembly_[1_d]->add_patch_bulk_points(bulk_integral_data_);
@@ -371,18 +371,18 @@ private:
         }
         this->fe_values_.reinit_patch();
 
-        // OLD
-        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
-        std::array<PatchElementsList, 4> patch_elements;
-
-        for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
-            // Skip invalid element indices.
-            if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
-
-            ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
-            patch_elements[elm.dim()].push_back(std::make_pair(elm, i));
-        }
-        this->fe_values_.reinit(patch_elements);
+//        OLD temporary
+//        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
+//        std::array<PatchElementsList, 4> patch_elements;
+//
+//        for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
+//            // Skip invalid element indices.
+//            if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
+//
+//            ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
+//            patch_elements[elm.dim()].push_back(std::make_pair(elm, i));
+//        }
+//        this->fe_values_.reinit(patch_elements);
     }
 
     /**
