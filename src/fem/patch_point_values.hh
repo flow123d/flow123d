@@ -634,6 +634,32 @@ struct side_reinit {
                 result_row(i_pt) = shape_values[el_table(3)(i_pt)][i_pt % n_points][i_row];
         }
     }
+    template<unsigned int dim>
+    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table,
+            std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, uint scalar_shape_grads_op_idx) {
+        auto &op = operations[scalar_shape_grads_op_idx];
+        uint n_points = ref_shape_grads[0].size();
+        uint n_dofs = ref_shape_grads[0][0].size();
+
+        Eigen::Vector<ArrayDbl, Eigen::Dynamic> ref_shape_grads_expd;
+        ref_shape_grads_expd.resize(dim*n_dofs);
+        for (uint i=0; i<ref_shape_grads_expd.rows(); ++i)
+        	ref_shape_grads_expd(i).resize(op_results(0).rows());
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_c=0; i_c<dim; ++i_c) {
+                ArrayDbl &shape_grad_row = ref_shape_grads_expd(i_dof*dim+i_c);
+                for (uint i_pt=0; i_pt<shape_grad_row.rows(); ++i_pt)
+                    shape_grad_row(i_pt) = ref_shape_grads[el_table(3)(i_pt)][i_pt % n_points][i_dof][i_c];
+            }
+
+        auto inv_jac_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            auto shape_grad_value = op.value<3, 1>(op_results, i_dof);
+            Eigen::Map<Eigen::Matrix<ArrayDbl, dim, 1>> ref_shape_grads_dof_value(ref_shape_grads_expd.data() + dim*i_dof, dim, 1);
+            shape_grad_value = inv_jac_value.transpose() * ref_shape_grads_dof_value;
+        }
+    }
 };
 
 
