@@ -340,6 +340,10 @@ private:
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
+        if (use_patch_fe_values_)
+            for (uint i=0; i<table_sizes_.size(); ++i)
+                for (uint j=0; j<table_sizes_[i].size(); ++j)
+                    table_sizes_[i][j] = 0;
     }
 
     void patch_reinit(std::shared_ptr<DOFHandlerMultiDim> dh) {
@@ -365,6 +369,7 @@ private:
             multidim_assembly_[2_d]->add_patch_coupling_integrals(coupling_integral_data_);
             multidim_assembly_[3_d]->add_patch_coupling_integrals(coupling_integral_data_);
         }
+        this->fe_values_.reinit_patch();
 
         // OLD
         const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
