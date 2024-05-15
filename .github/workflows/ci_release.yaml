@@ -9,7 +9,8 @@ on:
         - JB_shared_system
         - JB_release_tests        
         - 3.9.1
-        - DF_patch_fevalues_new
+        - DF_patch_fevalues_dg
+        - DF_patch_fe_data_tables
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
