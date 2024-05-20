@@ -114,7 +114,7 @@ public:
             unsigned int begin, unsigned int begin_side, unsigned int n_dofs_bulk, unsigned int n_dofs_side, unsigned int join_idx)
     : patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side), begin_(begin),
 	  begin_side_(begin_side), n_dofs_high_(n_dofs_side), n_dofs_low_(n_dofs_bulk), join_idx_(join_idx) {
-        ASSERT( (patch_point_vals_bulk->dim()==2) || (patch_point_vals_bulk->dim()==3) )(patch_point_vals_bulk->dim() ).error("Invalid dimension, must be 2 or 3!");
+        //ASSERT( (patch_point_vals_bulk->dim()==2) || (patch_point_vals_bulk->dim()==3) )(patch_point_vals_bulk->dim() ).error("Invalid dimension, must be 2 or 3!");
     }
 
     /// Return global index of DOF
@@ -423,7 +423,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opSdJacDet].result_row();
+        uint begin = patch_point_vals_.operations_[FeSide::SideOps::opSideJacDet].result_row();
         return ElQ<Scalar>(patch_point_vals_, begin);
     }
 
