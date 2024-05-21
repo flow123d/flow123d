@@ -124,13 +124,15 @@ TEST(OuterProduct, outer_product) {
 	// https://stackoverflow.com/questions/40829887/how-do-i-do-outer-product-of-tensors-in-eigen
     test_add_operator_simple();
     std::cout << "==============" << std::endl;
-    test_multi_operator_simple();
-    std::cout << "==============" << std::endl;
     test_add_operator();
     std::cout << "==============" << std::endl;
-    test_multi_operator();
+    test_multi_operator_simple();
     std::cout << "==============" << std::endl;
-    test_multi_mat_vec_operator();
+    test_multi_operator_vec_scalar();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_vec_vec();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_mat_vec();
 }
 
 
