@@ -37,9 +37,6 @@ jobs:
     build:
         runs-on: ubuntu-latest
         name: Flow123d release main build
-
-        outputs:
-          reltag: ${{ steps.vars.outputs.reltag }}
         
         steps:
         - name: Checkout
@@ -58,9 +55,9 @@ jobs:
             echo ${build_dir}
     
             # can not use environment variables in github actions
-            echo "pubdir=publish_${environment}" >> $GITHUB_OUTPUT
-            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
-            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+            echo "pubdir=publish_${environment}" >> "$GITHUB_OUTPUT"
+            echo "reltag=${release_tag}" >> "$GITHUB_OUTPUT"
+            echo "builddir=${build_dir}" >> "$GITHUB_OUTPUT"
 
         - name: Check vars
           run: |
@@ -92,8 +89,10 @@ jobs:
         needs: [build]
         runs-on: ubuntu-latest
         continue-on-error: True
+        # Map a step output to a job outpu
         outputs:
             status: ${{job.status}}
+            reltag: ${{ steps.vars.outputs.reltag }}
 
         steps:
         - uses: actions/checkout@v3
@@ -278,7 +277,7 @@ jobs:
         - name: Get Image URL
           id: image_url
           run: |
-            echo "image_url=flow123d/ci-gnu:${{ needs.packages.outputs.reltag }}" >> $GITHUB_OUTPUT
+            echo "image_url=flow123d/ci-gnu:${{ needs.packages.outputs.reltag }}" >> "$GITHUB_OUTPUT"
 
         - name: Pull Image
           run: docker pull "${{ steps.image_url.outputs.image_url }}"
