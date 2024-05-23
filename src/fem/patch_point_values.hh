@@ -463,7 +463,7 @@ struct bulk_reinit {
         auto &op = operations[FeBulk::BulkOps::opJacDet];
         auto &jac_det_value = op_results(op.result_row());
         auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        jac_det_value = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, dim>>(jac_value);
+        jac_det_value = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, dim>>(jac_value).array().abs();
     }
 
     // expansion operations
@@ -575,7 +575,7 @@ struct side_reinit {
         auto &op = operations[FeSide::SideOps::opSideJacDet];
         ArrayDbl &det_value = op_results( op.result_row() );
         auto jac_value = operations[ op.input_ops()[0] ].value<3, dim-1>(op_results);
-        det_value = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, dim-1>>(jac_value);
+        det_value = eigen_tools::determinant<Eigen::Matrix<ArrayDbl, 3, dim-1>>(jac_value).array().abs();
     }
 
     // expansion operations
