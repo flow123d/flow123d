@@ -37,6 +37,10 @@ jobs:
     build:
         runs-on: ubuntu-latest
         name: Flow123d release main build
+
+        outputs:
+          reltag: ${{ steps.vars.outputs.reltag }}
+        
         steps:
         - name: Checkout
           uses: actions/checkout@v2
@@ -233,7 +237,7 @@ jobs:
  
     # TODO: modify to run integration tests with release image
     integration_tests:
-        needs: [packages]
+        needs: packages
         runs-on: ubuntu-latest
         name: Integration Test ${{matrix.test_dir}}
         continue-on-error: True
