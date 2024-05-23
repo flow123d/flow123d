@@ -7,7 +7,8 @@ on:
         branches:
         - master
         - JB_shared_system
-        - JB_release_tests        
+        - JB_release_tests      
+        - JB-rel-int-test
         - 3.9.1
         - DF_variant_benchmark_asm
         - DF_asm_optimization
@@ -269,17 +270,17 @@ jobs:
             
         steps:
         - name: Checkout Code
-          uses: actions/checkout@v3
+            uses: actions/checkout@v3
         - name: Get Image URL
           id: image_url
           run: |
             echo "image_url=flow123d/ci-gnu:${{ needs.packages.outputs.reltag }}" >> $GITHUB_OUTPUT
 
         - name: Pull Image
-          run: docker pull "${{ steps.image_url.outputs.image_url }}"
+            run: docker pull "${{ steps.image_url.outputs.image_url }}"
         
         - name: Run Container
-          run: |
+            run: |
             docker run \
                 --name release-container \
                 -it \
