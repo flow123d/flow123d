@@ -196,7 +196,7 @@ public:
             unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
             for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
                 element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
-                table_sizes_[1][cell.dim()-1]++;
+                table_sizes_[1][cell.dim()]++;
 
                 if (add_low) {
                     auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
