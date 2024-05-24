@@ -670,6 +670,21 @@ struct side_reinit {
 };
 
 
+// template specialization
+template<>
+inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+}
+
+template<>
+inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    auto &op = operations[FeSide::SideOps::opSideJacDet];
+    ArrayDbl &result_vec = op_results( op.result_row() );
+    for (uint i=0;i<result_vec.size(); ++i) {
+        result_vec(i) = 1.0;
+    }
+}
+
+
 
 namespace FeBulk {
 
