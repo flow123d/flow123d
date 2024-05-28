@@ -317,6 +317,26 @@ public:
         std::cout << "*****************" << std::endl;
     }
 
+    /// Temporary development method
+    void print_operations(ostream& stream, uint bulk_side) const {
+        std::vector< std::vector<std::string> > op_names =
+        {
+            { "el_coords", "jacobian", "inv_jac", "jac_det", "exp_coords", "exp_jacobian", "exp_in_jac", "exp_jac_det", "pt_coords", "weights",
+              "JxW", "", "", "", "", "" },
+            { "el_coords", "el_jac", "el_inv_jac", "side_coords", "side_jac", "side_jac_det", "exp_el_coords", "exp_el_jac", "exp_el_inv_jac",
+              "exp_side_coords", "exp_side_jac", "exp_side_jac_det", "pt_coords", "weights", "JxW", "normal_vec", "", "", "", "", "" }
+        };
+        stream << std::setfill(' ') << " Operation" << setw(12) << "" << "Shape" << setw(2) << ""
+                << "Result row" << setw(2) << "" << "n DOFs" << setw(2) << "" << "Input operations" << endl;
+        for (uint i=0; i<operations_.size(); ++i) {
+            stream << " " << std::left << setw(20) << op_names[bulk_side][i] << "" << " " << setw(6) << operations_[i].format_shape() << "" << " "
+                << setw(11) << operations_[i].result_row() << "" << " " << setw(7) << operations_[i].n_dofs() << "" << " ";
+            auto &input_ops = operations_[i].input_ops();
+            for (auto i_o : input_ops) stream << op_names[bulk_side][i_o] << " ";
+            stream << std::endl;
+        }
+    }
+
 protected:
     /**
      * Store data of bulk or side quadrature points of one dimension
@@ -385,6 +405,11 @@ public:
         return result_row_;
     }
 
+    /// Getter of n_dofs_
+    inline uint n_dofs() const {
+        return n_dofs_;
+    }
+
     /// Getter of input_ops_
     inline const std::vector<uint> &input_ops() const {
         return input_ops_;
@@ -393,6 +418,14 @@ public:
     /// Getter of shape_
     inline const std::vector<uint> &shape() const {
         return shape_;
+    }
+
+    /// Format shape to string
+    inline std::string format_shape() const {
+        stringstream ss;
+        ss << shape_[0];
+        if (shape_.size() > 1) ss << "x" << shape_[1];
+        return ss.str();
     }
 
     /// Call reinit function on element table if function is defined

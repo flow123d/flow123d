@@ -1099,6 +1099,22 @@ public:
                 patch_point_vals_side_[i].print(points, ints);
     }
 
+    /// Temporary development method
+    void print_operations(ostream& stream) const {
+        stream << endl << "Table of patch FE operations:" << endl;
+        for (uint i=0; i<3; ++i) {
+            stream << std::setfill('-') << setw(100) << "" << endl;
+            stream << "Bulk, dimension " << (i+1) << ", n_rows " << patch_point_vals_bulk_[i].n_rows() << endl;
+            patch_point_vals_bulk_[i].print_operations(stream, 0);
+        }
+        for (uint i=0; i<3; ++i) {
+            stream << std::setfill('-') << setw(100) << "" << endl;
+            stream << "Side, dimension " << (i+1) << ", n_rows " << patch_point_vals_side_[i].n_rows() << endl;
+            patch_point_vals_side_[i].print_operations(stream, 1);
+        }
+        stream << std::setfill('=') << setw(100) << "" << endl;
+    }
+
 private:
     /// Sub objects of dimensions 1,2,3
     std::array<DimPatchFEValues, 3> dim_fe_vals_;
