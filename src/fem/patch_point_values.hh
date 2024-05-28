@@ -275,13 +275,13 @@ public:
     }
 
     inline Scalar scalar_val(uint result_row, uint point_idx) const {
-        return point_vals_(result_row)(elements_map_[point_idx]);
+        return point_vals_(result_row)(points_map_[point_idx]);
     }
 
     inline Vector vector_val(uint result_row, uint point_idx) const {
         Vector val;
         for (uint i=0; i<3; ++i)
-            val(i) = point_vals_(result_row+i)(elements_map_[point_idx]);
+            val(i) = point_vals_(result_row+i)(points_map_[point_idx]);
         return val;
     }
 
@@ -289,7 +289,7 @@ public:
         Tensor val;
         for (uint i=0; i<3; ++i)
             for (uint j=0; j<3; ++j)
-                val(i,j) = point_vals_(result_row+3*i+j)(elements_map_[point_idx]);
+                val(i,j) = point_vals_(result_row+3*i+j)(points_map_[point_idx]);
         return val;
     }
 
