@@ -629,6 +629,7 @@ struct side_reinit {
         auto &op = operations[FeSide::SideOps::opExpansionSideCoords];
         common_reinit::expand_data(op, op_results, el_table);
     }
+    template<unsigned int dim>
     static inline void expd_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opExpansionSideJac];
         common_reinit::expand_data(op, op_results, el_table);
@@ -715,6 +716,10 @@ inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, Ta
     for (uint i=0;i<result_vec.size(); ++i) {
         result_vec(i) = 1.0;
     }
+}
+
+template<>
+inline void side_reinit::expd_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
 }
 
 
@@ -831,7 +836,7 @@ namespace FeSide {
 
             this->make_expansion( sd_coords, {spacedim, this->dim_}, &side_reinit::expd_sd_coords );
 
-            this->make_expansion( sd_jac, {spacedim, this->dim_-1}, &side_reinit::expd_sd_jac );
+            this->make_expansion( sd_jac, {spacedim, this->dim_-1}, &side_reinit::expd_sd_jac<dim> );
 
             this->make_expansion( sd_jac_det, {1}, &side_reinit::expd_sd_jac_det );
 
