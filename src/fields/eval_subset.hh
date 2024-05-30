@@ -204,14 +204,6 @@ public:
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
-    /**
-     * Return BulkPoint with local_point_idx according to index of quadrature point in element (not on patch).
-     * Temporary method. Used only in dimjoin_integral.
-     *
-     * TODO Remove after complete implementation of new PatchFEValeus.
-     */
-    inline BulkPoint lower_dim_converted(DHCellAccessor cell_lower) const;
-
     /// Intermediate step in implementation of PatcFEValues.
     unsigned int side_idx() const override;
 
@@ -520,12 +512,6 @@ inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
-}
-
-/// Temporary method.
-inline BulkPoint CouplingPoint::lower_dim_converted(DHCellAccessor cell_lower) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
-    return BulkPoint(elm_cache_map_, i_elm, local_point_idx_);
 }
 
 
