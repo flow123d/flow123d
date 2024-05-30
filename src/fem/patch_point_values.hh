@@ -663,6 +663,20 @@ struct side_reinit {
         auto normal_value = op.value<3, 1>(op_results);
         auto inv_jac_mat_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
         normal_value = inv_jac_mat_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
+
+        ArrayDbl norm_vec;
+        norm_vec.resize(normal_value(0).rows());
+        Eigen::VectorXd A(3);
+
+        for (uint i=0; i<normal_value(0).rows(); ++i) {
+            A(0) = normal_value(0)(i);
+            A(1) = normal_value(1)(i);
+            A(2) = normal_value(2)(i);
+            norm_vec(i) = A.norm();
+        }
+        for (uint i=0; i<3; ++i) {
+        	normal_value(i) /= norm_vec;
+        }
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table,
     		std::vector< std::vector< std::vector<double> > > shape_values, uint scalar_shape_op_idx) {
