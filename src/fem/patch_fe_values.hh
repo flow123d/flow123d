@@ -997,7 +997,7 @@ public:
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
     JoinValues<dim> join_values() {
-    	ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
+    	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
         return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], fe_);
     }
 
