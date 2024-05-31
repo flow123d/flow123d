@@ -886,15 +886,6 @@ private:
         MeshObjectType object_type_;
     };
 
-    /// Temporary helper class used in step between usage old a new implementation
-	class FuncDef {
-    public:
-    	FuncDef() {}
-        FuncDef(DimPatchFEValues *data, string func_name)
-        : point_data_(data), func_name_(func_name) {}
-        DimPatchFEValues *point_data_;
-	    string func_name_;
-    };
 public:
 
     PatchFEValues()
@@ -1127,8 +1118,6 @@ private:
 
     ///< Temporary helper objects used in step between usage old a new implementation
     bool used_quads_[2];
-    std::map<unsigned int, FuncDef> func_map_;
-    std::map<unsigned int, FuncDef> func_map_side_;
 
     template <class ValueType>
     friend class ElQ;
