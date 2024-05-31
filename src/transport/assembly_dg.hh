@@ -62,7 +62,7 @@ public:
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of MassAssembly FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -275,7 +275,7 @@ public:
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
         }
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
@@ -540,19 +540,19 @@ public:
 
                         for (int m=0; m<2; m++)
                         {
-                            for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
-                                for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
-                                    local_matrix_[i*this->fe_values_->n_dofs(dim)+j] = 0;
+                            for (unsigned int i=0; i<ndofs_; i++)
+                                for (unsigned int j=0; j<ndofs_; j++)
+                                    local_matrix_[i*ndofs_+j] = 0;
 
                             k=0;
                             for (auto p1 : this->edge_points(zero_edge_side) )
                             //for (k=0; k<this->quad_low_->size(); ++k)
                             {
-                                for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
+                                for (unsigned int i=0; i<ndofs_; i++)
                                 {
-                                    for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
+                                    for (unsigned int j=0; j<ndofs_; j++)
                                     {
-                                        int index = i*this->fe_values_->n_dofs(dim)+j;
+                                        int index = i*ndofs_+j;
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
@@ -715,7 +715,7 @@ public:
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of SourcesAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
@@ -837,12 +837,11 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
         UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_low_, u);
         if (dim==1) // print to log only one time
             DebugOut() << "List of BdrConditionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = fe_->n_dofs();
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
@@ -991,7 +990,6 @@ public:
         EqFields *eq_fields_;
         EqData *eq_data_;
 
-        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
         unsigned int ndofs_;                                      ///< Number of dofs
 
         /// Sub field set contains fields used in calculation.
@@ -1045,7 +1043,7 @@ public:
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         // if (dim==1) // print to log only one time
             // DebugOut() << "List of InitProjectionAssemblyDG FEValues updates flags: " << this->print_update_flags(u);
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);

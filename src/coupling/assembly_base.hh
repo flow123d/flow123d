@@ -295,6 +295,11 @@ public:
     }
 
     /// Return BulkValues object
+    inline unsigned int n_dofs() {
+        return fe_values_->template n_dofs<dim>();
+    }
+
+    /// Return BulkValues object
     inline BulkValues<dim> bulk_values() {
         return fe_values_->template bulk_values<dim>();
     }

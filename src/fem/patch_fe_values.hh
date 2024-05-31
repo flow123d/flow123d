@@ -974,28 +974,30 @@ public:
     /**
      * @brief Returns the number of shape functions.
      */
-    inline unsigned int n_dofs(unsigned int dim, FMT_UNUSED uint component_idx = 0) const
-    {
-        ASSERT( (dim>0) && (dim<=3) )(dim).error("Invalid dimension!");
-        return dim_fe_vals_[dim-1].n_dofs_;
+    template<unsigned int dim>
+    inline unsigned int n_dofs() const {
+        ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
+        return fe_[Dim<dim>{}]->n_dofs();
     }
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
     BulkValues<dim> bulk_values() {
+    	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
         return BulkValues<dim>(patch_point_vals_bulk_[dim-1], fe_);
     }
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
     SideValues<dim> side_values() {
+    	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
         return SideValues<dim>(patch_point_vals_side_[dim-1], fe_);
     }
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
     JoinValues<dim> join_values() {
-        //static_assert(dim > 1, "Dimension must be 2 or 3.");
+    	ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
         return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], fe_);
     }
 
