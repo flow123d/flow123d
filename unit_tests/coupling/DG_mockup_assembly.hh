@@ -43,7 +43,7 @@ public:
 
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_, u);
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -188,7 +188,7 @@ public:
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_shape_side_( this->side_values().scalar_shape() ),
       conc_grad_( this->bulk_values().grad_scalar_shape() ),
-	  conc_grad_side_( this->side_values().grad_scalar_shape_side() ),
+	  conc_grad_side_( this->side_values().grad_scalar_shape() ),
       conc_join_shape_( Range< JoinShapeAccessor<Scalar> >( this->join_values().scalar_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
@@ -216,13 +216,16 @@ public:
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_, u);
         this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
-        if (dim>1)
-            conc_join_shape_ = Range< JoinShapeAccessor<Scalar> >( this->fe_values_->scalar_join_shape( {this->quad_low_, this->quad_low_} ) );
         if (dim==1) { // print to log only one time
             DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
             DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
+
+            // Perform output of patch operations:
+            // stringstream ss;
+            // this->fe_values_->print_operations(ss);
+            // WarningOut() << ss.str();
         }
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
         side_dof_indices_vb_.resize(2*ndofs_);
@@ -498,19 +501,19 @@ public:
 
                         for (int m=0; m<2; m++)
                         {
-                            for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
-                                for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
-                                    local_matrix_[i*this->fe_values_->n_dofs(dim)+j] = 0;
+                            for (unsigned int i=0; i<ndofs_; i++)
+                                for (unsigned int j=0; j<ndofs_; j++)
+                                    local_matrix_[i*ndofs_+j] = 0;
 
                             k=0;
                             for (auto p1 : this->edge_points(zero_edge_side) )
                             //for (k=0; k<this->quad_low_->size(); ++k)
                             {
-                                for (unsigned int i=0; i<this->fe_values_->n_dofs(dim); i++)
+                                for (unsigned int i=0; i<ndofs_; i++)
                                 {
-                                    for (unsigned int j=0; j<this->fe_values_->n_dofs(dim); j++)
+                                    for (unsigned int j=0; j<ndofs_; j++)
                                     {
-                                        int index = i*this->fe_values_->n_dofs(dim)+j;
+                                        int index = i*ndofs_+j;
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
@@ -761,7 +764,7 @@ public:
 
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         this->fe_values_->template initialize<dim>(*this->quad_, u);
-        ndofs_ = this->fe_values_->n_dofs(dim);
+        ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
