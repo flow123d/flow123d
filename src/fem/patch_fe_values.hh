@@ -770,12 +770,20 @@ public:
     }
 
     /// Temporary development method
-    void print(bool points, bool ints, bool only_bulk=true) const {
-        for (uint i=0; i<3; ++i)
-            patch_point_vals_bulk_[i].print(points, ints);
+    void print_data_tables(ostream& stream, bool points, bool ints, bool only_bulk=true) const {
+        stream << endl << "Table of patch FE data:" << endl;
+        for (uint i=0; i<3; ++i) {
+            stream << std::setfill('-') << setw(100) << "" << endl;
+            stream << "Bulk, dimension " << (i+1) << endl;
+            patch_point_vals_bulk_[i].print_data_tables(stream, points, ints);
+        }
         if (!only_bulk)
-            for (uint i=0; i<3; ++i)
-                patch_point_vals_side_[i].print(points, ints);
+            for (uint i=0; i<3; ++i) {
+                stream << std::setfill('-') << setw(100) << "" << endl;
+                stream << "Side, dimension " << (i+1) << endl;
+                patch_point_vals_side_[i].print_data_tables(stream, points, ints);
+            }
+        stream << std::setfill('=') << setw(100) << "" << endl;
     }
 
     /// Temporary development method

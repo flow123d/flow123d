@@ -268,27 +268,25 @@ public:
     }
 
     /// Temporary development method
-    void print(bool points, bool ints) const {
-        std::cout << "** Dimension: " << dim_ << std::endl;
+    void print_data_tables(ostream& stream, bool points, bool ints) const {
         if (points) {
-            std::cout << "Point vals: " << point_vals_.rows() << " - " << point_vals_.cols() << std::endl;
+            stream << "Point vals: " << point_vals_.rows() << " - " << point_vals_.cols() << std::endl;
 	        for (uint i_row=0; i_row<n_points_; ++i_row) {
                 for (uint i_col=0; i_col<n_rows_; ++i_col)
-                	std::cout << point_vals_(i_col)(i_row) << " ";
-                std::cout << std::endl;
+                	stream << point_vals_(i_col)(i_row) << " ";
+                stream << std::endl;
             }
-            std::cout << std::endl;
+            stream << std::endl;
         }
         if (ints) {
-            std::cout << "Int vals: " << int_vals_.rows() << " - " << int_vals_.cols() << std::endl;
+            stream << "Int vals: " << int_vals_.rows() << " - " << int_vals_.cols() << std::endl;
 	        for (uint i_row=0; i_row<n_points_; ++i_row) {
                 for (uint i_col=0; i_col<3; ++i_col)
-                	std::cout << int_vals_(i_col)(i_row) << " ";
-                std::cout << std::endl;
+                	stream << int_vals_(i_col)(i_row) << " ";
+                stream << std::endl;
             }
-            std::cout << std::endl;
+            stream << std::endl;
         }
-        std::cout << "*****************" << std::endl;
     }
 
     /// Temporary development method
