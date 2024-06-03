@@ -189,7 +189,7 @@ public:
 
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : fe_values_(CacheMapElementNumber::get(), eq_data->quad_order(), dh->ds()->fe()),
+    : fe_values_(eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
       min_edge_sides_(2),
@@ -370,19 +370,6 @@ private:
             multidim_assembly_[3_d]->add_patch_coupling_integrals(coupling_integral_data_);
         }
         this->fe_values_.reinit_patch();
-
-//        OLD temporary
-//        const std::vector<unsigned int> &elm_idx_vec = element_cache_map_.elm_idx_vec();
-//        std::array<PatchElementsList, 4> patch_elements;
-//
-//        for (unsigned int i=0; i<elm_idx_vec.size(); ++i) {
-//            // Skip invalid element indices.
-//            if ( elm_idx_vec[i] == std::numeric_limits<unsigned int>::max() ) continue;
-//
-//            ElementAccessor<3> elm(dh->mesh(), elm_idx_vec[i]);
-//            patch_elements[elm.dim()].push_back(std::make_pair(elm, i));
-//        }
-//        this->fe_values_.reinit(patch_elements);
     }
 
     /**

@@ -889,17 +889,13 @@ private:
 public:
 
     PatchFEValues()
-    : dim_fe_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-      dim_fe_side_vals_({DimPatchFEValues(0), DimPatchFEValues(0), DimPatchFEValues(0)}),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
+    : patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
 	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int n_quad_points, unsigned int quad_order, MixedPtr<FiniteElement> fe)
-    : dim_fe_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-      dim_fe_side_vals_({DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points), DimPatchFEValues(n_quad_points)}),
-      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
+    PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
+    : patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
     	                       FeBulk::PatchPointValues(2, quad_order),
                                FeBulk::PatchPointValues(3, quad_order)} },
       patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order),
@@ -928,18 +924,13 @@ public:
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
-    void initialize(Quadrature &_quadrature,
-                    UpdateFlags _flags)
+    void initialize(Quadrature &_quadrature)
     {
         if ( _quadrature.dim() == DIM ) {
-            dim_fe_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[0] = true;
-            // new data storing
             patch_point_vals_bulk_[DIM-1].initialize(3); // bulk
         } else {
-            dim_fe_side_vals_[DIM-1].initialize(_quadrature, *fe_[Dim<DIM>{}], _flags);
             used_quads_[1] = true;
-            // new data storing
             patch_point_vals_side_[DIM-1].initialize(4); // side
         }
     }
@@ -950,15 +941,6 @@ public:
         for (unsigned int i=0; i<3; ++i) {
             if (used_quads_[0]) patch_point_vals_bulk_[i].reset();
             if (used_quads_[1]) patch_point_vals_side_[i].reset();
-        }
-    }
-
-    /// Reinit data - old data storing, temporary
-    void reinit(std::array<PatchElementsList, 4> patch_elements)
-    {
-        for (unsigned int i=0; i<3; ++i) {
-            if (used_quads_[0]) dim_fe_vals_[i].reinit(patch_elements[i+1]);
-            if (used_quads_[1]) dim_fe_side_vals_[i].reinit(patch_elements[i+1]);
         }
     }
 
@@ -999,13 +981,6 @@ public:
     JoinValues<dim> join_values() {
     	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
         return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], fe_);
-    }
-
-    /// Resize \p dim_point_table_ if actual size is less than new_size and return reference
-    inline DimPointTable &dim_point_table(unsigned int new_size) {
-        if (dim_point_table_.size() < new_size) dim_point_table_.resize(new_size);
-        for (uint i=0; i<new_size; ++i) dim_point_table_[i][0] = 10; // set invalid dim
-        return dim_point_table_;
     }
 
     /** Following methods are used during update of patch. **/
@@ -1109,17 +1084,11 @@ public:
     }
 
 private:
-    /// Sub objects of dimensions 1,2,3
-    std::array<DimPatchFEValues, 3> dim_fe_vals_;
-    std::array<DimPatchFEValues, 3> dim_fe_side_vals_;
-    std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;
-    std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;
-    DimPointTable dim_point_table_;
+    std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;  ///< Sub objects of bulk data of dimensions 1,2,3
+    std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;  ///< Sub objects of side data of dimensions 1,2,3
 
-    MixedPtr<FiniteElement> fe_;         ///< Mixed of shared pointers of FiniteElement object
-
-    ///< Temporary helper objects used in step between usage old a new implementation
-    bool used_quads_[2];
+    MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
+    bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     template <class ValueType>
     friend class ElQ;

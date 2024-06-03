@@ -155,14 +155,6 @@ public:
         return quad_;
     }
 
-   /// Adds the number of rows equal to n_added, returns index of first of them
-    /// Temporary method allow acces to old structure PatchFEValues::DimPatchFEValues
-    inline uint add_rows(uint n_added) {
-        uint old_size = n_rows_;
-        n_rows_ += n_added;
-        return old_size;
-    }
-
     /// Resize data tables
     void resize_tables(uint n_points) {
         eigen_tools::resize_table(point_vals_, n_points);
@@ -251,27 +243,9 @@ public:
     /// Reinit data.
     void reinit_patch() {
         if (n_elems_ == 0) return; // skip if tables are empty
-        // precompute data on point_vals_ table
+        // Reinit patch data of all operation
         for (uint i=0; i<operations_.size(); ++i)
             operations_[i].reinit_function(operations_, point_vals_, int_vals_);
-
-//        // copy data from el_vals_ to point_vals_
-//        std::vector<uint> copied; // list of columns that will be copied
-//        for (uint i_op=0; i_op<operations_.size(); ++i_op)
-//            if (operations_[i_op].copy_vals()) {
-//            	uint res_col = operations_[i_op].result_row();
-//            	for (uint i_col=res_col; i_col<res_col+operations_[i_op].n_comp(); ++i_col)
-//            		copied.push_back(i_col);
-//            }
-//        for (uint i_pt=0; i_pt<n_points_; ++i_pt) {
-//            uint el_table_idx = int_vals_(1)(i_pt);
-//            for (uint i_q=0; i_q<copied.size(); ++i_q)
-//                point_vals_(copied[i_q])(i_pt) = el_vals_(copied[i_q])(el_table_idx);
-//        }
-//
-//        // precompute data on point_vals_ table
-//        for (uint i=0; i<operations_.size(); ++i)
-//            operations_[i].reinit_points(operations_, point_vals_);
     }
 
     inline Scalar scalar_val(uint result_row, uint point_idx) const {

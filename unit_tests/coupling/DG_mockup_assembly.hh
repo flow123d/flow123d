@@ -41,8 +41,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        this->fe_values_->template initialize<dim>(*this->quad_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -212,19 +211,14 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
-        UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        this->fe_values_->template initialize<dim>(*this->quad_, u);
-        this->fe_values_->template initialize<dim>(*this->quad_low_, u_side);
-        if (dim==1) { // print to log only one time
-            DebugOut() << "List of StiffnessAssemblyDG FEValues (cell) updates flags: " << this->print_update_flags(u);
-            DebugOut() << "List of StiffnessAssemblyDG FEValues (side) updates flags: " << this->print_update_flags(u_side);
-
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
+        // if (dim==1) { // print to log only one time
             // Perform output of patch operations:
             // stringstream ss;
             // this->fe_values_->print_operations(ss);
             // WarningOut() << ss.str();
-        }
+        // }
         ndofs_ = this->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
@@ -762,8 +756,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
-        this->fe_values_->template initialize<dim>(*this->quad_, u);
+        this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
