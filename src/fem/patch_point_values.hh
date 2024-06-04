@@ -45,7 +45,13 @@ using ReinitFunction = std::function<void(std::vector<ElOp<3>> &, TableDbl &, Ta
 
 
 namespace FeBulk {
-    /// enum of bulk operation
+    /**
+     * Enumeration of element bulk operations
+     *
+     * Operations are stored in fix order. Order in enum is equal to order
+     * in PatchPointVale::operations_ vector. FE operations are added dynamically
+     * by request of user.
+     */
     enum BulkOps
     {
         /// operations evaluated on elements
@@ -67,7 +73,13 @@ namespace FeBulk {
 
 
 namespace FeSide {
-    /// enum of side operation
+    /**
+     * Enumeration of element side operations
+     *
+     * Operations are stored in fix order. Order in enum is equal to order
+     * in PatchPointVale::operations_ vector. FE operations are added dynamically
+     * by request of user.
+     */
     enum SideOps
     {
         /// operations evaluated on elements
@@ -95,7 +107,7 @@ namespace FeSide {
 
 
 /**
- * @brief Class for storing FE data of quadrature points.
+ * v Class for storing FE data of quadrature points on one patch.
  *
  * Store data of bulk or side quadrature points of one dimension.
  */
@@ -106,7 +118,7 @@ public:
     /**
      * Constructor
      *
-     * Set dimension
+     * @param dim Set dimension
      */
     PatchPointValues(uint dim)
     : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0) {}
@@ -114,7 +126,7 @@ public:
     /**
      * Initialize object, set number of columns (quantities) in tables.
      *
-     * Number of columns of int_vals_ table is passed by argument, number of columns
+     * Number of columns of int_vals_ table is passed by argument \p int_cols, number of columns
      * of other tables is given by n_rows_ value.
      */
     void initialize(uint int_cols) {
@@ -124,44 +136,49 @@ public:
     	int_vals_.resize(int_cols);
     }
 
-    /// Reset number of rows (points and elements)
+    /// Reset number of columns (points and elements)
     inline void reset() {
         n_points_ = 0;
         n_elems_ = 0;
     }
 
-    /// Getter of dim_
+    /// Getter for dim_
     inline uint dim() const {
         return dim_;
     }
 
-    /// Getter of n_rows_
+    /// Getter for n_rows_
     inline uint n_rows() const {
         return n_rows_;
     }
 
-    /// Getter of n_elems_
+    /// Getter for n_elems_
     inline uint n_elems() const {
         return n_elems_;
     }
 
-    /// Getter of n_points_
+    /// Getter for n_points_
     inline uint n_points() const {
         return n_points_;
     }
 
-    /// Return quadrature
+    /// Getter for quadrature
     Quadrature *get_quadrature() const {
         return quad_;
     }
 
-    /// Resize data tables
+    /// Resize data tables. Method is called before reinit of patch.
     void resize_tables(uint n_points) {
         eigen_tools::resize_table(point_vals_, n_points);
         eigen_tools::resize_table(int_vals_, n_points);
     }
 
-    /// Register element, add to point_vals_ table
+    /**
+     * Register element, add to point_vals_ table
+     *
+     * @param coords            Coordinates of element nodes.
+     * @param element_patch_idx Index of element on patch.
+     */
     uint register_element(arma::mat coords, uint element_patch_idx) {
         uint res_column = operations_[FeBulk::BulkOps::opElCoords].result_row();
         for (uint i_col=0; i_col<coords.n_cols; ++i_col)
@@ -174,7 +191,12 @@ public:
         return n_elems_++;
     }
 
-    /// Register side, add to point_vals_ table
+    /**
+     * Register side, add to point_vals_ table
+     *
+     * @param coords      Coordinates of element nodes.
+     * @param side_coords Coordinates of side nodes.
+     */
     uint register_side(arma::mat elm_coords, arma::mat side_coords) {
         uint res_column = operations_[FeSide::SideOps::opElCoords].result_row();
         for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
@@ -193,7 +215,13 @@ public:
         return n_elems_++;
     }
 
-    /// Register bulk point, add to int_vals_ table
+    /**
+     * Register bulk point, add to int_vals_ table
+     *
+     * @param elem_table_row  Index of element in temporary element table.
+     * @param value_patch_idx Index of point in ElementCacheMap.
+     * @param elem_idx        Index of element in Mesh.
+     */
     uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx) {
         int_vals_(0)(n_points_) = value_patch_idx;
         int_vals_(1)(n_points_) = elem_table_row;
@@ -203,7 +231,14 @@ public:
         return n_points_++;
     }
 
-    /// Register side point, add to int_vals_ table
+    /**
+     * Register side point, add to int_vals_ table
+     *
+     * @param elem_table_row  Index of side in temporary element table.
+     * @param value_patch_idx Index of point in ElementCacheMap.
+     * @param elem_idx        Index of element in Mesh.
+     * @param side_idx        Index of side on element.
+     */
     uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx) {
         int_vals_(0)(n_points_) = value_patch_idx;
         int_vals_(1)(n_points_) = elem_table_row;
@@ -214,7 +249,13 @@ public:
         return n_points_++;
     }
 
-    /// Add accessor to operations_ vector
+    /**
+     * Adds accessor to of new operation operations_ vector
+     *
+     * @param shape          Shape of function output
+     * @param reinit_f       Reinitialize function
+     * @param input_ops_vec  Indices of input operations in operations_ vector.
+     */
     ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec) {
     	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec);
     	this->n_rows_ += op_accessor.n_comp();
@@ -222,7 +263,13 @@ public:
     	return operations_[operations_.size()-1];
     }
 
-    /// Add accessor to operations_ vector
+    /**
+     * Adds accessor of expansion operation to operations_ vector
+     *
+     * @param el_op     Source operation of expansion.
+     * @param shape     Shape of function output
+     * @param reinit_f  Reinitialize function
+     */
     ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape, ReinitFunction reinit_f) {
         ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row(), reinit_f);
         // shape passed from el_op throws:
@@ -231,7 +278,14 @@ public:
         return operations_[operations_.size()-1];
     }
 
-    /// Add accessor to operations_ vector
+    /**
+     * Adds accessor of FE operation and adds operation dynamically to operations_ vector
+     *
+     * @param shape          Shape of function output
+     * @param reinit_f       Reinitialize function
+     * @param input_ops_vec  Indices of input operations in operations_ vector.
+     * @param n_dofs         Number of DOFs
+     */
     ElOp<spacedim> &make_fe_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs) {
     	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec, n_dofs);
     	this->n_rows_ += op_accessor.n_comp() * n_dofs;
@@ -240,18 +294,33 @@ public:
     }
 
 
-    /// Reinit data.
+    /**
+     * Reinitializes patch data.
+     *
+     * Calls reinit functions defined on each operations.
+     */
     void reinit_patch() {
         if (n_elems_ == 0) return; // skip if tables are empty
-        // Reinit patch data of all operation
         for (uint i=0; i<operations_.size(); ++i)
             operations_[i].reinit_function(operations_, point_vals_, int_vals_);
     }
 
+    /**
+     * Returns scalar output value given by index of first row and index of quadrature point.
+     *
+     * @param result_row  Row of operation in point_vals_ data table
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
     inline Scalar scalar_val(uint result_row, uint point_idx) const {
         return point_vals_(result_row)(points_map_[point_idx]);
     }
 
+    /**
+     * Returns vector output value given by index of first row and index of quadrature point.
+     *
+     * @param result_row  First row of operation in point_vals_ data table
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
     inline Vector vector_val(uint result_row, uint point_idx) const {
         Vector val;
         for (uint i=0; i<3; ++i)
@@ -259,6 +328,12 @@ public:
         return val;
     }
 
+    /**
+     * Returns tensor output value given by index of first row and index of quadrature point.
+     *
+     * @param result_row  First row of operation in point_vals_ data table
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
     inline Tensor tensor_val(uint result_row, uint point_idx) const {
         Tensor val;
         for (uint i=0; i<3; ++i)
@@ -267,7 +342,13 @@ public:
         return val;
     }
 
-    /// Temporary development method
+    /**
+     * Performs output of data tables to stream.
+     *
+     * Development method.
+     * @param points Allows switched off output of point table,
+     * @param ints   Allows switched off output of int (connectivity to elements) table,
+     */
     void print_data_tables(ostream& stream, bool points, bool ints) const {
         if (points) {
             stream << "Point vals: " << point_vals_.rows() << " - " << point_vals_.cols() << std::endl;
@@ -289,7 +370,12 @@ public:
         }
     }
 
-    /// Temporary development method
+    /**
+     * Performs table of fixed operations to stream.
+     *
+     * Development method.
+     * @param bulk_side Needs set 0 (bulk) or 1 (side) for correct output of operation names.
+     */
     void print_operations(ostream& stream, uint bulk_side) const {
         std::vector< std::vector<std::string> > op_names =
         {
@@ -351,48 +437,60 @@ protected:
 };
 
 /**
- * @brief Class represents FE operations.
+ * @brief Class represents element or FE operations.
  */
 template<unsigned int spacedim = 3>
 class ElOp {
 public:
-    /// Constructor
+    /**
+     * Constructor
+     *
+     * Set all data members.
+     */
     ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, std::vector<uint> input_ops = {}, uint n_dofs = 1)
     : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), n_dofs_(n_dofs), reinit_func(reinit_f)
     {}
 
-    /// Number of components computed from shape_ vector
+    /**
+     * Return number of operation components
+     *
+     * Value is computed from shape_ vector
+     */
     inline uint n_comp() const {
         if (shape_.size() == 1) return shape_[0];
         else return shape_[0] * shape_[1];
     }
 
-    /// Getter of dimension
+    /// Getter for dimension
     inline uint dim() const {
         return dim_;
     }
 
-    /// Getter of result_row_
+    /// Getter for result_row_
     inline uint result_row() const {
         return result_row_;
     }
 
-    /// Getter of n_dofs_
+    /// Getter for n_dofs_
     inline uint n_dofs() const {
         return n_dofs_;
     }
 
-    /// Getter of input_ops_
+    /// Getter for input_ops_
     inline const std::vector<uint> &input_ops() const {
         return input_ops_;
     }
 
-    /// Getter of shape_
+    /// Getter for shape_
     inline const std::vector<uint> &shape() const {
         return shape_;
     }
 
-    /// Format shape to string
+    /**
+     * Format shape to string
+     *
+     * Method is used in output development method.
+     */
     inline std::string format_shape() const {
         stringstream ss;
         ss << shape_[0];
