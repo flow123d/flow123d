@@ -39,9 +39,9 @@ public:
     // Override the operator*
     inline OuterProdVec operator*(const OuterProdVec& other) const
     {
-        ASSERT_EQ(this->data.cols(), other.data.rows());
+        ASSERT_EQ(this->data.cols(), other.data.cols());
         OuterProdVec res;
-        res.data = this->data * other.data;
+        res.data = this->data * other.data.transpose();
         return res;
     }
 };
@@ -98,7 +98,7 @@ int test_multi_operator_simple()
     std::cout << "test_multi_operator_simple" << std::endl;
 
     OuterProdVec arr1(2, 1);
-    OuterProdVec arr2(1, 4);
+    OuterProdVec arr2(4, 1);
 
     // Initialize arrays with some values
     arr1.data << 1, 2;
@@ -118,7 +118,7 @@ int test_multi_operator_vec_scalar()
     std::cout << "test_multi_operator_vec_scalar" << std::endl;
 
     Eigen::Matrix<OuterProdVec, 3, 1> arr1;
-    OuterProdVec arr2(1, 4);
+    OuterProdVec arr2(4, 1);
 
     // Initialize arrays with some values
     for (uint i=0; i<3; ++i) {
@@ -154,7 +154,7 @@ int test_multi_operator_vec_vec()
     for (uint i=0; i<3; ++i) {
         arr1(i).data.resize(2, 1);
         arr1(i).data << (i+1), (i+2);
-        arr2(i).data.resize(1, 4);
+        arr2(i).data.resize(4, 1);
         arr2(i).data << (2*i+1), (2*i+2), (2*i+3), (2*i+4);
     }
 
@@ -184,7 +184,7 @@ int test_multi_operator_mat_vec()
     std::cout << "test_multi_operator_mat_vec" << std::endl;
 
     Eigen::Matrix<OuterProdVec, 3, 3> arr1;
-    Eigen::Matrix<OuterProdVec, 3, 1> arr2;
+    Eigen::Matrix<OuterProdVec, 3, 1> arr2; // dynamic
 
     // Initialize arrays with some values
     for (uint i=0; i<3; ++i) {
@@ -192,7 +192,7 @@ int test_multi_operator_mat_vec()
             arr1(i,j).data.resize(2, 1);
             arr1(i,j).data << (i+j+1), (i+j+2);
     	}
-        arr2(i).data.resize(1, 4);
+        arr2(i).data.resize(4, 1);
         arr2(i).data << (2*i+1), (2*i+2), (2*i+3), (2*i+4);
     }
 

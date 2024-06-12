@@ -31,7 +31,7 @@ public:
         // fill empty (zero) rows
         for (uint i_row=n_nozero_rows; i_row<n_rows; ++i_row) {
             for (uint i_col=0; i_col<spacedim; ++i_col) {
-            	data_table_(i_row)(i_col) = 01.0;
+            	data_table_(i_row)(i_col) = 0.0;
             }
         }
 
@@ -119,7 +119,7 @@ public:
 	            arr1_(i,j).data.resize(2, 1);
 	            arr1_(i,j).data << (i+j+1), (i+j+2);
 	    	}
-	        arr2_(i).data.resize(1, 4);
+	        arr2_(i).data.resize(4, 1);
 	        arr2_(i).data << (2*i+1), (2*i+2), (2*i+3), (2*i+4);
 	    }
 
@@ -168,19 +168,19 @@ TEST(OuterProduct, speed_test) {
 }
 
 
-//TEST(OuterProduct, outer_product) {
-//	// https://stackoverflow.com/questions/40829887/how-do-i-do-outer-product-of-tensors-in-eigen
-//    test_add_operator_simple();
-//    std::cout << "==============" << std::endl;
-//    test_add_operator();
-//    std::cout << "==============" << std::endl;
-//    test_multi_operator_simple();
-//    std::cout << "==============" << std::endl;
-//    test_multi_operator_vec_scalar();
-//    std::cout << "==============" << std::endl;
-//    test_multi_operator_vec_vec();
-//    std::cout << "==============" << std::endl;
-//    test_multi_operator_mat_vec();
-//}
+TEST(OuterProduct, outer_product) {
+	// https://stackoverflow.com/questions/40829887/how-do-i-do-outer-product-of-tensors-in-eigen
+    test_add_operator_simple();
+    std::cout << "==============" << std::endl;
+    test_add_operator();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_simple();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_vec_scalar();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_vec_vec();
+    std::cout << "==============" << std::endl;
+    test_multi_operator_mat_vec();
+}
 
 
