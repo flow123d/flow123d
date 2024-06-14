@@ -41,7 +41,7 @@ problem: !Coupling_Sequential
             - step: 1
           fields:
             - displacement
-            - stress
+            - effective_stress
             - cross_section_updated
             - region_id
         solver: !Petsc

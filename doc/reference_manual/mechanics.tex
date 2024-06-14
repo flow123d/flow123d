@@ -13,7 +13,7 @@ in terms of the \hyperA{Mechanics-LinearElasticity-FE-Data::initial-stress}{init
 \eq{ \mu = \frac{E}{2(1+\nu)},\quad \lambda = \frac{E\nu}{(1+\nu)(1-2\nu)}, }
 where $E$ [$\mathrm{Pa}$] is the \hyperA{Mechanics-LinearElasticity-FE-Data::young-modulus}{Young modulus} and  $\nu$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::poisson-ratio}{Poisson's ratio}.
 The strain tensor in $\Omega_d$ is defined as follows:
-\eq{ \widetilde\ee(\uu) = \frac12(\nabla\uu_d+\nabla\uu_d^\top) + \begin{cases}0&\mbox{ if }d=3,\\\frac1\delta\sum_{i=1}^n\uu_{d+1}^i\otimes_s\nn_{d+1}^i & \mbox{ else}.\end{cases} }
+\eq{ \widetilde\ee_d(\uu) = \frac12(\nabla\uu_d+\nabla\uu_d^\top) + \begin{cases}0&\mbox{ if }d=3,\\\frac1{\delta_d}\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\otimes_s\nn_{d+1}^i & \mbox{ else}.\end{cases} }
 Here $\vc a\otimes_s\vc b:=\frac12(\vc a\otimes\vc b+\vc b\otimes\vc a)$.
 
 The symbol $\vc f$ stands for the \hyperA{Mechanics-LinearElasticity-FE-Data::load}{body load} [$\mathrm{Nm}^{-3}$].
@@ -21,17 +21,24 @@ The symbol $\vc f$ stands for the \hyperA{Mechanics-LinearElasticity-FE-Data::lo
 
 \paragraph{Hydromechanical coupling.}
 The mechanics equation \eqref{eq:lin_el} is coupled to flow by the term
-\eq{ \vc f_H = -\nabla(\delta\alpha p), \quad p = \varrho_l g h, }
-where $p$ [$\mathrm{Pa}$] is the pressure, $\alpha$ \units{}{}{} is the \hyperA{Coupling-Iterative-Data::biot-alpha}{Biot coefficient}, $\varrho_l$ \units{1}{-3}{} is the \hyperA{Coupling-Iterative-Data::fluid-density}{fluid density} and $g$ \units{}{1}{-2} is the \hyperA{Coupling-Iterative-Data::gravity}{gravitational acceleration}.
+\eq{ \vc f_H = -\nabla(\delta\alpha \varrho_l g(h-h^0)), }
+where $h$, $h^0$ [$\mathrm{m}$] is the pressure head and its initial value, respectively, $\alpha$ \units{}{}{} is the \hyperA{Coupling-Iterative-Data::biot-alpha}{Biot coefficient}, $\varrho_l$ \units{1}{-3}{} is the \hyperA{Coupling-Iterative-Data::fluid-density}{fluid density} and $g$ \units{}{1}{-2} is the \hyperA{Coupling-Iterative-Data::gravity}{gravitational acceleration}.
 Conversely, the deformation affects the flow via the additional term
 \eq{\label{eq:fluid_source_div_u} F_M = -\partial_t(\delta\alpha\widetilde\div\uu) }
-on the right hand side of \eqref{eq:continuity}.
-The expression $\widetilde\div\uu$ is defined as follows:
-\eq{ \widetilde\div\uu_d = \div\uu_d + \begin{cases}0 & \mbox{ if }d=3,\\\frac{\delta_{d+1}}{\delta_d}\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1} & \mbox{ else}.\end{cases} }
+on the right hand side of \eqref{eq:continuity}, where $\widetilde\div\uu:=\tn I:\widetilde\ee(\uu)$.
+Adding the coupling terms $\vc f_H$, $F_M$ into the equation of mechanics \eqref{eq:lin_el} and flow \eqref{eq:continuity}, respectively, leads to the Biot-type poroelasticity system:
+\eq{ -\div(\delta\widehat\sigma(\uu,h)) = \delta\vc f + \vc f_C, }
+\eq{ \partial_t(\delta(Sh + \alpha\widetilde\div\uu)) + \div\vc q = F. }
+Here
+\eq{ \widehat\sigma(\uu,h):=\sigma(\uu)-\alpha\varrho_l g(h-h^0)\tn I }
+is the total poroelastic stress, while $\sigma(\uu)$ plays the role of the effective (mechanical) stress.
+
 The numerical solution of coupled hydro-mechanical problems is solved by an iterative splitting, where, in order to achieve convergence, the flow equation is modified as follows:
 \eq{ \partial_t(\delta(S+S_{extra})h) + \div\vc q = F + F_M + \partial_t(\delta S_{extra} h_{old}). }
-Here $h_{old}$ is the previous value of piezometric head in the iteration process and $S_{extra}$ is an extra storativity coefficient whose value affects the rate of convergence.
-It can be manually tuned using the \hyperA{Coupling-Iterative::iteration-parameter}{iteration parameter}.
+Here $h_{old}$ is the previous value of pressure head in the iteration process and
+\eq{ S_{extra}=\iota\frac{\alpha^2}{2\varrho_l g(\tfrac23\mu+\lambda)} }
+ is an extra storativity coefficient whose value affects the rate of convergence.
+It can be manually tuned using the \hyperA{Coupling-Iterative::iteration-parameter}{iteration parameter} $\iota$.
 
 
 \paragraph{Boundary conditions.}
@@ -42,45 +49,55 @@ Given the decomposition $\partial\Omega_d=\Gamma_D\cup\Gamma_{DN}\cup\Gamma_T\cu
 via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-displacement}{given displacement} $\uu_D$ \units{}{1}{}.
 \item \textbf{displacement\_n}: Displacement is prescribed only in the normal component, in tangent directions(s) zero traction is assumed:
 \eq{ \left.\begin{aligned}\uu\cdot\nn &= \uu_D\cdot\nn\\
-(\sigma(\uu)\nn)_\tau &= \vc 0\end{aligned}\right\} \mbox{ on }\Gamma_{DN}. }
+(\widehat\sigma(\uu,h)\nn)_\tau &= \vc 0\end{aligned}\right\} \mbox{ on }\Gamma_{DN}. }
 Here $\vc a_\tau := \vc a - (\vc a\cdot\nn)\nn$ is the projection of a vector $\vc a$ to the tangent plane of the boundary.
 \item \textbf{traction} condition (default) is imposed via \hyperA{Mechanics-LinearElasticity-FE-Data::bc-traction}{given traction} $\vc t_N$ [$\mathrm{Pa}$]:
-\eq{ -\sigma(\uu)\nn = \vc t_N \mbox{ on }\Gamma_T. }
+\eq{ \widehat\sigma(\uu,h)\nn = \vc t_N \mbox{ on }\Gamma_T. }
 \item \textbf{stress} condition is the same type as \textbf{traction}, but instead of traction the user supplies the full \hyperA{Mechanics-LinearElasticity-FE-Data::bc-stress}{stress tensor} $\tn\sigma_N$ [$\mathrm{Pa}$]:
-\eq{ -\sigma(\uu)\nn = \tn\sigma_N\nn \mbox{ on }\Gamma_S. }
+\eq{ \widehat\sigma(\uu,h)\nn = \tn\sigma_N\nn \mbox{ on }\Gamma_S. }
 \end{itemize}
 
 
 \paragraph{Communication between dimensions.}
 The mechanical interaction on the interface between $\Omega_{d+1}$ and $\Omega_d$ is realized via the traction condition on the boundary of $\Omega_{d+1}$:
-\eq{ \delta_{d+1}(\sigma(\uu^i_{d+1})-\alpha_{d+1}p_{d+1}\tn I)\nn^i_{d+1} = \vc t^i_{d+1,d}, }
+\eq{ \widehat\sigma(\uu^i_{d+1},h^i_{d+1})\nn^i_{d+1} = \vc t^i_{d+1,d}, }
 where
-\eq{ \vc t^i_{d+1,d} = \sigma^U_{d+1,d}\delta_{d+1}\left(\frac{2\delta_{d+1}}{\delta_d}\tn C_d\left((\uu_{d+1}^i-\uu_d)\otimes\nn_{d+1}^i\right)-\alpha_d p_d\tn I\right)\nn_{d+1}^i }
+\eq{ \vc t^i_{d+1,d} = \sigma^U_{d+1,d}\left(\sigma_0+\frac{2\delta_{d+1}^i}{\delta_d}\tn C_d\left((\uu_{d+1}^i-\uu_d)\otimes\nn_{d+1}^i\right)-\alpha_d \varrho_l g(h_d-d^0_d)\tn I\right)\nn_{d+1}^i }
 and $\sigma^U_{d+1,d}$ \units{}{}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::fracture-sigma}{transition coefficient}.
 The force term in $\Omega_d$ due to the interaction with $\Omega_{d+1}$ is
-\eq{ \vc f_{Cd} = \begin{cases}\vc 0 & \mbox{ if }d=3,\\\sum_{i=1}^n\vc t^i_{d+1,d} & \mbox{ else}.\end{cases} }
+\eq{ \vc f_{Cd} = \begin{cases}\vc 0 & \mbox{ if }d=3,\\\sum_{i=1}^n\delta_{d+1}^i\vc t^i_{d+1,d} & \mbox{ else}.\end{cases} }
 
 \paragraph{Fracture contact mechanics.}
 The linear elastic model does not prevent the self-penetration of the deformed porous material.
 To avoid this unphysical behaviour, the user has to switch on the \hyperA{Mechanics-LinearElasticity-FE::contact}{contact} parameter.
 Then the following contact condition is applied to all fracture elements:
-\eq{ \delta_d-\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\cdot\nn_{d+1}^i \ge \delta_{min}, }
-where $\delta_{min}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::cross-section-min}{minimal cross-section} of the fracture.
+\eq{ \tilde\delta_d(\uu) := \delta_d-\sum_{i=1}^n\delta_{d+1}^i\uu_{d+1}^i\cdot\nn_{d+1}^i \ge \delta_d^{min}, }
+where $\tilde\delta_d(\uu)$ \units{}{3-d}{} is the cross-section of the deformed fracture, $\delta_d^{min}$ \units{}{3-d}{} is the \hyperA{Mechanics-LinearElasticity-FE-Data::cross-section-min}{minimal cross-section} of the fracture.
 In the case $d=2$, the minimal cross-section is just the contact distance.
-For $1d$ fractures/channels $\delta_{min}$ corresponds to the minimal contact area.
+For $1d$ fractures/channels, $\delta^{min}$ corresponds to the minimal contact area.
 When contact conditions are active, the mechanical model is solved as a quadratic programming problem with linear constraints.
 
 \paragraph{Output fields.}
 The mechanics equation provides several fields for output:
 \begin{itemize}
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement}{displacement}: The computed displacement vector field $\uu$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::stress}{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-stress}{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::effective-stress}{effective\_stress}: The effective (mechanical) stress tensor $\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::total-stress}{total\_stress}: The total (poroelastic) stress tensor $\widehat\sigma(\uu,h)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-effective-stress}{mean\_effective\_stress}: The mean of the principal effective stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-total-stress}{mean\_total\_stress}: The mean of the principal total stresses, i.e. $\widehat\sigma_m:=\frac13\tn I:\widehat\sigma(\uu,h)$;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\sigma_m\tn I$ is the deviatoric stress.
     Equivalently, von Mises stress can be expressed as
     \[ \sigma_{VM} = \sqrt{\frac12\left((\sigma_1-\sigma_2)^2+(\sigma_1-\sigma_3)^2+(\sigma_2-\sigma_3)^2\right)}, \]
-    where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$;
-    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}{cross\_section\_updated}: This field expresses the cross-section of fractures after deformation and is defined as $\delta_d-\sum_{i=1}^n\uu^i_{d+1}\cdot\nn^i_{d+1}$;
+    where $\sigma_{1,2,3}$ are the principal stresses, i.e. eigenvalues of $\tn\sigma(\uu)$ (or equivalently $\widehat\sigma(\uu,h)$);
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::cross-section-updated}{cross\_section\_updated}: The cross-section $\tilde\delta_d(\uu)$ after deformation;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement-divergence}{displacement\_divergence}: $\widetilde\div\uu_d$.
 \end{itemize}
 
+
+\paragraph{Stress tensors and sign convention.}
+We use the engineering convention, according to which, tensile stress is positive.
+This applies to the values of $\sigma(\uu)$, $\widehat\sigma(\uu,h)$, $\sigma_0$ and $\sigma_N$.
+It means that, for example, the initial stress $\sigma_0$ in a rock massive will typically have negative principal values.
+Accordingly, an outward orientation of the traction $\vc t_N$ indicates tension and vice versa.
+
+We also emphasize that the initial stress is not an initial value in the mathematical sense, but rather a pre-existing stress that is always present even if no other forces are applied.

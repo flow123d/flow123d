@@ -52,7 +52,7 @@ problem: !Coupling_Sequential
           times: *output_times
           fields:
             - displacement
-            - stress
+            - effective_stress
         solver: !Petsc
           a_tol: 1e-14
           r_tol: 1e-14
