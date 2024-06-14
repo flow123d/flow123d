@@ -8,6 +8,10 @@
 #include <new>
 #include <stdexcept>   // !! Use Flow exception mechanism
 
+#include "system/asserts.hh"
+#include "system/sys_profiler.hh"
+#include "system/file_path.hh"
+
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -242,6 +246,22 @@ public:
         return (T*)aligned_resource_simd_.do_allocate(bytes, aligned_resource_simd_.alignment_);
     }
 
+    /// Deallocate passed data pointer of n_item array of type T (alignment to length 8 bytes)
+    template <class T>
+    void deallocate_8(T * data_ptr, size_t n_items) {
+        size_t bytes = sizeof(T) * n_items;
+        // Call override method do_deallocate with alignment argument
+        aligned_resource_8_.do_deallocate((void *)data_ptr, bytes, aligned_resource_8_.alignment_);
+    }
+
+    /// Deallocate passed data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
+    template <class T>
+    void deallocate_simd(T * data_ptr, size_t n_items) {
+        size_t bytes = sizeof(T) * n_items;
+        // Call override method do_deallocate with alignment argument
+        aligned_resource_simd_.do_deallocate((void *)data_ptr, bytes, aligned_resource_simd_.alignment_);
+    }
+
 protected:
     /// Override do_allocate to handle allocation logic
     void* do_allocate(size_t bytes, size_t alignment) override {
@@ -267,6 +287,78 @@ private:
     AlignedMemoryResource aligned_resource_simd_;
 };
 
+
+template<class T>
+class ArenaVec {
+public:
+    /// Type definitions
+	typedef Eigen::Array<T, Eigen::Dynamic, 1> ArrayData;
+    typedef Eigen::Vector<ArrayData, Eigen::Dynamic> TableData;
+    typedef Eigen::Matrix<ArrayData, Eigen::Dynamic, Eigen::Dynamic> MatrixData;
+
+    /// Base constructor, set invalid data pointer
+    ArenaVec(std::vector<size_t> shape)
+    : shape_( set_shape_vec(shape) ), row_size_(0), data_ptr_(nullptr) {}
+
+    /**
+     * Constructor. Set sizes and allocate data pointer
+     */
+    ArenaVec(std::vector<size_t> shape, size_t row_size, ArenaAllocator &arena)
+    : shape_( set_shape_vec(shape) ), data_ptr_(nullptr) {
+        allocate_data(row_size, arena);
+    }
+
+    /// Return number of components
+    inline size_t n_comp() const {
+        return shape_[0] * shape_[1];
+    }
+
+    /**
+     * Allocate data on \p arena memory
+     *
+     * Size of data is given by \p shape_ and \p row_size
+     */
+    void allocate_data(size_t row_size, ArenaAllocator &arena) {
+        if (data_ptr_ != nullptr) {
+            arena.deallocate_simd<T>(data_ptr_, n_comp() * row_size );
+        }
+        row_size_ = row_size;
+        data_ptr_ = arena.allocate_simd<T>( n_comp() * row_size );
+    }
+
+    /**
+     * Maps data pointer to Eigen Map of dimensions given by shape_ and row_size_ and returns it.
+     */
+    Eigen::Map<MatrixData> data_map() {
+        // Create the TableDbl
+        TableData table_data( n_comp() );
+
+        // Map each segment of the array d to the inner ArrayDbl of TableDbl
+        for (int i = 0; i < n_comp(); ++i) {
+            table_data(i) = Eigen::Map<ArrayData>(data_ptr_ + i * row_size_, row_size_);
+        }
+
+        return Eigen::Map<MatrixData>(table_data.data(), shape_[0], shape_[1]);
+    }
+
+    /// Return data pointer (development method)
+    T* data_ptr() {
+        return data_ptr_;
+    }
+
+protected:
+    std::vector<size_t> set_shape_vec(std::vector<size_t> shape) const {
+    	ASSERT( (shape.size() == 1) || (shape.size() == 2) )(shape.size()).error("Invalid size of shape vector!\n");
+    	if (shape.size() == 1) shape.push_back(1);
+    	return shape;
+    }
+
+    std::vector<size_t> shape_;
+    size_t row_size_;
+    T* data_ptr_;
+};
+
+
 TEST(Arena, allocatzor) {
     try {
         ArenaAllocator allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
@@ -280,6 +372,7 @@ TEST(Arena, allocatzor) {
         std::pmr::vector<double> vector_dbl_256( &aligned_resource_simd );
         // Create array of double of length 10
         double *custom_memory = allocator.allocate_simd<double>(10);
+        ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
 
         // Fill the vectors with some data
         for (int i = 0; i < 10; ++i) {
@@ -288,6 +381,10 @@ TEST(Arena, allocatzor) {
             vector_dbl_8.push_back(i + 0.1);
             vector_dbl_256.push_back(i * 10 + 0.5);
             custom_memory[i] = i * 10 + 0.5;
+        }
+        double* data_ptr = quantity_deta.data_ptr();
+        for (int i = 0; i < 60; ++i) {
+            data_ptr[i] = (i%10 + 1) + 0.1 * (i/10 + 1);
         }
 
         // Print the vectors
@@ -332,10 +429,62 @@ TEST(Arena, allocatzor) {
 
         // Change value in vector, print matrix, value (1,0) must be changed
         eigen_vector(1) = 5.5;
-        std::cout << "Eigen matrix changed:\n" << eigen_matrix << std::endl;
+        std::cout << "Eigen matrix changed:\n" << eigen_matrix << std::endl << std::endl;
+
+        auto map = quantity_deta.data_map();
+        std::cout << "ArenaVec dimensions: " << map.rows() << ", " << map.cols() << std::endl;
     } catch (const std::bad_alloc& e) {
         // Handle allocation failure
         std::cerr << "Allocation failed: " << e.what() << std::endl;
     }
 
 }
+
+TEST(Arena, map_access_speed_test) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Profiler::instance();
+    PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+    static const uint n_loops = 1e06;
+    size_t single_sum=0, repeated_sum=0;
+
+    ArenaAllocator allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
+
+    // Create std::pmr::vector instances using the aligned memory resources
+    ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
+
+    // Fill the vectors with some data
+    double* data_ptr = quantity_deta.data_ptr();
+    for (int i = 0; i < 60; ++i) {
+        data_ptr[i] = (i%10 + 1) + 0.1 * (i/10 + 1);
+    }
+
+    START_TIMER("single_map_construct");
+    auto map_1 = quantity_deta.data_map();
+    for (uint i=0; i<n_loops; ++i) {
+        if (i%2==0) single_sum += map_1.rows();
+        else single_sum += map_1.cols();
+    }
+    END_TIMER("single_map_construct");
+
+    START_TIMER("repeated_map_construct");
+    for (uint i=0; i<n_loops; ++i) {
+        auto map_2 = quantity_deta.data_map();
+        if (i%2==0) repeated_sum += map_1.rows();
+        else repeated_sum += map_1.cols();
+    }
+    END_TIMER("repeated_map_construct");
+    EXPECT_EQ(single_sum, repeated_sum);
+
+    // profiler autput
+    FilePath fp("map_access_profiler.json", FilePath::output_file);
+	Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+}
+
+/*
+ * Result:
+ *
+ * n_repeats                     1E05        1E06
+ * single_map_construct     0.0001052   0.0006767
+ * repeated_map_construct   0.0291635   0.2823245
+ */
