@@ -168,43 +168,49 @@
 //}
 
 
+template <class Resource> class ArenaAllocator; // forward declaration
+
+
+// Helper class of ArenaAllocator
+template <class Resource>
+class AlignedMemoryResource : public std::pmr::memory_resource {
+public:
+    explicit AlignedMemoryResource(std::pmr::monotonic_buffer_resource& upstream, size_t alignment)
+        : upstream_(upstream), alignment_(alignment) {}
+
+protected:
+    inline size_t align_size(size_t size) {
+    	return (size + alignment_ - 1) / alignment_ * alignment_;
+    }
+
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        void* p = upstream_.allocate(bytes, alignment);
+        if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
+            throw std::bad_alloc();
+        }
+        return p;
+    }
+
+    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+        upstream_.deallocate(p, bytes, alignment);
+    }
+
+    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
+        return this == &other;
+    }
+
+private:
+    Resource& upstream_;
+    size_t alignment_;
+
+    friend class ArenaAllocator<Resource>;
+};
+
 
 // Final proposal of Arena
+template <class Resource>
 class ArenaAllocator : public std::pmr::memory_resource {
 public:
-	class AlignedMemoryResource : public std::pmr::memory_resource {
-	public:
-	    explicit AlignedMemoryResource(std::pmr::monotonic_buffer_resource& upstream, size_t alignment)
-	        : upstream_(upstream), alignment_(alignment) {}
-
-	protected:
-	    inline size_t align_size(size_t size) {
-	    	return (size + alignment_ - 1) / alignment_ * alignment_;
-	    }
-
-        void* do_allocate(size_t bytes, size_t alignment) override {
-            void* p = upstream_.allocate(bytes, alignment);
-            if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
-                throw std::bad_alloc();
-            }
-            return p;
-        }
-
-        void do_deallocate(void* p, size_t bytes, size_t alignment) override {
-            upstream_.deallocate(p, bytes, alignment);
-        }
-
-        bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
-            return this == &other;
-        }
-
-	private:
-	    std::pmr::monotonic_buffer_resource& upstream_;
-	    size_t alignment_;
-
-	    friend class ArenaAllocator;
-	};
-
     explicit ArenaAllocator(size_t buffer_size, size_t simd_alignment)
         : buffer(new char[buffer_size]),
           buffer_size(buffer_size),
@@ -221,12 +227,12 @@ public:
     ~ArenaAllocator() = default;
 
     /// Getter for aligned_resource_8_
-    AlignedMemoryResource aligned_resource_8() {
+    AlignedMemoryResource<Resource> aligned_resource_8() {
     	return aligned_resource_8_;
     }
 
     /// Getter for aligned_resource_simd_
-    AlignedMemoryResource aligned_resource_simd() {
+    AlignedMemoryResource<Resource> aligned_resource_simd() {
     	return aligned_resource_simd_;
     }
 
@@ -282,9 +288,9 @@ protected:
 private:
     std::unique_ptr<char[]> buffer;
     size_t buffer_size;
-    std::pmr::monotonic_buffer_resource resource;
-    AlignedMemoryResource aligned_resource_8_;
-    AlignedMemoryResource aligned_resource_simd_;
+    Resource resource;
+    AlignedMemoryResource<Resource> aligned_resource_8_;
+    AlignedMemoryResource<Resource> aligned_resource_simd_;
 };
 
 
@@ -303,7 +309,7 @@ public:
     /**
      * Constructor. Set sizes and allocate data pointer
      */
-    ArenaVec(std::vector<size_t> shape, size_t row_size, ArenaAllocator &arena)
+    ArenaVec(std::vector<size_t> shape, size_t row_size, ArenaAllocator<std::pmr::monotonic_buffer_resource> &arena)
     : shape_( set_shape_vec(shape) ), data_ptr_(nullptr) {
         allocate_data(row_size, arena);
     }
@@ -318,7 +324,7 @@ public:
      *
      * Size of data is given by \p shape_ and \p row_size
      */
-    void allocate_data(size_t row_size, ArenaAllocator &arena) {
+    void allocate_data(size_t row_size, ArenaAllocator<std::pmr::monotonic_buffer_resource> &arena) {
         if (data_ptr_ != nullptr) {
             arena.deallocate_simd<T>(data_ptr_, n_comp() * row_size );
         }
@@ -341,6 +347,24 @@ public:
         return Eigen::Map<MatrixData>(table_data.data(), shape_[0], shape_[1]);
     }
 
+//    Eigen::Map<MatrixData> full_map() {
+//        Eigen::Map< Eigen::Matrix<ArrayData, Eigen::Dynamic, Eigen::Dynamic> > map(data_ptr_, shape_[0], shape_[1]);
+//        return map;
+//    }
+
+    /// Temporary test
+    MatrixData data_matrix() {
+        // Create the TableDbl
+    	MatrixData matrix_data( shape_[0], shape_[1] );
+
+        // Map each segment of the array d to the inner ArrayDbl of TableDbl
+        for (int i = 0; i < n_comp(); ++i) {
+        	matrix_data(i%shape_[0], i/shape_[0]) = Eigen::Map<ArrayData>(data_ptr_ + i * row_size_, row_size_);
+        }
+
+        return matrix_data;
+    }
+
     /// Return data pointer (development method)
     T* data_ptr() {
         return data_ptr_;
@@ -361,11 +385,11 @@ protected:
 
 TEST(Arena, allocatzor) {
     try {
-        ArenaAllocator allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
+        ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
 
         // Create std::pmr::vector instances using the aligned memory resources
-        ArenaAllocator::AlignedMemoryResource aligned_resource_8 = allocator.aligned_resource_8();
-        ArenaAllocator::AlignedMemoryResource aligned_resource_simd = allocator.aligned_resource_simd();
+        AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_8 = allocator.aligned_resource_8();
+        AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_simd = allocator.aligned_resource_simd();
         std::pmr::vector<int> vector_8( &aligned_resource_8 );
         std::pmr::vector<int> vector_256( &aligned_resource_simd );
         std::pmr::vector<double> vector_dbl_8( &aligned_resource_8 );
@@ -431,8 +455,22 @@ TEST(Arena, allocatzor) {
         eigen_vector(1) = 5.5;
         std::cout << "Eigen matrix changed:\n" << eigen_matrix << std::endl << std::endl;
 
-        auto map = quantity_deta.data_map();
-        std::cout << "ArenaVec dimensions: " << map.rows() << ", " << map.cols() << std::endl;
+//        auto map = quantity_deta.data_map();
+//        std::cout << "ArenaVec dimensions: " << map.rows() << ", " << map.cols() << std::endl;
+
+        auto matrix = quantity_deta.data_matrix();
+        std::cout << "ArenaVec dimensions: " << matrix.rows() << ", " << matrix.cols() << ", " << matrix(0,0).rows() << std::endl;
+        std::cout << "Matrix 2x3:" << std::endl;
+        for (int i = 0; i < 6; ++i) {
+        	std::cout << "(" << i%2 << "," << i/2 << "): ";
+        	std::cout << matrix(i%2, i/2).transpose() << std::endl;
+        }
+        quantity_deta.data_ptr()[1] = 0.5;
+        std::cout << "Matrix 2x3 changed:" << std::endl;
+        for (int i = 0; i < 6; ++i) {
+        	std::cout << "(" << i%2 << "," << i/2 << "): ";
+        	std::cout << matrix(i%2, i/2).transpose() << std::endl;
+        }
     } catch (const std::bad_alloc& e) {
         // Handle allocation failure
         std::cerr << "Allocation failed: " << e.what() << std::endl;
@@ -448,7 +486,7 @@ TEST(Arena, map_access_speed_test) {
     static const uint n_loops = 1e06;
     size_t single_sum=0, repeated_sum=0;
 
-    ArenaAllocator allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
+    ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
 
     // Create std::pmr::vector instances using the aligned memory resources
     ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
