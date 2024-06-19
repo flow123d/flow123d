@@ -13,44 +13,6 @@
 #include <Eigen/Dense>
 
 
-template <class Resource> class ArenaResource; // forward declaration
-
-
-// Helper class of ArenaResource, allows allocate aligned blocks of data
-template <class Upstream>
-class AlignedMemoryResource : public std::pmr::memory_resource {
-public:
-    explicit AlignedMemoryResource(std::pmr::monotonic_buffer_resource& upstream, size_t alignment)
-        : upstream_(upstream), alignment_(alignment) {}
-
-protected:
-    void* do_allocate(size_t bytes, size_t alignment) override {
-        if (alignment_ > alignment) {
-            alignment = alignment_;
-        }
-        void* p = upstream_.allocate(bytes, alignment);
-        if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
-            throw std::bad_alloc();
-        }
-        return p;
-    }
-
-    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
-        upstream_.deallocate(p, bytes, alignment);
-    }
-
-    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
-        return this == &other;
-    }
-
-private:
-    Upstream& upstream_;
-    size_t alignment_;
-
-    friend class ArenaResource<Upstream>;
-};
-
-
 // Final proposal of Arena
 template <class Resource>
 class ArenaResource : public std::pmr::memory_resource {
@@ -78,16 +40,14 @@ public:
     template <class T>
     T* allocate_8(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
-        AlignedMemoryResource<Resource> a_res(this->resource_, 8);
-        return (T*)a_res.do_allocate(bytes, a_res.alignment_);
+        return (T*)this->do_allocate(bytes, 8);
     }
 
     /// Allocate and return data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
     template <class T>
     T* allocate_simd(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
-        AlignedMemoryResource<Resource> a_res(this->resource_, simd_alignment_);
-        return (T*)a_res.do_allocate(bytes, a_res.alignment_);
+        return (T*)this->do_allocate(bytes, simd_alignment_);
     }
 
     // Reset allocated data
@@ -97,9 +57,12 @@ public:
 
 protected:
     /// Override do_allocate to handle allocation logic
-    void* do_allocate(FMT_UNUSED size_t bytes, FMT_UNUSED size_t alignment) override {
-        // No-op
-        return nullptr;
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        void* p = resource_.allocate(bytes, alignment);
+        if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
+            throw std::bad_alloc();
+        }
+        return p;
     }
 
     /// Override do_deallocate (no-op for monotonic buffer)
@@ -138,6 +101,12 @@ public:
     : data_ptr_(nullptr), data_size_(0), arena_(nullptr) {}
 
     /**
+     * Constructor. Set scalar value
+     */
+    ArenaVec(T scalar_val)
+    : data_ptr_(nullptr), data_size_(0), arena_(nullptr), scalar_val_(scalar_val) {}
+
+    /**
      * Constructor. Set sizes and allocate data pointer
      */
     ArenaVec(size_t data_size, AssemblyArena &arena)
@@ -149,6 +118,7 @@ public:
      * Maps data pointer to Eigen Map of dimensions given data_size_ and returns it.
      */
     inline Eigen::Map<VecData> eigen_map() {
+        ASSERT_PTR(data_ptr_);
         return Eigen::Map<VecData>(data_ptr_, data_size_, 1);
     }
 
@@ -162,6 +132,7 @@ public:
     	return data_size_;
     }
 
+    /// For development only. TODO remove
     inline T & operator()(std::size_t item) {
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
@@ -186,6 +157,7 @@ protected:
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
     AssemblyArena *arena_;   ///< Pointer to Arena
+    T scalar_val_;           ///< Scalar value of T type
 };
 
 

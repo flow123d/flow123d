@@ -634,24 +634,25 @@ public:
     };
 
     PatchFEValues()
-    : patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} },
-	  asm_arena_(1024 * 1024, 256),
-	  patch_arena_(1024 * 1024, 256)
+    : asm_arena_(1024 * 1024, 256),
+	  patch_arena_(1024 * 1024, 256),
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} }
 	{
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
-    : patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
+    : asm_arena_(1024 * 1024, 256),
+	  patch_arena_(1024 * 1024, 256),
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
     	                       FeBulk::PatchPointValues(2, quad_order),
                                FeBulk::PatchPointValues(3, quad_order)} },
       patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order),
                                FeSide::PatchPointValues(2, quad_order),
                                FeSide::PatchPointValues(3, quad_order)} },
-      fe_(fe),
-	  asm_arena_(1024 * 1024, 256),
-	  patch_arena_(1024 * 1024, 256) {
+      fe_(fe)
+    {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
@@ -839,13 +840,13 @@ public:
     }
 
 private:
+    AssemblyArena asm_arena_;
+    AssemblyArena patch_arena_;
     std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;  ///< Sub objects of bulk data of dimensions 1,2,3
     std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;  ///< Sub objects of side data of dimensions 1,2,3
 
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
-    AssemblyArena asm_arena_;
-    AssemblyArena patch_arena_;
 
     template <class ValueType>
     friend class ElQ;
