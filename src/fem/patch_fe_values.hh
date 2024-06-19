@@ -39,6 +39,7 @@
 #include "fem/update_flags.hh"                // for UpdateFlags
 #include "quadrature/quadrature_lib.hh"
 #include "fields/eval_subset.hh"
+#include "system/arena_resource.hh"
 
 template<unsigned int spacedim> class PatchFEValues;
 
@@ -598,10 +599,46 @@ public:
 template<unsigned int spacedim = 3>
 class PatchFEValues {
 public:
+    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
+    struct TableSizes {
+    public:
+        /// Constructor
+        TableSizes() {
+            elem_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
+            point_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
+        }
+
+        /// Set all values to zero
+        void reset() {
+            std::fill(elem_sizes_[0].begin(), elem_sizes_[0].end(), 0);
+            std::fill(elem_sizes_[1].begin(), elem_sizes_[1].end(), 0);
+            std::fill(point_sizes_[0].begin(), point_sizes_[0].end(), 0);
+            std::fill(point_sizes_[1].begin(), point_sizes_[1].end(), 0);
+        }
+
+        /**
+         * Holds number of elements and sides on each dimension
+         * Format:
+         *  { {n_elements_1D, n_elements_2D, n_elements_3D },
+         *    {n_sides_1D, n_sides_2D, n_sides_3D } }
+         */
+        std::vector<std::vector<uint> > elem_sizes_;
+
+        /**
+         * Holds number of bulk and side points on each dimension
+         * Format:
+         *  { {n_bulk_points_1D, n_bulk_points_2D, n_bulk_points_3D },
+         *    {n_side_points_1D, n_side_points_2D, n_side_points_3D } }
+         */
+        std::vector<std::vector<uint> > point_sizes_;
+    };
 
     PatchFEValues()
     : patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} } {
+	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} },
+	  asm_arena_(1024 * 1024, 256),
+	  patch_arena_(1024 * 1024, 256)
+	{
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
@@ -612,7 +649,9 @@ public:
       patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order),
                                FeSide::PatchPointValues(2, quad_order),
                                FeSide::PatchPointValues(3, quad_order)} },
-      fe_(fe) {
+      fe_(fe),
+	  asm_arena_(1024 * 1024, 256),
+	  patch_arena_(1024 * 1024, 256) {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
@@ -697,13 +736,10 @@ public:
     /** Following methods are used during update of patch. **/
 
     /// Resize tables of patch_point_vals_
-    void resize_tables(std::vector<std::vector<uint> > dim_sizes) {
-        ASSERT_EQ(dim_sizes.size(), 2);
-        ASSERT_EQ(dim_sizes[0].size(), 3);
-
+    void resize_tables(TableSizes table_sizes) {
         for (uint i=0; i<3; ++i) {
-        	patch_point_vals_bulk_[i].resize_tables(dim_sizes[0][i]);
-        	patch_point_vals_side_[i].resize_tables(dim_sizes[1][i]);
+            if (used_quads_[0]) patch_point_vals_bulk_[i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
+            if (used_quads_[1]) patch_point_vals_side_[i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
         }
     }
 
@@ -808,6 +844,8 @@ private:
 
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
+    AssemblyArena asm_arena_;
+    AssemblyArena patch_arena_;
 
     template <class ValueType>
     friend class ElQ;

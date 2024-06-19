@@ -97,13 +97,13 @@ public:
 
 protected:
     /// Override do_allocate to handle allocation logic
-    void* do_allocate(size_t bytes, size_t alignment) override {
+    void* do_allocate(FMT_UNUSED size_t bytes, FMT_UNUSED size_t alignment) override {
         // No-op
         return nullptr;
     }
 
     /// Override do_deallocate (no-op for monotonic buffer)
-    void do_deallocate(void* p, size_t bytes, size_t alignment) override {
+    void do_deallocate(FMT_UNUSED void* p, FMT_UNUSED size_t bytes, FMT_UNUSED size_t alignment) override {
         // No-op
     }
 
