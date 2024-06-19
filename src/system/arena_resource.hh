@@ -119,8 +119,91 @@ private:
     size_t simd_alignment_;
 };
 
+
 using AssemblyArena = ArenaResource<std::pmr::monotonic_buffer_resource>;
 using PatchArenaResource = ArenaResource<AssemblyArena>;
+
+
+/**
+ * Define vector allocated in Arena and aligned to SIMD size.
+ */
+template<class T>
+class ArenaVec {
+public:
+    /// Type definition
+	typedef Eigen::Matrix<T, Eigen::Dynamic, 1> VecData;
+
+	/// Default constructor, set invalid data pointer
+    ArenaVec()
+    : data_ptr_(nullptr), data_size_(0), arena_(nullptr) {}
+
+    /**
+     * Constructor. Set sizes and allocate data pointer
+     */
+    ArenaVec(size_t data_size, AssemblyArena &arena)
+    : data_ptr_(nullptr), data_size_(data_size), arena_(&arena) {
+        data_ptr_ = arena_->allocate_simd<T>( data_size_ );
+    }
+
+    /**
+     * Maps data pointer to Eigen Map of dimensions given data_size_ and returns it.
+     */
+    inline Eigen::Map<VecData> eigen_map() {
+        return Eigen::Map<VecData>(data_ptr_, data_size_, 1);
+    }
+
+    /// Return data pointer (development method)
+    T* data_ptr() {
+        return data_ptr_;
+    }
+
+    /// Getter for data_size_
+    inline size_t data_size() const {
+    	return data_size_;
+    }
+
+    inline T & operator()(std::size_t item) {
+        ASSERT_LT(item, data_size_);
+        return data_ptr_[item];
+    }
+
+    inline ArenaVec<T> operator+(const ArenaVec<T> &other) const {
+        ASSERT_EQ(data_size_, other.data_size());
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map() + other.eigen_map();
+        return res;
+    }
+
+    inline ArenaVec<T> operator*(T multi) const {
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map() * multi;
+        return res;
+    }
+
+protected:
+    T* data_ptr_;            ///< Pointer to data array
+    size_t data_size_;       ///< Length of data array
+    AssemblyArena *arena_;   ///< Pointer to Arena
+};
+
+
+
+/// Outer product - only proposal of multi operator
+//template<class T>
+//class ArenaOVec {
+//public:
+//    inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
+//        typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
+//
+//        ArenaOVec<T> res(data_size_*other.data_size(), *arena_);
+//        Eigen::Map<MatData> result_map = Eigen::Map<MatData>(res.data_ptr(), data_size_, other.data_size());
+//        result_map = this->eigen_map() * other.eigen_map().transpose();
+//        return res;
+//    }
+//};
+
 
 
 
