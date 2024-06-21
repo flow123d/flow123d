@@ -27,6 +27,7 @@
 #include "fem/dh_cell_accessor.hh"
 #include "fem/element_values.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "system/arena_resource.hh"
 
 
 template<unsigned int spacedim> class PatchFEValues;
@@ -125,8 +126,8 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(uint dim)
-    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0) {}
+    PatchPointValues(uint dim, AssemblyArena &patch_arena)
+    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0), patch_arena_(patch_arena) {}
 
     /**
      * Initialize object, set number of columns (quantities) in tables.
@@ -174,15 +175,20 @@ public:
 
     /// Resize data tables. Method is called before reinit of patch.
     void resize_tables(uint n_elems, uint n_points) {
-    	for (uint i=0; i<point_vals_.rows(); ++i) {
-    		if (row_sizes_[i] == elemOp) {
-    		    point_vals_(i).resize(n_elems);
-    		    point_vals_(i).setZero(n_elems,1);
-    		} else if (row_sizes_[i] == pointOp) {
-    		    point_vals_(i).resize(n_points);
-    		    point_vals_(i).setZero(n_points,1);
-    		}
-    	}
+        std::vector<uint> sizes = {n_elems, n_points};
+        for (auto &elOp : operations_)
+            if (elOp.size_type() != fixedSizeOp) {
+                elOp.allocate_result(sizes[elOp.size_type()], patch_arena_);
+            }
+	    for (uint i=0; i<point_vals_.rows(); ++i) {
+            if (row_sizes_[i] == elemOp) {
+                point_vals_(i).resize(n_elems);
+                point_vals_(i).setZero(n_elems,1);
+            } else if (row_sizes_[i] == pointOp) {
+                point_vals_(i).resize(n_points);
+                point_vals_(i).setZero(n_points,1);
+            }
+        }
         eigen_tools::resize_table(int_vals_, n_points);
     }
 
@@ -193,10 +199,14 @@ public:
      * @param element_patch_idx Index of element on patch.
      */
     uint register_element(arma::mat coords, uint element_patch_idx) {
-        uint res_column = operations_[FeBulk::BulkOps::opElCoords].result_row();
+    	ElOp<spacedim> &op = operations_[FeBulk::BulkOps::opElCoords];
+        uint res_column = op.result_row();
+        auto &coords_mat = op.result_matrix();
+        std::size_t i_elem = n_elems_;
         for (uint i_col=0; i_col<coords.n_cols; ++i_col)
             for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
                 point_vals_(res_column)(n_elems_) = coords(i_row, i_col);
+                coords_mat(i_row, i_col)(i_elem) = coords(i_row, i_col);
                 ++res_column;
             }
 
@@ -271,7 +281,7 @@ public:
      * @param size_type Type of operation by size of rows
      */
     ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, OpSizeType size_type = pointOp) {
-    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec);
+    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, size_type, input_ops_vec);
     	this->n_rows_ += op_accessor.n_comp();
     	row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp(), size_type);
     	operations_.push_back(op_accessor);
@@ -296,7 +306,7 @@ public:
      * @param reinit_f  Reinitialize function
      */
     ElOp<spacedim> &make_expansion(ElOp<spacedim> &el_op, std::initializer_list<uint> shape, ReinitFunction reinit_f) {
-        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row(), reinit_f);
+        ElOp<spacedim> op_accessor(this->dim_, shape, el_op.result_row(), reinit_f, OpSizeType::pointOp);
         // shape passed from el_op throws:
         // C++ exception with description "std::bad_alloc" thrown in the test body.
         operations_.push_back(op_accessor);
@@ -314,7 +324,7 @@ public:
      */
     ElOp<spacedim> &make_fe_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs,
             OpSizeType size_type = pointOp) {
-    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, input_ops_vec, n_dofs);
+    	ElOp<spacedim> op_accessor(this->dim_, shape, this->n_rows_, reinit_f, size_type, input_ops_vec, n_dofs);
     	this->n_rows_ += op_accessor.n_comp() * n_dofs;
     	row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp() * n_dofs, size_type);
     	operations_.push_back(op_accessor);
@@ -380,10 +390,17 @@ public:
     void print_data_tables(ostream& stream, bool points, bool ints) const {
         if (points) {
             stream << "Point vals: " << point_vals_.rows() << " - " << point_vals_.cols() << std::endl;
-	        for (uint i_row=0; i_row<n_points_; ++i_row) {
-                for (uint i_col=0; i_col<n_rows_; ++i_col)
-                	stream << point_vals_(i_col)(i_row) << " ";
-                stream << std::endl;
+            for (auto &op : operations_) {
+            	const auto &mat = op.result_matrix();
+                for (uint i_mat=0; i_mat<mat.rows()*mat.cols(); ++i_mat) {
+                    if (mat(i_mat).data_size()==0) stream << "<empty>";
+                    else {
+                        const double *vals = mat(i_mat).data_ptr();
+                        for (size_t i_val=0; i_val<mat(i_mat).data_size(); ++i_val)
+                            stream << vals[i_val] << " ";
+                    }
+                    stream << std::endl;
+                }
             }
             stream << std::endl;
         }
@@ -411,11 +428,6 @@ public:
             { "el_coords", "el_jac", "el_inv_jac", "side_coords", "side_jac", "side_jac_det", "exp_el_coords", "exp_el_jac", "exp_el_inv_jac",
               "exp_side_coords", "exp_side_jac", "exp_side_jac_det", "pt_coords", "weights", "JxW", "normal_vec", "", "", "", "", "" }
         };
-        stream << "Rows sizes:" << endl;
-        for (uint i=0; i<row_sizes_.size(); ++i) {
-            stream << i << " " << row_sizes_[i] << " " << point_vals_(i).rows() << std::endl;
-        }
-        stream << std::setfill('=') << setw(100) << "" << endl;
         stream << std::setfill(' ') << " Operation" << setw(12) << "" << "Shape" << setw(2) << ""
                 << "Result row" << setw(2) << "" << "n DOFs" << setw(2) << "" << "Input operations" << endl;
         for (uint i=0; i<operations_.size(); ++i) {
@@ -458,6 +470,7 @@ protected:
     std::vector<uint> elements_map_;    ///< Map of element patch indices to el_vals_ table
     std::vector<uint> points_map_;      ///< Map of point patch indices  to point_vals_ and int_vals_ tables
     std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
+    AssemblyArena &patch_arena_;        ///< Reference to global Arena of PatchFeValues
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
@@ -480,9 +493,17 @@ public:
      *
      * Set all data members.
      */
-    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, std::vector<uint> input_ops = {}, uint n_dofs = 1)
-    : dim_(dim), shape_(shape), result_row_(result_row), input_ops_(input_ops), n_dofs_(n_dofs), reinit_func(reinit_f)
+    ElOp(uint dim, std::initializer_list<uint> shape, uint result_row, ReinitFunction reinit_f, OpSizeType size_type, std::vector<uint> input_ops = {}, uint n_dofs = 1)
+    : dim_(dim), shape_(set_shape_vec(shape)), result_row_(result_row), size_type_(size_type), input_ops_(input_ops), n_dofs_(n_dofs), reinit_func(reinit_f)
     {}
+
+    /// Aligns shape_vec to 2 items (equal to matrix number of dimensions)
+    std::vector<uint> set_shape_vec(std::initializer_list<uint> shape) const {
+        std::vector<uint> shape_vec(shape);
+        if (shape_vec.size() == 1) shape_vec.push_back(1);
+        ASSERT_EQ(shape_vec.size(), 2);
+        return shape_vec;
+    }
 
     /**
      * Return number of operation components
@@ -490,8 +511,7 @@ public:
      * Value is computed from shape_ vector
      */
     inline uint n_comp() const {
-        if (shape_.size() == 1) return shape_[0];
-        else return shape_[0] * shape_[1];
+        return shape_[0] * shape_[1];
     }
 
     /// Getter for dimension
@@ -502,6 +522,11 @@ public:
     /// Getter for result_row_
     inline uint result_row() const {
         return result_row_;
+    }
+
+    /// Getter for size_type_
+    OpSizeType size_type() const {
+        return size_type_;
     }
 
     /// Getter for n_dofs_
@@ -526,8 +551,7 @@ public:
      */
     inline std::string format_shape() const {
         stringstream ss;
-        ss << shape_[0];
-        if (shape_.size() > 1) ss << "x" << shape_[1];
+        ss << shape_[0] << "x" << shape_[1];
         return ss.str();
     }
 
@@ -535,6 +559,28 @@ public:
     inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableDbl &data_table, TableInt &int_table) {
         reinit_func(operations, data_table, int_table);
     }
+
+    inline void allocate_result(size_t data_size, AssemblyArena &arena) {
+        result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(shape_[0], shape_[1]);
+        for (uint i=0; i<n_comp(); ++i)
+            result_(i) = ArenaVec<double>(data_size, arena);
+    }
+
+    /// Return map referenced result as Eigen::Matrix
+    Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> &result_matrix() {
+        return result_;
+    }
+//    Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> result_matrix() {
+//        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data(), shape_[0], shape_[1]);
+//    }
+
+    /// Same as previous but return const reference
+    const Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> &result_matrix() const {
+        return result_;
+    }
+//    const Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> result_matrix() const {
+//        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data(), shape_[0], shape_[1]);
+//    }
 
     /// Return map referenced Eigen::Matrix of given dimension
     template<unsigned int dim1, unsigned int dim2>
@@ -556,7 +602,10 @@ public:
 protected:
     uint dim_;                                ///< Dimension
     std::vector<uint> shape_;                 ///< Shape of stored data (size of vector or number of rows and cols of matrix)
-    uint result_row_;                         ///< First row to scalar, vector or matrix result
+    uint result_row_;                         ///< First row to scalar, vector or matrix result TODO replace
+    Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_;
+                                              ///< Result matrix of operation
+    OpSizeType size_type_;                    ///< Type of operation by size of vector (element, point or fixed size)
     std::vector<uint> input_ops_;             ///< Indices of operations in PatchPointValues::operations_ vector on which ElOp is depended
     uint n_dofs_;                             ///< Number of DOFs of FE operations (or 1 in case of element operations)
 
@@ -588,12 +637,14 @@ struct common_reinit {
 struct bulk_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeBulk::BulkOps::opJac];
-        auto jac_value = op.value<3, dim>(op_results);
-        auto coords_value = operations[ op.input_ops()[0] ].value<3, dim+1>(op_results);
-        jac_value = eigen_tools::jacobian<3,dim>(coords_value);
+        auto &jac_value = op.result_matrix();
+        const auto &coords_value = operations[ op.input_ops()[0] ].result_matrix();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<dim; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
     static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
@@ -692,7 +743,7 @@ struct side_reinit {
         auto &op = operations[FeSide::SideOps::opElInvJac];
         auto inv_jac_value = op.value<dim, 3>(op_results);
         auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        inv_jac_value = eigen_tools::inverse<3,dim>(jac_value);
+        inv_jac_value = eigen_tools::inverse<3, dim>(jac_value);
     }
     template<unsigned int dim>
     static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
@@ -845,8 +896,8 @@ namespace FeBulk {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order)
-        : ::PatchPointValues<spacedim>(dim) {
+        PatchPointValues(uint dim, uint quad_order, AssemblyArena &patch_arena)
+        : ::PatchPointValues<spacedim>(dim, patch_arena) {
             this->quad_ = new QGauss(dim, 2*quad_order);
             switch (dim) {
             case 1:
@@ -870,24 +921,28 @@ namespace FeBulk {
 
             /*auto &el_jac =*/ this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, {BulkOps::opElCoords}, OpSizeType::elemOp );
 
-            /*auto &el_inv_jac =*/ this->make_new_op( {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
+            /*auto &el_inv_jac =*/ this->make_new_op( {this->dim_, spacedim}, &common_reinit::op_base, {BulkOps::opJac}, OpSizeType::elemOp );
+            // &bulk_reinit::elop_inv_jac<dim>
 
-            /*auto &el_jac_det =*/ this->make_new_op( {1}, &bulk_reinit::elop_jac_det<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
+            /*auto &el_jac_det =*/ this->make_new_op( {1}, &common_reinit::op_base, {BulkOps::opJac}, OpSizeType::elemOp );
+            // &bulk_reinit::elop_jac_det<dim>
 
             // Second step: adds point values operations
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
 
             // use lambda reinit function
-            auto point_weights_vec = this->quad_->get_weights();
-            ArrayDbl point_weights(point_weights_vec.size());
-            for (uint i=0; i<point_weights_vec.size(); ++i)
-                point_weights(i) = point_weights_vec[i];
-            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-                    bulk_reinit::ptop_weights(operations, op_results, point_weights);
-                };
-            /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
+//            auto point_weights_vec = this->quad_->get_weights();
+//            ArrayDbl point_weights(point_weights_vec.size());
+//            for (uint i=0; i<point_weights_vec.size(); ++i)
+//                point_weights(i) = point_weights_vec[i];
+//            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+//                    bulk_reinit::ptop_weights(operations, op_results, point_weights);
+//                };
+            /*auto &weights =*/ this->make_fixed_op( {1}, common_reinit::op_base );
+            // lambda_weights
 
-            /*auto &JxW =*/ this->make_new_op( {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
+            /*auto &JxW =*/ this->make_new_op( {1}, &common_reinit::op_base, {BulkOps::opWeights, BulkOps::opJacDet} );
+            // &bulk_reinit::ptop_JxW
         }
     };
 
@@ -902,8 +957,8 @@ namespace FeSide {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order)
-        : ::PatchPointValues<spacedim>(dim) {
+        PatchPointValues(uint dim, uint quad_order, AssemblyArena &patch_arena)
+        : ::PatchPointValues<spacedim>(dim, patch_arena) {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
             switch (dim) {
             case 1:

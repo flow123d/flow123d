@@ -635,22 +635,26 @@ public:
 
     PatchFEValues()
     : asm_arena_(1024 * 1024, 256),
-	  patch_arena_(1024 * 1024, 256),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0), FeBulk::PatchPointValues(2, 0), FeBulk::PatchPointValues(3, 0)} },
-	  patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0), FeSide::PatchPointValues(2, 0), FeSide::PatchPointValues(3, 0)} }
-	{
+      patch_arena_(1024 * 1024, 256),
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, patch_arena_),
+                               FeBulk::PatchPointValues(2, 0, patch_arena_),
+                               FeBulk::PatchPointValues(3, 0, patch_arena_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, patch_arena_),
+                               FeSide::PatchPointValues(2, 0, patch_arena_),
+                               FeSide::PatchPointValues(3, 0, patch_arena_)} }
+    {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : asm_arena_(1024 * 1024, 256),
 	  patch_arena_(1024 * 1024, 256),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order),
-    	                       FeBulk::PatchPointValues(2, quad_order),
-                               FeBulk::PatchPointValues(3, quad_order)} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order),
-                               FeSide::PatchPointValues(2, quad_order),
-                               FeSide::PatchPointValues(3, quad_order)} },
+	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, patch_arena_),
+    	                       FeBulk::PatchPointValues(2, quad_order, patch_arena_),
+                               FeBulk::PatchPointValues(3, quad_order, patch_arena_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, patch_arena_),
+                               FeSide::PatchPointValues(2, quad_order, patch_arena_),
+                               FeSide::PatchPointValues(3, quad_order, patch_arena_)} },
       fe_(fe)
     {
         used_quads_[0] = false; used_quads_[1] = false;
