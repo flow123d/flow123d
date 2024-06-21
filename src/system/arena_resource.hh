@@ -122,8 +122,19 @@ public:
         return Eigen::Map<VecData>(data_ptr_, data_size_, 1);
     }
 
+    /// Smae as previous but with const modifier
+    inline Eigen::Map<VecData> eigen_map() const {
+        ASSERT_PTR(data_ptr_);
+        return Eigen::Map<VecData>(data_ptr_, data_size_, 1);
+    }
+
     /// Return data pointer (development method)
     T* data_ptr() {
+        return data_ptr_;
+    }
+
+    /// Smae as previous but return const pointer
+    const T* data_ptr() const {
         return data_ptr_;
     }
 
@@ -146,6 +157,14 @@ public:
         return res;
     }
 
+    inline ArenaVec<T> operator-(const ArenaVec<T> &other) const {
+        ASSERT_EQ(data_size_, other.data_size());
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map() - other.eigen_map();
+        return res;
+    }
+
     inline ArenaVec<T> operator*(T multi) const {
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<VecData> result_map = res.eigen_map();
@@ -154,6 +173,10 @@ public:
     }
 
 protected:
+    /// Forbidden copy constructor
+    ArenaVec(FMT_UNUSED const ArenaVec<T> &other)
+    { ASSERT_PERMANENT(false); }
+
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
     AssemblyArena *arena_;   ///< Pointer to Arena
