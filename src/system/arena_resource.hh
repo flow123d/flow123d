@@ -16,15 +16,21 @@
 // Final proposal of Arena
 template <class Resource>
 class ArenaResource : public std::pmr::memory_resource {
-public:
-    explicit ArenaResource(size_t buffer_size, size_t simd_alignment)
-        : buffer(new char[buffer_size]),
-          buffer_size(buffer_size),
+protected:
+    /// Returns different upstream resource in debug / release mode
+	static inline std::pmr::memory_resource* upstream_resource() {
 #ifdef FLOW123D_DEBUG
-          resource_(buffer.get(), buffer_size, std::pmr::null_memory_resource()),
+    	return std::pmr::null_memory_resource();
 #else
-          resource_(buffer.get(), buffer_size, std::pmr::get_default_resource()),
+    	return std::pmr::get_default_resource();
 #endif
+    }
+
+public:
+    explicit ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
+        : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
+          buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
+          resource_(buffer_, buffer_size, upstream_),
           simd_alignment_(simd_alignment)
     {}
 
@@ -76,8 +82,8 @@ protected:
     }
 
 private:
-    std::unique_ptr<char[]> buffer;
-    size_t buffer_size;
+    std::pmr::memory_resource* upstream_;
+    void* buffer_;
     Resource resource_;
     size_t simd_alignment_;
 };
