@@ -101,6 +101,7 @@ class ArenaVec {
 public:
     /// Type definition
 	typedef Eigen::Matrix<T, Eigen::Dynamic, 1> VecData;
+	typedef Eigen::Array<T, Eigen::Dynamic, 1> ArrayData;
 
 	/// Default constructor, set invalid data pointer
     ArenaVec()
@@ -120,6 +121,12 @@ public:
         data_ptr_ = arena_->allocate_simd<T>( data_size_ );
     }
 
+    /// Copy constructor
+    ArenaVec(const ArenaVec<T> &other)
+    : data_ptr_(other.data_ptr_), data_size_(other.data_size_),
+      arena_(other.arena_), scalar_val_(other.scalar_val_)
+    {}
+
     /**
      * Maps data pointer to Eigen Map of dimensions given data_size_ and returns it.
      */
@@ -129,9 +136,23 @@ public:
     }
 
     /// Smae as previous but with const modifier
-    inline Eigen::Map<VecData> eigen_map() const {
+    inline const Eigen::Map<VecData> eigen_map() const {
         ASSERT_PTR(data_ptr_);
         return Eigen::Map<VecData>(data_ptr_, data_size_, 1);
+    }
+
+    /**
+     * Maps data pointer to Eigen Map of dimensions given data_size_ and returns it.
+     */
+    inline Eigen::Map<ArrayData> array_map() {
+        ASSERT_PTR(data_ptr_);
+        return Eigen::Map<ArrayData>(data_ptr_, data_size_, 1);
+    }
+
+    /// Smae as previous but with const modifier
+    inline const Eigen::Map<ArrayData> array_map() const {
+        ASSERT_PTR(data_ptr_);
+        return Eigen::Map<ArrayData>(data_ptr_, data_size_, 1);
     }
 
     /// Return data pointer (development method)
@@ -149,8 +170,28 @@ public:
     	return data_size_;
     }
 
+    inline ArenaVec<T> sqrt() const {
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map().sqrt();
+        return res;
+    }
+
+    inline ArenaVec<T> inverse() const {
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map().inverse();
+        return res;
+    }
+
     /// For development only. TODO remove
     inline T & operator()(std::size_t item) {
+        ASSERT_LT(item, data_size_);
+        return data_ptr_[item];
+    }
+
+    /// For development only. TODO remove
+    inline const T & operator()(std::size_t item) const {
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
     }
@@ -178,11 +219,23 @@ public:
         return res;
     }
 
-protected:
-    /// Forbidden copy constructor
-    ArenaVec(FMT_UNUSED const ArenaVec<T> &other)
-    { ASSERT_PERMANENT(false); }
+    inline ArenaVec<T> operator*(const ArenaVec<T> &other) const {
+        ASSERT_EQ(data_size_, other.data_size());
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map() * other.eigen_map();
+        return res;
+    }
 
+    inline ArenaVec<T> operator/(const ArenaVec<T> &other) const {
+        ASSERT_EQ(data_size_, other.data_size());
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map() / other.array_map();
+        return res;
+    }
+
+protected:
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
     AssemblyArena *arena_;   ///< Pointer to Arena

@@ -22,9 +22,11 @@
 #define PATCH_DATA_TABLE_HH_
 
 #include "system/asserts.hh"
+#include "system/arena_resource.hh"
 #include <armadillo>
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <unsupported/Eigen/MatrixFunctions>
 
 
 /// Definitions of Eigen structures
@@ -36,21 +38,15 @@ typedef Eigen::Vector<ArrayInt,Eigen::Dynamic> TableInt;
 
 namespace eigen_tools {
 
-/// Resize vector of Eigen::Array to given size
-template<class ET>
-void resize_table(typename Eigen::Vector<ET,Eigen::Dynamic> &table, uint size) {
-	for (uint i=0; i<table.rows(); ++i) {
-	    table(i).resize(size);
-	    table(i).setZero(size,1);
-	}
-}
-
+/********************************************
+ *    Matrix operations on ArrayDbl type    *
+ ********************************************/
 
 /**
  * @brief Calculates determinant of a rectangular matrix.
  */
-template<class T>
-ArrayDbl determinant(const T &M);
+template<int m, int n>
+ArrayDbl determinant(const Eigen::Matrix<ArrayDbl,m,n> &A);
 
 
 
@@ -178,8 +174,8 @@ template<> inline Eigen::Matrix<ArrayDbl,2,2> inverse<2,2>(const Eigen::Matrix<A
 	ArrayDbl det = determinant(A);
 
     B(0,0) = A(1,1) / det;
-    B(0,1) = -A(0,1) / det;
-    B(1,0) = -A(1,0) / det;
+    B(0,1) = A(0,1) / det * (-1);
+    B(1,0) = A(1,0) / det * (-1);
     B(1,1) = A(0,0) / det;
     return B;
 }
@@ -224,6 +220,16 @@ template<> inline Eigen::Matrix<ArrayDbl,3,2> inverse<2,3>(const Eigen::Matrix<A
 }
 
 
+/// Resize vector of Eigen::Array to given size
+template<class ET>
+void resize_table(typename Eigen::Vector<ET,Eigen::Dynamic> &table, uint size) {
+	for (uint i=0; i<table.rows(); ++i) {
+	    table(i).resize(size);
+	    table(i).setZero(size,1);
+	}
+}
+
+
 template<unsigned int spacedim, unsigned int dim>
 Eigen::Matrix<ArrayDbl, spacedim, dim> jacobian(const Eigen::Matrix<ArrayDbl, spacedim, dim+1> &coords)
 {
@@ -233,6 +239,191 @@ Eigen::Matrix<ArrayDbl, spacedim, dim> jacobian(const Eigen::Matrix<ArrayDbl, sp
             jac(i,j) = coords(i,j+1) - coords(i,0);
     return jac;
 }
+
+}
+
+namespace eigen_arena_tools {
+/********************************************
+ *    Matrix operations on ArenaVec type    *
+ ********************************************/
+
+/**
+ * @brief Calculates determinant of a rectangular matrix.
+ */
+template<int m, int n>
+ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,m,n> &A);
+
+
+
+inline Eigen::Matrix<ArenaVec<double>,1,1> normal_matrix(const Eigen::Matrix<ArenaVec<double>,1,2> &A) {
+	Eigen::Matrix<ArenaVec<double>,1,1> res;
+    res(0,0) = A(0,0)*A(0,0)+A(0,1)*A(0,1);
+    return res;
+}
+
+inline Eigen::Matrix<ArenaVec<double>,1,1> normal_matrix(const Eigen::Matrix<ArenaVec<double>,2,1> &A) {
+	Eigen::Matrix<ArenaVec<double>,1,1> res;
+    res(0,0) = A(0,0)*A(0,0)+A(1,0)*A(1,0);
+    return res;
+}
+
+inline Eigen::Matrix<ArenaVec<double>,1,1> normal_matrix(const Eigen::Matrix<ArenaVec<double>,1,3> &A) {
+	Eigen::Matrix<ArenaVec<double>,1,1> res;
+    res(0,0) = A(0,0)*A(0,0)+A(0,1)*A(0,1)+A(0,2)*A(0,2);
+    return res;
+}
+
+inline Eigen::Matrix<ArenaVec<double>,1,1> normal_matrix(const Eigen::Matrix<ArenaVec<double>,3,1> &A) {
+	Eigen::Matrix<ArenaVec<double>,1,1> res;
+    res(0,0) = A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
+    return res;
+}
+
+inline Eigen::Matrix<ArenaVec<double>,2,2> normal_matrix(const Eigen::Matrix<ArenaVec<double>,2,3> &A) {
+    Eigen::Matrix<ArenaVec<double>,2,2> res;
+    res(0,0) = A(0,0)*A(0,0)+A(0,1)*A(0,1)+A(0,2)*A(0,2);
+    res(0,1) = A(0,0)*A(1,0)+A(0,1)*A(1,1)+A(0,2)*A(1,2);
+    res(1,0) = A(1,0)*A(0,0)+A(1,1)*A(0,1)+A(1,2)*A(0,2);
+    res(1,1) = A(1,0)*A(1,0)+A(1,1)*A(1,1)+A(1,2)*A(1,2);
+    return res;
+}
+
+inline Eigen::Matrix<ArenaVec<double>,2,2> normal_matrix(const Eigen::Matrix<ArenaVec<double>,3,2> &A) {
+	Eigen::Matrix<ArenaVec<double>,2,2> res;
+    res(0,0) = A(0,0)*A(0,0)+A(1,0)*A(1,0)+A(2,0)*A(2,0);
+    res(0,1) = A(0,0)*A(0,1)+A(1,0)*A(1,1)+A(2,0)*A(2,1);
+    res(1,0) = A(0,1)*A(0,0)+A(1,1)*A(1,0)+A(2,1)*A(2,0);
+    res(1,1) = A(0,1)*A(0,1)+A(1,1)*A(1,1)+A(2,1)*A(2,1);
+    return res;
+}
+
+
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,1,1> &M)
+{
+    return M(0,0);
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,2,2> &M)
+{
+    return M(0,0)*M(1,1) - M(1,0)*M(0,1);
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,3,3> &M)
+{
+    return ( M(0,0)*M(1,1)*M(2,2) + M(0,1)*M(1,2)*M(2,0) + M(0,2)*M(1,0)*M(2,1) )
+         - ( M(2,0)*M(1,1)*M(0,2) + M(2,1)*M(1,2)*M(0,0) + M(2,2)*M(1,0)*M(0,1) );
+}
+
+template<> inline ArenaVec<double> determinant(FMT_UNUSED const Eigen::Matrix<ArenaVec<double>,0,3> &M)
+{
+    return ArenaVec<double>();
+}
+
+template<> inline ArenaVec<double> determinant(FMT_UNUSED const Eigen::Matrix<ArenaVec<double>,3,0> &M)
+{
+    return ArenaVec<double>();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,1,2> &M)
+{
+    return determinant(normal_matrix(M)).sqrt();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,2,1> &M)
+{
+    return determinant(normal_matrix(M)).sqrt();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,1,3> &M)
+{
+    return determinant(normal_matrix(M)).sqrt();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,3,1> &M)
+{
+    return determinant(normal_matrix(M)).sqrt();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,2,3> &M)
+{
+    return determinant(normal_matrix(M)).sqrt();
+}
+
+template<> inline ArenaVec<double> determinant(const Eigen::Matrix<ArenaVec<double>,3,2> &M)
+{
+	return determinant(normal_matrix(M)).sqrt();
+}
+
+
+/**
+ * @brief Calculates inverse of rectangular matrix or pseudoinverse of non-rectangular matrix.
+ */
+template<int m, int n>
+Eigen::Matrix<ArenaVec<double>,n,m> inverse(const Eigen::Matrix<ArenaVec<double>,m,n> &A) {
+    // only for cases m > n
+    return inverse(normal_matrix(A)) * A.transpose();
+}
+
+
+template<> inline Eigen::Matrix<ArenaVec<double>,1,1> inverse<1,1>(const Eigen::Matrix<ArenaVec<double>,1,1> &A)
+{
+	Eigen::Matrix<ArenaVec<double>,1,1> B;
+    B(0,0) = A(0,0).inverse(); // 1/A(0,0)
+    return B;
+}
+
+template<> inline Eigen::Matrix<ArenaVec<double>,2,2> inverse<2,2>(const Eigen::Matrix<ArenaVec<double>,2,2> &A)
+{
+	Eigen::Matrix<ArenaVec<double>,2,2> B;
+	ArenaVec<double> det = determinant(A);
+
+    B(0,0) = A(1,1) / det;
+    B(0,1) = A(0,1) / det * (-1);
+    B(1,0) = A(1,0) / det * (-1);
+    B(1,1) = A(0,0) / det;
+    return B;
+}
+
+template<> inline Eigen::Matrix<ArenaVec<double>,3,3> inverse<3,3>(const Eigen::Matrix<ArenaVec<double>,3,3> &A)
+{
+    Eigen::Matrix<ArenaVec<double>,3,3> B;
+
+    B(0,0) = A(1,1)*A(2,2) - A(2,1)*A(1,2);
+    B(1,0) = A(2,0)*A(1,2) - A(1,0)*A(2,2);
+    B(2,0) = A(1,0)*A(2,1) - A(2,0)*A(1,1);
+
+    ArenaVec<double> det = A(0,0)*B(0,0) + A(0,1)*B(1,0) + A(0,2)*B(2,0);
+    B(0,0) = B(0,0) / det;
+    B(1,0) = B(1,0) / det;
+    B(2,0) = B(2,0) / det;
+
+    B(0,1) = (A(2,1)*A(0,2) - A(0,1)*A(2,2)) / det;
+    B(1,1) = (A(0,0)*A(2,2) - A(2,0)*A(0,2)) / det;
+    B(2,1) = (A(2,0)*A(0,1) - A(0,0)*A(2,1)) / det;
+
+    B(0,2) = (A(0,1)*A(1,2) - A(1,1)*A(0,2)) / det;
+    B(1,2) = (A(1,0)*A(0,2) - A(0,0)*A(1,2)) / det;
+    B(2,2) = (A(0,0)*A(1,1) - A(1,0)*A(0,1)) / det;
+
+    return B;
+}
+
+template<> inline Eigen::Matrix<ArenaVec<double>,2,1> inverse<1,2>(const Eigen::Matrix<ArenaVec<double>,1,2> &A)
+{
+    return A.transpose() * inverse(normal_matrix(A));
+}
+
+template<> inline Eigen::Matrix<ArenaVec<double>,3,1> inverse<1,3>(const Eigen::Matrix<ArenaVec<double>,1,3> &A)
+{
+    return A.transpose() * inverse(normal_matrix(A));
+}
+
+template<> inline Eigen::Matrix<ArenaVec<double>,3,2> inverse<2,3>(const Eigen::Matrix<ArenaVec<double>,2,3> &A)
+{
+    return A.transpose() * inverse(normal_matrix(A));
+}
+
 
 } // closing namespace eigen_tools
 
