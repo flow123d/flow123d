@@ -172,15 +172,22 @@ public:
 
     inline ArenaVec<T> sqrt() const {
         ArenaVec<T> res(data_size_, *arena_);
-        Eigen::Map<VecData> result_map = res.eigen_map();
-        result_map = this->eigen_map().sqrt();
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map().sqrt();
         return res;
     }
 
     inline ArenaVec<T> inverse() const {
         ArenaVec<T> res(data_size_, *arena_);
-        Eigen::Map<VecData> result_map = res.eigen_map();
-        result_map = this->eigen_map().inverse();
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map().inverse();
+        return res;
+    }
+
+    inline ArenaVec<T> abs() const {
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map().abs();
         return res;
     }
 
@@ -207,23 +214,23 @@ public:
     inline ArenaVec<T> operator-(const ArenaVec<T> &other) const {
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
-        Eigen::Map<VecData> result_map = res.eigen_map();
-        result_map = this->eigen_map() - other.eigen_map();
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map() - other.array_map();
         return res;
     }
 
     inline ArenaVec<T> operator*(T multi) const {
         ArenaVec<T> res(data_size_, *arena_);
-        Eigen::Map<VecData> result_map = res.eigen_map();
-        result_map = this->eigen_map() * multi;
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map() * multi;
         return res;
     }
 
     inline ArenaVec<T> operator*(const ArenaVec<T> &other) const {
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
-        Eigen::Map<VecData> result_map = res.eigen_map();
-        result_map = this->eigen_map() * other.eigen_map();
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map() * other.array_map();
         return res;
     }
 

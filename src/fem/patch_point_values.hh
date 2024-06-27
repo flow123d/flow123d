@@ -647,20 +647,20 @@ struct bulk_reinit {
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeBulk::BulkOps::opInvJac];
-        auto inv_jac_value = op.value<dim, 3>(op_results);
-        auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        inv_jac_value = eigen_tools::inverse<3, dim>(jac_value);
+        auto &inv_jac_value = op.result_matrix();
+        const auto &jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
     }
     template<unsigned int dim>
-    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeBulk::BulkOps::opJacDet];
-        auto &jac_det_value = op_results(op.result_row());
-        auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        jac_det_value = eigen_tools::determinant<3, dim>(jac_value).array().abs();
+        auto &jac_det_value = op.result_matrix();
+        const auto &jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        jac_det_value(0,0) = eigen_arena_tools::determinant<3, dim>(jac_value).abs();
     }
 
     // point operations
@@ -921,11 +921,9 @@ namespace FeBulk {
 
             /*auto &el_jac =*/ this->make_new_op( {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, {BulkOps::opElCoords}, OpSizeType::elemOp );
 
-            /*auto &el_inv_jac =*/ this->make_new_op( {this->dim_, spacedim}, &common_reinit::op_base, {BulkOps::opJac}, OpSizeType::elemOp );
-            // &bulk_reinit::elop_inv_jac<dim>
+            /*auto &el_inv_jac =*/ this->make_new_op( {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
 
-            /*auto &el_jac_det =*/ this->make_new_op( {1}, &common_reinit::op_base, {BulkOps::opJac}, OpSizeType::elemOp );
-            // &bulk_reinit::elop_jac_det<dim>
+            /*auto &el_jac_det =*/ this->make_new_op( {1}, &bulk_reinit::elop_jac_det<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
 
             // Second step: adds point values operations
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
