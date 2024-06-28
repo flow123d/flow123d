@@ -276,6 +276,10 @@ public:
     }
 
 protected:
+    /// Constructor. Allows create ArenaVec from ArenaOVec
+    ArenaVec(T* data_ptr, size_t data_size, AssemblyArena &arena)
+    : data_ptr_(data_ptr), data_size_(data_size), arena_(&arena) {}
+
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
     AssemblyArena *arena_;   ///< Pointer to Arena
@@ -285,18 +289,44 @@ protected:
 
 
 /// Outer product - only proposal of multi operator
-//template<class T>
-//class ArenaOVec {
-//public:
-//    inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
-//        typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
-//
-//        ArenaOVec<T> res(data_size_*other.data_size(), *arena_);
-//        Eigen::Map<MatData> result_map = Eigen::Map<MatData>(res.data_ptr(), data_size_, other.data_size());
-//        result_map = this->eigen_map() * other.eigen_map().transpose();
-//        return res;
-//    }
-//};
+template<class T>
+class ArenaOVec : public ArenaVec<T> {
+public:
+	ArenaOVec(ArenaVec<T> &vec)
+	: vec_(vec) {
+	    ASSERT_PTR(vec.data_ptr());
+	    this->data_ptr_ = vec_.data_ptr();
+	    this->data_size_ = vec_.data_size();
+	    this->arena_ = vec_.arena_;
+	}
+
+    ArenaVec<T> get_vec() {
+        return ArenaVec<T>(this->data_ptr_, this->data_size_, this->arena_);
+    }
+
+    inline ArenaOVec<T> operator+(const ArenaOVec<T> &other) const {
+        // Test of valid data_ptr is in constructor
+        ASSERT_EQ(this->data_size_, other.data_size());
+        ArenaOVec<T> res(this->data_size_, *this->arena_);
+        Eigen::Map<typename ArenaVec<T>::VecData> result_map = res.eigen_map();
+        result_map = this->eigen_map() + other.eigen_map();
+        return res;
+    }
+
+
+	//v obou testovat operatorech (v DEBUG), že oba operandy mají ArenaVec již alokovaný.
+
+    inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
+        typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
+
+        ArenaOVec<T> res(this->data_size_*other.data_size(), *this->arena_);
+        Eigen::Map<MatData> result_map = Eigen::Map<MatData>(res.data_ptr(), this->data_size_, other.data_size());
+        result_map = this->eigen_map() * other.eigen_map().transpose();
+        return res;
+    }
+protected:
+    ArenaVec<T> &vec_;  ///< Reference to ArenaVec
+};
 
 
 
