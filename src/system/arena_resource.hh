@@ -171,6 +171,7 @@ public:
     }
 
     inline ArenaVec<T> sqrt() const {
+        ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
         result_map = this->array_map().sqrt();
@@ -178,6 +179,7 @@ public:
     }
 
     inline ArenaVec<T> inverse() const {
+        ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
         result_map = this->array_map().inverse();
@@ -185,6 +187,7 @@ public:
     }
 
     inline ArenaVec<T> abs() const {
+        ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
         result_map = this->array_map().abs();
@@ -193,6 +196,7 @@ public:
 
     /// For development only. TODO remove
     inline T & operator()(std::size_t item) {
+        ASSERT_PTR(data_ptr_);
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
     }
@@ -204,6 +208,8 @@ public:
     }
 
     inline ArenaVec<T> operator+(const ArenaVec<T> &other) const {
+        ASSERT_PTR(data_ptr_);
+        ASSERT_PTR(other.data_ptr());
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<VecData> result_map = res.eigen_map();
@@ -212,6 +218,8 @@ public:
     }
 
     inline ArenaVec<T> operator-(const ArenaVec<T> &other) const {
+        ASSERT_PTR(data_ptr_);
+        ASSERT_PTR(other.data_ptr());
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
@@ -220,6 +228,7 @@ public:
     }
 
     inline ArenaVec<T> operator*(T multi) const {
+        ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
         result_map = this->array_map() * multi;
@@ -227,6 +236,8 @@ public:
     }
 
     inline ArenaVec<T> operator*(const ArenaVec<T> &other) const {
+        ASSERT_PTR(data_ptr_);
+        ASSERT_PTR(other.data_ptr());
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
@@ -234,7 +245,17 @@ public:
         return res;
     }
 
+    inline ArenaVec<T> operator/(T div_by) const {
+        ASSERT_PTR(data_ptr_);
+        ArenaVec<T> res(data_size_, *arena_);
+        Eigen::Map<ArrayData> result_map = res.array_map();
+        result_map = this->array_map() / div_by;
+        return res;
+    }
+
     inline ArenaVec<T> operator/(const ArenaVec<T> &other) const {
+        ASSERT_PTR(data_ptr_);
+        ASSERT_PTR(other.data_ptr());
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
