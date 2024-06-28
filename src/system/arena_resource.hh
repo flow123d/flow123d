@@ -27,12 +27,16 @@ protected:
     }
 
 public:
-    explicit ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
+    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
         : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
           buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
+		  buffer_size_(buffer_size),
+		  used_size_(0),
           resource_(buffer_, buffer_size, upstream_),
           simd_alignment_(simd_alignment)
-    {}
+    {
+        ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
+    }
 
 
     ~ArenaResource() = default;
@@ -59,12 +63,18 @@ public:
     // Reset allocated data
     void reset() {
         resource_.release();
+        used_size_ = 0;
+    }
+
+    inline size_t free_space() const {
+        return buffer_size_ - (used_size_ + simd_alignment_ -1) / simd_alignment_ * simd_alignment_;
     }
 
 protected:
     /// Override do_allocate to handle allocation logic
     void* do_allocate(size_t bytes, size_t alignment) override {
         void* p = resource_.allocate(bytes, alignment);
+        used_size_ += bytes;
         if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
             throw std::bad_alloc();
         }
@@ -84,6 +94,8 @@ protected:
 private:
     std::pmr::memory_resource* upstream_;
     void* buffer_;
+    size_t buffer_size_;
+    size_t used_size_;
     Resource resource_;
     size_t simd_alignment_;
 };
