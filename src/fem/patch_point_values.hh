@@ -667,11 +667,12 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, ArrayDbl point_weights) {
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, AssemblyArena &arena, const std::vector<double> &point_weights) {
         auto &op = operations[FeBulk::BulkOps::opWeights];
-        ArrayDbl &result_row = op_results( op.result_row() );
-        result_row.resize(point_weights.rows());
-        result_row << point_weights;
+        op.allocate_result(point_weights.size(), arena);
+        auto &weights_value = op.result_matrix();
+        for (uint i=0; i<point_weights.size(); ++i)
+            weights_value(0,0)(i) = point_weights[i];
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeBulk::BulkOps::opJxW];
@@ -929,15 +930,11 @@ namespace FeBulk {
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
 
             // use lambda reinit function
-//            auto point_weights_vec = this->quad_->get_weights();
-//            ArrayDbl point_weights(point_weights_vec.size());
-//            for (uint i=0; i<point_weights_vec.size(); ++i)
-//                point_weights(i) = point_weights_vec[i];
-//            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-//                    bulk_reinit::ptop_weights(operations, op_results, point_weights);
-//                };
-            /*auto &weights =*/ this->make_fixed_op( {1}, common_reinit::op_base );
-            // lambda_weights
+            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                    bulk_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
+                };
+            /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
 
             /*auto &JxW =*/ this->make_new_op( {1}, &common_reinit::op_base, {BulkOps::opWeights, BulkOps::opJacDet} );
             // &bulk_reinit::ptop_JxW
