@@ -19,5 +19,16 @@
  */
 
 #include "fem/patch_fe_values.hh"
+#include "fem/mapping_p1.hh"
+#include "fem/fe_system.hh"
+#include "fem/fe_values_map.hh"
 
 
+
+// explicit instantiation
+template void PatchFEValues<3>::initialize<0>(Quadrature&);
+template void PatchFEValues<3>::initialize<1>(Quadrature&);
+template void PatchFEValues<3>::initialize<2>(Quadrature&);
+template void PatchFEValues<3>::initialize<3>(Quadrature&);
+
+template class PatchFEValues<3>;

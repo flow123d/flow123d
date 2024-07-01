@@ -276,6 +276,31 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 
 
 template<unsigned int dim>
+auto RefElement<dim>::normal_vector_array(Eigen::Array<uint,Eigen::Dynamic,1> loc_side_idx_array) -> Eigen::Vector<RefElement<dim>::ArrayDbl,dim>
+{
+    Eigen::Vector<ArrayDbl,dim> normal_vec_array;
+    for (uint i=0; i<dim; ++i)
+        normal_vec_array(i).resize( loc_side_idx_array.size() );
+    for (uint sid=0; sid<loc_side_idx_array.size(); ++sid) {
+    	arma::vec::fixed<dim> n_vec = RefElement<dim>::normal_vector( loc_side_idx_array(sid) );
+    	for (uint i=0; i<dim; ++i)
+            normal_vec_array(i)(sid) = n_vec(i);
+    }
+    return normal_vec_array;
+}
+
+
+
+template<>
+auto RefElement<0>::normal_vector_array(FMT_UNUSED Eigen::Array<uint,Eigen::Dynamic,1> loc_side_idx_array) -> Eigen::Vector<RefElement<0>::ArrayDbl,0>
+{
+    Eigen::Vector<ArrayDbl,0> normal_vec_array;
+    return normal_vec_array;
+}
+
+
+
+template<unsigned int dim>
 auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face) -> FaceBaryPoint
 {
     ASSERT_EQ(barycentric.n_rows, dim+1);
