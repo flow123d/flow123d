@@ -105,6 +105,9 @@ using AssemblyArena = ArenaResource<std::pmr::monotonic_buffer_resource>;
 using PatchArenaResource = ArenaResource<AssemblyArena>;
 
 
+template<class T> class ArenaOVec;
+
+
 /**
  * Define vector allocated in Arena and aligned to SIMD size.
  */
@@ -284,6 +287,8 @@ protected:
     size_t data_size_;       ///< Length of data array
     AssemblyArena *arena_;   ///< Pointer to Arena
     T scalar_val_;           ///< Scalar value of T type
+
+    friend class ArenaOVec<T>;
 };
 
 
@@ -301,13 +306,14 @@ public:
 	}
 
     ArenaVec<T> get_vec() {
-        return ArenaVec<T>(this->data_ptr_, this->data_size_, this->arena_);
+        return ArenaVec<T>(*this);
     }
 
     inline ArenaOVec<T> operator+(const ArenaOVec<T> &other) const {
         // Test of valid data_ptr is in constructor
         ASSERT_EQ(this->data_size_, other.data_size());
-        ArenaOVec<T> res(this->data_size_, *this->arena_);
+        ArenaVec<T> res_vec(this->data_size_, *this->arena_);
+        ArenaOVec<T> res(res_vec);
         Eigen::Map<typename ArenaVec<T>::VecData> result_map = res.eigen_map();
         result_map = this->eigen_map() + other.eigen_map();
         return res;
@@ -319,7 +325,8 @@ public:
     inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
         typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
 
-        ArenaOVec<T> res(this->data_size_*other.data_size(), *this->arena_);
+        ArenaVec<T> res_vec(this->data_size_*other.data_size(), *this->arena_);
+        ArenaOVec<T> res(res_vec);
         Eigen::Map<MatData> result_map = Eigen::Map<MatData>(res.data_ptr(), this->data_size_, other.data_size());
         result_map = this->eigen_map() * other.eigen_map().transpose();
         return res;
