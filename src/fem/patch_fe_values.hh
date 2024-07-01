@@ -55,8 +55,8 @@ public:
     ElQ() = delete;
 
     /// Constructor
-    ElQ(PatchPointValues<3> &patch_point_vals, unsigned int begin)
-    : patch_point_vals_(patch_point_vals), begin_(begin) {}
+    ElQ(PatchPointValues<3> &patch_point_vals, unsigned int begin, unsigned int op_idx)
+    : patch_point_vals_(patch_point_vals), begin_(begin), op_idx_(op_idx) {}
 
     ValueType operator()(FMT_UNUSED const BulkPoint &point);
 
@@ -65,6 +65,7 @@ public:
 private:
     PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
     unsigned int begin_;                    /// Index of the first component of the bulk Quantity. Size is given by ValueType
+    unsigned int op_idx_;                   /// Index of operation in patch_point_vals_.operations vector
 };
 
 
@@ -272,14 +273,14 @@ public:
     inline ElQ<Scalar> JxW()
     {
         uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opJxW].result_row();
-        return ElQ<Scalar>(patch_point_vals_, begin);
+        return ElQ<Scalar>(patch_point_vals_, begin, FeBulk::BulkOps::opJxW);
     }
 
 	/// Create bulk accessor of coords entity
     inline ElQ<Vector> coords()
     {
         uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opCoords].result_row();
-        return ElQ<Vector>(patch_point_vals_, begin);
+        return ElQ<Vector>(patch_point_vals_, begin, FeBulk::BulkOps::opCoords);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -289,7 +290,7 @@ public:
     inline ElQ<Scalar> determinant()
     {
         uint begin = patch_point_vals_.operations_[FeBulk::BulkOps::opJacDet].result_row();
-        return ElQ<Scalar>(patch_point_vals_, begin);
+        return ElQ<Scalar>(patch_point_vals_, begin, FeBulk::BulkOps::opJacDet);
     }
 
     /**
@@ -400,7 +401,7 @@ public:
     inline ElQ<Scalar> JxW()
     {
         uint begin = patch_point_vals_.operations_[FeSide::SideOps::opJxW].result_row();
-        return ElQ<Scalar>(patch_point_vals_, begin);
+        return ElQ<Scalar>(patch_point_vals_, begin, FeSide::SideOps::opJxW);
     }
 
     /**
@@ -411,21 +412,21 @@ public:
 	inline ElQ<Vector> normal_vector()
 	{
         uint begin = patch_point_vals_.operations_[FeSide::SideOps::opNormalVec].result_row();
-        return ElQ<Vector>(patch_point_vals_, begin);
+        return ElQ<Vector>(patch_point_vals_, begin, FeSide::SideOps::opNormalVec);
 	}
 
 	/// Create side accessor of coords entity
     inline ElQ<Vector> coords()
     {
         uint begin = patch_point_vals_.operations_[FeSide::SideOps::opCoords].result_row();
-        return ElQ<Vector>(patch_point_vals_, begin);
+        return ElQ<Vector>(patch_point_vals_, begin, FeSide::SideOps::opCoords);
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
         uint begin = patch_point_vals_.operations_[FeSide::SideOps::opSideJacDet].result_row();
-        return ElQ<Scalar>(patch_point_vals_, begin);
+        return ElQ<Scalar>(patch_point_vals_, begin, FeSide::SideOps::opSideJacDet);
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
@@ -864,19 +865,19 @@ private:
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const BulkPoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx);
 }
 
 template <>
 inline Vector ElQ<Vector>::operator()(const BulkPoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_val(begin_, value_cache_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx);
 }
 
 template <>
 inline Tensor ElQ<Tensor>::operator()(const BulkPoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.tensor_val(begin_, value_cache_idx);
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx);
 }
 
 template <class ValueType>

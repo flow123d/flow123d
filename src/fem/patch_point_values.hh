@@ -352,6 +352,9 @@ public:
     inline Scalar scalar_val(uint result_row, uint point_idx) const {
         return point_vals_(result_row)(points_map_[point_idx]);
     }
+    inline Scalar scalar_value(uint op_idx, uint point_idx) const {
+        return operations_[op_idx].result_matrix()(0)(points_map_[point_idx]);
+    }
 
     /**
      * Returns vector output value given by index of first row and index of quadrature point.
@@ -363,6 +366,13 @@ public:
         Vector val;
         for (uint i=0; i<3; ++i)
             val(i) = point_vals_(result_row+i)(points_map_[point_idx]);
+        return val;
+    }
+    inline Vector vector_value(uint op_idx, uint point_idx) const {
+        Vector val;
+        const auto &op_matrix = operations_[op_idx].result_matrix();
+        for (uint i=0; i<3; ++i)
+            val(i) = op_matrix(i)(points_map_[point_idx]);
         return val;
     }
 
@@ -377,6 +387,14 @@ public:
         for (uint i=0; i<3; ++i)
             for (uint j=0; j<3; ++j)
                 val(i,j) = point_vals_(result_row+3*i+j)(points_map_[point_idx]);
+        return val;
+    }
+    inline Tensor tensor_value(uint op_idx, uint point_idx) const {
+        Tensor val;
+        const auto &op_matrix = operations_[op_idx].result_matrix();
+        for (uint i=0; i<3; ++i)
+            for (uint j=0; j<3; ++j)
+                val(i,j) = op_matrix(i,j)(points_map_[point_idx]);
         return val;
     }
 
