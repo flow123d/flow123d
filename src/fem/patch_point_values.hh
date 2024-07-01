@@ -674,18 +674,16 @@ struct bulk_reinit {
         for (uint i=0; i<point_weights.size(); ++i)
             weights_value(0,0)(i) = point_weights[i];
     }
-    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeBulk::BulkOps::opJxW];
-//        auto inv_jac_value = op.value<dim, 3>(op_results);
-        Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>> jac_det_value = operations[op.input_ops()[1]].vector_value(op_results);
-        Eigen::Map<Eigen::Vector<double, Eigen::Dynamic>> weights_value = operations[op.input_ops()[0]].vector_value(op_results);
-        Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> result_value = op.matrix_value(op_results, weights_value.rows(), jac_det_value.rows());
-        result_value = weights_value * jac_det_value.transpose();
-
-//        ArrayDbl &weights_row = op_results( operations[op.input_ops()[0]].result_row() );
-//        ArrayDbl &jac_det_row = op_results( operations[op.input_ops()[1]].result_row() );
-//        ArrayDbl &result_row = op_results( op.result_row() );
-//        result_row = jac_det_row * weights_row;
+        auto &weights_value = operations[ op.input_ops()[0] ].result_matrix();
+        auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
+        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+        std::cout << "ptop_JxW " << weights_ovec.data_size() << "x" << jac_det_ovec.data_size() << std::endl;
+        ArenaOVec<double> jxw_ovec = weights_ovec * jac_det_ovec;
+        auto &jxw_value = op.result_matrix();
+        jxw_value(0,0) = jxw_ovec.get_vec();
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, TableDbl &op_results,
             std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
@@ -936,8 +934,7 @@ namespace FeBulk {
                 };
             /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
 
-            /*auto &JxW =*/ this->make_new_op( {1}, &common_reinit::op_base, {BulkOps::opWeights, BulkOps::opJacDet} );
-            // &bulk_reinit::ptop_JxW
+            /*auto &JxW =*/ this->make_new_op( {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
         }
     };
 
