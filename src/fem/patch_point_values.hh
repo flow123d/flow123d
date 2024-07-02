@@ -27,7 +27,8 @@
 #include "fem/dh_cell_accessor.hh"
 #include "fem/element_values.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "system/arena_resource.hh"
+#include "fem/arena_resource.hh"
+#include "fem/arena_vec.hh"
 
 
 template<unsigned int spacedim> class PatchFEValues;

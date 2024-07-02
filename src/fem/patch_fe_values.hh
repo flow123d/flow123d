@@ -39,7 +39,8 @@
 #include "fem/update_flags.hh"                // for UpdateFlags
 #include "quadrature/quadrature_lib.hh"
 #include "fields/eval_subset.hh"
-#include "system/arena_resource.hh"
+#include "fem/arena_resource.hh"
+#include "fem/arena_vec.hh"
 
 template<unsigned int spacedim> class PatchFEValues;
 

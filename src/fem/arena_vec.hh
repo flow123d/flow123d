@@ -1,108 +1,28 @@
-#ifndef ARENA_RESOURCE_HH_
-#define ARENA_RESOURCE_HH_
+/*!
+ *
+ï»¿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ *
+ * @file    arena_vec.hh
+ */
 
-#include <memory_resource>
-#include <vector>
-#include <iostream>
-#include <new>
-#include <stdexcept>   // !! Use Flow exception mechanism
+#ifndef ARENA_VEC_HH_
+#define ARENA_VEC_HH_
 
+#include "fem/arena_resource.hh"
 #include "system/asserts.hh"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
-
-// Final proposal of Arena
-template <class Resource>
-class ArenaResource : public std::pmr::memory_resource {
-protected:
-    /// Returns different upstream resource in debug / release mode
-	static inline std::pmr::memory_resource* upstream_resource() {
-#ifdef FLOW123D_DEBUG
-    	return std::pmr::null_memory_resource();
-#else
-    	return std::pmr::get_default_resource();
-#endif
-    }
-
-public:
-    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
-        : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
-          buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
-		  buffer_size_(buffer_size),
-		  used_size_(0),
-          resource_(buffer_, buffer_size, upstream_),
-          simd_alignment_(simd_alignment)
-    {
-        ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
-    }
-
-
-    ~ArenaResource() = default;
-
-    /// Getter for resource
-    Resource &resource() {
-    	return resource_;
-    }
-
-    /// Allocate and return data pointer of n_item array of type T (alignment to length 8 bytes)
-    template <class T>
-    T* allocate_8(size_t n_items) {
-        size_t bytes = sizeof(T) * n_items;
-        return (T*)this->do_allocate(bytes, 8);
-    }
-
-    /// Allocate and return data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
-    template <class T>
-    T* allocate_simd(size_t n_items) {
-        size_t bytes = sizeof(T) * n_items;
-        return (T*)this->do_allocate(bytes, simd_alignment_);
-    }
-
-    // Reset allocated data
-    void reset() {
-        resource_.release();
-        used_size_ = 0;
-    }
-
-    inline size_t free_space() const {
-        return buffer_size_ - (used_size_ + simd_alignment_ -1) / simd_alignment_ * simd_alignment_;
-    }
-
-protected:
-    /// Override do_allocate to handle allocation logic
-    void* do_allocate(size_t bytes, size_t alignment) override {
-        void* p = resource_.allocate(bytes, alignment);
-        used_size_ += bytes;
-        if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
-            throw std::bad_alloc();
-        }
-        return p;
-    }
-
-    /// Override do_deallocate (no-op for monotonic buffer)
-    void do_deallocate(FMT_UNUSED void* p, FMT_UNUSED size_t bytes, FMT_UNUSED size_t alignment) override {
-        // No-op
-    }
-
-    /// Override do_is_equal for memory resource comparison
-    bool do_is_equal(const std::pmr::memory_resource& other) const noexcept override {
-        return this == &other;
-    }
-
-private:
-    std::pmr::memory_resource* upstream_;
-    void* buffer_;
-    size_t buffer_size_;
-    size_t used_size_;
-    Resource resource_;
-    size_t simd_alignment_;
-};
-
-
-using AssemblyArena = ArenaResource<std::pmr::monotonic_buffer_resource>;
-using PatchArenaResource = ArenaResource<AssemblyArena>;
 
 
 template<class T> class ArenaOVec;
@@ -320,7 +240,7 @@ public:
     }
 
 
-	//v obou testovat operatorech (v DEBUG), že oba operandy mají ArenaVec již alokovaný.
+	//v obou testovat operatorech (v DEBUG), ï¿½e oba operandy majï¿½ ArenaVec jiï¿½ alokovanï¿½.
 
     inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
         typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
@@ -338,4 +258,4 @@ protected:
 
 
 
-#endif /* ARENA_RESOURCE_HH_ */
+#endif /* ARENA_VEC_HH_ */

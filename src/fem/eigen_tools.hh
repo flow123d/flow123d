@@ -22,7 +22,8 @@
 #define PATCH_DATA_TABLE_HH_
 
 #include "system/asserts.hh"
-#include "system/arena_resource.hh"
+#include "fem/arena_resource.hh"
+#include "fem/arena_vec.hh"
 #include <armadillo>
 #include <Eigen/Core>
 #include <Eigen/Dense>
