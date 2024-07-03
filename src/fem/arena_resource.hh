@@ -40,13 +40,13 @@ protected:
     }
 
 public:
-    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
-        : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
-          buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
-		  buffer_size_(buffer_size),
-		  used_size_(0),
-          resource_(buffer_, buffer_size, upstream_),
-          simd_alignment_(simd_alignment)
+    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = std::pmr::null_memory_resource())
+    : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
+      buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
+      buffer_size_(buffer_size),
+      used_size_(0),
+      resource_(buffer_, buffer_size, upstream_),
+      simd_alignment_(simd_alignment)
     {
         ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
     }
@@ -63,14 +63,14 @@ public:
     template <class T>
     T* allocate_8(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
-        return (T*)this->do_allocate(bytes, 8);
+        return (T*)this->raw_allocate(bytes, 8);
     }
 
     /// Allocate and return data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
     template <class T>
     T* allocate_simd(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
-        return (T*)this->do_allocate(bytes, simd_alignment_);
+        return (T*)this->raw_allocate(bytes, simd_alignment_);
     }
 
     // Reset allocated data
@@ -84,14 +84,18 @@ public:
     }
 
 protected:
-    /// Override do_allocate to handle allocation logic
-    void* do_allocate(size_t bytes, size_t alignment) override {
+    void* raw_allocate(size_t bytes, size_t alignment) {
         void* p = resource_.allocate(bytes, alignment);
         used_size_ += bytes;
         if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
             throw std::bad_alloc();
         }
         return p;
+    }
+
+    /// Override do_allocate to handle allocation logic
+    void* do_allocate(size_t bytes, size_t alignment) override {
+        return raw_allocate(bytes, alignment);
     }
 
     /// Override do_deallocate (no-op for monotonic buffer)
@@ -115,7 +119,7 @@ private:
 
 
 using AssemblyArena = ArenaResource<std::pmr::monotonic_buffer_resource>;
-using PatchArenaResource = ArenaResource<AssemblyArena>;
+using PatchArena = AssemblyArena;
 
 
 #endif /* ARENA_RESOURCE_HH_ */
