@@ -30,6 +30,19 @@
 template <class Resource>
 class ArenaResource : public std::pmr::memory_resource {
 protected:
+    /// Inner constructor, used only in construction of child arena
+    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment)
+    : upstream_(std::pmr::get_default_resource()),
+      buffer_(buffer),
+      buffer_size_(buffer_size),
+      used_size_(0),
+      resource_(buffer_, buffer_size, upstream_),
+      simd_alignment_(simd_alignment),
+      full_data_(false)
+    {
+        ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
+    }
+
     /// Returns different upstream resource in debug / release mode
 	static inline std::pmr::memory_resource* upstream_resource() {
 #ifdef FLOW123D_DEBUG
@@ -40,19 +53,35 @@ protected:
     }
 
 public:
-    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = std::pmr::null_memory_resource())
+    ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
     : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
       buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
       buffer_size_(buffer_size),
       used_size_(0),
       resource_(buffer_, buffer_size, upstream_),
-      simd_alignment_(simd_alignment)
+      simd_alignment_(simd_alignment),
+      full_data_(false)
     {
         ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
     }
 
 
     ~ArenaResource() = default;
+
+    /**
+     * Create and return child arena.
+     *
+     * Child arena is created in free space of actual arena.
+     * Actual arena is marked as full (flag full_data_) and cannot allocate new data.
+     */
+    ArenaResource get_child_arena() {
+        void *p = this->raw_allocate(1, simd_alignment_);
+        size_t used_size = (char *)p - (char *)buffer_;
+        size_t free_space = buffer_size_ - used_size;
+        full_data_ = true;
+        return ArenaResource(p, free_space, simd_alignment_);
+    }
+
 
     /// Getter for resource
     Resource &resource() {
@@ -77,16 +106,19 @@ public:
     void reset() {
         resource_.release();
         used_size_ = 0;
-    }
-
-    inline size_t free_space() const {
-        return buffer_size_ - (used_size_ + simd_alignment_ -1) / simd_alignment_ * simd_alignment_;
+#ifdef FLOW123D_DEBUG
+    	char *c_buffer = (char *)buffer_;
+    	for (size_t i=0; i<buffer_size_; ++i)
+    	    c_buffer[i] = 0;
+#endif
     }
 
 protected:
     void* raw_allocate(size_t bytes, size_t alignment) {
+        ASSERT(!full_data_).error("Allocation of new data is not possible because child arena was created.");
+
         void* p = resource_.allocate(bytes, alignment);
-        used_size_ += bytes;
+        used_size_ += (bytes + alignment - 1) / alignment * alignment;
         if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
             throw std::bad_alloc();
         }
@@ -109,12 +141,13 @@ protected:
     }
 
 private:
-    std::pmr::memory_resource* upstream_;
-    void* buffer_;
-    size_t buffer_size_;
-    size_t used_size_;
-    Resource resource_;
-    size_t simd_alignment_;
+    std::pmr::memory_resource* upstream_;   ///< Pointer to upstream
+    void* buffer_;                          ///< Pointer to buffer
+    size_t buffer_size_;                    ///< Size of buffer
+    size_t used_size_;                      ///< Temporary data member, will be removed
+    Resource resource_;                     ///< Resource of arena
+    size_t simd_alignment_;                 ///< Size of SIMD alignment
+    bool full_data_;                        ///< Flag signs full data (child arena is created)
 };
 
 
