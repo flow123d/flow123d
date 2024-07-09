@@ -689,3 +689,180 @@ TEST_F(FemToolsTest, speed_test) {
     this->profiler_output("fem_tools");
 }
 
+#include "fem/eigen_tools.hh"
+#include "fem/arena_resource.hh"
+#include "fem/arena_vec.hh"
+
+TEST_F(FemToolsTest, speed_eigen_test) {
+    typedef Eigen::Matrix<double,Eigen::Dynamic,1> OuterDbl;
+
+    static const uint N_RUNS = 4e5;
+    static const uint data_size = 30;
+
+    AssemblyArena asm_arena(1024 * 1024, 256);
+
+    // Defines Eigen objects
+    // Speed test - comparation ArrayDbl and ArenaVec - inputs
+    Eigen::Matrix<ArrayDbl,3,3> mat33_array;
+    Eigen::Matrix<ArrayDbl,2,3> mat23_array;
+    Eigen::Matrix<ArrayDbl,3,1> vec3_array;
+    Eigen::Matrix<ArenaVec<double>, 3, 3> mat33_arena;
+    Eigen::Matrix<ArenaVec<double>, 2, 3> mat23_arena;
+    Eigen::Matrix<ArenaVec<double>, 3, 1> vec3_arena;
+    // Speed test - comparation ArrayDbl and ArenaVec - outputs
+    ArrayDbl result_det_array;
+    Eigen::Matrix<ArrayDbl,3,3> result_inv_array;
+    Eigen::Matrix<ArrayDbl,3,2> result_pinv_array;
+    Eigen::Matrix<ArrayDbl,3,1> result_multi_array;
+    ArenaVec<double> result_det_arena;
+    Eigen::Matrix<ArenaVec<double>, 3, 3> result_inv_arena;
+    Eigen::Matrix<ArenaVec<double>, 3, 2> result_pinv_arena;
+    Eigen::Matrix<ArenaVec<double>, 3, 1> result_multi_arena;
+    // Speed test of outer product
+    OuterDbl outer_prod1;
+    OuterDbl outer_prod2;
+    OuterDbl result_oprod_transp;
+    OuterDbl result_oprod_map;
+
+    // Fills Eigen objects
+    for (uint i=0; i<9; ++i) {
+    	mat33_array(i).resize(data_size);
+    	mat33_arena(i) = ArenaVec<double>(data_size, asm_arena);
+        for (uint j=0; j<data_size; ++j) {
+            mat33_array(i)(j) = 0.1 * (2*i + j + 1);
+            mat33_arena(i)(j) = 0.1 * (2*i + j + 1);
+        }
+    }
+    for (uint i=0; i<6; ++i) {
+    	mat23_array(i).resize(data_size);
+    	mat23_arena(i) = ArenaVec<double>(data_size, asm_arena);
+        for (uint j=0; j<data_size; ++j) {
+            mat23_array(i)(j) = 0.1 * (2*i + j + 1);
+            mat23_arena(i)(j) = 0.1 * (2*i + j + 1);
+        }
+    }
+    for (uint i=0; i<3; ++i) {
+    	vec3_array(i).resize(data_size);
+    	vec3_arena(i) = ArenaVec<double>(data_size, asm_arena);
+        for (uint j=0; j<data_size; ++j) {
+            vec3_array(i)(j) = 0.1 * (2*i + j + 1);
+            vec3_arena(i)(j) = 0.1 * (2*i + j + 1);
+        }
+    }
+    outer_prod1.resize(3);
+    for (uint i=0; i<3; ++i)
+        outer_prod1(i) = 1 + i*0.1;
+    outer_prod2.resize(data_size/3);
+    for (uint i=0; i<data_size/3; ++i)
+        outer_prod2(i) = 2.1 + i*0.2;
+    result_oprod_transp.resize(data_size);
+    result_oprod_map.resize(data_size);
+
+    // Create PatchArena as child arena, set this arena to input ArenaVecs.
+    // It means that intermediate calculations and results are stored to
+    // patch_arena and this arena is reseted in loop.
+    PatchArena patch_arena = asm_arena.get_child_arena();
+    for (uint i=0; i<9; ++i)
+    	mat33_arena(i).set_patch_arena(patch_arena);
+    for (uint i=0; i<6; ++i)
+    	mat23_arena(i).set_patch_arena(patch_arena);
+    for (uint i=0; i<3; ++i)
+    	vec3_arena(i).set_patch_arena(patch_arena);
+
+    /**
+     * Determinant 3x3
+     */
+    //START_TIMER("DET");
+    START_TIMER("determinant_array_dbl");
+    for (uint i=0; i<N_RUNS; ++i)
+        result_det_array = eigen_tools::determinant<3,3>(mat33_array);
+    END_TIMER("determinant_array_dbl");
+
+    START_TIMER("determinant_arena_vec");
+    for (uint i=0; i<N_RUNS; ++i) {
+        if (i%5 == 0) patch_arena.reset();
+        result_det_arena = eigen_arena_tools::determinant<3,3>(mat33_arena);
+    }
+    END_TIMER("determinant_arena_vec");
+    EXPECT_DOUBLE_EQ( result_det_array(0), result_det_arena(0) );
+    //END_TIMER("DET");
+
+    /**
+     * Inverse 3x3
+     */
+    //START_TIMER("INV");
+    START_TIMER("inverse_array_dbl");
+    for (uint i=0; i<N_RUNS; ++i)
+        result_inv_array = eigen_tools::inverse<3,3>(mat33_array);
+    END_TIMER("inverse_array_dbl");
+
+    START_TIMER("inverse_arena_vec");
+    for (uint i=0; i<N_RUNS; ++i) {
+        if (i%5 == 0) patch_arena.reset();
+        result_inv_arena = eigen_arena_tools::inverse<3,3>(mat33_arena);
+    }
+    END_TIMER("inverse_arena_vec");
+    EXPECT_DOUBLE_EQ( result_inv_array(0)(0), result_inv_arena(0)(0) );
+    //END_TIMER("INV");
+
+    /**
+     * Inverse 2x3
+     */
+    //START_TIMER("PINV");
+    START_TIMER("pinverse_array_dbl");
+    for (uint i=0; i<N_RUNS; ++i)
+        result_pinv_array = eigen_tools::inverse<2,3>(mat23_array);
+    END_TIMER("pinverse_array_dbl");
+
+    START_TIMER("pinverse_arena_vec");
+    for (uint i=0; i<N_RUNS; ++i) {
+        if (i%5 == 0) patch_arena.reset();
+        result_pinv_arena = eigen_arena_tools::inverse<2,3>(mat23_arena);
+    }
+    END_TIMER("pinverse_arena_vec");
+    EXPECT_DOUBLE_EQ( result_pinv_array(0)(0), result_pinv_arena(0)(0) );
+    //END_TIMER("PINV");
+
+    /**
+     * Multiplication Matrix3x3 * Vector3
+     */
+    //START_TIMER("MULTI");
+    START_TIMER("multi_array_dbl");
+    for (uint i=0; i<N_RUNS; ++i)
+    	result_multi_array = mat33_array * vec3_array;
+    END_TIMER("multi_array_dbl");
+
+    START_TIMER("multi_arena_vec");
+    for (uint i=0; i<N_RUNS; ++i) {
+        if (i%5 == 0) patch_arena.reset();
+        result_multi_arena = mat33_arena * vec3_arena;
+    }
+    END_TIMER("multi_arena_vec");
+    EXPECT_DOUBLE_EQ( result_multi_array(0)(0), result_multi_arena(0)(0) );
+    //MULTI("MULTI");
+
+    /**
+     * OuterProduct compare speed of:
+     *    ColVec3 * ColVec10.transpose
+     *    ColVec3 * RowVec10 (RowVec10 is created as mapped ColVec10)
+     */
+    //START_TIMER("OPROD");
+    START_TIMER("outer_prod_transpose");
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> result_transp_ref(result_oprod_transp.data(), 3, data_size/3);
+    for (uint i=0; i<N_RUNS; ++i)
+    	result_transp_ref = outer_prod1 * outer_prod2.transpose();
+    END_TIMER("outer_prod_transpose");
+
+    START_TIMER("outer_prod_map");
+    Eigen::Map<Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>> result_map_ref(result_oprod_map.data(), 3, data_size/3);
+    for (uint i=0; i<N_RUNS; ++i) {
+        Eigen::Map<Eigen::Matrix<double, 1, Eigen::Dynamic>> outer_prod2_ref(outer_prod2.data(), 1, data_size/3);
+        result_map_ref = outer_prod1 * outer_prod2_ref;
+    }
+    END_TIMER("outer_prod_map");
+    EXPECT_DOUBLE_EQ( result_oprod_transp(1), result_oprod_map(1) );
+    //MULTI("OPROD");
+    // 0.0311495 vs. 0.0308666
+
+    this->profiler_output("fem_tools");
+}

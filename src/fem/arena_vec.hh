@@ -105,6 +105,12 @@ public:
     	return data_size_;
     }
 
+    /// Set pointer to PatchArena
+    inline void set_patch_arena(PatchArena &arena) {
+        ASSERT_PTR(arena_);
+        this->arena_ = &arena;
+    }
+
     inline ArenaVec<T> sqrt() const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -205,7 +211,7 @@ protected:
 
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
-    AssemblyArena *arena_;   ///< Pointer to Arena
+    AssemblyArena *arena_;   ///< Pointer to Arena where intermediate calculations and results are stored, should be changed by set_patch_arena
     T scalar_val_;           ///< Scalar value of T type
 
     friend class ArenaOVec<T>;
