@@ -306,17 +306,18 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
-        std::vector< std::vector<double> > shape_values( patch_point_vals_.get_quadrature()->size(), vector<double>(fe_component->n_dofs()) );
+        std::vector< std::vector<double> > shape_values( fe_component->n_dofs(), vector<double>(patch_point_vals_.get_quadrature()->size()) );
         auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_.get_quadrature(), fe_component);
         for (unsigned int i = 0; i < patch_point_vals_.get_quadrature()->size(); i++)
             for (unsigned int j = 0; j < fe_component->n_dofs(); j++) {
-            	shape_values[i][j] = ref_shape_vals[i][j][0];
+            	shape_values[j][i] = ref_shape_vals[i][j][0];
             }
         uint scalar_shape_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, op_results, shape_values, scalar_shape_op_idx);
+        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, shape_values, scalar_shape_op_idx);
             };
         auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
+        // lambda_scalar_shape
         uint begin = scalar_shape_bulk_op.result_row();
 
         return FeQ<Scalar>(patch_point_vals_, begin, fe_component->n_dofs());

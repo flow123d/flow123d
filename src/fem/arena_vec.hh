@@ -105,6 +105,11 @@ public:
     	return data_size_;
     }
 
+    /// Getter for arena_
+    AssemblyArena &arena() {
+        return *arena_;
+    }
+
     /// Set pointer to PatchArena
     inline void set_patch_arena(PatchArena &arena) {
         ASSERT_PTR(arena_);

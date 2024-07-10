@@ -585,7 +585,7 @@ public:
     }
 
     inline void allocate_result(size_t data_size, PatchArena &arena) {
-        result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(shape_[0], shape_[1]);
+        result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(n_dofs()*shape_[0], shape_[1]);
         for (uint i=0; i<n_comp(); ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
     }
@@ -708,15 +708,27 @@ struct bulk_reinit {
         auto &jxw_value = op.result_matrix();
         jxw_value(0,0) = jxw_ovec.get_vec();
     }
-    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, TableDbl &op_results,
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations,
             std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
         auto &op = operations[scalar_shape_op_idx];
-        uint n_points = shape_values.size();
+        uint n_dofs = shape_values.size();
+        uint n_points = shape_values[0].size();
+        uint n_elem = op.result_matrix()(0).data_size() / n_points;
+//        std::cout << "XXXXX ptop_scalar_shape " << op.dim() << ", " << n_dofs << ", " << n_points << ", " << n_elem << std::endl;
 
-        for (uint i_row=0; i_row<shape_values[0].size(); ++i_row) {
-            ArrayDbl &result_row = op_results( op.result_row()+i_row );
-            for (uint i_pt=0; i_pt<result_row.rows(); ++i_pt)
-                result_row(i_pt) = shape_values[i_pt % n_points][i_row];
+        auto &shape_matrix = op.result_matrix();
+        ArenaVec<double> ref_vec(n_points, op.result_matrix()(0).arena());
+        ArenaVec<double> elem_vec(n_elem, op.result_matrix()(0).arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> ref_ovec(ref_vec);
+        ArenaOVec<double> elem_ovec(elem_vec);
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_p=0; i_p<n_points; ++i_p)
+                ref_vec(i_p) = shape_values[i_dof][i_p];
+            ArenaOVec<double> shape_ovec = ref_ovec * elem_ovec;
+            shape_matrix(i_dof) = shape_ovec.get_vec();
         }
     }
     template<unsigned int dim>
