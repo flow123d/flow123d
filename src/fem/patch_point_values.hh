@@ -127,8 +127,8 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(uint dim, AssemblyArena &patch_arena)
-    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0), patch_arena_(patch_arena) {}
+    PatchPointValues(uint dim, AssemblyArena &asm_arena)
+    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena) {}
 
     /**
      * Initialize object, set number of columns (quantities) in tables.
@@ -141,6 +141,10 @@ public:
 
     	point_vals_.resize(n_rows_);
     	int_vals_.resize(int_cols);
+    }
+
+    inline void init_finalize(PatchArena *patch_arena) {
+        patch_arena_ = patch_arena;
     }
 
     /// Reset number of columns (points and elements)
@@ -179,7 +183,7 @@ public:
         std::vector<uint> sizes = {n_elems, n_points};
         for (auto &elOp : operations_)
             if (elOp.size_type() != fixedSizeOp) {
-                elOp.allocate_result(sizes[elOp.size_type()], patch_arena_);
+                elOp.allocate_result(sizes[elOp.size_type()], *patch_arena_);
             }
 	    for (uint i=0; i<point_vals_.rows(); ++i) {
             if (row_sizes_[i] == elemOp) {
@@ -489,7 +493,8 @@ protected:
     std::vector<uint> elements_map_;    ///< Map of element patch indices to el_vals_ table
     std::vector<uint> points_map_;      ///< Map of point patch indices  to point_vals_ and int_vals_ tables
     std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
-    AssemblyArena &patch_arena_;        ///< Reference to global Arena of PatchFeValues
+    AssemblyArena &asm_arena_;          ///< Reference to global assembly arena of PatchFeValues
+    PatchArena *patch_arena_;           ///< Pointer to global patch arena of PatchFeValues
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
@@ -579,7 +584,7 @@ public:
         reinit_func(operations, data_table, int_table);
     }
 
-    inline void allocate_result(size_t data_size, AssemblyArena &arena) {
+    inline void allocate_result(size_t data_size, PatchArena &arena) {
         result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(shape_[0], shape_[1]);
         for (uint i=0; i<n_comp(); ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
@@ -686,9 +691,9 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, AssemblyArena &arena, const std::vector<double> &point_weights) {
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
         auto &op = operations[FeBulk::BulkOps::opWeights];
-        op.allocate_result(point_weights.size(), arena);
+        op.allocate_result(point_weights.size(), *arena);
         auto &weights_value = op.result_matrix();
         for (uint i=0; i<point_weights.size(); ++i)
             weights_value(0,0)(i) = point_weights[i];
@@ -699,7 +704,6 @@ struct bulk_reinit {
         auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
-        std::cout << "ptop_JxW " << weights_ovec.data_size() << "x" << jac_det_ovec.data_size() << std::endl;
         ArenaOVec<double> jxw_ovec = weights_ovec * jac_det_ovec;
         auto &jxw_value = op.result_matrix();
         jxw_value(0,0) = jxw_ovec.get_vec();
@@ -914,8 +918,8 @@ namespace FeBulk {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, AssemblyArena &patch_arena)
-        : ::PatchPointValues<spacedim>(dim, patch_arena) {
+        PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
+        : ::PatchPointValues<spacedim>(dim, asm_arena) {
             this->quad_ = new QGauss(dim, 2*quad_order);
             switch (dim) {
             case 1:
@@ -968,8 +972,8 @@ namespace FeSide {
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, AssemblyArena &patch_arena)
-        : ::PatchPointValues<spacedim>(dim, patch_arena) {
+        PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
+        : ::PatchPointValues<spacedim>(dim, asm_arena) {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
             switch (dim) {
             case 1:

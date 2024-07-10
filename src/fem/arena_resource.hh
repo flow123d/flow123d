@@ -53,6 +53,7 @@ protected:
     }
 
 public:
+    /// Constructor. Creates assembly arena
     ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
     : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
       buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
@@ -74,12 +75,12 @@ public:
      * Child arena is created in free space of actual arena.
      * Actual arena is marked as full (flag full_data_) and cannot allocate new data.
      */
-    ArenaResource get_child_arena() {
+    ArenaResource *get_child_arena() {
         void *p = this->raw_allocate(1, simd_alignment_);
         size_t used_size = (char *)p - (char *)buffer_;
         size_t free_space = buffer_size_ - used_size;
         full_data_ = true;
-        return ArenaResource(p, free_space, simd_alignment_);
+        return new ArenaResource(p, free_space, simd_alignment_);
     }
 
 

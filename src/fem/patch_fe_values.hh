@@ -637,26 +637,26 @@ public:
 
     PatchFEValues()
     : asm_arena_(1024 * 1024, 256),
-      patch_arena_(1024 * 1024, 256),
-      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, patch_arena_),
-                               FeBulk::PatchPointValues(2, 0, patch_arena_),
-                               FeBulk::PatchPointValues(3, 0, patch_arena_)} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, patch_arena_),
-                               FeSide::PatchPointValues(2, 0, patch_arena_),
-                               FeSide::PatchPointValues(3, 0, patch_arena_)} }
+      patch_arena_(nullptr),
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, asm_arena_),
+                               FeBulk::PatchPointValues(2, 0, asm_arena_),
+                               FeBulk::PatchPointValues(3, 0, asm_arena_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, asm_arena_),
+                               FeSide::PatchPointValues(2, 0, asm_arena_),
+                               FeSide::PatchPointValues(3, 0, asm_arena_)} }
     {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : asm_arena_(1024 * 1024, 256),
-	  patch_arena_(1024 * 1024, 256),
-	  patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, patch_arena_),
-    	                       FeBulk::PatchPointValues(2, quad_order, patch_arena_),
-                               FeBulk::PatchPointValues(3, quad_order, patch_arena_)} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, patch_arena_),
-                               FeSide::PatchPointValues(2, quad_order, patch_arena_),
-                               FeSide::PatchPointValues(3, quad_order, patch_arena_)} },
+      patch_arena_(nullptr),
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, asm_arena_),
+    	                       FeBulk::PatchPointValues(2, quad_order, asm_arena_),
+                               FeBulk::PatchPointValues(3, quad_order, asm_arena_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, asm_arena_),
+                               FeSide::PatchPointValues(2, quad_order, asm_arena_),
+                               FeSide::PatchPointValues(3, quad_order, asm_arena_)} },
       fe_(fe)
     {
         used_quads_[0] = false; used_quads_[1] = false;
@@ -665,7 +665,10 @@ public:
 
     /// Destructor
     ~PatchFEValues()
-    {}
+    {
+        if (patch_arena_!=nullptr)
+            delete patch_arena_;
+    }
 
     /// Return bulk or side quadrature of given dimension
     Quadrature *get_quadrature(uint dim, bool is_bulk) const {
@@ -692,6 +695,15 @@ public:
         }
     }
 
+    /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
+    void init_finalize() {
+        patch_arena_ = asm_arena_.get_child_arena();
+        for (unsigned int i=0; i<3; ++i) {
+            if (used_quads_[0]) patch_point_vals_bulk_[i].init_finalize(patch_arena_);
+            if (used_quads_[1]) patch_point_vals_side_[i].init_finalize(patch_arena_);
+        }
+    }
+
     /// Reset PatchpointValues structures
     void reset()
     {
@@ -699,6 +711,7 @@ public:
             if (used_quads_[0]) patch_point_vals_bulk_[i].reset();
             if (used_quads_[1]) patch_point_vals_side_[i].reset();
         }
+        patch_arena_->reset();
     }
 
     /// Reinit data.
@@ -847,7 +860,7 @@ public:
 
 private:
     AssemblyArena asm_arena_;
-    AssemblyArena patch_arena_;
+    AssemblyArena *patch_arena_;
     std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;  ///< Sub objects of bulk data of dimensions 1,2,3
     std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;  ///< Sub objects of side data of dimensions 1,2,3
 
