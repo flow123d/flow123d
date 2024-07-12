@@ -31,8 +31,8 @@ template <class Resource>
 class ArenaResource : public std::pmr::memory_resource {
 protected:
     /// Inner constructor, used only in construction of child arena
-    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment)
-    : upstream_(std::pmr::get_default_resource()),
+    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
+    : upstream_( upstream ),
       buffer_(buffer),
       buffer_size_(buffer_size),
       used_size_(0),
@@ -56,7 +56,7 @@ public:
     /// Constructor. Creates assembly arena
     ArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
     : upstream_(upstream), // TODO needs use buffer and resource of upstream if default upstream is not used
-      buffer_( upstream_->allocate(buffer_size, simd_alignment) ),
+      buffer_( std::pmr::get_default_resource()->allocate(buffer_size, simd_alignment) ),
       buffer_size_(buffer_size),
       used_size_(0),
       resource_(buffer_, buffer_size, upstream_),
