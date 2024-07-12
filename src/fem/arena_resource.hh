@@ -117,6 +117,7 @@ public:
 protected:
     void* raw_allocate(size_t bytes, size_t alignment) {
         ASSERT(!full_data_).error("Allocation of new data is not possible because child arena was created.");
+        ASSERT_EQ(buffer_size_%alignment, 0);
 
         void* p = resource_.allocate(bytes, alignment);
         used_size_ += (bytes + alignment - 1) / alignment * alignment;
