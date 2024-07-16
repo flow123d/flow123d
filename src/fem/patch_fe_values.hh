@@ -539,8 +539,8 @@ public:
             	shape_values_bulk[i][j] = ref_shape_vals_bulk[i][j][0];
             }
         uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, op_results, shape_values_bulk, scalar_shape_op_idx_bulk);
+        auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, shape_values_bulk, scalar_shape_op_idx_bulk);
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {}, fe_component_low->n_dofs());
         uint begin_bulk = grad_scalar_shape_bulk_op.result_row();
