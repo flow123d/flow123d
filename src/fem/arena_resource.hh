@@ -84,6 +84,15 @@ public:
     }
 
 
+    /// Compute and print free space and used space of arena buffer. Development method
+    inline void print_space() {
+        void *p = this->raw_allocate(1, simd_alignment_);
+        size_t used_size = (char *)p - (char *)buffer_;
+        size_t free_space = buffer_size_ - used_size;
+        std::cout << "Allocated space of arena is " << used_size << " B, free space is " << free_space << " B." << std::endl;
+    }
+
+
     /// Getter for resource
     Resource &resource() {
     	return resource_;
@@ -107,6 +116,7 @@ public:
     void reset() {
         resource_.release();
         used_size_ = 0;
+        full_data_ = false;
 #ifdef FLOW123D_DEBUG
     	char *c_buffer = (char *)buffer_;
     	for (size_t i=0; i<buffer_size_; ++i)
