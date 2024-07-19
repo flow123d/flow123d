@@ -743,6 +743,19 @@ TEST_F(FemToolsTest, speed_test) {
 //}
 
 
+//class OpDeterminant {
+//public>
+//    inline ArrayDbl test_array_dbl(Eigen::Matrix<ArrayDbl,3,3> &mat33_array) {
+//        return eigen_tools::determinant<3,3>(mat33_array);
+//    }
+//
+//    inline ArenaVec<double> test_arena(Eigen::Matrix<ArenaVec<double>, 3, 3> &mat33_arena) {
+//        return eigen_arena_tools::determinant<3,3>(mat33_arena);
+//    }
+//};
+
+
+
 class ArenaSpeedTest {
 public:
     static const uint N_RUNS = 4e5;
@@ -821,16 +834,10 @@ public:
 
         START_TIMER("determinant_arena_vec");
         for (uint i=0; i<N_RUNS; ++i) {
-            result_det_arena = eigen_arena_tools::determinant<3,3>(mat33_arena);
-        }
-        END_TIMER("determinant_arena_vec");
-
-        START_TIMER("determinant_arena_vec_reset");
-        for (uint i=0; i<N_RUNS; ++i) {
             patch_arena->reset();
             result_det_arena = eigen_arena_tools::determinant<3,3>(mat33_arena);
         }
-        END_TIMER("determinant_arena_vec_reset");
+        END_TIMER("determinant_arena_vec");
         EXPECT_DOUBLE_EQ( result_det_array(0), result_det_arena(0) );
     }
 
@@ -849,16 +856,10 @@ public:
 
         START_TIMER("inverse_arena_vec");
         for (uint i=0; i<N_RUNS; ++i) {
-            result_inv_arena = eigen_arena_tools::inverse<3,3>(mat33_arena);
-        }
-        END_TIMER("inverse_arena_vec");
-
-        START_TIMER("inverse_arena_vec_reset");
-        for (uint i=0; i<N_RUNS; ++i) {
             patch_arena->reset();
             result_inv_arena = eigen_arena_tools::inverse<3,3>(mat33_arena);
         }
-        END_TIMER("inverse_arena_vec_reset");
+        END_TIMER("inverse_arena_vec");
         EXPECT_DOUBLE_EQ( result_inv_array(0)(0), result_inv_arena(0)(0) );
     }
 
@@ -877,16 +878,10 @@ public:
 
         START_TIMER("pinverse_arena_vec");
         for (uint i=0; i<N_RUNS; ++i) {
-            result_pinv_arena = eigen_arena_tools::inverse<2,3>(mat23_arena);
-        }
-        END_TIMER("pinverse_arena_vec");
-
-        START_TIMER("pinverse_arena_vec_reset");
-        for (uint i=0; i<N_RUNS; ++i) {
             patch_arena->reset();
             result_pinv_arena = eigen_arena_tools::inverse<2,3>(mat23_arena);
         }
-        END_TIMER("pinverse_arena_vec_reset");
+        END_TIMER("pinverse_arena_vec");
         EXPECT_DOUBLE_EQ( result_pinv_array(0)(0), result_pinv_arena(0)(0) );
     }
 
@@ -894,9 +889,10 @@ public:
      * Multiplication Matrix3x3 * Vector3
      */
     void mat_multi_test(uint data_size) {
-        fill_matt33(data_size);
+    	fill_matt33(data_size);
         fill_vec3(data_size);
         patch_arena = asm_arena.get_child_arena();
+        set_patch_arena_mat33();
         set_patch_arena_vec3();
 
         START_TIMER("multi_array_dbl");
@@ -906,18 +902,11 @@ public:
 
         START_TIMER("multi_arena_vec");
         for (uint i=0; i<N_RUNS; ++i) {
-            result_multi_arena = mat33_arena * vec3_arena;
-        }
-        END_TIMER("multi_arena_vec");
-
-        START_TIMER("multi_arena_vec_reset");
-        for (uint i=0; i<N_RUNS; ++i) {
             patch_arena->reset();
             result_multi_arena = mat33_arena * vec3_arena;
         }
-        END_TIMER("multi_arena_vec_reset");
+        END_TIMER("multi_arena_vec");
         EXPECT_DOUBLE_EQ( result_multi_array(0)(0), result_multi_arena(0)(0) );
-        END_TIMER("MULTI");
     }
 
     /**
@@ -965,63 +954,68 @@ public:
     Eigen::Matrix<ArenaVec<double>, 3, 1> result_multi_arena;
 };
 
+void all_tests(size_t arena_size, std::vector<uint> data_sizes) {
+    ArenaSpeedTest test_det(arena_size);
+    test_det.determinant_test(data_sizes[0]);
+
+    ArenaSpeedTest test_inv(arena_size);
+    test_inv.inverse3x3_test(data_sizes[1]);
+
+    ArenaSpeedTest test_pinv(arena_size);
+    test_pinv.inverse2x3_test(data_sizes[2]);
+
+    ArenaSpeedTest test_multi(arena_size);
+    test_multi.mat_multi_test(data_sizes[3]);
+}
+
 
 TEST_F(FemToolsTest, speed_eigen_test) {
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> OuterDbl;
 
     MessageOut() << "L1 half ... " << std::endl;
     { // L1 half
-        ArenaSpeedTest test_obj(32);
         START_TIMER("L1_HALF");
-        test_obj.all_tests( {156, 80, 76, 148} );
+        all_tests( 32, {156, 80, 76, 148} );
         END_TIMER("L1_HALF");
     }
     MessageOut() << " ...  OK" << std::endl;
 
     MessageOut() << "L1 full ... " << std::endl;
     { // L1 full
-        ArenaSpeedTest test_obj(64);
-
         START_TIMER("L1_FULL");
-        test_obj.all_tests( {312, 160, 152, 300} );
+        all_tests( 64, {312, 160, 152, 300} );
         END_TIMER("L1_FULL");
     }
     MessageOut() << " ...  OK" << std::endl;
 
     MessageOut() << "L2 half ... " << std::endl;
     { // L2 half
-        ArenaSpeedTest test_obj(128);
         START_TIMER("L2_HALF");
-        test_obj.all_tests( {628, 324, 308, 604} );
+        all_tests( 128, {628, 324, 308, 604} );
         END_TIMER("L2_HALF");
     }
     MessageOut() << " ...  OK" << std::endl;
 
     MessageOut() << "L2 full ... " << std::endl;
     { // L2 full
-        ArenaSpeedTest test_obj(256);
-
         START_TIMER("L2_FULL");
-        test_obj.all_tests( {1260, 652, 616, 1212} );
+        all_tests(256, {1260, 652, 616, 1212} );
         END_TIMER("L2_FULL");
     }
     MessageOut() << " ...  OK" << std::endl;
 
     MessageOut() << "L3 half ... " << std::endl;
     { // L3 half
-        ArenaSpeedTest test_obj(4 * 1024);
         START_TIMER("L3_HALF");
-        test_obj.all_tests( {20164, 10484, 9892, 19416} );
+        all_tests(4 * 1024, {20164, 10484, 9892, 19416} );
         END_TIMER("L3_HALF");
     }
     MessageOut() << " ...  OK" << std::endl;
 
     MessageOut() << "L3 full ... " << std::endl;
     { // L3 full
-        ArenaSpeedTest test_obj(8 * 1024);
-
         START_TIMER("L3_FULL");
-        test_obj.all_tests( {40328, 20968, 19784, 38836} );
+        all_tests(8 * 1024, {40328, 20968, 19784, 38836} );
         END_TIMER("L3_FULL");
     }
     MessageOut() << " ...  OK" << std::endl;
