@@ -27,28 +27,16 @@
 
 
 // Final proposal of Arena
+// TODO shared_ptr out of class, pass pointer to data, describe how to use
 template <class Resource>
 class ArenaResource : public std::pmr::memory_resource {
 protected:
-    /// Inner constructor, used only in construction of child arena
-    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
-    : upstream_( upstream ),
-      buffer_(buffer),
-      buffer_size_(buffer_size),
-      used_size_(0),
-      resource_(buffer_, buffer_size, upstream_),
-      simd_alignment_(simd_alignment),
-      full_data_(false)
-    {
-        ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
-    }
-
     /// Returns different upstream resource in debug / release mode
 	static inline std::pmr::memory_resource* upstream_resource() {
 #ifdef FLOW123D_DEBUG
-    	return std::pmr::null_memory_resource();
+        return std::pmr::null_memory_resource();
 #else
-    	return std::pmr::get_default_resource();
+        return std::pmr::get_default_resource();
 #endif
     }
 
@@ -67,7 +55,21 @@ public:
     }
 
 
-    ~ArenaResource() = default;
+    /// Same as previous but doesn't construct buffer implicitly.
+    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
+    : upstream_( upstream ),
+      buffer_(buffer),
+      buffer_size_(buffer_size),
+      used_size_(0),
+      resource_(buffer_, buffer_size, upstream_),
+      simd_alignment_(simd_alignment),
+      full_data_(false)
+    {
+        ASSERT_PERMANENT_EQ( (buffer_size%simd_alignment), 0 );
+    }
+
+
+    ~ArenaResource() = default; // virtual, call destructor buffer_ = default_resource, (resource_)
 
     /**
      * Create and return child arena.
