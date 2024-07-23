@@ -11,10 +11,169 @@
 #include "system/asserts.hh"
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
+#include "fem/arena_resource.hh"
+#include "fem/arena_vec.hh"
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+
+//TEST(FemToolsTest, working) {
+//    size_t size = 256 * 1024;
+//    std::shared_ptr<char> data_ptr(new char[size], std::default_delete<char[]>());
+//    void* void_ptr = static_cast<void*>(data_ptr.get());
+//
+//    std::cout << "Test asm arena 1" << std::endl;
+//    AssemblyArena asm_arena(void_ptr, size, 32);
+//    std::cout << "Test asm arena 2" << std::endl;
+//    uint data_size = 1212;
+//
+//    Eigen::Matrix<ArenaVec<double>, 3, 3> mat33_arena;
+//    Eigen::Matrix<ArenaVec<double>, 3, 1> vec3_arena;
+//    Eigen::Matrix<ArenaVec<double>, 3, 1> result_multi_arena;
+//
+//    for (uint i=0; i<9; ++i) {
+//        mat33_arena(i) = ArenaVec<double>(data_size, asm_arena);
+//        for (uint j=0; j<data_size; ++j) {
+//            mat33_arena(i)(j) = 0.1 * (2*i + j + 1);
+//        }
+//    }
+//    for (uint i=0; i<3; ++i) {
+//        vec3_arena(i) = ArenaVec<double>(data_size, asm_arena);
+//        for (uint j=0; j<data_size; ++j) {
+//            vec3_arena(i)(j) = 0.1 * (2*i + j + 1);
+//        }
+//    }
+//
+//    std::cout << "Test patch arena 1" << std::endl;
+//    PatchArena *patch_arena = asm_arena.get_child_arena();
+//    std::cout << "Test patch arena 2" << std::endl;
+//    for (uint i=0; i<9; ++i)
+//        mat33_arena(i).set_patch_arena(*patch_arena);
+//    for (uint i=0; i<3; ++i)
+//        vec3_arena(i).set_patch_arena(*patch_arena);
+//
+//    for (uint i=0; i<1; ++i) {
+//        patch_arena->reset();
+//        result_multi_arena = mat33_arena * vec3_arena;
+//    }
+//}
+//
+
+/*
+[100%] Linking CXX executable arena_test_bin
+[100%] Built target arena_test_bin
+[----------] Global test environment set-up.
+[----------] 1 test from FemToolsTest
+[ RUN      ] FemToolsTest.working
+Test asm arena 1
+Constructor 2: 262144, 32
+Test asm arena 2
+raw_aloocate used size: 16
+raw_aloocate used size: 9712
+raw_aloocate used size: 19408
+raw_aloocate used size: 29104
+raw_aloocate used size: 38800
+raw_aloocate used size: 48496
+raw_aloocate used size: 58192
+raw_aloocate used size: 67888
+raw_aloocate used size: 77584
+raw_aloocate used size: 87280
+raw_aloocate used size: 96976
+raw_aloocate used size: 106672
+Test patch arena 1
+raw_aloocate used size: 116368
+get_child_arena: 262144, 116368, 145776, 32
+Constructor 2: 145776, 32
+--------------------------------------------------------
+Program Error: Violated assert!
+> In file: /c/Users/davidflanderka/vyvoj/flow123d/src/fem/arena_resource.hh(70): Throw in function ArenaResource
+> Expression: '(buffer_size%simd_alignment) == 0'
+> Values:
+  (buffer_size%simd_alignment) : '16'
+  0 : '0'
+
+** Stacktrace **
+
+--------------------------------------------------------
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   PID 110 RUNNING AT 10cb26af67a8
+=   EXIT CODE: 6
+=   CLEANING UP REMAINING PROCESSES
+=   YOU CAN IGNORE THE BELOW CLEANUP MESSAGES
+===================================================================================
+YOUR APPLICATION TERMINATED WITH THE EXIT STRING: Aborted (signal 6)
+This typically refers to a problem with your application.
+Please see the FAQ page for debugging suggestions
+make[3]: *** [unit_tests/system/CMakeFiles/arena-1-test.dir/build.make:70: unit_tests/system/CMakeFiles/arena-1-test] Error 6
+make[2]: *** [CMakeFiles/Makefile2:7427: unit_tests/system/CMakeFiles/arena-1-test.dir/all] Error 2
+make[1]: *** [CMakeFiles/Makefile2:7434: unit_tests/system/CMakeFiles/arena-1-test.dir/rule] Error 2
+make: *** [Makefile:886: unit_tests/system/CMakeFiles/arena-1-test.dir/rule] Error 2
+rel 4.0.3 /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/system make -j 5 arena-1-test
+
+POST-CHECKOUT(DF_patch_fe_data_tables -> DF_patch_fe_data_tables):
+[  0%] Built target update_source_tree
+[  0%] Built target gtest
+[ 16%] Built target gtest_main
+[ 83%] Built target system_lib
+[ 83%] Built target gtest_mpi_obj
+Consolidate compiler generated dependencies of target arena_test_bin
+[100%] Building CXX object unit_tests/system/CMakeFiles/arena_test_bin.dir/arena_test.cpp.o
+In file included from /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/flow_gtest_mpi.hh:13,
+                 from /c/Users/davidflanderka/vyvoj/flow123d/unit_tests/system/arena_test.cpp:3:
+/c/Users/davidflanderka/vyvoj/flow123d/unit_tests/_gtest_extensions/gtest_throw_what.hh:22:22: warning: ‘std::string FormatDeathTestOutput(const string&)’ defined but not used [-Wunused-function]
+   22 | static ::std::string FormatDeathTestOutput(const ::std::string& output) {
+      |                      ^~~~~~~~~~~~~~~~~~~~~
+[100%] Linking CXX executable arena_test_bin
+[100%] Built target arena_test_bin
+[----------] Global test environment set-up.
+[----------] 1 test from FemToolsTest
+[ RUN      ] FemToolsTest.working
+Test asm arena 1
+Constructor 1: 262144, 32
+Test asm arena 2
+raw_aloocate used size: 0
+raw_aloocate used size: 9696
+raw_aloocate used size: 19392
+raw_aloocate used size: 29088
+raw_aloocate used size: 38784
+raw_aloocate used size: 48480
+raw_aloocate used size: 58176
+raw_aloocate used size: 67872
+raw_aloocate used size: 77568
+raw_aloocate used size: 87264
+raw_aloocate used size: 96960
+raw_aloocate used size: 106656
+Test patch arena 1
+raw_aloocate used size: 116352
+get_child_arena: 262144, 116352, 145792, 32
+Constructor 2: 145792, 32
+Test patch arena 2
+raw_aloocate used size: 0
+raw_aloocate used size: 9696
+raw_aloocate used size: 19392
+raw_aloocate used size: 29088
+raw_aloocate used size: 38784
+raw_aloocate used size: 48480
+raw_aloocate used size: 58176
+raw_aloocate used size: 67872
+raw_aloocate used size: 77568
+raw_aloocate used size: 87264
+raw_aloocate used size: 96960
+raw_aloocate used size: 106656
+raw_aloocate used size: 116352
+raw_aloocate used size: 126048
+raw_aloocate used size: 135744
+[       OK ] FemToolsTest.working (0 ms)
+[----------] 1 test from FemToolsTest (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test case ran. (0 ms total)
+[  PASSED  ] 1 test.
+[100%] Built target arena-1-test
+ */
 
 /// First proposal in issue
 //class ArenaAllocatorTest : public std::pmr::memory_resource {
@@ -167,6 +326,7 @@
 //    std::cout << std::endl;
 //}
 
+namespace ArenaTest {
 
 template <class Resource> class ArenaAllocator; // forward declaration
 
@@ -179,10 +339,6 @@ public:
         : upstream_(upstream), alignment_(alignment) {}
 
 protected:
-    inline size_t align_size(size_t size) {
-    	return (size + alignment_ - 1) / alignment_ * alignment_;
-    }
-
     void* do_allocate(size_t bytes, size_t alignment) override {
         void* p = upstream_.allocate(bytes, alignment);
         if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
@@ -215,33 +371,30 @@ public:
         : buffer(new char[buffer_size]),
           buffer_size(buffer_size),
 #ifdef FLOW123D_DEBUG
-          resource(buffer.get(), buffer_size, std::pmr::null_memory_resource()),
+          resource_(buffer.get(), buffer_size, std::pmr::null_memory_resource()),
 #else
-          resource(buffer.get(), buffer_size, std::pmr::get_default_resource()),
+          resource_(buffer.get(), buffer_size, std::pmr::get_default_resource()),
 #endif
-		  aligned_resource_8_(this->resource, 8),
-		  aligned_resource_simd_(this->resource, simd_alignment)
+		  arena_resource_8_(this->resource_, 8),
+		  arena_resource_simd_(this->resource_, simd_alignment),
+		  simd_alignment_(simd_alignment)
     {}
 
 
     ~ArenaAllocator() = default;
 
-    /// Getter for aligned_resource_8_
-    AlignedMemoryResource<Resource> aligned_resource_8() {
-    	return aligned_resource_8_;
+    /// Getter for resource
+    Resource &resource() {
+    	return resource_;
     }
 
-    /// Getter for aligned_resource_simd_
-    AlignedMemoryResource<Resource> aligned_resource_simd() {
-    	return aligned_resource_simd_;
-    }
 
     /// Allocate and return data pointer of n_item array of type T (alignment to length 8 bytes)
     template <class T>
     T* allocate_8(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
         // Call override method do_allocate with alignment argument
-        return (T*)aligned_resource_8_.do_allocate(bytes, aligned_resource_8_.alignment_);
+        return (T*)arena_resource_8_.do_allocate(bytes, arena_resource_8_.alignment_);
     }
 
     /// Allocate and return data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
@@ -249,7 +402,7 @@ public:
     T* allocate_simd(size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
         // Call override method do_allocate with alignment argument
-        return (T*)aligned_resource_simd_.do_allocate(bytes, aligned_resource_simd_.alignment_);
+        return (T*)arena_resource_simd_.do_allocate(bytes, arena_resource_simd_.alignment_);
     }
 
     /// Deallocate passed data pointer of n_item array of type T (alignment to length 8 bytes)
@@ -257,7 +410,7 @@ public:
     void deallocate_8(T * data_ptr, size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
         // Call override method do_deallocate with alignment argument
-        aligned_resource_8_.do_deallocate((void *)data_ptr, bytes, aligned_resource_8_.alignment_);
+        arena_resource_8_.do_deallocate((void *)data_ptr, bytes, arena_resource_8_.alignment_);
     }
 
     /// Deallocate passed data pointer of n_item array of type T (alignment to length given by simd_alignment constructor argument)
@@ -265,7 +418,7 @@ public:
     void deallocate_simd(T * data_ptr, size_t n_items) {
         size_t bytes = sizeof(T) * n_items;
         // Call override method do_deallocate with alignment argument
-        aligned_resource_simd_.do_deallocate((void *)data_ptr, bytes, aligned_resource_simd_.alignment_);
+        arena_resource_simd_.do_deallocate((void *)data_ptr, bytes, arena_resource_simd_.alignment_);
     }
 
 protected:
@@ -288,9 +441,10 @@ protected:
 private:
     std::unique_ptr<char[]> buffer;
     size_t buffer_size;
-    Resource resource;
-    AlignedMemoryResource<Resource> aligned_resource_8_;
-    AlignedMemoryResource<Resource> aligned_resource_simd_;
+    Resource resource_;
+    AlignedMemoryResource<Resource> arena_resource_8_;
+    AlignedMemoryResource<Resource> arena_resource_simd_;
+    size_t simd_alignment_;
 };
 
 
@@ -382,21 +536,22 @@ protected:
     T* data_ptr_;
 };
 
+}; // namespace ArenaTest
 
 TEST(Arena, allocatzor) {
     try {
-        ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
+        ArenaTest::ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
 
         // Create std::pmr::vector instances using the aligned memory resources
-        AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_8 = allocator.aligned_resource_8();
-        AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_simd = allocator.aligned_resource_simd();
+        ArenaTest::AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_8(allocator.resource(), 8);
+        ArenaTest::AlignedMemoryResource<std::pmr::monotonic_buffer_resource> aligned_resource_simd(allocator.resource(), 256);
         std::pmr::vector<int> vector_8( &aligned_resource_8 );
         std::pmr::vector<int> vector_256( &aligned_resource_simd );
         std::pmr::vector<double> vector_dbl_8( &aligned_resource_8 );
         std::pmr::vector<double> vector_dbl_256( &aligned_resource_simd );
         // Create array of double of length 10
         double *custom_memory = allocator.allocate_simd<double>(10);
-        ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
+        ArenaTest::ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
 
         // Fill the vectors with some data
         for (int i = 0; i < 10; ++i) {
@@ -486,10 +641,10 @@ TEST(Arena, map_access_speed_test) {
     static const uint n_loops = 1e06;
     size_t single_sum=0, repeated_sum=0;
 
-    ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
+    ArenaTest::ArenaAllocator<std::pmr::monotonic_buffer_resource> allocator(1024 * 1024, 256); // Create an arena with 1MB buffer
 
     // Create std::pmr::vector instances using the aligned memory resources
-    ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
+    ArenaTest::ArenaVec<double> quantity_deta({2, 3}, 10, allocator);
 
     // Fill the vectors with some data
     double* data_ptr = quantity_deta.data_ptr();
@@ -526,3 +681,84 @@ TEST(Arena, map_access_speed_test) {
  * single_map_construct     0.0001052   0.0006767
  * repeated_map_construct   0.0291635   0.2823245
  */
+
+
+TEST(Arena, asm_patch_model) {
+	AssemblyArena asm_arena(1024 * 1024, 256);
+
+//    ArenaVec<double> data_vec(10, asm_arena);
+//    double *custom_memory1 = data_vec.data_ptr();
+//
+//    for (int i = 0; i < 10; ++i) {
+//        custom_memory1[i] = i * 10 + 0.5;
+//    }
+//    std::cout << "data_vec: " << data_vec.eigen_map().transpose() << std::endl;
+
+    Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> jac(2,3);
+    for (uint i=0; i<2*3; ++i)
+        jac(i) = ArenaVec<double>(10, asm_arena);
+    std::cout << "jac: " << jac.rows() << " - " << jac.cols() << std::endl;
+    std::cout << "inner: " << jac(1,2).data_size() << std::endl;
+    jac(0,0)(0) = 1.5;
+    std::cout << "zero item: " << jac(0,0)(0) << std::endl;
+    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > submat(jac.data(), 2, 2);
+    std::cout << "mat zero item: " << submat(0,0)(0) << std::endl;
+    jac(0,0)(0) = 2.5;
+    std::cout << "changed zero item: " << jac(0,0)(0) << std::endl;
+    std::cout << "changed mat zero item: " << submat(0,0)(0) << std::endl;
+
+}
+
+
+TEST(Arena, arena_alloc) {
+    static const uint N_RUNS = 4e5;
+
+    AssemblyArena asm_arena(64 * 1024, 32, std::pmr::get_default_resource());
+    size_t sum_sizes = 0;
+
+    ArenaVec<double> data_vec1(4 * 1024 + 4, asm_arena);
+    sum_sizes += data_vec1.data_size();
+
+    PatchArena *patch_arena = asm_arena.get_child_arena();
+
+    for (uint i=0; i<N_RUNS; ++i) {
+        patch_arena->reset();
+        ArenaVec<double> data_vec2(4 * 1024 + 4, *patch_arena);
+        sum_sizes += data_vec2.data_size();
+    }
+    std::cout << "sum_sizes: " << sum_sizes << std::endl;
+}
+
+
+/**
+ * Tests deallocation of arena memory.
+ *
+ * Allocate arena and 3 vectors, first vector is small and is stored in AsmArena.
+ * Two remaining vectors are large and are stored in PatchArena. Size of these vector is set up like this:
+ * 1. All 3 vectors are stored in resource of arena.
+ * 2. Sum of sizes of all vectors is larger than size of arena and allocation needs to get second block of memory.
+ *    If deallocation is not call, test causes memory error.
+ */
+TEST(Arena, dealloc_test) {
+    static const uint N_RUNS = 4e6;
+    static const size_t arena_vec_size = 1024;
+    static const size_t patch_vec_size = 510 * 1024; // first case - see test description
+    //static const size_t patch_vec_size = 512 * 1024; // second case
+
+    AssemblyArena asm_arena(1024 * 1024, 256, std::pmr::get_default_resource());
+    size_t sum_sizes = 0;
+
+    ArenaVec<double> data_vec1(arena_vec_size, asm_arena);
+    sum_sizes += data_vec1.data_size();
+
+    PatchArena *patch_arena = asm_arena.get_child_arena();
+
+    for (uint i=0; i<N_RUNS; ++i) {
+        patch_arena->reset();
+        ArenaVec<double> data_vec2(patch_vec_size, *patch_arena);
+        ArenaVec<double> data_vec3(patch_vec_size, *patch_arena);
+        sum_sizes += data_vec2.data_size() + data_vec3.data_size();
+    }
+    std::cout << "sum_sizes: " << sum_sizes << std::endl;
+}
+
