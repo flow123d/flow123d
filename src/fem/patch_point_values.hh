@@ -128,7 +128,9 @@ public:
      * @param dim Set dimension
      */
     PatchPointValues(uint dim, AssemblyArena &asm_arena)
-    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena) {}
+    : dim_(dim), n_rows_(0), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena) {
+        reset();
+    }
 
     /**
      * Initialize object, set number of columns (quantities) in tables.
@@ -151,6 +153,7 @@ public:
     inline void reset() {
         n_points_ = 0;
         n_elems_ = 0;
+        i_elem_ = 0;
     }
 
     /// Getter for dim_
@@ -180,6 +183,8 @@ public:
 
     /// Resize data tables. Method is called before reinit of patch.
     void resize_tables(uint n_elems, uint n_points) {
+        n_elems_ = n_elems;
+        // n_points_ = n_points; // will be set here later
         std::vector<uint> sizes = {n_elems, n_points};
         for (auto &elOp : operations_)
             if (elOp.size_type() != fixedSizeOp) {
@@ -207,16 +212,16 @@ public:
     	ElOp<spacedim> &op = operations_[FeBulk::BulkOps::opElCoords];
         uint res_column = op.result_row();
         auto &coords_mat = op.result_matrix();
-        std::size_t i_elem = n_elems_;
+        std::size_t i_elem = i_elem_;
         for (uint i_col=0; i_col<coords.n_cols; ++i_col)
             for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
-                point_vals_(res_column)(n_elems_) = coords(i_row, i_col);
+                point_vals_(res_column)(i_elem_) = coords(i_row, i_col);
                 coords_mat(i_row, i_col)(i_elem) = coords(i_row, i_col);
                 ++res_column;
             }
 
-        elements_map_[element_patch_idx] = n_elems_;
-        return n_elems_++;
+        elements_map_[element_patch_idx] = i_elem_;
+        return i_elem_++;
     }
 
     /**
@@ -229,18 +234,18 @@ public:
         uint res_column = operations_[FeSide::SideOps::opElCoords].result_row();
         for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
             for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
-                point_vals_(res_column)(n_elems_) = elm_coords(i_row, i_col);
+                point_vals_(res_column)(i_elem_) = elm_coords(i_row, i_col);
                 ++res_column;
             }
 
         res_column = operations_[FeSide::SideOps::opSideCoords].result_row();
         for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
             for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
-                point_vals_(res_column)(n_elems_) = side_coords(i_row, i_col);
+                point_vals_(res_column)(i_elem_) = side_coords(i_row, i_col);
                 ++res_column;
             }
 
-        return n_elems_++;
+        return i_elem_++;
     }
 
     /**
@@ -249,14 +254,17 @@ public:
      * @param elem_table_row  Index of element in temporary element table.
      * @param value_patch_idx Index of point in ElementCacheMap.
      * @param elem_idx        Index of element in Mesh.
+     * @param i_point_on_elem Index of point on element
      */
-    uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx) {
-        int_vals_(0)(n_points_) = value_patch_idx;
-        int_vals_(1)(n_points_) = elem_table_row;
-        int_vals_(2)(n_points_) = elem_idx;
+    uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint i_point_on_elem) {
+        uint point_pos = i_point_on_elem * n_elems_ + elem_table_row; // index of bulk point on patch
+        int_vals_(0)(point_pos) = value_patch_idx;
+        int_vals_(1)(point_pos) = elem_table_row;
+        int_vals_(2)(point_pos) = elem_idx;
 
-        points_map_[value_patch_idx] = n_points_;
-        return n_points_++;
+        points_map_[value_patch_idx] = point_pos;
+        n_points_++;
+        return point_pos;
     }
 
     /**
@@ -488,6 +496,7 @@ protected:
     uint n_rows_;                       ///< Number of columns of \p point_vals table
     uint n_points_;                     ///< Number of points in patch
     uint n_elems_;                      ///< Number of elements in patch
+    uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
     Quadrature *quad_;                  ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to el_vals_ table
@@ -585,7 +594,7 @@ public:
     }
 
     inline void allocate_result(size_t data_size, PatchArena &arena) {
-        result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(n_dofs()*shape_[0], shape_[1]);
+        result_ = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>(shape_[0], shape_[1]);
         for (uint i=0; i<n_comp(); ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
     }
@@ -704,7 +713,7 @@ struct bulk_reinit {
         auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
-        ArenaOVec<double> jxw_ovec = weights_ovec * jac_det_ovec;
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
         auto &jxw_value = op.result_matrix();
         jxw_value(0,0) = jxw_ovec.get_vec();
     }
@@ -714,22 +723,20 @@ struct bulk_reinit {
         uint n_dofs = shape_values.size();
         uint n_points = shape_values[0].size();
         uint n_elem = op.result_matrix()(0).data_size() / n_points;
-//        std::cout << "XXXXX ptop_scalar_shape " << op.dim() << ", " << n_dofs << ", " << n_points << ", " << n_elem << std::endl;
 
         auto &shape_matrix = op.result_matrix();
-        ArenaVec<double> ref_vec(n_points, op.result_matrix()(0).arena());
+        ArenaVec<double> ref_vec(n_points * n_dofs, op.result_matrix()(0).arena());
         ArenaVec<double> elem_vec(n_elem, op.result_matrix()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
         ArenaOVec<double> ref_ovec(ref_vec);
         ArenaOVec<double> elem_ovec(elem_vec);
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
-                ref_vec(i_p) = shape_values[i_dof][i_p];
-            ArenaOVec<double> shape_ovec = ref_ovec * elem_ovec;
-            shape_matrix(i_dof) = shape_ovec.get_vec();
-        }
+                ref_vec(i_dof * n_points + i_p) = shape_values[i_dof][i_p];
+        ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
+        shape_matrix(0) = shape_ovec.get_vec();
     }
     template<unsigned int dim>
     static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, TableDbl &op_results,

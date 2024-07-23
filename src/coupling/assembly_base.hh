@@ -232,9 +232,10 @@ public:
             if (bulk_integral_data[i].cell.dim() != dim) continue;
             uint element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
             uint elm_pos = fe_values_->register_element(bulk_integral_data[i].cell, element_patch_idx);
+            uint i_point = 0;
             for (auto p : this->bulk_points(element_patch_idx) ) {
                 unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                fe_values_->register_bulk_point(bulk_integral_data[i].cell, elm_pos, value_cache_idx);
+                fe_values_->register_bulk_point(bulk_integral_data[i].cell, elm_pos, value_cache_idx, i_point++);
             }
         }
     }
@@ -272,25 +273,26 @@ public:
         uint side_pos, element_patch_idx, elm_pos=0;
         uint last_element_idx = -1;
 
-    	for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
+        for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
             if (coupling_integral_data[i].side.dim() != dim) continue;
-        	side_pos = fe_values_->register_side(coupling_integral_data[i].side);
+            side_pos = fe_values_->register_side(coupling_integral_data[i].side);
             if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
-        	    element_patch_idx = this->element_cache_map_->position_in_cache(coupling_integral_data[i].cell.elm_idx());
+                element_patch_idx = this->element_cache_map_->position_in_cache(coupling_integral_data[i].cell.elm_idx());
                 elm_pos = fe_values_->register_element(coupling_integral_data[i].cell, element_patch_idx);
             }
 
-        	for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
+            uint i_point = 0;
+            for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
             {
-        	    unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
+                unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
                 fe_values_->register_side_point(coupling_integral_data[i].side, side_pos, value_cache_idx);
                 if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
                     auto p_low = p_high.lower_dim(coupling_integral_data[i].cell);
             	    value_cache_idx = p_low.elm_cache_map()->element_eval_point(p_low.elem_patch_idx(), p_low.eval_point_idx());
-                    fe_values_->register_bulk_point(coupling_integral_data[i].cell, elm_pos, value_cache_idx);
+                    fe_values_->register_bulk_point(coupling_integral_data[i].cell, elm_pos, value_cache_idx, i_point++);
                 }
             }
-        	last_element_idx = coupling_integral_data[i].cell.elm_idx();
+            last_element_idx = coupling_integral_data[i].cell.elm_idx();
         }
     }
 

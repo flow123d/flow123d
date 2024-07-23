@@ -817,8 +817,8 @@ public:
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx) {
-        return patch_point_vals_bulk_[cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx());
+    uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx, uint i_point_on_elem) {
+        return patch_point_vals_bulk_[cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx(), i_point_on_elem);
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
