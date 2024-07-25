@@ -861,7 +861,7 @@ public:
 
 private:
     AssemblyArena asm_arena_;
-    AssemblyArena *patch_arena_;
+    PatchArena *patch_arena_;
     std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;  ///< Sub objects of bulk data of dimensions 1,2,3
     std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;  ///< Sub objects of side data of dimensions 1,2,3
 

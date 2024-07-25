@@ -51,7 +51,7 @@ public:
     /**
      * Constructor. Set sizes and allocate data pointer
      */
-    ArenaVec(size_t data_size, AssemblyArena &arena)
+    ArenaVec(size_t data_size, PatchArena &arena)
     : data_ptr_(nullptr), data_size_(data_size), arena_(&arena) {
         data_ptr_ = arena_->allocate_simd<T>( data_size_ );
     }
@@ -106,7 +106,7 @@ public:
     }
 
     /// Getter for arena_
-    AssemblyArena &arena() {
+    PatchArena &arena() {
         return *arena_;
     }
 
@@ -211,12 +211,12 @@ public:
 
 protected:
     /// Constructor. Allows create ArenaVec from ArenaOVec
-    ArenaVec(T* data_ptr, size_t data_size, AssemblyArena &arena)
+    ArenaVec(T* data_ptr, size_t data_size, PatchArena &arena)
     : data_ptr_(data_ptr), data_size_(data_size), arena_(&arena) {}
 
     T* data_ptr_;            ///< Pointer to data array
     size_t data_size_;       ///< Length of data array
-    AssemblyArena *arena_;   ///< Pointer to Arena where intermediate calculations and results are stored, should be changed by set_patch_arena
+    PatchArena *arena_;      ///< Pointer to Arena where intermediate calculations and results are stored, should be changed by set_patch_arena
     T scalar_val_;           ///< Scalar value of T type
 
     friend class ArenaOVec<T>;
