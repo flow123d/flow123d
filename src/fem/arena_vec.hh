@@ -153,6 +153,14 @@ public:
         return data_ptr_[item];
     }
 
+    inline ArenaVec<T> &operator=(const ArenaVec<T> &other) {
+        data_ptr_ = other.data_ptr_;
+        data_size_ = other.data_size_;
+        arena_ = other.arena_;
+        scalar_val_ = other.scalar_val_;
+        return *this;
+    }
+
     inline ArenaVec<T> operator+(const ArenaVec<T> &other) const {
         ASSERT_PTR(data_ptr_);
         ASSERT_PTR(other.data_ptr());
@@ -227,18 +235,40 @@ protected:
 /// Outer product - only proposal of multi operator
 template<class T>
 class ArenaOVec : public ArenaVec<T> {
-public:
-	ArenaOVec(ArenaVec<T> &vec)
-	: vec_(vec) {
-	    ASSERT_PTR(vec.data_ptr());
-	    this->data_ptr_ = vec_.data_ptr();
-	    this->data_size_ = vec_.data_size();
-	    this->arena_ = vec_.arena_;
-	}
+private:
+    /// Return empty ArenaVec object, use in default constructor
+    static ArenaVec<T> &empty_arena_vec() {
+        static ArenaVec<T> arena_vec;
+        return arena_vec;
+    }
 
-    ArenaVec<T> get_vec() {
+public:
+    /// Default constructor
+    ArenaOVec()
+    : ArenaVec<T>(), vec_( ArenaOVec<T>::empty_arena_vec() ) {}
+
+    /// Constructor creates ArenaOVec on data of ArenaVec
+    ArenaOVec(ArenaVec<T> &vec)
+    : vec_(vec) {
+        ASSERT_PTR(vec.data_ptr());
+        this->data_ptr_ = vec_.data_ptr();
+        this->data_size_ = vec_.data_size();
+        this->arena_ = vec_.arena_;
+    }
+
+    ArenaVec<T> get_vec() const {
         return ArenaVec<T>(*this);
     }
+
+    inline ArenaOVec<T> &operator=(const ArenaOVec<T> &other) {
+        this->data_ptr_ = other.data_ptr_;
+        this->data_size_ = other.data_size_;
+        this->arena_ = other.arena_;
+        this->scalar_val_ = other.scalar_val_;
+        vec_ = other.vec_;
+        return *this;
+    }
+
 
     inline ArenaOVec<T> operator+(const ArenaOVec<T> &other) const {
         // Test of valid data_ptr is in constructor

@@ -343,8 +343,8 @@ public:
         // use lambda reinit function
         auto ref_shape_grads = this->ref_shape_gradients(fe_component);
         uint scalar_shape_grads_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, op_results, ref_shape_grads, scalar_shape_grads_op_idx);
+        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, ref_shape_grads, scalar_shape_grads_op_idx);
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
