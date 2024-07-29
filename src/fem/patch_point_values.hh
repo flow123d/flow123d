@@ -365,8 +365,8 @@ public:
     inline Scalar scalar_val(uint result_row, uint point_idx) const {
         return point_vals_(result_row)(points_map_[point_idx]);
     }
-    inline Scalar scalar_value(uint op_idx, uint point_idx) const {
-        return operations_[op_idx].result_matrix()(0)(points_map_[point_idx]);
+    inline Scalar scalar_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+        return operations_[op_idx].result_matrix()(0)(points_map_[point_idx] + i_dof*n_points_);
     }
 
     /**
@@ -381,11 +381,12 @@ public:
             val(i) = point_vals_(result_row+i)(points_map_[point_idx]);
         return val;
     }
-    inline Vector vector_value(uint op_idx, uint point_idx) const {
+    inline Vector vector_value(uint op_idx, uint point_idx, uint i_dof=0) const {
         Vector val;
         const auto &op_matrix = operations_[op_idx].result_matrix();
+        uint op_matrix_idx = points_map_[point_idx] + i_dof*n_points_;
         for (uint i=0; i<3; ++i)
-            val(i) = op_matrix(i)(points_map_[point_idx]);
+            val(i) = op_matrix(i)(op_matrix_idx);
         return val;
     }
 
@@ -402,12 +403,13 @@ public:
                 val(i,j) = point_vals_(result_row+3*i+j)(points_map_[point_idx]);
         return val;
     }
-    inline Tensor tensor_value(uint op_idx, uint point_idx) const {
+    inline Tensor tensor_value(uint op_idx, uint point_idx, uint i_dof=0) const {
         Tensor val;
         const auto &op_matrix = operations_[op_idx].result_matrix();
+        uint op_matrix_idx = points_map_[point_idx] + i_dof*n_points_;
         for (uint i=0; i<3; ++i)
             for (uint j=0; j<3; ++j)
-                val(i,j) = op_matrix(i,j)(points_map_[point_idx]);
+                val(i,j) = op_matrix(i,j)(op_matrix_idx);
         return val;
     }
 

@@ -65,8 +65,8 @@ public:
 
 private:
     PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
-    unsigned int begin_;                    /// Index of the first component of the bulk Quantity. Size is given by ValueType
-    unsigned int op_idx_;                   /// Index of operation in patch_point_vals_.operations vector
+    unsigned int begin_;                    ///< Index of the first component of the bulk Quantity. Size is given by ValueType
+    unsigned int op_idx_;                   ///< Index of operation in patch_point_vals_.operations vector
 };
 
 
@@ -77,8 +77,8 @@ public:
     FeQ() = delete;
 
     // Class similar to current FeView
-    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int begin, unsigned int n_dofs)
-    : patch_point_vals_(patch_point_vals), begin_(begin), n_dofs_(n_dofs) {}
+    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int begin, unsigned int op_idx, unsigned int n_dofs)
+    : patch_point_vals_(patch_point_vals), begin_(begin), op_idx_(op_idx), n_dofs_(n_dofs) {}
 
 
     ValueType operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point);
@@ -91,6 +91,7 @@ public:
 private:
     PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
     unsigned int begin_;                    ///< Index of the first component of the Quantity. Size is given by ValueType
+    unsigned int op_idx_;                   ///< Index of operation in patch_point_vals_.operations vector
     unsigned int n_dofs_;                   ///< Number of DOFs
 };
 
@@ -319,8 +320,9 @@ public:
         auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         // lambda_scalar_shape
         uint begin = scalar_shape_bulk_op.result_row();
+        uint op_idx = patch_point_vals_.operations_.size()-1;
 
-        return FeQ<Scalar>(patch_point_vals_, begin, fe_component->n_dofs());
+        return FeQ<Scalar>(patch_point_vals_, begin, op_idx, fe_component->n_dofs());
     }
 
 //    inline FeQ<Vector> vector_shape(uint component_idx = 0)
@@ -348,8 +350,9 @@ public:
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_bulk_op.result_row();
+        uint op_idx = patch_point_vals_.operations_.size()-1;
 
-        return FeQ<Vector>(patch_point_vals_, begin, fe_component->n_dofs());
+        return FeQ<Vector>(patch_point_vals_, begin, op_idx, fe_component->n_dofs());
     }
 
 //    inline FeQ<Tensor> grad_vector_shape(std::initializer_list<Quadrature *> quad_list, unsigned int i_comp=0)
@@ -454,8 +457,9 @@ public:
             };
         auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         uint begin = scalar_shape_bulk_op.result_row();
+        uint op_idx = patch_point_vals_.operations_.size()-1;
 
-        return FeQ<Scalar>(patch_point_vals_, begin, fe_component->n_dofs());
+        return FeQ<Scalar>(patch_point_vals_, begin, op_idx, fe_component->n_dofs());
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
@@ -472,8 +476,9 @@ public:
             };
         auto &grad_scalar_shape_side_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_side_op.result_row();
+        uint op_idx = patch_point_vals_.operations_.size()-1;
 
-        return FeQ<Vector>(patch_point_vals_, begin, fe_component->n_dofs());
+        return FeQ<Vector>(patch_point_vals_, begin, op_idx, fe_component->n_dofs());
     }
 
 private:
@@ -916,19 +921,19 @@ inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) {
 template <class ValueType>
 ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const BulkPoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_val(begin_+shape_idx, value_cache_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 template <>
 inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const BulkPoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_val(begin_+3*shape_idx, value_cache_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 template <>
-inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const BulkPoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+inline Tensor FeQ<Tensor>::operator()(unsigned int shape_idx, const BulkPoint &point) {
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 template <class ValueType>
