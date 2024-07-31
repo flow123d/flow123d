@@ -40,7 +40,7 @@ public:
 
 	/// Default constructor, set invalid data pointer
     ArenaVec()
-    : data_ptr_(nullptr), data_size_(0), arena_(nullptr) {}
+    : data_ptr_(nullptr), data_size_(0), arena_(nullptr), scalar_val_( (T)0 ) {}
 
     /**
      * Constructor. Set scalar value
@@ -52,7 +52,7 @@ public:
      * Constructor. Set sizes and allocate data pointer
      */
     ArenaVec(size_t data_size, PatchArena &arena)
-    : data_ptr_(nullptr), data_size_(data_size), arena_(&arena) {
+    : data_ptr_(nullptr), data_size_(data_size), arena_(&arena), scalar_val_( (T)0 ) {
         data_ptr_ = arena_->allocate_simd<T>( data_size_ );
     }
 
