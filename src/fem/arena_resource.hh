@@ -29,7 +29,7 @@
 // Final proposal of Arena
 // TODO shared_ptr out of class, pass pointer to data, describe how to use
 template <class Resource>
-class ArenaResource : public std::pmr::memory_resource {
+class PatchArenaResource : public std::pmr::memory_resource {
 protected:
     /// Returns different upstream resource in debug / release mode
 	static inline std::pmr::memory_resource* upstream_resource() {
@@ -42,7 +42,7 @@ protected:
 
 public:
     /// Same as previous but doesn't construct buffer implicitly.
-    ArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
+	PatchArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = PatchArenaResource<Resource>::upstream_resource())
     : upstream_( upstream ),
       buffer_(buffer),
       buffer_size_(buffer_size),
@@ -55,7 +55,7 @@ public:
     }
 
 
-    ~ArenaResource() = default; // virtual, call destructor buffer_ = default_resource, (resource_)
+    ~PatchArenaResource() = default; // virtual, call destructor buffer_ = default_resource, (resource_)
 
     /// Compute and print free space and used space of arena buffer. Development method
     inline void print_space() {
@@ -136,11 +136,11 @@ protected:
 
 
 template <class Resource>
-class AssemblyArenaResource : public ArenaResource<Resource> {
+class AssemblyArenaResource : public PatchArenaResource<Resource> {
 public:
     /// Constructor. Creates assembly arena
-	AssemblyArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = ArenaResource<Resource>::upstream_resource())
-    : ArenaResource<Resource>( std::pmr::get_default_resource()->allocate(buffer_size, simd_alignment), buffer_size, simd_alignment, upstream ) {}
+	AssemblyArenaResource(size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = PatchArenaResource<Resource>::upstream_resource())
+    : PatchArenaResource<Resource>( std::pmr::get_default_resource()->allocate(buffer_size, simd_alignment), buffer_size, simd_alignment, upstream ) {}
 
 	virtual ~AssemblyArenaResource() {
 	    this->do_deallocate(this->buffer_, this->buffer_size_, this->simd_alignment_);
@@ -152,12 +152,12 @@ public:
      * Child arena is created in free space of actual arena.
      * Actual arena is marked as full (flag full_data_) and cannot allocate new data.
      */
-    ArenaResource<Resource> *get_child_arena() {
+	PatchArenaResource<Resource> *get_child_arena() {
         void *p = this->raw_allocate(1, this->simd_alignment_);
         size_t used_size = (char *)p - (char *)this->buffer_;
         size_t free_space = this->buffer_size_ - used_size;
         this->full_data_ = true;
-        return new ArenaResource<Resource>(p, free_space, this->simd_alignment_);
+        return new PatchArenaResource<Resource>(p, free_space, this->simd_alignment_);
     }
 
 
@@ -166,7 +166,7 @@ public:
 
 
 using AssemblyArena = AssemblyArenaResource<std::pmr::monotonic_buffer_resource>;
-using PatchArena = ArenaResource<std::pmr::monotonic_buffer_resource>;
+using PatchArena = PatchArenaResource<std::pmr::monotonic_buffer_resource>;
 
 
 #endif /* ARENA_RESOURCE_HH_ */
