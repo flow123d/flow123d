@@ -393,7 +393,7 @@ public:
             }
             EXPECT_DOUBLE_EQ( jxw, jxw_ref );
             //EXPECT_DOUBLE_EQ( det, det_ref );
-            //EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
+            EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
             sum_grad_scalar += (grad_scalar_ref(0) - grad_scalar(0));
         }
 
