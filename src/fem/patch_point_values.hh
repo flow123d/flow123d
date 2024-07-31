@@ -713,8 +713,8 @@ struct bulk_reinit {
         auto &op = operations[FeBulk::BulkOps::opJxW];
         auto &weights_value = operations[ op.input_ops()[0] ].result_matrix();
         auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
-        ArenaOVec<double> weights_ovec( weights_value(0,0) );
-        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+        ArenaOVec<double> weights_ovec( weights_value(0,0), weights_value(0,0).data_size() );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0), jac_det_value(0,0).data_size() );
         ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
         auto &jxw_value = op.result_matrix();
         jxw_value(0,0) = jxw_ovec.get_vec();
@@ -732,8 +732,8 @@ struct bulk_reinit {
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
-        ArenaOVec<double> ref_ovec(ref_vec);
-        ArenaOVec<double> elem_ovec(elem_vec);
+        ArenaOVec<double> ref_ovec(ref_vec, ref_vec.data_size());
+        ArenaOVec<double> elem_ovec(elem_vec, elem_vec.data_size());
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
                 ref_vec(i_dof * n_points + i_p) = shape_values[i_dof][i_p];
@@ -755,20 +755,19 @@ struct bulk_reinit {
             for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_dof][i_p](i);
-            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
+            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i), ref_grads_vec(i).data_size());
         }
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
         for (uint i=0; i<dim*3; ++i) {
-            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
+            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i), inv_jac_vec(i).data_size());
         }
 
         auto &result_vec = op.result_matrix();
-        auto result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-        std::cout << " - ptop_scalar_shape_grads sizes: " << result_vec.rows() << ", " << result_ovec.rows() << std::endl;
-//        for (uint i=0; i<3; ++i) {
-//            result_vec(i) = result_ovec(i).get_vec();
-//        }
+        Eigen::Matrix<ArenaOVec<double>, 3, 1> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+        for (uint i=0; i<3; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
     }
 };
 
