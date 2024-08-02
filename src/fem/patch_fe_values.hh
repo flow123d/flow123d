@@ -903,19 +903,19 @@ inline Tensor ElQ<Tensor>::operator()(const BulkPoint &point) {
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const SidePoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_val(begin_, value_cache_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx);
 }
 
 template <>
 inline Vector ElQ<Vector>::operator()(const SidePoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_val(begin_, value_cache_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx);
 }
 
 template <>
 inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.tensor_val(begin_, value_cache_idx);
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx);
 }
 
 template <class ValueType>
@@ -939,19 +939,19 @@ inline Tensor FeQ<Tensor>::operator()(unsigned int shape_idx, const BulkPoint &p
 template <class ValueType>
 ValueType FeQ<ValueType>::operator()(unsigned int shape_idx, const SidePoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_val(begin_+shape_idx, value_cache_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 template <>
 inline Vector FeQ<Vector>::operator()(unsigned int shape_idx, const SidePoint &point) {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_val(begin_+3*shape_idx, value_cache_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 template <>
 inline Tensor FeQ<Tensor>::operator()(FMT_UNUSED unsigned int shape_idx, FMT_UNUSED const SidePoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, shape_idx);
 }
 
 
