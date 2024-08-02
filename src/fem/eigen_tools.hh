@@ -36,6 +36,7 @@ typedef Eigen::Array<uint,Eigen::Dynamic,1>    ArrayInt;
 typedef Eigen::Vector<ArrayDbl,Eigen::Dynamic> TableDbl;
 typedef Eigen::Vector<ArrayInt,Eigen::Dynamic> TableInt;
 
+typedef Eigen::Vector<ArenaVec<uint>, Eigen::Dynamic> IntTableArena;
 
 namespace eigen_tools {
 

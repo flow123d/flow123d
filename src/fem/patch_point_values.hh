@@ -43,7 +43,7 @@ using Tensor = arma::mat33;
 
 
 /// Type for conciseness
-using ReinitFunction = std::function<void(std::vector<ElOp<3>> &, TableInt &)>;
+using ReinitFunction = std::function<void(std::vector<ElOp<3>> &, IntTableArena &)>;
 
 
 namespace FeBulk {
@@ -135,14 +135,13 @@ public:
     /**
      * Initialize object, set number of columns (quantities) in tables.
      *
-     * Number of columns of int_vals_ table is passed by argument \p int_cols, number of columns
-     * of other tables is given by n_rows_ value.
+     * Number of columns point_vals_ is given by n_rows_ value.
      */
-    void initialize(uint int_cols) {
+    void initialize() {
         this->reset();
 
-    	point_vals_.resize(n_rows_);
-    	int_vals_.resize(int_cols);
+        point_vals_.resize(n_rows_);
+        int_table_.resize(int_sizes_.size());
     }
 
     inline void init_finalize(PatchArena *patch_arena) {
@@ -186,6 +185,9 @@ public:
         n_elems_ = n_elems;
         n_points_ = n_points;
         std::vector<uint> sizes = {n_elems, n_points};
+	    for (uint i=0; i<int_table_.rows(); ++i) {
+	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_arena_);
+	    }
         for (auto &elOp : operations_)
             if (elOp.size_type() != fixedSizeOp) {
                 elOp.allocate_result(sizes[elOp.size_type()], *patch_arena_);
@@ -199,7 +201,6 @@ public:
                 point_vals_(i).setZero(n_points,1);
             }
         }
-        eigen_tools::resize_table(int_vals_, n_points);
     }
 
     /**
@@ -229,8 +230,9 @@ public:
      *
      * @param coords      Coordinates of element nodes.
      * @param side_coords Coordinates of side nodes.
+     * @param side_idx    Index of side on element.
      */
-    uint register_side(arma::mat elm_coords, arma::mat side_coords) {
+    uint register_side(arma::mat elm_coords, arma::mat side_coords, uint side_idx) {
     	{
             ElOp<spacedim> &op = operations_[FeSide::SideOps::opElCoords];
             uint res_column = op.result_row();
@@ -257,11 +259,13 @@ public:
                 }
     	}
 
+    	int_table_(3)(i_elem_) = side_idx;
+
         return i_elem_++;
     }
 
     /**
-     * Register bulk point, add to int_vals_ table
+     * Register bulk point, add to int_table_
      *
      * @param elem_table_row  Index of element in temporary element table.
      * @param value_patch_idx Index of point in ElementCacheMap.
@@ -270,16 +274,16 @@ public:
      */
     uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint i_point_on_elem) {
         uint point_pos = i_point_on_elem * n_elems_ + elem_table_row; // index of bulk point on patch
-        int_vals_(0)(point_pos) = value_patch_idx;
-        int_vals_(1)(point_pos) = elem_table_row;
-        int_vals_(2)(point_pos) = elem_idx;
+        int_table_(0)(point_pos) = value_patch_idx;
+        int_table_(1)(point_pos) = elem_table_row;
+        int_table_(2)(point_pos) = elem_idx;
 
         points_map_[value_patch_idx] = point_pos;
         return point_pos;
     }
 
     /**
-     * Register side point, add to int_vals_ table
+     * Register side point, add to int_table_
      *
      * @param elem_table_row  Index of side in temporary element table.
      * @param value_patch_idx Index of point in ElementCacheMap.
@@ -289,10 +293,10 @@ public:
      */
     uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
         uint point_pos = i_point_on_side * n_elems_ + elem_table_row; // index of side point on patch
-        int_vals_(0)(point_pos) = value_patch_idx;
-        int_vals_(1)(point_pos) = elem_table_row;
-        int_vals_(2)(point_pos) = elem_idx;
-        int_vals_(3)(point_pos) = side_idx;
+        int_table_(0)(point_pos) = value_patch_idx;
+        int_table_(1)(point_pos) = elem_table_row;
+        int_table_(2)(point_pos) = elem_idx;
+        int_table_(4)(point_pos) = side_idx;
 
         points_map_[value_patch_idx] = point_pos;
         return point_pos;
@@ -366,7 +370,7 @@ public:
     void reinit_patch() {
         if (n_elems_ == 0) return; // skip if tables are empty
         for (uint i=0; i<operations_.size(); ++i)
-            operations_[i].reinit_function(operations_, int_vals_);
+            operations_[i].reinit_function(operations_, int_table_);
     }
 
     /**
@@ -451,10 +455,14 @@ public:
             stream << std::endl;
         }
         if (ints) {
-            stream << "Int vals: " << int_vals_.rows() << " - " << int_vals_.cols() << std::endl;
-	        for (uint i_row=0; i_row<n_points_; ++i_row) {
-                for (uint i_col=0; i_col<3; ++i_col)
-                	stream << int_vals_(i_col)(i_row) << " ";
+            stream << "Int vals: " << int_table_.rows() << " - " << int_table_.cols() << std::endl;
+            for (uint i_row=0; i_row<int_table_.rows(); ++i_row) {
+                if (int_table_(i_row).data_size()==0) stream << "<empty>";
+                else {
+                    const uint *vals = int_table_(i_row).data_ptr();
+                    for (size_t i_val=0; i_val<int_table_(i_row).data_size(); ++i_val)
+                        stream << vals[i_val] << " ";
+                }
                 stream << std::endl;
             }
             stream << std::endl;
@@ -493,16 +501,22 @@ protected:
      */
     TableDbl point_vals_;
     /**
-     * Hold integer values of quadrature points of previous table.
+     * Hold integer values of quadrature points of defined operations.
      *
-     * Table contains following columns:
+     * Table contains following rows:
      *  0: Index of quadrature point on patch
      *  1: Row of element/side in point_vals_ table in registration step (before expansion)
      *  2: Element idx in Mesh
-     *  3: Index of side in element (column is allocated only for side point table)
+     *   - last two rows are allocated only for side point table
+     *  3: Index of side in element - short vector, size of column = number of sides
+     *  4: Index of side in element - long vector, size of column = number of points
      * Number of used rows is given by n_points_.
      */
-    TableInt int_vals_;
+    IntTableArena int_table_;
+
+    /// Set size and type of rows of int_table_, value is set implicitly in constructor of descendants
+    std::vector<OpSizeType> int_sizes_;
+
 
     /// Vector of all defined operations
     std::vector<ElOp<spacedim>> operations_;
@@ -515,7 +529,7 @@ protected:
     Quadrature *quad_;                  ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to el_vals_ table
-    std::vector<uint> points_map_;      ///< Map of point patch indices  to point_vals_ and int_vals_ tables
+    std::vector<uint> points_map_;      ///< Map of point patch indices to point_vals_ and int_table_ tables
     std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
     AssemblyArena &asm_arena_;          ///< Reference to global assembly arena of PatchFeValues
     PatchArena *patch_arena_;           ///< Pointer to global patch arena of PatchFeValues
@@ -604,7 +618,7 @@ public:
     }
 
     /// Call reinit function on element table if function is defined
-    inline void reinit_function(std::vector<ElOp<spacedim>> &operations, TableInt &int_table) {
+    inline void reinit_function(std::vector<ElOp<spacedim>> &operations, IntTableArena &int_table) {
         reinit_func(operations, int_table);
     }
 
@@ -664,7 +678,7 @@ protected:
 /// Defines common functionality of reinit operations.
 struct common_reinit {
 	// empty base operation
-	static inline void op_base(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+	static inline void op_base(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // empty
     }
 
@@ -685,7 +699,7 @@ struct common_reinit {
 struct bulk_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeBulk::BulkOps::opJac];
         auto &jac_value = op.result_matrix();
@@ -695,7 +709,7 @@ struct bulk_reinit {
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeBulk::BulkOps::opInvJac];
         auto &inv_jac_value = op.result_matrix();
@@ -703,7 +717,7 @@ struct bulk_reinit {
         inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
     }
     template<unsigned int dim>
-    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeBulk::BulkOps::opJacDet];
         auto &jac_det_value = op.result_matrix();
@@ -712,7 +726,7 @@ struct bulk_reinit {
     }
 
     // point operations
-    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
     static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
@@ -722,7 +736,7 @@ struct bulk_reinit {
         for (uint i=0; i<point_weights.size(); ++i)
             weights_value(0,0)(i) = point_weights[i];
     }
-    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         auto &op = operations[FeBulk::BulkOps::opJxW];
         auto &weights_value = operations[ op.input_ops()[0] ].result_matrix();
         auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
@@ -790,7 +804,7 @@ struct bulk_reinit {
 struct side_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_el_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_el_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeSide::SideOps::opElJac];
         auto &jac_value = op.result_matrix();
@@ -800,14 +814,14 @@ struct side_reinit {
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         auto &op = operations[FeSide::SideOps::opElInvJac];
         auto &inv_jac_value = op.result_matrix();
         const auto &jac_value = operations[ op.input_ops()[0] ].result_matrix();
         inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeSide::SideOps::opSideJac];
         auto &jac_value = op.result_matrix();
@@ -817,7 +831,7 @@ struct side_reinit {
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_sd_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeSide::SideOps::opSideJacDet];
         auto &jac_det_value = op.result_matrix();
@@ -854,7 +868,7 @@ struct side_reinit {
 //    }
 
     // Point operations
-    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
     static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
@@ -864,7 +878,7 @@ struct side_reinit {
         for (uint i=0; i<point_weights.size(); ++i)
             weights_value(0,0)(i) = point_weights[i];
     }
-    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         auto &op = operations[FeSide::SideOps::opJxW];
         auto &weights_value = operations[ op.input_ops()[0] ].result_matrix();
         auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
@@ -875,7 +889,7 @@ struct side_reinit {
         jxw_value(0,0) = jxw_ovec.get_vec();
     }
     template<unsigned int dim>
-    static inline void ptop_normal_vec(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_normal_vec(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
 //        auto &op = operations[FeSide::SideOps::opNormalVec];
 //        auto normal_value = op.value<3, 1>(op_results);
 //        auto inv_jac_mat_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
@@ -895,7 +909,7 @@ struct side_reinit {
 //        	normal_value(i) /= norm_vec;
 //        }
     }
-    static inline void ptop_scalar_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table,
+    static inline void ptop_scalar_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
     		FMT_UNUSED std::vector< std::vector< std::vector<double> > > shape_values, FMT_UNUSED uint scalar_shape_op_idx) {
 //        auto &op = operations[scalar_shape_op_idx];
 //        uint n_points = shape_values[0].size();
@@ -907,7 +921,7 @@ struct side_reinit {
 //        }
     }
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table,
+    static inline void ptop_scalar_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
             FMT_UNUSED std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, FMT_UNUSED uint scalar_shape_grads_op_idx) {
 //        auto &op = operations[scalar_shape_grads_op_idx];
 //        uint n_points = ref_shape_grads[0].size();
@@ -937,11 +951,11 @@ struct side_reinit {
 
 // template specialization
 template<>
-inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
 }
 
 template<>
-inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
     auto &op = operations[FeSide::SideOps::opSideJacDet];
     auto &result_vec = op.result_matrix();
     for (uint i=0;i<result_vec(0,0).data_size(); ++i) {
@@ -965,6 +979,7 @@ namespace FeBulk {
         PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
         : ::PatchPointValues<spacedim>(dim, asm_arena) {
             this->quad_ = new QGauss(dim, 2*quad_order);
+            this->int_sizes_ = {pointOp, pointOp, pointOp};
             switch (dim) {
             case 1:
             	init<1>();
@@ -996,7 +1011,7 @@ namespace FeBulk {
 
             // use lambda reinit function
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
                     bulk_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
                 };
             /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
@@ -1019,6 +1034,7 @@ namespace FeSide {
         PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
         : ::PatchPointValues<spacedim>(dim, asm_arena) {
             this->quad_ = new QGauss(dim-1, 2*quad_order);
+            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
             switch (dim) {
             case 1:
             	init<1>();
@@ -1067,7 +1083,7 @@ namespace FeSide {
 
             // use lambda reinit function
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
+            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
                     side_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
                 };
             /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
