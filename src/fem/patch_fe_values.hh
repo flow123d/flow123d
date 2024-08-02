@@ -314,7 +314,7 @@ public:
             	shape_values[j][i] = ref_shape_vals[i][j][0];
             }
         uint scalar_shape_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, shape_values, scalar_shape_op_idx);
             };
         auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
@@ -345,7 +345,7 @@ public:
         // use lambda reinit function
         auto ref_shape_grads = this->ref_shape_gradients(fe_component);
         uint scalar_shape_grads_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
                 bulk_reinit::ptop_scalar_shape_grads<dim>(operations, ref_shape_grads, scalar_shape_grads_op_idx);
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac}, fe_component->n_dofs());
@@ -452,8 +452,8 @@ public:
             	    shape_values[s][i][j] = ref_shape_vals[s][i][j][0];
                 }
         uint scalar_shape_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-                side_reinit::ptop_scalar_shape(operations, op_results, el_table, shape_values, scalar_shape_op_idx);
+        auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, TableInt &el_table) {
+                side_reinit::ptop_scalar_shape(operations, el_table, shape_values, scalar_shape_op_idx);
             };
         auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         uint begin = scalar_shape_bulk_op.result_row();
@@ -471,8 +471,8 @@ public:
         // use lambda reinit function
         auto ref_shape_grads = this->ref_shape_gradients(fe_component);
         uint scalar_shape_grads_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-                side_reinit::ptop_scalar_shape_grads<dim>(operations, op_results, el_table, ref_shape_grads, scalar_shape_grads_op_idx);
+        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, TableInt &el_table) {
+                side_reinit::ptop_scalar_shape_grads<dim>(operations, el_table, ref_shape_grads, scalar_shape_grads_op_idx);
             };
         auto &grad_scalar_shape_side_op = patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac}, fe_component->n_dofs());
         uint begin = grad_scalar_shape_side_op.result_row();
@@ -544,7 +544,7 @@ public:
             	shape_values_bulk[i][j] = ref_shape_vals_bulk[i][j][0];
             }
         uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+        auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED TableInt &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, shape_values_bulk, scalar_shape_op_idx_bulk);
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {}, fe_component_low->n_dofs());
@@ -565,8 +565,8 @@ public:
             	    shape_values_side[s][i][j] = ref_shape_vals_side[s][i][j][0];
                 }
         uint scalar_shape_op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_side = [shape_values_side, scalar_shape_op_idx_side](std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-                side_reinit::ptop_scalar_shape(operations, op_results, el_table, shape_values_side, scalar_shape_op_idx_side);
+        auto lambda_scalar_shape_side = [shape_values_side, scalar_shape_op_idx_side](std::vector<ElOp<3>> &operations, TableInt &el_table) {
+                side_reinit::ptop_scalar_shape(operations, el_table, shape_values_side, scalar_shape_op_idx_side);
             };
         auto &grad_scalar_shape_side_op = patch_point_vals_side_->make_fe_op({1}, lambda_scalar_shape_side, {}, fe_component_high->n_dofs());
         uint begin_side = grad_scalar_shape_side_op.result_row();
