@@ -115,9 +115,10 @@ public:
      * @param join_idx               Index function.
      */
     JoinShapeAccessor(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side,
-            unsigned int begin, unsigned int begin_side, unsigned int n_dofs_bulk, unsigned int n_dofs_side, unsigned int join_idx)
+            unsigned int begin, unsigned int begin_side, unsigned int n_dofs_bulk, unsigned int n_dofs_side,
+	        unsigned int op_idx_bulk, unsigned int op_idx_side, unsigned int join_idx)
     : patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side), begin_(begin),
-	  begin_side_(begin_side), n_dofs_high_(n_dofs_side), n_dofs_low_(n_dofs_bulk), join_idx_(join_idx) {
+	  begin_side_(begin_side), n_dofs_high_(n_dofs_side), n_dofs_low_(n_dofs_bulk), op_idx_bulk_(op_idx_bulk), op_idx_side_(op_idx_side), join_idx_(join_idx) {
         //ASSERT( (patch_point_vals_bulk->dim()==2) || (patch_point_vals_bulk->dim()==3) )(patch_point_vals_bulk->dim() ).error("Invalid dimension, must be 2 or 3!");
     }
 
@@ -171,6 +172,8 @@ private:
     unsigned int begin_side_;                     ///< Index of the first component of the side Quantity. Size is given by ValueType
     unsigned int n_dofs_high_;                    ///< Number of DOFs on high-dim element
     unsigned int n_dofs_low_;                     ///< Number of DOFs on low-dim element
+    unsigned int op_idx_bulk_;                    ///< Index of operation in patch_point_vals_bulk_.operations vector
+    unsigned int op_idx_side_;                    ///< Index of operation in patch_point_vals_side_.operations vector
     unsigned int join_idx_;                       ///< Index of processed DOF
 };
 
@@ -549,6 +552,7 @@ public:
             };
         auto &grad_scalar_shape_bulk_op = patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {}, fe_component_low->n_dofs());
         uint begin_bulk = grad_scalar_shape_bulk_op.result_row();
+        uint op_idx_bulk = patch_point_vals_bulk_->operations_.size()-1;
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
@@ -570,12 +574,13 @@ public:
             };
         auto &grad_scalar_shape_side_op = patch_point_vals_side_->make_fe_op({1}, lambda_scalar_shape_side, {}, fe_component_high->n_dofs());
         uint begin_side = grad_scalar_shape_side_op.result_row();
+        uint op_idx_side = patch_point_vals_side_->operations_.size()-1;
 
         auto bgn_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_,
-                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), 0) );
+                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, 0) );
         unsigned int end_idx = fe_component_low->n_dofs() + fe_component_high->n_dofs();
         auto end_it = make_iter<JoinShapeAccessor<Scalar>>( JoinShapeAccessor<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_,
-                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), end_idx) );
+                begin_bulk, begin_side, fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, end_idx) );
         return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
     }
 
@@ -962,7 +967,7 @@ ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
         return 0.0;
     } else {
         unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_bulk_->scalar_val(begin_+this->local_idx(), value_cache_idx);
+        return patch_point_vals_bulk_->scalar_value(op_idx_bulk_, value_cache_idx, this->local_idx());
     }
 }
 
@@ -982,7 +987,7 @@ template <class ValueType>
 ValueType JoinShapeAccessor<ValueType>::operator()(const SidePoint &point) {
     if (this->is_high_dim()) {
         unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_side_->scalar_val(begin_side_+this->local_idx(), value_cache_idx);
+        return patch_point_vals_side_->scalar_value(op_idx_side_, value_cache_idx, this->local_idx());
     } else {
         return 0.0;
     }
