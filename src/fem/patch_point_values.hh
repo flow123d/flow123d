@@ -88,12 +88,12 @@ namespace FeSide {
         opSideJac,              ///< Jacobian of element
         opSideJacDet,           ///< determinant of Jacobian of side
 		/// operation executed expansion to quadrature point (value of element / side > values on quadrature points)
-        opExpansionElCoords,    ///< expands coordinates on element
-        opExpansionElJac,       ///< expands Jacobian on element
-        opExpansionElInvJac,    ///< expands inverse Jacobian on element
-        opExpansionSideCoords,  ///< expands coordinates on side
-        opExpansionSideJac,     ///< expands Jacobian on side
-        opExpansionSideJacDet,  ///< expands Jacobian determinant on side
+//        opExpansionElCoords,    ///< expands coordinates on element
+//        opExpansionElJac,       ///< expands Jacobian on element
+//        opExpansionElInvJac,    ///< expands inverse Jacobian on element
+//        opExpansionSideCoords,  ///< expands coordinates on side
+//        opExpansionSideJac,     ///< expands Jacobian on side
+//        opExpansionSideJacDet,  ///< expands Jacobian determinant on side
         /// operations evaluated on quadrature points
         opCoords,               ///< coordinations of quadrature point
         opWeights,              ///< weight of quadrature point
@@ -231,19 +231,31 @@ public:
      * @param side_coords Coordinates of side nodes.
      */
     uint register_side(arma::mat elm_coords, arma::mat side_coords) {
-        uint res_column = operations_[FeSide::SideOps::opElCoords].result_row();
-        for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
-            for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
-                point_vals_(res_column)(i_elem_) = elm_coords(i_row, i_col);
-                ++res_column;
-            }
+    	{
+            ElOp<spacedim> &op = operations_[FeSide::SideOps::opElCoords];
+            uint res_column = op.result_row();
+            auto &coords_mat = op.result_matrix();
+            std::size_t i_elem = i_elem_;
+            for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
+                for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
+                    point_vals_(res_column)(i_elem_) = elm_coords(i_row, i_col);
+                    coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
+                    ++res_column;
+                }
+    	}
 
-        res_column = operations_[FeSide::SideOps::opSideCoords].result_row();
-        for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
-            for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
-                point_vals_(res_column)(i_elem_) = side_coords(i_row, i_col);
-                ++res_column;
-            }
+    	{
+            ElOp<spacedim> &op = operations_[FeSide::SideOps::opSideCoords];
+            uint res_column = op.result_row();
+            auto &coords_mat = op.result_matrix();
+            std::size_t i_elem = i_elem_;
+            for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
+                for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
+                    point_vals_(res_column)(i_elem_) = side_coords(i_row, i_col);
+                    coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
+                    ++res_column;
+                }
+    	}
 
         return i_elem_++;
     }
@@ -777,82 +789,89 @@ struct bulk_reinit {
 struct side_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_el_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_el_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeSide::SideOps::opElJac];
-        auto jac_value = op.value<3, dim>(op_results);
-        auto coords_value = operations[ op.input_ops()[0] ].value<3, dim+1>(op_results);
-        jac_value = eigen_tools::jacobian<3,dim>(coords_value);
+        auto &jac_value = op.result_matrix();
+        const auto &coords_value = operations[ op.input_ops()[0] ].result_matrix();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<dim; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opElInvJac];
-        auto inv_jac_value = op.value<dim, 3>(op_results);
-        auto jac_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        inv_jac_value = eigen_tools::inverse<3, dim>(jac_value);
+        auto &inv_jac_value = op.result_matrix();
+        const auto &jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
         auto &op = operations[FeSide::SideOps::opSideJac];
-        auto jac_value = op.value<3, dim-1>(op_results);
-        auto coords_value = operations[ op.input_ops()[0] ].value<3, dim>(op_results);
-        jac_value = eigen_tools::jacobian<3, dim-1>(coords_value);
+        auto &jac_value = op.result_matrix();
+        const auto &coords_value = operations[ op.input_ops()[0] ].result_matrix();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<dim-1; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void elop_sd_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // result double, input matrix(spacedim, dim)
         auto &op = operations[FeSide::SideOps::opSideJacDet];
-        ArrayDbl &det_value = op_results( op.result_row() );
-        auto jac_value = operations[ op.input_ops()[0] ].value<3, dim-1>(op_results);
-        det_value = eigen_tools::determinant<3, dim-1>(jac_value).array().abs();
+        auto &jac_det_value = op.result_matrix();
+        const auto &jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        jac_det_value(0,0) = eigen_arena_tools::determinant<3, dim-1>(jac_value).abs();
     }
 
     // expansion operations
-    static inline void expd_el_coords(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionElCoords];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
-    static inline void expd_el_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionElJac];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
-    static inline void expd_el_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionElInvJac];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
-
-    static inline void expd_sd_coords(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionSideCoords];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
-    template<unsigned int dim>
-    static inline void expd_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionSideJac];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
-    static inline void expd_sd_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
-        auto &op = operations[FeSide::SideOps::opExpansionSideJacDet];
-        common_reinit::expand_data(op, op_results, el_table);
-    }
+//    static inline void expd_el_coords(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionElCoords];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
+//    static inline void expd_el_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionElJac];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
+//    static inline void expd_el_inv_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionElInvJac];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
+//
+//    static inline void expd_sd_coords(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionSideCoords];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
+//    template<unsigned int dim>
+//    static inline void expd_sd_jac(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionSideJac];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
+//    static inline void expd_sd_jac_det(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
+//        auto &op = operations[FeSide::SideOps::opExpansionSideJacDet];
+//        common_reinit::expand_data(op, op_results, el_table);
+//    }
 
     // Point operations
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, TableDbl &op_results, std::vector<double> point_weights) {
+    static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
         auto &op = operations[FeSide::SideOps::opWeights];
-        ArrayDbl &result_row = op_results( op.result_row() );
-        auto n_points = point_weights.size();
-        for (uint i=0; i<result_row.rows(); ++i)
-            result_row(i) = point_weights[i%n_points];
+        op.allocate_result(point_weights.size(), *arena);
+        auto &weights_value = op.result_matrix();
+        for (uint i=0; i<point_weights.size(); ++i)
+            weights_value(0,0)(i) = point_weights[i];
     }
-    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
         auto &op = operations[FeSide::SideOps::opJxW];
-        ArrayDbl &weights_row = op_results( operations[op.input_ops()[0]].result_row() );
-        ArrayDbl &jac_det_row = op_results( operations[op.input_ops()[1]].result_row() );
-        ArrayDbl &result_row = op_results( op.result_row() );
-        result_row = jac_det_row * weights_row;
+        auto &weights_value = operations[ op.input_ops()[0] ].result_matrix();
+        auto &jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
+        ArenaOVec<double> weights_ovec( weights_value(0,0), weights_value(0,0).data_size() );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0), jac_det_value(0,0).data_size() );
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+        auto &jxw_value = op.result_matrix();
+        jxw_value(0,0) = jxw_ovec.get_vec();
     }
     template<unsigned int dim>
     static inline void ptop_normal_vec(std::vector<ElOp<3>> &operations, TableDbl &op_results, TableInt &el_table) {
@@ -921,17 +940,17 @@ inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operati
 }
 
 template<>
-inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+inline void side_reinit::elop_sd_jac_det<1>(std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
     auto &op = operations[FeSide::SideOps::opSideJacDet];
-    ArrayDbl &result_vec = op_results( op.result_row() );
-    for (uint i=0;i<result_vec.size(); ++i) {
-        result_vec(i) = 1.0;
+    auto &result_vec = op.result_matrix();
+    for (uint i=0;i<result_vec(0,0).data_size(); ++i) {
+        result_vec(0,0)(i) = 1.0;
     }
 }
 
-template<>
-inline void side_reinit::expd_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-}
+//template<>
+//inline void side_reinit::expd_sd_jac<1>(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+//}
 
 
 
@@ -1017,40 +1036,40 @@ namespace FeSide {
         template<unsigned int dim>
         void init() {
 			// First step: adds element values operations
-            auto &el_coords = this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {} );
+            /*auto &el_coords =*/ this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {}, OpSizeType::elemOp );
 
-            auto &el_jac = this->make_new_op( {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, {SideOps::opElCoords} );
+            /*auto &el_jac =*/ this->make_new_op( {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, {SideOps::opElCoords}, OpSizeType::elemOp );
 
-            auto &el_inv_jac = this->make_new_op( {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, {SideOps::opElJac} );
+            /*auto &el_inv_jac =*/ this->make_new_op( {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, {SideOps::opElJac}, OpSizeType::elemOp );
 
-            auto &sd_coords = this->make_new_op( {spacedim, this->dim_}, &common_reinit::op_base, {} );
+            /*auto &sd_coords =*/ this->make_new_op( {spacedim, this->dim_}, &common_reinit::op_base, {}, OpSizeType::elemOp );
 
-            auto &sd_jac = this->make_new_op( {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, {SideOps::opSideCoords} );
+            /*auto &sd_jac =*/ this->make_new_op( {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, {SideOps::opSideCoords}, OpSizeType::elemOp );
 
-            auto &sd_jac_det = this->make_new_op( {1}, &side_reinit::elop_sd_jac_det<dim>, {SideOps::opSideJac} );
+            /*auto &sd_jac_det =*/ this->make_new_op( {1}, &side_reinit::elop_sd_jac_det<dim>, {SideOps::opSideJac}, OpSizeType::elemOp );
 
             // Second step: adds expand operations (element values to point values)
-            this->make_expansion( el_coords, {spacedim, this->dim_+1}, &side_reinit::expd_el_coords );
-
-            this->make_expansion( el_jac, {spacedim, this->dim_}, &side_reinit::expd_el_jac );
-
-            this->make_expansion( el_inv_jac, {this->dim_, spacedim}, &side_reinit::expd_el_inv_jac );
-
-            this->make_expansion( sd_coords, {spacedim, this->dim_}, &side_reinit::expd_sd_coords );
-
-            this->make_expansion( sd_jac, {spacedim, this->dim_-1}, &side_reinit::expd_sd_jac<dim> );
-
-            this->make_expansion( sd_jac_det, {1}, &side_reinit::expd_sd_jac_det );
+//            this->make_expansion( el_coords, {spacedim, this->dim_+1}, &side_reinit::expd_el_coords );
+//
+//            this->make_expansion( el_jac, {spacedim, this->dim_}, &side_reinit::expd_el_jac );
+//
+//            this->make_expansion( el_inv_jac, {this->dim_, spacedim}, &side_reinit::expd_el_inv_jac );
+//
+//            this->make_expansion( sd_coords, {spacedim, this->dim_}, &side_reinit::expd_sd_coords );
+//
+//            this->make_expansion( sd_jac, {spacedim, this->dim_-1}, &side_reinit::expd_sd_jac<dim> );
+//
+//            this->make_expansion( sd_jac_det, {1}, &side_reinit::expd_sd_jac_det );
 
             // Third step: adds point values operations
             /*auto &coords =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_coords, {} );
 
             // use lambda reinit function
-            std::vector<double> point_weights = this->quad_->get_weights();
-            auto lambda_weights = [point_weights](std::vector<ElOp<3>> &operations, TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
-                    side_reinit::ptop_weights(operations, op_results, point_weights);
+            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED TableDbl &op_results, FMT_UNUSED TableInt &el_table) {
+                    side_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
                 };
-            /*auto &weights =*/ this->make_new_op( {1}, lambda_weights, {} );
+            /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
 
             /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSideJacDet} );
 
