@@ -184,7 +184,7 @@ public:
     /// Resize data tables. Method is called before reinit of patch.
     void resize_tables(uint n_elems, uint n_points) {
         n_elems_ = n_elems;
-        // n_points_ = n_points; // will be set here later
+        n_points_ = n_points;
         std::vector<uint> sizes = {n_elems, n_points};
         for (auto &elOp : operations_)
             if (elOp.size_type() != fixedSizeOp) {
@@ -275,7 +275,6 @@ public:
         int_vals_(2)(point_pos) = elem_idx;
 
         points_map_[value_patch_idx] = point_pos;
-        n_points_++;
         return point_pos;
     }
 
@@ -286,15 +285,17 @@ public:
      * @param value_patch_idx Index of point in ElementCacheMap.
      * @param elem_idx        Index of element in Mesh.
      * @param side_idx        Index of side on element.
+     * @param i_point_on_side Index of point on side
      */
-    uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx) {
-        int_vals_(0)(n_points_) = value_patch_idx;
-        int_vals_(1)(n_points_) = elem_table_row;
-        int_vals_(2)(n_points_) = elem_idx;
-        int_vals_(3)(n_points_) = side_idx;
+    uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
+        uint point_pos = i_point_on_side * n_elems_ + elem_table_row; // index of side point on patch
+        int_vals_(0)(point_pos) = value_patch_idx;
+        int_vals_(1)(point_pos) = elem_table_row;
+        int_vals_(2)(point_pos) = elem_idx;
+        int_vals_(3)(point_pos) = side_idx;
 
-        points_map_[value_patch_idx] = n_points_;
-        return n_points_++;
+        points_map_[value_patch_idx] = point_pos;
+        return point_pos;
     }
 
     /**

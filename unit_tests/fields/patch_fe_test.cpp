@@ -242,9 +242,10 @@ public:
             for( DHCellSide edge_side : range )
             {
             	uint side_pos = patch_fe_values_.register_side(edge_side);
+                uint i_point = 0;
                 for (auto p : this->edge_points(dim, edge_side) ) {
                     unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                    patch_fe_values_.register_side_point(edge_side, side_pos, value_cache_idx);
+                    patch_fe_values_.register_side_point(edge_side, side_pos, value_cache_idx, i_point++);
                 }
             }
         }

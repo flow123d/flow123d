@@ -827,8 +827,9 @@ public:
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
-    uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx) {
-        return patch_point_vals_side_[cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(), cell_side.side_idx());
+    uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx, uint i_point_on_side) {
+        return patch_point_vals_side_[cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(),
+                cell_side.side_idx(), i_point_on_side);
     }
 
     /// Temporary development method
