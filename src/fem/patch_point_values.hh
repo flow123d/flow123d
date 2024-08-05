@@ -881,7 +881,6 @@ struct side_reinit {
         auto &normal_value = op.result_matrix();
         auto &inv_jac_mat_value = operations[ op.input_ops()[0] ].result_matrix();
         normal_value = inv_jac_mat_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
-        std::cout << "side::ptop_normal_vec A " << dim << ": " << normal_value(0).data_size() << std::endl;
 
         ArenaVec<double> norm_vec( normal_value(0).data_size(), normal_value(0).arena() );
         Eigen::VectorXd A(3);
@@ -902,18 +901,22 @@ struct side_reinit {
             }
             normal_value(i) = expand_vec;
         }
-        std::cout << "side::ptop_normal_vec B: " << points_per_side << " - " << normal_value(0).data_size() << std::endl;
     }
-    static inline void ptop_scalar_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
-    		FMT_UNUSED std::vector< std::vector< std::vector<double> > > shape_values, FMT_UNUSED uint scalar_shape_op_idx) {
-//        auto &op = operations[scalar_shape_op_idx];
-//        uint n_points = shape_values[0].size();
-//
-//        for (uint i_row=0; i_row<shape_values[0][0].size(); ++i_row) {
-//            ArrayDbl &result_row = op_results( op.result_row()+i_row );
-//            for (uint i_pt=0; i_pt<result_row.rows(); ++i_pt)
-//                result_row(i_pt) = shape_values[el_table(3)(i_pt)][i_pt % n_points][i_row];
-//        }
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
+    		std::vector< std::vector< std::vector<double> > > shape_values, uint scalar_shape_op_idx) {
+        uint n_points = shape_values[0].size();
+        uint n_dofs = shape_values[0][0].size();
+        uint n_patch_points = el_table(4).data_size();
+
+        auto &op = operations[scalar_shape_op_idx];
+        auto &scalar_shape_value = op.result_matrix();
+        scalar_shape_value(0) = ArenaVec<double>(n_dofs*n_patch_points, scalar_shape_value(0).arena());
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            uint dof_shift = i_dof * n_patch_points;
+            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
+                scalar_shape_value(0)(i_pt + dof_shift) = shape_values[el_table(4)(i_pt)][i_pt % n_points][i_dof];
+        }
     }
     template<unsigned int dim>
     static inline void ptop_scalar_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
