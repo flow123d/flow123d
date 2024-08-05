@@ -876,25 +876,33 @@ struct side_reinit {
         jxw_value(0,0) = jxw_ovec.get_vec();
     }
     template<unsigned int dim>
-    static inline void ptop_normal_vec(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-//        auto &op = operations[FeSide::SideOps::opNormalVec];
-//        auto normal_value = op.value<3, 1>(op_results);
-//        auto inv_jac_mat_value = operations[ op.input_ops()[0] ].value<dim, 3>(op_results);
-//        normal_value = inv_jac_mat_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
-//
-//        ArrayDbl norm_vec;
-//        norm_vec.resize(normal_value(0).rows());
-//        Eigen::VectorXd A(3);
-//
-//        for (uint i=0; i<normal_value(0).rows(); ++i) {
-//            A(0) = normal_value(0)(i);
-//            A(1) = normal_value(1)(i);
-//            A(2) = normal_value(2)(i);
-//            norm_vec(i) = A.norm();
-//        }
-//        for (uint i=0; i<3; ++i) {
-//        	normal_value(i) /= norm_vec;
-//        }
+    static inline void ptop_normal_vec(std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+        auto &op = operations[FeSide::SideOps::opNormalVec];
+        auto &normal_value = op.result_matrix();
+        auto &inv_jac_mat_value = operations[ op.input_ops()[0] ].result_matrix();
+        normal_value = inv_jac_mat_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
+        std::cout << "side::ptop_normal_vec A " << dim << ": " << normal_value(0).data_size() << std::endl;
+
+        ArenaVec<double> norm_vec( normal_value(0).data_size(), normal_value(0).arena() );
+        Eigen::VectorXd A(3);
+        for (uint i=0; i<normal_value(0).data_size(); ++i) {
+            A(0) = normal_value(0)(i);
+            A(1) = normal_value(1)(i);
+            A(2) = normal_value(2)(i);
+            norm_vec(i) = A.norm();
+        }
+
+        size_t points_per_side = el_table(4).data_size() / el_table(3).data_size();
+        size_t n_points = el_table(3).data_size();
+        for (uint i=0; i<3; ++i) {
+            normal_value(i) = normal_value(i) / norm_vec;
+            ArenaVec<double> expand_vec( normal_value(i).data_size() * points_per_side, normal_value(i).arena() );
+            for (uint j=0; j<expand_vec.data_size(); ++j) {
+                expand_vec(j) = normal_value(i)(j % n_points);
+            }
+            normal_value(i) = expand_vec;
+        }
+        std::cout << "side::ptop_normal_vec B: " << points_per_side << " - " << normal_value(0).data_size() << std::endl;
     }
     static inline void ptop_scalar_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
     		FMT_UNUSED std::vector< std::vector< std::vector<double> > > shape_values, FMT_UNUSED uint scalar_shape_op_idx) {

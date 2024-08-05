@@ -19,6 +19,7 @@
 #include "system/global_defs.h"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
+#include "fem/arena_vec.hh"
 
 
 
@@ -276,15 +277,16 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 
 
 template<unsigned int dim>
-auto RefElement<dim>::normal_vector_array(Eigen::Array<uint,Eigen::Dynamic,1> loc_side_idx_array) -> Eigen::Vector<RefElement<dim>::ArrayDbl,dim>
+auto RefElement<dim>::normal_vector_array(ArenaVec<uint> loc_side_idx_vec) -> Eigen::Matrix<ArenaVec<double>, dim, 1>
 {
-    Eigen::Vector<ArrayDbl,dim> normal_vec_array;
+    Eigen::Matrix<ArenaVec<double>, dim, 1> normal_vec_array;
     for (uint i=0; i<dim; ++i)
-        normal_vec_array(i).resize( loc_side_idx_array.size() );
-    for (uint sid=0; sid<loc_side_idx_array.size(); ++sid) {
-    	arma::vec::fixed<dim> n_vec = RefElement<dim>::normal_vector( loc_side_idx_array(sid) );
-    	for (uint i=0; i<dim; ++i)
+        normal_vec_array(i) = ArenaVec<double>( loc_side_idx_vec.data_size(), loc_side_idx_vec.arena() );
+    for (uint sid=0; sid<loc_side_idx_vec.data_size(); ++sid) {
+        arma::vec::fixed<dim> n_vec = RefElement<dim>::normal_vector( loc_side_idx_vec(sid) );
+        for (uint i=0; i<dim; ++i) {
             normal_vec_array(i)(sid) = n_vec(i);
+        }
     }
     return normal_vec_array;
 }
@@ -292,9 +294,9 @@ auto RefElement<dim>::normal_vector_array(Eigen::Array<uint,Eigen::Dynamic,1> lo
 
 
 template<>
-auto RefElement<0>::normal_vector_array(FMT_UNUSED Eigen::Array<uint,Eigen::Dynamic,1> loc_side_idx_array) -> Eigen::Vector<RefElement<0>::ArrayDbl,0>
+auto RefElement<0>::normal_vector_array(FMT_UNUSED ArenaVec<uint> loc_side_idx_array) -> Eigen::Matrix<ArenaVec<double>, 0, 1>
 {
-    Eigen::Vector<ArrayDbl,0> normal_vec_array;
+	Eigen::Matrix<ArenaVec<double>, 0, 1> normal_vec_array;
     return normal_vec_array;
 }
 
