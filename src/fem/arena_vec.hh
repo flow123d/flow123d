@@ -29,7 +29,7 @@ template<class T> class ArenaOVec;
 
 
 /**
- * Define vector allocated in Arena and aligned to SIMD size.
+ * Define vector allocated in ArenaResource and aligned to SIMD size.
  */
 template<class T>
 class ArenaVec {
@@ -232,42 +232,52 @@ protected:
 
 
 
-/// Outer product - only proposal of multi operator
+/**
+ * Define vector allocated in ArenaResource based on ArenaVec with overwrite
+ * multiplication operator that executes outer product.
+ *
+ * Example of usage with conversions between ArenaVec and ArenaOVec:
+   @code
+    ArenaVec<double> outer_product(ArenaVec<double> a, ArenaVec<double> b) {
+        // Convert ArenaVec inputs to ArenaOVec variables
+        ArenaOVec<double> a_ovec(a);
+        ArenaOVec<double> b_ovec(b);
+
+        // performs outer product
+        ArenaOVec<double> result_ovec = a * b;
+
+        // reverse conversion to ArenaVec
+        return result_ovec.get_vec();
+    }
+   @endcode
+ *
+ * If we consider that size of input vector 'a' is 'M' and size of input vector 'b' is 'N'
+ * then size of returned vector is 'M*N'.
+ */
 template<class T>
 class ArenaOVec : public ArenaVec<T> {
-private:
-    /// Return empty ArenaVec object, use in default constructor
-    static ArenaVec<T> &empty_arena_vec() {
-        static ArenaVec<T> arena_vec;
-        return arena_vec;
-    }
-
 public:
     /// Default constructor
     ArenaOVec()
-    : ArenaVec<T>(), vec_( ArenaOVec<T>::empty_arena_vec() ) {}
+    : ArenaVec<T>() {}
 
     /// Copy constructor
     ArenaOVec(const ArenaOVec<T> &other)
-    : ArenaVec<T>(other), vec_(other.vec_) {}
+    : ArenaVec<T>(other) {}
 
     /// Constructor. Set scalar_val
     ArenaOVec(T scalar_val)
-    : ArenaVec<T>(scalar_val), vec_( ArenaOVec<T>::empty_arena_vec() ) {}
+    : ArenaVec<T>(scalar_val) {}
 
     /**
      * Constructor creates ArenaOVec on data of ArenaVec
-     *
-     * Second argument is hack. If it isn't defined this constructor is in conflict with copy constructor.
      */
-    ArenaOVec(ArenaVec<T> &vec, size_t data_size)
-    : vec_(vec) {
+    ArenaOVec(const ArenaVec<T> &vec) {
         ASSERT_PTR(vec.data_ptr());
-        ASSERT_EQ(vec.data_size(), data_size);
 
-        this->data_ptr_ = vec_.data_ptr();
-        this->data_size_ = data_size;
-        this->arena_ = vec_.arena_;
+        this->data_ptr_ = vec.data_ptr_;
+        this->data_size_ = vec.data_size_;
+        this->arena_ = vec.arena_;
     }
 
     /// Convert ArenaOVec to ArenaVec and its
@@ -277,7 +287,6 @@ public:
 
     inline ArenaOVec<T> &operator=(const ArenaOVec<T> &other) {
         ArenaVec<T>::operator=(other);
-        vec_ = other.vec_;
         return *this;
     }
 
@@ -286,7 +295,7 @@ public:
         // Test of valid data_ptr is in constructor
         ASSERT_EQ(this->data_size_, other.data_size());
         ArenaVec<T> res_vec(this->data_size_, *this->arena_);
-        ArenaOVec<T> res(res_vec, res_vec.data_size());
+        ArenaOVec<T> res(res_vec);
         Eigen::Map<typename ArenaVec<T>::VecData> result_map = res.eigen_map();
         result_map = this->eigen_map() + other.eigen_map();
         return res;
@@ -297,13 +306,11 @@ public:
         typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
 
         ArenaVec<T> res_vec(this->data_size_*other.data_size(), *this->arena_);
-        ArenaOVec<T> res(res_vec, res_vec.data_size());
+        ArenaOVec<T> res(res_vec);
         Eigen::Map<MatData> result_map = Eigen::Map<MatData>(res.data_ptr(), this->data_size_, other.data_size());
         result_map = this->eigen_map() * other.eigen_map().transpose();
         return res;
     }
-protected:
-    ArenaVec<T> &vec_;  ///< Reference to ArenaVec
 };
 
 
