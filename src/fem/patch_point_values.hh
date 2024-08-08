@@ -845,8 +845,8 @@ struct side_reinit {
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
     		std::vector< std::vector< std::vector<double> > > shape_values, uint scalar_shape_op_idx) {
-        uint n_points = shape_values[0].size();
         uint n_dofs = shape_values[0][0].size();
+        uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
         auto &op = operations[scalar_shape_op_idx];
@@ -856,7 +856,7 @@ struct side_reinit {
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             uint dof_shift = i_dof * n_patch_points;
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
-                scalar_shape_value(0)(i_pt + dof_shift) = shape_values[el_table(4)(i_pt)][i_pt % n_points][i_dof];
+                scalar_shape_value(0)(i_pt + dof_shift) = shape_values[el_table(4)(i_pt)][i_pt / n_sides][i_dof];
         }
     }
     template<unsigned int dim>
