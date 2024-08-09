@@ -312,7 +312,7 @@ public:
         auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, shape_values, scalar_shape_op_idx);
             };
-        auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
+        patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         uint op_idx = patch_point_vals_.operations_.size()-1;
 
         return FeQ<Scalar>(patch_point_vals_, op_idx, fe_component->n_dofs());
@@ -443,7 +443,7 @@ public:
         auto lambda_scalar_shape = [shape_values, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
                 side_reinit::ptop_scalar_shape(operations, el_table, shape_values, scalar_shape_op_idx);
             };
-        auto &scalar_shape_bulk_op = patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
+        patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         uint op_idx = patch_point_vals_.operations_.size()-1;
 
         return FeQ<Scalar>(patch_point_vals_, op_idx, fe_component->n_dofs());
