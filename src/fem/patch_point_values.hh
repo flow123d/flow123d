@@ -409,8 +409,8 @@ public:
                     }
                     stream << std::endl;
                 }
+                stream << " --- end of operation ---" << std::endl;
             }
-            stream << std::endl;
         }
         if (ints) {
             stream << "Int vals: " << int_table_.rows() << " - " << int_table_.cols() << std::endl;
