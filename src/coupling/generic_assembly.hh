@@ -284,6 +284,9 @@ private:
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);
         multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        if (use_patch_fe_values_) {
+            fe_values_.init_finalize();
+        }
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
 
