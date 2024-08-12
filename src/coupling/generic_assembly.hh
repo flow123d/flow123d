@@ -426,10 +426,10 @@ private:
         auto range = cell_side.edge_sides();
         uint dim = range.begin()->dim();
         edge_integral_data_.emplace_back(range, integrals_.edge_[dim-1]->get_subset_idx());
-        table_sizes_.elem_sizes_[1][dim-1]++;
 
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
+            table_sizes_.elem_sizes_[1][dim-1]++;
             for (auto p : integrals_.edge_[dim-1]->points(edge_side, &element_cache_map_) ) {
                 element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                 table_sizes_.point_sizes_[1][dim-1]++;
