@@ -252,6 +252,9 @@ public:
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
                 element_cache_map_.make_paermanent_eval_points();
+                if (use_patch_fe_values_) {
+                    table_sizes_.copy(table_sizes_tmp_);
+                }
                 if (element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     add_into_patch = false;
@@ -343,6 +346,7 @@ private:
         element_cache_map_.clear_element_eval_points_map();
         if (use_patch_fe_values_) {
             table_sizes_.reset();
+            table_sizes_tmp_.reset();
             fe_values_.reset();
         }
     }
@@ -411,13 +415,13 @@ private:
         bulk_integral_data_.emplace_back(cell, subset_idx);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        table_sizes_.elem_sizes_[0][cell.dim()-1]++;
+        table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
         for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
                   i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
             element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
-            table_sizes_.point_sizes_[0][cell.dim()-1]++;
+            table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
         }
     }
 
@@ -429,10 +433,10 @@ private:
 
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
-            table_sizes_.elem_sizes_[1][dim-1]++;
+            table_sizes_tmp_.elem_sizes_[1][dim-1]++;
             for (auto p : integrals_.edge_[dim-1]->points(edge_side, &element_cache_map_) ) {
                 element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                table_sizes_.point_sizes_[1][dim-1]++;
+                table_sizes_tmp_.point_sizes_[1][dim-1]++;
             }
         }
     }
@@ -441,19 +445,19 @@ private:
     inline void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
         coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
                 integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
-        table_sizes_.elem_sizes_[1][cell.dim()]++;
-        if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
+        table_sizes_tmp_.elem_sizes_[1][cell.dim()]++;
+        if (add_low) table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
 
         unsigned int reg_idx_low = cell.elm().region_idx().idx();
         unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
         for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
             element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-            table_sizes_.point_sizes_[1][cell.dim()]++;
+            table_sizes_tmp_.point_sizes_[1][cell.dim()]++;
 
         	if (add_low) {
                 auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                 element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                table_sizes_.point_sizes_[0][cell.dim()-1]++;
+                table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
         	}
         }
     }
@@ -464,10 +468,10 @@ private:
                 integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx());
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
-        table_sizes_.elem_sizes_[1][bdr_side.dim()-1]++;
+        table_sizes_tmp_.elem_sizes_[1][bdr_side.dim()-1]++;
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
             element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-            table_sizes_.point_sizes_[1][bdr_side.dim()-1]++;
+            table_sizes_tmp_.point_sizes_[1][bdr_side.dim()-1]++;
 
         	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
@@ -505,10 +509,10 @@ private:
     RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
 
-    /**
-     * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-     */
+    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
     PatchFEValues<3>::TableSizes table_sizes_;
+    /// Same as previous but hold temporary values during adding elements, sides and points.
+    PatchFEValues<3>::TableSizes table_sizes_tmp_;
 };
 
 

@@ -610,6 +610,14 @@ public:
             std::fill(point_sizes_[1].begin(), point_sizes_[1].end(), 0);
         }
 
+        /// Copy values of other TableSizes instance
+        void copy(const TableSizes &other) {
+            elem_sizes_[0] = other.elem_sizes_[0];
+            elem_sizes_[1] = other.elem_sizes_[1];
+            point_sizes_[0] = other.point_sizes_[0];
+            point_sizes_[1] = other.point_sizes_[1];
+        }
+
         /**
          * Holds number of elements and sides on each dimension
          * Format:
