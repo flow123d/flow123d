@@ -670,7 +670,7 @@ struct bulk_reinit {
             ref_grads_vec(i) = ArenaVec<double>(n_points * n_dofs, op.result_matrix()(0).arena());
             for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_dof][i_p](i);
+                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
             ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
         }
 
