@@ -523,11 +523,11 @@ public:
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         // use lambda reinit function
-        std::vector< std::vector<double> > shape_values_bulk( patch_point_vals_bulk_->get_quadrature()->size(), vector<double>(fe_component_low->n_dofs()) );
+        std::vector< std::vector<double> > shape_values_bulk( fe_component_low->n_dofs(), vector<double>(patch_point_vals_bulk_->get_quadrature()->size()) );
         auto ref_shape_vals_bulk = this->ref_shape_values_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
         for (unsigned int i = 0; i < patch_point_vals_bulk_->get_quadrature()->size(); i++)
             for (unsigned int j = 0; j < fe_component_low->n_dofs(); j++) {
-            	shape_values_bulk[i][j] = ref_shape_vals_bulk[i][j][0];
+            	shape_values_bulk[j][i] = ref_shape_vals_bulk[i][j][0];
             }
         uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
         auto lambda_scalar_shape_bulk = [shape_values_bulk, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {

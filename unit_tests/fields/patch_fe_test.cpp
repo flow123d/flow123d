@@ -88,7 +88,7 @@ public:
 
     PatchFETestBase(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : dh_(dh), patch_fe_values_(quad_order, dh_->ds()->fe()),
-	  fe_(1), fe_values_(3), fe_values_side_(3),
+	  fe_(quad_order), fe_values_(3), fe_values_side_(3),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
 	  coupling_integral_data_(12, 6),
@@ -594,6 +594,19 @@ public:
 };
 
 
+void compare_evaluation_func(Mesh* mesh, unsigned int quad_order) {
+    MixedPtr<FE_P_disc> fe(quad_order);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFETestFull patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(true);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
 
 
 TEST(PatchFeTest, complete_evaluation) {
@@ -604,17 +617,9 @@ TEST(PatchFeTest, complete_evaluation) {
     std::string input_str = "{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }";
     Mesh* mesh = mesh_full_constructor(input_str);
 
-    MixedPtr<FE_P_disc> fe(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
-    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
-    dh->distribute_dofs(ds);
-    unsigned int quad_order = 1;
-
-    PatchFETestFull patch_fe(quad_order, dh);
-    patch_fe.initialize();
-    patch_fe.test_evaluation(true);
-    patch_fe.reset();
-    patch_fe.test_evaluation();
+    // two tests with different quad_order
+    compare_evaluation_func(mesh, 1);
+    compare_evaluation_func(mesh, 2);
 }
 
 //TEST(PatchFeTest, speed_comparation) {
