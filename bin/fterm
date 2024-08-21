@@ -177,7 +177,7 @@ function update_image() {
     autopull=$2
     
     if [[ $autopull == "1" ]]; then
-      docker pull flow123d/$pull_image:$image_tag
+      docker pull $pull_image:$image_tag
     fi
 }
 
@@ -377,10 +377,10 @@ fi
 
 
 # determine image names
-base_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
+flow_image=flow123d/flow-dev-$image_env-$image_kind:$image_tag
 
 
-dbg "base_image     = $base_image"
+dbg "flow_image     = $flow_image"
 dbg "image_tag      = $image_tag"
 dbg "image_kind     = $image_kind"
 dbg "image_env      = $image_env"
@@ -394,7 +394,7 @@ dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
-if [ "${base_image%:*}" == "flow123d/flow-dev-gnu-vtune" ]
+if [ "${flow_image%:*}" == "flow123d/flow-dev-gnu-vtune" ]
 then
   # port binding under Windows 10 needs host local IP adress to be specified.
   envarg="--name=vtune_cont --cap-add CAP_SYS_ADMIN --publish 127.0.0.1:7788:7788 ${envarg}"
@@ -416,33 +416,33 @@ fi
 case $action in
   raw)
     dbg2 "Raw fterm call: $rest"
-    docker run $rest $base_image
+    docker run $rest $flow_image
   ;;
   detach)
     docker rm -f $contname > /dev/null 2>&1
-    dbgc docker run -d --name $contname ${docker_terminal} $envarg $mountargs $priv_true $rest $base_image 
+    dbgc docker run -d --name $contname ${docker_terminal} $envarg $mountargs $priv_true $rest $flow_image 
     #dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
   run)
-    update_image $base_image $autopull
+    update_image $flow_image $autopull
     dbg2 "Executing flow123d with args $rest"
-    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image "$REL_FLOW_DIR/bin/flow123d" "$rest"
+    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $flow_image "$REL_FLOW_DIR/bin/flow123d" "$rest"
   ;;
   exec)
-    update_image $base_image $autopull
+    update_image $flow_image $autopull
     dbg2 "Executing command $rest"
-    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $base_image "$rest"
+    dbgc docker run --rm ${docker_terminal} $envarg $mountargs $priv_true $flow_image "$rest"
   ;;
   shell)
-    update_image $base_image $autopull
+    update_image $flow_image $autopull
     dbg2 "Entering shell"
     
-    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $flow_image
   ;;
   update)
     for image in $flow123d_images
     do
-        update_image $image 1
+        update_image flow123d/$image 1
     done
   ;;
   clean)
