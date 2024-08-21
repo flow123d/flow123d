@@ -3,6 +3,15 @@
 # Starts VTUNE server, use in the flow-dev-xyz-vtune container.
 # Allows to use it through a web browser.
 
-ABS_FLOW_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+source /opt/intel/oneapi/vtune/latest/vtune-vars.sh
 
-vtune-backend --allow-remote-access --web-port=7788 --enable-server-profiling --data-directory ${ABS_FLOW_DIR} 
+ABS_FLOW_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+VTUNE_WORKDIR="${ABS_FLOW_DIR}/vtune-work"
+
+# from version 2024.02 VTUN wants to create directory: ${HOME}/intel/swip
+sudo mkdir ${HOME}/intel
+sudo chown 1000:1000 ${HOME}/intel
+
+mkdir -p "${VTUNE_WORKDIR}"
+echo "VTUNE WORDIR: '${VTUNE_WORKDIR}'"
+vtune-backend --allow-remote-access --web-port=7788 --enable-server-profiling --data-directory ${VTUNE_WORKDIR} 
