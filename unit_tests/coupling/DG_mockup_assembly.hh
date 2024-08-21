@@ -169,6 +169,80 @@ public:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
+// return the ratio of longest and shortest edge
+double elem_anisotropy(ElementAccessor<3> e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            double dist = arma::norm(*e.node(i) - *e.node(j));
+            h_max = max(h_max, dist);
+            h_min = min(h_min, dist);
+        }
+    return h_max/h_min;
+}
+
+/**
+ * @brief Computes average normal diffusivity over a set of points
+ *
+ * @param diff_coef Diffusion tensor.
+ * @param pts       Points.
+ * @param nv        Normal vector.
+ * @return double
+ */
+double diffusion_delta(Field<3, FieldValue<3>::TensorFixed> &diff_coef, Range<BoundaryPoint> pts, const arma::vec3 &nv)
+{
+    double delta = 0;
+    unsigned int n = 0;
+    for (auto p : pts )
+    {
+        delta += dot(diff_coef(p)*nv, nv);
+        n++;
+    }
+    return n == 0 ? 0 : (delta/n);
+}
+
+
+/**
+ * @brief Computes the penalty parameter of the DG method on a given boundary edge.
+ *
+ * Assumption is that the edge consists of only 1 side.
+ * @param side       		The boundary side.
+ * @param diff_delta	    Average normal dispersivity K*n.n computed by diffusion_delta()
+ * @param ad_vector         Advection vector.
+ * @param alpha				Penalty parameter that influences the continuity
+ * 							of the solution (large value=more continuity).
+ */
+double DG_penalty_boundary(Side side,
+            const double &diff_delta,
+            const double flux,
+            const double alpha)
+{
+    return 0.5*fabs(flux) + alpha/side.diameter()*diff_delta*elem_anisotropy(side.element());
+}
+
+
+/**
+ * @brief Computes advective flux.
+ *
+ * @param advection_coef Advection vector.
+ * @param pts            Quadrature points.
+ * @param JxW            JxW accessor.
+ * @param normal         normalW accessor.
+ * @return double
+ */
+template <class PointType>
+double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Range<PointType> pts, ElQ<Scalar> &JxW, ElQ<Vector> normal)
+{
+    double side_flux = 0;
+    for (auto p : pts) {
+        side_flux += arma::dot(advection_coef(p), normal(p))*JxW(p);
+    }
+    return side_flux;
+}
+
+
 template <unsigned int dim>
 class Stiffness_FullAssembly : public AssemblyBasePatch<dim>
 {
@@ -293,29 +367,22 @@ public:
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
-            // On Neumann boundaries we have only term from integrating by parts the advective term,
-            // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-            double side_flux = 0;
-            k=0;
-            for (auto p : this->boundary_points(cell_side) ) {
-                side_flux += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_side_(p);
-                k++;
-            }
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), JxW_side_, normal_);
             double transport_flux = side_flux/side.measure();
 
+            // On Neumann boundaries we have only term from integrating by parts the advective term,
+            // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
             auto p_side = *( this->boundary_points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
-                for (auto p : this->boundary_points(cell_side) ) {
-                    eq_data_->dif_coef[sbi][k] = eq_fields_->diffusion_coef[sbi](p);
-                    k++;
-                }
                 auto p = *( this->boundary_points(cell_side).begin() );
-                eq_data_->set_DG_parameters_boundary(side, qsize_lower_dim_, eq_data_->dif_coef[sbi], transport_flux, normal_(p), eq_fields_->dg_penalty[sbi](p_side), gamma_l);
+                gamma_l = DG_penalty_boundary(side,
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), normal_(p)),
+                                              transport_flux,
+                                              eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
             }
 
@@ -389,11 +456,7 @@ public:
             sid=0;
             for( DHCellSide edge_side : edge_side_range )
             {
-                fluxes[sid] = 0;
-                for (auto p : this->edge_points(edge_side) ) {
-                    fluxes[sid] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_side_(p);
-                }
-                fluxes[sid] /= edge_side.measure();
+                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], this->edge_points(edge_side), JxW_side_, normal_) / edge_side.measure();
                 if (fluxes[sid] > 0)
                     pflux += fluxes[sid];
                 else
@@ -461,8 +524,8 @@ public:
                         omega[0] = delta[1]/delta_sum;
                         omega[1] = delta[0]/delta_sum;
                         double h = edge_side1.diameter();
-                        aniso1 = eq_data_->elem_anisotropy(edge_side1.element());
-                        aniso2 = eq_data_->elem_anisotropy(edge_side2.element());
+                        aniso1 = elem_anisotropy(edge_side1.element());
+                        aniso2 = elem_anisotropy(edge_side2.element());
                         gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
                     }
                     else
@@ -602,12 +665,6 @@ public:
 
 
 protected:
-    /// Holds set of element_patch_idx and side_idx of processed edge.
-    struct EdgeValuesMap {
-        std::vector<unsigned int> element_patch_idx_;      ///< Index of element in patch
-        std::vector<unsigned int> side_idx_;               ///< Index of side in element
-    };
-
     virtual void cell_integral_set_values(unsigned int sbi) {
         this->eq_data_->ls[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
     }
