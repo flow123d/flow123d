@@ -988,6 +988,7 @@ install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 install(FILES build_tree/src/libflow123d_lib.so  DESTINATION lib/)
+install(FILES build_tree/src/libsystem_lib.so  DESTINATION lib/)
 install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)
 
 # plain files
