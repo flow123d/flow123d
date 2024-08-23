@@ -41,12 +41,14 @@ protected:
     }
 
 public:
+    DECLARE_EXCEPTION( ExcArenaAllocation,
+            << "Allocation of ArenaResource failed. Please check if correct type of upstream is used.");
+
     /// Same as previous but doesn't construct buffer implicitly.
 	PatchArenaResource(void *buffer, size_t buffer_size, size_t simd_alignment, std::pmr::memory_resource* upstream = PatchArenaResource<Resource>::upstream_resource())
     : upstream_( upstream ),
       buffer_(buffer),
       buffer_size_(buffer_size),
-      used_size_(0),
       resource_(buffer_, buffer_size, upstream_),
       simd_alignment_(simd_alignment),
       full_data_(false)
@@ -88,7 +90,6 @@ public:
     // Reset allocated data
     void reset() {
         resource_.release();
-        used_size_ = 0;
         full_data_ = false;
 #ifdef FLOW123D_DEBUG
     	char *c_buffer = (char *)buffer_;
@@ -102,12 +103,13 @@ protected:
         ASSERT(!full_data_).error("Allocation of new data is not possible because child arena was created.");
         ASSERT_EQ(buffer_size_%alignment, 0);
 
-        void* p = resource_.allocate(bytes, alignment);
-        used_size_ += (bytes + alignment - 1) / alignment * alignment;
-        if (p == nullptr) {  // test only in Debug when null_pointer_resource is in use
-            throw std::bad_alloc();
-        }
-        return p;
+    	try {
+            void* p = resource_.allocate(bytes, alignment);
+            return p;
+    	} catch ( std::bad_alloc& ) {
+            THROW( ExcArenaAllocation() );
+    	}
+        return nullptr;
     }
 
     /// Override do_allocate to handle allocation logic
@@ -128,7 +130,6 @@ protected:
     std::pmr::memory_resource* upstream_;   ///< Pointer to upstream
     void* buffer_;                          ///< Pointer to buffer
     size_t buffer_size_;                    ///< Size of buffer
-    size_t used_size_;                      ///< Temporary data member, will be removed
     Resource resource_;                     ///< Resource of arena
     size_t simd_alignment_;                 ///< Size of SIMD alignment
     bool full_data_;                        ///< Flag signs full data (child arena is created)
