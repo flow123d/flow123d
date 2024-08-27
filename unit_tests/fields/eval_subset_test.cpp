@@ -31,25 +31,42 @@ arma::vec::fixed<dim> loc_coords(std::shared_ptr<EvalPoints> eval_points, unsign
 
 
 TEST(EvalPointsTest, all) {
-	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
-	EXPECT_EQ(eval_points->size(3), 0);
-	EXPECT_EQ(eval_points->n_subsets(3), 0);
+    std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    EXPECT_EQ(eval_points->size(3), 0);
+    EXPECT_EQ(eval_points->n_subsets(3), 0);
 
-    Quadrature *q_bulk_3 = new QGauss(3, 2); // dim 3
-    eval_points->add_bulk<3>(*q_bulk_3 );
-	EXPECT_EQ(eval_points->size(3), 4);
-	EXPECT_EQ(eval_points->n_subsets(3), 1);
-	EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
-	EXPECT_EQ(eval_points->subset_end(3, 0), 4);
-	EXPECT_EQ(eval_points->subset_size(3, 0), 4);
+    Quadrature *q_bulk_2 = new QGauss(2, 2);       // dim 2
+    Quadrature *q_side_2 = new QGauss(1, 2);
+    Quadrature *q_side_3 = new QGauss(2, 2);       // join integral between elemenet of dim 2 and side of element of dim 3
+    eval_points->add_bulk<2>(*q_bulk_2 );          // Add bulk integral, test values
+    EXPECT_EQ(eval_points->size(2), 3);
+    EXPECT_EQ(eval_points->n_subsets(2), 1);
+    EXPECT_EQ(eval_points->subset_begin(2, 0), 0);
+    EXPECT_EQ(eval_points->subset_end(2, 0), 3);
+    EXPECT_EQ(eval_points->subset_size(2, 0), 3);
+    eval_points->add_edge<2>(*q_side_2 );          // Add edge integral, test values
+    EXPECT_EQ(eval_points->size(2), 9);
+    EXPECT_EQ(eval_points->n_subsets(2), 2);
+    EXPECT_EQ(eval_points->subset_begin(2, 1), 3);
+    EXPECT_EQ(eval_points->subset_end(2, 1), 9);
+    EXPECT_EQ(eval_points->subset_size(2, 1), 6);
+    EXPECT_EQ(eval_points->n_subsets(3), 0);       // Check n_subsets of dim 3 before adding of join integral
+    std::shared_ptr<CouplingIntegral> ci = eval_points->add_coupling<3>(*q_side_3 ); // Add join integral, test values
+    EXPECT_EQ(ci->get_subset_low_idx(), 0);        // Shared subset with bulk integral
+    EXPECT_EQ(ci->get_subset_high_idx(), 0);       // New subset with edge integral
+    EXPECT_EQ(eval_points->n_subsets(3), 1);       // Join integral adds subset of higher dimension
+    std::shared_ptr<BoundaryIntegral> bi = eval_points->add_boundary<3>(*q_side_3 ); // Add boundary integral, test values
+    EXPECT_EQ(bi->get_subset_low_idx(), 0);        // Shared subset with bulk integral
+    EXPECT_EQ(bi->get_subset_high_idx(), 1);       // New subset with edge integral
+    EXPECT_EQ(eval_points->n_subsets(3), 2);
 
-	Quadrature *q_bulk_0 = new QGauss(0, 2); // dim 0
+    Quadrature *q_bulk_0 = new QGauss(0, 2);       // dim 0
     eval_points->add_bulk<0>(*q_bulk_0 );
-	EXPECT_EQ(eval_points->size(0), 1);
-	EXPECT_EQ(eval_points->n_subsets(0), 1);
-	EXPECT_EQ(eval_points->subset_begin(0, 0), 0);
-	EXPECT_EQ(eval_points->subset_end(0, 0), 1);
-	EXPECT_EQ(eval_points->subset_size(0, 0), 1);
+    EXPECT_EQ(eval_points->size(0), 1);
+    EXPECT_EQ(eval_points->n_subsets(0), 1);
+    EXPECT_EQ(eval_points->subset_begin(0, 0), 0);
+    EXPECT_EQ(eval_points->subset_end(0, 0), 1);
+    EXPECT_EQ(eval_points->subset_size(0, 0), 1);
 }
 
 
