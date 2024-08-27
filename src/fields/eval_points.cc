@@ -66,7 +66,7 @@ template <unsigned int dim>
 std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
 
-    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    std::shared_ptr<BulkIntegral> bulk_integral = this->get_bulk_integral<dim-1>(quad);
     DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
             << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
     std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
