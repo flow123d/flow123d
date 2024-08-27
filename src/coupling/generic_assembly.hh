@@ -318,9 +318,11 @@ private:
      * Types of used integrals must be set in data member \p active_integrals_.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
+        bool add_bulk_points = true; // Holds if bulk points of CoplingIntegral must be added (checks duplicity)
         if (active_integrals_ & ActiveIntegrals::bulk)
     	    if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
+                add_bulk_points = false;
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
@@ -337,11 +339,10 @@ private:
         }
 
         if (active_integrals_ & ActiveIntegrals::coupling) {
-            bool add_low = true;
         	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
                 if (cell.dim() != neighb_side.dim()-1) continue;
-                this->add_coupling_integral(cell, neighb_side, add_low);
-                add_low = false;
+                this->add_coupling_integral(cell, neighb_side, add_bulk_points);
+                add_bulk_points = false;
             }
         }
     }
