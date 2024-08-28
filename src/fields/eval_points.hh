@@ -184,12 +184,19 @@ private:
     template <unsigned int dim>
     std::shared_ptr<BulkIntegral> get_bulk_integral(const Quadrature &quad);
 
+    /// Create EdgeIntegral of appropriate dimension if doesn't exist and return its.
+    template <unsigned int dim>
+    std::shared_ptr<EdgeIntegral> get_edge_integral(const Quadrature &quad);
+
 
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
     /// BulkIntegral objects of dimension 0,1,2,3
     std::array< std::shared_ptr<BulkIntegral>, 4> bulk_integrals_;
+
+    /// EdgeIntegral objects of dimension 1,2,3
+    std::array< std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;

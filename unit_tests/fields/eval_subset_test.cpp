@@ -57,8 +57,8 @@ TEST(EvalPointsTest, all) {
     EXPECT_EQ(eval_points->n_subsets(3), 1);       // Join integral adds subset of higher dimension
     std::shared_ptr<BoundaryIntegral> bi = eval_points->add_boundary<3>(*q_side_3 ); // Add boundary integral, test values
     EXPECT_EQ(bi->get_subset_low_idx(), 0);        // Shared subset with bulk integral
-    EXPECT_EQ(bi->get_subset_high_idx(), 1);       // New subset with edge integral
-    EXPECT_EQ(eval_points->n_subsets(3), 2);
+    EXPECT_EQ(bi->get_subset_high_idx(), 0);       // Shared subset with join integral
+    EXPECT_EQ(eval_points->n_subsets(3), 1);
 
     Quadrature *q_bulk_0 = new QGauss(0, 2);       // dim 0
     eval_points->add_bulk<0>(*q_bulk_0 );
