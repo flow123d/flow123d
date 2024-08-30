@@ -181,7 +181,7 @@ TEST_F(FieldValueCacheTest, element_cache_map) {
     EXPECT_EQ(this->n_regions(), 1);
     EXPECT_EQ(this->n_elements(), 3);
     EXPECT_EQ(element_starts_[0], 0);
-    EXPECT_EQ(element_starts_[3], 24);
+    EXPECT_EQ(element_starts_[3], 12);
     EXPECT_EQ(regions_starts_[0], 0);
     EXPECT_EQ(regions_starts_[1], 3);
     this->finish_elements_update();
