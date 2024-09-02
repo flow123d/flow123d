@@ -46,8 +46,6 @@ template<unsigned int spacedim> class PatchFEValues;
 
 
 
-typedef typename std::vector< std::array<uint, 3> > DimPointTable;  ///< Holds triplet (dim; bulk/side; idx of point in subtable)
-
 
 template <class ValueType>
 class ElQ {
