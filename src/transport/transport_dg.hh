@@ -63,7 +63,6 @@ template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitProjectionAssemblyDG;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
-template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 class Quadrature;

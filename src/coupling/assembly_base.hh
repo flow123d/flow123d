@@ -69,6 +69,10 @@ public:
     /// Method finishes object after assemblation (e.g. balance, ...).
     virtual void end() {}
 
+    /// Method prepares object before computing on patch (typically reinitialize PatchFEValues objects).
+    /// TODO Temporary methods use only in initialization of PatchFEValues_TEMP (only mechanic equation)
+    virtual void patch_reinit(FMT_UNUSED std::array<PatchElementsList, 4> &patch_elements) {}
+
     /// Getter of active_integrals.
     inline int n_active_integrals() const {
         return active_integrals_;
@@ -191,6 +195,18 @@ protected:
     int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
     ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
+};
+
+
+template <unsigned int dim>
+class AssemblyBasePatch : public AssemblyBase<dim>
+{
+public:
+	AssemblyBasePatch(unsigned int quad_order, PatchFEValues<3> *fe_values)
+	: AssemblyBase<dim>(quad_order), fe_values_(fe_values) {}
+
+protected:
+    PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions
 };
 
 
