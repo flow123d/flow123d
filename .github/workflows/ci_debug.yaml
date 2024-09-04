@@ -98,7 +98,7 @@ jobs:
             
         steps:  
         - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v4.1.7
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
@@ -131,7 +131,7 @@ jobs:
             - tools
         steps:  
         - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v4.1.7
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
@@ -145,7 +145,7 @@ jobs:
             status: ${{job.status}}
         steps:  
         - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/download-artifact@v4.1.7
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh  dbg_gnu make ref-doc
