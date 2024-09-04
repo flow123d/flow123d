@@ -65,7 +65,6 @@ void ElementCacheMap::create_patch() {
 
     unsigned int last_region_idx = -1;
     unsigned int last_element_idx = -1;
-    unsigned int last_point_idx = -1;
     unsigned int i_pos=0; // position in eval_point_data_
     bool is_new_reg, is_new_elm;
 
@@ -77,10 +76,6 @@ void ElementCacheMap::create_patch() {
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
     for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
-        if ( (it->i_reg_ == last_region_idx) && (it->i_element_ == last_element_idx) && (it->i_eval_point_ == last_point_idx)) {
-            // skip duplicate point (typically added by bulk and join integral)
-            continue;
-        }
         is_new_reg = (it->i_reg_ != last_region_idx);
         is_new_elm = is_new_reg || (it->i_element_ != last_element_idx);
         if (is_new_elm) {
@@ -105,7 +100,6 @@ void ElementCacheMap::create_patch() {
         eval_point_data_.emplace_back( *it );
         set_element_eval_point(element_starts_.temporary_size()-1, it->i_eval_point_, i_pos);
         i_pos++;
-        last_point_idx = it->i_eval_point_;
     }
     unsigned int last_eval_point = i_pos-1; // set size of block of last region by SIMD size
     while (i_pos % simd_size_double > 0) {
@@ -113,7 +107,6 @@ void ElementCacheMap::create_patch() {
         i_pos++;
     }
 
-    std::cout << " ... OK" << std::endl;
     regions_starts_.emplace_back( element_starts_.temporary_size() );
     element_starts_.emplace_back(i_pos);
     regions_starts_.make_permanent();
