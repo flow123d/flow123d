@@ -176,6 +176,7 @@ public:
             if (elOp.size_type() != fixedSizeOp) {
                 elOp.allocate_result(sizes[elOp.size_type()], *patch_arena_);
             }
+        std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
     /**
@@ -185,6 +186,11 @@ public:
      * @param element_patch_idx Index of element on patch.
      */
     uint register_element(arma::mat coords, uint element_patch_idx) {
+    	if (elements_map_[element_patch_idx] != (uint)-1) {
+    	    // Return index of element on patch if it is registered repeatedly
+    	    return elements_map_[element_patch_idx];
+    	}
+
     	ElOp<spacedim> &op = operations_[FeBulk::BulkOps::opElCoords];
         auto &coords_mat = op.result_matrix();
         std::size_t i_elem = i_elem_;
