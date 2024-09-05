@@ -306,6 +306,11 @@ public:
     /// Used in BDDC for unknown reason.
     virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
 
+    /// Return type of finite element
+    inline FEType fe_type() const {
+        return type_;
+    }
+
     /**
      * @brief Destructor.
      */

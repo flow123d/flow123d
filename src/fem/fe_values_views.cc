@@ -19,7 +19,6 @@
 #include "mesh/accessors.hh"
 #include "fem/fe_values_views.hh"
 #include "fem/fe_values.hh"
-#include "fem/patch_fe_values.hh"
 #include "fem/finite_element.hh"
 #include "quadrature/quadrature.hh"
 

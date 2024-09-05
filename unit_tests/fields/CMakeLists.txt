@@ -55,6 +55,8 @@ define_mpi_test(field_value_cache 1)
 define_test(bparser)
 define_test(field_model)
 
+define_mpi_test(patch_fe 1)
+define_mpi_test(outer_product 1)
 
 
 
