@@ -254,4 +254,23 @@ protected:
 };
 
 
+
+/**
+ * Class EqDataBase is class that holds common data of all equations used in GenericAssembly class.
+ */
+class EqDataBase {
+public:
+    /// Constructor
+    EqDataBase(unsigned int q_order = 0, unsigned int output_q_order = 0)
+    : quad_order(q_order), output_quad_order(output_q_order) {}
+
+    /// Polynomial order of finite elements.
+    unsigned int quad_order;
+
+    /// Polynomial order of output.
+    unsigned int output_quad_order;
+};
+
+
+
 #endif /* EQUATION_HH_ */
