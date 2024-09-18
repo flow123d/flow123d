@@ -205,7 +205,7 @@ public:
         Field<3, FieldValue<3>::Scalar> ref_divergence;
     };
 
-    class EqData {
+    class EqData : public EqDataBase {
     public:
         
         EqData();

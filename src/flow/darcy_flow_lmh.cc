@@ -349,6 +349,7 @@ const it::Selection & DarcyLMH::EqFields::get_bc_type_selection() {
 
 
 DarcyLMH::EqData::EqData()
+: EqDataBase(0)
 {
     mortar_method_=NoMortar;
 }
