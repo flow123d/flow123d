@@ -34,6 +34,7 @@
 #include "system/sys_profiler.hh"
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
+#include "coupling/equation.hh"
 
 
 /****************************************************************************************
@@ -64,9 +65,9 @@ static const unsigned int profiler_loop = 50;
 
 class FieldFESpeedTest : public testing::Test {
 public:
-    class EqData : public FieldSet {
+    class EqData : public FieldSet, public EqDataBase {
     public:
-        EqData() : order(2) {
+        EqData() : EqDataBase(2) {
             *this += vector_field
                         .name("vector_field")
                         .description("Velocity vector.")
@@ -85,9 +86,6 @@ public:
                         .flags_add(in_main_matrix);
 #endif // ALL_FIELDS
         }
-
-    	/// Polynomial order of finite elements.
-    	unsigned int order;
 
     	// fields
         Field<3, FieldValue<3>::VectorFixed > vector_field;
@@ -199,7 +197,7 @@ public:
 
     /// Constructor.
     AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
         this->used_fields_.set_mesh( *eq_fields_->mesh() );
         this->used_fields_ += *eq_fields_;

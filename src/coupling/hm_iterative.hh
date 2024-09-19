@@ -133,9 +133,12 @@ private:
 class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
     
-    class EqData
+    class EqData : public EqDataBase
     {
     public:
+        /// Constructor
+        EqData() : EqDataBase(1) {}
+
         /// steady or unsteady water flow simulator based on MH scheme
         std::shared_ptr<DarcyLMH> flow_;
 

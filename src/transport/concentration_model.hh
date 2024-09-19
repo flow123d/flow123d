@@ -115,10 +115,10 @@ public:
 
 	};
 
-   	class ModelEqData {
+   	class ModelEqData : public EqDataBase {
    	public:
 
-		ModelEqData() {}
+		ModelEqData() : EqDataBase() {}
 
 		static constexpr const char * name() { return "Solute_AdvectionDiffusion"; }
 

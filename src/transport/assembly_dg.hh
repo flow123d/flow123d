@@ -43,7 +43,7 @@ public:
 
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -56,7 +56,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->quad_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
@@ -245,7 +245,7 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -268,8 +268,8 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
-        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->dg_order);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->quad_order);
+        fe_low_ = std::make_shared< FE_P_disc<dim-1> >(eq_data_->quad_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         UpdateFlags u_side = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
@@ -719,7 +719,7 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -733,7 +733,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->quad_order);
         UpdateFlags u = update_values | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         if (dim==1) // print to log only one time
@@ -844,7 +844,7 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -862,7 +862,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->quad_order);
         UpdateFlags u = update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);
         if (dim==1) // print to log only one time
@@ -1067,7 +1067,7 @@ public:
 
     /// Constructor.
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
@@ -1079,7 +1079,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->dg_order);
+        fe_ = std::make_shared< FE_P_disc<dim> >(eq_data_->quad_order);
         UpdateFlags u = update_values | update_gradients | update_JxW_values | update_quadrature_points;
         fe_values_.initialize(*this->quad_, *fe_, u);
         // if (dim==1) // print to log only one time

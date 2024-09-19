@@ -116,10 +116,10 @@ public:
     };
 
 
-    class EqData {
+    class EqData : public EqDataBase {
     public:
 
-        EqData() : is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
+        EqData() : EqDataBase(0), is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
         virtual ~EqData() {};
 
         /// Returns number of transported substances.
