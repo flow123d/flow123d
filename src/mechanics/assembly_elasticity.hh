@@ -32,7 +32,7 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class StiffnessAssemblyElasticity : public AssemblyBase<dim>
+class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -41,11 +41,11 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()),
-	  fe_values_side_(CacheMapElementNumber::get()),
-	  fe_values_sub_(CacheMapElementNumber::get()) {
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+      JxW_( this->bulk_values().JxW() ),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -67,12 +67,14 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_values_.initialize(*this->quad_, *fe_,
+        fe_vals_.initialize(*this->quad_, *fe_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
         fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = fe_->n_dofs();
         n_dofs_sub_ = fe_low_->n_dofs();
@@ -88,18 +90,9 @@ public:
             for (uint n=0; n<2; ++n)
                 local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
         }
-        vec_view_ = &fe_values_.vector_view(0);
+        vec_view_ = &fe_vals_.vector_view(0);
         vec_view_side_ = &fe_values_side_.vector_view(0);
         if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fe_values_.reinit(patch_elements[dim]);
-        fe_values_side_.reinit(patch_elements[dim]);
-        fe_values_sub_.reinit(patch_elements[dim-1]);
     }
 
 
@@ -108,7 +101,8 @@ public:
     {
         if (cell.dim() != dim) return;
 
-        fe_values_.get_cell(element_patch_idx);
+        ElementAccessor<3> elm_acc = cell.elm();
+        fe_vals_.reinit(elm_acc);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -125,7 +119,7 @@ public:
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
                                                 2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
                                                 + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
-                                               )*fe_values_.JxW(p);
+                                               )*JxW_(p);
             }
             k++;
         }
@@ -141,7 +135,7 @@ public:
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
-        fe_values_side_.get_side(this->element_cache_map_->position_in_cache(cell_side.elem_idx()), cell_side.side_idx());
+        fe_values_side_.reinit(side);
 
         for (unsigned int i=0; i<n_dofs_; i++)
             for (unsigned int j=0; j<n_dofs_; j++)
@@ -158,7 +152,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * fe_values_side_.JxW(p);
+                                arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * JxW_side_(p);
                 k++;
             }
         }
@@ -169,8 +163,8 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_view_side_->value(i,k), fe_values_side_.normal_vector(p)) *
-                                arma::dot(vec_view_side_->value(j,k), fe_values_side_.normal_vector(p)) * fe_values_side_.JxW(p);
+                                arma::dot(vec_view_side_->value(i,k), normal_(p)) *
+                                arma::dot(vec_view_side_->value(j,k), normal_(p)) * JxW_side_(p);
                 k++;
             }
         }
@@ -185,11 +179,12 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		fe_values_sub_.get_cell( this->element_cache_map_->position_in_cache(cell_lower_dim.elm_idx()) );
+		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
+		fe_values_sub_.reinit(cell_sub);
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
+		fe_values_side_.reinit(neighb_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -207,7 +202,7 @@ public:
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = fe_values_side_.normal_vector(p_high);
+            arma::vec3 nv = normal_(p_high);
 
             for (int n=0; n<2; n++)
             {
@@ -234,7 +229,7 @@ public:
                                       + eq_fields_->lame_lambda(p_low)*divuft*nv
                                      )
                                      - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fe_values_sub_.JxW(p_low);
+                                    )*JxW_side_(p_high);
                         }
 
                 }
@@ -271,17 +266,22 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    PatchFEValues_TEMP<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
-    PatchFEValues_TEMP<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
+    FEValues<3> fe_vals_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fe_values_side_;                                        ///< FEValues of side object
+    FEValues<3> fe_values_sub_;                                         ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;            ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;        ///< Vector view of low dim element in neighbour calculation.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Scalar> JxW_;
+    ElQ<Scalar> JxW_side_;
+    ElQ<Vector> normal_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

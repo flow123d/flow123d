@@ -123,6 +123,11 @@ public:
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh, unsigned int fe_order);
 
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 1;
+        }
+
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
         std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
