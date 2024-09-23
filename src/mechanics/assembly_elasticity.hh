@@ -756,7 +756,7 @@ private:
  * Container class for assembly of constraint matrix for contact condition.
  */
 template <unsigned int dim>
-class ConstraintAssemblyElasticity : public AssemblyBase<dim>
+class ConstraintAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -765,9 +765,10 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_side_(CacheMapElementNumber::get()) {
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
@@ -784,18 +785,13 @@ public:
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_side_JxW_values | update_normal_vectors);
+        //this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = fe_->n_dofs();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
         vec_view_side_ = &fe_values_side_.vector_view(0);
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fe_values_side_.reinit(patch_elements[dim]);
     }
 
 
@@ -807,9 +803,9 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(dof_indices_);
+        cell_higher_dim.get_dof_indices(dof_indices_);
 
-		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
+        fe_values_side_.reinit(neighb_side.side());
 
         for (unsigned int i=0; i<n_dofs_; i++)
             local_matrix_[i] = 0;
@@ -822,13 +818,13 @@ public:
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = fe_values_side_.normal_vector(p_high);
+            arma::vec3 nv = normal_(p_high);
 
-            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*JxW_side_(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(p_high) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
             }
             k++;
         }
@@ -854,12 +850,17 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
+    FEValues<3> fe_values_side_;                                        ///< FEValues of side object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in boundary / neighbour calculation.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Scalar> JxW_side_;
+    ElQ<Vector> normal_;
+
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

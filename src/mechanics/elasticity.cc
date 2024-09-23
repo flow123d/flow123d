@@ -433,7 +433,7 @@ void Elasticity::initialize()
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
         ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
-        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
