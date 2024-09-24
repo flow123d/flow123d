@@ -584,7 +584,7 @@ private:
 };
 
 template <unsigned int dim>
-class OutpuFieldsAssemblyElasticity : public AssemblyBase<dim>
+class OutpuFieldsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -593,10 +593,9 @@ public:
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fv_(CacheMapElementNumber::get()),
-	  fsv_(CacheMapElementNumber::get()) {
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+      normal_( this->side_values().normal_vector() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -618,6 +617,9 @@ public:
         		update_values | update_gradients | update_quadrature_points);
         fsv_.initialize(*this->quad_low_, *fe_,
         		update_values | update_normal_vectors | update_quadrature_points);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
+
         n_dofs_ = fe_->n_dofs();
         vec_view_ = &fv_.vector_view(0);
         //        if (dim>1) ??
@@ -632,14 +634,6 @@ public:
     }
 
 
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fv_.reinit(patch_elements[dim]);
-        fsv_.reinit(patch_elements[dim]);
-    }
-
-
     /// Assemble integral over element
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
@@ -648,7 +642,8 @@ public:
         DHCellAccessor cell_tensor = cell.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_scalar = cell.cell_with_other_dh(eq_data_->dh_scalar_.get());
 
-        fv_.get_cell(element_patch_idx);
+        auto elm = cell.elm();
+        fv_.reinit(elm);
         dof_indices_        = cell.get_loc_dof_indices();
         dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
         dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
@@ -690,7 +685,7 @@ public:
         DHCellAccessor cell_higher_dim = neighb_side.cell();
         DHCellAccessor cell_tensor = cell_lower_dim.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
-        fsv_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
+        fsv_.reinit(neighb_side.side());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
         auto p_high = *( this->coupling_points(neighb_side).begin() );
@@ -698,8 +693,8 @@ public:
 
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(p_high));
-            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(p_high).t()) / eq_fields_->cross_section(p_low);
+            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), normal_(p_high));
+            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
         }
 
@@ -725,17 +720,20 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues_TEMP<3> fv_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues_TEMP<3> fsv_;                                              ///< FEValues of side (neighbour integral) object
+    FEValues<3> fv_;                                                    ///< FEValues of cell object (FESystem of P disc finite element type)
+    FEValues<3> fsv_;                                                   ///< FEValues of side (neighbour integral) object
 
     LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
     LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
     LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;            ///< Vector view in cell integral calculation.
+    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in neighbour calculation.
 
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Vector> normal_;
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
