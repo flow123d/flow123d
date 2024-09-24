@@ -144,8 +144,5 @@ const FV &FEValuesViews::Tensor<FV, spacedim>::base() const
 template class FEValuesViews::Scalar<FEValues<3>, 3>;
 template class FEValuesViews::Vector<FEValues<3>, 3>;
 template class FEValuesViews::Tensor<FEValues<3>, 3>;
-template class FEValuesViews::Scalar<PatchFEValues_TEMP<3>, 3>;
-template class FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3>;
-template class FEValuesViews::Tensor<PatchFEValues_TEMP<3>, 3>;
 
 
