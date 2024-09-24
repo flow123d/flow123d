@@ -108,6 +108,7 @@ public:
 
 	};
 
+	/// Data of equation parameters
 	class EqData {
 	public:
 
@@ -121,7 +122,7 @@ public:
 		}
 
 		/// Create DOF handler objects
-        void create_dh(Mesh * mesh, unsigned int fe_order);
+        void create_dh(Mesh * mesh);
 
         /// Returns quad_order
         inline unsigned int quad_order() const {
@@ -130,8 +131,6 @@ public:
 
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
     	/// @name Solution of algebraic system
     	// @{
@@ -149,6 +148,30 @@ public:
 
     	/// Shared Balance object
     	std::shared_ptr<Balance> balance_;
+
+	};
+
+
+	/// Data of output parameters
+	class OutputEqData {
+	public:
+
+		OutputEqData()
+        {}
+
+		~OutputEqData() {}
+
+		/// Create DOF handler objects
+        void create_dh(Mesh * mesh);
+
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 0;
+        }
+
+        /// Objects for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
 	};
 
@@ -238,6 +261,9 @@ private:
 
 	/// Data for model parameters.
 	std::shared_ptr<EqData> eq_data_;
+
+	/// Data for output parameters.
+	std::shared_ptr<OutputEqData> output_eq_data_;
 
     /// Indicator of contact conditions on fractures.
     bool has_contact_;

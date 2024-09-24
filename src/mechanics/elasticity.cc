@@ -279,25 +279,29 @@ Elasticity::EqFields::EqFields()
 
 }
 
-void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
+void Elasticity::EqData::create_dh(Mesh * mesh)
 {
-	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
-    MixedPtr<FE_P> fe_p(1);
+	ASSERT_EQ(quad_order(), 1).error("Unsupported polynomial order for finite elements in Elasticity");
+    MixedPtr<FE_P> fe_p( quad_order() );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
 
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
 	dh_->distribute_dofs(ds);
+}
 
+void Elasticity::OutputEqData::create_dh(Mesh * mesh)
+{
+	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
 
-    MixedPtr<FE_P_disc> fe_p_disc(0);
+	MixedPtr<FE_P_disc> fe_p_disc( quad_order() );
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
 	dh_scalar_->distribute_dofs(ds_scalar);
 
 
-    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>( quad_order() ), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);
@@ -317,6 +321,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 	START_TIMER(name_);
 
     eq_data_ = std::make_shared<EqData>();
+    output_eq_data_ = std::make_shared<OutputEqData>();
     eq_fields_ = std::make_shared<EqFields>();
     this->eq_fieldset_ = eq_fields_;
     
@@ -340,7 +345,8 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     eq_data_->balance_ = this->balance();
     
     // create finite element structures and distribute DOFs
-    eq_data_->create_dh(mesh_, 1);
+    eq_data_->create_dh(mesh_);
+    output_eq_data_->create_dh(mesh_);
     DebugOut().fmt("Mechanics: solution size {}\n", eq_data_->dh_->n_global_dofs());
     
 }
@@ -368,23 +374,23 @@ void Elasticity::initialize()
     eq_fields_->output_field.set(eq_fields_->output_field_ptr, 0.);
     
     // setup output stress
-    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
+    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(output_eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
     // setup output von Mises stress
-    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
 
     // setup output mean stress
-    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
-    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_cross_section.set(eq_fields_->output_cross_section_ptr, 0.);
     
     // setup output divergence
-    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
 
     // read optional user fields
@@ -444,7 +450,7 @@ void Elasticity::initialize()
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), output_eq_data_.get());
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),

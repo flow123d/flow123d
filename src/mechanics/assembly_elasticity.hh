@@ -588,7 +588,7 @@ class OutpuFieldsAssemblyElasticity : public AssemblyBase<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename Elasticity::OutputEqData EqData;
 
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
