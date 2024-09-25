@@ -182,8 +182,8 @@ protected:
     /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
     template<unsigned int FE_dim>
     std::shared_ptr<FiniteElement<FE_dim>> fe_comp(std::shared_ptr< FiniteElement<FE_dim> > fe, uint component_idx) {
-        FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
-        if (fe_sys != nullptr) {
+        if (fe->fe_type() == FEMixedSystem) {
+            FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
             return fe_sys->fe()[component_idx];
         } else {
             ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
