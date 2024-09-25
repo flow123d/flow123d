@@ -3,15 +3,6 @@ name: CI build, tests and alpha release of images and packages
 # Triggered on push to specified branches.
 
 on: 
-    push:
-        branches:
-        - master
-        - JB_shared_system
-        - JB_release_tests        
-        - 3.9.1
-        - DF_variant_benchmark_asm
-        - DF_asm_optimization
-    
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
     workflow_dispatch:
