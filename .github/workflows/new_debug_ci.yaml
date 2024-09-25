@@ -1,0 +1,215 @@
+name: New flow123d debug CI
+
+on: 
+  push:
+    branches: 
+      - "**"
+
+ # Must be here? If we dont use it, it is not needed.
+ # We dont use github.event.inputs.environment in this workflow.
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Build environment [gnu, intel].
+        type: choice
+        options:
+          - gnu
+          - intel
+        required: false
+        default: gnu
+
+# Must be here? If we dont use it, it is not needed.
+env:
+  autopull:  0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Flow123d debug main build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set variables
+        id: vars
+        run: |            
+          # create build_dir variable
+          git_branch=`git rev-parse --abbrev-ref HEAD`
+          build_dir=build-${git_branch}
+          echo ${build_dir}
+  
+          # can not use environment variables in github actions
+          echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+
+      - name: Check vars
+        run: |
+            echo builddir="${{ steps.vars.outputs.builddir }}"
+      
+      - name: Build flow123d, verify, tarball.
+        run: |
+          release_tag=`cat version`
+          config/build/auto_build.sh dbg gnu ci ${release_tag} 
+
+      - name: Benchmark meshes
+        run: |
+            build_dir="${{ steps.vars.outputs.builddir }}"
+            config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
+
+      - name: Tarball build dir
+        run: |
+            build_dir="${{ steps.vars.outputs.builddir }}"
+            config/build/tar_build_dir.sh ${build_dir}      
+
+      - uses: actions/upload-artifact@v3
+        with:         
+          name: build_dir
+          path: build_dir.tar
+    
+  integration_tests:
+    needs: [build]
+    runs-on: ubuntu-latest
+    name: Integration Test ${{matrix.test_dir}}
+    continue-on-error: True
+    outputs:
+        status: ${{job.status}}
+    strategy:
+      matrix:
+        test_dir:
+        - 01_cmd_line
+        - 02_generic_input
+        - 03_generic_output
+        - 04_generic_mesh
+        - 05_tutorial
+        - 06_errors
+        - 10_darcy
+        - 11_darcy_bc
+        - 12_darcy_frac
+        - 13_darcy_time
+        - 14_darcy_richards
+        - 20_solute_fv
+        - 21_solute_fv_frac
+        - 22_solute_fv_time
+        - 24_solute_dg
+        - 25_solute_dg_bc
+        - 26_solute_dg_frac
+        - 27_solute_dg_time
+        - 30_sorption
+        - 31_dual_por
+        - 32_decay
+        - 33_reaction
+        - 34_sorption_dg
+        - 40_heat
+        - 50_mechanics
+        
+    steps:  
+    - uses: actions/checkout@v3
+    - uses: actions/download-artifact@v3
+      with:
+        name: build_dir
+    - run: config/build/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+    - name: Report
+      run: |
+        echo "Job result: ${{job.result}}"
+        echo "Job status: ${{job.status}}"
+
+  unit_tests:
+      needs: [build]
+      runs-on: ubuntu-latest
+      name: Unit Test 
+      continue-on-error: True
+      outputs:
+          status: ${{job.status}}        
+      strategy:
+        matrix:
+          test_dir:
+          - coupling
+          - fem
+          - fields
+          - flow
+          - input
+          - intersection
+          - la
+          - mesh
+          - output
+          - scripts
+          - system
+          - test_scripts
+          - tools
+      steps:  
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: build_dir
+      - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+  build_doc:
+      needs: [build]
+      runs-on: ubuntu-latest
+      name: Test build doc
+      continue-on-error: True
+      outputs:
+          status: ${{job.status}}
+      steps:  
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: build_dir
+      - run: config/build/run_with_build_dir.sh  dbg_gnu make ref-doc
+                   
+      
+  conclusion:
+      if: ${{always()}}
+      runs-on: ubuntu-latest
+      name: Workflow conclusion from all job results 
+      
+      #needs: [integration_tests, unit_tests, build_doc]        
+      needs: [build_doc, unit_tests, integration_tests]
+      
+      # continue-on-error jobs always reports sucess to the workflow
+      steps:
+        - name: Install gh command
+          # Fixed on the last workflow update. Works but seems fragile.
+          # But so prooved to be the previous solution:
+          # sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+          # sudo apt-add-repository https://cli.github.com/packages
+          run: |
+              type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+              curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+                && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+                && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+                && sudo apt update \
+                && sudo apt install gh -y
+        - name: Check status of all jobs
+          env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+              echo "run_id: ${{ github.run_id }}"
+              echo "run_number: ${{ github.run_number }}"
+              echo "run_attempt: ${{ github.run_attempt }}"
+              
+              # get the status of jobs selected by name:
+              #statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
+              
+              # get the status of all jobs
+              statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
+
+              # check if any job has failed
+              if echo "$statuses" | grep -q failure; then
+                  echo "One or more jobs have failed"
+                  exit 1
+              else
+                  echo "All jobs have succeeded"
+              fi    
+
+# steps.xyz.outcome  ... The result before continue-on-error is applied. Possible values: success, failure, cancelled, skipped.
+# steps.xyz.conclusion .. The result after continue-on-error is applied. Always success for continue-on-error.
+# "${{ job.status }}" ?? status of actual job 
+# ${{needs.<job-id>.result}}
+# ${{needs.<job-id>.outpus.<output-id>}} ... does not add the job to needs list automatically !!
+
+# problem is how to integrate the result over the whole job matrix
+# proposed solution: https://github.com/orgs/community/discussions/26822
+# uses `if: ${{always()}}` for the conclusion job which should run the job multiple times
+
+
+    
