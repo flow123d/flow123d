@@ -110,12 +110,18 @@ public:
         return *arena_;
     }
 
+    /// Getter for scalar_val_
+    T scalar_val() const {
+        return scalar_val_;
+    }
+
     /// Set pointer to PatchArena
     inline void set_patch_arena(PatchArena &arena) {
         ASSERT_PTR(arena_);
         this->arena_ = &arena;
     }
 
+    /// Returns copied vector of square root values
     inline ArenaVec<T> sqrt() const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -124,6 +130,7 @@ public:
         return res;
     }
 
+    /// Returns copied vector of inverse values
     inline ArenaVec<T> inverse() const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -132,6 +139,7 @@ public:
         return res;
     }
 
+    /// Returns copied vector of absolute values
     inline ArenaVec<T> abs() const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -153,6 +161,7 @@ public:
         return data_ptr_[item];
     }
 
+    /// Assignment operator
     inline ArenaVec<T> &operator=(const ArenaVec<T> &other) {
         data_ptr_ = other.data_ptr_;
         data_size_ = other.data_size_;
@@ -161,6 +170,12 @@ public:
         return *this;
     }
 
+    /**
+     * Addition operator
+     *
+     * Sums two ArenaVec objects
+     * TODO If ASSERT_PTR is thrown needs to implement tests of scalar values (see multiplication operator).
+     */
     inline ArenaVec<T> operator+(const ArenaVec<T> &other) const {
         ASSERT_PTR(data_ptr_);
         ASSERT_PTR(other.data_ptr());
@@ -171,6 +186,12 @@ public:
         return res;
     }
 
+    /**
+     * Subtraction operator
+     *
+     * Subtracts two ArenaVec objects
+     * TODO If ASSERT_PTR is thrown needs to implement tests of scalar values (see multiplication operator).
+     */
     inline ArenaVec<T> operator-(const ArenaVec<T> &other) const {
         ASSERT_PTR(data_ptr_);
         ASSERT_PTR(other.data_ptr());
@@ -181,6 +202,11 @@ public:
         return res;
     }
 
+    /**
+     * Multiplication operator
+     *
+     * Product Scalar x ArenaVec
+     */
     inline ArenaVec<T> operator*(T multi) const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -189,9 +215,16 @@ public:
         return res;
     }
 
+    /**
+     * Multiplication operator
+     *
+     * Product of two ArenaVec objects, checks if one ofe them is define as scalar
+     */
     inline ArenaVec<T> operator*(const ArenaVec<T> &other) const {
-        ASSERT_PTR(data_ptr_);
-        ASSERT_PTR(other.data_ptr());
+        if (data_ptr_ == nullptr)
+            return other * scalar_val_;
+        if (other.data_ptr() == nullptr)
+            return this->operator *(other.scalar_val());
         ASSERT_EQ(data_size_, other.data_size());
         ArenaVec<T> res(data_size_, *arena_);
         Eigen::Map<ArrayData> result_map = res.array_map();
@@ -199,6 +232,11 @@ public:
         return res;
     }
 
+    /**
+     * Division operator
+     *
+     * Divides ArenaVec / Scalar
+     */
     inline ArenaVec<T> operator/(T div_by) const {
         ASSERT_PTR(data_ptr_);
         ArenaVec<T> res(data_size_, *arena_);
@@ -207,6 +245,12 @@ public:
         return res;
     }
 
+    /**
+     * Division operator
+     *
+     * Divides two ArenaVec objects
+     * TODO If ASSERT_PTR is thrown needs to implement tests of scalar values (see multiplication operator).
+     */
     inline ArenaVec<T> operator/(const ArenaVec<T> &other) const {
         ASSERT_PTR(data_ptr_);
         ASSERT_PTR(other.data_ptr());
@@ -285,12 +329,13 @@ public:
         return ArenaVec<T>(*this);
     }
 
+    /// Assignment operator
     inline ArenaOVec<T> &operator=(const ArenaOVec<T> &other) {
         ArenaVec<T>::operator=(other);
         return *this;
     }
 
-
+    /// Addition operator
     inline ArenaOVec<T> operator+(const ArenaOVec<T> &other) const {
         // Test of valid data_ptr is in constructor
         ASSERT_EQ(this->data_size_, other.data_size());
@@ -301,7 +346,7 @@ public:
         return res;
     }
 
-
+    /// Multiplication operator
     inline ArenaOVec<T> operator*(const ArenaOVec<T> &other) const {
         typedef Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> MatData;
 
