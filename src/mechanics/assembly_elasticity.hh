@@ -45,7 +45,10 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ) {
+      normal_( this->side_values().normal_vector() ),
+      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_( this->bulk_values().vector_sym_grad() ),
+      divergence_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -67,8 +70,6 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_vals_.initialize(*this->quad_, *fe_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
         fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
@@ -90,7 +91,6 @@ public:
             for (uint n=0; n<2; ++n)
                 local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
         }
-        vec_view_ = &fe_vals_.vector_view(0);
         vec_view_side_ = &fe_values_side_.vector_view(0);
         if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
     }
@@ -101,8 +101,6 @@ public:
     {
         if (cell.dim() != dim) return;
 
-        ElementAccessor<3> elm_acc = cell.elm();
-        fe_vals_.reinit(elm_acc);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -110,18 +108,16 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        unsigned int k=0;
         for (auto p : this->bulk_points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
-                                                + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
+                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_(j,p), sym_grad_(i,p))
+                                                + eq_fields_->lame_lambda(p)*divergence_(j,p)*divergence_(i,p)
                                                )*JxW_(p);
             }
-            k++;
         }
         eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
     }
@@ -266,7 +262,6 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_vals_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
     FEValues<3> fe_values_side_;                                        ///< FEValues of side object
     FEValues<3> fe_values_sub_;                                         ///< FEValues of lower dimension cell object
 
@@ -274,7 +269,6 @@ private:
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;            ///< Vector view in cell integral calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in boundary / neighbour calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;        ///< Vector view of low dim element in neighbour calculation.
 
@@ -282,6 +276,9 @@ private:
     ElQ<Scalar> JxW_;
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
+    FeQ<Tensor> grad_vec_shape_;
+    FeQ<Tensor> sym_grad_;
+    FeQ<Scalar> divergence_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -303,7 +300,10 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ) {
+      normal_( this->side_values().normal_vector() ),
+      vec_shape_( this->bulk_values().vector_shape() ),
+      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
+      divergence_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
@@ -330,8 +330,6 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_vals_.initialize(*this->quad_, *fe_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
         fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
@@ -351,7 +349,6 @@ public:
         local_rhs_.resize(n_dofs_);
         local_rhs_ngh_.resize(2);
         for (uint n=0; n<2; ++n) local_rhs_ngh_[n].resize(n_dofs_);
-        vec_view_ = &fe_vals_.vector_view(0);
         vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
         vec_view_side_ = &fe_values_side_.vector_view(0);
         if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
@@ -364,8 +361,6 @@ public:
         if (cell.dim() != dim) return;
         if (!cell.is_own()) return;
 
-        ElementAccessor<3> elm_acc = cell.elm();
-        fe_vals_.reinit(elm_acc);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -374,16 +369,14 @@ public:
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
         // compute sources
-        unsigned int k=0;
         for (auto p : this->bulk_points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
-                                 arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
-                                 -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
-                                 -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
+                                 arma::dot(eq_fields_->load(p), vec_shape_(i,p))
+                                 -eq_fields_->potential_load(p)*divergence_(i,p)
+                                 -arma::dot(eq_fields_->initial_stress(p), grad_vec_shape_(i,p))
                                 )*eq_fields_->cross_section(p)*JxW_(p);
-            ++k;
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
 
@@ -558,7 +551,6 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_vals_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
     FEValues<3> fe_values_bdr_side_;                                    ///< FEValues of side (boundary integral) object
     FEValues<3> fe_values_side_;                                        ///< FEValues of side (neighbour integral) object
     FEValues<3> fe_values_sub_;                                         ///< FEValues of lower dimension cell object
@@ -567,7 +559,6 @@ private:
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
     vector<vector<PetscScalar>> local_rhs_ngh_;                         ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;            ///< Vector view in cell integral calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_bdr_;        ///< Vector view in boundary calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in neighbour calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;        ///< Vector view of low dim element in neighbour calculation.
@@ -576,6 +567,9 @@ private:
     ElQ<Scalar> JxW_;
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
+    FeQ<Vector> vec_shape_;
+    FeQ<Tensor> grad_vec_shape_;
+    FeQ<Scalar> divergence_;
 
 
     template < template<IntDim...> class DimAssembly>
@@ -595,7 +589,10 @@ public:
     /// Constructor.
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      normal_( this->side_values().normal_vector() ) {
+      normal_( this->side_values().normal_vector() ),
+      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_( this->bulk_values().vector_sym_grad() ),
+      divergence_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -613,15 +610,12 @@ public:
 
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fv_.initialize(*this->quad_, *fe_,
-        		update_values | update_gradients | update_quadrature_points);
         fsv_.initialize(*this->quad_low_, *fe_,
         		update_values | update_normal_vectors | update_quadrature_points);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = fe_->n_dofs();
-        vec_view_ = &fv_.vector_view(0);
         //        if (dim>1) ??
         vec_view_side_ = &fsv_.vector_view(0);
 
@@ -642,8 +636,6 @@ public:
         DHCellAccessor cell_tensor = cell.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_scalar = cell.cell_with_other_dh(eq_data_->dh_scalar_.get());
 
-        auto elm = cell.elm();
-        fv_.reinit(elm);
         dof_indices_        = cell.get_loc_dof_indices();
         dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
         dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
@@ -654,9 +646,9 @@ public:
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            stress += (2*eq_fields_->lame_mu(p)*vec_view_->sym_grad(i,0) + eq_fields_->lame_lambda(p)*vec_view_->divergence(i,0)*arma::eye(3,3))
+            stress += (2*eq_fields_->lame_mu(p)*sym_grad_(i,p) + eq_fields_->lame_lambda(p)*divergence_(i,p)*arma::eye(3,3))
                     * output_vec_.get(dof_indices_[i]);
-            div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
+            div += divergence_(i,p)*output_vec_.get(dof_indices_[i]);
         }
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
@@ -720,13 +712,11 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    FEValues<3> fv_;                                                    ///< FEValues of cell object (FESystem of P disc finite element type)
     FEValues<3> fsv_;                                                   ///< FEValues of side (neighbour integral) object
 
     LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
     LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
     LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_;            ///< Vector view in cell integral calculation.
     const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in neighbour calculation.
 
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
@@ -734,6 +724,9 @@ private:
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
+    FeQ<Tensor> grad_vec_shape_;
+    FeQ<Tensor> sym_grad_;
+    FeQ<Scalar> divergence_;
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
