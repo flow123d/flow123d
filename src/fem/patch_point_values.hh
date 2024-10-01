@@ -721,6 +721,20 @@ struct bulk_reinit {
         for (uint c=0; c<3; ++c)
             shape_matrix(c) = shape_omatrix(0,c).get_vec();
     }
+    static inline void ptop_vector_contravariant_shape(FMT_UNUSED std::vector<ElOp<3>> &operations,
+            FMT_UNUSED std::vector< std::vector<arma::vec3> > shape_values, FMT_UNUSED uint vector_shape_op_idx) {
+//        auto &op = operations[vector_sym_grad_op_idx];
+//        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
+//        auto &sym_grad_value = op.result_matrix();
+//        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
+    }
+    static inline void ptop_vector_piola_shape(FMT_UNUSED std::vector<ElOp<3>> &operations,
+            FMT_UNUSED std::vector< std::vector<arma::vec3> > shape_values, FMT_UNUSED uint vector_shape_op_idx) {
+//        auto &op = operations[vector_sym_grad_op_idx];
+//        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
+//        auto &sym_grad_value = op.result_matrix();
+//        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
+    }
     template<unsigned int dim>
     static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations,
             std::vector< std::vector<arma::mat> > ref_shape_grads, uint scalar_shape_grads_op_idx) {
@@ -841,14 +855,7 @@ struct bulk_reinit {
         auto &op = operations[vector_sym_grad_op_idx];
         auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
         auto &sym_grad_value = op.result_matrix();
-
-        Eigen::Matrix<ArenaVec<double>, 3, 3> multi_mat;
-        for (uint i=0; i<9; ++i) {
-            multi_mat(i) = ArenaVec<double>(grad_vector_value(0).data_size(), grad_vector_value(0).arena());
-            for (uint i_p=0; i_p<grad_vector_value(0).data_size(); ++i_p)
-                multi_mat(i)(i_p) = 0.5;
-        }
-        sym_grad_value = (grad_vector_value.transpose() + grad_vector_value) * multi_mat; // 0.5 * (grad_vector_value.transpose() + grad_vector_value);
+        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
     static inline void ptop_vector_divergence(std::vector<ElOp<3>> &operations, uint vector_divergence_op_idx) {
         auto &op = operations[vector_divergence_op_idx];

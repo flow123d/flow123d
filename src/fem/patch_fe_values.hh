@@ -340,20 +340,20 @@ public:
             }
             case FEVectorContravariant:
             {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-//                auto lambda_contravariant_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, shape_values, vector_shape_op_idx);
-//                    };
-//                patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                auto lambda_contravariant_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_contravariant_shape(operations, shape_values, vector_shape_op_idx);
+                    };
+                patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-//                auto lambda_piola_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_piola_shape_grads<dim>(operations, shape_values, vector_shape_op_idx);
-//                    };
-//                patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                auto lambda_piola_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_piola_shape(operations, shape_values, vector_shape_op_idx);
+                    };
+                patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
                 break;
             }
             default:
