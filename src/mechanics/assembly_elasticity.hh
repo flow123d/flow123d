@@ -776,7 +776,7 @@ public:
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_values_side_.initialize(*this->quad_low_, *fe_,
                 update_values | update_side_JxW_values | update_normal_vectors);
-        //this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = fe_->n_dofs();
