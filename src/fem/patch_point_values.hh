@@ -621,6 +621,20 @@ struct common_reinit {
         // empty
     }
 
+	/// Common reinit function of vector symmetric gradient on bulk and side points
+    static inline void ptop_vector_sym_grad(std::vector<ElOp<3>> &operations, uint vector_sym_grad_op_idx) {
+        auto &op = operations[vector_sym_grad_op_idx];
+        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
+        auto &sym_grad_value = op.result_matrix();
+        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
+    }
+	/// Common reinit function of vector divergence on bulk and side points
+    static inline void ptop_vector_divergence(std::vector<ElOp<3>> &operations, uint vector_divergence_op_idx) {
+        auto &op = operations[vector_divergence_op_idx];
+        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
+        auto &divergence_value = op.result_matrix();
+        divergence_value(0,0) = grad_vector_value(0,0) + grad_vector_value(1,1) + grad_vector_value(2,2);
+    }
 };
 
 /// Defines reinit operations on bulk points.
@@ -851,18 +865,6 @@ struct bulk_reinit {
 //            result_vec(i) = result_ovec(i).get_vec();
 //        }
     }
-    static inline void ptop_vector_sym_grad(std::vector<ElOp<3>> &operations, uint vector_sym_grad_op_idx) {
-        auto &op = operations[vector_sym_grad_op_idx];
-        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
-        auto &sym_grad_value = op.result_matrix();
-        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
-    }
-    static inline void ptop_vector_divergence(std::vector<ElOp<3>> &operations, uint vector_divergence_op_idx) {
-        auto &op = operations[vector_divergence_op_idx];
-        auto &grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
-        auto &divergence_value = op.result_matrix();
-        divergence_value(0,0) = grad_vector_value(0,0) + grad_vector_value(1,1) + grad_vector_value(2,2);
-    }
 };
 
 
@@ -1032,6 +1034,64 @@ struct side_reinit {
         // computes operation result
         grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
     }
+    template<unsigned int dim>
+    static inline void ptop_vector_shape_grads(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
+            std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, uint vector_shape_grads_op_idx) {
+        uint n_points = ref_shape_grads[0].size();
+        uint n_dofs = ref_shape_grads[0][0].size();
+        uint n_sides = el_table(3).data_size();
+        uint n_patch_points = el_table(4).data_size();
+
+        // Result vector
+        auto &op = operations[vector_shape_grads_op_idx];
+        auto &grad_scalar_shape_value = op.result_matrix();
+
+        // Expands inverse jacobian to inv_jac_expd_value
+        auto &inv_jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
+        for (uint i=0; i<dim*3; ++i) {
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(i).arena() );
+        	for (uint j=0; j<n_dofs*n_patch_points; ++j)
+        	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_sides);
+        }
+
+        // Fill ref shape gradients by q_point. DOF and side_idx
+        Eigen::Matrix<ArenaVec<double>, dim, 3> ref_shape_grads_expd;
+        for (uint i=0; i<3*dim; ++i) {
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(0).arena() );
+        }
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_pt=0; i_pt<n_points; ++i_pt) {
+                uint i_begin = (i_dof * n_points + i_pt) * n_sides;
+                for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
+                    for (uint i_c=0; i_c<3*dim; ++i_c) {
+                        ref_shape_grads_expd(i_c)(i_begin + i_sd) = ref_shape_grads[el_table(3)(i_sd)][i_pt][i_dof][i_c];
+                    }
+                }
+            }
+        }
+
+        // computes operation result
+        grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
+
+// ---/ OLD CODE
+//        Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
+//        for (uint i=0; i<dim*3; ++i) {
+//            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
+//        }
+//
+//        auto &result_vec = op.result_matrix();
+//        Eigen::Matrix<ArenaOVec<double>, 3, 3> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+//        for (uint i=0; i<9; ++i) {
+//            result_vec(i) = result_ovec(i).get_vec();
+//        }
+    }
+    template<unsigned int dim>
+    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
+            FMT_UNUSED std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {}
+    template<unsigned int dim>
+    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
+            FMT_UNUSED std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {}
 };
 
 

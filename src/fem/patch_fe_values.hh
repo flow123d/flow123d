@@ -463,7 +463,7 @@ public:
         uint vector_sym_grad_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
         uint grad_vector_op_idx = patch_point_vals_.get_fe_op(FEOps::opGradVectorShape);
         auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
+                common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
             };
         patch_point_vals_.make_fe_op({3,3}, lambda_vector_sym_grad, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorSymGrad, vector_sym_grad_op_idx);
@@ -486,7 +486,7 @@ public:
         uint vector_divergence_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
         uint grad_vector_op_idx = patch_point_vals_.get_fe_op(FEOps::opGradVectorShape);
         auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
+                common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
             };
         patch_point_vals_.make_fe_op({1}, lambda_vector_divergence, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorDivergence, vector_divergence_op_idx);
@@ -662,6 +662,110 @@ public:
         patch_point_vals_.set_fe_op(FEOps::opGradScalarShape, scalar_shape_grads_op_idx);
 
         return FeQ<Vector>(patch_point_vals_, scalar_shape_grads_op_idx, fe_component->n_dofs());
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient vector shape function
+     * at the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQ<Tensor> grad_vector_shape(uint component_idx=0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+
+        // use lambda reinit function
+        auto ref_shape_grads = this->ref_shape_gradients(fe_component);
+        uint vector_shape_grads_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
+
+        switch (fe_component->fe_type()) {
+            case FEVector:
+            {
+                auto lambda_vector_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                        side_reinit::ptop_vector_shape_grads<dim>(operations, el_table, ref_shape_grads, vector_shape_grads_op_idx);
+                    };
+                patch_point_vals_.make_fe_op({3, 3},
+                                             lambda_vector_shape_grad,
+                                             {FeSide::SideOps::opElInvJac},
+                                             fe_component->n_dofs());
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                auto lambda_contravariant_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                        side_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, el_table, ref_shape_grads, vector_shape_grads_op_idx);
+                    };
+                patch_point_vals_.make_fe_op({3, 3},
+                                             lambda_contravariant_shape_grad,
+                                             {FeSide::SideOps::opElInvJac, FeSide::SideOps::opElJac},
+                                             fe_component->n_dofs());
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                auto lambda_piola_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                        side_reinit::ptop_vector_piola_shape_grads<dim>(operations, el_table, ref_shape_grads, vector_shape_grads_op_idx);
+                    };
+                patch_point_vals_.make_fe_op({3, 3},
+                                              lambda_piola_shape_grad,
+                                              {FeSide::SideOps::opElInvJac, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet}, // TODO define and use opElJacDet
+                                              fe_component->n_dofs());
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+        patch_point_vals_.set_fe_op(FEOps::opGradVectorShape, vector_shape_grads_op_idx);
+
+        return FeQ<Tensor>(patch_point_vals_, vector_shape_grads_op_idx, fe_component->n_dofs());
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector symmetric gradient
+     * at the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQ<Tensor> vector_sym_grad(uint component_idx=0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+
+        // use lambda reinit function
+        uint vector_sym_grad_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
+        uint grad_vector_op_idx = patch_point_vals_.get_fe_op(FEOps::opGradVectorShape);
+        auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
+            };
+        patch_point_vals_.make_fe_op({3,3}, lambda_vector_sym_grad, {grad_vector_op_idx}, fe_component->n_dofs());
+        patch_point_vals_.set_fe_op(FEOps::opVectorSymGrad, vector_sym_grad_op_idx);
+
+        return FeQ<Tensor>(patch_point_vals_, vector_sym_grad_op_idx, fe_component->n_dofs());
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector divergence at
+     * the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQ<Scalar> vector_divergence(uint component_idx=0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+
+        // use lambda reinit function
+        uint vector_divergence_op_idx = patch_point_vals_.operations_.size(); // index in operations_ vector
+        uint grad_vector_op_idx = patch_point_vals_.get_fe_op(FEOps::opGradVectorShape);
+        auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
+            };
+        patch_point_vals_.make_fe_op({1}, lambda_vector_divergence, {grad_vector_op_idx}, fe_component->n_dofs());
+        patch_point_vals_.set_fe_op(FEOps::opVectorDivergence, vector_divergence_op_idx);
+
+        return FeQ<Scalar>(patch_point_vals_, vector_divergence_op_idx, fe_component->n_dofs());
     }
 
 private:
