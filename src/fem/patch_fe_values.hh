@@ -866,6 +866,79 @@ public:
         return Range<JoinShapeAccessor<Scalar>>(bgn_it, end_it);
     }
 
+    inline Range< JoinShapeAccessor<Vector> > vector_join_shape(uint component_idx = 0)
+    {
+    	// element of lower dim (bulk points)
+        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
+        std::vector< std::vector<arma::vec3> > shape_values_bulk( fe_component_low->n_dofs(), vector<arma::vec3>(patch_point_vals_bulk_->get_quadrature()->size()) );
+        auto ref_shape_vals_bulk = this->ref_shape_values_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
+        for (unsigned int i = 0; i < patch_point_vals_bulk_->get_quadrature()->size(); i++)
+            for (unsigned int j = 0; j < fe_component_low->n_dofs(); j++) {
+            	shape_values_bulk[j][i] = ref_shape_vals_bulk[i][j];
+            }
+        uint op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
+
+        // element of higher dim (side points)
+        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
+        std::vector< std::vector< std::vector<arma::vec3> > > shape_values_side(
+                dim+1,
+                std::vector< std::vector<arma::vec3> >(patch_point_vals_side_->get_quadrature()->size(), vector<arma::vec3>(fe_component_high->n_dofs()) )
+                );
+        auto ref_shape_vals_side = this->ref_shape_values_side(patch_point_vals_side_->get_quadrature(), fe_component_high);
+        for (unsigned int s=0; s<dim+1; ++s)
+            for (unsigned int i = 0; i < patch_point_vals_side_->get_quadrature()->size(); i++)
+                for (unsigned int j = 0; j < fe_component_high->n_dofs(); j++) {
+            	    shape_values_side[s][i][j] = ref_shape_vals_side[s][i][j];
+                }
+        uint op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
+
+        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
+        switch (fe_component_low->fe_type()) {
+            case FEVector:
+            {
+                // use lambda reinit function (lower dim)
+                auto lambda_vector_shape_bulk = [shape_values_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape(operations, shape_values_bulk, op_idx_bulk);
+                    };
+                patch_point_vals_bulk_->make_fe_op({3}, lambda_vector_shape_bulk, {}, fe_component_low->n_dofs());
+
+                // use lambda reinit function (higher dim)
+                auto lambda_vector_shape_side = [shape_values_side, op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                        side_reinit::ptop_vector_shape(operations, el_table, shape_values_side, op_idx_side);
+                    };
+                patch_point_vals_side_->make_fe_op({3}, lambda_vector_shape_side, {}, fe_component_high->n_dofs());
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                //auto lambda_contravariant_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                //        bulk_reinit::ptop_vector_contravariant_shape(operations, shape_values, vector_shape_op_idx);
+                //    };
+                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                //auto lambda_piola_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                //        bulk_reinit::ptop_vector_piola_shape(operations, shape_values, vector_shape_op_idx);
+                //    };
+                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+        auto bgn_it = make_iter<JoinShapeAccessor<Vector>>( JoinShapeAccessor<Vector>(patch_point_vals_bulk_, patch_point_vals_side_,
+                fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, 0) );
+        unsigned int end_idx = fe_component_low->n_dofs() + fe_component_high->n_dofs();
+        auto end_it = make_iter<JoinShapeAccessor<Vector>>( JoinShapeAccessor<Vector>(patch_point_vals_bulk_, patch_point_vals_side_,
+                fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, end_idx) );
+        return Range<JoinShapeAccessor<Vector>>(bgn_it, end_it);
+    }
+
 private:
     PatchPointValues<3> *patch_point_vals_bulk_;
     PatchPointValues<3> *patch_point_vals_side_;
@@ -887,6 +960,13 @@ public:
         return Range<JoinShapeAccessor<Scalar>>(
                 make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()),
                 make_iter<JoinShapeAccessor<Scalar>>(JoinShapeAccessor<Scalar>()) );
+    }
+
+    inline Range< JoinShapeAccessor<Vector> > vector_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return Range<JoinShapeAccessor<Vector>>(
+                make_iter<JoinShapeAccessor<Vector>>(JoinShapeAccessor<Vector>()),
+                make_iter<JoinShapeAccessor<Vector>>(JoinShapeAccessor<Vector>()) );
     }
 };
 
