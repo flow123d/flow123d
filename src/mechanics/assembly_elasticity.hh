@@ -302,7 +302,8 @@ public:
       vec_shape_( this->bulk_values().vector_shape() ),
       vec_shape_side_( this->side_values().vector_shape() ),
       grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
-      divergence_( this->bulk_values().vector_divergence() ) {
+      divergence_( this->bulk_values().vector_divergence() ),
+      vec_join_shape_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
@@ -329,10 +330,6 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_normal_vectors);
-        fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
-                update_values | update_JxW_values | update_quadrature_points);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
@@ -346,8 +343,6 @@ public:
         local_rhs_.resize(n_dofs_);
         local_rhs_ngh_.resize(2);
         for (uint n=0; n<2; ++n) local_rhs_ngh_[n].resize(n_dofs_);
-        vec_view_side_ = &fe_values_side_.vector_view(0);
-        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
     }
 
 
@@ -478,12 +473,9 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
-		fe_values_sub_.reinit(cell_sub);
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-		fe_values_side_.reinit(neighb_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -495,26 +487,21 @@ public:
                 local_rhs_ngh_[n][i] = 0;
 
         // set transmission conditions
-        unsigned int k=0;
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
 
-            for (int n=0; n<2; n++)
-            {
-                if (!own_element_id[n]) continue;
+            for( auto join_shape_i : vec_join_shape_) {
+                uint is_high_i = join_shape_i.is_high_dim();
+                if (!own_element_id[is_high_i]) continue;
 
-                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
-                {
-                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+                arma::vec3 vi = join_shape_i(p_high);
+                arma::vec3 vf = join_shape_i(p_low);
 
-                    local_rhs_ngh_[n][i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
-                            arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
-                }
+                local_rhs_ngh_[is_high_i][join_shape_i.local_idx()] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
+                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
             }
-            ++k;
         }
 
         for (unsigned int n=0; n<2; ++n)
@@ -537,15 +524,11 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_values_side_;                                        ///< FEValues of side (neighbour integral) object
-    FEValues<3> fe_values_sub_;                                         ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
     vector<vector<PetscScalar>> local_rhs_ngh_;                         ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in neighbour calculation.
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;        ///< Vector view of low dim element in neighbour calculation.
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_;
@@ -555,6 +538,7 @@ private:
     FeQ<Vector> vec_shape_side_;
     FeQ<Tensor> grad_vec_shape_;
     FeQ<Scalar> divergence_;
+    Range< JoinShapeAccessor<Vector> > vec_join_shape_;
 
 
     template < template<IntDim...> class DimAssembly>
