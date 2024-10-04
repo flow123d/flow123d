@@ -1262,15 +1262,25 @@ ValueType JoinShapeAccessor<ValueType>::operator()(const BulkPoint &point) {
 }
 
 template <>
-inline Vector JoinShapeAccessor<Vector>::operator()(FMT_UNUSED const BulkPoint &point) {
-    Vector vect; vect.zeros();
-    return vect;
+inline Vector JoinShapeAccessor<Vector>::operator()(const BulkPoint &point) {
+    if (this->is_high_dim()) {
+        Vector vect; vect.zeros();
+        return vect;
+    } else {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_bulk_->vector_value(op_idx_bulk_, value_cache_idx, this->local_idx());
+    }
 }
 
 template <>
-inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const BulkPoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+inline Tensor JoinShapeAccessor<Tensor>::operator()(const BulkPoint &point) {
+    if (this->is_high_dim()) {
+        Tensor tens; tens.zeros();
+        return tens;
+    } else {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_bulk_->tensor_value(op_idx_bulk_, value_cache_idx, this->local_idx());
+    }
 }
 
 template <class ValueType>
@@ -1284,15 +1294,25 @@ ValueType JoinShapeAccessor<ValueType>::operator()(const SidePoint &point) {
 }
 
 template <>
-inline Vector JoinShapeAccessor<Vector>::operator()(FMT_UNUSED const SidePoint &point) {
-    Vector vect; vect.zeros();
-    return vect;
+inline Vector JoinShapeAccessor<Vector>::operator()(const SidePoint &point) {
+    if (this->is_high_dim()) {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_side_->vector_value(op_idx_side_, value_cache_idx, this->local_idx());
+    } else {
+        Vector vect; vect.zeros();
+        return vect;
+    }
 }
 
 template <>
-inline Tensor JoinShapeAccessor<Tensor>::operator()(FMT_UNUSED const SidePoint &point) {
-	Tensor tens; tens.zeros();
-    return tens;
+inline Tensor JoinShapeAccessor<Tensor>::operator()(const SidePoint &point) {
+    if (this->is_high_dim()) {
+        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+        return patch_point_vals_side_->tensor_value(op_idx_side_, value_cache_idx, this->local_idx());
+    } else {
+        Tensor tens; tens.zeros();
+        return tens;
+    }
 }
 
 
