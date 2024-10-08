@@ -139,16 +139,16 @@ ${dexec} cp -r ${tmp_install_dir} /docker_package
 # TODO: need to copy the package out of the vmount, but only for testing
 
 docker rmi -f ${target_tagged}
-docker rmi -f flow123d/temporary_build
-docker commit ${build_container} flow123d/temporary_build
-docker pull "flow123d/${install_image}"
+docker rmi -f stepanmoc/temporary_build
+docker commit ${build_container} stepanmoc/temporary_build
+docker pull "stepanmoc/${install_image}"
 
 build_date=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
 #cp ${destination}/${cmake_package_name} project/src/docker/create/default/${cmake_package_name}
 docker build \
-     --build-arg base_image=flow123d/${install_image} \
-     --build-arg source_image=flow123d/temporary_build \
+     --build-arg base_image=stepanmoc/${install_image} \
+     --build-arg source_image=stepanmoc/temporary_build \
      --build-arg source_location=/docker_package \
      --build-arg flow_version=${release_tag} \
      --build-arg flow_install_location=${flow_install_location} \

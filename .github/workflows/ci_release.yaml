@@ -53,16 +53,20 @@ jobs:
               echo pubdir="${{ steps.vars.outputs.pubdir }}"
               echo reltag="${{ steps.vars.outputs.reltag }}"
               echo builddir="${{ steps.vars.outputs.builddir }}"
+
         - name: Build Flow123d
           run: |
               release_tag="${{ steps.vars.outputs.reltag }}"
               # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>               
               config/build/auto_build.sh rel ${environment} ci ${release_tag}
+
+        # Proč se nepoužívá config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes jako v ci_debug.yaml?
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
               echo "Benchmark meshes build_dir="${build_dir}
               bin/create_meshes.sh
+
         - name: Tarball build dir
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
@@ -103,8 +107,8 @@ jobs:
               echo pubdir="${{ steps.vars.outputs.pubdir }}"
               echo reltag="${{ steps.vars.outputs.reltag }}"
 
-        - run: |
-            # Login for finall push to docker hub
+        - name: Login for finall push to docker hub
+          run: |
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
             release_tag="${{ steps.vars.outputs.reltag }}"
             config/build/make_packages.sh ${environment} ci ${release_tag} push
@@ -119,12 +123,12 @@ jobs:
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
       
-        - name: SCP upload to Share
-          run: |
-            release_tag="${{ steps.vars.outputs.reltag }}"
-            publish_dir="${{ steps.vars.outputs.pubdir }}"
-            config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+        #- name: SCP upload to Share
+        #  run: |
+        #    release_tag="${{ steps.vars.outputs.reltag }}"
+        #    publish_dir="${{ steps.vars.outputs.pubdir }}"
+        #    config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
+        #    ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
     # Run unit tests with release build, similar to the debug build
     unit_tests:
@@ -219,55 +223,56 @@ jobs:
               github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./src/python/notebooks/public   
               commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
-                
- 
-    # TODO: modify to run integration tests with release image
-    #integration_tests:
-        #needs: [build]
-        #runs-on: ubuntu-latest
-        #name: Integration Test ${{matrix.test_dir}}
-        #continue-on-error: True
-        #outputs:
-            #status: ${{job.status}}
-        #strategy:
-          #matrix:
-            #test_dir:
-            #- 01_cmd_line
-            #- 02_generic_input
-            #- 03_generic_output
-            #- 04_generic_mesh
-            #- 05_tutorial
-            #- 06_errors
-            #- 10_darcy
-            #- 11_darcy_bc
-            #- 12_darcy_frac
-            #- 13_darcy_time
-            #- 14_darcy_richards
-            #- 20_solute_fv
-            #- 21_solute_fv_frac
-            #- 22_solute_fv_time
-            #- 24_solute_dg
-            #- 25_solute_dg_bc
-            #- 26_solute_dg_frac
-            #- 27_solute_dg_time
-            #- 30_sorption
-            #- 31_dual_por
-            #- 32_decay
-            #- 33_reaction
-            #- 34_sorption_dg
-            #- 40_heat
-            #- 50_mechanics
+
+    integration_tests:
+        needs: [packages]
+        runs-on: ubuntu-latest
+        name: Integration Test ${{matrix.test_dir}}
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        strategy:
+          matrix:
+            test_dir:
+            - 01_cmd_line
+            - 02_generic_input
+            - 03_generic_output
+            - 04_generic_mesh
+            - 05_tutorial
+            - 06_errors
+            - 10_darcy
+            - 11_darcy_bc
+            - 12_darcy_frac
+            - 13_darcy_time
+            - 14_darcy_richards
+            - 20_solute_fv
+            - 21_solute_fv_frac
+            - 22_solute_fv_time
+            - 24_solute_dg
+            - 25_solute_dg_bc
+            - 26_solute_dg_frac
+            - 27_solute_dg_time
+            - 30_sorption
+            - 31_dual_por
+            - 32_decay
+            - 33_reaction
+            - 34_sorption_dg
+            - 40_heat
+            - 50_mechanics
             
-        #steps:  
-        #- uses: actions/checkout@v3
-        #- uses: actions/download-artifact@v3
-          #with:
-            #name: build_dir
-        #- run: config/tests/run_with_build_dir.sh tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
-        #- name: Report
-          #run: |
-            #echo "Job result: ${{job.result}}"
-            #echo "Job status: ${{job.status}}"
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        
+        # This run is from ci_debug and job integration_tests
+        #- run: config/build/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        - run: config/build/run_with_build_dir.sh rel_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        - name: Report
+          run: |
+            echo "Job result: ${{job.result}}"
+            echo "Job status: ${{job.status}}"
 
             
     conclusion:
@@ -276,7 +281,7 @@ jobs:
         name: Workflow conclusion from all job results 
         
         #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [packages, unit_tests]
+        needs: [packages, unit_tests, integration_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:
