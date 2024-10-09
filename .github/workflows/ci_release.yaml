@@ -6,17 +6,6 @@ on:
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
     workflow_dispatch:
-        inputs:
-            environment:
-                description: Build environment [gnu, intel].
-                type: choice
-                options:
-                    - gnu
-                    - intel
-                required: false
-                default: gnu
-
-                
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -24,52 +13,64 @@ env:
   environment: gnu
   
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        name: Flow123d release main build
-        steps:
+    variables:
+      name: Set and check variables
+      runs-on: ubuntu-latest
+      steps:
         - name: Checkout
-          uses: actions/checkout@v2
-    
+          uses: actions/checkout@v3
+
         - name: Set variables
           id: vars
           run: |
-            git_commit=`git rev-parse --short=6 HEAD`
-            release_tag=`cat version`_${git_commit}
-            echo ${release_tag}
+            # create release_tag variable
+            git_commit=$(git rev-parse --short=6 HEAD)
+            release_tag="$(cat version)_${git_commit}"
 
-            # create build_dir variable
-            git_branch=`git rev-parse --abbrev-ref HEAD`
+            # Variables for the build
+            git_branch=$(git rev-parse --abbrev-ref HEAD)
             build_dir=build-${git_branch}
-            echo ${build_dir}
-    
-            # can not use environment variables in github actions
-            echo "pubdir=publish_${environment}" >> $GITHUB_OUTPUT
-            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
-            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+            pub_dir=publish_${environment}
+            dev_version=${git_branch}_${git_commit}
+
+            echo "pub_dir=${pub_dir}" >> $GITHUB_ENV
+            echo "release_tag=${release_tag}" >> $GITHUB_ENV
+            echo "build_dir=${build_dir}" >> $GITHUB_ENV
+            echo "dev_version=${dev_version}" >> $GITHUB_ENV
+            echo "git_commit=${git_commit}" >> $GITHUB_ENV
 
         - name: Check vars
           run: |
-              echo pubdir="${{ steps.vars.outputs.pubdir }}"
-              echo reltag="${{ steps.vars.outputs.reltag }}"
-              echo builddir="${{ steps.vars.outputs.builddir }}"
+              echo pub_dir="${{ env.pub_dir }}"
+              echo release_tag="${{ env.release_tag }}"
+              echo build_dir="${{ env.build_dir }}"
+              echo dev_version="${{ env.dev_version }}"
+              echo git_commit="${{ env.git_commit }}"
+
+    build:
+        runs-on: ubuntu-latest
+        name: Flow123d release main build
+        needs: variables
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v2
 
         - name: Build Flow123d
           run: |
-              release_tag="${{ steps.vars.outputs.reltag }}"
+              release_tag="${{ env.release_tag }}"
               # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>               
               config/build/auto_build.sh rel ${environment} ci ${release_tag}
 
         # Proč se nepoužívá config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes jako v ci_debug.yaml?
         - name: Benchmark meshes
           run: |
-              build_dir="${{ steps.vars.outputs.builddir }}"
+              build_dir="${{ env.build_dir }}"
               echo "Benchmark meshes build_dir="${build_dir}
               bin/create_meshes.sh
 
         - name: Tarball build dir
           run: |
-              build_dir="${{ steps.vars.outputs.builddir }}"
+              build_dir="${{ env.build_dir }}"
               config/build/tar_build_dir.sh ${build_dir}              
         - uses: actions/upload-artifact@v3
           with:         
@@ -91,47 +92,32 @@ jobs:
           with:
             name: build_dir
 
-        - name: Set variables
-          id: vars
-          run: |
-            git_commit=`git rev-parse --short=6 HEAD`
-            release_tag=`cat version`_${git_commit}
-            echo ${release_tag}
-
-            # can not use environment variables in github actions
-            echo "pubdir=publish_${environment}" >> $GITHUB_OUTPUT
-            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
-
-        - name: Check vars
-          run: |
-              echo pubdir="${{ steps.vars.outputs.pubdir }}"
-              echo reltag="${{ steps.vars.outputs.reltag }}"
-
         - name: Login for finall push to docker hub
           run: |
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
-            release_tag="${{ steps.vars.outputs.reltag }}"
+            release_tag="${{ env.release_tag }}"
             config/build/make_packages.sh ${environment} ci ${release_tag} push
 
         - name: Prepare integration test image
           run: |
-            release_tag="${{ steps.vars.outputs.reltag }}"
+            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
+            release_tag="${{ env.release_tag }}"
             config/build/make_integration_test_image.sh ${environment} ci ${release_tag} push
     
         - name: upload artifacts
           uses: actions/upload-artifact@v3
           with:       
             path: |
-                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
-                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.json 
-                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
-                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
-                ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
+                ${{ env.pub_dir }}/flow123d_${{ env.release_tag }}_doc.pdf 
+                ${{ env.pub_dir }}/flow123d_${{ env.release_tag }}_linux_install.json 
+                ${{ env.pub_dir }}/flow123d_${{ env.release_tag }}_linux_install.tar.gz 
+                ${{ env.pub_dir }}/flow123d_${{ env.release_tag }}_windows_install.exe 
+                ${{ env.pub_dir }}/flow123d_${{ env.release_tag }}_windows_install.json 
       
         #- name: SCP upload to Share
         #  run: |
-        #    release_tag="${{ steps.vars.outputs.reltag }}"
-        #    publish_dir="${{ steps.vars.outputs.pubdir }}"
+        #    release_tag="${{ env.release_tag }}"
+        #    publish_dir="${{ env.pub_dir }}"
         #    config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
         #    ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
@@ -184,23 +170,7 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - name: Set variables
-          id: vars
-          run: |
-            git_commit=`git rev-parse --short=6 HEAD`
 
-            # create build_dir variable
-            git_branch=`git rev-parse --abbrev-ref HEAD`
-            build_dir=build-${git_branch}
-    
-            # can not use environment variables in github actions
-            echo "dev_version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT 
-            echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
-            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
-        - name: Check vars
-          run: |
-              echo git_commit="${{ steps.vars.outputs.git_commit }}"
-              echo builddir="${{ steps.vars.outputs.builddir }}"
         - name: Run Benchmark
           run: |              
               config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
@@ -227,7 +197,7 @@ jobs:
           with:
               github_token: ${{ secrets.GITHUB_TOKEN }}
               publish_dir: ./src/python/notebooks/public   
-              commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
+              commit_message: "Benchmark ${{matrix.test.target}}, ${{env.dev_version}}"
 
     integration_tests:
         needs: [packages]
