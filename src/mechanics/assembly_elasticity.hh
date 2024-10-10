@@ -49,7 +49,9 @@ public:
       vec_shape_side_( this->side_values().vector_shape() ),
       grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
       sym_grad_( this->bulk_values().vector_sym_grad() ),
-      divergence_( this->bulk_values().vector_divergence() ) {
+      divergence_( this->bulk_values().vector_divergence() ),
+      vec_join_shape_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ),
+      vec_join_grad_( Range< JoinShapeAccessor<Tensor> >( this->join_values().gradient_vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -191,43 +193,45 @@ public:
                         local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
 
         // set transmission conditions
-        unsigned int k=0;
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
 
-            for (int n=0; n<2; n++)
-            {
-                if (!own_element_id[n]) continue;
+            auto deform_shape_i = vec_join_shape_.begin();
+            auto deform_grad_i = vec_join_grad_.begin();
+            for( ; deform_shape_i != vec_join_shape_.end() && deform_grad_i != vec_join_grad_.end(); ++deform_shape_i, ++deform_grad_i) {
+                uint is_high_i = deform_shape_i->is_high_dim();
+                if (!own_element_id[is_high_i]) continue;
+                uint i_mat_idx = deform_shape_i->local_idx();
+                auto dsi = *deform_shape_i;
+                auto dgi = *deform_grad_i;
+                arma::vec3 diff_deform_i = dsi(p_low) - dsi(p_high);
+                arma::mat33 grad_deform_i = dgi(p_low);  // low dim element
 
-                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
-                {
-                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
-                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                auto deform_shape_j = vec_join_shape_.begin();
+                auto deform_grad_j = vec_join_grad_.begin();
+                for( ; deform_shape_j != vec_join_shape_.end() && deform_grad_j != vec_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
+                    uint is_high_j = deform_shape_j->is_high_dim();
+                    uint j_mat_idx = deform_shape_j->local_idx();
+                    auto dsj = *deform_shape_j;
+                    auto dgj = *deform_grad_j;
+                    arma::vec3 deform_j_high = dsj(p_high);
+                    arma::vec3 diff_deform_j = dsj(p_low) - dsj(p_high);
+                    arma::mat33 grad_deform_j = mat_t( arma::trans(dgj(p_low)), nv);  // low dim element
+                    double div_deform_j = arma::trace(grad_deform_j);
 
-                    for (int m=0; m<2; m++)
-                        for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
-                            arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
-                            arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuft = (m==0) ? arma::trace(guft) : 0;
-
-                            local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
-                                    eq_fields_->fracture_sigma(p_low)*(
-                                     arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
-                                     )
-                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*JxW_side_(p_high);
-                        }
-
+                    local_matrix_ngh_[is_high_i][is_high_j][i_mat_idx*n_dofs_ngh_[is_high_j] + j_mat_idx] +=
+                            eq_fields_->fracture_sigma(p_low)*(
+                             arma::dot(diff_deform_i,
+                              2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(diff_deform_j)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(diff_deform_j,nv)*nv))
+                              + eq_fields_->lame_mu(p_low)*arma::trans(grad_deform_j)*nv
+                              + eq_fields_->lame_lambda(p_low)*div_deform_j*nv
+                             )
+                             - arma::dot(arma::trans(grad_deform_i), eq_fields_->lame_mu(p_low)*arma::kron(nv,deform_j_high.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(deform_j_high,nv)*arma::eye(3,3))
+                            )*JxW_side_(p_high);
                 }
             }
-        	k++;
         }
 
         for (unsigned int n=0; n<2; ++n)
@@ -277,6 +281,8 @@ private:
     FeQ<Tensor> grad_vec_shape_;
     FeQ<Tensor> sym_grad_;
     FeQ<Scalar> divergence_;
+    Range< JoinShapeAccessor<Vector> > vec_join_shape_;
+    Range< JoinShapeAccessor<Tensor> > vec_join_grad_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
