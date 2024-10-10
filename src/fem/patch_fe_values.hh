@@ -260,7 +260,7 @@ protected:
     std::vector<std::vector<arma::mat> > ref_shape_gradients_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
     	std::vector<std::vector<arma::mat> > ref_shape_grads( q->size(), vector<arma::mat>(fe->n_dofs()) );
 
-        arma::mat grad(dim, fe->n_components());
+        arma::mat grad(FE_dim, fe->n_components());
         for (unsigned int i_pt=0; i_pt<q->size(); i_pt++)
         {
             for (unsigned int i_dof=0; i_dof<fe->n_dofs(); i_dof++)
@@ -939,6 +939,97 @@ public:
         return Range<JoinShapeAccessor<Vector>>(bgn_it, end_it);
     }
 
+    inline Range< JoinShapeAccessor<Tensor> > gradient_vector_join_shape(uint component_idx = 0)
+    {
+    	// element of lower dim (bulk points)
+        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
+        auto ref_shape_grads_bulk = this->ref_shape_gradients_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
+        uint op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
+
+        // element of higher dim (side points)
+        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
+        auto ref_shape_grads_side = this->ref_shape_gradients_side(patch_point_vals_side_->get_quadrature(), fe_component_high);
+        uint op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
+
+        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
+        switch (fe_component_low->fe_type()) {
+            case FEVector:
+            {
+                // use lambda reinit function (lower dim)
+                auto lambda_vector_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+                    };
+                patch_point_vals_bulk_->make_fe_op({3, 3},
+                                                  lambda_vector_grad_bulk,
+                                                  {FeBulk::BulkOps::opInvJac},
+                                                  fe_component_low->n_dofs());
+
+                // use lambda reinit function (higher dim)
+                auto lambda_vector_grad_side = [ref_shape_grads_side, op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                        side_reinit::ptop_vector_shape_grads<dim>(operations, el_table, ref_shape_grads_side, op_idx_side);
+                    };
+                patch_point_vals_side_->make_fe_op({3, 3},
+                                                  lambda_vector_grad_side,
+                                                  {FeSide::SideOps::opElInvJac},
+                                                  fe_component_high->n_dofs());
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+//                // use lambda reinit function (lower dim)
+//                auto lambda_contravariant_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+//                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+//                    };
+//                patch_point_vals_bulk_->make_fe_op({3, 3},
+//                                                  lambda_contravariant_grad_bulk,
+//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac},
+//                                                  fe_component_low->n_dofs());
+//
+//                // use lambda reinit function (higher dim)
+//                auto lambda_contravariant_grad_side = [ref_shape_grads_side, op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+//                        side_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, el_table, ref_shape_grads_side, op_idx_side);
+//                    };
+//                patch_point_vals_side_->make_fe_op({3, 3},
+//                                                  lambda_contravariant_grad_side,
+//                                                  {FeSide::SideOps::opElInvJac, FeSide::SideOps::opElJac},
+//                                                  fe_component_high->n_dofs());
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+//                // use lambda reinit function (lower dim)
+//                auto lambda_piola_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+//                        bulk_reinit::ptop_vector_piola_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+//                    };
+//                patch_point_vals_bulk_->make_fe_op({3, 3},
+//                                                  lambda_piola_grad_bulk,
+//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
+//                                                  fe_component_low->n_dofs());
+//
+//                // use lambda reinit function (higher dim)
+//                auto lambda_piola_grad_side = [ref_shape_grads_side, op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+//                        side_reinit::ptop_vector_piola_shape_grads<dim>(operations, el_table, ref_shape_grads_side, op_idx_side);
+//                    };
+//                patch_point_vals_side_->make_fe_op({3, 3},
+//                                                  lambda_piola_grad_side,
+//                                                  {FeSide::SideOps::opElInvJac, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet},
+//                                                  fe_component_high->n_dofs());
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+        auto bgn_it = make_iter<JoinShapeAccessor<Tensor>>( JoinShapeAccessor<Tensor>(patch_point_vals_bulk_, patch_point_vals_side_,
+                fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, 0) );
+        unsigned int end_idx = fe_component_low->n_dofs() + fe_component_high->n_dofs();
+        auto end_it = make_iter<JoinShapeAccessor<Tensor>>( JoinShapeAccessor<Tensor>(patch_point_vals_bulk_, patch_point_vals_side_,
+                fe_component_low->n_dofs(), fe_component_high->n_dofs(), op_idx_bulk, op_idx_side, end_idx) );
+        return Range<JoinShapeAccessor<Tensor>>(bgn_it, end_it);
+    }
+
 private:
     PatchPointValues<3> *patch_point_vals_bulk_;
     PatchPointValues<3> *patch_point_vals_side_;
@@ -967,6 +1058,13 @@ public:
         return Range<JoinShapeAccessor<Vector>>(
                 make_iter<JoinShapeAccessor<Vector>>(JoinShapeAccessor<Vector>()),
                 make_iter<JoinShapeAccessor<Vector>>(JoinShapeAccessor<Vector>()) );
+    }
+
+    inline Range< JoinShapeAccessor<Tensor> > gradient_vector_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return Range<JoinShapeAccessor<Tensor>>(
+                make_iter<JoinShapeAccessor<Tensor>>(JoinShapeAccessor<Tensor>()),
+                make_iter<JoinShapeAccessor<Tensor>>(JoinShapeAccessor<Tensor>()) );
     }
 };
 
