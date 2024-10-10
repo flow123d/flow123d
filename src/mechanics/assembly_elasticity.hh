@@ -204,21 +204,17 @@ public:
                 uint is_high_i = deform_shape_i->is_high_dim();
                 if (!own_element_id[is_high_i]) continue;
                 uint i_mat_idx = deform_shape_i->local_idx();
-                auto dsi = *deform_shape_i;
-                auto dgi = *deform_grad_i;
-                arma::vec3 diff_deform_i = dsi(p_low) - dsi(p_high);
-                arma::mat33 grad_deform_i = dgi(p_low);  // low dim element
+                arma::vec3 diff_deform_i = (*deform_shape_i)(p_low) - (*deform_shape_i)(p_high);
+                arma::mat33 grad_deform_i = (*deform_grad_i)(p_low);  // low dim element
 
                 auto deform_shape_j = vec_join_shape_.begin();
                 auto deform_grad_j = vec_join_grad_.begin();
                 for( ; deform_shape_j != vec_join_shape_.end() && deform_grad_j != vec_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
                     uint is_high_j = deform_shape_j->is_high_dim();
                     uint j_mat_idx = deform_shape_j->local_idx();
-                    auto dsj = *deform_shape_j;
-                    auto dgj = *deform_grad_j;
-                    arma::vec3 deform_j_high = dsj(p_high);
-                    arma::vec3 diff_deform_j = dsj(p_low) - dsj(p_high);
-                    arma::mat33 grad_deform_j = mat_t( arma::trans(dgj(p_low)), nv);  // low dim element
+                    arma::vec3 deform_j_high = (*deform_shape_j)(p_high);
+                    arma::vec3 diff_deform_j = (*deform_shape_j)(p_low) - (*deform_shape_j)(p_high);
+                    arma::mat33 grad_deform_j = mat_t( arma::trans((*deform_grad_j)(p_low)), nv);  // low dim element
                     double div_deform_j = arma::trace(grad_deform_j);
 
                     local_matrix_ngh_[is_high_i][is_high_j][i_mat_idx*n_dofs_ngh_[is_high_j] + j_mat_idx] +=
