@@ -11,6 +11,7 @@ on:
         - 3.9.1
         - DF_variant_benchmark_asm
         - DF_asm_optimization
+        - DF_mechanic_bench
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
