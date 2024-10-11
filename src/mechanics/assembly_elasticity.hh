@@ -69,19 +69,13 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
-        n_dofs_sub_ = fe_low_->n_dofs();
+        n_dofs_ = this->n_dofs();
+        n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
         side_dof_indices_.resize(2);
@@ -94,8 +88,6 @@ public:
             for (uint n=0; n<2; ++n)
                 local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
         }
-        vec_view_side_ = &fe_values_side_.vector_view(0);
-        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
     }
 
 
@@ -134,7 +126,6 @@ public:
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
-        fe_values_side_.reinit(side);
 
         for (unsigned int i=0; i<n_dofs_; i++)
             for (unsigned int j=0; j<n_dofs_; j++)
@@ -174,12 +165,9 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
-		fe_values_sub_.reinit(cell_sub);
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-		fe_values_side_.reinit(neighb_side.side());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -245,10 +233,6 @@ private:
     }
 
 
-
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -259,15 +243,11 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    FEValues<3> fe_values_side_;                                        ///< FEValues of side object
-    FEValues<3> fe_values_sub_;                                         ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_side_;       ///< Vector view in boundary / neighbour calculation.
-    const FEValuesViews::Vector<FEValues<3>, 3> * vec_view_sub_;        ///< Vector view of low dim element in neighbour calculation.
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_;
@@ -328,15 +308,13 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
+        shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
-        n_dofs_sub_ = fe_low_->n_dofs();
+        n_dofs_ = this->n_dofs();
+        n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
         side_dof_indices_.resize(2);
@@ -513,9 +491,6 @@ public:
 
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -580,12 +555,10 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
+        n_dofs_ = this->n_dofs();
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
@@ -669,8 +642,6 @@ public:
 
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -738,12 +709,10 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
+        n_dofs_ = this->n_dofs();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
     }
@@ -788,9 +757,6 @@ public:
 
 private:
 
-
-
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
