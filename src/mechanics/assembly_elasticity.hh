@@ -46,12 +46,12 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      vec_shape_side_( this->side_values().vector_shape() ),
-      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
-      sym_grad_( this->bulk_values().vector_sym_grad() ),
-      divergence_( this->bulk_values().vector_divergence() ),
-      vec_join_shape_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ),
-      vec_join_grad_( Range< JoinShapeAccessor<Tensor> >( this->join_values().gradient_vector_join_shape() ) ) {
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
+      div_deform_( this->bulk_values().vector_divergence() ),
+      deform_join_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ),
+      deform_join_grad_( Range< JoinShapeAccessor<Tensor> >( this->join_values().gradient_vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -117,8 +117,8 @@ public:
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_(j,p), sym_grad_(i,p))
-                                                + eq_fields_->lame_lambda(p)*divergence_(j,p)*divergence_(i,p)
+                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_deform_(j,p), sym_grad_deform_(i,p))
+                                                + eq_fields_->lame_lambda(p)*div_deform_(j,p)*div_deform_(i,p)
                                                )*JxW_(p);
             }
         }
@@ -150,7 +150,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_shape_side_(i,p),vec_shape_side_(j,p)) * JxW_side_(p);
+                                arma::dot(deform_side_(i,p),deform_side_(j,p)) * JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
@@ -159,8 +159,8 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_shape_side_(i,p), normal_(p)) *
-                                arma::dot(vec_shape_side_(j,p), normal_(p)) * JxW_side_(p);
+                                arma::dot(deform_side_(i,p), normal_(p)) *
+                                arma::dot(deform_side_(j,p), normal_(p)) * JxW_side_(p);
             }
         }
 
@@ -198,18 +198,18 @@ public:
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
 
-            auto deform_shape_i = vec_join_shape_.begin();
-            auto deform_grad_i = vec_join_grad_.begin();
-            for( ; deform_shape_i != vec_join_shape_.end() && deform_grad_i != vec_join_grad_.end(); ++deform_shape_i, ++deform_grad_i) {
+            auto deform_shape_i = deform_join_.begin();
+            auto deform_grad_i = deform_join_grad_.begin();
+            for( ; deform_shape_i != deform_join_.end() && deform_grad_i != deform_join_grad_.end(); ++deform_shape_i, ++deform_grad_i) {
                 uint is_high_i = deform_shape_i->is_high_dim();
                 if (!own_element_id[is_high_i]) continue;
                 uint i_mat_idx = deform_shape_i->local_idx();
                 arma::vec3 diff_deform_i = (*deform_shape_i)(p_low) - (*deform_shape_i)(p_high);
                 arma::mat33 grad_deform_i = (*deform_grad_i)(p_low);  // low dim element
 
-                auto deform_shape_j = vec_join_shape_.begin();
-                auto deform_grad_j = vec_join_grad_.begin();
-                for( ; deform_shape_j != vec_join_shape_.end() && deform_grad_j != vec_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
+                auto deform_shape_j = deform_join_.begin();
+                auto deform_grad_j = deform_join_grad_.begin();
+                for( ; deform_shape_j != deform_join_.end() && deform_grad_j != deform_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
                     uint is_high_j = deform_shape_j->is_high_dim();
                     uint j_mat_idx = deform_shape_j->local_idx();
                     arma::vec3 deform_j_high = (*deform_shape_j)(p_high);
@@ -273,12 +273,12 @@ private:
     ElQ<Scalar> JxW_;
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQ<Vector> vec_shape_side_;
-    FeQ<Tensor> grad_vec_shape_;
-    FeQ<Tensor> sym_grad_;
-    FeQ<Scalar> divergence_;
-    Range< JoinShapeAccessor<Vector> > vec_join_shape_;
-    Range< JoinShapeAccessor<Tensor> > vec_join_grad_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Tensor> sym_grad_deform_;
+    FeQ<Scalar> div_deform_;
+    Range< JoinShapeAccessor<Vector> > deform_join_;
+    Range< JoinShapeAccessor<Tensor> > deform_join_grad_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -301,11 +301,11 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      vec_shape_( this->bulk_values().vector_shape() ),
-      vec_shape_side_( this->side_values().vector_shape() ),
-      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
-      divergence_( this->bulk_values().vector_divergence() ),
-      vec_join_shape_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ) {
+      deform_( this->bulk_values().vector_shape() ),
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      div_deform_( this->bulk_values().vector_divergence() ),
+      deform_join_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
@@ -366,9 +366,9 @@ public:
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
-                                 arma::dot(eq_fields_->load(p), vec_shape_(i,p))
-                                 -eq_fields_->potential_load(p)*divergence_(i,p)
-                                 -arma::dot(eq_fields_->initial_stress(p), grad_vec_shape_(i,p))
+                                 arma::dot(eq_fields_->load(p), deform_(i,p))
+                                 -eq_fields_->potential_load(p)*div_deform_(i,p)
+                                 -arma::dot(eq_fields_->initial_stress(p), gras_deform_(i,p))
                                 )*eq_fields_->cross_section(p)*JxW_(p);
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
@@ -407,7 +407,7 @@ public:
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
                         arma::dot(( eq_fields_->initial_stress(p) * normal_(p)),
-                                    vec_shape_side_(i,p)) *
+                                    deform_side_(i,p)) *
                         JxW_side_(p);
         }
 
@@ -419,7 +419,7 @@ public:
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-					        arma::dot(eq_fields_->bc_displacement(p_bdr), vec_shape_side_(i,p)) *
+					        arma::dot(eq_fields_->bc_displacement(p_bdr), deform_side_(i,p)) *
 					        JxW_side_(p);
             }
         }
@@ -432,7 +432,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
                             arma::dot(eq_fields_->bc_displacement(p_bdr), normal_(p)) *
-                            arma::dot(vec_shape_side_(i,p), normal_(p)) *
+                            arma::dot(deform_side_(i,p), normal_(p)) *
                             JxW_side_(p);
             }
         }
@@ -443,7 +443,7 @@ public:
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_shape_side_(i,p), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * normal_(p)) *
+                            arma::dot(deform_side_(i,p), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * normal_(p)) *
                             JxW_side_(p);
             }
         }
@@ -455,7 +455,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     // stress is multiplied by inward normal to obtain traction
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_shape_side_(i,p), -eq_fields_->bc_stress(p_bdr)*normal_(p)
+                            arma::dot(deform_side_(i,p), -eq_fields_->bc_stress(p_bdr)*normal_(p)
                             + eq_fields_->ref_potential_load(p) * normal_(p))
                             * JxW_side_(p);
             }
@@ -494,7 +494,7 @@ public:
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
 
-            for( auto join_shape_i : vec_join_shape_) {
+            for( auto join_shape_i : deform_join_) {
                 uint is_high_i = join_shape_i.is_high_dim();
                 if (!own_element_id[is_high_i]) continue;
 
@@ -536,11 +536,11 @@ private:
     ElQ<Scalar> JxW_;
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQ<Vector> vec_shape_;
-    FeQ<Vector> vec_shape_side_;
-    FeQ<Tensor> grad_vec_shape_;
-    FeQ<Scalar> divergence_;
-    Range< JoinShapeAccessor<Vector> > vec_join_shape_;
+    FeQ<Vector> deform_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Scalar> div_deform_;
+    Range< JoinShapeAccessor<Vector> > deform_join_;
 
 
     template < template<IntDim...> class DimAssembly>
@@ -561,10 +561,10 @@ public:
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       normal_( this->side_values().normal_vector() ),
-      vec_shape_side_( this->side_values().vector_shape() ),
-      grad_vec_shape_( this->bulk_values().grad_vector_shape() ),
-      sym_grad_( this->bulk_values().vector_sym_grad() ),
-      divergence_( this->bulk_values().vector_divergence() ) {
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
+      div_deform_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -614,9 +614,9 @@ public:
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            stress += (2*eq_fields_->lame_mu(p)*sym_grad_(i,p) + eq_fields_->lame_lambda(p)*divergence_(i,p)*arma::eye(3,3))
+            stress += (2*eq_fields_->lame_mu(p)*sym_grad_deform_(i,p) + eq_fields_->lame_lambda(p)*div_deform_(i,p)*arma::eye(3,3))
                     * output_vec_.get(dof_indices_[i]);
-            div += divergence_(i,p)*output_vec_.get(dof_indices_[i]);
+            div += div_deform_(i,p)*output_vec_.get(dof_indices_[i]);
         }
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
@@ -652,8 +652,8 @@ public:
 
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            normal_displacement_ -= arma::dot(vec_shape_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high));
-            arma::mat33 grad = -arma::kron(vec_shape_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
+            normal_displacement_ -= arma::dot(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high));
+            arma::mat33 grad = -arma::kron(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
         }
 
@@ -688,10 +688,10 @@ private:
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
-    FeQ<Vector> vec_shape_side_;
-    FeQ<Tensor> grad_vec_shape_;
-    FeQ<Tensor> sym_grad_;
-    FeQ<Scalar> divergence_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Tensor> sym_grad_deform_;
+    FeQ<Scalar> div_deform_;
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
@@ -725,7 +725,7 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      vec_shape_side_( this->side_values().vector_shape() ) {
+      deform_side_( this->side_values().vector_shape() ) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
@@ -775,7 +775,7 @@ public:
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_shape_side_(i,p_high), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(deform_side_(i,p_high), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
             }
         }
 
@@ -807,7 +807,7 @@ private:
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQ<Vector> vec_shape_side_;
+    FeQ<Vector> deform_side_;
 
 
     template < template<IntDim...> class DimAssembly>
