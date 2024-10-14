@@ -16,4 +16,6 @@
 
 
 TEST_F(ElasticityMockupTest, simple_asm) {
+    this->profiler_output("elasticity_asm");
+    Profiler::uninitialize();
 }
