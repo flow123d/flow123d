@@ -12,6 +12,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "elasticity_mockup.hh"
+#include "elasticity_mockup_assembly.hh"
 //#include "DG_mockup_meshes.hh"
 
 
