@@ -106,7 +106,7 @@ jobs:
           run: |
             echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin
             release_tag="${{ steps.vars.outputs.reltag }}"
-            config/build/make_integration_test_image.sh ${environment} ci ${release_tag} push
+            config/build/make_integration_test_image.sh ${environment} ${release_tag} push
     
         - name: upload artifacts
           uses: actions/upload-artifact@v3
