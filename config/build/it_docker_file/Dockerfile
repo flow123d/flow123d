@@ -12,15 +12,9 @@ LABEL org.label-schema.build-date=${build_date} \
       org.label-schema.version=${flow_version} \
       org.label-schema.schema-version="1.0"
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    cmake \
-    libvtk7-dev \
-    python3-vtk7 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+FROM source_image as final
 
-COPY --from=source_image ${flow_install_location} ${flow_install_location} 
+COPY --from=source_image /opt/flow123d ${flow_install_location}
 COPY --from=source_image /root/.local /root/.local
 
 ENV PATH="/root/.local/bin:${flow_install_location}/bin:${PATH}"

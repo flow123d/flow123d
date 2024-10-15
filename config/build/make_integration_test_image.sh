@@ -24,7 +24,10 @@ cd ${flow_repo_host}
 source_image="stepanmoc/ci-${environment}:${release_tag}"
 target_image="stepanmoc/it-${environment}:${release_tag}"
 
-docker rmi -f ${target_image}
+if [[ "$(docker images -q ${target_image} 2> /dev/null)" != "" ]]; then
+    docker rmi -f ${target_image}
+fi
+
 docker pull ${source_image}
 
 docker build --build-arg source_image=${source_image} \
