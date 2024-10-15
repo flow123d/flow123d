@@ -34,7 +34,7 @@ docker build --build-arg source_image=${source_image} \
              ${flow_repo_host}/config/build/it_docker_file
 
 # Push the image to Docker Hub
-docker push ${target_image}
+${docker_push} ${target_image}
 
 # Done
 echo "Docker image '${target_image}' has been built and pushed."
