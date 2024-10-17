@@ -33,7 +33,47 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
+class GenericAssemblyBase;
+template<unsigned int dim> class Stiffness_FullAssembly;
+template<unsigned int dim> class Stiffness_ComputeLocal;
+template<unsigned int dim> class Stiffness_EvalFields;
+template<unsigned int dim> class Rhs_FullAssembly;
+template<unsigned int dim> class Rhs_ComputeLocal;
+template<unsigned int dim> class Rhs_EvalFields;
+template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
+
+/*******************************************************************************
+ * Functors of FieldModels
+ */
+using Sclr = double;
+using Vect = arma::vec3;
+using Tens = arma::mat33;
+
+// Functor computing lame_mu
+struct fn_lame_mu {
+	inline double operator() (double young, double poisson) {
+        return young * 0.5 / (poisson+1.);
+    }
+};
+
+// Functor computing lame_lambda
+struct fn_lame_lambda {
+	inline double operator() (double young, double poisson) {
+        return young * poisson / ((poisson+1.)*(1.-2.*poisson));
+    }
+};
+
+// Functor computing base of dirichlet_penalty (without dividing by side meassure)
+struct fn_dirichlet_penalty {
+	inline double operator() (double lame_mu, double lame_lambda) {
+        return 1e3 * (2 * lame_mu + lame_lambda);
+    }
+};
+
+
+
+/// Test class
 class ElasticityMockupTest : public testing::Test {
 public:
 	ElasticityMockupTest()
@@ -50,6 +90,14 @@ public:
     }
 
     ~ElasticityMockupTest() {}
+
+    /// Run assembly algorithms with different type of assembly and type of field
+    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
 
     /// Perform profiler output.
     void profiler_output(std::string file_name) {
@@ -161,6 +209,7 @@ public:
 
         *this+=cross_section
           .name("cross_section")
+          .input_default("1.0")
           .units( UnitSI().m(3).md() )
           .flags(input_copy & in_time_term & in_main_matrix & in_rhs);
 
@@ -172,6 +221,13 @@ public:
 
         *this+=potential_load
           .name("potential_load")
+          .input_default("1.0")
+          .units( UnitSI().m() )
+          .flags(input_copy & in_rhs);
+
+        *this+=ref_potential_load
+          .name("ref_potential_load")
+          .input_default("1.0")
           .units( UnitSI().m() )
           .flags(input_copy & in_rhs);
 
@@ -183,30 +239,35 @@ public:
 
         *this += output_stress
                 .name("stress")
+                .input_default("0.0")
                 .description("Stress tensor output.")
                 .units( UnitSI().Pa() )
                 .flags(equation_result);
 
         *this += output_von_mises_stress
                 .name("von_mises_stress")
+                .input_default("0.0")
                 .description("von Mises stress output.")
                 .units( UnitSI().Pa() )
                 .flags(equation_result);
 
         *this += output_mean_stress
                 .name("mean_stress")
+                .input_default("0.0")
                 .description("mean stress output.")
                 .units( UnitSI().Pa() )
                 .flags(equation_result);
 
         *this += output_cross_section
                 .name("cross_section_updated")
+                .input_default("0.0")
                 .description("Cross-section after deformation - output.")
                 .units( UnitSI().m() )
                 .flags(equation_result);
 
         *this += output_divergence
                 .name("displacement_divergence")
+                .input_default("0.0")
                 .description("Displacement divergence output.")
                 .units( UnitSI().dimensionless() )
                 .flags(equation_result);
@@ -233,6 +294,37 @@ public:
         this->set_default_fieldset();
     }
 
+    /// Initialize selected fields as FieldModels
+    void init_field_models()
+    {
+        lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), young_modulus, poisson_ratio), 0.0);
+        lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), young_modulus, poisson_ratio), 0.0);
+        dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), lame_mu, lame_lambda), 0.0);
+    }
+
+    /// Initialize selected fields as FieldConstants
+    void init_field_constants(double val_lame_mu, double val_lame_lambda, double val_dirichl_penalty)
+    {
+
+        {
+    	    FieldValue<3>::Scalar f_value(val_lame_mu);
+            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+            field_algo->set_value(f_value);
+            lame_mu.set(field_algo, 0.0);
+        }
+        {
+    	    FieldValue<3>::Scalar f_value(val_lame_lambda);
+            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+            field_algo->set_value(f_value);
+            lame_lambda.set(field_algo, 0.0);
+        }
+        {
+    	    FieldValue<3>::Scalar f_value(val_dirichl_penalty);
+            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+            field_algo->set_value(f_value);
+            dirichlet_penalty.set(field_algo, 0.0);
+        }
+    }
 
     // Definition of Fields
     BCField<3, FieldValue<3>::Enum > bc_type;
@@ -309,5 +401,92 @@ public:
 };
 
 } // end of namespace equation_data
+
+
+/*******************************************************************************
+ * Test class
+ */
+template<template<IntDim...> class Stiffness, template<IntDim...> class Rhs>
+class ElasticityMockup : public EquationBase {
+public:
+    /// Declare Input::Type structure
+    static Input::Type::Record & get_input_type() {
+        std::string equation_name = "TestEquation";
+        return Input::Type::Record(equation_name, "Benchmark test equation record.")
+            .declare_key("solver", LinSys_PETSC::get_input_type(), Input::Type::Default("{}"),
+                    "Solver for the linear system.")
+            .declare_key("input_fields", Input::Type::Array(
+                    equation_data::EqFields()
+                        .make_field_descriptor_type(equation_name)),
+                    IT::Default::obligatory(),
+                    "Input fields of the equation.")
+            //.declare_key("output",
+            //        EqFields().output_fields.make_output_type(equation_name, ""),
+            //        Input::Type::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
+            //        "Specification of output fields and output times.")
+            .close();
+    }
+
+
+    /// Constructor
+    ElasticityMockup()
+    {
+        eq_data_ = make_shared<equation_data::EqData>();
+        eq_fields_ = make_shared<equation_data::EqFields>();
+        this->eq_fieldset_ = eq_fields_;
+    }
+
+    ~ElasticityMockup() {
+        if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
+        if (rhs_assembly_!=nullptr) delete rhs_assembly_;
+
+        eq_data_.reset();
+        eq_fields_.reset();
+    }
+
+    void create_and_set_mesh(const std::string &mesh_file) {
+        std::string input_str = "{ mesh_file=\"" + mesh_file + "\" }";
+        this->mesh_ = mesh_full_constructor(input_str);
+        START_TIMER("n_mesh_elements");
+        uint n_elements = this->mesh_->n_elements();
+        // for(i =0; i<n_elements; i++) i+1;
+        ADD_CALLS(n_elements);
+        END_TIMER("n_mesh_elements");
+
+        // Set up physical parameters.
+        eq_fields_->set_mesh(*mesh_);
+        eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
+        eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
+
+        // Create DOF handler
+        eq_data_->create_dh(this->mesh_, 1);
+    }
+
+    /// Initialize equation
+    void initialize(const string &input);
+
+    /// Execute zero time step. Do not call method directly, use run_simulation
+    void zero_time_step();
+
+    /// Update equation solution. Do not call method directly, use run_simulation
+    void update_solution();
+
+    /// Call zero_time_step and update_solution for 4 time steps.
+    void run_simulation() {
+        this->zero_time_step();
+        for (uint i=0; i<4; ++i) {
+            this->update_solution();
+        }
+    }
+
+
+    std::shared_ptr<equation_data::EqFields> eq_fields_;  ///< Fields for model parameters.
+    std::shared_ptr<equation_data::EqData> eq_data_;      ///< Data for model parameters.
+    Input::Record input_rec;
+
+    GenericAssemblyBase * stiffness_assembly_;
+    GenericAssemblyBase * rhs_assembly_;
+};
+
 
 #endif /* ELASTICITY_MOCKUP_HH_ */
