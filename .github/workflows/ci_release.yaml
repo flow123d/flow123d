@@ -179,6 +179,7 @@ jobs:
             test:
             # unit_test_subdir,   target in the subdir,   processing notebook in src/python/notebooks
             - {dir: coupling, target: dg_asm, notebook: dg_asm_plots }
+            - {dir: coupling, target: elasticity_asm, notebook: dg_asm_plots }
             #- {dir: fem, target: fem_tools}
         steps:  
         - uses: actions/checkout@v3
