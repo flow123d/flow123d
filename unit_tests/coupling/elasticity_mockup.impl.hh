@@ -79,7 +79,7 @@ void ElasticityMockupTest::run_evalfields_model(const string &eq_data_input, con
     test_eval_fields_model.initialize( eq_data_input );
     test_eval_fields_model.eq_fields_->init_field_models();
     test_eval_fields_model.run_simulation();
-    END_TIMER("EvalFields_model");
+    END_TIMER("full_mesh");
     END_TIMER("FullAssembly_model");
 }
 
