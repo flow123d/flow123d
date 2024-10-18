@@ -32,7 +32,7 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class StiffnessAssemblyElasticity : public AssemblyBase<dim>
+class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -41,11 +41,17 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()),
-	  fe_values_side_(CacheMapElementNumber::get()),
-	  fe_values_sub_(CacheMapElementNumber::get()) {
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+      JxW_( this->bulk_values().JxW() ),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ),
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
+      div_deform_( this->bulk_values().vector_divergence() ),
+      deform_join_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ),
+      deform_join_grad_( Range< JoinShapeAccessor<Tensor> >( this->join_values().gradient_vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -63,43 +69,17 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_values_.initialize(*this->quad_, *fe_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-        fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
+        shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
-        n_dofs_sub_ = fe_low_->n_dofs();
+        n_dofs_ = this->n_dofs();
+        n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
-        side_dof_indices_.resize(2);
-        side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
-        side_dof_indices_[1].resize(n_dofs_);      // index 1 = side of element with higher dimension
-        local_matrix_.resize(n_dofs_*n_dofs_);
-        local_matrix_ngh_.resize(2);
-        for (uint m=0; m<2; ++m) {
-            local_matrix_ngh_[m].resize(2);
-            for (uint n=0; n<2; ++n)
-                local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
-        }
-        vec_view_ = &fe_values_.vector_view(0);
-        vec_view_side_ = &fe_values_side_.vector_view(0);
-        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fe_values_.reinit(patch_elements[dim]);
-        fe_values_side_.reinit(patch_elements[dim]);
-        fe_values_sub_.reinit(patch_elements[dim-1]);
+        side_dof_indices_.resize(2*n_dofs_);
+        local_matrix_.resize(4*n_dofs_*n_dofs_);
     }
 
 
@@ -108,7 +88,6 @@ public:
     {
         if (cell.dim() != dim) return;
 
-        fe_values_.get_cell(element_patch_idx);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -116,18 +95,16 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        unsigned int k=0;
         for (auto p : this->bulk_points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
-                                                + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
-                                               )*fe_values_.JxW(p);
+                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_deform_(j,p), sym_grad_deform_(i,p))
+                                                + eq_fields_->lame_lambda(p)*div_deform_(j,p)*div_deform_(i,p)
+                                               )*JxW_(p);
             }
-            k++;
         }
         eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
     }
@@ -141,7 +118,6 @@ public:
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
-        fe_values_side_.get_side(this->element_cache_map_->position_in_cache(cell_side.elem_idx()), cell_side.side_idx());
 
         for (unsigned int i=0; i<n_dofs_; i++)
             for (unsigned int j=0; j<n_dofs_; j++)
@@ -153,25 +129,21 @@ public:
         double side_measure = cell_side.measure();
         if (bc_type == EqFields::bc_type_displacement)
         {
-            unsigned int k=0;
             for (auto p : this->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_view_side_->value(i,k),vec_view_side_->value(j,k)) * fe_values_side_.JxW(p);
-                k++;
+                                arma::dot(deform_side_(i,p),deform_side_(j,p)) * JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
-            unsigned int k=0;
             for (auto p : this->boundary_points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(vec_view_side_->value(i,k), fe_values_side_.normal_vector(p)) *
-                                arma::dot(vec_view_side_->value(j,k), fe_values_side_.normal_vector(p)) * fe_values_side_.JxW(p);
-                k++;
+                                arma::dot(deform_side_(i,p), normal_(p)) *
+                                arma::dot(deform_side_(j,p), normal_(p)) * JxW_side_(p);
             }
         }
 
@@ -184,67 +156,64 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		fe_values_sub_.get_cell( this->element_cache_map_->position_in_cache(cell_lower_dim.elm_idx()) );
+        unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i] = dof_indices_[i];
+        }
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
+        n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i+n_dofs_ngh_[0]] = dof_indices_[i];
+        }
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
 		own_element_id[0] = cell_lower_dim.is_own();
 		own_element_id[1] = cell_higher_dim.is_own();
 
-        for (unsigned int n=0; n<2; ++n)
-            for (unsigned int i=0; i<n_dofs_; i++)
-                for (unsigned int m=0; m<2; ++m)
-                    for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
+        for (unsigned int i=0; i<n_dofs_ngh_[0]+n_dofs_ngh_[1]; i++)
+            for (unsigned int j=0; j<n_dofs_ngh_[0]+n_dofs_ngh_[1]; j++)
+                local_matrix_[i*(n_dofs_ngh_[0]+n_dofs_ngh_[1])+j] = 0;
 
         // set transmission conditions
-        unsigned int k=0;
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = fe_values_side_.normal_vector(p_high);
+            arma::vec3 nv = normal_(p_high);
 
-            for (int n=0; n<2; n++)
-            {
-                if (!own_element_id[n]) continue;
+            auto deform_shape_i = deform_join_.begin();
+            auto deform_grad_i = deform_join_grad_.begin();
+            for( ; deform_shape_i != deform_join_.end() && deform_grad_i != deform_join_grad_.end(); ++deform_shape_i, ++deform_grad_i) {
+                uint is_high_i = deform_shape_i->is_high_dim();
+                if (!own_element_id[is_high_i]) continue;
+                uint i_mat_idx = deform_shape_i->join_idx();
+                arma::vec3 diff_deform_i = (*deform_shape_i)(p_low) - (*deform_shape_i)(p_high);
+                arma::mat33 grad_deform_i = (*deform_grad_i)(p_low);  // low dim element
 
-                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
-                {
-                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
-                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                auto deform_shape_j = deform_join_.begin();
+                auto deform_grad_j = deform_join_grad_.begin();
+                for( ; deform_shape_j != deform_join_.end() && deform_grad_j != deform_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
+                    uint j_mat_idx = deform_shape_j->join_idx();
+                    arma::vec3 deform_j_high = (*deform_shape_j)(p_high);
+                    arma::vec3 diff_deform_j = (*deform_shape_j)(p_low) - (*deform_shape_j)(p_high);
+                    arma::mat33 grad_deform_j = mat_t( arma::trans((*deform_grad_j)(p_low)), nv);  // low dim element
+                    double div_deform_j = arma::trace(grad_deform_j);
 
-                    for (int m=0; m<2; m++)
-                        for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
-                            arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
-                            arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuft = (m==0) ? arma::trace(guft) : 0;
-
-                            local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
-                                    eq_fields_->fracture_sigma(p_low)*(
-                                     arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
-                                     )
-                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fe_values_sub_.JxW(p_low);
-                        }
-
+                    local_matrix_[i_mat_idx * (n_dofs_ngh_[0]+n_dofs_ngh_[1]) + j_mat_idx] +=
+                            eq_fields_->fracture_sigma(p_low)*(
+                             arma::dot(diff_deform_i,
+                              2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(diff_deform_j)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(diff_deform_j,nv)*nv))
+                              + eq_fields_->lame_mu(p_low)*arma::trans(grad_deform_j)*nv
+                              + eq_fields_->lame_lambda(p_low)*div_deform_j*nv
+                             )
+                             - arma::dot(arma::trans(grad_deform_i), eq_fields_->lame_mu(p_low)*arma::kron(nv,deform_j_high.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(deform_j_high,nv)*arma::eye(3,3))
+                            )*JxW_side_(p_high);
                 }
             }
-        	k++;
         }
 
-        for (unsigned int n=0; n<2; ++n)
-            for (unsigned int m=0; m<2; ++m)
-                eq_data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
+        eq_data_->ls->mat_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), &(local_matrix_[0]));
     }
 
 
@@ -257,10 +226,6 @@ private:
     }
 
 
-
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -271,17 +236,21 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    PatchFEValues_TEMP<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
-    PatchFEValues_TEMP<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<LongIdx> side_dof_indices_;                                  ///< vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-    vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Scalar> JxW_;
+    ElQ<Scalar> JxW_side_;
+    ElQ<Vector> normal_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Tensor> sym_grad_deform_;
+    FeQ<Scalar> div_deform_;
+    Range< JoinShapeAccessor<Vector> > deform_join_;
+    Range< JoinShapeAccessor<Tensor> > deform_join_grad_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -290,7 +259,7 @@ private:
 
 
 template <unsigned int dim>
-class RhsAssemblyElasticity : public AssemblyBase<dim>
+class RhsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -299,12 +268,16 @@ public:
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_(CacheMapElementNumber::get()),
-	  fe_values_bdr_side_(CacheMapElementNumber::get()),
-	  fe_values_side_(CacheMapElementNumber::get()),
-	  fe_values_sub_(CacheMapElementNumber::get()) {
+    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+      JxW_( this->bulk_values().JxW() ),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ),
+      deform_( this->bulk_values().vector_shape() ),
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      div_deform_( this->bulk_values().vector_divergence() ),
+      deform_join_( Range< JoinShapeAccessor<Vector> >( this->join_values().vector_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
@@ -327,20 +300,13 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fe_low_ = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        fe_values_.initialize(*this->quad_, *fe_,
-                update_values | update_gradients | update_JxW_values | update_quadrature_points);
-        fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
-        fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_normal_vectors);
-        fe_values_sub_.initialize(*this->quad_low_, *fe_low_,
-                update_values | update_JxW_values | update_quadrature_points);
-        n_dofs_ = fe_->n_dofs();
-        n_dofs_sub_ = fe_low_->n_dofs();
+        shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
+
+        n_dofs_ = this->n_dofs();
+        n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
         side_dof_indices_.resize(2);
@@ -349,20 +315,6 @@ public:
         local_rhs_.resize(n_dofs_);
         local_rhs_ngh_.resize(2);
         for (uint n=0; n<2; ++n) local_rhs_ngh_[n].resize(n_dofs_);
-        vec_view_ = &fe_values_.vector_view(0);
-        vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
-        vec_view_side_ = &fe_values_side_.vector_view(0);
-        if (dim>1) vec_view_sub_ = &fe_values_sub_.vector_view(0);
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fe_values_.reinit(patch_elements[dim]);
-        fe_values_bdr_side_.reinit(patch_elements[dim]);
-        fe_values_side_.reinit(patch_elements[dim]);
-        fe_values_sub_.reinit(patch_elements[dim-1]);
     }
 
 
@@ -372,7 +324,6 @@ public:
         if (cell.dim() != dim) return;
         if (!cell.is_own()) return;
 
-        fe_values_.get_cell(element_patch_idx);
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -381,23 +332,21 @@ public:
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
         // compute sources
-        unsigned int k=0;
         for (auto p : this->bulk_points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
-                                 arma::dot(eq_fields_->load(p), vec_view_->value(i,k))
-                                 -eq_fields_->potential_load(p)*vec_view_->divergence(i,k)
-                                 -arma::dot(eq_fields_->initial_stress(p), vec_view_->grad(i,k))
-                                )*eq_fields_->cross_section(p)*fe_values_.JxW(p);
-            ++k;
+                                 arma::dot(eq_fields_->load(p), deform_(i,p))
+                                 -eq_fields_->potential_load(p)*div_deform_(i,p)
+                                 -arma::dot(eq_fields_->initial_stress(p), gras_deform_(i,p))
+                                )*eq_fields_->cross_section(p)*JxW_(p);
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
 
 //         for (unsigned int i=0; i<n_dofs_; i++)
 //         {
 //             for (unsigned int k=0; k<qsize_; k++) // point range
-//                 local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_values_[vec_view_].value(i,k)*fe_values_.JxW(k);
+//                 local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_vals_[vec_view_].value(i,k)*JxW_(k);
 //
 //             local_source_balance_rhs[i] += local_rhs_[i];
 //         }
@@ -411,44 +360,37 @@ public:
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
-        fe_values_bdr_side_.get_side(this->element_cache_map_->position_in_cache(cell_side.elem_idx()), cell_side.side_idx());
 
         auto p_side = *( this->boundary_points(cell_side).begin() );
-        auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+        auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
 
         fill_n(&(local_rhs_[0]), n_dofs_, 0);
         // local_flux_balance_vector.assign(n_dofs_, 0);
         // local_flux_balance_rhs = 0;
 
-        unsigned int k = 0;
-
         // addtion from initial stress
         for (auto p : this->boundary_points(cell_side) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
-                        arma::dot(( eq_fields_->initial_stress(p) * fe_values_bdr_side_.normal_vector(p)),
-                                    vec_view_bdr_->value(i,k)) *
-                        fe_values_bdr_side_.JxW(p);
-            ++k;
+                        arma::dot(( eq_fields_->initial_stress(p) * normal_(p)),
+                                    deform_side_(i,p)) *
+                        JxW_side_(p);
         }
 
-        k = 0;
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
-                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-					        arma::dot(eq_fields_->bc_displacement(p_bdr), vec_view_bdr_->value(i,k)) *
-					        fe_values_bdr_side_.JxW(p);
-                ++k;
+					        arma::dot(eq_fields_->bc_displacement(p_bdr), deform_side_(i,p)) *
+					        JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
@@ -456,39 +398,36 @@ public:
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
             {
-                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                            arma::dot(eq_fields_->bc_displacement(p_bdr), fe_values_bdr_side_.normal_vector(p)) *
-                            arma::dot(vec_view_bdr_->value(i,k), fe_values_bdr_side_.normal_vector(p)) *
-                            fe_values_bdr_side_.JxW(p);
-                ++k;
+                            arma::dot(eq_fields_->bc_displacement(p_bdr), normal_(p)) *
+                            arma::dot(deform_side_(i,p), normal_(p)) *
+                            JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_traction)
         {
             for (auto p : this->boundary_points(cell_side) )
             {
-                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_view_bdr_->value(i,k), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(p)) *
-                            fe_values_bdr_side_.JxW(p);
-                ++k;
+                            arma::dot(deform_side_(i,p), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * normal_(p)) *
+                            JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_stress)
         {
             for (auto p : this->boundary_points(cell_side) )
             {
-                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     // stress is multiplied by inward normal to obtain traction
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(vec_view_bdr_->value(i,k), -eq_fields_->bc_stress(p_bdr)*fe_values_bdr_side_.normal_vector(p)
-                            + eq_fields_->ref_potential_load(p) * fe_values_bdr_side_.normal_vector(p))
-                            * fe_values_bdr_side_.JxW(p);
-                ++k;
+                            arma::dot(deform_side_(i,p), -eq_fields_->bc_stress(p_bdr)*normal_(p)
+                            + eq_fields_->ref_potential_load(p) * normal_(p))
+                            * JxW_side_(p);
             }
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
@@ -506,11 +445,9 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
 		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		fe_values_sub_.get_cell( this->element_cache_map_->position_in_cache(cell_lower_dim.elm_idx()) );
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
-		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
@@ -522,26 +459,21 @@ public:
                 local_rhs_ngh_[n][i] = 0;
 
         // set transmission conditions
-        unsigned int k=0;
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = fe_values_side_.normal_vector(p_high);
+            arma::vec3 nv = normal_(p_high);
 
-            for (int n=0; n<2; n++)
-            {
-                if (!own_element_id[n]) continue;
+            for( auto join_shape_i : deform_join_) {
+                uint is_high_i = join_shape_i.is_high_dim();
+                if (!own_element_id[is_high_i]) continue;
 
-                for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
-                {
-                    arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
-                    arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
+                arma::vec3 vi = join_shape_i(p_high);
+                arma::vec3 vf = join_shape_i(p_low);
 
-                    local_rhs_ngh_[n][i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
-                            arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * fe_values_sub_.JxW(p_low);
-                }
+                local_rhs_ngh_[is_high_i][join_shape_i.local_idx()] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
+                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
             }
-            ++k;
         }
 
         for (unsigned int n=0; n<2; ++n)
@@ -551,9 +483,6 @@ public:
 
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -564,19 +493,21 @@ private:
     unsigned int n_dofs_;                                               ///< Number of dofs
     unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
-    PatchFEValues_TEMP<3> fe_values_;                                        ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues_TEMP<3> fe_values_bdr_side_;                               ///< FEValues of side (boundary integral) object
-    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side (neighbour integral) object
-    PatchFEValues_TEMP<3> fe_values_sub_;                                    ///< FEValues of lower dimension cell object
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
     vector<vector<PetscScalar>> local_rhs_ngh_;                         ///< Auxiliary vectors for assemble ngh integral
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_bdr_;   ///< Vector view in boundary calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_sub_;   ///< Vector view of low dim element in neighbour calculation.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Scalar> JxW_;
+    ElQ<Scalar> JxW_side_;
+    ElQ<Vector> normal_;
+    FeQ<Vector> deform_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Scalar> div_deform_;
+    Range< JoinShapeAccessor<Vector> > deform_join_;
 
 
     template < template<IntDim...> class DimAssembly>
@@ -585,19 +516,22 @@ private:
 };
 
 template <unsigned int dim>
-class OutpuFieldsAssemblyElasticity : public AssemblyBase<dim>
+class OutpuFieldsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename Elasticity::OutputEqData EqData;
 
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fv_(CacheMapElementNumber::get()),
-	  fsv_(CacheMapElementNumber::get()) {
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+      normal_( this->side_values().normal_vector() ),
+      deform_side_( this->side_values().vector_shape() ),
+      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
+      div_deform_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -613,16 +547,10 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fv_.initialize(*this->quad_, *fe_,
-        		update_values | update_gradients | update_quadrature_points);
-        fsv_.initialize(*this->quad_low_, *fe_,
-        		update_values | update_normal_vectors | update_quadrature_points);
-        n_dofs_ = fe_->n_dofs();
-        vec_view_ = &fv_.vector_view(0);
-        //        if (dim>1) ??
-        vec_view_side_ = &fsv_.vector_view(0);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
+
+        n_dofs_ = this->n_dofs();
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
@@ -630,14 +558,6 @@ public:
         output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
         output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
         output_div_vec_ = eq_fields_->output_div_ptr->vec();
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fv_.reinit(patch_elements[dim]);
-        fsv_.reinit(patch_elements[dim]);
     }
 
 
@@ -649,7 +569,6 @@ public:
         DHCellAccessor cell_tensor = cell.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_scalar = cell.cell_with_other_dh(eq_data_->dh_scalar_.get());
 
-        fv_.get_cell(element_patch_idx);
         dof_indices_        = cell.get_loc_dof_indices();
         dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
         dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
@@ -660,9 +579,9 @@ public:
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            stress += (2*eq_fields_->lame_mu(p)*vec_view_->sym_grad(i,0) + eq_fields_->lame_lambda(p)*vec_view_->divergence(i,0)*arma::eye(3,3))
+            stress += (2*eq_fields_->lame_mu(p)*sym_grad_deform_(i,p) + eq_fields_->lame_lambda(p)*div_deform_(i,p)*arma::eye(3,3))
                     * output_vec_.get(dof_indices_[i]);
-            div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
+            div += div_deform_(i,p)*output_vec_.get(dof_indices_[i]);
         }
 
         arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
@@ -691,7 +610,6 @@ public:
         DHCellAccessor cell_higher_dim = neighb_side.cell();
         DHCellAccessor cell_tensor = cell_lower_dim.cell_with_other_dh(eq_data_->dh_tensor_.get());
         DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
-        fsv_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
         auto p_high = *( this->coupling_points(neighb_side).begin() );
@@ -699,8 +617,8 @@ public:
 
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(p_high));
-            arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(p_high).t()) / eq_fields_->cross_section(p_low);
+            normal_displacement_ -= arma::dot(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high));
+            arma::mat33 grad = -arma::kron(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
         }
 
@@ -716,8 +634,6 @@ public:
 
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -726,17 +642,19 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues_TEMP<3> fv_;                                               ///< FEValues of cell object (FESystem of P disc finite element type)
-    PatchFEValues_TEMP<3> fsv_;                                              ///< FEValues of side (neighbour integral) object
-
     LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
     LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
     LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_;       ///< Vector view in cell integral calculation.
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in neighbour calculation.
 
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Vector> normal_;
+    FeQ<Vector> deform_side_;
+    FeQ<Tensor> gras_deform_;
+    FeQ<Tensor> sym_grad_deform_;
+    FeQ<Scalar> div_deform_;
 
     /// Data vectors of output fields (FieldFE).
     VectorMPI output_vec_;
@@ -757,7 +675,7 @@ private:
  * Container class for assembly of constraint matrix for contact condition.
  */
 template <unsigned int dim>
-class ConstraintAssemblyElasticity : public AssemblyBase<dim>
+class ConstraintAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename Elasticity::EqFields EqFields;
@@ -766,9 +684,11 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
-	  fe_values_side_(CacheMapElementNumber::get()) {
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+      JxW_side_( this->side_values().JxW() ),
+      normal_( this->side_values().normal_vector() ),
+      deform_side_( this->side_values().vector_shape() ) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
@@ -781,22 +701,12 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
-        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
-        fe_values_side_.initialize(*this->quad_low_, *fe_,
-                update_values | update_side_JxW_values | update_normal_vectors);
+        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
-        n_dofs_ = fe_->n_dofs();
+        n_dofs_ = this->n_dofs();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
-        vec_view_side_ = &fe_values_side_.vector_view(0);
-    }
-
-
-    /// Reinit PatchFEValues_TEMP objects (all computed elements in one step).
-    void patch_reinit(std::array<PatchElementsList, 4> &patch_elements) override
-    {
-        fe_values_side_.reinit(patch_elements[dim]);
     }
 
 
@@ -808,9 +718,7 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(dof_indices_);
-
-		fe_values_side_.get_side(this->element_cache_map_->position_in_cache(neighb_side.elem_idx()), neighb_side.side_idx());
+        cell_higher_dim.get_dof_indices(dof_indices_);
 
         for (unsigned int i=0; i<n_dofs_; i++)
             local_matrix_[i] = 0;
@@ -818,20 +726,18 @@ public:
         // Assemble matrix and vector for contact conditions in the form B*x <= c,
         // where B*x is the average jump of normal displacements and c is the average cross-section on element.
         // Positive value means that the fracture closes.
-        unsigned int k=0;
         double local_vector = 0;
         for (auto p_high : this->coupling_points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = fe_values_side_.normal_vector(p_high);
+            arma::vec3 nv = normal_(p_high);
 
-            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*fe_values_side_.JxW(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*JxW_side_(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(p_high) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(deform_side_(i,p_high), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
             }
-            k++;
         }
 
         int arow[1] = { eq_data_->constraint_idx[cell_lower_dim.elm_idx()] };
@@ -844,9 +750,6 @@ public:
 private:
 
 
-
-    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
-
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -855,12 +758,15 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    PatchFEValues_TEMP<3> fe_values_side_;                                   ///< FEValues of side object
-
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-    const FEValuesViews::Vector<PatchFEValues_TEMP<3>, 3> * vec_view_side_;  ///< Vector view in boundary / neighbour calculation.
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Scalar> JxW_side_;
+    ElQ<Vector> normal_;
+    FeQ<Vector> deform_side_;
+
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
