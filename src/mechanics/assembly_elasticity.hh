@@ -78,16 +78,8 @@ public:
         n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
-        side_dof_indices_.resize(2);
-        side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
-        side_dof_indices_[1].resize(n_dofs_);      // index 1 = side of element with higher dimension
-        local_matrix_.resize(n_dofs_*n_dofs_);
-        local_matrix_ngh_.resize(2);
-        for (uint m=0; m<2; ++m) {
-            local_matrix_ngh_[m].resize(2);
-            for (uint n=0; n<2; ++n)
-                local_matrix_ngh_[m][n].resize(n_dofs_*n_dofs_);
-        }
+        side_dof_indices_.resize(2*n_dofs_);
+        local_matrix_.resize(4*n_dofs_*n_dofs_);
     }
 
 
@@ -164,21 +156,25 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
+        unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i] = dof_indices_[i];
+        }
 
 		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+        n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i+n_dofs_ngh_[0]] = dof_indices_[i];
+        }
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
 		own_element_id[0] = cell_lower_dim.is_own();
 		own_element_id[1] = cell_higher_dim.is_own();
 
-        for (unsigned int n=0; n<2; ++n)
-            for (unsigned int i=0; i<n_dofs_; i++)
-                for (unsigned int m=0; m<2; ++m)
-                    for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
+        for (unsigned int i=0; i<n_dofs_ngh_[0]+n_dofs_ngh_[1]; i++)
+            for (unsigned int j=0; j<n_dofs_ngh_[0]+n_dofs_ngh_[1]; j++)
+                local_matrix_[i*(n_dofs_ngh_[0]+n_dofs_ngh_[1])+j] = 0;
 
         // set transmission conditions
         for (auto p_high : this->coupling_points(neighb_side) )
@@ -191,21 +187,20 @@ public:
             for( ; deform_shape_i != deform_join_.end() && deform_grad_i != deform_join_grad_.end(); ++deform_shape_i, ++deform_grad_i) {
                 uint is_high_i = deform_shape_i->is_high_dim();
                 if (!own_element_id[is_high_i]) continue;
-                uint i_mat_idx = deform_shape_i->local_idx();
+                uint i_mat_idx = deform_shape_i->join_idx();
                 arma::vec3 diff_deform_i = (*deform_shape_i)(p_low) - (*deform_shape_i)(p_high);
                 arma::mat33 grad_deform_i = (*deform_grad_i)(p_low);  // low dim element
 
                 auto deform_shape_j = deform_join_.begin();
                 auto deform_grad_j = deform_join_grad_.begin();
                 for( ; deform_shape_j != deform_join_.end() && deform_grad_j != deform_join_grad_.end(); ++deform_shape_j, ++deform_grad_j) {
-                    uint is_high_j = deform_shape_j->is_high_dim();
-                    uint j_mat_idx = deform_shape_j->local_idx();
+                    uint j_mat_idx = deform_shape_j->join_idx();
                     arma::vec3 deform_j_high = (*deform_shape_j)(p_high);
                     arma::vec3 diff_deform_j = (*deform_shape_j)(p_low) - (*deform_shape_j)(p_high);
                     arma::mat33 grad_deform_j = mat_t( arma::trans((*deform_grad_j)(p_low)), nv);  // low dim element
                     double div_deform_j = arma::trace(grad_deform_j);
 
-                    local_matrix_ngh_[is_high_i][is_high_j][i_mat_idx*n_dofs_ngh_[is_high_j] + j_mat_idx] +=
+                    local_matrix_[i_mat_idx * (n_dofs_ngh_[0]+n_dofs_ngh_[1]) + j_mat_idx] +=
                             eq_fields_->fracture_sigma(p_low)*(
                              arma::dot(diff_deform_i,
                               2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(diff_deform_j)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(diff_deform_j,nv)*nv))
@@ -218,9 +213,7 @@ public:
             }
         }
 
-        for (unsigned int n=0; n<2; ++n)
-            for (unsigned int m=0; m<2; ++m)
-                eq_data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
+        eq_data_->ls->mat_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), &(local_matrix_[0]));
     }
 
 
@@ -245,9 +238,8 @@ private:
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<LongIdx> side_dof_indices_;                                  ///< vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-    vector<vector<vector<PetscScalar>>> local_matrix_ngh_;              ///< Auxiliary vectors for assemble ngh integral
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_;
