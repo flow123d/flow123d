@@ -12,7 +12,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "elasticity_mockup.impl.hh"
-#include "DG_mockup_meshes.hh"
+#include "bench_meshes_handler.hh"
 
 
 TEST_F(ElasticityMockupTest, simple_asm) {
@@ -32,6 +32,10 @@ TEST_F(ElasticityMockupTest, simple_asm) {
         poisson_ratio: !FieldFormula
           value: 0.1*X[0]
     )YAML";
+
+    BenchMeshesHandler mesh_handler;
+    std::vector<std::string> meshes_table = mesh_handler.get_mesh_names("elasticity_asm");
+    std::vector<std::string> meshes_sizes = mesh_handler.get_mesh_sizes();
 
     std::vector< std::shared_ptr<CodePoint> > cp_vec;
     std::vector< std::shared_ptr<CodePoint> > cp_vec_in;
