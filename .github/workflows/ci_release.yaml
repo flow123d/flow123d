@@ -261,7 +261,7 @@ jobs:
           with:
             name: build_dir
         
-        - run: config/build/run_with_build_dir.sh rel_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        - run: config/build/run_with_build_dir.sh ci_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
         - name: Report
           run: |
             echo "Job result: ${{job.result}}"
