@@ -590,95 +590,95 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
 
 
 
-template<unsigned int spacedim>
-PatchFEValues_TEMP<spacedim>::PatchFEValues_TEMP(unsigned int max_size)
-: FEValuesBase<PatchFEValues_TEMP<spacedim>, spacedim>(),
-  patch_data_idx_(-1), used_size_(0), max_n_elem_(max_size) {}
-
-
-template<unsigned int spacedim>
-void PatchFEValues_TEMP<spacedim>::reinit(PatchElementsList patch_elements) {
-    element_patch_map_.clear();
-    if (object_type_ == ElementFE)
-        used_size_ = patch_elements.size();
-    else
-        used_size_ = patch_elements.size() * (this->dim_+1);
-    ASSERT_LE(used_size_, max_size());
-
-    unsigned int i=0;
-    for (auto it=patch_elements.begin(); it!=patch_elements.end(); ++it, ++i) {
-        if (object_type_ == ElementFE) {
-            patch_data_idx_ = i;
-            element_patch_map_[it->second] = i;
-            element_data_[i].elm_values_->reinit(it->first);
-            this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
-        } else {
-            element_patch_map_[it->second] = i * (this->dim_+1);
-            for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
-                patch_data_idx_ = i * (this->dim_+1) + sid;
-                element_data_[patch_data_idx_].elm_values_->reinit( *it->first.side(sid) );
-                this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
-
-            }
-        }
-    }
-}
-
-
-template<unsigned int spacedim>
-void PatchFEValues_TEMP<spacedim>::allocate_in(unsigned int q_dim)
-{
-    ASSERT_PERMANENT_GT(this->max_n_elem_, 0);
-
-    if ( q_dim == this->dim_ ) {
-        element_data_.resize( this->max_n_elem_ );
-        object_type_ = ElementFE;
-    } else if ( q_dim+1 == this->dim_ ) {
-        element_data_.resize( this->max_n_elem_ * (this->dim_+1) );
-        object_type_ = SideFE;
-    } else
-        ASSERT(false)(q_dim)(this->dim_).error("Invalid dimension of quadrature!");
-
-    for (uint i=0; i<max_size(); ++i) {
-        if (this->update_flags & update_values)
-            element_data_[i].shape_values_.resize(this->n_points_, vector<double>(this->n_dofs_*this->n_components_));
-
-        if (this->update_flags & update_gradients)
-            element_data_[i].shape_gradients_.resize(this->n_points_, vector<arma::vec::fixed<spacedim> >(this->n_dofs_*this->n_components_));
-    }
-
-    this->fv_ = this;
-}
-
-
-template<unsigned int spacedim>
-void PatchFEValues_TEMP<spacedim>::initialize_in(
-        Quadrature &q,
-        unsigned int dim)
-{
-    for (uint i=0; i<max_size(); ++i)
-        element_data_[i].elm_values_ = std::make_shared<ElementValues<spacedim> >(q, this->update_flags, dim);
-}
-
-
-template<unsigned int spacedim>
-void PatchFEValues_TEMP<spacedim>::init_fe_val_vec()
-{
-    for (unsigned int i=0; i<this->fe_values_vec.size(); ++i)
-        this->fe_values_vec[i].resize( this->max_size() );
-}
-
-
-template<unsigned int spacedim>
-arma::vec::fixed<spacedim> PatchFEValues_TEMP<spacedim>::shape_grad_component(const unsigned int function_no,
-                                                        const unsigned int point_no,
-                                                        const unsigned int comp) const
-{
-    ASSERT_LT(function_no, this->n_dofs_);
-    ASSERT_LT(point_no, this->n_points_);
-    ASSERT_LT(comp, this->n_components_);
-    return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no*this->n_components_+comp];
-}
+//template<unsigned int spacedim>
+//PatchFEValues_TEMP<spacedim>::PatchFEValues_TEMP(unsigned int max_size)
+//: FEValuesBase<PatchFEValues_TEMP<spacedim>, spacedim>(),
+//  patch_data_idx_(-1), used_size_(0), max_n_elem_(max_size) {}
+//
+//
+//template<unsigned int spacedim>
+//void PatchFEValues_TEMP<spacedim>::reinit(PatchElementsList patch_elements) {
+//    element_patch_map_.clear();
+//    if (object_type_ == ElementFE)
+//        used_size_ = patch_elements.size();
+//    else
+//        used_size_ = patch_elements.size() * (this->dim_+1);
+//    ASSERT_LE(used_size_, max_size());
+//
+//    unsigned int i=0;
+//    for (auto it=patch_elements.begin(); it!=patch_elements.end(); ++it, ++i) {
+//        if (object_type_ == ElementFE) {
+//            patch_data_idx_ = i;
+//            element_patch_map_[it->second] = i;
+//            element_data_[i].elm_values_->reinit(it->first);
+//            this->fill_data(*element_data_[i].elm_values_, *this->fe_data_);
+//        } else {
+//            element_patch_map_[it->second] = i * (this->dim_+1);
+//            for (unsigned int sid=0; sid<this->dim_+1; ++sid) {
+//                patch_data_idx_ = i * (this->dim_+1) + sid;
+//                element_data_[patch_data_idx_].elm_values_->reinit( *it->first.side(sid) );
+//                this->fill_data(*element_data_[patch_data_idx_].elm_values_, *this->side_fe_data_[sid]);
+//
+//            }
+//        }
+//    }
+//}
+//
+//
+//template<unsigned int spacedim>
+//void PatchFEValues_TEMP<spacedim>::allocate_in(unsigned int q_dim)
+//{
+//    ASSERT_PERMANENT_GT(this->max_n_elem_, 0);
+//
+//    if ( q_dim == this->dim_ ) {
+//        element_data_.resize( this->max_n_elem_ );
+//        object_type_ = ElementFE;
+//    } else if ( q_dim+1 == this->dim_ ) {
+//        element_data_.resize( this->max_n_elem_ * (this->dim_+1) );
+//        object_type_ = SideFE;
+//    } else
+//        ASSERT(false)(q_dim)(this->dim_).error("Invalid dimension of quadrature!");
+//
+//    for (uint i=0; i<max_size(); ++i) {
+//        if (this->update_flags & update_values)
+//            element_data_[i].shape_values_.resize(this->n_points_, vector<double>(this->n_dofs_*this->n_components_));
+//
+//        if (this->update_flags & update_gradients)
+//            element_data_[i].shape_gradients_.resize(this->n_points_, vector<arma::vec::fixed<spacedim> >(this->n_dofs_*this->n_components_));
+//    }
+//
+//    this->fv_ = this;
+//}
+//
+//
+//template<unsigned int spacedim>
+//void PatchFEValues_TEMP<spacedim>::initialize_in(
+//        Quadrature &q,
+//        unsigned int dim)
+//{
+//    for (uint i=0; i<max_size(); ++i)
+//        element_data_[i].elm_values_ = std::make_shared<ElementValues<spacedim> >(q, this->update_flags, dim);
+//}
+//
+//
+//template<unsigned int spacedim>
+//void PatchFEValues_TEMP<spacedim>::init_fe_val_vec()
+//{
+//    for (unsigned int i=0; i<this->fe_values_vec.size(); ++i)
+//        this->fe_values_vec[i].resize( this->max_size() );
+//}
+//
+//
+//template<unsigned int spacedim>
+//arma::vec::fixed<spacedim> PatchFEValues_TEMP<spacedim>::shape_grad_component(const unsigned int function_no,
+//                                                        const unsigned int point_no,
+//                                                        const unsigned int comp) const
+//{
+//    ASSERT_LT(function_no, this->n_dofs_);
+//    ASSERT_LT(point_no, this->n_points_);
+//    ASSERT_LT(comp, this->n_components_);
+//    return element_data_[patch_data_idx_].shape_gradients_[point_no][function_no*this->n_components_+comp];
+//}
 
 
 
@@ -703,11 +703,6 @@ template void FEValuesBase<FEValues<3>, 3>::initialize<1>(Quadrature&, FiniteEle
 template void FEValuesBase<FEValues<3>, 3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
 template void FEValuesBase<FEValues<3>, 3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
 
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::initialize<0>(Quadrature&, FiniteElement<0>&, UpdateFlags);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::initialize<1>(Quadrature&, FiniteElement<1>&, UpdateFlags);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::initialize<2>(Quadrature&, FiniteElement<2>&, UpdateFlags);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::initialize<3>(Quadrature&, FiniteElement<3>&, UpdateFlags);
-
 template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapScalar<FEValues<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
 template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapPiola<FEValues<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
 template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapContravariant<FEValues<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
@@ -715,26 +710,9 @@ template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapVector<FEVa
 template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapTensor<FEValues<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
 template void FEValuesBase<FEValues<3>, 3>::fill_data_specialized<MapSystem<FEValues<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
 
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapScalar<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapPiola<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapContravariant<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapVector<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapTensor<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-template void FEValuesBase<PatchFEValues_TEMP<3>, 3>::fill_data_specialized<MapSystem<PatchFEValues_TEMP<3>, 3>>(const ElementValues<3> &, const FEInternalData &);
-
-
-
-
-
-
-
-
-
-
 
 
 
 
 
 template class FEValues<3>;
-template class PatchFEValues_TEMP<3>;
