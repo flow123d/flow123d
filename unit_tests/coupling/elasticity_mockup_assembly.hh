@@ -1,28 +1,11 @@
-/*!
- *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it under
- * the terms of the GNU General Public License version 3 as published by the
- * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
- *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
- *
- *
- * @file    assembly_elasticity.hh
- * @brief
- */
-
-#ifndef ASSEMBLY_ELASTICITY_HH_
-#define ASSEMBLY_ELASTICITY_HH_
+#ifndef ELASTICITY_MOCKUP_ASSEMBLYA_HH_
+#define ELASTICITY_MOCKUP_ASSEMBLYA_HH_
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
-#include "mechanics/elasticity.hh"
+#include "elasticity_mockup.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
@@ -32,16 +15,16 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
+class Stiffness_FullAssembly : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename equation_data::EqFields EqFields;
+    typedef typename equation_data::EqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
+    static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
@@ -62,7 +45,7 @@ public:
     }
 
     /// Destructor.
-    ~StiffnessAssemblyElasticity() {}
+    ~Stiffness_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -84,7 +67,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
 
@@ -106,11 +89,11 @@ public:
                                                )*JxW_(p);
             }
         }
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        this->cell_integral_set_values();
     }
 
     /// Assembles boundary integral.
-    inline void boundary_side_integral(DHCellSide cell_side)
+    inline virtual void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -147,12 +130,12 @@ public:
             }
         }
 
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        this->boundary_side_integral_set_values();
     }
 
 
     /// Assembles between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline virtual void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -213,17 +196,32 @@ public:
             }
         }
 
-        eq_data_->ls->mat_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), &(local_matrix_[0]));
+        this->dimjoin_intergral_set_values();
     }
 
 
 
-private:
+protected:
+    inline virtual void cell_integral_set_values() {
+        this->eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+    }
+
+    inline virtual void boundary_side_integral_set_values() {
+        this->eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+    }
+
+    inline virtual void dimjoin_intergral_set_values() {
+        this->eq_data_->ls->mat_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), &(local_matrix_[0]));
+        this->eq_data_->ls->mat_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), n_dofs_ngh_[0]+n_dofs_ngh_[1], &(side_dof_indices_[0]), &(local_matrix_[0]));
+    }
+
+
     inline arma::mat33 mat_t(const arma::mat33 &m, const arma::vec3 &n)
     {
       arma::mat33 mt = m - m*arma::kron(n,n.t());
       return mt;
     }
+
 
 
     /// Data objects shared with Elasticity
@@ -233,13 +231,13 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                               ///< Number of dofs
-    unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
-    std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
-    vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
-    vector<LongIdx> side_dof_indices_;                                  ///< vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<LongIdx> side_dof_indices_;                        ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_;
@@ -259,16 +257,76 @@ private:
 
 
 template <unsigned int dim>
-class RhsAssemblyElasticity : public AssemblyBasePatch<dim>
+class Stiffness_ComputeLocal : public Stiffness_FullAssembly<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
-    static constexpr const char * name() { return "RhsAssemblyElasticity"; }
+    static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+
+    /// Destructor.
+    ~Stiffness_ComputeLocal() {}
+
+protected:
+    void cell_integral_set_values() override {}
+
+    void boundary_side_integral_set_values() override {}
+
+    void dimjoin_intergral_set_values() override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Stiffness_EvalFields : public Stiffness_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "StiffnessAssembly"; }
+
+    /// Constructor.
+    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+
+    /// Destructor.
+    ~Stiffness_EvalFields() {}
+
+    /// Assembles the cell (volume) integral into the stiffness matrix.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+
+    /// Assembles the fluxes on the boundary.
+    inline void boundary_side_integral(DHCellSide cell_side) override {}
+
+    /// Assembles the fluxes between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Rhs_FullAssembly : public AssemblyBasePatch<dim>
+{
+public:
+    typedef typename equation_data::EqFields EqFields;
+    typedef typename equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "RhsAssembly"; }
+
+    /// Constructor.
+    Rhs_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
@@ -293,7 +351,7 @@ public:
     }
 
     /// Destructor.
-    ~RhsAssemblyElasticity() {}
+    ~Rhs_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -337,17 +395,7 @@ public:
                                  -arma::dot(eq_fields_->initial_stress(p), gras_deform_(i,p))
                                 )*eq_fields_->cross_section(p)*JxW_(p);
         }
-        eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
-
-//         for (unsigned int i=0; i<n_dofs_; i++)
-//         {
-//             for (unsigned int k=0; k<qsize_; k++) // point range
-//                 local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_vals_[vec_view_].value(i,k)*JxW_(k);
-//
-//             local_source_balance_rhs[i] += local_rhs_[i];
-//         }
-//         balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices_, local_source_balance_vector);
-//         balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices_, local_source_balance_rhs);
+        this->cell_integral_set_values();
     }
 
     /// Assembles boundary integral.
@@ -426,12 +474,7 @@ public:
                             * JxW_side_(p);
             }
         }
-        eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
-
-
-//             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
-//             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
-		// ++loc_b;
+        this->boundary_side_integral_set_values();
     }
 
 
@@ -477,12 +520,25 @@ public:
             }
         }
 
-        eq_data_->ls->rhs_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], side_dof_indices_.data(), &(local_rhs_[0]));
+        this->dimjoin_intergral_set_values();
     }
 
 
 
-private:
+protected:
+    inline virtual void cell_integral_set_values() {
+        this->eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
+    }
+
+    inline virtual void boundary_side_integral_set_values() {
+        this->eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
+    }
+
+    inline virtual void dimjoin_intergral_set_values() {
+        this->eq_data_->ls->rhs_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], side_dof_indices_.data(), &(local_rhs_[0]));
+    }
+
+
     /// Data objects shared with Elasticity
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -490,9 +546,9 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int n_dofs_;                                               ///< Number of dofs
-    unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
-    std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    unsigned int n_dofs_sub_;                                 ///< Number of dofs (on lower dim element)
+    std::vector<unsigned int> n_dofs_ngh_;                    ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<LongIdx> side_dof_indices_;                                  ///< 2 items vector of DOF indices in neighbour calculation.
@@ -514,154 +570,29 @@ private:
 
 };
 
+
 template <unsigned int dim>
-class OutpuFieldsAssemblyElasticity : public AssemblyBasePatch<dim>
+class Rhs_ComputeLocal : public Rhs_FullAssembly<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::OutputEqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
-    static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
+    static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ),
-      gras_deform_( this->bulk_values().grad_vector_shape() ),
-      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
-      div_deform_( this->bulk_values().vector_divergence() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
-        this->used_fields_ += eq_fields_->cross_section;
-        this->used_fields_ += eq_fields_->lame_mu;
-        this->used_fields_ += eq_fields_->lame_lambda;
-        this->used_fields_ += eq_fields_->initial_stress;
-    }
+    Rhs_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : Rhs_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
 
     /// Destructor.
-    ~OutpuFieldsAssemblyElasticity() {}
+    ~Rhs_ComputeLocal() {}
 
-    /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
+protected:
+    void cell_integral_set_values() override {}
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+    void boundary_side_integral_set_values() override {}
 
-        n_dofs_ = this->n_dofs();
-
-        output_vec_ = eq_fields_->output_field_ptr->vec();
-        output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
-        output_von_mises_stress_vec_ = eq_fields_->output_von_mises_stress_ptr->vec();
-        output_mean_stress_vec_ = eq_fields_->output_mean_stress_ptr->vec();
-        output_cross_sec_vec_ = eq_fields_->output_cross_section_ptr->vec();
-        output_div_vec_ = eq_fields_->output_div_ptr->vec();
-    }
-
-
-    /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
-    {
-        if (cell.dim() != dim) return;
-        if (!cell.is_own()) return;
-        DHCellAccessor cell_tensor = cell.cell_with_other_dh(eq_data_->dh_tensor_.get());
-        DHCellAccessor cell_scalar = cell.cell_with_other_dh(eq_data_->dh_scalar_.get());
-
-        dof_indices_        = cell.get_loc_dof_indices();
-        dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
-        dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
-
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
-
-        arma::mat33 stress = eq_fields_->initial_stress(p);
-        double div = 0;
-        for (unsigned int i=0; i<n_dofs_; i++)
-        {
-            stress += (2*eq_fields_->lame_mu(p)*sym_grad_deform_(i,p) + eq_fields_->lame_lambda(p)*div_deform_(i,p)*arma::eye(3,3))
-                    * output_vec_.get(dof_indices_[i]);
-            div += div_deform_(i,p)*output_vec_.get(dof_indices_[i]);
-        }
-
-        arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
-        double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
-        double mean_stress = arma::trace(stress) / 3;
-        output_div_vec_.add(dof_indices_scalar_[0], div);
-
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<3; j++)
-                output_stress_vec_.add( dof_indices_tensor_[i*3+j], stress(i,j) );
-        output_von_mises_stress_vec_.set( dof_indices_scalar_[0], von_mises_stress );
-        output_mean_stress_vec_.set( dof_indices_scalar_[0], mean_stress );
-
-        output_cross_sec_vec_.add( dof_indices_scalar_[0], eq_fields_->cross_section(p) );
-    }
-
-
-    /// Assembles between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
-
-        normal_displacement_ = 0;
-        normal_stress_.zeros();
-
-        DHCellAccessor cell_higher_dim = neighb_side.cell();
-        DHCellAccessor cell_tensor = cell_lower_dim.cell_with_other_dh(eq_data_->dh_tensor_.get());
-        DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
-
-        dof_indices_ = cell_higher_dim.get_loc_dof_indices();
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
-        auto p_low = p_high.lower_dim(cell_lower_dim);
-
-        for (unsigned int i=0; i<n_dofs_; i++)
-        {
-            normal_displacement_ -= arma::dot(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high));
-            arma::mat33 grad = -arma::kron(deform_side_(i,p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
-            normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
-        }
-
-        LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
-        LocDofVec dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<3; j++)
-                output_stress_vec_.add( dof_indices_tensor_[i*3+j], normal_stress_(i,j) );
-        output_cross_sec_vec_.add( dof_indices_scalar_[0], normal_displacement_ );
-        output_div_vec_.add( dof_indices_scalar_[0], normal_displacement_ / eq_fields_->cross_section(p_low) );
-    }
-
-
-
-private:
-    /// Data objects shared with Elasticity
-    EqFields *eq_fields_;
-    EqData *eq_data_;
-
-    /// Sub field set contains fields used in calculation.
-    FieldSet used_fields_;
-
-    unsigned int n_dofs_;                                               ///< Number of dofs
-    LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
-    LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
-    LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
-
-    double normal_displacement_;                                        ///< Holds constributions of normal displacement.
-    arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
-
-    /// Following data members represent Element quantities and FE quantities
-    ElQ<Vector> normal_;
-    FeQ<Vector> deform_side_;
-    FeQ<Tensor> gras_deform_;
-    FeQ<Tensor> sym_grad_deform_;
-    FeQ<Scalar> div_deform_;
-
-    /// Data vectors of output fields (FieldFE).
-    VectorMPI output_vec_;
-    VectorMPI output_stress_vec_;
-    VectorMPI output_von_mises_stress_vec_;
-    VectorMPI output_mean_stress_vec_;
-    VectorMPI output_cross_sec_vec_;
-    VectorMPI output_div_vec_;
+    void dimjoin_intergral_set_values() override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -669,103 +600,30 @@ private:
 };
 
 
-
-/**
- * Container class for assembly of constraint matrix for contact condition.
- */
 template <unsigned int dim>
-class ConstraintAssemblyElasticity : public AssemblyBasePatch<dim>
+class Rhs_EvalFields : public Rhs_FullAssembly<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
-    static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
+    static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::coupling;
-        this->used_fields_ += eq_fields_->cross_section;
-        this->used_fields_ += eq_fields_->cross_section_min;
-    }
+    Rhs_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : Rhs_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
 
     /// Destructor.
-    ~ConstraintAssemblyElasticity() {}
+    ~Rhs_EvalFields() {}
 
-    /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    /// Assembles the cell (volume) integral into the stiffness matrix.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+    /// Assembles the fluxes on the boundary.
+    inline void boundary_side_integral(DHCellSide cell_side) override {}
 
-        n_dofs_ = this->n_dofs();
-        dof_indices_.resize(n_dofs_);
-        local_matrix_.resize(n_dofs_*n_dofs_);
-    }
-
-
-    /// Assembles between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
-        if (!cell_lower_dim.is_own()) return;
-        
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
-
-        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-        cell_higher_dim.get_dof_indices(dof_indices_);
-
-        for (unsigned int i=0; i<n_dofs_; i++)
-            local_matrix_[i] = 0;
-
-        // Assemble matrix and vector for contact conditions in the form B*x <= c,
-        // where B*x is the average jump of normal displacements and c is the average cross-section on element.
-        // Positive value means that the fracture closes.
-        double local_vector = 0;
-        for (auto p_high : this->coupling_points(neighb_side) )
-        {
-            auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
-
-            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*JxW_side_(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
-
-            for (unsigned int i=0; i<n_dofs_; i++)
-            {
-                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(deform_side_(i,p_high), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
-            }
-        }
-
-        int arow[1] = { eq_data_->constraint_idx[cell_lower_dim.elm_idx()] };
-        MatSetValues(eq_data_->constraint_matrix, 1, arow, n_dofs_, dof_indices_.data(), &(local_matrix_[0]), ADD_VALUES);
-        VecSetValue(eq_data_->constraint_vec, arow[0], local_vector, ADD_VALUES);
-    }
-
-
-
-private:
-
-
-    /// Data objects shared with Elasticity
-    EqFields *eq_fields_;
-    EqData *eq_data_;
-
-    /// Sub field set contains fields used in calculation.
-    FieldSet used_fields_;
-
-    unsigned int n_dofs_;                                               ///< Number of dofs
-    vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
-    vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
-
-    /// Following data members represent Element quantities and FE quantities
-    ElQ<Scalar> JxW_side_;
-    ElQ<Vector> normal_;
-    FeQ<Vector> deform_side_;
-
+    /// Assembles the fluxes between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -773,5 +631,5 @@ private:
 };
 
 
-#endif /* ASSEMBLY_ELASTICITY_HH_ */
+#endif /* ELASTICITY_MOCKUP_ASSEMBLYA_HH_ */
 
