@@ -381,6 +381,11 @@ public:
         if (ls!=nullptr) delete ls;
     }
 
+    /// Returns quad_order
+    inline unsigned int quad_order() const {
+        return 1;
+    }
+
     /// Create DOF handler objects
     void create_dh(Mesh * mesh, unsigned int fe_order) {
         ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
