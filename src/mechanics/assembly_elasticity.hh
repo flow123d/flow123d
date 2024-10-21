@@ -309,12 +309,8 @@ public:
         n_dofs_sub_ = fe_low->n_dofs();
         n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
         dof_indices_.resize(n_dofs_);
-        side_dof_indices_.resize(2);
-        side_dof_indices_[0].resize(n_dofs_sub_);  // index 0 = element with lower dimension,
-        side_dof_indices_[1].resize(n_dofs_);      // index 1 = side of element with higher dimension
-        local_rhs_.resize(n_dofs_);
-        local_rhs_ngh_.resize(2);
-        for (uint n=0; n<2; ++n) local_rhs_ngh_[n].resize(n_dofs_);
+        side_dof_indices_.resize(n_dofs_sub_ + n_dofs_);
+        local_rhs_.resize(2*n_dofs_);
     }
 
 
@@ -444,19 +440,24 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
+        unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i] = dof_indices_[i];
+        }
 
-		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+	    DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+        n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
+        for(unsigned int i=0; i<n_indices; ++i) {
+            side_dof_indices_[i+n_dofs_ngh_[0]] = dof_indices_[i];
+        }
 
 		// Element id's for testing if they belong to local partition.
 		bool own_element_id[2];
 		own_element_id[0] = cell_lower_dim.is_own();
 		own_element_id[1] = cell_higher_dim.is_own();
 
-        for (unsigned int n=0; n<2; ++n)
-            for (unsigned int i=0; i<n_dofs_; i++)
-                local_rhs_ngh_[n][i] = 0;
+        for (unsigned int i=0; i<2*n_dofs_; i++)
+            local_rhs_[i] = 0;
 
         // set transmission conditions
         for (auto p_high : this->coupling_points(neighb_side) )
@@ -471,13 +472,12 @@ public:
                 arma::vec3 vi = join_shape_i(p_high);
                 arma::vec3 vf = join_shape_i(p_low);
 
-                local_rhs_ngh_[is_high_i][join_shape_i.local_idx()] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
+                local_rhs_[join_shape_i.join_idx()] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
                         arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
             }
         }
 
-        for (unsigned int n=0; n<2; ++n)
-            eq_data_->ls->rhs_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), &(local_rhs_ngh_[n][0]));
+        eq_data_->ls->rhs_set_values(n_dofs_ngh_[0]+n_dofs_ngh_[1], side_dof_indices_.data(), &(local_rhs_[0]));
     }
 
 
@@ -495,9 +495,8 @@ private:
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
+    vector<LongIdx> side_dof_indices_;                                  ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
-    vector<vector<PetscScalar>> local_rhs_ngh_;                         ///< Auxiliary vectors for assemble ngh integral
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Scalar> JxW_;
