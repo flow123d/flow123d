@@ -114,14 +114,14 @@ class ProfilerHandler:
             'assembly_variant',
                              'assembly_class', 'tag', 'number_of_calls', 'integral_type', 'time', 'time_fraction', 'time_fraction_of_reminder']
         
-        self.assembly_tags = ['MassAssembly', 'StiffnessAssembly', 'SourcesAssembly']
+        #self.assembly_tags = ['MassAssembly', 'StiffnessAssembly', 'SourcesAssembly']
         
         # Dictionary holds pairs tag-method, these methods are called for selected tags during processing of profiler tree
         self.tag_method = {
             'full_mesh':                     ProcessTag.full_mesh, 
             'BaseMeshReader - mesh factory': ProcessTag.empty, 
             'ZERO-TIME STEP':                ProcessTag.empty}
-        self.tag_method.update({t: ProcessTag.assembly for t in self.assembly_tags})
+        #self.tag_method.update({t: ProcessTag.assembly for t in self.assembly_tags})
         
         # Create other data members using during profiler processing
         self.node_path = []
@@ -178,10 +178,15 @@ class ProfilerHandler:
         """
         Detect nodes for which we generate row  in df.
         """
+        tag = self.current_node['tag']
+        if tag.endswith('Assembly'):
+            #print(tag, self.current_node)
+            return ProcessTag.assembly(self.current_node, self, df) 
+
         try:
-            process_method = self.tag_method[self.current_node['tag']] 
+            process_method = self.tag_method[tag] 
         except KeyError:
-            if self.parent_node is not None and self.parent_node['tag'] in self.assembly_tags:
+            if self.parent_node is not None and self.parent_node['tag'].endswith('Assembly'):
                 process_method = ProcessTag.asm_child
             else:
                 return df
@@ -227,8 +232,10 @@ def unify_df_values(df):
     df['mesh_size'] = [size_map[s] for s in df['mesh_size']]
     
     # use name of assembly class without 'Assembly' postfix
-    asm_map = {'MassAssembly': 'Mass', 'StiffnessAssembly': 'Stiffness', 'SourcesAssembly': 'Sources', '': ''}
-    df['assembly_class'] = [asm_map[s] for s in df['assembly_class']]
+    #asm_map = {'MassAssembly': 'Mass', 'StiffnessAssembly': 'Stiffness', 'SourcesAssembly': 'Sources', '': ''}
+    
+    
+    df['assembly_class'] = [s[:-len('Assembly')] for s in df['assembly_class']]
     
     return df
 
