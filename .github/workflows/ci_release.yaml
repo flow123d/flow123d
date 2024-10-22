@@ -268,7 +268,7 @@ jobs:
           run: |
               echo reltag="${{ steps.vars.outputs.reltag }}"
         
-        - nam: Run integration tests
+        - name: Run integration tests
           run: | 
             release_tag="${{ steps.vars.outputs.reltag }}"
             config/build/run_with_build_dir.sh gnu release_tag ./runtest.sh tests/${{matrix.test_dir}} --keep-going --batch &
