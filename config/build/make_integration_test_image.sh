@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage:
-# ./make_integration_test_image.sh <environment> <image_source_name_base> <release_tag> [push]
+# ./make_integration_test_image.sh <environment> <release_tag> [push]
 
 # Stop on first error
 set -e
@@ -40,6 +40,7 @@ docker build --build-arg source_image=${source_image} \
 container_id=$(docker run -d ${target_image})
 
 docker cp ${flow_repo_host}/tests ${container_id}:/opt/flow123d/bin/tests
+docker cp ${flow_repo_host}/config/build/run_with_integration_tests.sh ${container_id}:/opt/flow123d/bin
 
 docker commit ${container_id} ${target_image}
 

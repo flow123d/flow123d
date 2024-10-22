@@ -256,12 +256,23 @@ jobs:
             - 50_mechanics
             
         steps:  
-        - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
-          with:
-            name: build_dir
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+            release_tag=`cat version`_${git_commit}
+
+            echo "reltag=${release_tag}" >> $GITHUB_OUTPUT
+
+        - name: Check vars
+          run: |
+              echo reltag="${{ steps.vars.outputs.reltag }}"
         
-        - run: config/build/run_with_build_dir.sh ci_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
+        - nam: Run integration tests
+          run: | 
+            release_tag="${{ steps.vars.outputs.reltag }}"
+            config/build/run_with_build_dir.sh gnu release_tag ./runtest.sh tests/${{matrix.test_dir}} --keep-going --batch &
+
         - name: Report
           run: |
             echo "Job result: ${{job.result}}"

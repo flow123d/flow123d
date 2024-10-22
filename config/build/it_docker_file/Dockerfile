@@ -19,7 +19,6 @@ COPY --from=source_image /root/.local /root/.local
 
 RUN sudo pip install vtk
 
-RUN sudo apt-get update
-RUN sudo apt-get install libgl1-mesa-glx
+RUN apt-get update && apt-get install -y libgl1-mesa-glx
 
 ENV PATH="/root/.local/bin:${flow_install_location}/bin:${PATH}"
