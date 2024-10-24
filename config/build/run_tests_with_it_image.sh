@@ -10,23 +10,15 @@ environment=$1; shift   # gnu | intel
 release_tag=$1; shift   # version	(4.0.3dev_cdd097)
 command_with_args=$@    # run the command with arguments
 
+
+flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+cd ${flow_repo_host}
+
 target_image="stepanmoc/it-${environment}:${release_tag}"
 
-if [[ "$(docker images -q ${target_image} 2> /dev/null)" == "" ]]; then
-    echo "Docker image '${target_image}' not found. Please build the image first."
-    exit 1
-fi
+container_id=$(docker run -d --tty=true --interactive=false -v ${flow_repo_host}/tests:/opt/flow123d/bin/tests ${target_image})
 
-container_id=$(docker run -d ${target_image})
-docker exec ${container_id} bash -c "cd /opt/flow123d/bin"
+docker exec ${container_id} bash -c "cd /opt/flow123d/bin && ${command_with_args}"
 
-for test_dir in "${test_dirs[@]}"; do
-  docker exec ${container_id} ${command_with_args}
-done
-
-# Wait for tests to finish
-wait
-
-# Stop and remove the container
 docker stop ${container_id}
 docker rm ${container_id}

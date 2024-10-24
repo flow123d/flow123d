@@ -39,11 +39,7 @@ docker build --build-arg source_image=${source_image} \
 
 container_id=$(docker run -d ${target_image})
 
-docker cp ${flow_repo_host}/tests ${container_id}:/opt/flow123d/bin/tests
-docker cp ${flow_repo_host}/config/build/run_tests_with_it_image.sh ${container_id}:/opt/flow123d/bin
-
 docker commit ${container_id} ${target_image}
-
 docker stop ${container_id}
 docker rm ${container_id}
 
