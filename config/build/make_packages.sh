@@ -127,7 +127,7 @@ ${dexec} pip install --user -r ${flow_repo_location}/config/build/requirements.t
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"
-target_tagged=flow123d/${target_image}:${release_tag}
+target_tagged=stepanmoc/${target_image}:${release_tag}
 
 tmp_install_dir=${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ/flow123d-base-${release_tag}-Linux
 
