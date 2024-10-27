@@ -126,97 +126,97 @@ jobs:
 
     # Run unit tests with release build, similar to the debug build
     unit_tests:
-      needs: [build]
-      runs-on: ubuntu-latest
-      name: Unit Test 
-      continue-on-error: True
-      outputs:
-          status: ${{job.status}}        
-      strategy:
-        matrix:
-          test_dir:
-          - coupling
-          - fem
-          - fields
-          - flow
-          - input
-          - intersection
-          - la
-          - mesh
-          - output
-          - scripts
-          - system
-          - test_scripts
-          - tools
-      steps:  
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: build_dir
-      - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Unit Test 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test_dir:
+            - coupling
+            - fem
+            - fields
+            - flow
+            - input
+            - intersection
+            - la
+            - mesh
+            - output
+            - scripts
+            - system
+            - test_scripts
+            - tools
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
   
     benchmarks:
-      needs: [build]
-      runs-on: ubuntu-latest
-      name: Benchmarks 
-      continue-on-error: True
-      outputs:
-          status: ${{job.status}}        
-      strategy:
-        matrix:
-          test:
-          # unit_test_subdir,   target in the subdir,   processing notebook in src/python/notebooks
-          - {dir: coupling, target: dg_asm, notebook: dg_asm_plots }
-          #- {dir: fem, target: fem_tools}
-      steps:  
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: build_dir
-      - name: Set variables
-        id: vars
-        run: |
-          git_commit=`git rev-parse --short=6 HEAD`
-
-          # create build_dir variable
-          git_branch=`git rev-parse --abbrev-ref HEAD`
-          build_dir=build-${git_branch}
-  
-          # can not use environment variables in github actions
-          echo "dev_version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT 
-          echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
-          echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
-      - name: Check vars
-        run: |
-            echo git_commit="${{ steps.vars.outputs.git_commit }}"
-            echo builddir="${{ steps.vars.outputs.builddir }}"
-      - name: Run Benchmark
-        run: |              
-            config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
-            config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{matrix.test.dir}}/${{matrix.test.target}} 
-            ls build_tree/unit_tests/${{matrix.test.dir}}    
-
-      - name: "Upload Artifacts: profiler results"
-        uses: actions/upload-artifact@v3
-        with:     
-          name: ${{matrix.test.target}}
-          path: |
-              build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
-
-      - name: Run postprocessing notebook
-        run: |
-          cd src/python/notebooks
-          pip install nbconvert jupyter papermill -r requirements.txt
-          git_branch=`git rev-parse --abbrev-ref HEAD`
-          build_dir=build-${git_branch}
-          papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
-          jupyter nbconvert --to html --execute ${{matrix.test.notebook}}_out.ipynb --output-dir public            
-      - name: GitHub Pages action
-        uses: peaceiris/actions-gh-pages@v3.6.1
-        with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./src/python/notebooks/public   
-            commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Benchmarks 
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}        
+        strategy:
+          matrix:
+            test:
+            # unit_test_subdir,   target in the subdir,   processing notebook in src/python/notebooks
+            - {dir: coupling, target: dg_asm, notebook: dg_asm_plots }
+            #- {dir: fem, target: fem_tools}
+        steps:  
+        - uses: actions/checkout@v3
+        - uses: actions/download-artifact@v3
+          with:
+            name: build_dir
+        - name: Set variables
+          id: vars
+          run: |
+            git_commit=`git rev-parse --short=6 HEAD`
+          
+            # create build_dir variable
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+          
+            # can not use environment variables in github actions
+            echo "dev_version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT 
+            echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+        - name: Check vars
+          run: |
+              echo git_commit="${{ steps.vars.outputs.git_commit }}"
+              echo builddir="${{ steps.vars.outputs.builddir }}"
+        - name: Run Benchmark
+          run: |              
+              config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
+              config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{matrix.test.dir}}/${{matrix.test.target}} 
+              ls build_tree/unit_tests/${{matrix.test.dir}}    
+          
+        - name: "Upload Artifacts: profiler results"
+          uses: actions/upload-artifact@v3
+          with:     
+            name: ${{matrix.test.target}}
+            path: |
+                build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
+          
+        - name: Run postprocessing notebook
+          run: |
+            cd src/python/notebooks
+            pip install nbconvert jupyter papermill -r requirements.txt
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+            papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
+            jupyter nbconvert --to html --execute ${{matrix.test.notebook}}_out.ipynb --output-dir public            
+        - name: GitHub Pages action
+          uses: peaceiris/actions-gh-pages@v3.6.1
+          with:
+              github_token: ${{ secrets.GITHUB_TOKEN }}
+              publish_dir: ./src/python/notebooks/public   
+              commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
 
     integration_tests:
         needs: [packages]
