@@ -18,7 +18,6 @@ target_image="stepanmoc/it-${environment}:${release_tag}"
 
 container_id=$(docker run -d --tty=true --interactive=false -v ${flow_repo_host}/tests:/opt/flow123d/bin/tests ${target_image})
 
-docker exec ${container_id} bash -c "cd /opt/flow123d/bin && ${command_with_args}"
+trap 'docker stop ${container_id}; docker rm ${container_id}' EXIT
 
-docker stop ${container_id}
-docker rm ${container_id}
+docker exec ${container_id} bash -c "cd /opt/flow123d/bin && ${command_with_args}"
