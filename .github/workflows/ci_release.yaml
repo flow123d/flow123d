@@ -305,7 +305,7 @@ jobs:
                 echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
-                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
+                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
                 
                 # get the status of all jobs
                 statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
