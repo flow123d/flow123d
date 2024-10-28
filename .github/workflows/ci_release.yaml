@@ -256,9 +256,6 @@ jobs:
             
         steps:  
         - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
-          with:
-            name: build_dir
 
         - name: Set variables
           id: vars
@@ -271,11 +268,11 @@ jobs:
         - name: Check vars
           run: |
               echo reltag="${{ steps.vars.outputs.reltag }}"
-        
+            
         - name: Run integration tests
           run: | 
             release_tag="${{ steps.vars.outputs.reltag }}"
-            config/build/run_test_with_it_image.sh ${environment} ${release_tag} ./runtest tests/${{matrix.test_dir}} --keep-going --batch &
+            config/build/run_tests_with_it_image.sh ${environment} ${release_tag} ./runtest tests/${{matrix.test_dir}} --keep-going --batch
 
         - name: Report
           run: |
