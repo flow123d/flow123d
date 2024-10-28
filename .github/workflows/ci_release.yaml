@@ -283,10 +283,8 @@ jobs:
     conclusion:
         if: ${{always()}}
         runs-on: ubuntu-latest
-        name: Workflow conclusion from all job results 
-        
-        #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [unit_tests, integration_tests]
+        name: Workflow conclusion from all job results   
+        needs: [packages, unit_tests, integration_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:
@@ -307,7 +305,7 @@ jobs:
                 echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
-                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${run_id}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
+                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name startswith("Integration"))  | .conclusion')
                 
                 # get the status of all jobs
                 statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
