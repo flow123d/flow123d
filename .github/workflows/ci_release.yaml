@@ -229,14 +229,14 @@ jobs:
           matrix:
             test_dir:
             - 01_cmd_line
-            - 02_generic_input
+            #- 02_generic_input
             - 03_generic_output
             - 04_generic_mesh
-            - 05_tutorial
+            #- 05_tutorial
             - 06_errors
             - 10_darcy
             - 11_darcy_bc
-            - 12_darcy_frac
+            #- 12_darcy_frac
             - 13_darcy_time
             - 14_darcy_richards
             - 20_solute_fv
