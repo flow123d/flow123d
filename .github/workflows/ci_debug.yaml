@@ -4,7 +4,7 @@ on:
     push:
         branches: 
         - "**"
-    
+
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
         inputs:
