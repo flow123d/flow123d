@@ -3,9 +3,29 @@ name: CI build, tests and alpha release of images and packages
 # Triggered on push to specified branches.
 
 on: 
+    push:
+        branches:
+        - master
+        - JB_shared_system
+        - JB_release_tests        
+        - 3.9.1
+        - DF_variant_benchmark_asm
+        - DF_asm_optimization
+
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
     workflow_dispatch:
+        inputs:
+            environment:
+                description: Build environment [gnu, intel].
+                type: choice
+                options:
+                    - gnu
+                    - intel
+                required: false
+                default: gnu
+
+
 
 env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
@@ -117,12 +137,12 @@ jobs:
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
       
-        #- name: SCP upload to Share
-        #  run: |
-        #    release_tag="${{ steps.vars.outputs.reltag }}"
-        #    publish_dir="${{ steps.vars.outputs.pubdir }}"
-        #    config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
-        #    ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
+        - name: SCP upload to Share
+          run: |
+            release_tag="${{ steps.vars.outputs.reltag }}"
+            publish_dir="${{ steps.vars.outputs.pubdir }}"
+            config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
     # Run unit tests with release build, similar to the debug build
     unit_tests:
@@ -154,7 +174,7 @@ jobs:
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
-  
+
     benchmarks:
         needs: [build]
         runs-on: ubuntu-latest
@@ -177,11 +197,11 @@ jobs:
           id: vars
           run: |
             git_commit=`git rev-parse --short=6 HEAD`
-          
+
             # create build_dir variable
             git_branch=`git rev-parse --abbrev-ref HEAD`
             build_dir=build-${git_branch}
-          
+
             # can not use environment variables in github actions
             echo "dev_version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT 
             echo "git_commit=${git_commit}" >> $GITHUB_OUTPUT
@@ -195,14 +215,14 @@ jobs:
               config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test.dir}} -k ${{matrix.test.target}}_bench_bin
               config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{matrix.test.dir}}/${{matrix.test.target}} 
               ls build_tree/unit_tests/${{matrix.test.dir}}    
-          
+
         - name: "Upload Artifacts: profiler results"
           uses: actions/upload-artifact@v3
           with:     
             name: ${{matrix.test.target}}
             path: |
                 build_tree/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json
-          
+
         - name: Run postprocessing notebook
           run: |
             cd src/python/notebooks
@@ -229,14 +249,14 @@ jobs:
           matrix:
             test_dir:
             - 01_cmd_line
-            #- 02_generic_input
+            - 02_generic_input
             - 03_generic_output
             - 04_generic_mesh
-            #- 05_tutorial
+            - 05_tutorial
             - 06_errors
             - 10_darcy
             - 11_darcy_bc
-            #- 12_darcy_frac
+            - 12_darcy_frac
             - 13_darcy_time
             - 14_darcy_richards
             - 20_solute_fv
@@ -253,7 +273,7 @@ jobs:
             - 34_sorption_dg
             - 40_heat
             - 50_mechanics
-            
+
         steps:  
         - uses: actions/checkout@v3
 
@@ -268,7 +288,7 @@ jobs:
         - name: Check vars
           run: |
               echo reltag="${{ steps.vars.outputs.reltag }}"
-            
+
         - name: Run integration tests
           run: | 
             release_tag="${{ steps.vars.outputs.reltag }}"
@@ -279,7 +299,6 @@ jobs:
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
 
-            
     conclusion:
         if: ${{always()}}
         runs-on: ubuntu-latest
@@ -305,10 +324,10 @@ jobs:
                 echo "run_attempt: ${{ github.run_attempt }}"
                 
                 # get the status of jobs selected by name:
-                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
                 
                 # get the status of all jobs
-                statuses=$(gh api "repos/MocStepan/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
+                statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
 
                 # check if any job has failed
                 if echo "$statuses" | grep -q failure; then

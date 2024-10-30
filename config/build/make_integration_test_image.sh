@@ -21,8 +21,8 @@ fi
 flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 cd ${flow_repo_host}
 
-source_image="stepanmoc/ci-${environment}:${release_tag}"
-target_image="stepanmoc/it-${environment}:${release_tag}"
+source_image="flow123d/ci-${environment}:${release_tag}"
+target_image="flow123d/it-${environment}:${release_tag}"
 
 if [[ "$(docker images -q ${target_image} 2> /dev/null)" != "" ]]; then
     docker rmi -f ${target_image}
@@ -36,12 +36,6 @@ docker build --build-arg source_image=${source_image} \
              --build-arg build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ") \
              --tag ${target_image} \
              ${flow_repo_host}/config/build/it_docker_file
-
-container_id=$(docker run -d ${target_image})
-
-docker commit ${container_id} ${target_image}
-docker stop ${container_id}
-docker rm ${container_id}
 
 ${docker_command} ${target_image}
 
