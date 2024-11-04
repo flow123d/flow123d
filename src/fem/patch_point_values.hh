@@ -451,8 +451,7 @@ public:
         std::vector< std::vector<std::string> > op_names =
         {
             { "el_coords", "jacobian", "inv_jac", "jac_det", "pt_coords", "weights", "JxW", "", "", "", "", "" },
-            { "el_coords", "el_jac", "el_inv_jac", "side_coords", "side_jac", "side_jac_det", "exp_el_coords", "exp_el_jac", "exp_el_inv_jac",
-              "exp_side_coords", "exp_side_jac", "exp_side_jac_det", "pt_coords", "weights", "JxW", "normal_vec", "", "", "", "", "" }
+            { "el_coords", "el_jac", "el_inv_jac", "side_coords", "side_jac", "side_jac_det", "pt_coords", "weights", "JxW", "normal_vec", "", "", "", "", "" }
         };
         stream << std::setfill(' ') << " Operation" << setw(12) << "" << "Shape" << setw(2) << ""
                 << "n DOFs" << setw(2) << "" << "Input operations" << endl;
