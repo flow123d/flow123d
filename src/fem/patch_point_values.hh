@@ -33,6 +33,7 @@
 
 template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int spacedim> class ElOp;
+template <class ValueType> class ElQ;
 template<unsigned int dim> class BulkValues;
 template<unsigned int dim> class SideValues;
 using Scalar = double;
@@ -349,7 +350,48 @@ public:
     }
 
     /**
-     * Returns scalar output value.
+     * Returns scalar output value of data stored by elements.
+     *
+     * @param op_idx      Index of operation in operations vector
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Scalar scalar_elem_value(uint op_idx, uint point_idx) const {
+        return operations_[op_idx].result_matrix()(0)( int_table_(1)(points_map_[point_idx]) );
+    }
+
+    /**
+     * Returns vector output value of data stored by elements.
+     *
+     * @param op_idx      Index of operation in operations vector
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Vector vector_elem_value(uint op_idx, uint point_idx) const {
+        Vector val;
+        const auto &op_matrix = operations_[op_idx].result_matrix();
+        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+        for (uint i=0; i<3; ++i)
+            val(i) = op_matrix(i)(op_matrix_idx);
+        return val;
+    }
+
+    /**
+     * Returns tensor output value of data stored by elements.
+     *
+     * @param op_idx      Index of operation in operations vector
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Tensor tensor_elem_value(uint op_idx, uint point_idx) const {
+        Tensor val;
+        const auto &op_matrix = operations_[op_idx].result_matrix();
+        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+        for (uint i=0; i<3; ++i)
+            for (uint j=0; j<3; ++j)
+                val(i,j) = op_matrix(i,j)(op_matrix_idx);
+        return val;
+    }
+
+    /**
+     * Returns scalar output value on point.
      *
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
@@ -360,7 +402,7 @@ public:
     }
 
     /**
-     * Returns vector output value.
+     * Returns vector output value on point.
      *
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
@@ -376,7 +418,7 @@ public:
     }
 
     /**
-     * Returns tensor output value.
+     * Returns tensor output value on point.
      *
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
@@ -503,6 +545,8 @@ protected:
 
     friend class PatchFEValues<spacedim>;
     friend class ElOp<spacedim>;
+    template <class ValueType>
+    friend class ElQ;
     template<unsigned int dim>
     friend class BulkValues;
     template<unsigned int dim>
@@ -944,15 +988,15 @@ struct side_reinit {
             norm_vec(i) = A.norm();
         }
 
-        size_t points_per_side = el_table(4).data_size() / el_table(3).data_size();
-        size_t n_points = el_table(3).data_size();
+//        size_t points_per_side = el_table(4).data_size() / el_table(3).data_size();
+//        size_t n_points = el_table(3).data_size();
         for (uint i=0; i<3; ++i) {
             normal_value(i) = normal_value(i) / norm_vec;
-            ArenaVec<double> expand_vec( normal_value(i).data_size() * points_per_side, normal_value(i).arena() );
-            for (uint j=0; j<expand_vec.data_size(); ++j) {
-                expand_vec(j) = normal_value(i)(j % n_points);
-            }
-            normal_value(i) = expand_vec;
+//            ArenaVec<double> expand_vec( normal_value(i).data_size() * points_per_side, normal_value(i).arena() );
+//            for (uint j=0; j<expand_vec.data_size(); ++j) {
+//                expand_vec(j) = normal_value(i)(j % n_points);
+//            }
+//            normal_value(i) = expand_vec;
         }
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
@@ -1219,7 +1263,7 @@ namespace FeSide {
 
             /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSideJacDet} );
 
-            /*auto &normal_vec =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_normal_vec<dim>, {SideOps::opElInvJac} );
+            /*auto &normal_vec =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_normal_vec<dim>, {SideOps::opElInvJac}, OpSizeType::elemOp );
         }
     };
 

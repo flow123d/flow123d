@@ -315,12 +315,12 @@ public:
     ElQ<Scalar> det_1d_;
     ElQ<Scalar> det_2d_;
     ElQ<Scalar> det_3d_;
-    ElQ<Scalar> jxw_1d_;
-    ElQ<Scalar> jxw_2d_;
-    ElQ<Scalar> jxw_3d_;
-    ElQ<Scalar> jxw_side_1d_;
-    ElQ<Scalar> jxw_side_2d_;
-    ElQ<Scalar> jxw_side_3d_;
+    FeQ<Scalar> jxw_1d_;
+    FeQ<Scalar> jxw_2d_;
+    FeQ<Scalar> jxw_3d_;
+    FeQ<Scalar> jxw_side_1d_;
+    FeQ<Scalar> jxw_side_2d_;
+    FeQ<Scalar> jxw_side_3d_;
     ElQ<Vector> normal_vec_1d_;
     ElQ<Vector> normal_vec_2d_;
     ElQ<Vector> normal_vec_3d_;
@@ -379,7 +379,7 @@ public:
         if (print_tables) {
             std::stringstream ss1, ss2;
             patch_fe_values_.print_data_tables(ss1, true, false, false);
-            std::cout << ss1.str();
+            WarningOut() << ss1.str();
             patch_fe_values_.print_operations(ss2);
             WarningOut() << ss2.str();
         }
@@ -388,6 +388,7 @@ public:
             ElementAccessor<3> elm = dh_cell.elm();
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
             double jxw = 0.0, jxw_ref = 0.0;
+            double det = 0.0, det_ref = 0.0;
             double scalar_shape = 0.0, scalar_shape_ref = 0.0;
             arma::vec3 grad_scalar_dof0("0 0 0");
             arma::vec3 grad_scalar_dof0_ref("0 0 0");
@@ -397,19 +398,23 @@ public:
             case 1:
                 fe_values_[0].reinit(elm);
                 jxw = jxw_1d_(p);
-                scalar_shape = scalar_shape_1d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_1d_(0, p);
+                det = det_1d_(p);
+                scalar_shape = scalar_shape_1d_(p, 0);
+            	grad_scalar_dof0 = grad_scalar_shape_1d_(p, 0);
                 jxw_ref = fe_values_[0].JxW(0);
+                det_ref = fe_values_[0].determinant(0);
                 scalar_shape_ref = fe_values_[0].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[0].shape_grad(0, 0);
                 break;
             case 2:
                 fe_values_[1].reinit(elm);
                 jxw = jxw_2d_(p);
-                scalar_shape = scalar_shape_2d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_2d_(0, p);
-            	grad_scalar_dof1 = grad_scalar_shape_2d_(1, p);
+                det = det_2d_(p);
+                scalar_shape = scalar_shape_2d_(p, 0);
+            	grad_scalar_dof0 = grad_scalar_shape_2d_(p, 0);
+            	grad_scalar_dof1 = grad_scalar_shape_2d_(p, 1);
                 jxw_ref = fe_values_[1].JxW(0);
+                det_ref = fe_values_[1].determinant(0);
                 scalar_shape_ref = fe_values_[1].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[1].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[1].shape_grad(1, 0);
@@ -417,16 +422,19 @@ public:
             case 3:
                 fe_values_[2].reinit(elm);
                 jxw = jxw_3d_(p);
-                scalar_shape = scalar_shape_3d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_3d_(0, p);
-            	grad_scalar_dof1 = grad_scalar_shape_3d_(1, p);
+                det = det_3d_(p);
+                scalar_shape = scalar_shape_3d_(p, 0);
+            	grad_scalar_dof0 = grad_scalar_shape_3d_(p, 0);
+            	grad_scalar_dof1 = grad_scalar_shape_3d_(p, 1);
                 jxw_ref = fe_values_[2].JxW(0);
+                det_ref = fe_values_[2].determinant(0);
                 scalar_shape_ref = fe_values_[2].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[2].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[2].shape_grad(1, 0);
                 break;
             }
             EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_DOUBLE_EQ( det, det_ref );
             EXPECT_DOUBLE_EQ( scalar_shape, scalar_shape_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof0, grad_scalar_dof0_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof1, grad_scalar_dof1_ref );
@@ -448,8 +456,8 @@ public:
             case 1:
                 jxw = jxw_side_1d_(p);
                 normal_vec = normal_vec_1d_(p);
-                scalar_shape = scalar_shape_side_1d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_1d_(0, p);
+                scalar_shape = scalar_shape_side_1d_(p, 0);
+            	grad_scalar = grad_scalar_shape_side_1d_(p, 0);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
@@ -459,8 +467,8 @@ public:
             case 2:
             	jxw = jxw_side_2d_(p);
                 normal_vec = normal_vec_2d_(p);
-                scalar_shape = scalar_shape_side_2d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_2d_(0, p);
+                scalar_shape = scalar_shape_side_2d_(p, 0);
+            	grad_scalar = grad_scalar_shape_side_2d_(p, 0);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
@@ -470,8 +478,8 @@ public:
             case 3:
             	jxw = jxw_side_3d_(p);
                 normal_vec = normal_vec_3d_(p);
-                scalar_shape = scalar_shape_side_3d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_3d_(0, p);
+                scalar_shape = scalar_shape_side_3d_(p, 0);
+            	grad_scalar = grad_scalar_shape_side_3d_(p, 0);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
