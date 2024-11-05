@@ -27,9 +27,6 @@
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector
-#include "fem/element_values.hh"              // for ElementValues
-#include "fem/fe_values.hh"                   // for FEValuesBase
-#include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "fem/fe_system.hh"                   // for FESystem
 #include "fem/eigen_tools.hh"
 #include "fem/patch_point_values.hh"
