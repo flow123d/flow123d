@@ -50,7 +50,7 @@
   * FiniteElement::update_each() determine the values required by
  * the FiniteElement on each cell. The same function exists in Mapping.
  *
- * FEValuesBase::update_each() is used to compute the union
+ * FEValues::update_each() is used to compute the union
  * of all values to be computed ever. It does this by first adding to
  * the flags set by the user all flags added by the FiniteElement.
  * This new set of flags is then given to the Mapping and all flags
