@@ -9,8 +9,11 @@ on:
         - JB_shared_system
         - JB_release_tests        
         - 3.9.1
-        - DF_patch_fevalues_dg
         - DF_patch_fe_data_tables
+        - DF_patch_fe_mechanics
+        - DF_variant_benchmark_asm
+        - DF_asm_optimization
+        - DF_mechanic_bench
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
@@ -178,6 +181,7 @@ jobs:
             test:
             # unit_test_subdir,   target in the subdir,   processing notebook in src/python/notebooks
             - {dir: coupling, target: dg_asm, notebook: dg_asm_plots }
+            - {dir: coupling, target: elasticity_asm, notebook: dg_asm_plots }
             #- {dir: fem, target: fem_tools}
         steps:  
         - uses: actions/checkout@v3
