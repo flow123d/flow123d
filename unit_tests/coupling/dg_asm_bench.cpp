@@ -12,7 +12,7 @@
 #include <flow_gtest_mpi.hh>
 
 #include "DG_mockup.impl.hh"
-#include "DG_mockup_meshes.hh"
+#include "bench_meshes_handler.hh"
 
 
 /****************************************************************************************
@@ -52,6 +52,10 @@ TEST_F(DGMockupTest, simple_asm) {
           - !FieldFormula
             value: "[ [ 0.01*X[0], 0.2*X[1], 1 ], [ 0.2*X[1], 0.01*X[0], 2 ], [ 1, 2, 3 ] ]"
     )YAML";
+
+    BenchMeshesHandler mesh_handler;
+    std::vector<std::string> meshes_table = mesh_handler.get_mesh_names("dg_asm");
+    std::vector<std::string> meshes_sizes = mesh_handler.get_mesh_sizes();
 
     std::vector< std::shared_ptr<CodePoint> > cp_vec;
     std::vector< std::shared_ptr<CodePoint> > cp_vec_in;

@@ -218,7 +218,7 @@ void FEValues<spacedim>::allocate(
 
     if (update_flags & update_gradients)
         shape_gradients.resize(n_points_, vector<arma::vec::fixed<spacedim> >(n_dofs_*n_components_));
-    
+
     views_cache_.initialize(*this, _fe);
 }
 
@@ -553,7 +553,7 @@ void FEValues<spacedim>::reinit(const Side &cell_side)
 {
     ASSERT_EQ( dim_, cell_side.dim()+1 );
     
-    if (!elm_values->side().is_valid() || 
+    if (!elm_values->side().is_valid() ||
         elm_values->side() != cell_side)
     {
         elm_values->reinit(cell_side);
