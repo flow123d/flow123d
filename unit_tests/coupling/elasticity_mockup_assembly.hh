@@ -84,8 +84,8 @@ public:
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_deform_(j,p), sym_grad_deform_(i,p))
-                                                + eq_fields_->lame_lambda(p)*div_deform_(j,p)*div_deform_(i,p)
+                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_deform_(p,j), sym_grad_deform_(p,i))
+                                                + eq_fields_->lame_lambda(p)*div_deform_(p,j)*div_deform_(p,i)
                                                )*JxW_(p);
             }
         }
@@ -116,7 +116,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(deform_side_(i,p),deform_side_(j,p)) * JxW_side_(p);
+                                arma::dot(deform_side_(p,i),deform_side_(p,j)) * JxW_side_(p);
             }
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
@@ -125,8 +125,8 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-                                arma::dot(deform_side_(i,p), normal_(p)) *
-                                arma::dot(deform_side_(j,p), normal_(p)) * JxW_side_(p);
+                                arma::dot(deform_side_(p,i), normal_(p)) *
+                                arma::dot(deform_side_(p,j), normal_(p)) * JxW_side_(p);
             }
         }
 
@@ -240,8 +240,8 @@ protected:
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
 
     /// Following data members represent Element quantities and FE quantities
-    ElQ<Scalar> JxW_;
-    ElQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_;
+    FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQ<Vector> deform_side_;
     FeQ<Tensor> gras_deform_;
@@ -390,9 +390,9 @@ public:
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
-                                 arma::dot(eq_fields_->load(p), deform_(i,p))
-                                 -eq_fields_->potential_load(p)*div_deform_(i,p)
-                                 -arma::dot(eq_fields_->initial_stress(p), gras_deform_(i,p))
+                                 arma::dot(eq_fields_->load(p), deform_(p,i))
+                                 -eq_fields_->potential_load(p)*div_deform_(p,i)
+                                 -arma::dot(eq_fields_->initial_stress(p), gras_deform_(p,i))
                                 )*eq_fields_->cross_section(p)*JxW_(p);
         }
         this->cell_integral_set_values();
@@ -421,7 +421,7 @@ public:
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
                         arma::dot(( eq_fields_->initial_stress(p) * normal_(p)),
-                                    deform_side_(i,p)) *
+                                    deform_side_(p,i)) *
                         JxW_side_(p);
         }
 
@@ -433,7 +433,7 @@ public:
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
-					        arma::dot(eq_fields_->bc_displacement(p_bdr), deform_side_(i,p)) *
+					        arma::dot(eq_fields_->bc_displacement(p_bdr), deform_side_(p,i)) *
 					        JxW_side_(p);
             }
         }
@@ -446,7 +446,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
                             arma::dot(eq_fields_->bc_displacement(p_bdr), normal_(p)) *
-                            arma::dot(deform_side_(i,p), normal_(p)) *
+                            arma::dot(deform_side_(p,i), normal_(p)) *
                             JxW_side_(p);
             }
         }
@@ -457,7 +457,7 @@ public:
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(deform_side_(i,p), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * normal_(p)) *
+                            arma::dot(deform_side_(p,i), eq_fields_->bc_traction(p_bdr) + eq_fields_->ref_potential_load(p) * normal_(p)) *
                             JxW_side_(p);
             }
         }
@@ -469,7 +469,7 @@ public:
                 for (unsigned int i=0; i<n_dofs_; i++)
                     // stress is multiplied by inward normal to obtain traction
                     local_rhs_[i] += eq_fields_->cross_section(p) *
-                            arma::dot(deform_side_(i,p), -eq_fields_->bc_stress(p_bdr)*normal_(p)
+                            arma::dot(deform_side_(p,i), -eq_fields_->bc_stress(p_bdr)*normal_(p)
                             + eq_fields_->ref_potential_load(p) * normal_(p))
                             * JxW_side_(p);
             }
@@ -555,8 +555,8 @@ protected:
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
 
     /// Following data members represent Element quantities and FE quantities
-    ElQ<Scalar> JxW_;
-    ElQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_;
+    FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQ<Vector> deform_;
     FeQ<Vector> deform_side_;
