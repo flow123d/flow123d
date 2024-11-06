@@ -166,11 +166,6 @@ public:
      */
 	void zero_time_step() override;
 
-    /**
-     * @brief Computes the solution in one time instant.
-     */
-	void update_solution() override;
-    
     /// Pass to next time and update equation data.
     void next_time();
     

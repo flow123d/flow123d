@@ -545,21 +545,6 @@ void Elasticity::preallocate()
 
 
 
-
-void Elasticity::update_solution()
-{
-	START_TIMER("DG-ONE STEP");
-
-    next_time();
-	solve_linear_system();
-
-    calculate_cumulative_balance();
-    
-    output_data();
-
-    END_TIMER("DG-ONE STEP");
-}
-
 void Elasticity::next_time()
 {
     time_->next_time();
