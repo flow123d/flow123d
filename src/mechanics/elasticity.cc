@@ -314,7 +314,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
-	START_TIMER(name_);
+	START_TIMER("Mechanics constructor");
 
     eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
@@ -342,7 +342,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     // create finite element structures and distribute DOFs
     eq_data_->create_dh(mesh_, 1);
     DebugOut().fmt("Mechanics: solution size {}\n", eq_data_->dh_->n_global_dofs());
-    
+    END_TIMER("Mechanics constructor");
 }
 
 
@@ -500,7 +500,7 @@ void Elasticity::update_output_fields()
 
 void Elasticity::zero_time_step()
 {
-	START_TIMER(name_);
+	START_TIMER("Mechanics zero time step");
 	eq_fields_->mark_input_times( *time_ );
 	eq_fields_->set_time(time_->step(), LimitSide::right);
 	std::stringstream ss; // print warning message with table of uninitialized fields
@@ -527,6 +527,7 @@ void Elasticity::zero_time_step()
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     output_data();
+    END_TIMER("Mechanics zero time step");
 }
 
 
@@ -570,6 +571,7 @@ void Elasticity::next_time()
 
 void Elasticity::solve_linear_system()
 {
+    START_TIMER("Mechanics step");
     START_TIMER("data reinit");
     eq_fields_->set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
@@ -601,6 +603,7 @@ void Elasticity::solve_linear_system()
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     END_TIMER("solve");
+    END_TIMER("Mechanics step");
 }
 
 
@@ -610,7 +613,7 @@ void Elasticity::solve_linear_system()
 
 void Elasticity::output_data()
 {
-    START_TIMER("MECH-OUTPUT");
+    START_TIMER("Mechanics output");
 
     // gather the solution from all processors
     eq_fields_->output_fields.set_time( this->time().step(), LimitSide::left);
@@ -618,12 +621,12 @@ void Elasticity::output_data()
     update_output_fields();
     eq_fields_->output_fields.output(this->time().step());
 
-//     START_TIMER("MECH-balance");
+//     START_TIMER("Mechanics-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
 //     balance_->output();
-//     END_TIMER("MECH-balance");
+//     END_TIMER("Mechanics-balance");
 
-    END_TIMER("MECH-OUTPUT");
+    END_TIMER("Mechanics output");
 }
 
 
