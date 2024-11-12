@@ -30,42 +30,7 @@ EvalPoints::EvalPoints()
 {}
 
 template <unsigned int dim>
-std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
-{
-    return get_bulk_integral<dim>(quad);
-}
-
-template <unsigned int dim>
-std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
-{
-    return get_edge_integral<dim>(quad);;
-}
-
-template <unsigned int dim>
-std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &quad) {
-    ASSERT_EQ(dim, quad.dim()+1);
-
-    std::shared_ptr<BulkIntegral> bulk_integral = this->get_bulk_integral<dim-1>(quad);
-    DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
-    std::shared_ptr<EdgeIntegral> edge_integral = this->get_edge_integral<dim>(quad);
-    DebugOut() << "coupling edge subset" << edge_integral->get_subset_idx();
-    return std::make_shared<CouplingIntegral>(edge_integral, bulk_integral);
-}
-
-template <unsigned int dim>
-std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
-    ASSERT_EQ(dim, quad.dim()+1);
-
-    std::shared_ptr<BulkIntegral> bulk_integral = this->get_bulk_integral<dim-1>(quad);
-    DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
-            << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
-    std::shared_ptr<EdgeIntegral> edge_integral = this->get_edge_integral<dim>(quad);
-    DebugOut() << "boundary edge subset" << edge_integral->get_subset_idx();
-    return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
-}
-
-template <unsigned int dim>
-std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral(const Quadrature &quad) {
+std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim());
 
     if (bulk_integrals_[dim] == nullptr) {
@@ -78,7 +43,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral(const Quadrature &qu
 }
 
 template <>
-std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<0>(const Quadrature &quad)
+std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
 {
     ASSERT_EQ(0, quad.dim());
 
@@ -91,7 +56,7 @@ std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<0>(const Quadrature 
 }
 
 template <unsigned int dim>
-std::shared_ptr<EdgeIntegral> EvalPoints::get_edge_integral(const Quadrature &quad) {
+std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
 
     if (edge_integrals_[dim-1] == nullptr) {
@@ -104,6 +69,29 @@ std::shared_ptr<EdgeIntegral> EvalPoints::get_edge_integral(const Quadrature &qu
         this->set_max_size();
     }
     return edge_integrals_[dim-1];
+}
+
+template <unsigned int dim>
+std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &quad) {
+    ASSERT_EQ(dim, quad.dim()+1);
+
+    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
+    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    DebugOut() << "coupling edge subset" << edge_integral->get_subset_idx();
+    return std::make_shared<CouplingIntegral>(edge_integral, bulk_integral);
+}
+
+template <unsigned int dim>
+std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
+    ASSERT_EQ(dim, quad.dim()+1);
+
+    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
+    DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
+            << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
+    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
+    DebugOut() << "boundary edge subset" << edge_integral->get_subset_idx();
+    return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
 }
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
@@ -147,13 +135,6 @@ template std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling<3>(const Qua
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<1>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<2>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Quadrature &);
-template std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<0>(const Quadrature &);
-template std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<1>(const Quadrature &);
-template std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<2>(const Quadrature &);
-template std::shared_ptr<BulkIntegral> EvalPoints::get_bulk_integral<3>(const Quadrature &);
-template std::shared_ptr<EdgeIntegral> EvalPoints::get_edge_integral<1>(const Quadrature &);
-template std::shared_ptr<EdgeIntegral> EvalPoints::get_edge_integral<2>(const Quadrature &);
-template std::shared_ptr<EdgeIntegral> EvalPoints::get_edge_integral<3>(const Quadrature &);
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);
