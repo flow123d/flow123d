@@ -329,6 +329,7 @@ void ProfilerTest::test_memory_profiler() {
     const int ARR_SIZE = 1000;
     const int LOOP_CNT = 1000;
     Profiler::instance();
+    Profiler::set_memory_monitoring(true);
     EXPECT_TRUE(Profiler::get_global_memory_monitoring());
 
     {
@@ -383,6 +384,7 @@ void ProfilerTest::test_petsc_memory() {
     EXPECT_EQ( ierr, 0 );
 
     Profiler::instance();
+    Profiler::set_memory_monitoring(true);
     EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
     {
         START_TIMER("A");
@@ -432,6 +434,7 @@ void ProfilerTest::test_memory_propagation(){
     int allocated_D = 0;
 
     Profiler::instance();
+    Profiler::set_memory_monitoring(true);
     EXPECT_TRUE(Profiler::get_global_memory_monitoring());
     {
         allocated_whole = MALLOC;
@@ -483,6 +486,7 @@ void ProfilerTest::test_petsc_memory_monitor() {
     EXPECT_EQ( ierr, 0 );
 
     Profiler::instance();
+    Profiler::set_memory_monitoring(true);
     EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
     {
         PetscInt size = 10000;
@@ -514,6 +518,7 @@ void ProfilerTest::test_multiple_instances() {
         Profiler::uninitialize();
         EXPECT_FALSE(Profiler::get_global_memory_monitoring());
         Profiler::instance();
+        Profiler::set_memory_monitoring(true);
         EXPECT_TRUE(Profiler::get_global_memory_monitoring());
         EXPECT_EQ(MALLOC, 0);
         {
@@ -530,7 +535,9 @@ void ProfilerTest::test_multiple_instances() {
 TEST_F(ProfilerTest, test_propagate_values) {test_propagate_values();}
 void ProfilerTest::test_propagate_values() {
     int allocated = 0;
-    Profiler::instance(); {
+    Profiler::instance();
+    Profiler::set_memory_monitoring(true);
+    {
             START_TIMER("A");
                 START_TIMER("B");
                     START_TIMER("C");
