@@ -665,7 +665,7 @@ public:
      * @param global_monitor whether to turn global monitoring on or off
      * @param petsc_monitor petsc monitoring
      */
-    void static set_memory_monitoring(const bool global_monitor, const bool petsc_monitor);
+    void static set_memory_monitoring(const bool global_monitor);
     
     /**
      * Public getter to memory monitoring
@@ -912,6 +912,8 @@ public:
     double calibration_time() {
         return -2;
     }
+    void set_memory_monitoring(bool)
+    {}
 private:
     Profiler() {}
 };

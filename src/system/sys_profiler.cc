@@ -311,7 +311,7 @@ Profiler::Profiler()
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-    set_memory_monitoring(true, true);
+    set_memory_monitoring(false);
 #ifdef FLOW123D_DEBUG_PROFILER
     MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
     timers_.push_back( Timer(main_cp, 0) );
@@ -644,7 +644,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     
     // stop monitoring memory
     bool temp_memory_monitoring = global_monitor_memory;
-    set_memory_monitoring(false, petsc_monitor_memory);
+    set_memory_monitoring(false);
 
     chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
     MPI_Comm_size(comm, &mpi_size);
@@ -711,7 +711,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     	}
     }
     // restore memory monitoring
-    set_memory_monitoring(temp_memory_monitoring, petsc_monitor_memory);
+    set_memory_monitoring(temp_memory_monitoring);
 }
 
 
@@ -848,15 +848,15 @@ void Profiler::uninitialize() {
     	ASSERT_PERMANENT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         Profiler::instance()->stop_timer(0);
-        set_memory_monitoring(false, false);
+        set_memory_monitoring(false);
         Profiler::instance(true);
     }
 }
 bool Profiler::global_monitor_memory = false;
-bool Profiler::petsc_monitor_memory = true;
-void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
+bool Profiler::petsc_monitor_memory = false;
+void Profiler::set_memory_monitoring(const bool global_monitor) {
     global_monitor_memory = global_monitor;
-    petsc_monitor_memory = petsc_monitor;
+    petsc_monitor_memory = global_monitor;
 }
 
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {
