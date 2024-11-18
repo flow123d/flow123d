@@ -115,7 +115,8 @@ Timer::Timer(const CodePoint &cp, int parent)
   max_allocated_(0),
   current_allocated_(0),
   alloc_called(0),
-  dealloc_called(0)
+  dealloc_called(0),
+  turn_off_memory_monitoring_(false)
 #ifdef FLOW123D_HAVE_PETSC
 , petsc_start_memory(0),
   petsc_end_memory (0),
@@ -235,6 +236,10 @@ bool Timer::stop(bool forced) {
     }
 #endif // FLOW123D_HAVE_PETSC
     
+    if (turn_off_memory_monitoring_) {
+        Profiler::set_memory_monitoring(false);
+    }
+
     if (forced) start_count=1;
 
     if (start_count == 1) {
@@ -483,6 +488,14 @@ void Profiler::stop_timer(int timer_index) {
     
 }
 
+
+void Profiler::start_memory_monitoring() {
+    if ( !get_global_memory_monitoring() ) {
+        set_memory_monitoring(true);
+        timers_[actual_node].set_turn_off_memory_monitoring();
+        // add check of flag to stop_timer before line 463
+    }
+}
 
 
 void Profiler::add_calls(unsigned int n_calls) {

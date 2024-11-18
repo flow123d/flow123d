@@ -41,6 +41,7 @@ class ProfilerTest: public testing::Test {
         void test_multiple_instances();
         void test_propagate_values();
         void test_calibrate();
+        void test_memory_switch();
         // void test_inconsistent_tree();
 };
 
@@ -571,6 +572,32 @@ void ProfilerTest::test_calibrate() {
 
     EXPECT_GT(Profiler::instance()->calibration_time(), 0);
 
+    Profiler::uninitialize();
+}
+
+TEST_F(ProfilerTest, test_memory_switch) {test_memory_switch();}
+void ProfilerTest::test_memory_switch() {
+    Profiler::instance();
+    {
+        START_TIMER("A");
+            START_TIMER("B");
+                EXPECT_FALSE( Profiler::get_global_memory_monitoring() );
+                START_MEMORY_MONITORING;
+                EXPECT_TRUE( Profiler::get_global_memory_monitoring() );
+
+                START_TIMER("C");
+                    START_MEMORY_MONITORING;
+                    START_TIMER("D");
+                        std::cout << " ... inner timer tag" << std::endl;
+                    END_TIMER("D");
+                END_TIMER("C");
+                EXPECT_TRUE( Profiler::get_global_memory_monitoring() );
+
+            END_TIMER("B");
+            EXPECT_FALSE( Profiler::get_global_memory_monitoring() );
+
+        END_TIMER("A");
+    }
     Profiler::uninitialize();
 }
 

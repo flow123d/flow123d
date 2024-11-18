@@ -150,6 +150,17 @@ using namespace std;
 #endif
 
 /**
+ * \def START_MEMORY_MONITORING
+ *
+ * @brief Allow to use monitoring only in part of code.
+ */
+#ifdef FLOW123D_DEBUG_PROFILER
+#define START_MEMORY_MONITORING Profiler::instance()->start_memory_monitoring()
+#else
+#define START_MEMORY_MONITORING
+#endif
+
+/**
  * \def END_START_TIMER(tag)
  *
  * Ends current timer and starts the new one with given tag.  Again this expands into two lines, see ATTENTION in previous macro.
@@ -342,6 +353,13 @@ public:
      */
     void add_child(int child_index, const Timer &child);
 
+    /**
+     * Set memory monitoring flag to true
+     */
+    inline void set_turn_off_memory_monitoring() {
+        turn_off_memory_monitoring_ = true;
+    }
+
 
 protected:
     
@@ -428,6 +446,10 @@ protected:
      * Number of times delete/delete[] operator was used in this scope
      */
     int dealloc_called;
+    /**
+     * True if memory monitoring was switched on by macro START_MEMORY_MONITORING.
+     */
+    bool turn_off_memory_monitoring_;
     
     #ifdef FLOW123D_HAVE_PETSC
     /**
@@ -565,6 +587,13 @@ public:
      * Negative @p timer_index means close @p actual_node
      */
     void stop_timer(int timer_index = -1);
+
+    /**
+     * Start memory monitoring if it is switched off.
+     *
+     * Memory monitoring is automatically turn off at the end of actual tag.
+     */
+    void start_memory_monitoring();
 
     /**
      * Adds @p n_calls - 1 to the total number of calls of the current timer. Minus one, since one call is counted when
