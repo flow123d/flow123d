@@ -97,6 +97,7 @@ public:
         if (cell.dim() != dim) return;
 
         ElementAccessor<3> elm_acc = cell.elm();
+        if (elm_acc->n_neighs_vb() > 0) return;
 
         fe_values_.reinit(elm_acc);
         cell.get_dof_indices(dof_indices_);
@@ -113,8 +114,7 @@ public:
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(vec_view_->sym_grad(j,k), vec_view_->sym_grad(i,k))
-                                                + eq_fields_->lame_lambda(p)*vec_view_->divergence(j,k)*vec_view_->divergence(i,k)
+                                                arma::dot(eq_fields_->stress_tensor(p,vec_view_->sym_grad(j,k)), vec_view_->sym_grad(i,k))
                                                )*fe_values_.JxW(k);
             }
             k++;
@@ -187,6 +187,8 @@ public:
 		own_element_id[0] = cell_lower_dim.is_own();
 		own_element_id[1] = cell_higher_dim.is_own();
 
+		unsigned int n_neighs = cell_sub->n_neighs_vb();
+
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int i=0; i<n_dofs_; i++)
                 for (unsigned int m=0; m<2; ++m)
@@ -209,22 +211,27 @@ public:
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                    arma::mat33 semi_gv = gvft + n_neighs/eq_fields_->cross_section(p_low)*arma::kron(vf-vi,nv.t());
+                    arma::mat33 semi_sym_gv = 0.5*(semi_gv + semi_gv.t());
 
                     for (int m=0; m<2; m++)
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
-                            arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
-                            double divuft = (m==0) ? arma::trace(guft) : 0;
+                            arma::mat33 guft = (m==0) ? vec_view_sub_->grad(j,k) : arma::zeros(3,3);
+                            arma::mat33 semi_gu = guft + n_neighs/eq_fields_->cross_section(p_low)*arma::kron(uf-ui,nv.t());
+                            arma::mat33 semi_sym_gu = 0.5*(semi_gu + semi_gu.t());
+                            arma::mat33 stress = eq_fields_->stress_tensor(p_low,semi_sym_gu);
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
-                                    eq_fields_->fracture_sigma(p_low)*(
-                                     arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
-                                     )
-                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
+                                    (
+                                     eq_fields_->fracture_sigma(p_low)*eq_fields_->cross_section(p_low)*arma::dot(semi_sym_gv, stress) / n_neighs
+
+                                     // This term corrects the tangential part of the above product so that there is no
+                                     // dependence on fracture_sigma.
+                                     // TODO: Fracture_sigma should be possibly removed and replaced by anisotropic elasticity.
+                                     + (1-eq_fields_->fracture_sigma(p_low))*eq_fields_->cross_section(p_low)
+                                       *arma::dot(0.5*(gvft+gvft.t()), eq_fields_->stress_tensor(p_low,0.5*(guft+guft.t()))) / n_neighs
                                     )*fe_values_sub_.JxW(k);
                         }
 
@@ -632,7 +639,7 @@ public:
         double div = 0;
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            stress += (2*eq_fields_->lame_mu(p)*vec_view_->sym_grad(i,0) + eq_fields_->lame_lambda(p)*vec_view_->divergence(i,0)*arma::eye(3,3))
+            stress += eq_fields_->stress_tensor(p, vec_view_->sym_grad(i,0))
                     * output_vec_.get(dof_indices_[i]);
             div += vec_view_->divergence(i,0)*output_vec_.get(dof_indices_[i]);
         }
@@ -673,7 +680,7 @@ public:
         {
             normal_displacement_ -= arma::dot(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0));
             arma::mat33 grad = -arma::kron(vec_view_side_->value(i,0)*output_vec_.get(dof_indices_[i]), fsv_.normal_vector(0).t()) / eq_fields_->cross_section(p_low);
-            normal_stress_ += eq_fields_->lame_mu(p_low)*(grad+grad.t()) + eq_fields_->lame_lambda(p_low)*arma::trace(grad)*arma::eye(3,3);
+            normal_stress_ += eq_fields_->stress_tensor(p_low, 0.5*(grad+grad.t()));
         }
 
         LocDofVec dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
