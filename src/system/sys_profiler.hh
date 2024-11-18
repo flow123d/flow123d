@@ -912,7 +912,7 @@ public:
     double calibration_time() {
         return -2;
     }
-    void set_memory_monitoring(bool)
+    static void set_memory_monitoring(bool)
     {}
 private:
     Profiler() {}
