@@ -508,7 +508,7 @@ void Application::init(int argc, char ** argv) {
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 
     if (use_profiler & memory_monitoring)
-        Profiler::set_memory_monitoring(true);
+        Profiler::set_memory_monitoring(memory_monitoring);
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 

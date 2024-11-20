@@ -354,10 +354,12 @@ public:
     void add_child(int child_index, const Timer &child);
 
     /**
-     * Set memory monitoring flag to true
+     * Start PETSC memory monitoring in actual time frame
      */
-    inline void set_turn_off_memory_monitoring() {
-        turn_off_memory_monitoring_ = true;
+    void start_memory_monitoring();
+
+    inline bool memory_monitor_on() const {
+        return memory_monitor_on_;
     }
 
 
@@ -449,7 +451,7 @@ protected:
     /**
      * True if memory monitoring was switched on by macro START_MEMORY_MONITORING.
      */
-    bool turn_off_memory_monitoring_;
+    bool memory_monitor_on_;
     
     #ifdef FLOW123D_HAVE_PETSC
     /**
@@ -704,14 +706,6 @@ public:
     	return global_monitor_memory;
     }
     
-    /**
-     * Public getter to petsc memory monitoring
-     * @return memory monitoring status
-     */
-    inline bool static get_petsc_memory_monitoring() {
-    	return petsc_monitor_memory;
-    }
-
     /**
      * Run calibration frame "UNIT PAYLOAD".
      * That should be about 100x timer resolution.

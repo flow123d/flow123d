@@ -386,9 +386,10 @@ void ProfilerTest::test_petsc_memory() {
 
     Profiler::instance();
     Profiler::set_memory_monitoring(true);
-    EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
+    EXPECT_TRUE(Profiler::get_global_memory_monitoring());
     {
         START_TIMER("A");
+        START_MEMORY_MONITORING;
             PetscInt size = 100*1000;
             PetscScalar value = 0.1;
             Vec tmp_vector;
@@ -398,6 +399,7 @@ void ProfilerTest::test_petsc_memory() {
         END_TIMER("A");
 
         START_TIMER("A");
+        START_MEMORY_MONITORING;
             // allocated memory MUST be greater or equal to size * size of double
 
             // TODO: It is not clear why this fails on CI with Jenkins
@@ -488,7 +490,7 @@ void ProfilerTest::test_petsc_memory_monitor() {
 
     Profiler::instance();
     Profiler::set_memory_monitoring(true);
-    EXPECT_TRUE(Profiler::get_petsc_memory_monitoring());
+    EXPECT_TRUE(Profiler::get_global_memory_monitoring());
     {
         PetscInt size = 10000;
         START_TIMER("A");
@@ -572,32 +574,6 @@ void ProfilerTest::test_calibrate() {
 
     EXPECT_GT(Profiler::instance()->calibration_time(), 0);
 
-    Profiler::uninitialize();
-}
-
-TEST_F(ProfilerTest, test_memory_switch) {test_memory_switch();}
-void ProfilerTest::test_memory_switch() {
-    Profiler::instance();
-    {
-        START_TIMER("A");
-            START_TIMER("B");
-                EXPECT_FALSE( Profiler::get_global_memory_monitoring() );
-                START_MEMORY_MONITORING;
-                EXPECT_TRUE( Profiler::get_global_memory_monitoring() );
-
-                START_TIMER("C");
-                    START_MEMORY_MONITORING;
-                    START_TIMER("D");
-                        std::cout << " ... inner timer tag" << std::endl;
-                    END_TIMER("D");
-                END_TIMER("C");
-                EXPECT_TRUE( Profiler::get_global_memory_monitoring() );
-
-            END_TIMER("B");
-            EXPECT_FALSE( Profiler::get_global_memory_monitoring() );
-
-        END_TIMER("A");
-    }
     Profiler::uninitialize();
 }
 
