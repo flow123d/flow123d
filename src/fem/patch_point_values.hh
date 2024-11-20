@@ -305,7 +305,7 @@ public:
      */
     ElOp<spacedim> &make_new_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, OpSizeType size_type = pointOp) {
     	ElOp<spacedim> op_accessor(this->dim_, shape, reinit_f, size_type, input_ops_vec);
-    	row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp(), size_type);
+    	//row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp(), size_type);
     	operations_.push_back(op_accessor);
     	return operations_[operations_.size()-1];
     }
@@ -332,7 +332,7 @@ public:
     ElOp<spacedim> &make_fe_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs,
             OpSizeType size_type = pointOp) {
     	ElOp<spacedim> op_accessor(this->dim_, shape, reinit_f, size_type, input_ops_vec, n_dofs);
-    	row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp() * n_dofs, size_type);
+    	//row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp() * n_dofs, size_type);
     	operations_.push_back(op_accessor);
     	return operations_[operations_.size()-1];
     }
@@ -539,7 +539,7 @@ protected:
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to ElOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to ElOp::result_ and int_table_ tables
-    std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
+    //std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
     AssemblyArena &asm_arena_;          ///< Reference to global assembly arena of PatchFeValues
     PatchArena *patch_arena_;           ///< Pointer to global patch arena of PatchFeValues
 
