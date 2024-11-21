@@ -69,7 +69,7 @@ public:
                     for (auto p : this->bulk_points(element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
-                                conc_shape_(p,j)*conc_shape_(p,i)*JxW_(p);
+                                conc_shape_.shape(j)(p)*conc_shape_.shape(i)(p)*JxW_(p);
                     }
                 }
             }
@@ -80,8 +80,8 @@ public:
                 local_retardation_balance_vector_[i] = 0;
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_(p,i)*JxW_(p);
-                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_(p,i)*JxW_(p);
+                    local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_.shape(i)(p)*JxW_(p);
+                    local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
                 }
             }
 
@@ -109,7 +109,7 @@ public:
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
         FeQ<Scalar> JxW_;
-        FeQ<Scalar> conc_shape_;
+        FeQArray<Scalar> conc_shape_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -336,13 +336,13 @@ public:
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*conc_grad_(p,i);
-                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), conc_grad_(p,i));
+                    arma::vec3 Kt_grad_i = eq_fields_->diffusion_coef[sbi](p).t()*conc_grad_.shape(i)(p);
+                    double ad_dot_grad_i = arma::dot(eq_fields_->advection_coef[sbi](p), conc_grad_.shape(i)(p));
 
                     for (unsigned int j=0; j<ndofs_; j++)
-                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, conc_grad_(p,j))
-                                                  -conc_shape_(p,j)*ad_dot_grad_i
-                                                  +eq_fields_->sources_sigma_out[sbi](p)*conc_shape_(p,j)*conc_shape_(p,i))*JxW_(p);
+                        local_matrix_[i*ndofs_+j] += (arma::dot(Kt_grad_i, conc_grad_.shape(j)(p))
+                                                  -conc_shape_.shape(j)(p)*ad_dot_grad_i
+                                                  +eq_fields_->sources_sigma_out[sbi](p)*conc_shape_.shape(j)(p)*conc_shape_.shape(i)(p))*JxW_(p);
                 }
             }
             this->cell_integral_set_values(sbi);
@@ -412,12 +412,12 @@ public:
                     for (unsigned int j=0; j<ndofs_; j++)
                     {
                         // flux due to advection and penalty
-                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_side_(p,i)*conc_shape_side_(p,j);
+                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_side_.shape(i)(p)*conc_shape_side_.shape(j)(p);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_side_(p,j),normal_(p))*conc_shape_side_(p,i)
-                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_side_(p,i),normal_(p))*conc_shape_side_(p,j)*eq_data_->dg_variant
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_side_.shape(j)(p),normal_(p))*conc_shape_side_.shape(i)(p)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_side_.shape(i)(p),normal_(p))*conc_shape_side_.shape(j)(p)*eq_data_->dg_variant
                                     )*JxW_side_(p);
                     }
                 }
@@ -472,7 +472,7 @@ public:
                 for (auto p : this->edge_points(edge_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
-                        averages[s1][k*ndofs_+i] = conc_shape_side_(p,i)*0.5;
+                        averages[s1][k*ndofs_+i] = conc_shape_side_.shape(i)(p)*0.5;
                     k++;
                 }
                 s1++;
@@ -543,10 +543,10 @@ public:
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<ndofs_; i++)
                         {
-                            jumps[0][k*ndofs_+i] = conc_shape_side_(p1,i);
-                            jumps[1][k*ndofs_+i] = - conc_shape_side_(p2,i);
-                            waverages[0][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_side_(p1,i),nv)*omega[0];
-                            waverages[1][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_side_(p2,i),nv)*omega[1];
+                            jumps[0][k*ndofs_+i] = conc_shape_side_.shape(i)(p1);
+                            jumps[1][k*ndofs_+i] = - conc_shape_side_.shape(i)(p2);
+                            waverages[0][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p1)*conc_grad_side_.shape(i)(p1),nv)*omega[0];
+                            waverages[1][k*ndofs_+i] = arma::dot(eq_fields_->diffusion_coef[sbi](p2)*conc_grad_side_.shape(i)(p2),nv)*omega[1];
                         }
                         k++;
                     }
@@ -704,10 +704,10 @@ protected:
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQ<Scalar> conc_shape_;
-    FeQ<Scalar> conc_shape_side_;
-    FeQ<Vector> conc_grad_;
-    FeQ<Vector> conc_grad_side_;
+    FeQArray<Scalar> conc_shape_;
+    FeQArray<Scalar> conc_shape_side_;
+    FeQArray<Vector> conc_grad_;
+    FeQArray<Vector> conc_grad_side_;
     Range< JoinShapeAccessor<Scalar> > conc_join_shape_;
 
     template < template<IntDim...> class DimAssembly>
@@ -844,7 +844,7 @@ public:
                 source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*JxW_(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
-                    local_rhs_[i] += source*conc_shape_(p,i);
+                    local_rhs_[i] += source*conc_shape_.shape(i)(p);
             }
             this->cell_integral_set_values(sbi);
 
@@ -852,7 +852,7 @@ public:
             {
                 for (auto p : this->bulk_points(element_patch_idx) )
                 {
-                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*conc_shape_(p,i)*JxW_(p);
+                    local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
                 }
 
                 local_source_balance_rhs_[i] += local_rhs_[i];
@@ -882,7 +882,7 @@ protected:
     vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
 
     FeQ<Scalar> JxW_;
-    FeQ<Scalar> conc_shape_;
+    FeQArray<Scalar> conc_shape_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

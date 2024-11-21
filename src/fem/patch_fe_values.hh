@@ -71,18 +71,52 @@ public:
     FeQ() = delete;
 
     // Class similar to current FeView
-    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int op_idx, unsigned int n_dofs = 1)
+    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int op_idx)
+    : patch_point_vals_(patch_point_vals), op_idx_(op_idx), i_shape_fn_idx_(0) {
+    }
+
+    /// Constructor used only in FeQArray::shape()
+    FeQ(PatchPointValues<3> &patch_point_vals, unsigned int op_idx, unsigned int i_shape_fn_idx)
+    : patch_point_vals_(patch_point_vals), op_idx_(op_idx), i_shape_fn_idx_(i_shape_fn_idx) {
+    }
+
+
+    ValueType operator()(const BulkPoint &point) const;
+
+    ValueType operator()(const SidePoint &point) const;
+
+    // Implementation for EdgePoint, SidePoint, and JoinPoint shoud have a common implementation
+    // resolving to side values
+
+private:
+    PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
+    unsigned int op_idx_;                   ///< Index of operation in patch_point_vals_.operations vector
+    unsigned int i_shape_fn_idx_;           ///< Index of shape function
+};
+
+
+template <class ValueType>
+class FeQArray {
+public:
+    /// Forbidden default constructor
+    FeQArray() = delete;
+
+    // Class similar to current FeView
+    FeQArray(PatchPointValues<3> &patch_point_vals, unsigned int op_idx, unsigned int n_dofs)
     : patch_point_vals_(patch_point_vals), op_idx_(op_idx), n_dofs_(n_dofs) {
         ASSERT_GT(n_dofs, 0).error("Invalid number of DOFs.\n");
     }
 
 
-    ValueType operator()(const BulkPoint &point, unsigned int shape_idx = 0) const;
+    FeQ<ValueType> shape(unsigned int i_shape_fn_idx) const {
+        ASSERT_LT(i_shape_fn_idx, n_dofs_);
+        return FeQ<ValueType>(patch_point_vals_, op_idx_, i_shape_fn_idx);
+    }
 
-    ValueType operator()(const SidePoint &point, unsigned int shape_idx = 0) const;
-
-    // Implementation for EdgePoint, SidePoint, and JoinPoint shoud have a common implementation
-    // resolving to side values
+    /// Return number of DOFs
+    inline unsigned int n_dofs() const {
+        return n_dofs_;
+    }
 
 private:
     PatchPointValues<3> &patch_point_vals_; ///< Reference to PatchPointValues
@@ -351,7 +385,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
+    inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
@@ -370,10 +404,10 @@ public:
         patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opScalarShape, scalar_shape_op_idx);
 
-        return FeQ<Scalar>(patch_point_vals_, scalar_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, scalar_shape_op_idx, fe_component->n_dofs());
     }
 
-    inline FeQ<Vector> vector_shape(uint component_idx = 0)
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
@@ -418,10 +452,10 @@ public:
         }
         patch_point_vals_.set_fe_op(FEOps::opVectorShape, vector_shape_op_idx);
 
-        return FeQ<Vector>(patch_point_vals_, vector_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, vector_shape_op_idx, fe_component->n_dofs());
     }
 
-//    inline FeQ<Tensor> tensor_shape(uint component_idx = 0)
+//    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
 //    {}
 
     /**
@@ -430,7 +464,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
+    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -444,7 +478,7 @@ public:
         patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opGradScalarShape, scalar_shape_grads_op_idx);
 
-        return FeQ<Vector>(patch_point_vals_, scalar_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, scalar_shape_grads_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -453,7 +487,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Tensor> grad_vector_shape(uint component_idx=0)
+    inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
@@ -502,7 +536,7 @@ public:
         }
         patch_point_vals_.set_fe_op(FEOps::opGradVectorShape, vector_shape_grads_op_idx);
 
-        return FeQ<Tensor>(patch_point_vals_, vector_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, vector_shape_grads_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -511,7 +545,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Tensor> vector_sym_grad(uint component_idx=0)
+    inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -525,7 +559,7 @@ public:
         patch_point_vals_.make_fe_op({3,3}, lambda_vector_sym_grad, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorSymGrad, vector_sym_grad_op_idx);
 
-        return FeQ<Tensor>(patch_point_vals_, vector_sym_grad_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, vector_sym_grad_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -534,7 +568,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Scalar> vector_divergence(uint component_idx=0)
+    inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -548,7 +582,7 @@ public:
         patch_point_vals_.make_fe_op({1}, lambda_vector_divergence, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorDivergence, vector_divergence_op_idx);
 
-        return FeQ<Scalar>(patch_point_vals_, vector_divergence_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, vector_divergence_op_idx, fe_component->n_dofs());
     }
 
 private:
@@ -597,7 +631,7 @@ public:
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
-    inline FeQ<Scalar> scalar_shape(uint component_idx = 0)
+    inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
@@ -620,11 +654,11 @@ public:
         patch_point_vals_.make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opScalarShape, scalar_shape_op_idx);
 
-        return FeQ<Scalar>(patch_point_vals_, scalar_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, scalar_shape_op_idx, fe_component->n_dofs());
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
-    inline FeQ<Vector> vector_shape(uint component_idx = 0)
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
@@ -673,11 +707,11 @@ public:
             default:
                 ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
         }
-        return FeQ<Vector>(patch_point_vals_, vector_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, vector_shape_op_idx, fe_component->n_dofs());
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
-    inline FeQ<Vector> grad_scalar_shape(uint component_idx=0)
+    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -691,7 +725,7 @@ public:
         patch_point_vals_.make_fe_op({3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opGradScalarShape, scalar_shape_grads_op_idx);
 
-        return FeQ<Vector>(patch_point_vals_, scalar_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, scalar_shape_grads_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -700,7 +734,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Tensor> grad_vector_shape(uint component_idx=0)
+    inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
@@ -749,7 +783,7 @@ public:
         }
         patch_point_vals_.set_fe_op(FEOps::opGradVectorShape, vector_shape_grads_op_idx);
 
-        return FeQ<Tensor>(patch_point_vals_, vector_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, vector_shape_grads_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -758,7 +792,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Tensor> vector_sym_grad(uint component_idx=0)
+    inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -772,7 +806,7 @@ public:
         patch_point_vals_.make_fe_op({3,3}, lambda_vector_sym_grad, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorSymGrad, vector_sym_grad_op_idx);
 
-        return FeQ<Tensor>(patch_point_vals_, vector_sym_grad_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, vector_sym_grad_op_idx, fe_component->n_dofs());
     }
 
     /**
@@ -781,7 +815,7 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-    inline FeQ<Scalar> vector_divergence(uint component_idx=0)
+    inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
@@ -795,7 +829,7 @@ public:
         patch_point_vals_.make_fe_op({1}, lambda_vector_divergence, {grad_vector_op_idx}, fe_component->n_dofs());
         patch_point_vals_.set_fe_op(FEOps::opVectorDivergence, vector_divergence_op_idx);
 
-        return FeQ<Scalar>(patch_point_vals_, vector_divergence_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, vector_divergence_op_idx, fe_component->n_dofs());
     }
 
 private:
@@ -1392,39 +1426,39 @@ inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) const {
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(const BulkPoint &point, unsigned int shape_idx) const {
+ValueType FeQ<ValueType>::operator()(const BulkPoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
-inline Vector FeQ<Vector>::operator()(const BulkPoint &point, unsigned int shape_idx) const {
+inline Vector FeQ<Vector>::operator()(const BulkPoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
-inline Tensor FeQ<Tensor>::operator()(const BulkPoint &point, unsigned int shape_idx) const {
+inline Tensor FeQ<Tensor>::operator()(const BulkPoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(const SidePoint &point, unsigned int shape_idx) const {
+ValueType FeQ<ValueType>::operator()(const SidePoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
-inline Vector FeQ<Vector>::operator()(const SidePoint &point, unsigned int shape_idx) const {
+inline Vector FeQ<Vector>::operator()(const SidePoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
-inline Tensor FeQ<Tensor>::operator()(const SidePoint &point, unsigned int shape_idx) const {
+inline Tensor FeQ<Tensor>::operator()(const SidePoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, shape_idx);
+    return patch_point_vals_.tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 

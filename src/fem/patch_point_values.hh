@@ -34,6 +34,7 @@
 template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int spacedim> class ElOp;
 template <class ValueType> class ElQ;
+template <class ValueType> class FeQ;
 template<unsigned int dim> class BulkValues;
 template<unsigned int dim> class SideValues;
 using Scalar = double;
