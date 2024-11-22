@@ -722,13 +722,6 @@ struct bulk_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
-        auto &op = operations[FeBulk::BulkOps::opWeights];
-        op.allocate_result(point_weights.size(), *arena);
-        auto weights_value = op.result_matrix();
-        for (uint i=0; i<point_weights.size(); ++i)
-            weights_value(0)(i) = point_weights[i];
-    }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         auto &op = operations[FeBulk::BulkOps::opJxW];
         auto weights_value = operations[ op.input_ops()[0] ].result_matrix();
@@ -963,13 +956,6 @@ struct side_reinit {
     static inline void ptop_coords(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
-    static inline void ptop_weights(std::vector<ElOp<3>> &operations, PatchArena *arena, const std::vector<double> &point_weights) {
-        auto &op = operations[FeSide::SideOps::opWeights];
-        op.allocate_result(point_weights.size(), *arena);
-        auto weights_value = op.result_matrix();
-        for (uint i=0; i<point_weights.size(); ++i)
-            weights_value(0)(i) = point_weights[i];
-    }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         auto &op = operations[FeSide::SideOps::opJxW];
         auto weights_value = operations[ op.input_ops()[0] ].result_matrix();
@@ -1183,12 +1169,13 @@ namespace FeBulk {
             // Second step: adds point values operations
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
 
-            // use lambda reinit function
+            auto &weights = this->make_fixed_op( {1}, &common_reinit::op_base );
+            // create result vector of weights operation in assembly arena
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                    bulk_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
-                };
-            /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
+            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
+            auto weights_value = weights.result_matrix();
+            for (uint i=0; i<point_weights_vec.size(); ++i)
+                weights_value(0)(i) = point_weights_vec[i];
 
             /*auto &JxW =*/ this->make_new_op( {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
         }
@@ -1243,12 +1230,13 @@ namespace FeSide {
             // Third step: adds point values operations
             /*auto &coords =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_coords, {} );
 
-            // use lambda reinit function
+            auto &weights = this->make_fixed_op( {1},  &common_reinit::op_base ); //lambda_weights );
+            // create result vector of weights operation in assembly arena
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            auto lambda_weights = [this, point_weights_vec](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                    side_reinit::ptop_weights(operations, this->patch_arena_, point_weights_vec);
-                };
-            /*auto &weights =*/ this->make_fixed_op( {1}, lambda_weights );
+            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
+            auto weights_value = weights.result_matrix();
+            for (uint i=0; i<point_weights_vec.size(); ++i)
+                weights_value(0)(i) = point_weights_vec[i];
 
             /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSideJacDet} );
 
