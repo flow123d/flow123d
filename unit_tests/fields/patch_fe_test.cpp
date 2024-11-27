@@ -110,8 +110,8 @@ public:
 	  scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
 	  scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
 	  scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
-	  conc_join_shape_2d_( Range< JoinShapeAccessor<Scalar> >( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
-	  conc_join_shape_3d_( Range< JoinShapeAccessor<Scalar> >( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
+	  conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
+	  conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -330,8 +330,8 @@ public:
     FeQArray<Scalar> scalar_shape_side_1d_;
     FeQArray<Scalar> scalar_shape_side_2d_;
     FeQArray<Scalar> scalar_shape_side_3d_;
-    Range< JoinShapeAccessor<Scalar> > conc_join_shape_2d_;
-    Range< JoinShapeAccessor<Scalar> > conc_join_shape_3d_;
+    FeQJoin<Scalar> conc_join_shape_2d_;
+    FeQJoin<Scalar> conc_join_shape_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
@@ -506,15 +506,15 @@ public:
             case 2:
                 fe_values_[0].reinit(cell_lower_dim.elm());
                 fe_values_side_[1].reinit(neighb_side.side());
-                for( auto conc_shape_i : conc_join_shape_2d_) {
-                    if (conc_shape_i.is_high_dim()) {
-                	    auto result = conc_shape_i(p_high);
+                for (uint i_dof=0; i_dof<conc_join_shape_2d_.n_dofs_both(); ++i_dof) {
+                    if (conc_join_shape_2d_.is_high_dim(i_dof)) {
+                	    auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_high++;
                     }
                     else {
-                	    auto result = conc_shape_i(p_low);
+                	    auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[0].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_low++;
@@ -524,15 +524,15 @@ public:
             case 3:
                 fe_values_[1].reinit(cell_lower_dim.elm());
                 fe_values_side_[2].reinit(neighb_side.side());
-                for( auto conc_shape_i : conc_join_shape_3d_) {
-                	if (conc_shape_i.is_high_dim()) {
-                	    auto result = conc_shape_i(p_high);
+                for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
+                	if (conc_join_shape_3d_.is_high_dim(i_dof)) {
+                	    auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_high++;
                 	}
                 	else {
-                	    auto result = conc_shape_i(p_low);
+                	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[1].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_low++;

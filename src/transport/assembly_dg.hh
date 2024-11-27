@@ -240,7 +240,7 @@ public:
       conc_shape_side_( this->side_values().scalar_shape() ),
       conc_grad_( this->bulk_values().grad_scalar_shape() ),
       conc_grad_sidw_( this->side_values().grad_scalar_shape() ),
-      conc_join_shape_( Range< JoinShapeAccessor<Scalar> >( this->join_values().scalar_join_shape() ) ) {
+      conc_join_shape_( FeQJoin<Scalar>( this->join_values().scalar_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -581,14 +581,14 @@ public:
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i] = dof_indices_[i];
         }
-        n_dofs[0] = conc_join_shape_.begin()->n_dofs_low();
+        n_dofs[0] = conc_join_shape_.n_dofs_low();
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_vb_[i+n_dofs[0]] = dof_indices_[i];
         }
-        n_dofs[1] = conc_join_shape_.begin()->n_dofs_high();
+        n_dofs[1] = conc_join_shape_.n_dofs_high();
 
         // Testing element if they belong to local partition.
         bool own_element_id[2];
@@ -617,16 +617,14 @@ public:
 
                 double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_(p_high));
 
-                for( auto conc_shape_i : conc_join_shape_) {
-                    uint is_high_i = conc_shape_i.is_high_dim();
+                for (uint i=0; i<conc_join_shape_.n_dofs_both(); ++i) {
+                    uint is_high_i = conc_join_shape_.is_high_dim(i);
                     if (!own_element_id[is_high_i]) continue;
-                    uint i_mat_idx = conc_shape_i.join_idx(); // i + is_high * n_dofs_low
-                    double diff_shape_i = conc_shape_i(p_high) - conc_shape_i(p_low);
-                    for( auto conc_shape_j : conc_join_shape_) {
-                        uint j_mat_idx = conc_shape_j.join_idx();
-                        local_matrix_[i_mat_idx * (n_dofs[0]+n_dofs[1]) + j_mat_idx] += (
-                                sigma * diff_shape_i * (conc_shape_j(p_high) - conc_shape_j(p_low))
-                                + diff_shape_i * ( max(0.,transport_flux) * conc_shape_j(p_high) + min(0.,transport_flux) * conc_shape_j(p_low))
+                    double diff_shape_i = conc_join_shape_.shape(i)(p_high) - conc_join_shape_.shape(i)(p_low);
+                    for (uint j=0; j<conc_join_shape_.n_dofs_both(); ++j) {
+                        local_matrix_[i * (n_dofs[0]+n_dofs[1]) + j] += (
+                                sigma * diff_shape_i * (conc_join_shape_.shape(j)(p_high) - conc_join_shape_.shape(j)(p_low))
+                                + diff_shape_i * ( max(0.,transport_flux) * conc_join_shape_.shape(j)(p_high) + min(0.,transport_flux) * conc_join_shape_.shape(j)(p_low))
 						    )*JxW_side_(p_high) + LocalSystem::almost_zero;
                     }
                 }
@@ -663,7 +661,7 @@ private:
     FeQArray<Scalar> conc_shape_side_;
     FeQArray<Vector> conc_grad_;
     FeQArray<Vector> conc_grad_sidw_;
-    Range< JoinShapeAccessor<Scalar> > conc_join_shape_;
+    FeQJoin<Scalar> conc_join_shape_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

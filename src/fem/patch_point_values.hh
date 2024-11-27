@@ -736,7 +736,7 @@ struct bulk_reinit {
             std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
         auto &op = operations[scalar_shape_op_idx];
         uint n_dofs = shape_values.size();
-        uint n_points = shape_values[0].size();
+        uint n_points = shape_values[0].size(); // points per element
         uint n_elem = op.raw_result()(0).data_size() / n_points;
 
         auto shape_matrix = op.result_matrix();
