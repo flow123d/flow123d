@@ -672,7 +672,36 @@ struct common_reinit {
         // empty
     }
 
-	/// Common reinit function of vector symmetric gradient on bulk and side points
+    template<unsigned int dim>
+    static inline void elop_jac(std::vector<ElOp<3>> &operations, uint result_op_idx) {
+        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
+        auto &op = operations[result_op_idx];
+        auto jac_value = op.result_matrix();
+        auto coords_value = operations[ op.input_ops()[0] ].result_matrix();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<dim; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
+    }
+
+    template<unsigned int dim>
+    static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, uint result_op_idx) {
+        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
+        auto &op = operations[result_op_idx];
+        auto inv_jac_value = op.result_matrix();
+        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
+    }
+
+    template<unsigned int dim>
+    static inline void elop_jac_det(std::vector<ElOp<3>> &operations, uint result_op_idx) {
+        // result double, input matrix(spacedim, dim)
+        auto &op = operations[result_op_idx];
+        auto jac_det_value = op.result_matrix();
+        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
+        jac_det_value(0) = eigen_arena_tools::determinant<3, dim>(jac_value).abs();
+    }
+
+    /// Common reinit function of vector symmetric gradient on bulk and side points
     static inline void ptop_vector_sym_grad(std::vector<ElOp<3>> &operations, uint vector_sym_grad_op_idx) {
         auto &op = operations[vector_sym_grad_op_idx];
         auto grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
@@ -693,29 +722,15 @@ struct bulk_reinit {
 	// element operations
     template<unsigned int dim>
     static inline void elop_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = operations[FeBulk::BulkOps::opJac];
-        auto jac_value = op.result_matrix();
-        auto coords_value = operations[ op.input_ops()[0] ].result_matrix();
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<dim; j++)
-                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
+        common_reinit::elop_jac<dim>(operations, FeBulk::BulkOps::opJac);
     }
     template<unsigned int dim>
     static inline void elop_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = operations[FeBulk::BulkOps::opInvJac];
-        auto inv_jac_value = op.result_matrix();
-        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
+        common_reinit::elop_inv_jac<dim>(operations, FeBulk::BulkOps::opInvJac);
     }
     template<unsigned int dim>
     static inline void elop_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        // result double, input matrix(spacedim, dim)
-        auto &op = operations[FeBulk::BulkOps::opJacDet];
-        auto jac_det_value = op.result_matrix();
-        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<3, dim>(jac_value).abs();
+        common_reinit::elop_jac_det<dim>(operations, FeBulk::BulkOps::opJacDet);
     }
 
     // point operations
@@ -918,38 +933,20 @@ struct side_reinit {
 	// element operations
     template<unsigned int dim>
     static inline void elop_el_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = operations[FeSide::SideOps::opElJac];
-        auto jac_value = op.result_matrix();
-        auto coords_value = operations[ op.input_ops()[0] ].result_matrix();
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<dim; j++)
-                jac_value(i+3*j) = coords_value(i+3*(j+1)) - coords_value(i);
+        common_reinit::elop_jac<dim>(operations, FeSide::SideOps::opElJac);
     }
     template<unsigned int dim>
     static inline void elop_el_inv_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        auto &op = operations[FeSide::SideOps::opElInvJac];
-        auto inv_jac_value = op.result_matrix();
-        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
+        common_reinit::elop_inv_jac<dim>(operations, FeSide::SideOps::opElInvJac);
     }
     template<unsigned int dim>
     static inline void elop_sd_jac(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = operations[FeSide::SideOps::opSideJac];
-        auto jac_value = op.result_matrix();
-        auto coords_value = operations[ op.input_ops()[0] ].result_matrix();
-        for (unsigned int i=0; i<3; i++)
-            for (unsigned int j=0; j<dim-1; j++)
-                jac_value(i+3*j) = coords_value(i+3*(j+1)) - coords_value(i);
+        common_reinit::elop_jac<dim-1>(operations, FeSide::SideOps::opSideJac);
     }
     template<unsigned int dim>
     static inline void elop_sd_jac_det(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        // result double, input matrix(spacedim, dim)
-        auto &op = operations[FeSide::SideOps::opSideJacDet];
-        auto jac_det_value = op.result_matrix();
-        auto jac_value = operations[ op.input_ops()[0] ].result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<3, dim-1>(jac_value).abs();
+        common_reinit::elop_jac_det<dim-1>(operations, FeSide::SideOps::opSideJacDet);
     }
 
     // Point operations
