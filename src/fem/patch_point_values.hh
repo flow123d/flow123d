@@ -701,6 +701,17 @@ struct common_reinit {
         jac_det_value(0) = eigen_arena_tools::determinant<3, dim>(jac_value).abs();
     }
 
+    static inline void ptop_JxW(std::vector<ElOp<3>> &operations, uint result_op_idx) {
+        auto &op = operations[result_op_idx];
+        auto weights_value = operations[ op.input_ops()[0] ].result_matrix();
+        auto jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
+        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+        auto jxw_value = op.result_matrix();
+        jxw_value(0,0) = jxw_ovec.get_vec();
+    }
+
     /// Common reinit function of vector symmetric gradient on bulk and side points
     static inline void ptop_vector_sym_grad(std::vector<ElOp<3>> &operations, uint vector_sym_grad_op_idx) {
         auto &op = operations[vector_sym_grad_op_idx];
@@ -738,14 +749,7 @@ struct bulk_reinit {
         // Implement
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        auto &op = operations[FeBulk::BulkOps::opJxW];
-        auto weights_value = operations[ op.input_ops()[0] ].result_matrix();
-        auto jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
-        ArenaOVec<double> weights_ovec( weights_value(0) );
-        ArenaOVec<double> jac_det_ovec( jac_det_value(0) );
-        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
-        auto jxw_value = op.result_matrix();
-        jxw_value(0) = jxw_ovec.get_vec();
+        common_reinit::ptop_JxW(operations, FeBulk::BulkOps::opJxW);
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations,
             std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
@@ -768,7 +772,7 @@ struct bulk_reinit {
         ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
         shape_matrix(0) = shape_ovec.get_vec();
     }
-    static inline void ptop_vector_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED std::vector< std::vector<arma::vec3> > shape_values, FMT_UNUSED uint vector_shape_op_idx) {
+    static inline void ptop_vector_shape(std::vector<ElOp<3>> &operations, std::vector< std::vector<arma::vec3> > shape_values, uint vector_shape_op_idx) {
         auto &op = operations[vector_shape_op_idx];
         uint n_dofs = shape_values.size();
         uint n_points = shape_values[0].size();
@@ -954,14 +958,7 @@ struct side_reinit {
         // Implement
     }
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-        auto &op = operations[FeSide::SideOps::opJxW];
-        auto weights_value = operations[ op.input_ops()[0] ].result_matrix();
-        auto jac_det_value = operations[ op.input_ops()[1] ].result_matrix();
-        ArenaOVec<double> weights_ovec( weights_value(0,0) );
-        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
-        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
-        auto jxw_value = op.result_matrix();
-        jxw_value(0,0) = jxw_ovec.get_vec();
+        common_reinit::ptop_JxW(operations, FeSide::SideOps::opJxW);
     }
     template<unsigned int dim>
     static inline void ptop_normal_vec(std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
