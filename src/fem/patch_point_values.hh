@@ -445,6 +445,16 @@ public:
         return fe_ops_indices_[fe_op];
     }
 
+    /// return reference to assembly arena
+    inline AssemblyArena &asm_arena() const {
+    	return asm_arena_;
+    }
+
+    /// return reference to patch arena
+    inline PatchArena &patch_arena() const {
+    	return *patch_arena_;
+    }
+
     /**
      * Performs output of data tables to stream.
      *
@@ -752,23 +762,18 @@ struct bulk_reinit {
         common_reinit::ptop_JxW(operations, FeBulk::BulkOps::opJxW);
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations,
-            std::vector< std::vector<double> > shape_values, uint scalar_shape_op_idx) {
+            ArenaVec<double> ref_vec, uint n_dofs, uint scalar_shape_op_idx) {
         auto &op = operations[scalar_shape_op_idx];
-        uint n_dofs = shape_values.size();
-        uint n_points = shape_values[0].size(); // points per element
+        uint n_points = ref_vec.data_size() / n_dofs; // points per element
         uint n_elem = op.raw_result()(0).data_size() / n_points;
 
         auto shape_matrix = op.result_matrix();
-        ArenaVec<double> ref_vec(n_points * n_dofs, op.raw_result()(0).arena());
         ArenaVec<double> elem_vec(n_elem, op.raw_result()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
         ArenaOVec<double> ref_ovec(ref_vec);
         ArenaOVec<double> elem_ovec(elem_vec);
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-            for (uint i_p=0; i_p<n_points; ++i_p)
-                ref_vec(i_dof * n_points + i_p) = shape_values[i_dof][i_p];
         ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
         shape_matrix(0) = shape_ovec.get_vec();
     }
@@ -981,8 +986,8 @@ struct side_reinit {
         }
     }
     static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
-            std::vector< std::vector< std::vector<double> > > shape_values, uint scalar_shape_op_idx) {
-        uint n_dofs = shape_values[0][0].size();
+            Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> shape_values, uint n_dofs, uint scalar_shape_op_idx) {
+        uint n_points = shape_values(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
@@ -993,7 +998,7 @@ struct side_reinit {
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             uint dof_shift = i_dof * n_patch_points;
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
-                scalar_shape_value(0)(i_pt + dof_shift) = shape_values[el_table(4)(i_pt)][i_pt / n_sides][i_dof];
+                scalar_shape_value(0)(i_pt + dof_shift) = shape_values(el_table(4)(i_pt))(i_dof * n_points + i_pt / n_sides);
         }
     }
     static inline void ptop_vector_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
