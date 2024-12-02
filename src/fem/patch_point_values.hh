@@ -107,6 +107,11 @@ namespace FeSide {
  */
 enum FEOps
 {
+    /// Reference data of FE operations
+    opRefScalar,           ///< Scalar reference
+    opRefVector,           ///< Vector reference
+    opRefTensor,           ///< Tensor reference
+    /// Own FE operations
     opScalarShape,         ///< Scalar shape operation
     opVectorShape,         ///< Vector shape operation
     opGradScalarShape,     ///< Scalar shape gradient
@@ -336,6 +341,17 @@ public:
     	//row_sizes_.insert(row_sizes_.end(), op_accessor.n_comp() * n_dofs, size_type);
     	operations_.push_back(op_accessor);
     	return operations_[operations_.size()-1];
+    }
+
+    /**
+     * Adds accessor of new operation with fixed data size (ref data) to operations_ vector
+     *
+     * @param shape          Shape of function output
+     * @param reinit_f       Reinitialize function
+     * @param n_dofs         Number of DOFs
+     */
+    ElOp<spacedim> &make_fixed_fe_op(std::initializer_list<uint> shape, ReinitFunction reinit_f, uint n_dofs) {
+    	return make_fe_op(shape, reinit_f, {}, n_dofs, fixedSizeOp);
     }
 
 
@@ -761,9 +777,11 @@ struct bulk_reinit {
     static inline void ptop_JxW(std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
         common_reinit::ptop_JxW(operations, FeBulk::BulkOps::opJxW);
     }
-    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations,
-            ArenaVec<double> ref_vec, uint n_dofs, uint scalar_shape_op_idx) {
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, uint scalar_shape_op_idx) {
         auto &op = operations[scalar_shape_op_idx];
+        auto ref_vec = operations[ op.input_ops()[0] ].result_matrix()(0);
+
+        uint n_dofs = op.n_dofs();
         uint n_points = ref_vec.data_size() / n_dofs; // points per element
         uint n_elem = op.raw_result()(0).data_size() / n_points;
 
@@ -985,13 +1003,15 @@ struct side_reinit {
             normal_value(i) = normal_value(i) / norm_vec;
         }
     }
-    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
-            Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> shape_values, uint n_dofs, uint scalar_shape_op_idx) {
+    static inline void ptop_scalar_shape(std::vector<ElOp<3>> &operations, IntTableArena &el_table, uint scalar_shape_op_idx) {
+        auto &op = operations[scalar_shape_op_idx];
+        auto shape_values = operations[ op.input_ops()[0] ].result_matrix();
+
+        uint n_dofs = op.n_dofs();
         uint n_points = shape_values(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
-        auto &op = operations[scalar_shape_op_idx];
         auto scalar_shape_value = op.result_matrix();
         scalar_shape_value(0) = ArenaVec<double>(n_dofs*n_patch_points, scalar_shape_value(0).arena());
 

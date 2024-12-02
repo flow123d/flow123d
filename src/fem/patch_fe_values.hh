@@ -376,6 +376,30 @@ public:
         return ElQ<Scalar>(patch_point_vals_, FeBulk::BulkOps::opJacDet);
     }
 
+    inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_scalar_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_scalar_op = patch_point_vals_->make_fixed_fe_op({1}, &common_reinit::op_base, n_dofs);
+
+        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
+        ref_scalar_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_scalar_value = ref_scalar_op.result_matrix();
+        for (unsigned int i_p = 0; i_p < n_points; i_p++)
+            for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+                ref_scalar_value(0)(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof][0];
+            }
+
+        patch_point_vals_->set_fe_op(FEOps::opRefScalar, ref_scalar_op_idx);
+
+        return FeQArray<Scalar>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
+    }
+
     /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p p bulk quadrature point.
@@ -389,19 +413,12 @@ public:
 
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
-        ArenaVec<double> shape_values(n_points * n_dofs, patch_point_vals_->asm_arena());
 
-        // use lambda reinit function
-        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
-        for (unsigned int i_p = 0; i_p < n_points; i_p++)
-            for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
-            	shape_values(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof][0];
-            }
         uint scalar_shape_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape = [shape_values, n_dofs, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, shape_values, n_dofs, scalar_shape_op_idx);
+        auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, scalar_shape_op_idx);
             };
-        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {patch_point_vals_->get_fe_op(FEOps::opRefScalar)}, fe_component->n_dofs());
         patch_point_vals_->set_fe_op(FEOps::opScalarShape, scalar_shape_op_idx);
 
         return FeQArray<Scalar>(patch_point_vals_, true, scalar_shape_op_idx, fe_component->n_dofs());
@@ -630,6 +647,32 @@ public:
         return ElQ<Scalar>(patch_point_vals_, FeSide::SideOps::opSideJacDet);
     }
 
+    inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_scalar_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_scalar_op = patch_point_vals_->make_fixed_fe_op({dim+1}, &common_reinit::op_base, n_dofs);
+
+        auto ref_shape_vals = this->ref_shape_values_side(patch_point_vals_->get_quadrature(), fe_component);
+        ref_scalar_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_scalar_value = ref_scalar_op.result_matrix();
+        for (unsigned int s=0; s<dim+1; ++s) {
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+                    ref_scalar_value(s)(i_dof * n_points + i_p) = ref_shape_vals[s][i_p][i_dof][0];
+                }
+        }
+
+        patch_point_vals_->set_fe_op(FEOps::opRefScalar, ref_scalar_op_idx);
+
+        return FeQArray<Scalar>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
+    }
+
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
@@ -639,21 +682,11 @@ public:
         // use lambda reinit function
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
-        auto ref_shape_vals = this->ref_shape_values_side(patch_point_vals_->get_quadrature(), fe_component);
-        Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> shape_values;
-        shape_values.resize(dim+1);
-        for (unsigned int s=0; s<dim+1; ++s) {
-            shape_values(s) = ArenaVec<double>(n_points*n_dofs, patch_point_vals_->asm_arena());
-            for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
-            	    shape_values(s)(i_dof * n_points + i_p) = ref_shape_vals[s][i_p][i_dof][0];
-                }
-        }
         uint scalar_shape_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape = [shape_values, n_dofs, scalar_shape_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape(operations, el_table, shape_values, n_dofs, scalar_shape_op_idx);
+        auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                side_reinit::ptop_scalar_shape(operations, el_table, scalar_shape_op_idx);
             };
-        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {}, n_dofs);
+        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {patch_point_vals_->get_fe_op(FEOps::opRefScalar)}, n_dofs);
         patch_point_vals_->set_fe_op(FEOps::opScalarShape, scalar_shape_op_idx);
 
         return FeQArray<Scalar>(patch_point_vals_, false, scalar_shape_op_idx, n_dofs);
@@ -860,18 +893,12 @@ public:
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_points_low = patch_point_vals_bulk_->get_quadrature()->size();
         uint n_dofs_low = fe_component_low->n_dofs();
-        ArenaVec<double> shape_values_bulk(n_points_low * n_dofs_low, patch_point_vals_bulk_->asm_arena());
         // use lambda reinit function
-        auto ref_shape_vals_bulk = this->ref_shape_values_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
-        for (unsigned int i_p = 0; i_p < patch_point_vals_bulk_->get_quadrature()->size(); i_p++)
-            for (unsigned int i_dof = 0; i_dof < fe_component_low->n_dofs(); i_dof++) {
-            	shape_values_bulk(i_dof * n_points_low + i_p) = ref_shape_vals_bulk[i_p][i_dof][0];
-            }
         uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_bulk = [shape_values_bulk, n_dofs_low, scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, shape_values_bulk, n_dofs_low, scalar_shape_op_idx_bulk);
+        auto lambda_scalar_shape_bulk = [scalar_shape_op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                bulk_reinit::ptop_scalar_shape(operations, scalar_shape_op_idx_bulk);
             };
-        patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {}, n_dofs_low);
+        patch_point_vals_bulk_->make_fe_op({1}, lambda_scalar_shape_bulk, {patch_point_vals_bulk_->get_fe_op(FEOps::opRefScalar)}, n_dofs_low);
         uint op_idx_bulk = patch_point_vals_bulk_->operations_.size()-1;
 
     	// element of higher dim (side points)
@@ -880,21 +907,11 @@ public:
         uint n_points_high = patch_point_vals_side_->get_quadrature()->size();
         uint n_dofs_high = fe_component_high->n_dofs();
         // use lambda reinit function
-        auto ref_shape_vals_side = this->ref_shape_values_side(patch_point_vals_side_->get_quadrature(), fe_component_high);
-        Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> shape_values_side;
-        shape_values_side.resize(dim+1);
-        for (unsigned int s=0; s<dim+1; ++s) {
-            shape_values_side(s) = ArenaVec<double>(n_points_high*n_dofs_high, patch_point_vals_side_->asm_arena());
-            for (unsigned int i_p = 0; i_p < n_points_high; i_p++)
-                for (unsigned int i_dof = 0; i_dof < n_dofs_high; i_dof++) {
-            	    shape_values_side(s)(i_dof * n_points_high + i_p) = ref_shape_vals_side[s][i_p][i_dof][0];
-                }
-        }
         uint scalar_shape_op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_side = [shape_values_side, n_dofs_high, scalar_shape_op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape(operations, el_table, shape_values_side, n_dofs_high, scalar_shape_op_idx_side);
+        auto lambda_scalar_shape_side = [scalar_shape_op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                side_reinit::ptop_scalar_shape(operations, el_table, scalar_shape_op_idx_side);
             };
-        patch_point_vals_side_->make_fe_op({1}, lambda_scalar_shape_side, {}, n_dofs_high);
+        patch_point_vals_side_->make_fe_op({1}, lambda_scalar_shape_side, {patch_point_vals_side_->get_fe_op(FEOps::opRefScalar)}, n_dofs_high);
         uint op_idx_side = patch_point_vals_side_->operations_.size()-1;
 
         return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high, op_idx_bulk, op_idx_side);

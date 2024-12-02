@@ -104,6 +104,12 @@ public:
 	  normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
 	  normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
 	  normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() ),
+	  ref_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar() ),
+	  ref_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar() ),
+	  ref_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar() ),
+	  ref_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar() ),
+	  ref_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar() ),
+	  ref_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar() ),
 	  scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
 	  scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
 	  scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
@@ -324,6 +330,12 @@ public:
     ElQ<Vector> normal_vec_1d_;
     ElQ<Vector> normal_vec_2d_;
     ElQ<Vector> normal_vec_3d_;
+    FeQArray<Scalar> ref_scalar_1d_;
+    FeQArray<Scalar> ref_scalar_2d_;
+    FeQArray<Scalar> ref_scalar_3d_;
+    FeQArray<Scalar> ref_scalar_side_1d_;
+    FeQArray<Scalar> ref_scalar_side_2d_;
+    FeQArray<Scalar> ref_scalar_side_3d_;
     FeQArray<Scalar> scalar_shape_1d_;
     FeQArray<Scalar> scalar_shape_2d_;
     FeQArray<Scalar> scalar_shape_3d_;
