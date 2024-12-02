@@ -63,6 +63,8 @@ public:
         
         static const Input::Type::Selection & get_bc_type_selection();
 
+        arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor);
+
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
@@ -296,12 +298,6 @@ private:
 
 };
 
-
-/*
- * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
- */
-double lame_mu(double young, double poisson);
-double lame_lambda(double young, double poisson);
 
 
 

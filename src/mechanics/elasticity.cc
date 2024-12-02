@@ -110,6 +110,10 @@ struct fn_dirichlet_penalty {
 };
 
 
+arma::mat33 Elasticity::EqFields::stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+{
+    return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+}
 
 
 
