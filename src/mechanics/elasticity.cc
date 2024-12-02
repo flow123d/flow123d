@@ -77,42 +77,82 @@ const int Elasticity::registrar =
 
 
 
-double lame_mu(double young, double poisson)
-{
-    return young*0.5/(poisson+1.);
-}
 
-
-double lame_lambda(double young, double poisson)
-{
-    return young*poisson/((poisson+1.)*(1.-2.*poisson));
-}
 
 // Functor computing lame_mu
 struct fn_lame_mu {
-	inline double operator() (double young, double poisson) {
-        return young * 0.5 / (poisson+1.);
+	inline arma::vec3 operator() (arma::vec3 young, arma::vec3 poisson) {
+        return young * 0.5 / (poisson+arma::ones(3));
     }
 };
 
 // Functor computing lame_lambda
 struct fn_lame_lambda {
-	inline double operator() (double young, double poisson) {
-        return young * poisson / ((poisson+1.)*(1.-2.*poisson));
+	inline arma::vec3 operator() (arma::vec3 young, arma::vec3 poisson) {
+        return young * poisson / ((poisson+arma::ones(3))*(arma::ones(3)-2.*poisson));
     }
 };
 
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
-	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e3 * (2 * lame_mu + lame_lambda);
+	inline double operator() (arma::vec3 lame_mu, arma::vec3 lame_lambda) {
+        return 1e3 * (2 * max(lame_mu) + max(lame_lambda));
     }
 };
 
 
+// Transform (generally nonsymmetric) matrix into a 6-vector.
+arma::vec6 voigt(const arma::mat33 &m)
+{
+    return { m(0,0), m(1,1), m(2,2), (m(1,2)+m(2,1))/sqrt(2), (m(0,2)+m(2,0))/sqrt(2), (m(0,1)+m(1,0))/sqrt(2) };
+}
+
+// Transform 6-vector into a symmetric matrix.
+arma::mat33 voigt_inv(const arma::vec6 &v)
+{
+    return { { v(0),         v(5)/sqrt(2), v(4)/sqrt(2) },
+             { v(5)/sqrt(2), v(1),         v(3)/sqrt(2) },
+             { v(4)/sqrt(2), v(3)/sqrt(2), v(2)         } };
+}
+
 arma::mat33 Elasticity::EqFields::stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
 {
-    return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+    // Make orthogonal 6x6 matrix for transformation of Cauchy tensor
+    arma::mat33 q,r;
+    qr(q,r,principal_axes(p).t()); // rows of q are vectors in the direction of principal axes
+    arma::mat66 Q = arma::zeros(6,6);
+    Q.col(0) = voigt(kron(q.col(0),q.col(0).t()));
+    Q.col(1) = voigt(kron(q.col(1),q.col(1).t()));
+    Q.col(2) = voigt(kron(q.col(2),q.col(2).t()));
+    Q.col(3) = voigt(sqrt(2)*kron(q.col(1),q.col(2).t()));
+    Q.col(4) = voigt(sqrt(2)*kron(q.col(0),q.col(2).t()));
+    Q.col(5) = voigt(sqrt(2)*kron(q.col(0),q.col(1).t()));
+
+    // Ordering of moduli in vectors:
+    // E(0), E(1), E(2) are Young's moduli in the direction of the principal axes
+    //
+    // nu(0), nu(1), nu(2) = ratio of transverse/applied strain in uniaxial tension
+    // nu(0) = - eps(1) / eps(2)
+    // nu(1) = - eps(0) / eps(2)
+    // nu(2) = - eps(0) / eps(1)
+    //
+    // G(0) = shear stiffness in the plane of axis 1 and axis 2
+    // G(1) = shear stiffness in the plane of axis 0 and axis 2
+    // G(2) = shear stiffness in the plane of axis 0 and axis 1
+    arma::vec3 E = young_modulus(p), nu = poisson_ratio(p), G = shear_modulus(p);
+
+    // full 3x3 part of compliance tensor
+    arma::mat33 S = { {      1/E(0), -nu(2)/E(1), -nu(1)/E(2) },
+                      { -nu(2)/E(1),      1/E(1), -nu(0)/E(2) },
+                      { -nu(1)/E(2), -nu(0)/E(2),      1/E(2) } };
+    // Compute Cauchy stiffness tensor
+    arma::mat66 C = arma::zeros(6,6);
+    C.submat(0,0,2,2) = S.i();
+    C(3,3) = 2*G(0);
+    C(4,4) = 2*G(1);
+    C(5,5) = 2*G(2);
+
+    return voigt_inv( Q*C*Q.t() * voigt(strain_tensor) );
 }
 
 
@@ -170,6 +210,13 @@ Elasticity::EqFields::EqFields()
         .units( UnitSI().N().m(-3) )
         .input_default("0.0")
         .flags_add(in_rhs);
+
+    *this+=principal_axes
+        .name("principal_axes")
+        .description("Coordinates of principal stress axes.")
+        .units( UnitSI().dimensionless() )
+        .input_default("1")
+        .flags_add(in_main_matrix & in_rhs);
     
     *this+=young_modulus
         .name("young_modulus")
@@ -177,6 +224,13 @@ Elasticity::EqFields::EqFields()
         .units( UnitSI().Pa() )
          .input_default("0.0")
         .flags_add(in_main_matrix & in_rhs);
+
+    *this+=shear_modulus
+        .name("shear_modulus")
+        .description("Shear modulus.")
+        .units( UnitSI().Pa() )
+         .input_default("0.0")
+        .flags_add(in_main_matrix);
     
     *this+=poisson_ratio
         .name("poisson_ratio")
@@ -396,7 +450,7 @@ void Elasticity::initialize()
     if (input_rec.opt_val("user_fields", user_fields_arr)) {
        	this->init_user_fields(user_fields_arr, eq_fields_->output_fields);
     }
-    
+
     eq_fields_->output_fields.set_mesh(*mesh_);
     eq_fields_->output_field.output_type(OutputTime::CORNER_DATA);
 
@@ -404,8 +458,8 @@ void Elasticity::initialize()
     eq_fields_->output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // set instances of FieldModel
-    eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
-    eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
+    eq_fields_->lame_mu.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
+    eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
 
     // equation default PETSc solver options

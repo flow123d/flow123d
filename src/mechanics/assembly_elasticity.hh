@@ -45,8 +45,10 @@ public:
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
-        this->used_fields_ += eq_fields_->lame_mu;
-        this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->young_modulus;
+        this->used_fields_ += eq_fields_->shear_modulus;
+        this->used_fields_ += eq_fields_->poisson_ratio;
+        this->used_fields_ += eq_fields_->principal_axes;
         this->used_fields_ += eq_fields_->dirichlet_penalty;
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->fracture_sigma;
@@ -585,8 +587,10 @@ public:
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
-        this->used_fields_ += eq_fields_->lame_mu;
-        this->used_fields_ += eq_fields_->lame_lambda;
+        this->used_fields_ += eq_fields_->young_modulus;
+        this->used_fields_ += eq_fields_->shear_modulus;
+        this->used_fields_ += eq_fields_->poisson_ratio;
+        this->used_fields_ += eq_fields_->principal_axes;
         this->used_fields_ += eq_fields_->initial_stress;
     }
 

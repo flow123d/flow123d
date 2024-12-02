@@ -70,8 +70,10 @@ public:
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
 		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
-        Field<3, FieldValue<3>::Scalar> young_modulus;
-        Field<3, FieldValue<3>::Scalar> poisson_ratio;
+        Field<3, FieldValue<3>::TensorFixed> principal_axes;
+        Field<3, FieldValue<3>::VectorFixed> young_modulus;
+        Field<3, FieldValue<3>::VectorFixed> shear_modulus;
+        Field<3, FieldValue<3>::VectorFixed> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
         Field<3, FieldValue<3>::TensorFixed> initial_stress;
 		
@@ -93,8 +95,8 @@ public:
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
 
-        Field<3, FieldValue<3>::Scalar > lame_mu;
-        Field<3, FieldValue<3>::Scalar > lame_lambda;
+        Field<3, FieldValue<3>::VectorFixed > lame_mu;
+        Field<3, FieldValue<3>::VectorFixed > lame_lambda;
         Field<3, FieldValue<3>::Scalar > dirichlet_penalty;
 
     	// @}
