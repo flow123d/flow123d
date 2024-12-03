@@ -14,7 +14,7 @@ command_with_args=$@    # run the command with arguments
 flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 cd ${flow_repo_host}
 
-target_image="stepanmoc/it-${environment}:${release_tag}"
+target_image="flow123d/it-${environment}:${release_tag}"
 
 container_id=$(docker run -d --tty=true --interactive=false -v ${flow_repo_host}/tests:/opt/flow123d/bin/tests ${target_image})
 
