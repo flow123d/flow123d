@@ -133,6 +133,19 @@ jobs:
             name: build_dir
         - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
+        - name: Copy Test Results
+          if: always()
+          run: |
+            cp -Lpr build_tree/unit_tests/${{matrix.test_dir}}/*.xml test-results
+          shell: bash
+
+        - name: Publish Test Results
+          uses: EnricoMi/publish-unit-test-result-action@v2
+          if: always()
+          with:
+             files: |
+                test-results/**/*.xml
+
     build_doc:
         needs: [build]
         runs-on: ubuntu-latest
