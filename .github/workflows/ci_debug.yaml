@@ -137,14 +137,28 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: Set variables
+          id: vars
+          run: |
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+
+        - name: Run unit tests
+          run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: List test results
+          run: |
+            ls -la build_tree/unit_tests/${{matrix.test_dir}}
+            ls -la ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}
 
         - name: Publish Test Results
           uses: EnricoMi/publish-unit-test-result-action@v2
           if: always()
           with:
              files: |
-                build_tree/unit_tests/**/*.xml
+                ${{ steps.vars.outputs.builddir }}/unit_tests/**/*.xml
 
     build_doc:
         needs: [build]
