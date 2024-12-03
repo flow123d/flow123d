@@ -47,7 +47,7 @@ public:
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
-      gras_deform_( this->bulk_values().grad_vector_shape() ),
+      grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ),
@@ -241,7 +241,7 @@ private:
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_side_;
-    FeQArray<Tensor> gras_deform_;
+    FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
@@ -270,7 +270,7 @@ public:
       normal_( this->side_values().normal_vector() ),
       deform_( this->bulk_values().vector_shape() ),
       deform_side_( this->side_values().vector_shape() ),
-      gras_deform_( this->bulk_values().grad_vector_shape() ),
+	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
@@ -329,7 +329,7 @@ public:
                 local_rhs_[i] += (
                                  arma::dot(eq_fields_->load(p), deform_.shape(i)(p))
                                  -eq_fields_->potential_load(p)*div_deform_.shape(i)(p)
-                                 -arma::dot(eq_fields_->initial_stress(p), gras_deform_.shape(i)(p))
+                                 -arma::dot(eq_fields_->initial_stress(p), grad_deform_.shape(i)(p))
                                 )*eq_fields_->cross_section(p)*JxW_(p);
         }
         eq_data_->ls->rhs_set_values(n_dofs_, dof_indices_.data(), &(local_rhs_[0]));
@@ -499,7 +499,7 @@ private:
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_;
     FeQArray<Vector> deform_side_;
-    FeQArray<Tensor> gras_deform_;
+    FeQArray<Tensor> grad_deform_;
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
 
@@ -523,7 +523,7 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
-      gras_deform_( this->bulk_values().grad_vector_shape() ),
+	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
       div_deform_( this->bulk_values().vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
@@ -646,7 +646,7 @@ private:
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_side_;
-    FeQArray<Tensor> gras_deform_;
+    FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
     FeQArray<Scalar> div_deform_;
 
