@@ -400,6 +400,81 @@ public:
         return FeQArray<Scalar>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
     }
 
+    inline FeQArray<Vector> ref_vector(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT((fe_component->fe_type() == FEType::FEVector) | (fe_component->fe_type() == FEType::FEVectorPiola) | (fe_component->fe_type() == FEType::FEVectorContravariant))
+                .error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_vector_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_vector_op = patch_point_vals_->make_fixed_fe_op({3}, &common_reinit::op_base, n_dofs);
+        ref_vector_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_vector_value = ref_vector_op.result_matrix();
+        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
+        for (unsigned int i_p = 0; i_p < patch_point_vals_->get_quadrature()->size(); i_p++)
+            for (unsigned int i_dof = 0; i_dof < fe_component->n_dofs(); i_dof++)
+                for (uint c=0; c<3; ++c)
+                    ref_vector_value(c,0)(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof](c);
+
+        patch_point_vals_->set_fe_op(FEOps::opRefVector, ref_vector_op_idx);
+
+        return FeQArray<Vector>(patch_point_vals_, true, ref_vector_op_idx, fe_component->n_dofs());
+    }
+
+    inline FeQArray<Vector> ref_scalar_grad(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_scalar_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_scalar_op = patch_point_vals_->make_fixed_fe_op({dim}, &common_reinit::op_base, n_dofs);
+
+        std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
+        ref_scalar_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_scalar_value = ref_scalar_op.result_matrix();
+        for (uint i=0; i<ref_scalar_value.rows(); ++i) {
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                for (uint i_p=0; i_p<n_points; ++i_p)
+                    ref_scalar_value(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+        }
+
+        patch_point_vals_->set_fe_op(FEOps::opRefScalarGrad, ref_scalar_op_idx);
+
+        return FeQArray<Vector>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
+    }
+
+    inline FeQArray<Tensor> ref_vector_grad(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT((fe_component->fe_type() == FEType::FEVector) | (fe_component->fe_type() == FEType::FEVectorPiola) | (fe_component->fe_type() == FEType::FEVectorContravariant))
+                .error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_vector_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_vector_op = patch_point_vals_->make_fixed_fe_op({dim, 3}, &common_reinit::op_base, n_dofs);
+
+        std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
+        ref_vector_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_vector_value = ref_vector_op.result_matrix();
+        for (uint i=0; i<ref_vector_value.rows()*ref_vector_value.cols(); ++i) {
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                for (uint i_p=0; i_p<n_points; ++i_p)
+                    ref_vector_value(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+        }
+
+        patch_point_vals_->set_fe_op(FEOps::opRefVectorGrad, ref_vector_op_idx);
+
+        return FeQArray<Tensor>(patch_point_vals_, true, ref_vector_op_idx, fe_component->n_dofs());
+    }
+
     /**
      * @brief Return the value of the @p function_no-th shape function at
      * the @p p bulk quadrature point.
@@ -411,17 +486,16 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
         uint scalar_shape_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
         auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, scalar_shape_op_idx);
             };
-        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {patch_point_vals_->get_fe_op(FEOps::opRefScalar)}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op({1}, lambda_scalar_shape, {patch_point_vals_->get_fe_op(FEOps::opRefScalar)}, n_dofs);
         patch_point_vals_->set_fe_op(FEOps::opScalarShape, scalar_shape_op_idx);
 
-        return FeQArray<Scalar>(patch_point_vals_, true, scalar_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, true, scalar_shape_op_idx, n_dofs);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
@@ -429,39 +503,33 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
 
         // use lambda reinit function
-        std::vector< std::vector<arma::vec3> > shape_values( fe_component->n_dofs(), vector<arma::vec3>(patch_point_vals_->get_quadrature()->size()) );
-        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
-        for (unsigned int i = 0; i < patch_point_vals_->get_quadrature()->size(); i++)
-            for (unsigned int j = 0; j < fe_component->n_dofs(); j++) {
-            	shape_values[j][i] = ref_shape_vals[i][j];
-            }
         uint vector_shape_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape(operations, shape_values, vector_shape_op_idx);
+                auto lambda_vector_shape = [vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op({3}, lambda_vector_shape, {}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op({3}, lambda_vector_shape, {patch_point_vals_->get_fe_op(FEOps::opRefVector)}, fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_contravariant_shape(operations, shape_values, vector_shape_op_idx);
+                auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op({3}, lambda_contravariant_shape, {patch_point_vals_->get_fe_op(FEOps::opRefVector), FeBulk::BulkOps::opJac}, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_piola_shape(operations, shape_values, vector_shape_op_idx);
+                auto lambda_piola_shape = [vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op({3}, lambda_piola_shape, {patch_point_vals_->get_fe_op(FEOps::opRefVector), FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
                 break;
             }
             default:
@@ -487,15 +555,15 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
-        auto ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
+        uint n_dofs = fe_component->n_dofs();
         uint scalar_shape_grads_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, ref_shape_grads, scalar_shape_grads_op_idx);
+        auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, scalar_shape_grads_op_idx);
             };
-        patch_point_vals_->make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op({3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac, patch_point_vals_->get_fe_op(FEOps::opRefScalarGrad)}, n_dofs);
         patch_point_vals_->set_fe_op(FEOps::opGradScalarShape, scalar_shape_grads_op_idx);
 
-        return FeQArray<Vector>(patch_point_vals_, true, scalar_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, true, scalar_shape_grads_op_idx, n_dofs);
     }
 
     /**
@@ -509,42 +577,41 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
 
         // use lambda reinit function
-        auto ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
         uint vector_shape_grads_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape_grads<dim>(operations, ref_shape_grads, vector_shape_grads_op_idx);
+                auto lambda_vector_shape_grad = [vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape_grads<dim>(operations, vector_shape_grads_op_idx);
                     };
                 patch_point_vals_->make_fe_op({3, 3},
                                              lambda_vector_shape_grad,
-                                             {FeBulk::BulkOps::opInvJac},
+                                             {FeBulk::BulkOps::opInvJac, patch_point_vals_->get_fe_op(FEOps::opRefVectorGrad)},
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, ref_shape_grads, vector_shape_grads_op_idx);
+                auto lambda_contravariant_shape_grad = [vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, vector_shape_grads_op_idx);
                     };
                 patch_point_vals_->make_fe_op({3, 3},
                                              lambda_contravariant_shape_grad,
-                                             {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac},
+                                             {FeBulk::BulkOps::opInvJac, patch_point_vals_->get_fe_op(FEOps::opRefVectorGrad), FeBulk::BulkOps::opJac},
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape_grad = [ref_shape_grads, vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_piola_shape_grads<dim>(operations, ref_shape_grads, vector_shape_grads_op_idx);
+                auto lambda_piola_shape_grad = [vector_shape_grads_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_piola_shape_grads<dim>(operations, vector_shape_grads_op_idx);
                     };
                 patch_point_vals_->make_fe_op({3, 3},
                                               lambda_piola_shape_grad,
-                                              {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
+                                              {FeBulk::BulkOps::opInvJac, patch_point_vals_->get_fe_op(FEOps::opRefVectorGrad), FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
                                               fe_component->n_dofs());
                 break;
             }
@@ -673,6 +740,81 @@ public:
         return FeQArray<Scalar>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
     }
 
+//    inline FeQArray<Vector> ref_vector(uint component_idx = 0)
+//    {
+//        auto fe_component = this->fe_comp(fe_, component_idx);
+//        ASSERT((fe_component->fe_type() == FEType::FEVector) | (fe_component->fe_type() == FEType::FEVectorPiola) | (fe_component->fe_type() == FEType::FEVectorContravariant))
+//                .error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+//
+//        uint n_points = patch_point_vals_->get_quadrature()->size();
+//        uint n_dofs = fe_component->n_dofs();
+//
+//        uint ref_vector_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+//        auto &ref_vector_op = patch_point_vals_->make_fixed_fe_op({3}, &common_reinit::op_base, n_dofs);
+//        ref_vector_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+//        auto ref_vector_value = ref_vector_op.result_matrix();
+//        auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
+//        for (unsigned int i_p = 0; i_p < patch_point_vals_->get_quadrature()->size(); i_p++)
+//            for (unsigned int i_dof = 0; i_dof < fe_component->n_dofs(); i_dof++)
+//                for (uint c=0; c<3; ++c)
+//                    ref_vector_value(c,0)(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof](c);
+//
+//        patch_point_vals_->set_fe_op(FEOps::opRefVector, ref_vector_op_idx);
+//
+//        return FeQArray<Vector>(patch_point_vals_, true, ref_vector_op_idx, fe_component->n_dofs());
+//    }
+
+    inline FeQArray<Vector> ref_scalar_grad(uint component_idx = 0)
+    {
+        auto fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        uint n_points = patch_point_vals_->get_quadrature()->size();
+        uint n_dofs = fe_component->n_dofs();
+
+        uint ref_scalar_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+        auto &ref_scalar_op = patch_point_vals_->make_fixed_fe_op({dim+1,dim}, &common_reinit::op_base, n_dofs);
+
+        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->ref_shape_gradients_side(patch_point_vals_->get_quadrature(), fe_component);
+        ref_scalar_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto ref_scalar_value = ref_scalar_op.result_matrix();
+        for (unsigned int s=0; s<dim+1; ++s)
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                for (uint i_p=0; i_p<n_points; ++i_p)
+                    for (uint c=0; c<dim; ++c)
+                        ref_scalar_value(s,c)(i_dof * n_points + i_p) = ref_shape_grads[s][i_p][i_dof](c);
+
+        patch_point_vals_->set_fe_op(FEOps::opRefScalarGrad, ref_scalar_op_idx);
+
+        return FeQArray<Vector>(patch_point_vals_, true, ref_scalar_op_idx, fe_component->n_dofs());
+    }
+
+//    inline FeQArray<Tensor> ref_vector_grad(uint component_idx = 0)
+//    {
+//        auto fe_component = this->fe_comp(fe_, component_idx);
+//        ASSERT((fe_component->fe_type() == FEType::FEVector) | (fe_component->fe_type() == FEType::FEVectorPiola) | (fe_component->fe_type() == FEType::FEVectorContravariant))
+//                .error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+//
+//        uint n_points = patch_point_vals_->get_quadrature()->size();
+//        uint n_dofs = fe_component->n_dofs();
+//
+//        uint ref_vector_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
+//        auto &ref_vector_op = patch_point_vals_->make_fixed_fe_op({dim, 3}, &common_reinit::op_base, n_dofs);
+//
+//        std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
+//        ref_vector_op.allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+//        auto ref_vector_value = ref_vector_op.result_matrix();
+//        for (uint i=0; i<ref_vector_value.rows()*ref_vector_value.cols(); ++i) {
+//            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+//                for (uint i_p=0; i_p<n_points; ++i_p)
+//                    ref_vector_value(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+//        }
+//
+//        patch_point_vals_->set_fe_op(FEOps::opRefVectorGrad, ref_vector_op_idx);
+//
+//        return FeQArray<Tensor>(patch_point_vals_, true, ref_vector_op_idx, fe_component->n_dofs());
+//    }
+
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
@@ -680,7 +822,6 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
-        uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
         uint scalar_shape_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
         auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
@@ -752,12 +893,11 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
         // use lambda reinit function
-        auto ref_shape_grads = this->ref_shape_gradients_side(patch_point_vals_->get_quadrature(), fe_component);
         uint scalar_shape_grads_op_idx = patch_point_vals_->operations_.size(); // index in operations_ vector
-        auto lambda_scalar_shape_grad = [ref_shape_grads, scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape_grads<dim>(operations, el_table, ref_shape_grads, scalar_shape_grads_op_idx);
+        auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
+                side_reinit::ptop_scalar_shape_grads<dim>(operations, el_table, scalar_shape_grads_op_idx);
             };
-        patch_point_vals_->make_fe_op({3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op({3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac, patch_point_vals_->get_fe_op(FEOps::opRefScalarGrad)}, fe_component->n_dofs());
         patch_point_vals_->set_fe_op(FEOps::opGradScalarShape, scalar_shape_grads_op_idx);
 
         return FeQArray<Vector>(patch_point_vals_, false, scalar_shape_grads_op_idx, fe_component->n_dofs());
@@ -891,7 +1031,6 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        uint n_points_low = patch_point_vals_bulk_->get_quadrature()->size();
         uint n_dofs_low = fe_component_low->n_dofs();
         // use lambda reinit function
         uint scalar_shape_op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
@@ -904,7 +1043,6 @@ public:
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        uint n_points_high = patch_point_vals_side_->get_quadrature()->size();
         uint n_dofs_high = fe_component_high->n_dofs();
         // use lambda reinit function
         uint scalar_shape_op_idx_side = patch_point_vals_side_->operations_.size(); // index in operations_ vector
@@ -921,12 +1059,6 @@ public:
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        std::vector< std::vector<arma::vec3> > shape_values_bulk( fe_component_low->n_dofs(), vector<arma::vec3>(patch_point_vals_bulk_->get_quadrature()->size()) );
-        auto ref_shape_vals_bulk = this->ref_shape_values_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
-        for (unsigned int i = 0; i < patch_point_vals_bulk_->get_quadrature()->size(); i++)
-            for (unsigned int j = 0; j < fe_component_low->n_dofs(); j++) {
-            	shape_values_bulk[j][i] = ref_shape_vals_bulk[i][j];
-            }
         uint op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
 
         // element of higher dim (side points)
@@ -948,10 +1080,10 @@ public:
             case FEVector:
             {
                 // use lambda reinit function (lower dim)
-                auto lambda_vector_shape_bulk = [shape_values_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape(operations, shape_values_bulk, op_idx_bulk);
+                auto lambda_vector_shape_bulk = [op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape(operations, op_idx_bulk);
                     };
-                patch_point_vals_bulk_->make_fe_op({3}, lambda_vector_shape_bulk, {}, fe_component_low->n_dofs());
+                patch_point_vals_bulk_->make_fe_op({3}, lambda_vector_shape_bulk, {patch_point_vals_bulk_->get_fe_op(FEOps::opRefVector)}, fe_component_low->n_dofs());
 
                 // use lambda reinit function (higher dim)
                 auto lambda_vector_shape_side = [shape_values_side, op_idx_side](std::vector<ElOp<3>> &operations, IntTableArena &el_table) {
@@ -963,19 +1095,19 @@ public:
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                //auto lambda_contravariant_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                //        bulk_reinit::ptop_vector_contravariant_shape(operations, shape_values, vector_shape_op_idx);
+                //auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                //        bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
                 //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {patch_point_vals_->get_fe_op(FEOps::opRefVector), FeBulk::BulkOps::opJac}, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //auto lambda_piola_shape = [shape_values, vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                //        bulk_reinit::ptop_vector_piola_shape(operations, shape_values, vector_shape_op_idx);
+                //auto lambda_piola_shape = [vector_shape_op_idx](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                //        bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
                 //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {patch_point_vals_->get_fe_op(FEOps::opRefVector), FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
                 break;
             }
             default:
@@ -990,7 +1122,6 @@ public:
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto ref_shape_grads_bulk = this->ref_shape_gradients_bulk(patch_point_vals_bulk_->get_quadrature(), fe_component_low);
         uint op_idx_bulk = patch_point_vals_bulk_->operations_.size(); // index in operations_ vector
 
         // element of higher dim (side points)
@@ -1003,12 +1134,12 @@ public:
             case FEVector:
             {
                 // use lambda reinit function (lower dim)
-                auto lambda_vector_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+                auto lambda_vector_grad_bulk = [op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+                        bulk_reinit::ptop_vector_shape_grads<dim-1>(operations, op_idx_bulk);
                     };
                 patch_point_vals_bulk_->make_fe_op({3, 3},
                                                   lambda_vector_grad_bulk,
-                                                  {FeBulk::BulkOps::opInvJac},
+                                                  {FeBulk::BulkOps::opInvJac, patch_point_vals_bulk_->get_fe_op(FEOps::opRefVectorGrad)},
                                                   fe_component_low->n_dofs());
 
                 // use lambda reinit function (higher dim)
@@ -1025,12 +1156,12 @@ public:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
 //                // use lambda reinit function (lower dim)
-//                auto lambda_contravariant_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+//                auto lambda_contravariant_grad_bulk = [op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+//                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>(operations, op_idx_bulk);
 //                    };
 //                patch_point_vals_bulk_->make_fe_op({3, 3},
 //                                                  lambda_contravariant_grad_bulk,
-//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac},
+//                                                  {FeBulk::BulkOps::opInvJac, patch_point_vals_bulk_->get_fe_op(FEOps::opRefVectorGrad), FeBulk::BulkOps::opJac},
 //                                                  fe_component_low->n_dofs());
 //
 //                // use lambda reinit function (higher dim)
@@ -1047,12 +1178,12 @@ public:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
 //                // use lambda reinit function (lower dim)
-//                auto lambda_piola_grad_bulk = [ref_shape_grads_bulk, op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_piola_shape_grads<dim-1>(operations, ref_shape_grads_bulk, op_idx_bulk);
+//                auto lambda_piola_grad_bulk = [op_idx_bulk](std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table) {
+//                        bulk_reinit::ptop_vector_piola_shape_grads<dim-1>(operations, op_idx_bulk);
 //                    };
 //                patch_point_vals_bulk_->make_fe_op({3, 3},
 //                                                  lambda_piola_grad_bulk,
-//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
+//                                                  {FeBulk::BulkOps::opInvJac, patch_point_vals_bulk_->get_fe_op(FEOps::opRefVectorGrad), FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
 //                                                  fe_component_low->n_dofs());
 //
 //                // use lambda reinit function (higher dim)

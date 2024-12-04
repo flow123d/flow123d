@@ -110,7 +110,8 @@ enum FEOps
     /// Reference data of FE operations
     opRefScalar,           ///< Scalar reference
     opRefVector,           ///< Vector reference
-    opRefTensor,           ///< Tensor reference
+    opRefScalarGrad,       ///< Gradient scalar reference
+    opRefVectorGrad,       ///< Gradient vector reference
     /// Own FE operations
     opScalarShape,         ///< Scalar shape operation
     opVectorShape,         ///< Vector shape operation
@@ -781,8 +782,7 @@ struct bulk_reinit {
         auto &op = operations[scalar_shape_op_idx];
         auto ref_vec = operations[ op.input_ops()[0] ].result_matrix()(0);
 
-        uint n_dofs = op.n_dofs();
-        uint n_points = ref_vec.data_size() / n_dofs; // points per element
+        uint n_points = ref_vec.data_size() / op.n_dofs(); // points per element
         uint n_elem = op.raw_result()(0).data_size() / n_points;
 
         auto shape_matrix = op.result_matrix();
@@ -795,61 +795,49 @@ struct bulk_reinit {
         ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
         shape_matrix(0) = shape_ovec.get_vec();
     }
-    static inline void ptop_vector_shape(std::vector<ElOp<3>> &operations, std::vector< std::vector<arma::vec3> > shape_values, uint vector_shape_op_idx) {
+    static inline void ptop_vector_shape(std::vector<ElOp<3>> &operations, uint vector_shape_op_idx) {
         auto &op = operations[vector_shape_op_idx];
-        uint n_dofs = shape_values.size();
-        uint n_points = shape_values[0].size();
+        auto ref_shape_vec = operations[ op.input_ops()[0] ].result_matrix();
+        uint n_dofs = op.n_dofs();
+        uint n_points = ref_shape_vec(0).data_size() / n_dofs;
         uint n_elem = op.raw_result()(0).data_size() / n_points;
 
         auto shape_matrix = op.result_matrix(); // result: shape 3x1
-        Eigen::Matrix<ArenaVec<double>, 3, 1> ref_shape_vec;
         Eigen::Matrix<ArenaOVec<double>, 3, 1> ref_shape_ovec;
         ArenaVec<double> elem_vec(n_elem, op.raw_result()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
         for (uint c=0; c<3; ++c) {
-            ref_shape_vec(c) = ArenaVec<double>(n_points * n_dofs, op.raw_result()(0).arena());
             ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(c));
         }
         ArenaOVec<double> elem_ovec(elem_vec);
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-            for (uint i_p=0; i_p<n_points; ++i_p)
-                for (uint c=0; c<3; ++c)
-                    ref_shape_vec(c,0)(i_dof * n_points + i_p) = shape_values[i_dof][i_p](c);
         Eigen::Matrix<ArenaOVec<double>, 1, 3> shape_omatrix = elem_ovec * ref_shape_ovec.transpose();
         for (uint c=0; c<3; ++c)
             shape_matrix(c) = shape_omatrix(0,c).get_vec();
     }
     static inline void ptop_vector_contravariant_shape(FMT_UNUSED std::vector<ElOp<3>> &operations,
-            FMT_UNUSED std::vector< std::vector<arma::vec3> > shape_values, FMT_UNUSED uint vector_shape_op_idx) {
+            FMT_UNUSED uint vector_shape_op_idx) {
 //        auto &op = operations[vector_sym_grad_op_idx];
 //        auto grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
 //        auto sym_grad_value = op.result_matrix();
 //        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
     static inline void ptop_vector_piola_shape(FMT_UNUSED std::vector<ElOp<3>> &operations,
-            FMT_UNUSED std::vector< std::vector<arma::vec3> > shape_values, FMT_UNUSED uint vector_shape_op_idx) {
+            FMT_UNUSED uint vector_shape_op_idx) {
 //        auto &op = operations[vector_sym_grad_op_idx];
 //        auto grad_vector_value = operations[ op.input_ops()[0] ].result_matrix();
 //        auto sym_grad_value = op.result_matrix();
 //        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations,
-            std::vector< std::vector<arma::mat> > ref_shape_grads, uint scalar_shape_grads_op_idx) {
+    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, uint scalar_shape_grads_op_idx) {
         auto &op = operations[scalar_shape_grads_op_idx];
         auto inv_jac_vec = operations[ op.input_ops()[0] ].result_matrix();
-        uint n_points = ref_shape_grads.size();
-        uint n_dofs = ref_shape_grads[0].size();
+        auto ref_grads_vec = operations[ op.input_ops()[1] ].result_matrix();
 
-        Eigen::Matrix<ArenaVec<double>, dim, 1> ref_grads_vec;
         Eigen::Matrix<ArenaOVec<double>, dim, 1> ref_grads_ovec;
-        for (uint i=0; i<ref_grads_vec.rows(); ++i) {
-            ref_grads_vec(i) = ArenaVec<double>(n_points * n_dofs, op.raw_result()(0).arena());
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-                for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+        for (uint i=0; i<dim; ++i) {
             ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
         }
 
@@ -865,25 +853,15 @@ struct bulk_reinit {
         }
     }
     template<unsigned int dim>
-    static inline void ptop_vector_shape_grads(std::vector<ElOp<3>> &operations,
-            std::vector< std::vector<arma::mat> > ref_shape_grads, uint vector_shape_grads_op_idx) {
+    static inline void ptop_vector_shape_grads(std::vector<ElOp<3>> &operations, uint vector_shape_grads_op_idx) {
         auto &op = operations[vector_shape_grads_op_idx];
         auto inv_jac_vec = operations[ op.input_ops()[0] ].result_matrix();
-        uint n_points = ref_shape_grads.size();
-        uint n_dofs = ref_shape_grads[0].size();
+        auto ref_grads_vec = operations[ op.input_ops()[1] ].result_matrix();
 
-        Eigen::Matrix<ArenaVec<double>, dim, 3> ref_grads_vec;
         Eigen::Matrix<ArenaOVec<double>, dim, 3> ref_grads_ovec;
-        for (uint i=0; i<ref_grads_vec.rows()*ref_grads_vec.cols(); ++i) {
-            ref_grads_vec(i) = ArenaVec<double>(n_points * n_dofs, op.raw_result()(0).arena());
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-                for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
-            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
-        }
-
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
         for (uint i=0; i<dim*3; ++i) {
+            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
 
@@ -894,8 +872,7 @@ struct bulk_reinit {
         }
     }
     template<unsigned int dim>
-    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations,
-            FMT_UNUSED std::vector< std::vector<arma::mat> > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {
+    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations,  FMT_UNUSED uint vector_shape_grads_op_idx) {
 //        auto &op = operations[scalar_shape_grads_op_idx];
 //        auto inv_jac_vec = operations[ op.input_ops()[0] ].result_matrix();
 //        uint n_points = ref_shape_grads.size();
@@ -923,8 +900,7 @@ struct bulk_reinit {
 //        }
     }
     template<unsigned int dim>
-    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations,
-            FMT_UNUSED std::vector< std::vector<arma::mat> > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {
+    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED uint vector_shape_grads_op_idx) {
 //        auto &op = operations[scalar_shape_grads_op_idx];
 //        auto inv_jac_vec = operations[ op.input_ops()[0] ].result_matrix();
 //        uint n_points = ref_shape_grads.size();
@@ -1044,16 +1020,15 @@ struct side_reinit {
     static inline void ptop_vector_piola_shape(FMT_UNUSED std::vector<ElOp<3>> &operations, FMT_UNUSED IntTableArena &el_table,
             FMT_UNUSED std::vector< std::vector< std::vector<arma::vec3> > > shape_values, FMT_UNUSED uint vector_shape_op_idx) {}
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, IntTableArena &el_table,
-            std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, uint scalar_shape_grads_op_idx) {
-        uint n_points = ref_shape_grads[0].size();
-        uint n_dofs = ref_shape_grads[0][0].size();
+    static inline void ptop_scalar_shape_grads(std::vector<ElOp<3>> &operations, IntTableArena &el_table, uint scalar_shape_grads_op_idx) {
+        auto &op = operations[scalar_shape_grads_op_idx];
+        auto ref_shape_grads = operations[ op.input_ops()[1] ].result_matrix();
+        auto grad_scalar_shape_value = op.result_matrix();  // Result vector
+
+        uint n_dofs = op.n_dofs();
+        uint n_points = ref_shape_grads(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
-
-        // Result vector
-        auto &op = operations[scalar_shape_grads_op_idx];
-        auto grad_scalar_shape_value = op.result_matrix();
 
         // Expands inverse jacobian to inv_jac_expd_value
         auto inv_jac_value = operations[ op.input_ops()[0] ].result_matrix();
@@ -1074,7 +1049,7 @@ struct side_reinit {
                 uint i_begin = (i_dof * n_points + i_pt) * n_sides;
                 for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
                     for (uint i_c=0; i_c<dim; ++i_c) {
-                        ref_shape_grads_expd(i_c)(i_begin + i_sd) = ref_shape_grads[el_table(3)(i_sd)][i_pt][i_dof][i_c];
+                        ref_shape_grads_expd(i_c)(i_begin + i_sd) = ref_shape_grads(el_table(3)(i_sd),i_c)(i_dof * n_points + i_pt);
                     }
                 }
             }

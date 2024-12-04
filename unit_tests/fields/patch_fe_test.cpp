@@ -361,6 +361,12 @@ class PatchFETestFull : public PatchFETestBase {
 public:
 	PatchFETestFull(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
+	  ref_grad_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar_grad() ),
+	  ref_grad_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar_grad() ),
+	  ref_grad_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar_grad() ),
 	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
 	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
 	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
@@ -556,6 +562,12 @@ public:
 
     }
 
+    FeQArray<Vector> ref_grad_scalar_1d_;
+    FeQArray<Vector> ref_grad_scalar_2d_;
+    FeQArray<Vector> ref_grad_scalar_3d_;
+    FeQArray<Vector> ref_grad_scalar_side_1d_;
+    FeQArray<Vector> ref_grad_scalar_side_2d_;
+    FeQArray<Vector> ref_grad_scalar_side_3d_;
     FeQArray<Vector> grad_scalar_shape_1d_;
     FeQArray<Vector> grad_scalar_shape_2d_;
     FeQArray<Vector> grad_scalar_shape_3d_;
