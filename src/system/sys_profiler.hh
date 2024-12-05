@@ -369,13 +369,17 @@ protected:
      * Pauses current timer, save measured petsc memory information util resume.
      * We get Petsc maximum memory usage via PetscMemoryGetMaximumUsage call
      * and save this value into temp value. (we override local maximum if temp
-     * value is greater)
+     * value is greater).
+     * 
+     * Method is not used now. It can be used if necessary.
      */
     void pause();
     /**
      * Resume current timer. e tell Petsc to monitor the maximum memory 
      * usage once again. We call PetscMemorySetGetMaximumUsage so later in 
      * resume() method will PetscMemoryGetMaximumUsage method work.
+     * 
+     * Method is not used now. It can be used if necessary.
      */
     void resume();
     
