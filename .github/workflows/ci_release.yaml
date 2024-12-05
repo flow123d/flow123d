@@ -9,9 +9,7 @@ on:
         - JB_shared_system
         - JB_release_tests        
         - 3.9.1
-        - DF_variant_benchmark_asm
-        - DF_asm_optimization
-        - DF_mechanic_bench
+        - DF_profiler_memory_monitor
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
