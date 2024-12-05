@@ -167,7 +167,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     parent.dealloc_called += child.dealloc_called;
     
 #ifdef FLOW123D_HAVE_PETSC
-    if (child.memory_monitor_on()) {
+    if (global_monitor_memory) {
         // add differences from child
         parent.petsc_memory_difference += child.petsc_memory_difference;
         parent.current_allocated_ += child.current_allocated_;
