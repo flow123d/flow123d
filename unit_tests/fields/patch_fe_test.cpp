@@ -104,14 +104,20 @@ public:
 	  normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
 	  normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
 	  normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() ),
+	  ref_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar() ),
+	  ref_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar() ),
+	  ref_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar() ),
+	  ref_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar() ),
+	  ref_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar() ),
+	  ref_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar() ),
 	  scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
 	  scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
 	  scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
 	  scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
 	  scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
 	  scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
-	  conc_join_shape_2d_( Range< JoinShapeAccessor<Scalar> >( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
-	  conc_join_shape_3d_( Range< JoinShapeAccessor<Scalar> >( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
+	  conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
+	  conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -315,23 +321,29 @@ public:
     ElQ<Scalar> det_1d_;
     ElQ<Scalar> det_2d_;
     ElQ<Scalar> det_3d_;
-    ElQ<Scalar> jxw_1d_;
-    ElQ<Scalar> jxw_2d_;
-    ElQ<Scalar> jxw_3d_;
-    ElQ<Scalar> jxw_side_1d_;
-    ElQ<Scalar> jxw_side_2d_;
-    ElQ<Scalar> jxw_side_3d_;
+    FeQ<Scalar> jxw_1d_;
+    FeQ<Scalar> jxw_2d_;
+    FeQ<Scalar> jxw_3d_;
+    FeQ<Scalar> jxw_side_1d_;
+    FeQ<Scalar> jxw_side_2d_;
+    FeQ<Scalar> jxw_side_3d_;
     ElQ<Vector> normal_vec_1d_;
     ElQ<Vector> normal_vec_2d_;
     ElQ<Vector> normal_vec_3d_;
-    FeQ<Scalar> scalar_shape_1d_;
-    FeQ<Scalar> scalar_shape_2d_;
-    FeQ<Scalar> scalar_shape_3d_;
-    FeQ<Scalar> scalar_shape_side_1d_;
-    FeQ<Scalar> scalar_shape_side_2d_;
-    FeQ<Scalar> scalar_shape_side_3d_;
-    Range< JoinShapeAccessor<Scalar> > conc_join_shape_2d_;
-    Range< JoinShapeAccessor<Scalar> > conc_join_shape_3d_;
+    FeQArray<Scalar> ref_scalar_1d_;
+    FeQArray<Scalar> ref_scalar_2d_;
+    FeQArray<Scalar> ref_scalar_3d_;
+    FeQArray<Scalar> ref_scalar_side_1d_;
+    FeQArray<Scalar> ref_scalar_side_2d_;
+    FeQArray<Scalar> ref_scalar_side_3d_;
+    FeQArray<Scalar> scalar_shape_1d_;
+    FeQArray<Scalar> scalar_shape_2d_;
+    FeQArray<Scalar> scalar_shape_3d_;
+    FeQArray<Scalar> scalar_shape_side_1d_;
+    FeQArray<Scalar> scalar_shape_side_2d_;
+    FeQArray<Scalar> scalar_shape_side_3d_;
+    FeQJoin<Scalar> conc_join_shape_2d_;
+    FeQJoin<Scalar> conc_join_shape_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
@@ -349,6 +361,12 @@ class PatchFETestFull : public PatchFETestBase {
 public:
 	PatchFETestFull(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
+	  ref_grad_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar_grad() ),
+	  ref_grad_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar_grad() ),
+	  ref_grad_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar_grad() ),
+	  ref_grad_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar_grad() ),
 	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
 	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
 	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
@@ -379,7 +397,7 @@ public:
         if (print_tables) {
             std::stringstream ss1, ss2;
             patch_fe_values_.print_data_tables(ss1, true, false, false);
-            std::cout << ss1.str();
+            WarningOut() << ss1.str();
             patch_fe_values_.print_operations(ss2);
             WarningOut() << ss2.str();
         }
@@ -388,6 +406,7 @@ public:
             ElementAccessor<3> elm = dh_cell.elm();
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
             double jxw = 0.0, jxw_ref = 0.0;
+            double det = 0.0, det_ref = 0.0;
             double scalar_shape = 0.0, scalar_shape_ref = 0.0;
             arma::vec3 grad_scalar_dof0("0 0 0");
             arma::vec3 grad_scalar_dof0_ref("0 0 0");
@@ -397,19 +416,23 @@ public:
             case 1:
                 fe_values_[0].reinit(elm);
                 jxw = jxw_1d_(p);
-                scalar_shape = scalar_shape_1d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_1d_(0, p);
+                det = det_1d_(p);
+                scalar_shape = scalar_shape_1d_.shape(0)(p);
+            	grad_scalar_dof0 = grad_scalar_shape_1d_.shape(0)(p);
                 jxw_ref = fe_values_[0].JxW(0);
+                det_ref = fe_values_[0].determinant(0);
                 scalar_shape_ref = fe_values_[0].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[0].shape_grad(0, 0);
                 break;
             case 2:
                 fe_values_[1].reinit(elm);
                 jxw = jxw_2d_(p);
-                scalar_shape = scalar_shape_2d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_2d_(0, p);
-            	grad_scalar_dof1 = grad_scalar_shape_2d_(1, p);
+                det = det_2d_(p);
+                scalar_shape = scalar_shape_2d_.shape(0)(p);
+            	grad_scalar_dof0 = grad_scalar_shape_2d_.shape(0)(p);
+            	grad_scalar_dof1 = grad_scalar_shape_2d_.shape(1)(p);
                 jxw_ref = fe_values_[1].JxW(0);
+                det_ref = fe_values_[1].determinant(0);
                 scalar_shape_ref = fe_values_[1].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[1].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[1].shape_grad(1, 0);
@@ -417,16 +440,19 @@ public:
             case 3:
                 fe_values_[2].reinit(elm);
                 jxw = jxw_3d_(p);
-                scalar_shape = scalar_shape_3d_(0, p);
-            	grad_scalar_dof0 = grad_scalar_shape_3d_(0, p);
-            	grad_scalar_dof1 = grad_scalar_shape_3d_(1, p);
+                det = det_3d_(p);
+                scalar_shape = scalar_shape_3d_.shape(0)(p);
+            	grad_scalar_dof0 = grad_scalar_shape_3d_.shape(0)(p);
+            	grad_scalar_dof1 = grad_scalar_shape_3d_.shape(1)(p);
                 jxw_ref = fe_values_[2].JxW(0);
+                det_ref = fe_values_[2].determinant(0);
                 scalar_shape_ref = fe_values_[2].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[2].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[2].shape_grad(1, 0);
                 break;
             }
             EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_DOUBLE_EQ( det, det_ref );
             EXPECT_DOUBLE_EQ( scalar_shape, scalar_shape_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof0, grad_scalar_dof0_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof1, grad_scalar_dof1_ref );
@@ -448,8 +474,8 @@ public:
             case 1:
                 jxw = jxw_side_1d_(p);
                 normal_vec = normal_vec_1d_(p);
-                scalar_shape = scalar_shape_side_1d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_1d_(0, p);
+                scalar_shape = scalar_shape_side_1d_.shape(0)(p);
+            	grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
@@ -459,8 +485,8 @@ public:
             case 2:
             	jxw = jxw_side_2d_(p);
                 normal_vec = normal_vec_2d_(p);
-                scalar_shape = scalar_shape_side_2d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_2d_(0, p);
+                scalar_shape = scalar_shape_side_2d_.shape(0)(p);
+            	grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
@@ -470,8 +496,8 @@ public:
             case 3:
             	jxw = jxw_side_3d_(p);
                 normal_vec = normal_vec_3d_(p);
-                scalar_shape = scalar_shape_side_3d_(0, p);
-            	grad_scalar = grad_scalar_shape_side_3d_(0, p);
+                scalar_shape = scalar_shape_side_3d_.shape(0)(p);
+            	grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
@@ -498,15 +524,15 @@ public:
             case 2:
                 fe_values_[0].reinit(cell_lower_dim.elm());
                 fe_values_side_[1].reinit(neighb_side.side());
-                for( auto conc_shape_i : conc_join_shape_2d_) {
-                    if (conc_shape_i.is_high_dim()) {
-                	    auto result = conc_shape_i(p_high);
+                for (uint i_dof=0; i_dof<conc_join_shape_2d_.n_dofs_both(); ++i_dof) {
+                    if (conc_join_shape_2d_.is_high_dim(i_dof)) {
+                	    auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_high++;
                     }
                     else {
-                	    auto result = conc_shape_i(p_low);
+                	    auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[0].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_low++;
@@ -516,15 +542,15 @@ public:
             case 3:
                 fe_values_[1].reinit(cell_lower_dim.elm());
                 fe_values_side_[2].reinit(neighb_side.side());
-                for( auto conc_shape_i : conc_join_shape_3d_) {
-                	if (conc_shape_i.is_high_dim()) {
-                	    auto result = conc_shape_i(p_high);
+                for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
+                	if (conc_join_shape_3d_.is_high_dim(i_dof)) {
+                	    auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_high++;
                 	}
                 	else {
-                	    auto result = conc_shape_i(p_low);
+                	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[1].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
                     	i_dof_low++;
@@ -536,12 +562,18 @@ public:
 
     }
 
-    FeQ<Vector> grad_scalar_shape_1d_;
-    FeQ<Vector> grad_scalar_shape_2d_;
-    FeQ<Vector> grad_scalar_shape_3d_;
-    FeQ<Vector> grad_scalar_shape_side_1d_;
-    FeQ<Vector> grad_scalar_shape_side_2d_;
-    FeQ<Vector> grad_scalar_shape_side_3d_;
+    FeQArray<Vector> ref_grad_scalar_1d_;
+    FeQArray<Vector> ref_grad_scalar_2d_;
+    FeQArray<Vector> ref_grad_scalar_3d_;
+    FeQArray<Vector> ref_grad_scalar_side_1d_;
+    FeQArray<Vector> ref_grad_scalar_side_2d_;
+    FeQArray<Vector> ref_grad_scalar_side_3d_;
+    FeQArray<Vector> grad_scalar_shape_1d_;
+    FeQArray<Vector> grad_scalar_shape_2d_;
+    FeQArray<Vector> grad_scalar_shape_3d_;
+    FeQArray<Vector> grad_scalar_shape_side_1d_;
+    FeQArray<Vector> grad_scalar_shape_side_2d_;
+    FeQArray<Vector> grad_scalar_shape_side_3d_;
 };
 
 
