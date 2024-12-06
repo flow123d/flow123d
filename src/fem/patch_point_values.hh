@@ -58,6 +58,8 @@ namespace FeBulk {
      */
     enum BulkOps
     {
+        /// fixed operations (reference data filled once during initialization)
+        opWeights,          ///< weight of quadrature point
         /// operations evaluated on elements
         opElCoords,         ///< coordinations of all nodes of element
         opJac,              ///< Jacobian of element
@@ -65,7 +67,6 @@ namespace FeBulk {
         opJacDet,           ///< determinant of Jacobian
         /// operations evaluated on quadrature points
         opCoords,           ///< coordinations of quadrature point
-        opWeights,          ///< weight of quadrature point
         opJxW               ///< JxW value of quadrature point
     };
 }
@@ -81,6 +82,8 @@ namespace FeSide {
      */
     enum SideOps
     {
+        /// fixed operations (reference data filled once during initialization)
+    	opWeights,              ///< weight of quadrature point
         /// operations evaluated on elements
         opElCoords,             ///< coordinations of all nodes of element
         opElJac,                ///< Jacobian of element
@@ -91,7 +94,6 @@ namespace FeSide {
         opSideJacDet,           ///< determinant of Jacobian of side
         /// operations evaluated on quadrature points
         opCoords,               ///< coordinations of quadrature point
-        opWeights,              ///< weight of quadrature point
         opJxW,                  ///< JxW value of quadrature point
 		opNormalVec             ///< normal vector of quadrature point
     };
@@ -119,7 +121,8 @@ enum FEOps
     opGradVectorShape,     ///< Vector shape gradient
     opVectorSymGrad,       ///< Vector symmetric gradient
     opVectorDivergence,    ///< Vector divergence
-    OpNItems               ///< Holds number of valid FE operations and value of invalid FE operation
+    OpNItems,              ///< Holds number of valid FE operations and value of invalid FE operation
+    OpUnused = 255         ///< Invalid operation index
 };
 
 
@@ -148,7 +151,7 @@ public:
      * @param dim Set dimension
      */
     PatchPointValues(uint dim, AssemblyArena &asm_arena)
-    : fe_ops_indices_(FEOps::OpNItems, FEOps::OpNItems), dim_(dim), elements_map_(300, 0),
+    : fe_ops_indices_(FEOps::OpNItems, FEOps::OpUnused), dim_(dim), elements_map_(300, 0),
       points_map_(300, 0), asm_arena_(asm_arena) {
         reset();
     }
@@ -1170,6 +1173,15 @@ namespace FeBulk {
         /// Initialize operations vector
         template<unsigned int dim>
         void init() {
+            // Fixed operation
+        	auto &weights = this->make_fixed_op( {1}, &common_reinit::op_base );
+            // create result vector of weights operation in assembly arena
+            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
+            auto weights_value = weights.result_matrix();
+            for (uint i=0; i<point_weights_vec.size(); ++i)
+                weights_value(0)(i) = point_weights_vec[i];
+
             // First step: adds element values operations
             /*auto &el_coords =*/ this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {}, OpSizeType::elemOp );
 
@@ -1181,14 +1193,6 @@ namespace FeBulk {
 
             // Second step: adds point values operations
             /*auto &pt_coords =*/ this->make_new_op( {spacedim}, &bulk_reinit::ptop_coords, {} );
-
-            auto &weights = this->make_fixed_op( {1}, &common_reinit::op_base );
-            // create result vector of weights operation in assembly arena
-            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
-            auto weights_value = weights.result_matrix();
-            for (uint i=0; i<point_weights_vec.size(); ++i)
-                weights_value(0)(i) = point_weights_vec[i];
 
             /*auto &JxW =*/ this->make_new_op( {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
         }
@@ -1226,6 +1230,15 @@ namespace FeSide {
         /// Initialize operations vector
         template<unsigned int dim>
         void init() {
+            // Fixed operation
+            auto &weights = this->make_fixed_op( {1},  &common_reinit::op_base ); //lambda_weights );
+            // create result vector of weights operation in assembly arena
+            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
+            auto weights_value = weights.result_matrix();
+            for (uint i=0; i<point_weights_vec.size(); ++i)
+                weights_value(0)(i) = point_weights_vec[i];
+
             // First step: adds element values operations
             /*auto &el_coords =*/ this->make_new_op( {spacedim, this->dim_+1}, &common_reinit::op_base, {}, OpSizeType::elemOp );
 
@@ -1242,14 +1255,6 @@ namespace FeSide {
 
             // Third step: adds point values operations
             /*auto &coords =*/ this->make_new_op( {spacedim}, &side_reinit::ptop_coords, {} );
-
-            auto &weights = this->make_fixed_op( {1},  &common_reinit::op_base ); //lambda_weights );
-            // create result vector of weights operation in assembly arena
-            const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            weights.allocate_result(point_weights_vec.size(), this->asm_arena_);
-            auto weights_value = weights.result_matrix();
-            for (uint i=0; i<point_weights_vec.size(); ++i)
-                weights_value(0)(i) = point_weights_vec[i];
 
             /*auto &JxW =*/ this->make_new_op( {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSideJacDet} );
 
