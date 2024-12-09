@@ -35,13 +35,85 @@ done
 mkdir -p ${OUTPUT_DIR}
 echo "pwd: $(pwd)"
 
-# gmsh in Docker container
-docker_container="flow123d/geomop-gnu:2.0.0"
-docker_contname="geomop-gnu"
-echo "start docker container: '${docker_container}'"
-docker run -t -d --name ${docker_contname} -w /$(pwd) -v /$(pwd):/$(pwd) ${docker_container}
-dexec="docker exec -u $(id -u):$(id -g) ${docker_contname}"
-gmsh="${dexec} gmsh -format msh2"
+
+DOCKER_IMAGE="flow123d/endorse_ci:e67f54"
+DOCKER_CONTAINER="endorse-ci"
+echo "start docker container: '${DOCKER_IMAGE}'"
+# docker run -t -d --name ${DOCKER_CONTAINER} -w /$(pwd) -v /$(pwd):/$(pwd) ${DOCKER_IMAGE}
+DE_EXEC="docker exec -u $(id -u):$(id -g) ${DOCKER_CONTAINER}"
+GMSH="${DE_EXEC} gmsh -format msh2"
+ENDORSE_DIR="${OUTPUT_DIR}/endorse-experiment"
+
+
+# Function to open the Docker container
+open_container() {
+    echo "Starting Docker container '${DOCKER_IMAGE}'"
+
+    # Check if the container already exists
+    if docker ps -a --format '{{.Names}}' | grep -q "^${DOCKER_CONTAINER}$"; then
+        echo "Container '${DOCKER_CONTAINER}' already exists. Removing it..."
+        docker stop "${DOCKER_CONTAINER}" >/dev/null 2>&1 || true
+        docker rm "${DOCKER_CONTAINER}" >/dev/null 2>&1 || true
+        sleep 1
+    fi
+
+    docker run -t -d --name "${DOCKER_CONTAINER}" -w /$(pwd) -v /$(pwd):/$(pwd) "${DOCKER_IMAGE}"
+
+    # Wait for container to start
+    sleep 1
+    # until docker ps | grep -q "${DOCKER_CONTAINER}"; do
+    #     echo "Waiting for container to start..."
+    #     sleep 1
+    # done
+}
+
+# Function to clean up the container
+cleanup_container() {
+    echo "Stopping and removing Docker container..."
+    rm -r --interactive=never ${ENDORSE_DIR}
+    docker stop "${DOCKER_CONTAINER}"
+    docker rm "${DOCKER_CONTAINER}"
+}
+
+# Function to clone and prepare the repository
+prepare_repository() {
+    echo "Installing required packages..."
+    ${DE_EXEC} sudo apt-get update
+    ${DE_EXEC} sudo apt-get install -y git
+    # fix which makes `python3` `python` without manually creating symlink
+    ${DE_EXEC} sudo apt-get install -y python-is-python3
+
+    echo "Cloning endorse repository..."
+    ${DE_EXEC} git clone -b PE_new_image https://github.com/GeoMop/endorse-experiment.git "${ENDORSE_DIR}"
+
+    echo "Fixing submodule URL for SALib..."
+    sed -i '/GeoMop\/SALib\.git/c\ \turl = ../../GeoMop/SALib.git' "${ENDORSE_DIR}/.gitmodules"
+
+    ${DE_EXEC} git -C "${ENDORSE_DIR}" submodule sync
+    ${DE_EXEC} git -C "${ENDORSE_DIR}" submodule update --init --recursive
+
+    echo "Installing Python packages..."
+    ${DE_EXEC} pip install -e "${ENDORSE_DIR}/submodules/bgem"
+    # attrs somehow was broken after gmsh explicit installation, must force its reinstalation
+    ${DE_EXEC} pip install --force-reinstall --upgrade attrs
+    ${DE_EXEC} pip install pyyaml-include==1.3.2
+    ${DE_EXEC} pip install -e "${ENDORSE_DIR}"
+
+    ${DE_EXEC} gmsh --version
+    echo "Repository prepared."
+}
+
+create_fractured_meshes() {
+    echo "Creating fractured meshes using bgem..."
+    ${DE_EXEC} python unit_tests/coupling/benchmark_meshes/create_fractured_mesh.py ${OUTPUT_DIR}
+}
+
+open_container
+prepare_repository
+create_fractured_meshes
+# exit 0
+
+
 
 # target element counts:
 # SMALL     3 000
@@ -86,7 +158,7 @@ function make_mesh {
   dim=$3
   size_int=$4
   if [ "$size_int" -le "$MAX_SIZE_INT" ]; then
-      ${gmsh} -setnumber fine_step $fine_step -setnumber mesh ${mesh_step} -${dim[$i]} -o ${mshfile} ${geofile}
+      ${GMSH} -setnumber fine_step $fine_step -setnumber mesh ${mesh_step} -${dim[$i]} -o ${mshfile} ${geofile}
   fi
 }
 
@@ -96,6 +168,7 @@ function make_mesh_variants {
   geofile="${ut_dir}/${geos[$i_mesh]}"
   filename="${geos[$i_mesh]%.*}"
   echo "generate meshes for: ${filename}"
+  # for i_size in 0; do
   for i_size in 0 1 2; do
     size_str=${SIZE_NAMES[$i_size]}
         
@@ -118,5 +191,4 @@ for i in ${!geos[@]}; do
   make_mesh_variants $i
 done
 
-docker stop ${docker_contname}
-docker rm ${docker_contname}
+cleanup_container
