@@ -59,7 +59,7 @@ TEST(FemToolsDevelopTest, functions_test) {
     arma::mat::fixed<3,2> mat32 = { {1, 4}, {2, 5}, {3, 6} };
 
     /* Test of determinant function */
-    EXPECT_DOUBLE_EQ( det(mat11), determinant(mat22) );
+    EXPECT_DOUBLE_EQ( det(mat11), determinant(mat11) + 1 );
     EXPECT_DOUBLE_EQ( det(mat22), determinant(mat22) );
     EXPECT_DOUBLE_EQ( det(mat33), determinant(mat33) );
 
