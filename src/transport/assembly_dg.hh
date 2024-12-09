@@ -45,6 +45,7 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
+	  ref_scalar_( this->bulk_values().ref_scalar() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
@@ -137,6 +138,7 @@ public:
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
         FeQ<Scalar> JxW_;
+        FeQArray<Scalar> ref_scalar_;
         FeQArray<Scalar> conc_shape_;
 
         template < template<IntDim...> class DimAssembly>
@@ -236,6 +238,10 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
+	  ref_scalar_( this->bulk_values().ref_scalar() ),
+	  ref_scalar_side_( this->side_values().ref_scalar() ),
+	  ref_scalar_grad_( this->bulk_values().ref_scalar_grad() ),
+	  ref_scalar_grad_side_( this->side_values().ref_scalar_grad() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_shape_side_( this->side_values().scalar_shape() ),
       conc_grad_( this->bulk_values().grad_scalar_shape() ),
@@ -657,6 +663,10 @@ private:
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
+    FeQArray<Scalar> ref_scalar_;
+    FeQArray<Scalar> ref_scalar_side_;
+    FeQArray<Vector> ref_scalar_grad_;
+    FeQArray<Vector> ref_scalar_grad_side_;
     FeQArray<Scalar> conc_shape_;
     FeQArray<Scalar> conc_shape_side_;
     FeQArray<Vector> conc_grad_;
@@ -685,6 +695,7 @@ public:
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
+	  ref_scalar_( this->bulk_values().ref_scalar() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
@@ -778,6 +789,7 @@ public:
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
 
         FeQ<Scalar> JxW_;
+        FeQArray<Scalar> ref_scalar_;
         FeQArray<Scalar> conc_shape_;
 
         template < template<IntDim...> class DimAssembly>
@@ -803,6 +815,8 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
+	  ref_scalar_side_( this->side_values().ref_scalar() ),
+	  ref_scalar_grad_side_( this->side_values().ref_scalar_grad() ),
       conc_shape_( this->side_values().scalar_shape() ),
 	  conc_grad_( this->side_values().grad_scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
@@ -984,6 +998,8 @@ public:
 
         FeQ<Scalar> JxW_;
         ElQ<Vector> normal_;
+        FeQArray<Scalar> ref_scalar_side_;
+        FeQArray<Vector> ref_scalar_grad_side_;
         FeQArray<Scalar> conc_shape_;
         FeQArray<Vector> conc_grad_;
 
@@ -1009,6 +1025,7 @@ public:
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
+	  ref_scalar_( this->bulk_values().ref_scalar() ),
       init_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
@@ -1076,6 +1093,7 @@ public:
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
 
         FeQ<Scalar> JxW_;
+        FeQArray<Scalar> ref_scalar_;
         FeQArray<Scalar> init_shape_;
 
         template < template<IntDim...> class DimAssembly>

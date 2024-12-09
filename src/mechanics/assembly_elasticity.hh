@@ -46,11 +46,11 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ),
-	  ref_vals_( this->bulk_values().ref_vector() ),
+      ref_vals_( this->bulk_values().ref_vector() ),
       ref_vals_side_( this->side_values().ref_vector() ),
-	  grad_ref_vals_( this->bulk_values().ref_vector_grad() ),
+      grad_ref_vals_( this->bulk_values().ref_vector_grad() ),
       grad_ref_vals_side_( this->side_values().ref_vector_grad() ),
+      deform_side_( this->side_values().vector_shape() ),
       grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
       div_deform_( this->bulk_values().vector_divergence() ),
@@ -244,11 +244,11 @@ private:
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQArray<Vector> deform_side_;
     FeQArray<Vector> ref_vals_;
     FeQArray<Vector> ref_vals_side_;
     FeQArray<Tensor> grad_ref_vals_;
     FeQArray<Tensor> grad_ref_vals_side_;
+    FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
     FeQArray<Scalar> div_deform_;
