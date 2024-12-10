@@ -287,16 +287,16 @@ TEST(DOFHandler, test_rt)
     }
 
     // dof at el. 1 side 1 equals dof at el. 2 side 0
-    if (own_elem[0] & own_elem[1]) EXPECT_EQ( indices[0][1], indices[1][0] );
+    if (own_elem[0] & own_elem[1]) EXPECT_EQ( indices[0][0], indices[1][0] );
 
     // dof at el. 1 side 1 equals dof at el. 3 side 0
-    if (own_elem[0] & own_elem[2]) EXPECT_EQ( indices[0][1], indices[2][0] );
+    if (own_elem[0] & own_elem[2]) EXPECT_EQ( indices[0][0], indices[2][0] );
 
     // dof at el. 4 side 2 equals dof at el. 6 side 0
-    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[0][0], indices[5][0] );
 
     // dof at el. 6 side 1 equals dof at el. 8 side 0
-    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][0] );
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[0][0], indices[7][0] );
 
     delete mesh;
 
