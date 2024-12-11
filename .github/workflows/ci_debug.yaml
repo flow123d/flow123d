@@ -152,7 +152,7 @@ jobs:
 
         - name: Process XML files
           run: |
-            python config/build/process_xml_files.py ${{ steps.vars.outputs.builddir }}/unit_tests ${{ matrix.test_dir }} $GITHUB_JOB $GITHUB_RUN_ID
+            python config/build/test_result_parser.py ${{ steps.vars.outputs.builddir }}/unit_tests ${{ matrix.test_dir }} $GITHUB_JOB $GITHUB_RUN_ID
 
 # Wait for python script. He will filter failed tests and extend them of url.            
 #        - name: Publish Test Results
