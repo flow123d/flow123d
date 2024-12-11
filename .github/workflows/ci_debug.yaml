@@ -147,24 +147,19 @@ jobs:
 
         - name: Run unit tests
           run: |
-            mkdir -p test-logs
-            config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test > test-logs/test-output.log 2>&1
+            config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test > ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}_log.txt 2>&1
 
-        - name: Display test output
-          run: cat test-logs/test-output.log
+        - name: Process XML files
+          run: |
+            python config/build/process_xml_files.py ${{ steps.vars.outputs.builddir }}/unit_tests ${{ matrix.test_dir }} $GITHUB_JOB $GITHUB_RUN_ID
 
-        - name: Upload test logs
-          uses: actions/upload-artifact@v3
-          with:
-            name: unit-test-logs
-            path: test-logs/test-output.log
-
-        - name: Publish Test Results
-          uses: EnricoMi/publish-unit-test-result-action@v2
-          if: always()
-          with:
-             files: |
-                ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
+# Wait for python script. He will filter failed tests and extend them of url.            
+#        - name: Publish Test Results
+#          uses: EnricoMi/publish-unit-test-result-action@v2
+#          if: always()
+#          with:
+#             files: |
+#                ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
 
     build_doc:
         needs: [build]
