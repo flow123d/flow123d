@@ -147,6 +147,7 @@ jobs:
 
         - name: Run unit tests
           run: |
+            mkdir -p ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}
             config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test > ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}_log.txt 2>&1
 
         - name: Process XML files
