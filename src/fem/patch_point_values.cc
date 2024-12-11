@@ -22,6 +22,6 @@
 
 
 template class PatchPointValues<3>;
-template class ElOp<3>;
+template class PatchOp<3>;
 template class FeBulk::PatchPointValues<3>;
 template class FeSide::PatchPointValues<3>;
