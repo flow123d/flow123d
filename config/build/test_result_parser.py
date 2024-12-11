@@ -19,7 +19,8 @@ import xml.etree.ElementTree as ET
 # It will create new directory for only failed tests.
 
 def get_core_number(test_name):
-    return
+    
+    return 
 
 def get_row_number(logs, core_number):
     return
@@ -34,6 +35,7 @@ def add_url_to_xml(xml_file, url):
 def process_xml_files(build_dir, test_dir, job_id, run_id):
     print(f"Processing XML files for Job ID: {job_id}, Run ID: {run_id}")
     print(f"Build directory: {build_dir}, Test directory: {test_dir}")
+    
     xml_path = os.path.join(build_dir, "unit_tests", test_dir, "*.xml")
     xml_files = glob.glob(xml_path)
 
@@ -45,6 +47,10 @@ def process_xml_files(build_dir, test_dir, job_id, run_id):
 
     for xml_file in xml_files:
         print(f"Processing file: {xml_file}")
+        print("--- File Content ---")
+        with open(xml_file, 'r') as file:
+            print(file.read())
+        print("--------------------")
         try:
             tree = ET.parse(xml_file)
             root = tree.getroot()
