@@ -148,7 +148,7 @@ jobs:
         - name: Run unit tests
           run: |
             mkdir -p ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}
-            config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test > ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}_log.txt 2>&1
+            config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test 2>&1 | tee ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}_log.txt
           shell: /usr/bin/bash -e {0}
           continue-on-error: true
 
