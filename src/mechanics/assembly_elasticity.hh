@@ -26,6 +26,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
+#include "la/linsys_PERMON.hh"
 
 
 /**
@@ -99,7 +100,7 @@ public:
         ElementAccessor<3> elm_acc = cell.elm();
 
         fe_values_.reinit(elm_acc);
-        cell.get_dof_indices(dof_indices_);
+        dof_indices_ = cell.get_loc_dof_indices();
 
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -119,18 +120,17 @@ public:
             }
             k++;
         }
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
-        dh_cell.get_dof_indices(dof_indices_);
+        dof_indices_ = dh_cell.get_loc_dof_indices();
         fe_values_side_.reinit(side);
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -165,7 +165,7 @@ public:
             }
         }
 
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
 
@@ -174,24 +174,28 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
-		fe_values_sub_.reinit(cell_sub);
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+        if (!cell_lower_dim.is_own()) return;
 
-		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+		side_dof_indices_[0] = cell_lower_dim.get_loc_dof_indices();
+		fe_values_sub_.reinit(cell_lower_dim.elm());
+        side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
-		// Element id's for testing if they belong to local partition.
-		bool own_element_id[2];
-		own_element_id[0] = cell_lower_dim.is_own();
-		own_element_id[1] = cell_higher_dim.is_own();
+        // mark dofs that do not contribute to dimjoin coupling
+        vector<LongIdx> lower_nodes;
+        for (unsigned int i=0; i<dim; i++)
+            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
+        vector<double> ignore_dofs(n_dofs_, false);
+        for (unsigned int idof=0; idof<n_dofs_; idof++)
+            if ( side_dof_indices_[1][idof] >= 0 && cell_higher_dim.cell_dof(idof).dim == 0 && 
+                 find(lower_nodes.begin(), lower_nodes.end(), cell_higher_dim.elm().node(cell_higher_dim.cell_dof(idof).n_face_idx).idx()) == lower_nodes.end() )
+                ignore_dofs[idof] = true;
 
         for (unsigned int n=0; n<2; ++n)
-            for (unsigned int i=0; i<n_dofs_; i++)
-                for (unsigned int m=0; m<2; ++m)
-                    for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
+            for (unsigned int m=0; m<2; ++m)
+                for (unsigned int i=0; i<n_dofs_*n_dofs_; i++)
+                    local_matrix_ngh_[n][m][i] = 0;
 
         // set transmission conditions
         unsigned int k=0;
@@ -202,16 +206,18 @@ public:
 
             for (int n=0; n<2; n++)
             {
-                if (!own_element_id[n]) continue;
-
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
+                    if (n == 1 && ignore_dofs[i]) continue;
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
-                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                    arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
+                    double divvft = (n==0) ? arma::trace(gvft) : 0;
 
                     for (int m=0; m<2; m++)
+                    {
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
+                            if (m == 1 && ignore_dofs[j]) continue;
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
@@ -219,14 +225,15 @@ public:
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
-                                     arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
-                                     )
-                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fe_values_sub_.JxW(k);
+                                        2/eq_fields_->cross_section(p_low)*(
+                                            eq_fields_->lame_mu(p_low)*arma::dot(vf-vi,uf-ui)
+                                          +(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*arma::dot(uf-ui,nv)*arma::dot(vf-vi,nv)
+                                        )
+                                        + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
+                                        + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
+                                    )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                         }
+                    }
 
                 }
             }
@@ -235,7 +242,7 @@ public:
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
-                eq_data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
+                eq_data_->ls->mat_set_values_local(n_dofs_ngh_[n], side_dof_indices_[n].memptr(), n_dofs_ngh_[m], side_dof_indices_[m].memptr(), &(local_matrix_ngh_[n][m][0]));
     }
 
 
@@ -266,8 +273,8 @@ private:
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
     FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    vector<LocDofVec > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;    ///< Auxiliary vectors for assemble ngh integral
     const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
@@ -347,7 +354,6 @@ public:
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
-        if (!cell.is_own()) return;
 
         ElementAccessor<3> elm_acc = cell.elm();
 
@@ -388,7 +394,6 @@ public:
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
@@ -774,6 +779,19 @@ public:
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(dof_indices_);
 
+        vector<LongIdx> lower_nodes;
+        for (unsigned int i=0; i<dim; i++)
+            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
+
+        vector<double> ignore_dofs(n_dofs_, false);
+        for (unsigned int idof=0; idof<n_dofs_; idof++) {
+            if ( dof_indices_[idof] >= 0 && cell_higher_dim.cell_dof(idof).dim == 0 && 
+                 find(lower_nodes.begin(), lower_nodes.end(), cell_higher_dim.elm().node(cell_higher_dim.cell_dof(idof).n_face_idx).idx()) == lower_nodes.end() )
+            {
+                ignore_dofs[idof] = true;
+            }
+        }
+
 		fe_values_side_.reinit(neighb_side.side());
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -793,6 +811,7 @@ public:
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
+                if (ignore_dofs[i]) continue;
                 local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
             }
         	k++;
