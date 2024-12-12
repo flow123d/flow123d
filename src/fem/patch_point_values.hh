@@ -318,11 +318,10 @@ public:
      * @param op_idx         Index of operation in operations_ vector
      * @param shape          Shape of function output
      * @param reinit_f       Reinitialize function
-     * @param input_ops_vec  Indices of input operations in operations_ vector.
      * @param size_type Type of operation by size of rows
      */
-    PatchOp<spacedim> *make_new_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, OpSizeType size_type = pointOp) {
-    	return make_fe_op(op_idx, shape, reinit_f, input_ops_vec, 1, size_type);
+    PatchOp<spacedim> *make_new_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, OpSizeType size_type = pointOp) {
+    	return make_fe_op(op_idx, shape, reinit_f, 1, size_type);
     }
 
     /**
@@ -333,7 +332,7 @@ public:
      * @param reinit_f       Reinitialize function
      */
     PatchOp<spacedim> *make_fixed_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f) {
-        return make_fe_op(op_idx, shape, reinit_f, {}, 1, fixedSizeOp);
+        return make_fe_op(op_idx, shape, reinit_f, 1, fixedSizeOp);
     }
 
     /**
@@ -342,15 +341,14 @@ public:
      * @param op_idx         Index of operation in operations_ vector
      * @param shape          Shape of function output
      * @param reinit_f       Reinitialize function
-     * @param input_ops_vec  Indices of input operations in operations_ vector.
      * @param n_dofs         Number of DOFs
      * @param size_type      Type of operation by size of rows
      */
-    PatchOp<spacedim> *make_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs,
+    PatchOp<spacedim> *make_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, uint n_dofs,
             OpSizeType size_type = pointOp) {
         if (operations_[op_idx] == nullptr) {
             std::vector<PatchOp<spacedim> *> input_ops_ptr;
-            for (uint i_op : input_ops_vec) {
+            for (uint i_op : this->op_dependency_[op_idx]) {
                 ASSERT_PTR(operations_[i_op]);
                 input_ops_ptr.push_back(operations_[i_op]);
             }
@@ -368,7 +366,7 @@ public:
      * @param n_dofs         Number of DOFs
      */
     PatchOp<spacedim> *make_fixed_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, uint n_dofs) {
-    	return make_fe_op(op_idx, shape, reinit_f, {}, n_dofs, fixedSizeOp);
+    	return make_fe_op(op_idx, shape, reinit_f, n_dofs, fixedSizeOp);
     }
 
 
@@ -539,8 +537,8 @@ public:
             if (operations_[i] == nullptr) continue;
             stream << " " << std::left << setw(20) << op_names[bulk_side][i] << "" << " " << setw(6) << operations_[i]->format_shape() << "" << " "
                 << setw(7) << operations_[i]->n_dofs() << "" << " ";
-//            auto &input_ops = operations_[i]->input_ops();
-//            for (auto i_o : input_ops) stream << op_names[bulk_side][i_o] << " ";
+            //auto &input_ops = operations_[i]->input_ops();
+            for (auto i_o : op_dependency_[i]) stream << op_names[bulk_side][i_o] << " ";
             stream << std::endl;
         }
     }
@@ -566,6 +564,9 @@ protected:
 
     /// Vector of all defined operations
     std::vector<PatchOp<spacedim> *> operations_;
+
+    /// Holds dependency between operations
+    std::vector< std::vector<unsigned int> > op_dependency_;
 
     uint dim_;                          ///< Dimension
     uint n_points_;                     ///< Number of points in patch
@@ -1146,6 +1147,23 @@ namespace FeBulk {
         /// Constructor
         PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
         : ::PatchPointValues<spacedim>(dim, asm_arena) {
+            // set dependency of operations
+            this->op_dependency_ = std::vector< std::vector<unsigned int> >(BulkOps::opNItems);
+            this->op_dependency_[BulkOps::opJac] = {BulkOps::opElCoords};
+            this->op_dependency_[BulkOps::opInvJac] = {BulkOps::opJac};
+            this->op_dependency_[BulkOps::opJacDet] = {BulkOps::opJac};
+            this->op_dependency_[BulkOps::opJxW] = {BulkOps::opWeights, BulkOps::opJacDet};
+            this->op_dependency_[BulkOps::opScalarShape] = {BulkOps::opRefScalar};
+            this->op_dependency_[BulkOps::opVectorShape] = {BulkOps::opRefVector};
+            // VectorContravariant: {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac}
+            // VectorPiola: {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}
+            this->op_dependency_[BulkOps::opGradScalarShape] = {BulkOps::opInvJac, BulkOps::opRefScalarGrad};
+            this->op_dependency_[BulkOps::opGradVectorShape] = {BulkOps::opInvJac, BulkOps::opRefVectorGrad};
+            // VectorContravariant: {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac}
+            // VectorPiola: {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}
+            this->op_dependency_[BulkOps::opVectorSymGrad] = {BulkOps::opGradVectorShape};
+            this->op_dependency_[BulkOps::opVectorDivergence] = {BulkOps::opGradVectorShape};
+
             this->quad_ = new QGauss(dim, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp};
             this->operations_.resize(BulkOps::opNItems, nullptr);
@@ -1176,18 +1194,18 @@ namespace FeBulk {
                 weights_value(0)(i) = point_weights_vec[i];
 
             // First step: adds element values operations
-            /*auto &el_coords =*/ this->make_new_op( BulkOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, {}, OpSizeType::elemOp );
+            /*auto &el_coords =*/ this->make_new_op( BulkOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
 
-            /*auto &el_jac =*/ this->make_new_op( BulkOps::opJac, {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, {BulkOps::opElCoords}, OpSizeType::elemOp );
+            /*auto &el_jac =*/ this->make_new_op( BulkOps::opJac, {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, OpSizeType::elemOp );
 
-            /*auto &el_inv_jac =*/ this->make_new_op( BulkOps::opInvJac, {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
+            /*auto &el_inv_jac =*/ this->make_new_op( BulkOps::opInvJac, {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, OpSizeType::elemOp );
 
-            /*auto &el_jac_det =*/ this->make_new_op( BulkOps::opJacDet, {1}, &bulk_reinit::elop_jac_det<dim>, {BulkOps::opJac}, OpSizeType::elemOp );
+            /*auto &el_jac_det =*/ this->make_new_op( BulkOps::opJacDet, {1}, &bulk_reinit::elop_jac_det<dim>, OpSizeType::elemOp );
 
             // Second step: adds point values operations
-            /*auto &pt_coords =*/ this->make_new_op( BulkOps::opCoords, {spacedim}, &bulk_reinit::ptop_coords, {} );
+            /*auto &pt_coords =*/ this->make_new_op( BulkOps::opCoords, {spacedim}, &bulk_reinit::ptop_coords );
 
-            /*auto &JxW =*/ this->make_new_op( BulkOps::opJxW, {1}, &bulk_reinit::ptop_JxW, {BulkOps::opWeights, BulkOps::opJacDet} );
+            /*auto &JxW =*/ this->make_new_op( BulkOps::opJxW, {1}, &bulk_reinit::ptop_JxW );
         }
     };
 
@@ -1204,6 +1222,26 @@ namespace FeSide {
         /// Constructor
         PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
         : ::PatchPointValues<spacedim>(dim, asm_arena) {
+            // set dependency of operations
+            this->op_dependency_ = std::vector< std::vector<unsigned int> >(SideOps::opNItems);
+            this->op_dependency_[SideOps::opElJac] = {SideOps::opElCoords};
+            this->op_dependency_[SideOps::opElInvJac] = {SideOps::opElJac};
+            this->op_dependency_[SideOps::opSideJac] = {SideOps::opSideCoords};
+            this->op_dependency_[SideOps::opSideJacDet] = {SideOps::opSideJac};
+            this->op_dependency_[SideOps::opJxW] = {SideOps::opWeights, SideOps::opSideJacDet};
+            this->op_dependency_[SideOps::opNormalVec] = {SideOps::opElInvJac};
+            this->op_dependency_[SideOps::opScalarShape] = {SideOps::opRefScalar};
+            this->op_dependency_[SideOps::opVectorShape] = {SideOps::opRefVector};
+            // VectorContravariant: {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac}
+            // VectorPiola: {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac, FeSide::SideOps::opSideJacDet}
+            this->op_dependency_[SideOps::opGradScalarShape] = {SideOps::opElInvJac, SideOps::opRefScalarGrad};
+            this->op_dependency_[SideOps::opGradVectorShape] = {SideOps::opElInvJac, SideOps::opRefVectorGrad};
+            // VectorContravariant: {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac}
+            // VectorPiola: {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet}
+                // TODO ?? define and use opElJacDet
+            this->op_dependency_[SideOps::opVectorSymGrad] = {SideOps::opGradVectorShape};
+            this->op_dependency_[SideOps::opVectorDivergence] = {SideOps::opGradVectorShape};
+
             this->quad_ = new QGauss(dim-1, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
             this->operations_.resize(SideOps::opNItems, nullptr);
@@ -1234,25 +1272,25 @@ namespace FeSide {
                 weights_value(0)(i) = point_weights_vec[i];
 
             // First step: adds element values operations
-            /*auto &el_coords =*/ this->make_new_op( SideOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, {}, OpSizeType::elemOp );
+            /*auto &el_coords =*/ this->make_new_op( SideOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
 
-            /*auto &el_jac =*/ this->make_new_op( SideOps::opElJac, {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, {SideOps::opElCoords}, OpSizeType::elemOp );
+            /*auto &el_jac =*/ this->make_new_op( SideOps::opElJac, {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, OpSizeType::elemOp );
 
-            /*auto &el_inv_jac =*/ this->make_new_op( SideOps::opElInvJac, {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, {SideOps::opElJac}, OpSizeType::elemOp );
+            /*auto &el_inv_jac =*/ this->make_new_op( SideOps::opElInvJac, {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, OpSizeType::elemOp );
 
             // Second step: adds side values operations
-            /*auto &sd_coords =*/ this->make_new_op( SideOps::opSideCoords, {spacedim, this->dim_}, &common_reinit::op_base, {}, OpSizeType::elemOp );
+            /*auto &sd_coords =*/ this->make_new_op( SideOps::opSideCoords, {spacedim, this->dim_}, &common_reinit::op_base, OpSizeType::elemOp );
 
-            /*auto &sd_jac =*/ this->make_new_op( SideOps::opSideJac, {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, {SideOps::opSideCoords}, OpSizeType::elemOp );
+            /*auto &sd_jac =*/ this->make_new_op( SideOps::opSideJac, {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, OpSizeType::elemOp );
 
-            /*auto &sd_jac_det =*/ this->make_new_op( SideOps::opSideJacDet, {1}, &side_reinit::elop_sd_jac_det<dim>, {SideOps::opSideJac}, OpSizeType::elemOp );
+            /*auto &sd_jac_det =*/ this->make_new_op( SideOps::opSideJacDet, {1}, &side_reinit::elop_sd_jac_det<dim>, OpSizeType::elemOp );
 
             // Third step: adds point values operations
-            /*auto &coords =*/ this->make_new_op( SideOps::opCoords, {spacedim}, &side_reinit::ptop_coords, {} );
+            /*auto &coords =*/ this->make_new_op( SideOps::opCoords, {spacedim}, &side_reinit::ptop_coords );
 
-            /*auto &JxW =*/ this->make_new_op( SideOps::opJxW, {1}, &side_reinit::ptop_JxW, {SideOps::opWeights, SideOps::opSideJacDet} );
+            /*auto &JxW =*/ this->make_new_op( SideOps::opJxW, {1}, &side_reinit::ptop_JxW );
 
-            /*auto &normal_vec =*/ this->make_new_op( SideOps::opNormalVec, {spacedim}, &side_reinit::ptop_normal_vec<dim>, {SideOps::opElInvJac}, OpSizeType::elemOp );
+            /*auto &normal_vec =*/ this->make_new_op( SideOps::opNormalVec, {spacedim}, &side_reinit::ptop_normal_vec<dim>, OpSizeType::elemOp );
         }
     };
 

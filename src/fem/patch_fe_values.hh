@@ -482,7 +482,7 @@ public:
         auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, scalar_shape_op_idx);
             };
-        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, {FeBulk::BulkOps::opRefScalar}, n_dofs);
+        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, n_dofs);
 
         return FeQArray<Scalar>(patch_point_vals_, true, scalar_shape_op_idx, n_dofs);
     }
@@ -500,7 +500,7 @@ public:
                 auto lambda_vector_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         bulk_reinit::ptop_vector_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, {FeBulk::BulkOps::opRefVector}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
@@ -509,7 +509,7 @@ public:
                 auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
@@ -518,7 +518,7 @@ public:
                 auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -548,7 +548,7 @@ public:
         auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 bulk_reinit::ptop_scalar_shape_grads<dim>(operations, scalar_shape_grads_op_idx);
             };
-        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefScalarGrad}, n_dofs);
+        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, n_dofs);
 
         return FeQArray<Vector>(patch_point_vals_, true, scalar_shape_grads_op_idx, n_dofs);
     }
@@ -575,7 +575,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
                                              lambda_vector_shape_grad,
-                                             {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad},
                                              fe_component->n_dofs());
                 break;
             }
@@ -588,7 +587,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
                                              lambda_contravariant_shape_grad,
-                                             {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac},
                                              fe_component->n_dofs());
                 break;
             }
@@ -601,7 +599,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                               {3, 3},
                                               lambda_piola_shape_grad,
-                                              {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
                                               fe_component->n_dofs());
                 break;
             }
@@ -628,7 +625,7 @@ public:
         auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
             };
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3}, lambda_vector_sym_grad, {FeBulk::BulkOps::opGradVectorShape}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3}, lambda_vector_sym_grad, fe_component->n_dofs());
 
         return FeQArray<Tensor>(patch_point_vals_, true, vector_sym_grad_op_idx, fe_component->n_dofs());
     }
@@ -649,7 +646,7 @@ public:
         auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
             };
-        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, {FeBulk::BulkOps::opGradVectorShape}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, fe_component->n_dofs());
 
         return FeQArray<Scalar>(patch_point_vals_, true, vector_divergence_op_idx, fe_component->n_dofs());
     }
@@ -806,7 +803,7 @@ public:
         auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
                 side_reinit::ptop_scalar_shape(operations, el_table, scalar_shape_op_idx);
             };
-        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, {FeSide::SideOps::opRefScalar}, n_dofs);
+        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, n_dofs);
 
         return FeQArray<Scalar>(patch_point_vals_, false, scalar_shape_op_idx, n_dofs);
     }
@@ -826,7 +823,7 @@ public:
                 auto lambda_vector_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
                         side_reinit::ptop_vector_shape(operations, el_table, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, {FeSide::SideOps::opRefVector}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
@@ -835,7 +832,7 @@ public:
                 auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         side_reinit::ptop_vector_contravariant_shape(operations, el_table, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
@@ -844,7 +841,7 @@ public:
                 auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         side_reinit::ptop_vector_piola_shape(operations, el_table, vector_shape_op_idx);
                     };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac, FeSide::SideOps::opSideJacDet}, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -864,7 +861,7 @@ public:
         auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
                 side_reinit::ptop_scalar_shape_grads<dim>(operations, el_table, scalar_shape_grads_op_idx);
             };
-        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefScalarGrad}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, fe_component->n_dofs());
 
         return FeQArray<Vector>(patch_point_vals_, false, scalar_shape_grads_op_idx, fe_component->n_dofs());
     }
@@ -891,7 +888,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
                                              lambda_vector_shape_grad,
-                                             {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad},
                                              fe_component->n_dofs());
                 break;
             }
@@ -904,7 +900,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
                                              lambda_contravariant_shape_grad,
-                                             {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac},
                                              fe_component->n_dofs());
                 break;
             }
@@ -917,7 +912,6 @@ public:
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                               {3, 3},
                                               lambda_piola_shape_grad,
-                                              {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet}, // TODO define and use opElJacDet
                                               fe_component->n_dofs());
                 break;
             }
@@ -944,7 +938,7 @@ public:
         auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
             };
-        patch_point_vals_->make_fe_op(vector_sym_grad_op_idx, {3,3}, lambda_vector_sym_grad, {FeSide::SideOps::opGradVectorShape}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(vector_sym_grad_op_idx, {3,3}, lambda_vector_sym_grad, fe_component->n_dofs());
 
         return FeQArray<Tensor>(patch_point_vals_, false, vector_sym_grad_op_idx, fe_component->n_dofs());
     }
@@ -965,7 +959,7 @@ public:
         auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
             };
-        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, {FeSide::SideOps::opGradVectorShape}, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, fe_component->n_dofs());
 
         return FeQArray<Scalar>(patch_point_vals_, false, vector_divergence_op_idx, fe_component->n_dofs());
     }
@@ -1000,7 +994,7 @@ public:
         auto lambda_scalar_shape_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 bulk_reinit::ptop_scalar_shape(operations, op_idx_bulk);
             };
-        patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {1}, lambda_scalar_shape_bulk, {FeBulk::BulkOps::opRefScalar}, n_dofs_low);
+        patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {1}, lambda_scalar_shape_bulk, n_dofs_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
@@ -1011,7 +1005,7 @@ public:
         auto lambda_scalar_shape_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
                 side_reinit::ptop_scalar_shape(operations, el_table, op_idx_side);
             };
-        patch_point_vals_side_->make_fe_op(op_idx_side, {1}, lambda_scalar_shape_side, {FeSide::SideOps::opRefScalar}, n_dofs_high);
+        patch_point_vals_side_->make_fe_op(op_idx_side, {1}, lambda_scalar_shape_side, n_dofs_high);
 
         return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high, op_idx_bulk, op_idx_side);
     }
@@ -1034,13 +1028,13 @@ public:
                 auto lambda_vector_shape_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                         bulk_reinit::ptop_vector_shape(operations, op_idx_bulk);
                     };
-                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, lambda_vector_shape_bulk, {FeBulk::BulkOps::opRefVector}, fe_component_low->n_dofs());
+                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, lambda_vector_shape_bulk, fe_component_low->n_dofs());
 
                 // use lambda reinit function (higher dim)
                 auto lambda_vector_shape_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
                         side_reinit::ptop_vector_shape(operations, el_table, op_idx_side);
                     };
-                patch_point_vals_side_->make_fe_op(op_idx_side, {3}, lambda_vector_shape_side, {FeSide::SideOps::opRefVector}, fe_component_high->n_dofs());
+                patch_point_vals_side_->make_fe_op(op_idx_side, {3}, lambda_vector_shape_side, fe_component_high->n_dofs());
                 break;
             }
             case FEVectorContravariant:
@@ -1049,7 +1043,7 @@ public:
                 //auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 //        bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
                 //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac}, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
@@ -1058,7 +1052,7 @@ public:
                 //auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 //        bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
                 //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -1090,7 +1084,6 @@ public:
                 patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
                                                   {3, 3},
                                                   lambda_vector_grad_bulk,
-                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad},
                                                   fe_component_low->n_dofs());
 
                 // use lambda reinit function (higher dim)
@@ -1100,7 +1093,6 @@ public:
                 patch_point_vals_side_->make_fe_op(op_idx_side,
                                                   {3, 3},
                                                   lambda_vector_grad_side,
-                                                  {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad},
                                                   fe_component_high->n_dofs());
                 break;
             }
@@ -1114,7 +1106,6 @@ public:
 //                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
 //                                                  {3, 3},
 //                                                  lambda_contravariant_grad_bulk,
-//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac},
 //                                                  fe_component_low->n_dofs());
 //
 //                // use lambda reinit function (higher dim)
@@ -1124,7 +1115,6 @@ public:
 //                patch_point_vals_side_->make_fe_op(op_idx_side,
 //                                                  {3, 3},
 //                                                  lambda_contravariant_grad_side,
-//                                                  {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac},
 //                                                  fe_component_high->n_dofs());
                 break;
             }
@@ -1138,7 +1128,6 @@ public:
 //                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
 //                                                  {3, 3},
 //                                                  lambda_piola_grad_bulk,
-//                                                  {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet},
 //                                                  fe_component_low->n_dofs());
 //
 //                // use lambda reinit function (higher dim)
@@ -1148,7 +1137,6 @@ public:
 //                patch_point_vals_side_->make_fe_op(op_idx_side,
 //                                                  {3, 3},
 //                                                  lambda_piola_grad_side,
-//                                                  {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet},
 //                                                  fe_component_high->n_dofs());
                 break;
             }
