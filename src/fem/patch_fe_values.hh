@@ -941,7 +941,6 @@ public:
 
         // use lambda reinit function
         uint vector_sym_grad_op_idx = FeSide::SideOps::opVectorSymGrad;
-        uint grad_vector_op_idx = FeSide::SideOps::opGradVectorShape;
         auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
                 common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
             };

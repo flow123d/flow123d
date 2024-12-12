@@ -348,12 +348,14 @@ public:
      */
     PatchOp<spacedim> *make_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, std::vector<uint> input_ops_vec, uint n_dofs,
             OpSizeType size_type = pointOp) {
-        std::vector<PatchOp<spacedim> *> input_ops_ptr;
-        for (uint i_op : input_ops_vec) {
-            ASSERT_PTR(operations_[i_op]);
-            input_ops_ptr.push_back(operations_[i_op]);
+        if (operations_[op_idx] == nullptr) {
+            std::vector<PatchOp<spacedim> *> input_ops_ptr;
+            for (uint i_op : input_ops_vec) {
+                ASSERT_PTR(operations_[i_op]);
+                input_ops_ptr.push_back(operations_[i_op]);
+            }
+            operations_[op_idx] = new PatchOp<spacedim>(this->dim_, shape, reinit_f, size_type, input_ops_ptr, n_dofs);
         }
-        operations_[op_idx] = new PatchOp<spacedim>(this->dim_, shape, reinit_f, size_type, input_ops_ptr, n_dofs);
     	return operations_[op_idx];
     }
 
