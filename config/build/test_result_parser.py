@@ -69,7 +69,7 @@ def process_xml_files(build_dir, test_dir, run_id, job_id):
     xml_path = os.path.join(build_dir, "unit_tests", test_dir, "*.xml")
     xml_files = glob.glob(xml_path)
 
-    log_file_path = os.path.join(build_dir, "unit_tests", "test_dir", f"{test_dir}_log.txt")
+    log_file_path = os.path.join(build_dir, "unit_tests", test_dir, f"{test_dir}_log.txt")
     with open(log_file_path, 'r', encoding='utf-8') as log_file:
         log_content = log_file.read()
 
