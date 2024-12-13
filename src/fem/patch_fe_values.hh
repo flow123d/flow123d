@@ -477,48 +477,33 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         uint n_dofs = fe_component->n_dofs();
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opScalarShape, {1}, bulk_reinit::ptop_scalar_shape, n_dofs);
 
-        uint scalar_shape_op_idx = FeBulk::BulkOps::opScalarShape;
-        auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, scalar_shape_op_idx);
-            };
-        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, n_dofs);
-
-        return FeQArray<Scalar>(patch_point_vals_, true, scalar_shape_op_idx, n_dofs);
+        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opScalarShape, n_dofs);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
-        // use lambda reinit function
         uint vector_shape_op_idx = FeBulk::BulkOps::opVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape(operations, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -542,15 +527,10 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
         uint n_dofs = fe_component->n_dofs();
-        uint scalar_shape_grads_op_idx = FeBulk::BulkOps::opGradScalarShape;
-        auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape_grads<dim>(operations, scalar_shape_grads_op_idx);
-            };
-        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, n_dofs);
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
 
-        return FeQArray<Vector>(patch_point_vals_, true, scalar_shape_grads_op_idx, n_dofs);
+        return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
     }
 
     /**
@@ -569,36 +549,27 @@ public:
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape_grads<dim>(operations, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
-                                             lambda_vector_shape_grad,
+                                             bulk_reinit::ptop_vector_shape_grads<dim>,
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
-                                             lambda_contravariant_shape_grad,
+                                             bulk_reinit::ptop_vector_contravariant_shape_grads<dim>,
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_piola_shape_grads<dim>(operations, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                               {3, 3},
-                                              lambda_piola_shape_grad,
+                                              bulk_reinit::ptop_vector_piola_shape_grads<dim>,
                                               fe_component->n_dofs());
                 break;
             }
@@ -620,14 +591,9 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
-        uint vector_sym_grad_op_idx = FeBulk::BulkOps::opVectorSymGrad;
-        auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
-            };
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3}, lambda_vector_sym_grad, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3}, common_reinit::ptop_vector_sym_grad, fe_component->n_dofs());
 
-        return FeQArray<Tensor>(patch_point_vals_, true, vector_sym_grad_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opVectorSymGrad, fe_component->n_dofs());
     }
 
     /**
@@ -641,14 +607,9 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
-        uint vector_divergence_op_idx = FeBulk::BulkOps::opVectorDivergence; // index in operations_ vector
-        auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
-            };
-        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorDivergence, {1}, common_reinit::ptop_vector_divergence, fe_component->n_dofs());
 
-        return FeQArray<Scalar>(patch_point_vals_, true, vector_divergence_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opVectorDivergence, fe_component->n_dofs());
     }
 
 private:
@@ -799,13 +760,9 @@ public:
 
         // use lambda reinit function
         uint n_dofs = fe_component->n_dofs();
-        uint scalar_shape_op_idx = FeSide::SideOps::opScalarShape;
-        auto lambda_scalar_shape = [scalar_shape_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape(operations, el_table, scalar_shape_op_idx);
-            };
-        patch_point_vals_->make_fe_op(scalar_shape_op_idx, {1}, lambda_scalar_shape, n_dofs);
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opScalarShape, {1}, side_reinit::ptop_scalar_shape, n_dofs);
 
-        return FeQArray<Scalar>(patch_point_vals_, false, scalar_shape_op_idx, n_dofs);
+        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opScalarShape, n_dofs);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
@@ -814,34 +771,24 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
         uint vector_shape_op_idx = FeSide::SideOps::opVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_shape(operations, el_table, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_vector_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        side_reinit::ptop_vector_contravariant_shape(operations, el_table, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_contravariant_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        side_reinit::ptop_vector_piola_shape(operations, el_table, vector_shape_op_idx);
-                    };
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, lambda_piola_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -856,14 +803,10 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
-        uint scalar_shape_grads_op_idx = FeSide::SideOps::opGradScalarShape;
-        auto lambda_scalar_shape_grad = [scalar_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape_grads<dim>(operations, el_table, scalar_shape_grads_op_idx);
-            };
-        patch_point_vals_->make_fe_op(scalar_shape_grads_op_idx, {3}, lambda_scalar_shape_grad, fe_component->n_dofs());
+        uint n_dofs = fe_component->n_dofs();
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opGradScalarShape, {3}, side_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
 
-        return FeQArray<Vector>(patch_point_vals_, false, scalar_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, false, FeSide::SideOps::opGradScalarShape, n_dofs);
     }
 
     /**
@@ -882,36 +825,27 @@ public:
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                auto lambda_vector_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_shape_grads<dim>(operations, el_table, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
-                                             lambda_vector_shape_grad,
+                                             side_reinit::ptop_vector_shape_grads<dim>,
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                auto lambda_contravariant_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, el_table, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                              {3, 3},
-                                             lambda_contravariant_shape_grad,
+                                             side_reinit::ptop_vector_contravariant_shape_grads<dim>,
                                              fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                auto lambda_piola_shape_grad = [vector_shape_grads_op_idx](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_piola_shape_grads<dim>(operations, el_table, vector_shape_grads_op_idx);
-                    };
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
                                               {3, 3},
-                                              lambda_piola_shape_grad,
+                                              side_reinit::ptop_vector_piola_shape_grads<dim>,
                                               fe_component->n_dofs());
                 break;
             }
@@ -933,14 +867,9 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
-        uint vector_sym_grad_op_idx = FeSide::SideOps::opVectorSymGrad;
-        auto lambda_vector_sym_grad = [vector_sym_grad_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                common_reinit::ptop_vector_sym_grad(operations, vector_sym_grad_op_idx);
-            };
-        patch_point_vals_->make_fe_op(vector_sym_grad_op_idx, {3,3}, lambda_vector_sym_grad, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorSymGrad, {3,3}, common_reinit::ptop_vector_sym_grad, fe_component->n_dofs());
 
-        return FeQArray<Tensor>(patch_point_vals_, false, vector_sym_grad_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, false, FeSide::SideOps::opVectorSymGrad, fe_component->n_dofs());
     }
 
     /**
@@ -954,14 +883,9 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
-        uint vector_divergence_op_idx = FeSide::SideOps::opVectorDivergence;
-        auto lambda_vector_divergence = [vector_divergence_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                common_reinit::ptop_vector_divergence(operations, vector_divergence_op_idx);
-            };
-        patch_point_vals_->make_fe_op(vector_divergence_op_idx, {1}, lambda_vector_divergence, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorDivergence, {1}, common_reinit::ptop_vector_divergence, fe_component->n_dofs());
 
-        return FeQArray<Scalar>(patch_point_vals_, false, vector_divergence_op_idx, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opVectorDivergence, fe_component->n_dofs());
     }
 
 private:
@@ -989,25 +913,16 @@ public:
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_low = fe_component_low->n_dofs();
-        // use lambda reinit function
-        uint op_idx_bulk = FeBulk::BulkOps::opScalarShape;
-        auto lambda_scalar_shape_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                bulk_reinit::ptop_scalar_shape(operations, op_idx_bulk);
-            };
-        patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {1}, lambda_scalar_shape_bulk, n_dofs_low);
+        patch_point_vals_bulk_->make_fe_op(FeBulk::BulkOps::opScalarShape, {1}, bulk_reinit::ptop_scalar_shape, n_dofs_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_high = fe_component_high->n_dofs();
-        // use lambda reinit function
-        uint op_idx_side = FeSide::SideOps::opScalarShape;
-        auto lambda_scalar_shape_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                side_reinit::ptop_scalar_shape(operations, el_table, op_idx_side);
-            };
-        patch_point_vals_side_->make_fe_op(op_idx_side, {1}, lambda_scalar_shape_side, n_dofs_high);
+        patch_point_vals_side_->make_fe_op(FeSide::SideOps::opScalarShape, {1}, side_reinit::ptop_scalar_shape, n_dofs_high);
 
-        return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high, op_idx_bulk, op_idx_side);
+        return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high,
+                               FeBulk::BulkOps::opScalarShape, FeSide::SideOps::opScalarShape);
     }
 
     inline FeQJoin<Vector> vector_join_shape(uint component_idx = 0)
@@ -1024,35 +939,20 @@ public:
         switch (fe_component_low->fe_type()) {
             case FEVector:
             {
-                // use lambda reinit function (lower dim)
-                auto lambda_vector_shape_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape(operations, op_idx_bulk);
-                    };
-                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, lambda_vector_shape_bulk, fe_component_low->n_dofs());
-
-                // use lambda reinit function (higher dim)
-                auto lambda_vector_shape_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_shape(operations, el_table, op_idx_side);
-                    };
-                patch_point_vals_side_->make_fe_op(op_idx_side, {3}, lambda_vector_shape_side, fe_component_high->n_dofs());
+                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, bulk_reinit::ptop_vector_shape, fe_component_low->n_dofs());
+                patch_point_vals_side_->make_fe_op(op_idx_side, {3}, side_reinit::ptop_vector_shape, fe_component_high->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                //auto lambda_contravariant_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                //        bulk_reinit::ptop_vector_contravariant_shape(operations, vector_shape_op_idx);
-                //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_contravariant_shape, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, bulk_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //auto lambda_piola_shape = [vector_shape_op_idx](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                //        bulk_reinit::ptop_vector_piola_shape(operations, vector_shape_op_idx);
-                //    };
-                //patch_point_vals_.make_fe_op({3}, lambda_piola_shape, fe_component->n_dofs());
+                //patch_point_vals_.make_fe_op({3}, bulk_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
                 break;
             }
             default:
@@ -1077,66 +977,42 @@ public:
         switch (fe_component_low->fe_type()) {
             case FEVector:
             {
-                // use lambda reinit function (lower dim)
-                auto lambda_vector_grad_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-                        bulk_reinit::ptop_vector_shape_grads<dim-1>(operations, op_idx_bulk);
-                    };
                 patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
                                                   {3, 3},
-                                                  lambda_vector_grad_bulk,
+                                                  bulk_reinit::ptop_vector_shape_grads<dim-1>,
                                                   fe_component_low->n_dofs());
 
-                // use lambda reinit function (higher dim)
-                auto lambda_vector_grad_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-                        side_reinit::ptop_vector_shape_grads<dim>(operations, el_table, op_idx_side);
-                    };
                 patch_point_vals_side_->make_fe_op(op_idx_side,
                                                   {3, 3},
-                                                  lambda_vector_grad_side,
+                                                  side_reinit::ptop_vector_shape_grads<dim>,
                                                   fe_component_high->n_dofs());
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-//                // use lambda reinit function (lower dim)
-//                auto lambda_contravariant_grad_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>(operations, op_idx_bulk);
-//                    };
 //                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
 //                                                  {3, 3},
-//                                                  lambda_contravariant_grad_bulk,
+//                                                  bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>,
 //                                                  fe_component_low->n_dofs());
 //
-//                // use lambda reinit function (higher dim)
-//                auto lambda_contravariant_grad_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-//                        side_reinit::ptop_vector_contravariant_shape_grads<dim>(operations, el_table, op_idx_side);
-//                    };
 //                patch_point_vals_side_->make_fe_op(op_idx_side,
 //                                                  {3, 3},
-//                                                  lambda_contravariant_grad_side,
+//                                                  side_reinit::ptop_vector_contravariant_shape_grads<dim>,
 //                                                  fe_component_high->n_dofs());
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-//                // use lambda reinit function (lower dim)
-//                auto lambda_piola_grad_bulk = [op_idx_bulk](std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-//                        bulk_reinit::ptop_vector_piola_shape_grads<dim-1>(operations, op_idx_bulk);
-//                    };
 //                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
 //                                                  {3, 3},
-//                                                  lambda_piola_grad_bulk,
+//                                                  bulk_reinit::ptop_vector_piola_shape_grads<dim-1>,
 //                                                  fe_component_low->n_dofs());
 //
-//                // use lambda reinit function (higher dim)
-//                auto lambda_piola_grad_side = [op_idx_side](std::vector<PatchOp<3> *> &operations, IntTableArena &el_table) {
-//                        side_reinit::ptop_vector_piola_shape_grads<dim>(operations, el_table, op_idx_side);
-//                    };
 //                patch_point_vals_side_->make_fe_op(op_idx_side,
 //                                                  {3, 3},
-//                                                  lambda_piola_grad_side,
+//                                                  side_reinit::ptop_vector_piola_shape_grads<dim>,
 //                                                  fe_component_high->n_dofs());
                 break;
             }

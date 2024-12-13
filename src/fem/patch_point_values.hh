@@ -45,7 +45,7 @@ using Tensor = arma::mat33;
 
 
 /// Type for conciseness
-using ReinitFunction = std::function<void(std::vector<PatchOp<3>*> &, IntTableArena &)>;
+using ReinitFunction = std::function<void(PatchOp<3> *, IntTableArena &)>;
 
 
 namespace FeBulk {
@@ -665,8 +665,8 @@ public:
     }
 
     /// Call reinit function on element table if function is defined
-    inline void reinit_function(std::vector<PatchOp<spacedim> *> &operations, IntTableArena &int_table) {
-        reinit_func(operations, int_table);
+    inline void reinit_function(FMT_UNUSED std::vector<PatchOp<spacedim> *> &operations, IntTableArena &int_table) {
+        reinit_func(this, int_table);
     }
 
     inline void allocate_result(size_t data_size, PatchArena &arena) {
@@ -706,62 +706,56 @@ protected:
 /// Defines common functionality of reinit operations.
 struct common_reinit {
 	// empty base operation
-	static inline void op_base(FMT_UNUSED std::vector<PatchOp<3>*> &operations, FMT_UNUSED IntTableArena &el_table) {
+	static inline void op_base(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
         // empty
     }
 
     template<unsigned int dim>
-    static inline void elop_jac(std::vector<PatchOp<3> *> &operations, uint result_op_idx) {
+    static inline void elop_jac(PatchOp<3> * result_op) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = *( operations[result_op_idx] );
-        auto jac_value = op.result_matrix();
-        auto coords_value = op.input_ops(0)->result_matrix();
+        auto jac_value = result_op->result_matrix();
+        auto coords_value = result_op->input_ops(0)->result_matrix();
         for (unsigned int i=0; i<3; i++)
             for (unsigned int j=0; j<dim; j++)
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
 
     template<unsigned int dim>
-    static inline void elop_inv_jac(std::vector<PatchOp<3> *> &operations, uint result_op_idx) {
+    static inline void elop_inv_jac(PatchOp<3> * result_op) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        auto &op = *( operations[result_op_idx] );
-        auto inv_jac_value = op.result_matrix();
-        auto jac_value = op.input_ops(0)->result_matrix();
+        auto inv_jac_value = result_op->result_matrix();
+        auto jac_value = result_op->input_ops(0)->result_matrix();
         inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);
     }
 
     template<unsigned int dim>
-    static inline void elop_jac_det(std::vector<PatchOp<3> *> &operations, uint result_op_idx) {
+    static inline void elop_jac_det(PatchOp<3> * result_op) {
         // result double, input matrix(spacedim, dim)
-        auto &op = *( operations[result_op_idx] );
-        auto jac_det_value = op.result_matrix();
-        auto jac_value = op.input_ops(0)->result_matrix();
+        auto jac_det_value = result_op->result_matrix();
+        auto jac_value = result_op->input_ops(0)->result_matrix();
         jac_det_value(0) = eigen_arena_tools::determinant<3, dim>(jac_value).abs();
     }
 
-    static inline void ptop_JxW(std::vector<PatchOp<3> *> &operations, uint result_op_idx) {
-        auto &op = *( operations[result_op_idx] );
-        auto weights_value = op.input_ops(0)->result_matrix();
-        auto jac_det_value = op.input_ops(1)->result_matrix();
+    static inline void ptop_JxW(PatchOp<3> * result_op) {
+        auto weights_value = result_op->input_ops(0)->result_matrix();
+        auto jac_det_value = result_op->input_ops(1)->result_matrix();
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
         ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
-        auto jxw_value = op.result_matrix();
+        auto jxw_value = result_op->result_matrix();
         jxw_value(0,0) = jxw_ovec.get_vec();
     }
 
     /// Common reinit function of vector symmetric gradient on bulk and side points
-    static inline void ptop_vector_sym_grad(std::vector<PatchOp<3> *> &operations, uint vector_sym_grad_op_idx) {
-        auto &op = *( operations[vector_sym_grad_op_idx] );
-        auto grad_vector_value = op.input_ops(0)->result_matrix();
-        auto sym_grad_value = op.result_matrix();
+    static inline void ptop_vector_sym_grad(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto grad_vector_value = result_op->input_ops(0)->result_matrix();
+        auto sym_grad_value = result_op->result_matrix();
         sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
 	/// Common reinit function of vector divergence on bulk and side points
-    static inline void ptop_vector_divergence(std::vector<PatchOp<3> *> &operations, uint vector_divergence_op_idx) {
-        auto &op = *( operations[vector_divergence_op_idx] );
-        auto grad_vector_value = op.input_ops(0)->result_matrix();
-        auto divergence_value = op.result_matrix();
+    static inline void ptop_vector_divergence(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto grad_vector_value = result_op->input_ops(0)->result_matrix();
+        auto divergence_value = result_op->result_matrix();
         divergence_value(0,0) = grad_vector_value(0,0) + grad_vector_value(1,1) + grad_vector_value(2,2);
     }
 };
@@ -770,34 +764,33 @@ struct common_reinit {
 struct bulk_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_jac(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_jac<dim>(operations, FeBulk::BulkOps::opJac);
+    static inline void elop_jac(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_jac<dim>(result_op);
     }
     template<unsigned int dim>
-    static inline void elop_inv_jac(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_inv_jac<dim>(operations, FeBulk::BulkOps::opInvJac);
+    static inline void elop_inv_jac(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_inv_jac<dim>(result_op);
     }
     template<unsigned int dim>
-    static inline void elop_jac_det(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_jac_det<dim>(operations, FeBulk::BulkOps::opJacDet);
+    static inline void elop_jac_det(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_jac_det<dim>(result_op);
     }
 
     // point operations
-    static inline void ptop_coords(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
+    static inline void ptop_coords(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
-    static inline void ptop_JxW(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::ptop_JxW(operations, FeBulk::BulkOps::opJxW);
+    static inline void ptop_JxW(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::ptop_JxW(result_op);
     }
-    static inline void ptop_scalar_shape(std::vector<PatchOp<3> *> &operations, uint scalar_shape_op_idx) {
-        auto &op = *( operations[scalar_shape_op_idx] );
-        auto ref_vec = op.input_ops(0)->result_matrix()(0);
+    static inline void ptop_scalar_shape(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto ref_vec = result_op->input_ops(0)->result_matrix()(0);
 
-        uint n_points = ref_vec.data_size() / op.n_dofs(); // points per element
-        uint n_elem = op.raw_result()(0).data_size() / n_points;
+        uint n_points = ref_vec.data_size() / result_op->n_dofs(); // points per element
+        uint n_elem = result_op->raw_result()(0).data_size() / n_points;
 
-        auto shape_matrix = op.result_matrix();
-        ArenaVec<double> elem_vec(n_elem, op.raw_result()(0).arena());
+        auto shape_matrix = result_op->result_matrix();
+        ArenaVec<double> elem_vec(n_elem, result_op->raw_result()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
@@ -806,15 +799,14 @@ struct bulk_reinit {
         ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
         shape_matrix(0) = shape_ovec.get_vec();
     }
-    static inline void ptop_vector_shape(std::vector<PatchOp<3> *> &operations, uint vector_shape_op_idx) {
-        auto &op = *( operations[vector_shape_op_idx] );
-        auto ref_shape_vec = op.input_ops(0)->result_matrix();
-        uint n_points = ref_shape_vec(0).data_size() / op.n_dofs();
-        uint n_elem = op.raw_result()(0).data_size() / n_points;
+    static inline void ptop_vector_shape(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto ref_shape_vec = result_op->input_ops(0)->result_matrix();
+        uint n_points = ref_shape_vec(0).data_size() / result_op->n_dofs();
+        uint n_elem = result_op->raw_result()(0).data_size() / n_points;
 
-        auto shape_matrix = op.result_matrix(); // result: shape 3x1
+        auto shape_matrix = result_op->result_matrix(); // result: shape 3x1
         Eigen::Matrix<ArenaOVec<double>, 3, 1> ref_shape_ovec;
-        ArenaVec<double> elem_vec(n_elem, op.raw_result()(0).arena());
+        ArenaVec<double> elem_vec(n_elem, result_op->raw_result()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
@@ -826,25 +818,22 @@ struct bulk_reinit {
         for (uint c=0; c<3; ++c)
             shape_matrix(c) = shape_omatrix(0,c).get_vec();
     }
-    static inline void ptop_vector_contravariant_shape(FMT_UNUSED std::vector<PatchOp<3> *> &operations,
-            FMT_UNUSED uint vector_shape_op_idx) {
+    static inline void ptop_vector_contravariant_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
 //        auto &op = operations[vector_sym_grad_op_idx];
 //        auto grad_vector_value = op.input_ops(0).result_matrix();
 //        auto sym_grad_value = op.result_matrix();
 //        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
-    static inline void ptop_vector_piola_shape(FMT_UNUSED std::vector<PatchOp<3> *> &operations,
-            FMT_UNUSED uint vector_shape_op_idx) {
+    static inline void ptop_vector_piola_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
 //        auto &op = operations[vector_sym_grad_op_idx];
 //        auto grad_vector_value = op.input_ops(0).result_matrix();
 //        auto sym_grad_value = op.result_matrix();
 //        sym_grad_value = 0.5 * (grad_vector_value.transpose() + grad_vector_value);
     }
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(std::vector<PatchOp<3> *> &operations, uint scalar_shape_grads_op_idx) {
-        auto &op = *( operations[scalar_shape_grads_op_idx] );
-        auto inv_jac_vec = op.input_ops(0)->result_matrix();
-        auto ref_grads_vec = op.input_ops(1)->result_matrix();
+    static inline void ptop_scalar_shape_grads(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto inv_jac_vec = result_op->input_ops(0)->result_matrix();
+        auto ref_grads_vec = result_op->input_ops(1)->result_matrix();
 
         Eigen::Matrix<ArenaOVec<double>, dim, 1> ref_grads_ovec;
         for (uint i=0; i<dim; ++i) {
@@ -856,17 +845,16 @@ struct bulk_reinit {
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
 
-        auto result_vec = op.result_matrix();
+        auto result_vec = result_op->result_matrix();
         Eigen::Matrix<ArenaOVec<double>, 3, 1> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
         for (uint i=0; i<3; ++i) {
             result_vec(i) = result_ovec(i).get_vec();
         }
     }
     template<unsigned int dim>
-    static inline void ptop_vector_shape_grads(std::vector<PatchOp<3> *> &operations, uint vector_shape_grads_op_idx) {
-        auto &op = *( operations[vector_shape_grads_op_idx] );
-        auto inv_jac_vec = op.input_ops(0)->result_matrix();
-        auto ref_grads_vec = op.input_ops(1)->result_matrix();
+    static inline void ptop_vector_shape_grads(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        auto inv_jac_vec = result_op->input_ops(0)->result_matrix();
+        auto ref_grads_vec = result_op->input_ops(1)->result_matrix();
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> ref_grads_ovec;
         for (uint i=0; i<ref_grads_vec.rows()*ref_grads_vec.cols(); ++i) {
@@ -878,68 +866,16 @@ struct bulk_reinit {
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
 
-        auto result_vec = op.result_matrix();
+        auto result_vec = result_op->result_matrix();
         Eigen::Matrix<ArenaOVec<double>, 3, 3> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
         for (uint i=0; i<9; ++i) {
             result_vec(i) = result_ovec(i).get_vec();
         }
     }
     template<unsigned int dim>
-    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED uint vector_shape_grads_op_idx) {
-//        auto &op = operations[scalar_shape_grads_op_idx];
-//        auto inv_jac_vec = op.input_ops(0).result_matrix();
-//        uint n_points = ref_shape_grads.size();
-//        uint n_dofs = ref_shape_grads[0].size();
-//
-//        Eigen::Matrix<ArenaVec<double>, dim, 1> ref_grads_vec;
-//        Eigen::Matrix<ArenaOVec<double>, dim, 1> ref_grads_ovec;
-//        for (uint i=0; i<ref_grads_vec.rows(); ++i) {
-//            ref_grads_vec(i) = ArenaVec<double>(n_points * n_dofs, op.raw_result()(0).arena());
-//            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-//                for (uint i_p=0; i_p<n_points; ++i_p)
-//                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
-//            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
-//        }
-//
-//        Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
-//        for (uint i=0; i<dim*3; ++i) {
-//            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
-//        }
-//
-//        auto result_vec = op.result_matrix();
-//        Eigen::Matrix<ArenaOVec<double>, 3, 1> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-//        for (uint i=0; i<3; ++i) {
-//            result_vec(i) = result_ovec(i).get_vec();
-//        }
-    }
+    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
     template<unsigned int dim>
-    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED uint vector_shape_grads_op_idx) {
-//        auto &op = operations[scalar_shape_grads_op_idx];
-//        auto inv_jac_vec = op.input_ops(0).result_matrix();
-//        uint n_points = ref_shape_grads.size();
-//        uint n_dofs = ref_shape_grads[0].size();
-//
-//        Eigen::Matrix<ArenaVec<double>, dim, 1> ref_grads_vec;
-//        Eigen::Matrix<ArenaOVec<double>, dim, 1> ref_grads_ovec;
-//        for (uint i=0; i<ref_grads_vec.rows(); ++i) {
-//            ref_grads_vec(i) = ArenaVec<double>(n_points * n_dofs, op.raw_result()(0).arena());
-//            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-//                for (uint i_p=0; i_p<n_points; ++i_p)
-//                    ref_grads_vec(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
-//            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
-//        }
-//
-//        Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
-//        for (uint i=0; i<dim*3; ++i) {
-//            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
-//        }
-//
-//        auto result_vec = op.result_matrix();
-//        Eigen::Matrix<ArenaOVec<double>, 3, 1> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-//        for (uint i=0; i<3; ++i) {
-//            result_vec(i) = result_ovec(i).get_vec();
-//        }
-    }
+    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
 };
 
 
@@ -948,35 +884,34 @@ struct bulk_reinit {
 struct side_reinit {
 	// element operations
     template<unsigned int dim>
-    static inline void elop_el_jac(std::vector<PatchOp<3>* > &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_jac<dim>(operations, FeSide::SideOps::opElJac);
+    static inline void elop_el_jac(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_jac<dim>(result_op);
     }
     template<unsigned int dim>
-    static inline void elop_el_inv_jac(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_inv_jac<dim>(operations, FeSide::SideOps::opElInvJac);
+    static inline void elop_el_inv_jac(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_inv_jac<dim>(result_op);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
+    static inline void elop_sd_jac(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
         // result matrix(spacedim, dim), input matrix(spacedim, dim+1)
-        common_reinit::elop_jac<dim-1>(operations, FeSide::SideOps::opSideJac);
+        common_reinit::elop_jac<dim-1>(result_op);
     }
     template<unsigned int dim>
-    static inline void elop_sd_jac_det(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::elop_jac_det<dim-1>(operations, FeSide::SideOps::opSideJacDet);
+    static inline void elop_sd_jac_det(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::elop_jac_det<dim-1>(result_op);
     }
 
     // Point operations
-    static inline void ptop_coords(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
+    static inline void ptop_coords(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
         // Implement
     }
-    static inline void ptop_JxW(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-        common_reinit::ptop_JxW(operations, FeSide::SideOps::opJxW);
+    static inline void ptop_JxW(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+        common_reinit::ptop_JxW(result_op);
     }
     template<unsigned int dim>
-    static inline void ptop_normal_vec(std::vector<PatchOp<3>* > &operations, IntTableArena &el_table) {
-        auto &op = *( operations[FeSide::SideOps::opNormalVec] );
-        auto normal_value = op.result_matrix();
-        auto inv_jac_value = op.input_ops(0)->result_matrix();
+    static inline void ptop_normal_vec(PatchOp<3> * result_op, IntTableArena &el_table) {
+        auto normal_value = result_op->result_matrix();
+        auto inv_jac_value = result_op->input_ops(0)->result_matrix();
         normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( el_table(3) );
 
         ArenaVec<double> norm_vec( normal_value(0).data_size(), normal_value(0).arena() );
@@ -992,16 +927,15 @@ struct side_reinit {
             normal_value(i) = normal_value(i) / norm_vec;
         }
     }
-    static inline void ptop_scalar_shape(std::vector<PatchOp<3> *> &operations, IntTableArena &el_table, uint scalar_shape_op_idx) {
-        auto &op = *( operations[scalar_shape_op_idx] );
-        auto shape_values = op.input_ops(0)->result_matrix();
+    static inline void ptop_scalar_shape(PatchOp<3> * result_op, IntTableArena &el_table) {
+        auto shape_values = result_op->input_ops(0)->result_matrix();
 
-        uint n_dofs = op.n_dofs();
+        uint n_dofs = result_op->n_dofs();
         uint n_points = shape_values(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
-        auto scalar_shape_value = op.result_matrix();
+        auto scalar_shape_value = result_op->result_matrix();
         scalar_shape_value(0) = ArenaVec<double>(n_dofs*n_patch_points, scalar_shape_value(0).arena());
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
@@ -1010,16 +944,15 @@ struct side_reinit {
                 scalar_shape_value(0)(i_pt + dof_shift) = shape_values(el_table(4)(i_pt))(i_dof * n_points + i_pt / n_sides);
         }
     }
-    static inline void ptop_vector_shape(std::vector<PatchOp<3> *> &operations, IntTableArena &el_table, uint vector_shape_op_idx) {
-        auto &op = *( operations[vector_shape_op_idx] );
-        auto ref_shape_vec = op.input_ops(0)->result_matrix();
+    static inline void ptop_vector_shape(PatchOp<3> * result_op, IntTableArena &el_table) {
+        auto ref_shape_vec = result_op->input_ops(0)->result_matrix();
 
-        uint n_dofs = op.n_dofs();
+        uint n_dofs = result_op->n_dofs();
         uint n_points = ref_shape_vec(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
-        auto vector_shape_value = op.result_matrix();
+        auto vector_shape_value = result_op->result_matrix();
         for (uint c=0; c<3; c++)
             vector_shape_value(c) = ArenaVec<double>(n_dofs*n_patch_points, vector_shape_value(c).arena());
 
@@ -1030,23 +963,20 @@ struct side_reinit {
                     vector_shape_value(c)(i_pt + dof_shift) = ref_shape_vec(el_table(4)(i_pt),c)(i_dof * n_points + i_pt / n_sides);
         }
     }
-    static inline void ptop_vector_contravariant_shape(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table,
-            FMT_UNUSED uint vector_shape_op_idx) {}
-    static inline void ptop_vector_piola_shape(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table,
-            FMT_UNUSED uint vector_shape_op_idx) {}
+    static inline void ptop_vector_contravariant_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
+    static inline void ptop_vector_piola_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
     template<unsigned int dim>
-    static inline void ptop_scalar_shape_grads(std::vector<PatchOp<3> *> &operations, IntTableArena &el_table, uint scalar_shape_grads_op_idx) {
-        auto &op = *( operations[scalar_shape_grads_op_idx] );
-        auto ref_shape_grads = op.input_ops(1)->result_matrix();
-        auto grad_scalar_shape_value = op.result_matrix();  // Result vector
+    static inline void ptop_scalar_shape_grads(PatchOp<3> * result_op, IntTableArena &el_table) {
+        auto ref_shape_grads = result_op->input_ops(1)->result_matrix();
+        auto grad_scalar_shape_value = result_op->result_matrix();  // Result vector
 
-        uint n_dofs = op.n_dofs();
+        uint n_dofs = result_op->n_dofs();
         uint n_points = ref_shape_grads(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
         // Expands inverse jacobian to inv_jac_expd_value
-        auto inv_jac_value = op.input_ops(0)->result_matrix();
+        auto inv_jac_value = result_op->input_ops(0)->result_matrix();
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(i).arena() );
@@ -1074,19 +1004,18 @@ struct side_reinit {
         grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
     }
     template<unsigned int dim>
-    static inline void ptop_vector_shape_grads(std::vector<PatchOp<3> *> &operations, IntTableArena &el_table, uint vector_shape_grads_op_idx) {
+    static inline void ptop_vector_shape_grads(PatchOp<3> * result_op, IntTableArena &el_table) {
         // Result vector
-        auto &op = *( operations[vector_shape_grads_op_idx] );
-        auto grad_scalar_shape_value = op.result_matrix();
-        auto ref_vector_grad = op.input_ops(1)->result_matrix();
+        auto grad_scalar_shape_value = result_op->result_matrix();
+        auto ref_vector_grad = result_op->input_ops(1)->result_matrix();
 
-        uint n_dofs = op.n_dofs();
+        uint n_dofs = result_op->n_dofs();
         uint n_points = ref_vector_grad(0).data_size() / n_dofs;
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
         // Expands inverse jacobian to inv_jac_expd_value
-        auto inv_jac_value = op.input_ops(0)->result_matrix();
+        auto inv_jac_value = result_op->input_ops(0)->result_matrix();
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(i).arena() );
@@ -1114,23 +1043,20 @@ struct side_reinit {
         grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
     }
     template<unsigned int dim>
-    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table,
-            FMT_UNUSED std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {}
+    static inline void ptop_vector_contravariant_shape_grads(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
     template<unsigned int dim>
-    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table,
-            FMT_UNUSED std::vector< std::vector< std::vector<arma::mat> > > ref_shape_grads, FMT_UNUSED uint vector_shape_grads_op_idx) {}
+    static inline void ptop_vector_piola_shape_grads(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
 };
 
 
 // template specialization
 template<>
-inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
+inline void side_reinit::elop_sd_jac<1>(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
 }
 
 template<>
-inline void side_reinit::elop_sd_jac_det<1>(std::vector<PatchOp<3> *> &operations, FMT_UNUSED IntTableArena &el_table) {
-    auto *op = operations[FeSide::SideOps::opSideJacDet];
-    auto result_vec = op->result_matrix();
+inline void side_reinit::elop_sd_jac_det<1>(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+    auto result_vec = result_op->result_matrix();
     for (uint i=0;i<result_vec(0).data_size(); ++i) {
         result_vec(0,0)(i) = 1.0;
     }
