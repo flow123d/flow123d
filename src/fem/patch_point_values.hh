@@ -1166,7 +1166,7 @@ namespace FeBulk {
         }
 
     private:
-        /// Constructor of zero values object
+        /// Specialized constructor of zero values object. Do not use in other cases!
         PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, PatchFeData &patch_fe_data)
         : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(BulkOps::opNItems);
@@ -1261,7 +1261,7 @@ namespace FeSide {
         }
 
     private:
-        /// Constructor of zero values object - TODO better description
+        /// Specialized constructor of zero values object. Do not use in other cases!
         PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, PatchFeData &patch_fe_data)
         : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(SideOps::opNItems);
