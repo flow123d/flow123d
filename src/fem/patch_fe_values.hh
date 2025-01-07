@@ -1066,6 +1066,8 @@ public:
 template<unsigned int spacedim = 3>
 class PatchFEValues {
 public:
+    typedef typename PatchPointValues<spacedim>::PatchFeData PatchFeData;
+
     /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
     struct TableSizes {
     public:
@@ -1109,39 +1111,40 @@ public:
     };
 
     PatchFEValues()
-    : asm_arena_(1024 * 1024, 256),
-      patch_arena_(nullptr),
-      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, asm_arena_),
-                               FeBulk::PatchPointValues(2, 0, asm_arena_),
-                               FeBulk::PatchPointValues(3, 0, asm_arena_)} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, asm_arena_),
-                               FeSide::PatchPointValues(2, 0, asm_arena_),
-                               FeSide::PatchPointValues(3, 0, asm_arena_)} }
+    : patch_fe_data_(1024 * 1024, 256),
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, 0, patch_fe_data_),
+                               FeBulk::PatchPointValues(2, 0, patch_fe_data_),
+                               FeBulk::PatchPointValues(3, 0, patch_fe_data_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, 0, patch_fe_data_),
+                               FeSide::PatchPointValues(2, 0, patch_fe_data_),
+                               FeSide::PatchPointValues(3, 0, patch_fe_data_)} }
     {
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
     PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
-    : asm_arena_(1024 * 1024, 256),
-      patch_arena_(nullptr),
-      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, asm_arena_),
-    	                       FeBulk::PatchPointValues(2, quad_order, asm_arena_),
-                               FeBulk::PatchPointValues(3, quad_order, asm_arena_)} },
-      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, asm_arena_),
-                               FeSide::PatchPointValues(2, quad_order, asm_arena_),
-                               FeSide::PatchPointValues(3, quad_order, asm_arena_)} },
+    : patch_fe_data_(1024 * 1024, 256),
+      patch_point_vals_bulk_{ {FeBulk::PatchPointValues(1, quad_order, patch_fe_data_),
+    	                       FeBulk::PatchPointValues(2, quad_order, patch_fe_data_),
+                               FeBulk::PatchPointValues(3, quad_order, patch_fe_data_)} },
+      patch_point_vals_side_{ {FeSide::PatchPointValues(1, quad_order, patch_fe_data_),
+                               FeSide::PatchPointValues(2, quad_order, patch_fe_data_),
+                               FeSide::PatchPointValues(3, quad_order, patch_fe_data_)} },
       fe_(fe)
     {
         used_quads_[0] = false; used_quads_[1] = false;
+
+        // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
+        uint max_n_dofs = std::max(fe_[Dim<1>{}]->n_dofs(), std::max(fe_[Dim<2>{}]->n_dofs(), fe_[Dim<3>{}]->n_dofs()) );
+        uint zero_vec_size = 300 * max_n_dofs;
+        patch_fe_data_.zero_vec_ = ArenaVec<double>(zero_vec_size, patch_fe_data_.asm_arena_);
+        for (uint i=0; i<zero_vec_size; ++i) patch_fe_data_.zero_vec_(i) = 0.0;
     }
 
 
     /// Destructor
     ~PatchFEValues()
-    {
-        if (patch_arena_!=nullptr)
-            delete patch_arena_;
-    }
+    {}
 
     /// Return bulk or side quadrature of given dimension
     Quadrature *get_quadrature(uint dim, bool is_bulk) const {
@@ -1170,11 +1173,7 @@ public:
 
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
-        patch_arena_ = asm_arena_.get_child_arena();
-        for (unsigned int i=0; i<3; ++i) {
-            if (used_quads_[0]) patch_point_vals_bulk_[i].init_finalize(patch_arena_);
-            if (used_quads_[1]) patch_point_vals_side_[i].init_finalize(patch_arena_);
-        }
+        patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
     }
 
     /// Reset PatchpointValues structures
@@ -1184,7 +1183,7 @@ public:
             if (used_quads_[0]) patch_point_vals_bulk_[i].reset();
             if (used_quads_[1]) patch_point_vals_side_[i].reset();
         }
-        patch_arena_->reset();
+        patch_fe_data_.patch_arena_->reset();
     }
 
     /// Reinit data.
@@ -1333,8 +1332,7 @@ public:
     }
 
 private:
-    AssemblyArena asm_arena_;
-    PatchArena *patch_arena_;
+    PatchFeData patch_fe_data_;
     std::array<FeBulk::PatchPointValues<spacedim>, 3> patch_point_vals_bulk_;  ///< Sub objects of bulk data of dimensions 1,2,3
     std::array<FeSide::PatchPointValues<spacedim>, 3> patch_point_vals_side_;  ///< Sub objects of side data of dimensions 1,2,3
 

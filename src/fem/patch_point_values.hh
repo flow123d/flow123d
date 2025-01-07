@@ -143,13 +143,33 @@ template<unsigned int spacedim = 3>
 class PatchPointValues
 {
 public:
+	/**
+	 * Stores shared data members between PatchFeValues and PatchPoinValues
+	 */
+	struct PatchFeData {
+	public:
+	    /// Constructor
+	    PatchFeData(size_t buffer_size, size_t simd_alignment)
+	    : asm_arena_(buffer_size, simd_alignment), patch_arena_(nullptr) {}
+
+	    /// Destructor
+	    ~PatchFeData() {
+	        if (patch_arena_!=nullptr)
+	            delete patch_arena_;
+	    }
+
+	    AssemblyArena asm_arena_;    ///< Assembly arena, created and filled once during initialization
+	    PatchArena *patch_arena_;    ///< Patch arena, reseted before patch reinit
+	    ArenaVec<double> zero_vec_;  ///< ArenaVec of zero values of maximal length using in zero PatchPointValues construction
+	};
+
     /**
      * Constructor
      *
      * @param dim Set dimension
      */
-    PatchPointValues(uint dim, AssemblyArena &asm_arena)
-    : dim_(dim), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena), needs_zero_values_(false) {
+    PatchPointValues(uint dim, PatchFeData &patch_fe_data)
+    : dim_(dim), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data), needs_zero_values_(false) {
         reset();
     }
 
@@ -171,10 +191,6 @@ public:
         int_table_.resize(int_sizes_.size());
         if (needs_zero_values_)
         	this->create_zero_values();
-    }
-
-    inline void init_finalize(PatchArena *patch_arena) {
-        patch_arena_ = patch_arena;
     }
 
     /// Reset number of columns (points and elements)
@@ -210,12 +226,12 @@ public:
         n_points_ = n_points;
         std::vector<uint> sizes = {n_elems, n_points};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
-	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_arena_);
+	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
 	    }
         for (auto *elOp : operations_) {
             if (elOp == nullptr) continue;
             if (elOp->size_type() != fixedSizeOp) {
-                elOp->allocate_result(sizes[elOp->size_type()], *patch_arena_);
+                elOp->allocate_result(sizes[elOp->size_type()], *patch_fe_data_.patch_arena_);
             }
         }
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
@@ -472,12 +488,12 @@ public:
 
     /// return reference to assembly arena
     inline AssemblyArena &asm_arena() const {
-    	return asm_arena_;
+    	return patch_fe_data_.asm_arena_;
     }
 
     /// return reference to patch arena
     inline PatchArena &patch_arena() const {
-    	return *patch_arena_;
+    	return *patch_fe_data_.patch_arena_;
     }
 
     /// Set flag needs_zero_values_ to true
@@ -597,8 +613,7 @@ protected:
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
 
-    AssemblyArena &asm_arena_;          ///< Reference to global assembly arena of PatchFeValues
-    PatchArena *patch_arena_;           ///< Pointer to global patch arena of PatchFeValues
+    PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
     bool needs_zero_values_;            ///< Flags hold whether zero_values_ object is needed
     PatchPointValues *zero_values_;     ///< PatchPointValues object returns zero values for all operations
@@ -698,10 +713,10 @@ public:
             result_(i) = ArenaVec<double>(data_size, arena);
     }
 
-    inline void allocate_const_result(double val) {
+    inline void allocate_const_result(ArenaVec<double> &value_vec) {
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1]);
         for (uint i=0; i<n_comp(); ++i)
-            result_(i) = ArenaVec<double>(val);
+            result_(i) = value_vec;
     }
 
     /// Return map referenced result as Eigen::Vector
@@ -1104,9 +1119,11 @@ namespace FeBulk {
     template<unsigned int spacedim = 3>
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
+        typedef typename ::PatchPointValues<spacedim>::PatchFeData PatchFeData;
+
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
-        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+        PatchPointValues(uint dim, uint quad_order, PatchFeData &patch_fe_data)
+        : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             // set dependency of operations
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(BulkOps::opNItems);
             this->op_dependency_[BulkOps::opJac] = {BulkOps::opElCoords};
@@ -1145,13 +1162,13 @@ namespace FeBulk {
 
         /// Create zero_values_ object
         void create_zero_values() override {
-		    this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->asm_arena_);
+		    this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->patch_fe_data_);
         }
 
     private:
         /// Constructor of zero values object
-        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, AssemblyArena &asm_arena)
-        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, PatchFeData &patch_fe_data)
+        : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(BulkOps::opNItems);
             this->create_zero_operations(operations);
         }
@@ -1163,7 +1180,7 @@ namespace FeBulk {
         	auto *weights = this->make_fixed_op( BulkOps::opWeights, {1}, &common_reinit::op_base );
             // create result vector of weights operation in assembly arena
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            weights->allocate_result(point_weights_vec.size(), this->asm_arena_);
+            weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
             auto weights_value = weights->result_matrix();
             for (uint i=0; i<point_weights_vec.size(); ++i)
                 weights_value(0)(i) = point_weights_vec[i];
@@ -1194,9 +1211,11 @@ namespace FeSide {
     template<unsigned int spacedim = 3>
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
+        typedef typename ::PatchPointValues<spacedim>::PatchFeData PatchFeData;
+
         /// Constructor
-        PatchPointValues(uint dim, uint quad_order, AssemblyArena &asm_arena)
-        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+        PatchPointValues(uint dim, uint quad_order, PatchFeData &patch_fe_data)
+        : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             // set dependency of operations
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(SideOps::opNItems);
             this->op_dependency_[SideOps::opElJac] = {SideOps::opElCoords};
@@ -1238,13 +1257,13 @@ namespace FeSide {
 
         /// Create zero_values_ object
         void create_zero_values() override {
-        	this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->asm_arena_);
+        	this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->patch_fe_data_);
         }
 
     private:
         /// Constructor of zero values object - TODO better description
-        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, AssemblyArena &asm_arena)
-        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, PatchFeData &patch_fe_data)
+        : ::PatchPointValues<spacedim>(dim, patch_fe_data) {
             this->op_dependency_ = std::vector< std::vector<unsigned int> >(SideOps::opNItems);
             this->create_zero_operations(operations);
         }
@@ -1256,7 +1275,7 @@ namespace FeSide {
             auto *weights = this->make_fixed_op( SideOps::opWeights, {1},  &common_reinit::op_base ); //lambda_weights );
             // create result vector of weights operation in assembly arena
             const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-            weights->allocate_result(point_weights_vec.size(), this->asm_arena_);
+            weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
             auto weights_value = weights->result_matrix();
             for (uint i=0; i<point_weights_vec.size(); ++i)
                 weights_value(0)(i) = point_weights_vec[i];

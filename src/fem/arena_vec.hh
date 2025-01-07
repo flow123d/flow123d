@@ -150,18 +150,14 @@ public:
 
     /// For development only. TODO remove
     inline T & operator()(std::size_t item) {
-        if (data_ptr_ == nullptr) {
-            return scalar_val_;
-        }
+        ASSERT_PTR(data_ptr_);
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
     }
 
     /// For development only. TODO remove
     inline const T & operator()(std::size_t item) const {
-        if (data_ptr_ == nullptr) {
-            return scalar_val_;
-        }
+        ASSERT_PTR(data_ptr_);
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
     }
