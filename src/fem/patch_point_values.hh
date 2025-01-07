@@ -149,16 +149,18 @@ public:
      * @param dim Set dimension
      */
     PatchPointValues(uint dim, AssemblyArena &asm_arena)
-    : dim_(dim), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena) {
+    : dim_(dim), elements_map_(300, 0), points_map_(300, 0), asm_arena_(asm_arena), needs_zero_values_(false) {
         reset();
     }
 
 	/**
 	 * Destructor.
 	 */
-	~PatchPointValues() {
+    virtual ~PatchPointValues() {
 	    for (uint i=0; i<operations_.size(); ++i)
 	    	if (operations_[i] != nullptr) delete operations_[i];
+	    if (needs_zero_values_)
+	        delete zero_values_;
 	}
 
     /**
@@ -167,6 +169,8 @@ public:
     void initialize() {
         this->reset();
         int_table_.resize(int_sizes_.size());
+        if (needs_zero_values_)
+        	this->create_zero_values();
     }
 
     inline void init_finalize(PatchArena *patch_arena) {
@@ -476,6 +480,20 @@ public:
     	return *patch_arena_;
     }
 
+    /// Set flag needs_zero_values_ to true
+    inline void zero_values_needed() {
+        needs_zero_values_ = true;
+    }
+
+
+    inline PatchPointValues *zero_values() {
+        ASSERT_PTR(zero_values_);
+        return zero_values_;
+    }
+
+    /// Create zero_values_ object
+    virtual void create_zero_values() =0;
+
     /**
      * Performs output of data tables to stream.
      *
@@ -544,6 +562,8 @@ public:
     }
 
 protected:
+    void create_zero_operations(std::vector<PatchOp<spacedim> *> &ref_ops);
+
     /**
      * Hold integer values of quadrature points of defined operations.
      *
@@ -576,9 +596,12 @@ protected:
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-    //std::vector<OpSizeType> row_sizes_; ///< hold sizes of rows by type of operation
+
     AssemblyArena &asm_arena_;          ///< Reference to global assembly arena of PatchFeValues
     PatchArena *patch_arena_;           ///< Pointer to global patch arena of PatchFeValues
+
+    bool needs_zero_values_;            ///< Flags hold whether zero_values_ object is needed
+    PatchPointValues *zero_values_;     ///< PatchPointValues object returns zero values for all operations
 
     friend class PatchFEValues<spacedim>;
     friend class PatchOp<spacedim>;
@@ -673,6 +696,12 @@ public:
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1]);
         for (uint i=0; i<n_comp(); ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
+    }
+
+    inline void allocate_const_result(double val) {
+        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1]);
+        for (uint i=0; i<n_comp(); ++i)
+            result_(i) = ArenaVec<double>(val);
     }
 
     /// Return map referenced result as Eigen::Vector
@@ -1066,7 +1095,12 @@ inline void side_reinit::elop_sd_jac_det<1>(PatchOp<3> * result_op, FMT_UNUSED I
 
 namespace FeBulk {
 
-    /// Bulk data specialization, order of item in operations_ vector corresponds to the BulkOps enum
+    /**
+     * Bulk data specialization, order of item in operations_ vector corresponds to the BulkOps enum
+     *
+     * TODO merge FeBulk::PatchPointValues and FeSide::PatchPointValues to PatchPointValues
+     * when operation dependencies will be solved by DFS
+     */
     template<unsigned int spacedim = 3>
     class PatchPointValues : public ::PatchPointValues<spacedim> {
     public:
@@ -1106,7 +1140,22 @@ namespace FeBulk {
             }
         }
 
+        /// Destructor
+        ~PatchPointValues() {}
+
+        /// Create zero_values_ object
+        void create_zero_values() override {
+		    this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->asm_arena_);
+        }
+
     private:
+        /// Constructor of zero values object
+        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, AssemblyArena &asm_arena)
+        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+            this->op_dependency_ = std::vector< std::vector<unsigned int> >(BulkOps::opNItems);
+            this->create_zero_operations(operations);
+        }
+
         /// Initialize operations vector
         template<unsigned int dim>
         void init() {
@@ -1184,7 +1233,22 @@ namespace FeSide {
             }
         }
 
+        /// Destructor
+        ~PatchPointValues() {}
+
+        /// Create zero_values_ object
+        void create_zero_values() override {
+        	this->zero_values_ = new PatchPointValues(this->dim_, this->operations_, this->asm_arena_);
+        }
+
     private:
+        /// Constructor of zero values object - TODO better description
+        PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &operations, AssemblyArena &asm_arena)
+        : ::PatchPointValues<spacedim>(dim, asm_arena) {
+            this->op_dependency_ = std::vector< std::vector<unsigned int> >(SideOps::opNItems);
+            this->create_zero_operations(operations);
+        }
+
         /// Initialize operations vector
         template<unsigned int dim>
         void init() {

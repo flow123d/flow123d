@@ -72,16 +72,16 @@ public:
 
     // Class similar to current FeView
     FeQ(PatchPointValues<3> *patch_point_vals, bool is_bulk, unsigned int op_idx)
-    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), is_bulk_(is_bulk), op_idx_(op_idx), i_shape_fn_idx_(0) {
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), op_idx_(op_idx), i_shape_fn_idx_(0) {
         if (is_bulk) patch_point_vals_bulk_ = patch_point_vals;
         else patch_point_vals_side_ = patch_point_vals;
     }
 
     /// Constructor used only in FeQArray::shape()
     FeQ(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side,
-            bool is_bulk, unsigned int op_idx, unsigned int i_shape_fn_idx)
+            unsigned int op_idx, unsigned int i_shape_fn_idx)
     : patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side),
-      is_bulk_(is_bulk), op_idx_(op_idx), i_shape_fn_idx_(i_shape_fn_idx) {}
+      op_idx_(op_idx), i_shape_fn_idx_(i_shape_fn_idx) {}
 
 
     ValueType operator()(const BulkPoint &point) const;
@@ -94,7 +94,6 @@ public:
 private:
     PatchPointValues<3> *patch_point_vals_bulk_; ///< Pointer to bulk PatchPointValues
     PatchPointValues<3> *patch_point_vals_side_; ///< Pointer to side PatchPointValues
-    bool is_bulk_;                               ///< True if type of patch_point_vals_ is FeBulk, false if FeSide
     unsigned int op_idx_;                        ///< Index of operation in patch_point_vals_.operations vector
     unsigned int i_shape_fn_idx_;                ///< Index of shape function
 };
@@ -108,17 +107,17 @@ public:
 
     // Class similar to current FeView
     FeQArray(PatchPointValues<3> *patch_point_vals, bool is_bulk, unsigned int op_idx, unsigned int n_dofs)
-    : patch_point_vals_(patch_point_vals), is_bulk_(is_bulk), op_idx_(op_idx), n_dofs_(n_dofs) {
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), op_idx_(op_idx), n_dofs_(n_dofs) {
         ASSERT_GT(n_dofs, 0).error("Invalid number of DOFs.\n");
+
+        if (is_bulk) patch_point_vals_bulk_ = patch_point_vals;
+        else patch_point_vals_side_ = patch_point_vals;
     }
 
 
     FeQ<ValueType> shape(unsigned int i_shape_fn_idx) const {
         ASSERT_LT(i_shape_fn_idx, n_dofs_);
-        if (is_bulk_)
-            return FeQ<ValueType>(patch_point_vals_, nullptr, is_bulk_, op_idx_, i_shape_fn_idx);
-        else
-            return FeQ<ValueType>(nullptr, patch_point_vals_, is_bulk_, op_idx_, i_shape_fn_idx);
+        return FeQ<ValueType>(patch_point_vals_bulk_, patch_point_vals_side_, op_idx_, i_shape_fn_idx);
     }
 
     /// Return number of DOFs
@@ -127,10 +126,10 @@ public:
     }
 
 private:
-    PatchPointValues<3> *patch_point_vals_; ///< Reference to PatchPointValues
-    bool is_bulk_;                          ///< True if type of patch_point_vals_ is FeBulk, false if FeSide
-    unsigned int op_idx_;                   ///< Index of operation in patch_point_vals_.operations vector
-    unsigned int n_dofs_;                   ///< Number of DOFs
+    PatchPointValues<3> *patch_point_vals_bulk_; ///< Reference to bulk PatchPointValues
+    PatchPointValues<3> *patch_point_vals_side_; ///< Reference to side PatchPointValues
+    unsigned int op_idx_;                        ///< Index of operation in patch_point_vals_.operations vector
+    unsigned int n_dofs_;                        ///< Number of DOFs
 };
 
 
@@ -183,9 +182,9 @@ public:
         ASSERT_LT(i_join_idx, n_dofs_both());
 
         if (this->is_high_dim(i_join_idx))
-            return FeQ<ValueType>(patch_point_vals_bulk_, patch_point_vals_side_, false, op_idx_side_, i_join_idx - n_dofs_low());
+            return FeQ<ValueType>(patch_point_vals_side_->zero_values(), patch_point_vals_side_, op_idx_side_, i_join_idx - n_dofs_low());
         else
-            return FeQ<ValueType>(patch_point_vals_bulk_, patch_point_vals_side_, true, op_idx_bulk_, i_join_idx);
+            return FeQ<ValueType>(patch_point_vals_bulk_, patch_point_vals_bulk_->zero_values(), op_idx_bulk_, i_join_idx);
     }
 
 
@@ -914,12 +913,14 @@ public:
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_low = fe_component_low->n_dofs();
         patch_point_vals_bulk_->make_fe_op(FeBulk::BulkOps::opScalarShape, {1}, bulk_reinit::ptop_scalar_shape, n_dofs_low);
+        patch_point_vals_bulk_->zero_values_needed();
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_high = fe_component_high->n_dofs();
         patch_point_vals_side_->make_fe_op(FeSide::SideOps::opScalarShape, {1}, side_reinit::ptop_scalar_shape, n_dofs_high);
+        patch_point_vals_side_->zero_values_needed();
 
         return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high,
                                FeBulk::BulkOps::opScalarShape, FeSide::SideOps::opScalarShape);
@@ -941,6 +942,8 @@ public:
             {
                 patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, bulk_reinit::ptop_vector_shape, fe_component_low->n_dofs());
                 patch_point_vals_side_->make_fe_op(op_idx_side, {3}, side_reinit::ptop_vector_shape, fe_component_high->n_dofs());
+                patch_point_vals_bulk_->zero_values_needed();
+                patch_point_vals_side_->zero_values_needed();
                 break;
             }
             case FEVectorContravariant:
@@ -986,6 +989,9 @@ public:
                                                   {3, 3},
                                                   side_reinit::ptop_vector_shape_grads<dim>,
                                                   fe_component_high->n_dofs());
+
+                patch_point_vals_bulk_->zero_values_needed();
+                patch_point_vals_side_->zero_values_needed();
                 break;
             }
             case FEVectorContravariant:
@@ -1381,71 +1387,49 @@ inline Tensor ElQ<Tensor>::operator()(const SidePoint &point) const {
 template <class ValueType>
 ValueType FeQ<ValueType>::operator()(const BulkPoint &point) const {
     ASSERT_PTR(patch_point_vals_bulk_);
-    if (is_bulk_) {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_bulk_->scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    } else {
-        return 0.0;
-    }
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_bulk_->scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
 inline Vector FeQ<Vector>::operator()(const BulkPoint &point) const {
-    ASSERT_PTR(patch_point_vals_bulk_);
-    if (is_bulk_) {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_bulk_->vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    } else {
-        Vector vect; vect.zeros();
-        return vect;
-    }
+	ASSERT_PTR(patch_point_vals_bulk_);
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_bulk_->vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
 inline Tensor FeQ<Tensor>::operator()(const BulkPoint &point) const {
-    ASSERT_PTR(patch_point_vals_bulk_);
-    if (is_bulk_) {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_bulk_->tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    } else {
-        Tensor tens; tens.zeros();
-        return tens;
-    }
+	ASSERT_PTR(patch_point_vals_bulk_);
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_bulk_->tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <class ValueType>
 ValueType FeQ<ValueType>::operator()(const SidePoint &point) const {
-    ASSERT_PTR(patch_point_vals_side_);
-    if (is_bulk_) {
-        return 0.0;
-    } else {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_side_->scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    }
+	ASSERT_PTR(patch_point_vals_side_);
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_side_->scalar_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
 inline Vector FeQ<Vector>::operator()(const SidePoint &point) const {
-    ASSERT_PTR(patch_point_vals_side_);
-    if (is_bulk_) {
-        Vector vect; vect.zeros();
-        return vect;
-    } else {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_side_->vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    }
+	ASSERT_PTR(patch_point_vals_side_);
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_side_->vector_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 template <>
 inline Tensor FeQ<Tensor>::operator()(const SidePoint &point) const {
-    ASSERT_PTR(patch_point_vals_side_);
-    if (is_bulk_) {
-        Tensor tens; tens.zeros();
-        return tens;
-    } else {
-        unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-        return patch_point_vals_side_->tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
-    }
+	ASSERT_PTR(patch_point_vals_side_);
+
+    unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
+    return patch_point_vals_side_->tensor_value(op_idx_, value_cache_idx, i_shape_fn_idx_);
 }
 
 

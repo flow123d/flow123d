@@ -21,6 +21,19 @@
 #include "fem/patch_point_values.hh"
 
 
+template<unsigned int spacedim>
+void PatchPointValues<spacedim>::create_zero_operations(std::vector<PatchOp<spacedim> *> &ref_ops) {
+    operations_.resize(ref_ops.size(), nullptr);
+    for (uint i_op = 0; i_op < ref_ops.size(); ++i_op ) {
+        auto *op = ref_ops[i_op];
+        if (op == nullptr) continue;
+
+        auto *new_op = make_fe_op(i_op, {op->shape()[0], op->shape()[1]}, &common_reinit::op_base, op->n_dofs(), op->size_type());
+        new_op->allocate_const_result(0.0);
+    }
+}
+
+
 template class PatchPointValues<3>;
 template class PatchOp<3>;
 template class FeBulk::PatchPointValues<3>;
