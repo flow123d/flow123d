@@ -529,12 +529,16 @@ public:
                 	    auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
+                	    auto result_low = conc_join_shape_2d_.shape(i_dof)(p_low);
+                	    EXPECT_DOUBLE_EQ( result_low, 0.0 );
                     	i_dof_high++;
                     }
                     else {
                 	    auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[0].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
+                	    auto result_high = conc_join_shape_2d_.shape(i_dof)(p_high);
+                	    EXPECT_DOUBLE_EQ( result_high, 0.0 );
                     	i_dof_low++;
                     }
                 }
@@ -547,12 +551,16 @@ public:
                 	    auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
                 	    auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
+                	    auto result_low = conc_join_shape_3d_.shape(i_dof)(p_low);
+                	    EXPECT_DOUBLE_EQ( result_low, 0.0 );
                     	i_dof_high++;
                 	}
                 	else {
                 	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
                 	    auto ref = fe_values_[1].shape_value(i_dof_low, 0);
                 	    EXPECT_DOUBLE_EQ( result, ref );
+                	    auto result_high = conc_join_shape_3d_.shape(i_dof)(p_high);
+                	    EXPECT_DOUBLE_EQ( result_high, 0.0 );
                     	i_dof_low++;
                 	}
                 }
