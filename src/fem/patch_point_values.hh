@@ -224,7 +224,7 @@ public:
     void resize_tables(uint n_elems, uint n_points) {
         n_elems_ = n_elems;
         n_points_ = n_points;
-        std::vector<uint> sizes = {n_elems, n_points};
+        std::vector<uint> sizes = {n_elems_, n_points_};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
 	    }
@@ -397,8 +397,9 @@ public:
      */
     void reinit_patch() {
         if (n_elems_ == 0) return; // skip if tables are empty
-        for (uint i=0; i<operations_.size(); ++i)
+        for (uint i=0; i<operations_.size(); ++i) {
             if (operations_[i] != nullptr) operations_[i]->reinit_function(operations_, int_table_);
+        }
     }
 
     /**
@@ -450,7 +451,7 @@ public:
      * @param i_dof       Index of DOF
      */
     inline Scalar scalar_value(uint op_idx, uint point_idx, uint i_dof=0) const {
-        return operations_[op_idx]->raw_result()(0)(points_map_[point_idx] + i_dof*n_points_);
+        return operations_[op_idx]->raw_result()(i_dof)(points_map_[point_idx]);
     }
 
     /**
@@ -828,20 +829,27 @@ struct bulk_reinit {
         common_reinit::ptop_JxW(result_op);
     }
     static inline void ptop_scalar_shape(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
-        auto ref_vec = result_op->input_ops(0)->result_matrix()(0);
+        auto ref_vec = result_op->input_ops(0)->result_matrix();
+        auto result_vec = result_op->result_matrix();
 
-        uint n_points = ref_vec.data_size() / result_op->n_dofs(); // points per element
-        uint n_elem = result_op->raw_result()(0).data_size() / n_points;
+        uint n_dofs = result_op->n_dofs();
+        uint n_elem = result_vec(0).data_size() / ref_vec(0).data_size();
 
-        auto shape_matrix = result_op->result_matrix();
         ArenaVec<double> elem_vec(n_elem, result_op->raw_result()(0).arena());
         for (uint i=0; i<n_elem; ++i) {
             elem_vec(i) = 1.0;
         }
-        ArenaOVec<double> ref_ovec(ref_vec);
         ArenaOVec<double> elem_ovec(elem_vec);
-        ArenaOVec<double> shape_ovec = elem_ovec * ref_ovec;
-        shape_matrix(0) = shape_ovec.get_vec();
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> ref_ovec(n_dofs);
+        for (uint i=0; i<n_dofs; ++i) {
+            ref_ovec(i) = ArenaOVec<double>( ref_vec(i) );
+        }
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> result_ovec = elem_ovec * ref_ovec;
+        for (uint i=0; i<n_dofs; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
     }
     static inline void ptop_vector_shape(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
         auto ref_shape_vec = result_op->input_ops(0)->result_matrix();
@@ -972,20 +980,17 @@ struct side_reinit {
         }
     }
     static inline void ptop_scalar_shape(PatchOp<3> * result_op, IntTableArena &el_table) {
-        auto shape_values = result_op->input_ops(0)->result_matrix();
+        auto ref_vec = result_op->input_ops(0)->result_matrix();
+        auto result_vec = result_op->result_matrix();
 
         uint n_dofs = result_op->n_dofs();
-        uint n_points = shape_values(0).data_size() / n_dofs;
-        uint n_sides = el_table(3).data_size();
-        uint n_patch_points = el_table(4).data_size();
-
-        auto scalar_shape_value = result_op->result_matrix();
-        scalar_shape_value(0) = ArenaVec<double>(n_dofs*n_patch_points, scalar_shape_value(0).arena());
+        uint n_sides = el_table(3).data_size();        // number of sides on patch
+        uint n_patch_points = el_table(4).data_size(); // number of points on patch
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            uint dof_shift = i_dof * n_patch_points;
-            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
-                scalar_shape_value(0)(i_pt + dof_shift) = shape_values(el_table(4)(i_pt))(i_dof * n_points + i_pt / n_sides);
+            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt) {
+                result_vec(i_dof)(i_pt) = ref_vec(el_table(4)(i_pt), i_dof)(i_pt / n_sides);
+            }
         }
     }
     static inline void ptop_vector_shape(PatchOp<3> * result_op, IntTableArena &el_table) {

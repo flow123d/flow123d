@@ -383,14 +383,14 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefScalar, {1}, &common_reinit::op_base, n_dofs);
+        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefScalar, {n_dofs}, &common_reinit::op_base, n_dofs);
 
         auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
-        ref_scalar_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_scalar_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_scalar_value = ref_scalar_op->result_matrix();
         for (unsigned int i_p = 0; i_p < n_points; i_p++)
             for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
-                ref_scalar_value(0)(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof][0];
+                ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
             }
 
         return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opRefScalar, fe_component->n_dofs());
@@ -476,7 +476,7 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opScalarShape, {1}, bulk_reinit::ptop_scalar_shape, n_dofs);
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opScalarShape, {n_dofs}, bulk_reinit::ptop_scalar_shape, n_dofs);
 
         return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opScalarShape, n_dofs);
     }
@@ -664,15 +664,15 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefScalar, {dim+1}, &common_reinit::op_base, n_dofs);
+        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefScalar, {dim+1, n_dofs}, &common_reinit::op_base, n_dofs);
 
         auto ref_shape_vals = this->ref_shape_values_side(patch_point_vals_->get_quadrature(), fe_component);
-        ref_scalar_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_scalar_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_scalar_value = ref_scalar_op->result_matrix();
         for (unsigned int s=0; s<dim+1; ++s) {
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
                 for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
-                    ref_scalar_value(s)(i_dof * n_points + i_p) = ref_shape_vals[s][i_p][i_dof][0];
+                    ref_scalar_value(s, i_dof)(i_p) = ref_shape_vals[s][i_p][i_dof][0];
                 }
         }
 
@@ -757,9 +757,8 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        // use lambda reinit function
         uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opScalarShape, {1}, side_reinit::ptop_scalar_shape, n_dofs);
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opScalarShape, {n_dofs}, side_reinit::ptop_scalar_shape, n_dofs);
 
         return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opScalarShape, n_dofs);
     }
