@@ -427,15 +427,15 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefScalarGrad, {dim}, &common_reinit::op_base, n_dofs);
+        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefScalarGrad, {dim, n_dofs}, &common_reinit::op_base, n_dofs);
 
         std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
-        ref_scalar_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_scalar_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_scalar_value = ref_scalar_op->result_matrix();
         for (uint i=0; i<ref_scalar_value.rows(); ++i) {
             for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_scalar_value(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+                    ref_scalar_value(i, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i);
         }
 
         return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opRefScalarGrad, fe_component->n_dofs());
@@ -527,7 +527,7 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
         uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3, n_dofs}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
 
         return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
     }
@@ -709,16 +709,16 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefScalarGrad, {dim+1,dim}, &common_reinit::op_base, n_dofs);
+        auto *ref_scalar_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefScalarGrad, {dim+1,dim*n_dofs}, &common_reinit::op_base, n_dofs);
 
         std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->ref_shape_gradients_side(patch_point_vals_->get_quadrature(), fe_component);
-        ref_scalar_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_scalar_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_scalar_value = ref_scalar_op->result_matrix();
         for (unsigned int s=0; s<dim+1; ++s)
             for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     for (uint c=0; c<dim; ++c)
-                        ref_scalar_value(s,c)(i_dof * n_points + i_p) = ref_shape_grads[s][i_p][i_dof](c);
+                        ref_scalar_value(s,dim*i_dof+c)(i_p) = ref_shape_grads[s][i_p][i_dof](c);
 
         return FeQArray<Vector>(patch_point_vals_, true, FeSide::SideOps::opRefScalarGrad, fe_component->n_dofs());
     }
@@ -802,7 +802,7 @@ public:
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
         uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opGradScalarShape, {3}, side_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opGradScalarShape, {3, n_dofs}, side_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
 
         return FeQArray<Vector>(patch_point_vals_, false, FeSide::SideOps::opGradScalarShape, n_dofs);
     }

@@ -464,9 +464,9 @@ public:
     inline Vector vector_value(uint op_idx, uint point_idx, uint i_dof=0) const {
         Vector val;
         auto op_matrix = operations_[op_idx]->raw_result();
-        uint op_matrix_idx = points_map_[point_idx] + i_dof*n_points_;
+        uint op_matrix_idx = points_map_[point_idx];
         for (uint i=0; i<3; ++i)
-            val(i) = op_matrix(i)(op_matrix_idx);
+            val(i) = op_matrix(i + 3*i_dof)(op_matrix_idx);
         return val;
     }
 
@@ -884,11 +884,13 @@ struct bulk_reinit {
     }
     template<unsigned int dim>
     static inline void ptop_scalar_shape_grads(PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
-        auto inv_jac_vec = result_op->input_ops(0)->result_matrix();
-        auto ref_grads_vec = result_op->input_ops(1)->result_matrix();
+        auto inv_jac_vec = result_op->input_ops(0)->result_matrix();    // dim x spacedim=3
+        auto ref_grads_vec = result_op->input_ops(1)->result_matrix();  // dim x n_dofs
 
-        Eigen::Matrix<ArenaOVec<double>, dim, 1> ref_grads_ovec;
-        for (uint i=0; i<dim; ++i) {
+        uint n_dofs = ref_grads_vec.cols();
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_grads_ovec(dim, n_dofs);
+        for (uint i=0; i<dim*n_dofs; ++i) {
             ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
         }
 
@@ -898,8 +900,8 @@ struct bulk_reinit {
         }
 
         auto result_vec = result_op->result_matrix();
-        Eigen::Matrix<ArenaOVec<double>, 3, 1> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-        for (uint i=0; i<3; ++i) {
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+        for (uint i=0; i<3*n_dofs; ++i) {
             result_vec(i) = result_ovec(i).get_vec();
         }
     }
@@ -993,6 +995,8 @@ struct side_reinit {
             }
         }
     }
+        static inline void ptop_vector_contravariant_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
+    static inline void ptop_vector_piola_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
     static inline void ptop_vector_shape(PatchOp<3> * result_op, IntTableArena &el_table) {
         auto ref_shape_vec = result_op->input_ops(0)->result_matrix();
 
@@ -1012,15 +1016,14 @@ struct side_reinit {
                     vector_shape_value(c)(i_pt + dof_shift) = ref_shape_vec(el_table(4)(i_pt),c)(i_dof * n_points + i_pt / n_sides);
         }
     }
-    static inline void ptop_vector_contravariant_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
-    static inline void ptop_vector_piola_shape(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {}
-    template<unsigned int dim>
+
+template<unsigned int dim>
     static inline void ptop_scalar_shape_grads(PatchOp<3> * result_op, IntTableArena &el_table) {
-        auto ref_shape_grads = result_op->input_ops(1)->result_matrix();
-        auto grad_scalar_shape_value = result_op->result_matrix();  // Result vector
+        auto ref_shape_grads = result_op->input_ops(1)->result_matrix();  // dim+1 x dim*n_dofs
+        auto grad_scalar_shape_value = result_op->result_matrix();  // Result vector: 3 x n_dofs
 
         uint n_dofs = result_op->n_dofs();
-        uint n_points = ref_shape_grads(0).data_size() / n_dofs;
+        uint n_points = ref_shape_grads(0).data_size();
         uint n_sides = el_table(3).data_size();
         uint n_patch_points = el_table(4).data_size();
 
@@ -1028,22 +1031,22 @@ struct side_reinit {
         auto inv_jac_value = result_op->input_ops(0)->result_matrix();
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
-        	inv_jac_expd_value(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(i).arena() );
-        	for (uint j=0; j<n_dofs*n_patch_points; ++j)
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, inv_jac_value(i).arena() );
+        	for (uint j=0; j<n_patch_points; ++j)
         	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_sides);
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
-        Eigen::Matrix<ArenaVec<double>, dim, 1> ref_shape_grads_expd;
-        for (uint i=0; i<dim; ++i) {
-            ref_shape_grads_expd(i) = ArenaVec<double>( n_dofs*n_patch_points, inv_jac_value(0).arena() );
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_grads_expd(dim, n_dofs);
+        for (uint i=0; i<dim*n_dofs; ++i) {
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, inv_jac_value(0).arena() );
         }
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_points; ++i_pt) {
-                uint i_begin = (i_dof * n_points + i_pt) * n_sides;
+                uint i_begin = i_pt * n_sides;
                 for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
                     for (uint i_c=0; i_c<dim; ++i_c) {
-                        ref_shape_grads_expd(i_c)(i_begin + i_sd) = ref_shape_grads(el_table(3)(i_sd),i_c)(i_dof * n_points + i_pt);
+                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(el_table(3)(i_sd),i_c)(i_dof * n_points + i_pt);
                     }
                 }
             }
