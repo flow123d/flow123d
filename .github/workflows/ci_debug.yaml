@@ -134,7 +134,26 @@ jobs:
         - uses: actions/download-artifact@v3
           with:
             name: build_dir
-        - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: Set variables
+          id: vars
+          run: |
+            git_branch=`git rev-parse --abbrev-ref HEAD`
+            build_dir=build-${git_branch}
+            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+
+        - name: Run UNIT tests
+          run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: Test Reporter
+          uses: dorny/test-reporter@v1
+          if: always()
+          with:
+            name: "Test reporter"
+            path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
+            reporter: java-junit
+            fail-on-error: false
+            token: ${{ secrets.GITHUB_TOKEN }}
 
     build_doc:
         needs: [build]
