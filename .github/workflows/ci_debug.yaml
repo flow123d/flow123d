@@ -164,6 +164,8 @@ jobs:
             reporter: java-junit
             fail-on-error: false
             token: ${{ secrets.GITHUB_TOKEN }}
+            list-suites: 'failed'
+            list-tests: 'failed'
 
     build_doc:
         needs: [build]
