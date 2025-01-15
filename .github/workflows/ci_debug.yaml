@@ -106,6 +106,7 @@ jobs:
           run: |
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
+
     unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
@@ -145,9 +146,18 @@ jobs:
         - name: Run UNIT tests
           run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
+        - name: Check if XML reports exist
+          id: check_reports
+          run: |
+            if ls ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml 1> /dev/null 2>&1; then
+              echo "xmlFound=true" >> $GITHUB_OUTPUT
+            else
+              echo "xmlFound=false" >> $GITHUB_OUTPUT
+            fi
+
         - name: Test Reporter
           uses: dorny/test-reporter@v1
-          if: always()
+          if: always() && steps.check_reports.outputs.xmlFound == 'true'
           with:
             name: "Test reporter"
             path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
