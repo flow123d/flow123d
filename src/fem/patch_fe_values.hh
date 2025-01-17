@@ -923,14 +923,14 @@ public:
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_low = fe_component_low->n_dofs();
-        patch_point_vals_bulk_->make_fe_op(FeBulk::BulkOps::opScalarShape, {1}, bulk_reinit::ptop_scalar_shape, n_dofs_low);
+        patch_point_vals_bulk_->make_fe_op(FeBulk::BulkOps::opScalarShape, {n_dofs_low}, bulk_reinit::ptop_scalar_shape, n_dofs_low);
         patch_point_vals_bulk_->zero_values_needed();
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         uint n_dofs_high = fe_component_high->n_dofs();
-        patch_point_vals_side_->make_fe_op(FeSide::SideOps::opScalarShape, {1}, side_reinit::ptop_scalar_shape, n_dofs_high);
+        patch_point_vals_side_->make_fe_op(FeSide::SideOps::opScalarShape, {n_dofs_high}, side_reinit::ptop_scalar_shape, n_dofs_high);
         patch_point_vals_side_->zero_values_needed();
 
         return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high,
@@ -942,17 +942,19 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         uint op_idx_bulk = FeBulk::BulkOps::opVectorShape;
+        uint n_dofs_low = fe_component_low->n_dofs();
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         uint op_idx_side = FeSide::SideOps::opVectorShape;
+        uint n_dofs_high = fe_component_high->n_dofs();
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         switch (fe_component_low->fe_type()) {
             case FEVector:
             {
-                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3}, bulk_reinit::ptop_vector_shape, fe_component_low->n_dofs());
-                patch_point_vals_side_->make_fe_op(op_idx_side, {3}, side_reinit::ptop_vector_shape, fe_component_high->n_dofs());
+                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3, n_dofs_low}, bulk_reinit::ptop_vector_shape, n_dofs_low);
+                patch_point_vals_side_->make_fe_op(op_idx_side, {3, n_dofs_high}, side_reinit::ptop_vector_shape, n_dofs_high);
                 patch_point_vals_bulk_->zero_values_needed();
                 patch_point_vals_side_->zero_values_needed();
                 break;
@@ -973,8 +975,7 @@ public:
                 ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
         }
 
-        return FeQJoin<Vector>(patch_point_vals_bulk_, patch_point_vals_side_, fe_component_low->n_dofs(),
-                fe_component_high->n_dofs(), op_idx_bulk, op_idx_side);
+        return FeQJoin<Vector>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high, op_idx_bulk, op_idx_side);
     }
 
     inline FeQJoin<Tensor> gradient_vector_join_shape(uint component_idx = 0)
@@ -992,12 +993,12 @@ public:
             case FEVector:
             {
                 patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
-                                                  {3, 3},
+                                                  {3, 3-fe_component_low->n_dofs()},
                                                   bulk_reinit::ptop_vector_shape_grads<dim-1>,
                                                   fe_component_low->n_dofs());
 
                 patch_point_vals_side_->make_fe_op(op_idx_side,
-                                                  {3, 3},
+                                                  {3, 3*fe_component_high->n_dofs()},
                                                   side_reinit::ptop_vector_shape_grads<dim>,
                                                   fe_component_high->n_dofs());
 
