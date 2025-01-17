@@ -181,6 +181,13 @@ public:
     FeQ<ValueType> shape(unsigned int i_join_idx) const {
         ASSERT_LT(i_join_idx, n_dofs_both());
 
+        /*
+         * Set zero bulk PatchFeValues for side DOFs and zero side PatchFeValues for bulk DOFs
+         *
+         * TODO After implementation of dependencies:
+         *      1) Implement FeQ::vec() getter (experimental method returned entire data vector)
+         *      2) Test difference of vectors
+         */
         if (this->is_high_dim(i_join_idx))
             return FeQ<ValueType>(patch_point_vals_side_->zero_values(), patch_point_vals_side_, op_idx_side_, i_join_idx - n_dofs_low());
         else
