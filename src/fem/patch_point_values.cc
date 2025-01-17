@@ -36,5 +36,3 @@ void PatchPointValues<spacedim>::create_zero_operations(std::vector<PatchOp<spac
 
 template class PatchPointValues<3>;
 template class PatchOp<3>;
-template class FeBulk::PatchPointValues<3>;
-template class FeSide::PatchPointValues<3>;
