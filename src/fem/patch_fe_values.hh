@@ -405,16 +405,16 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *vector_ref_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefVector, {3}, &common_reinit::op_base, n_dofs);
+        auto *vector_ref_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefVector, {3, n_dofs}, &common_reinit::op_base, n_dofs);
 
-        vector_ref_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        vector_ref_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto vector_ref_result = vector_ref_op->result_matrix();
         auto ref_shape_vals = this->ref_shape_values_bulk(patch_point_vals_->get_quadrature(), fe_component);
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
                 for (uint c=0; c<3; ++c)
-                    vector_ref_result(c)(i_dof * n_points + i_p) = ref_shape_vals[i_p][i_dof](c);
+                    vector_ref_result(c, i_dof)(i_p) = ref_shape_vals[i_p][i_dof](c);
 
         return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opRefVector, n_dofs);
     }
@@ -450,18 +450,19 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefVectorGrad, {dim, 3}, &common_reinit::op_base, n_dofs);
+        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeBulk::BulkOps::opRefVectorGrad, {dim, 3*n_dofs}, &common_reinit::op_base, n_dofs);
 
         std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component);
-        ref_vector_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_vector_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_vector_value = ref_vector_op->result_matrix();
-        for (uint i=0; i<ref_vector_value.rows()*ref_vector_value.cols(); ++i) {
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-                for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_vector_value(i)(i_dof * n_points + i_p) = ref_shape_grads[i_p][i_dof](i);
+        for (uint i_c=0; i_c<3; ++i_c) {
+            for (uint i_dim=0; i_dim<dim; ++i_dim)
+                for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                    for (uint i_p=0; i_p<n_points; ++i_p)
+                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = ref_shape_grads[i_p][i_dof](i_dim, i_c);
         }
 
-        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opRefVectorGrad, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opRefVectorGrad, n_dofs);
     }
 
     /**
@@ -485,24 +486,25 @@ public:
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
+        uint n_dofs = fe_component->n_dofs();
         uint vector_shape_op_idx = FeBulk::BulkOps::opVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_shape, n_dofs);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_contravariant_shape, n_dofs);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, bulk_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_piola_shape, n_dofs);
                 break;
             }
             default:
@@ -542,41 +544,41 @@ public:
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
-        // use lambda reinit function
+        uint n_dofs = fe_component->n_dofs();
         uint vector_shape_grads_op_idx = FeBulk::BulkOps::opGradVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3},
+                                             {3, 3*n_dofs},
                                              bulk_reinit::ptop_vector_shape_grads<dim>,
-                                             fe_component->n_dofs());
+                                             n_dofs);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3},
+                                             {3, 3*n_dofs},
                                              bulk_reinit::ptop_vector_contravariant_shape_grads<dim>,
-                                             fe_component->n_dofs());
+                                             n_dofs);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                              {3, 3},
+                                              {3, 3*n_dofs},
                                               bulk_reinit::ptop_vector_piola_shape_grads<dim>,
-                                              fe_component->n_dofs());
+                                              n_dofs);
                 break;
             }
             default:
                 ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
         }
 
-        return FeQArray<Tensor>(patch_point_vals_, true, vector_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, true, vector_shape_grads_op_idx, n_dofs);
     }
 
     /**
@@ -588,11 +590,12 @@ public:
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
+        uint n_dofs = fe_component->n_dofs();
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3}, common_reinit::ptop_vector_sym_grad, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3*n_dofs}, common_reinit::ptop_vector_sym_grad, n_dofs);
 
-        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opVectorSymGrad, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opVectorSymGrad, n_dofs);
     }
 
     /**
@@ -604,11 +607,12 @@ public:
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
+        uint n_dofs = fe_component->n_dofs();
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorDivergence, {1}, common_reinit::ptop_vector_divergence, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorDivergence, {n_dofs}, common_reinit::ptop_vector_divergence, n_dofs);
 
-        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opVectorDivergence, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opVectorDivergence, n_dofs);
     }
 
 private:
@@ -688,15 +692,15 @@ public:
         uint n_points = patch_point_vals_->get_quadrature()->size();
         uint n_dofs = fe_component->n_dofs();
 
-        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefVector, {dim+1,3}, &common_reinit::op_base, n_dofs);
-        ref_vector_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefVector, {dim+1,3*n_dofs}, &common_reinit::op_base, n_dofs);
+        ref_vector_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_vector_value = ref_vector_op->result_matrix();
         auto ref_shape_vals = this->ref_shape_values_side(patch_point_vals_->get_quadrature(), fe_component);
         for (unsigned int s=0; s<dim+1; ++s)
-            for (unsigned int i_p = 0; i_p < patch_point_vals_->get_quadrature()->size(); i_p++)
-                for (unsigned int i_dof = 0; i_dof < fe_component->n_dofs(); i_dof++)
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++)
                     for (uint c=0; c<3; ++c)
-                        ref_vector_value(s,c)(i_dof * n_points + i_p) = ref_shape_vals[s][i_p][i_dof][c];
+                        ref_vector_value(s,3*i_dof+c)(i_p) = ref_shape_vals[s][i_p][i_dof][c];
 
         return FeQArray<Vector>(patch_point_vals_, true, FeSide::SideOps::opRefVector, fe_component->n_dofs());
     }
@@ -733,20 +737,18 @@ public:
         uint n_dofs = fe_component->n_dofs();
         uint n_sides = dim+1;
 
-        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefVectorGrad, {dim+1, dim*3}, &common_reinit::op_base, n_dofs);
+        auto *ref_vector_op = patch_point_vals_->make_fixed_fe_op(FeSide::SideOps::opRefVectorGrad, {n_sides*dim, 3*n_dofs}, &common_reinit::op_base, n_dofs);
 
         std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->ref_shape_gradients_side(patch_point_vals_->get_quadrature(), fe_component);
-        ref_vector_op->allocate_result(n_points * n_dofs, patch_point_vals_->asm_arena());
+        ref_vector_op->allocate_result(n_points, patch_point_vals_->asm_arena());
         auto ref_vector_value = ref_vector_op->result_matrix();
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            for (uint i_pt=0; i_pt<n_points; ++i_pt) {
-                for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
-                    for (uint i_c=0; i_c<3*dim; ++i_c) {
-                        ref_vector_value(i_sd, i_c)(i_dof * n_points + i_pt) = ref_shape_grads[i_sd][i_pt][i_dof][i_c];
-                    }
-                }
-            }
-        }
+        for (uint i_sd=0; i_sd<n_sides; ++i_sd)
+            for (uint i_c=0; i_c<3; ++i_c)
+                for (uint i_dim=0; i_dim<dim; ++i_dim)
+                    for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                        for (uint i_p=0; i_p<n_points; ++i_p) {
+                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = ref_shape_grads[i_sd][i_p][i_dof](i_dim, i_c);
+                        }
 
         return FeQArray<Tensor>(patch_point_vals_, true, FeSide::SideOps::opRefVectorGrad, fe_component->n_dofs());
     }
@@ -769,30 +771,31 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
+        uint n_dofs = fe_component->n_dofs();
         uint vector_shape_op_idx = FeSide::SideOps::opVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_shape, n_dofs);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_contravariant_shape, n_dofs);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3}, side_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
+                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_piola_shape, n_dofs);
                 break;
             }
             default:
                 ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
         }
-        return FeQArray<Vector>(patch_point_vals_, false, vector_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(patch_point_vals_, false, vector_shape_op_idx, n_dofs);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
@@ -817,41 +820,41 @@ public:
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
 
-        // use lambda reinit function
+        uint n_dofs = fe_component->n_dofs();
         uint vector_shape_grads_op_idx = FeSide::SideOps::opGradVectorShape;
 
         switch (fe_component->fe_type()) {
             case FEVector:
             {
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3},
+                                             {3, 3*n_dofs},
                                              side_reinit::ptop_vector_shape_grads<dim>,
-                                             fe_component->n_dofs());
+                                             n_dofs);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3},
+                                             {3, 3*n_dofs},
                                              side_reinit::ptop_vector_contravariant_shape_grads<dim>,
-                                             fe_component->n_dofs());
+                                             n_dofs);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
                 patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                              {3, 3},
+                                              {3, 3*n_dofs},
                                               side_reinit::ptop_vector_piola_shape_grads<dim>,
-                                              fe_component->n_dofs());
+                                              n_dofs);
                 break;
             }
             default:
                 ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
         }
 
-        return FeQArray<Tensor>(patch_point_vals_, false, vector_shape_grads_op_idx, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, false, vector_shape_grads_op_idx, n_dofs);
     }
 
     /**
@@ -863,11 +866,12 @@ public:
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
+        uint n_dofs = fe_component->n_dofs();
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorSymGrad, {3,3}, common_reinit::ptop_vector_sym_grad, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorSymGrad, {3,3*n_dofs}, common_reinit::ptop_vector_sym_grad, n_dofs);
 
-        return FeQArray<Tensor>(patch_point_vals_, false, FeSide::SideOps::opVectorSymGrad, fe_component->n_dofs());
+        return FeQArray<Tensor>(patch_point_vals_, false, FeSide::SideOps::opVectorSymGrad, n_dofs);
     }
 
     /**
@@ -879,11 +883,12 @@ public:
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
+        uint n_dofs = fe_component->n_dofs();
         //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorDivergence, {1}, common_reinit::ptop_vector_divergence, fe_component->n_dofs());
+        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorDivergence, {n_dofs}, common_reinit::ptop_vector_divergence, n_dofs);
 
-        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opVectorDivergence, fe_component->n_dofs());
+        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opVectorDivergence, n_dofs);
     }
 
 private:
