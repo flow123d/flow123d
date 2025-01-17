@@ -1064,7 +1064,7 @@ template<unsigned int dim>
                 uint i_begin = i_pt * n_sides;
                 for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
                     for (uint i_c=0; i_c<dim; ++i_c) {
-                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(el_table(3)(i_sd),i_c)(i_dof * n_points + i_pt);
+                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(el_table(3)(i_sd), i_dof*dim+i_c)(i_pt);
                     }
                 }
             }
