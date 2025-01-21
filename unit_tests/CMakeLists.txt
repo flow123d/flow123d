@@ -92,6 +92,11 @@ macro(define_test class_name)
   set(test_valgrind "${class_name}-valgrind")
   #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
 
+  # Define variables for output and error log files
+  set(COMPILE_OUTPUT "${CMAKE_BINARY_DIR}/${test_binary}_compile_output.txt")
+  set(COMPILE_ERRORS "${CMAKE_BINARY_DIR}/${test_binary}_compile_errors.txt")
+  set(XML_REPORT "${CMAKE_BINARY_DIR}/${test_binary}_report.xml")
+
   set (extra_args ${ARGN})
   # Did we get any optional args?
   list(LENGTH extra_args extra_count)
@@ -107,8 +112,31 @@ macro(define_test class_name)
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
   target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
-
-
+  
+  # Custom command to compile and link the binary
+  add_custom_command(
+      VERBATIM
+      OUTPUT ${test_binary}
+      DEPENDS ${test_source}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      COMMAND bash -c "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main > >(tee ${COMPILE_OUTPUT}) 2> >(tee ${COMPILE_ERRORS} >&2)"
+  )
+  
+  # Custom command to generate XML report
+  add_custom_command(
+      DEPENDS ${test_binary}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+      OUTPUT ${XML_REPORT}
+      COMMAND python3 ${CMAKE_SOURCE_DIR}/unit_tests/generate_default_xml.py  ${COMPILE_OUTPUT} ${COMPILE_ERRORS} ${XML_REPORT}
+      COMMENT "Generating XML report for ${test_binary}..."
+  )
+  
+  # Custom target to tie the above commands together
+  add_custom_target(
+      ${test_binary}_target
+      DEPENDS ${test_binary} ${XML_REPORT}
+      COMMENT "Custom target for compiling, linking, and generating XML report"
+  )
 
   # rule to run the test
   add_custom_target(${test_name}
