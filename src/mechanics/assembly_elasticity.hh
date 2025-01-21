@@ -195,7 +195,7 @@ public:
                 for (uint j=0; j<deform_join_.n_dofs_both(); ++j) {
                     arma::vec3 deform_j_high = deform_join_.shape(j)(p_high);
                     arma::vec3 diff_deform_j = deform_join_.shape(j)(p_low) - deform_j_high;
-                    arma::mat33 grad_deform_j = mat_t( arma::trans(deform_join_grad_.shape(j)(p_low)), nv);  // low dim element
+                    arma::mat33 grad_deform_j = mat_t( deform_join_grad_.shape(j)(p_low), nv);  // low dim element
                     double div_deform_j = arma::trace(grad_deform_j);
 
                     local_matrix_[i * (n_dofs_ngh_[0]+n_dofs_ngh_[1]) + j] +=
@@ -205,7 +205,7 @@ public:
                               + eq_fields_->lame_mu(p_low)*arma::trans(grad_deform_j)*nv
                               + eq_fields_->lame_lambda(p_low)*div_deform_j*nv
                              )
-                             - arma::dot(arma::trans(grad_deform_i), eq_fields_->lame_mu(p_low)*arma::kron(nv,deform_j_high.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(deform_j_high,nv)*arma::eye(3,3))
+                             - arma::dot(grad_deform_i, eq_fields_->lame_mu(p_low)*arma::kron(nv,deform_j_high.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(deform_j_high,nv)*arma::eye(3,3))
                             )*JxW_side_(p_high);
                 }
             }
