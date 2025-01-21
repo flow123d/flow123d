@@ -1147,8 +1147,7 @@ public:
         used_quads_[0] = false; used_quads_[1] = false;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
-        uint max_n_dofs = std::max(fe_[Dim<1>{}]->n_dofs(), std::max(fe_[Dim<2>{}]->n_dofs(), fe_[Dim<3>{}]->n_dofs()) );
-        uint zero_vec_size = 300 * max_n_dofs;
+        uint zero_vec_size = 300;
         patch_fe_data_.zero_vec_ = ArenaVec<double>(zero_vec_size, patch_fe_data_.asm_arena_);
         for (uint i=0; i<zero_vec_size; ++i) patch_fe_data_.zero_vec_(i) = 0.0;
     }
