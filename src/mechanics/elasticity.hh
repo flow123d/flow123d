@@ -47,47 +47,47 @@ class StressTensor
 {
 public:
 
-    arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor) = 0;
+    virtual arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor) = 0;
 
-    double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor) = 0;
+    virtual double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor) = 0;
 
-    arma::vec3 eigenvalues(BulkPoint &p) = 0;
+    virtual arma::vec3 eigenvalues(BulkPoint &p) = 0;
 };
 
-class StressTensorIsotropic : public StressTensor
-{
-private:
-
-    Field<3, FieldValue<3>::VectorFixed> young_modulus;
-    Field<3, FieldValue<3>::VectorFixed> poisson_ratio;
-
-public:
-
-    arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor)
-    {
-        double E = young_modulus(p);
-        double nu = poisson_ratio(p);
-
-        return E/(nu+1)*strain_tensor + E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::eye(3,3);
-    }
-
-    double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor)
-    {
-        double E = young_modulus(p);
-        double nu = poisson_ratio(p);
-
-        return E/(nu+1)*arma::dot(strain_tensor,test_tensor)
-              +E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::trace(test_tensor);
-    }
-
-    arma::vec3 eigenvalues(BulkPoint &p)
-    {
-        double E = young_modulus(p);
-        double nu = poisson_ratio(p);
-
-        return E/(nu+1) * (1 + nu/(1-2*nu))*arma::ones(3);
-    }
-}
+// class StressTensorIsotropic : public StressTensor
+// {
+// private:
+//
+//     Field<3, FieldValue<3>::VectorFixed> young_modulus;
+//     Field<3, FieldValue<3>::VectorFixed> poisson_ratio;
+//
+// public:
+//
+//     arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1)*strain_tensor + E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::eye(3,3);
+//     }
+//
+//     double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1)*arma::dot(strain_tensor,test_tensor)
+//               +E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::trace(test_tensor);
+//     }
+//
+//     arma::vec3 eigenvalues(BulkPoint &p)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1) * (1 + nu/(1-2*nu))*arma::ones(3);
+//     }
+// }
 
 
 class Elasticity : public EquationBase
