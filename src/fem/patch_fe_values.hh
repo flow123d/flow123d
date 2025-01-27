@@ -94,7 +94,8 @@ public:
                                PatchPointValues(3, 0, true, patch_fe_data_)} },
       patch_point_vals_side_{ {PatchPointValues(1, 0, false, patch_fe_data_),
                                PatchPointValues(2, 0, false, patch_fe_data_),
-                               PatchPointValues(3, 0, false, patch_fe_data_)} }
+                               PatchPointValues(3, 0, false, patch_fe_data_)} },
+      operations_(3)
     {
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -107,7 +108,8 @@ public:
       patch_point_vals_side_{ {PatchPointValues(1, quad_order, false, patch_fe_data_),
                                PatchPointValues(2, quad_order, false, patch_fe_data_),
                                PatchPointValues(3, quad_order, false, patch_fe_data_)} },
-      fe_(fe)
+      fe_(fe),
+	  operations_(3)
     {
         used_quads_[0] = false; used_quads_[1] = false;
 
@@ -184,21 +186,21 @@ public:
     template<unsigned int dim>
     BulkValues<dim> bulk_values() {
     	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return BulkValues<dim>(&patch_point_vals_bulk_[dim-1], fe_);
+        return BulkValues<dim>(&patch_point_vals_bulk_[dim-1], *this, fe_);
     }
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
     SideValues<dim> side_values() {
     	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return SideValues<dim>(&patch_point_vals_side_[dim-1], fe_);
+        return SideValues<dim>(&patch_point_vals_side_[dim-1], *this, fe_);
     }
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
     JoinValues<dim> join_values() {
     	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-        return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], fe_);
+        return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], *this, fe_);
     }
 
     /** Following methods are used during update of patch. **/
@@ -274,6 +276,37 @@ public:
                 cell_side.side_idx(), i_point_on_side);
     }
 
+    /// return reference to assembly arena
+    inline AssemblyArena &asm_arena() {
+    	return patch_fe_data_.asm_arena_;
+    }
+
+    /// same as previous but return constant reference
+    inline const AssemblyArena &asm_arena() const {
+    	return patch_fe_data_.asm_arena_;
+    }
+
+    /// return reference to patch arena
+    inline PatchArena &patch_arena() const {
+    	return *patch_fe_data_.patch_arena_;
+    }
+
+    /// Returns operation of given dim and OpType, creates it if doesn't exist
+    template<class OpType>
+    PatchOp<spacedim>* get(uint dim, bool only_create=false) {
+        std::string op_name = typeid(OpType).name();
+        auto it = operations_[dim-1].find(op_name);
+        if (it == operations_[dim-1].end()) {
+            PatchOp<spacedim>* new_op = new OpType(dim, *this);
+            operations_[dim-1].insert(std::make_pair(op_name, new_op));
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
+            return new_op;
+        } else {
+            ASSERT_PERMANENT(!only_create)(dim)(op_name).error("Multiple initialization of patch operation.\n");
+            return it->second;
+        }
+    }
+
     /// Temporary development method
     void print_data_tables(ostream& stream, bool points, bool ints, bool only_bulk=true) const {
         stream << endl << "Table of patch FE data:" << endl;
@@ -314,6 +347,8 @@ private:
 
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
+
+    std::vector< std::unordered_map<std::string, PatchOp<spacedim> *> > operations_;
 
     template <class ValueType>
     friend class ElQ;

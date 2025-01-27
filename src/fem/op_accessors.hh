@@ -22,6 +22,7 @@
 #include "fields/eval_subset.hh"
 
 template<unsigned int spacedim> class PatchPointValues;
+template<unsigned int spacedim> class PatchOp;
 
 using Scalar = double;
 using Vector = arma::vec3;
@@ -37,15 +38,20 @@ public:
 
     /// Constructor
     ElQ(PatchPointValues<3> *patch_point_vals, unsigned int op_idx)
-    : patch_point_vals_(patch_point_vals), op_idx_(op_idx) {}
+    : patch_point_vals_(patch_point_vals), op_idx_(op_idx), patch_op_(nullptr) {}
+
+    /// Constructor
+    ElQ(PatchOp<3> *op)
+    : patch_point_vals_(nullptr), op_idx_(0), patch_op_(op) {}
 
     ValueType operator()(const BulkPoint &point) const;
 
     ValueType operator()(const SidePoint &point) const;
 
 private:
-    PatchPointValues<3> *patch_point_vals_; ///< Reference to PatchPointValues
+    PatchPointValues<3> *patch_point_vals_; ///< Pointer to PatchPointValues
     unsigned int op_idx_;                   ///< Index of operation in patch_point_vals_.operations vector
+    PatchOp<3> *patch_op_;                  ///< Pointer to operation
 };
 
 

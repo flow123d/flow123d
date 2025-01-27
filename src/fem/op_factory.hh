@@ -32,7 +32,7 @@ class BaseValues
 {
 protected:
 	// Default constructor
-	BaseValues()
+	BaseValues(PatchFEValues<3> &pfev) : patch_fe_values_(pfev)
 	{}
 
     /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
@@ -163,6 +163,7 @@ protected:
         return ref_shape_grads;
     }
 
+    PatchFEValues<3> &patch_fe_values_;
 };
 
 template<unsigned int dim>
@@ -170,8 +171,8 @@ class BulkValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	BulkValues(PatchPointValues<3> *patch_point_vals, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(), patch_point_vals_(patch_point_vals) {
+	BulkValues(PatchPointValues<3> *patch_point_vals, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev), patch_point_vals_(patch_point_vals) {
 	    ASSERT_EQ(patch_point_vals->dim(), dim);
 	    fe_ = fe[Dim<dim>{}];
 	}
@@ -200,6 +201,13 @@ public:
     inline ElQ<Scalar> determinant()
     {
         return ElQ<Scalar>(patch_point_vals_, FeBulk::BulkOps::opJacDet);
+    }
+
+    /// Create bulk accessor of jac determinant entity - new implementation of op dependency
+    inline ElQ<Scalar> determinant_new()
+    {
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet >(dim, true);
+        return ElQ<Scalar>(op);
     }
 
     inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)
@@ -453,8 +461,8 @@ class SideValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	SideValues(PatchPointValues<3> *patch_point_vals, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(), patch_point_vals_(patch_point_vals) {
+	SideValues(PatchPointValues<3> *patch_point_vals, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev), patch_point_vals_(patch_point_vals) {
 	    ASSERT_EQ(patch_point_vals->dim(), dim);
 	    fe_ = fe[Dim<dim>{}];
 	}
@@ -729,8 +737,8 @@ class JoinValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	JoinValues(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(), patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
+	JoinValues(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev), patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
 	    ASSERT_EQ(patch_point_vals_bulk->dim(), dim-1);
 	    ASSERT_EQ(patch_point_vals_side->dim(), dim);
 	    fe_high_dim_ = fe[Dim<dim>{}];
@@ -875,8 +883,9 @@ class JoinValues<1> : public BaseValues<1>
 {
 public:
 	/// Constructor
-	JoinValues(FMT_UNUSED PatchPointValues<3> *patch_point_vals_bulk, FMT_UNUSED PatchPointValues<3> *patch_point_vals_side, FMT_UNUSED MixedPtr<FiniteElement> fe)
-	: BaseValues<1>() {}
+	JoinValues(FMT_UNUSED PatchPointValues<3> *patch_point_vals_bulk, FMT_UNUSED PatchPointValues<3> *patch_point_vals_side,
+	        PatchFEValues<3> &pfev, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	: BaseValues<1>(pfev) {}
 
     inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)
     {

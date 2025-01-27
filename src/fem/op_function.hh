@@ -29,6 +29,7 @@
 
 
 template<unsigned int spacedim> class PatchOp;
+template<unsigned int spacedim> class PatchFEValues;
 
 
 /// Type for conciseness
@@ -44,6 +45,11 @@ enum OpSizeType
 };
 
 
+// TEMPORARY DECLARATION
+static inline void op_empty(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
+    // empty
+}
+
 
 /**
  * @brief Class represents element or FE operations.
@@ -53,6 +59,15 @@ class PatchOp {
 public:
     /**
      * Constructor
+     *
+     * Set all data members.
+     */
+    PatchOp(uint dim, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
+    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(n_dofs), reinit_func(&op_empty)
+    {}
+
+    /**
+     * Obsolete constructor
      *
      * Set all data members.
      */
@@ -165,6 +180,102 @@ protected:
 
     ReinitFunction reinit_func;                   ///< Pointer to patch reinit function of element data table specialized by operation
 };
+
+
+namespace Op {
+
+namespace Bulk {
+
+namespace El {
+
+class OpCoords : public PatchOp<3> {
+public:
+    /// Constructor
+    OpCoords(uint dim, FMT_UNUSED PatchFEValues<3> &pfev)
+    : PatchOp<3>(dim, {3, dim+1}, OpSizeType::elemOp)
+      {}
+
+    void eval(FMT_UNUSED IntTableArena &el_table) {}
+};
+
+class OpJac : public PatchOp<3> {
+public:
+    /// Constructor
+    OpJac(uint dim, PatchFEValues<3> &pfev);
+
+    void eval(FMT_UNUSED IntTableArena &el_table) {
+        auto jac_value = this->result_matrix();
+        auto coords_value = this->input_ops(0)->result_matrix();
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<this->dim_; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
+    }
+};
+
+class OpInvJac : public PatchOp<3> {
+public:
+    /// Constructor
+    OpInvJac(uint dim, PatchFEValues<3> &pfev);
+
+    void eval(FMT_UNUSED IntTableArena &el_table) {
+//        auto inv_jac_value = this->result_matrix();
+//        auto jac_value = this->input_ops(0)->result_matrix();
+//        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);  //TODO dim must be const
+    }
+};
+
+class OpJacDet : public PatchOp<3> {
+public:
+    /// Constructor
+	OpJacDet(uint dim, PatchFEValues<3> &pfev);
+
+    void eval(FMT_UNUSED IntTableArena &el_table) {
+        auto jac_det_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        switch (this->dim_) {
+        case 1:
+        	jac_det_value(0) = eigen_arena_tools::determinant<3, 1>(jac_value).abs();
+        	break;
+        case 2:
+        	jac_det_value(0) = eigen_arena_tools::determinant<3, 2>(jac_value).abs();
+        	break;
+        case 3:
+        	jac_det_value(0) = eigen_arena_tools::determinant<3, 3>(jac_value).abs();
+        	break;
+        }
+
+    }
+};
+
+} // end of namespace Op::Bulk::El
+
+namespace Pt {
+
+//class OpRefGradScalar : public PatchOp<3> {
+//public:
+//    /// Constructor
+//    OpRefGradScalar(uint dim, PatchFEValues<3> &pfev);
+//
+//    void eval(FMT_UNUSED IntTableArena &el_table) {}
+//};
+
+} // end of namespace Op::Bulk::Pt
+
+} // end of namespace Op::Bulk
+
+namespace Side {
+
+namespace El {
+
+} // end of namespace Op::Side::El
+
+namespace Pt {
+
+} // end of namespace Op::Side::Pt
+
+} // end of namespace Side
+
+} // end of namespace Op
 
 
 
