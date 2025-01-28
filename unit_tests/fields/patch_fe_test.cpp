@@ -1125,7 +1125,10 @@ public:
 	  fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
 	  det_1d_( this->patch_fe_values_.bulk_values<1>().determinant_new() ),
 	  det_2d_( this->patch_fe_values_.bulk_values<2>().determinant_new() ),
-	  det_3d_( this->patch_fe_values_.bulk_values<3>().determinant_new() )
+	  det_3d_( this->patch_fe_values_.bulk_values<3>().determinant_new() ),
+	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape_new() ),
+	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape_new() ),
+	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape_new() )
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -1211,6 +1214,9 @@ public:
     ElQ<Scalar> det_1d_;
     ElQ<Scalar> det_2d_;
     ElQ<Scalar> det_3d_;
+    FeQArray<Vector> grad_scalar_shape_1d_;
+    FeQArray<Vector> grad_scalar_shape_2d_;
+    FeQArray<Vector> grad_scalar_shape_3d_;
 };
 
 /// Complete test with FE scalar operations
