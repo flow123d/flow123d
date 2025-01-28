@@ -206,7 +206,7 @@ public:
     /// Create bulk accessor of jac determinant entity - new implementation of op dependency
     inline ElQ<Scalar> determinant_new()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet >(dim, true);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim> >(dim);
         return ElQ<Scalar>(op);
     }
 
@@ -367,6 +367,11 @@ public:
         patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3, n_dofs}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
 
         return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
+    }
+    inline FeQArray<Vector> grad_scalar_shape_new(uint component_idx=0)
+    {
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim> >(dim, component_idx);
+        return FeQArray<Vector>(op);
     }
 
     /**

@@ -62,8 +62,8 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
-    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(n_dofs), reinit_func(&op_empty)
+    PatchOp(uint dim, std::initializer_list<uint> shape, OpSizeType size_type)
+    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), reinit_func(&op_empty)
     {}
 
     /**
@@ -171,6 +171,34 @@ public:
 
 
 protected:
+    /**
+     * @brief Precomputed gradients of basis functions at the bulk quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
+     */
+    template<unsigned int FE_dim>
+    std::vector<std::vector<arma::mat> > ref_shape_gradients_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
+    	std::vector<std::vector<arma::mat> > ref_shape_grads( q->size(), vector<arma::mat>(fe->n_dofs()) );
+
+        arma::mat grad(FE_dim, fe->n_components());
+        for (unsigned int i_pt=0; i_pt<q->size(); i_pt++)
+        {
+            for (unsigned int i_dof=0; i_dof<fe->n_dofs(); i_dof++)
+            {
+                grad.zeros();
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    grad.col(c) += fe->shape_grad(i_dof, q->point<FE_dim>(i_pt), c);
+
+                ref_shape_grads[i_pt][i_dof] = grad;
+            }
+        }
+
+        return ref_shape_grads;
+    }
+
+
     uint dim_;                                    ///< Dimension
     std::vector<uint> shape_;                     ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> result_;    ///< Result matrix of operation
@@ -195,7 +223,7 @@ public:
     : PatchOp<3>(dim, {3, dim+1}, OpSizeType::elemOp)
       {}
 
-    void eval(FMT_UNUSED IntTableArena &el_table) {}
+    void eval() {}
 };
 
 class OpJac : public PatchOp<3> {
@@ -203,7 +231,7 @@ public:
     /// Constructor
     OpJac(uint dim, PatchFEValues<3> &pfev);
 
-    void eval(FMT_UNUSED IntTableArena &el_table) {
+    void eval() {
         auto jac_value = this->result_matrix();
         auto coords_value = this->input_ops(0)->result_matrix();
         for (unsigned int i=0; i<3; i++)
@@ -212,38 +240,29 @@ public:
     }
 };
 
+template<unsigned int op_dim>
 class OpInvJac : public PatchOp<3> {
 public:
     /// Constructor
     OpInvJac(uint dim, PatchFEValues<3> &pfev);
 
-    void eval(FMT_UNUSED IntTableArena &el_table) {
-//        auto inv_jac_value = this->result_matrix();
-//        auto jac_value = this->input_ops(0)->result_matrix();
-//        inv_jac_value = eigen_arena_tools::inverse<3, dim>(jac_value);  //TODO dim must be const
+    void eval() {
+        auto inv_jac_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<3, op_dim>(jac_value);
     }
 };
 
+template<unsigned int op_dim>
 class OpJacDet : public PatchOp<3> {
 public:
     /// Constructor
 	OpJacDet(uint dim, PatchFEValues<3> &pfev);
 
-    void eval(FMT_UNUSED IntTableArena &el_table) {
+    void eval() {
         auto jac_det_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        switch (this->dim_) {
-        case 1:
-        	jac_det_value(0) = eigen_arena_tools::determinant<3, 1>(jac_value).abs();
-        	break;
-        case 2:
-        	jac_det_value(0) = eigen_arena_tools::determinant<3, 2>(jac_value).abs();
-        	break;
-        case 3:
-        	jac_det_value(0) = eigen_arena_tools::determinant<3, 3>(jac_value).abs();
-        	break;
-        }
-
+        jac_det_value(0) = eigen_arena_tools::determinant<3, op_dim>(jac_value).abs();
     }
 };
 
@@ -251,13 +270,44 @@ public:
 
 namespace Pt {
 
-//class OpRefGradScalar : public PatchOp<3> {
-//public:
-//    /// Constructor
-//    OpRefGradScalar(uint dim, PatchFEValues<3> &pfev);
-//
-//    void eval(FMT_UNUSED IntTableArena &el_table) {}
-//};
+template<unsigned int op_dim>
+class OpRefGradScalar : public PatchOp<3> {
+public:
+    /// Constructor
+    OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
+
+    void eval() {}
+};
+
+template<unsigned int op_dim>
+class OpGradScalarShape : public PatchOp<3> {
+public:
+    /// Constructor
+	OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
+
+    void eval() {
+        auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
+        auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x n_dofs
+
+        uint n_dofs = this->n_dofs();
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_grads_ovec(this->dim_, n_dofs);
+        for (uint i=0; i<this->dim_*n_dofs; ++i) {
+            ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, op_dim, 3> inv_jac_ovec;
+        for (uint i=0; i<this->dim_*3; ++i) {
+            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
+        }
+
+        auto result_vec = this->result_matrix();
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+        for (uint i=0; i<3*n_dofs; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
+    }
+};
 
 } // end of namespace Op::Bulk::Pt
 

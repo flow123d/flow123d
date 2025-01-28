@@ -36,15 +36,19 @@ OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)
     this->input_ops_.push_back( pfev.get< OpCoords >(dim) );
 }
 
-OpInvJac::OpInvJac(uint dim, PatchFEValues<3> &pfev)
+template<unsigned int op_dim>
+OpInvJac<op_dim>::OpInvJac(uint dim, PatchFEValues<3> &pfev)
 : PatchOp<3>(dim, {dim, 3}, OpSizeType::elemOp)
 {
-    this->input_ops_.push_back( pfev.get< OpJac >(dim) );
+    ASSERT_EQ(this->dim_, op_dim);
+    this->input_ops_.push_back( pfev.get< OpJac >(op_dim) );
 }
 
-OpJacDet::OpJacDet(uint dim, PatchFEValues<3> &pfev)
+template<unsigned int op_dim>
+OpJacDet<op_dim>::OpJacDet(uint dim, PatchFEValues<3> &pfev)
 : PatchOp<3>(dim, {1}, OpSizeType::elemOp)
 {
+    ASSERT_EQ(this->dim_, dim);
     this->input_ops_.push_back( pfev.get< OpJac >(dim) );
 }
 
@@ -52,21 +56,42 @@ OpJacDet::OpJacDet(uint dim, PatchFEValues<3> &pfev)
 
 namespace Pt {
 
-//OpRefGradScalar::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint n_dofs)
-//: PatchOp<3>(dim, {dim, n_dofs}, OpSizeType::fixedOp, n_dofs)
-//{
-//    uint n_points = patch_point_vals_->get_quadrature()->size(); // get quadrature size
-//
-//    std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk(patch_point_vals_->get_quadrature(), fe_component); //move to PatchOp
-//    this->allocate_result(n_points, pfev.asm_arena());
-//    auto ref_scalar_value = this->result_matrix();
-//    for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {
-//        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
-//            for (uint i_p=0; i_p<n_points; ++i_p)
-//                ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
-//    }
-//
-//}
+template<unsigned int op_dim>
+OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint component_idx)
+: PatchOp<3>(dim, {dim, 1}, OpSizeType::fixedSizeOp)
+{
+    auto fe_component = pfev.fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+    uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
+    uint n_dofs = fe_component->n_dofs();
+    this->n_dofs_ = n_dofs;
+    this->shape_[1] = n_dofs;
+
+    std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    this->allocate_result(n_points, pfev.asm_arena());
+    auto ref_scalar_value = this->result_matrix();
+    for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_p=0; i_p<n_points; ++i_p)
+                ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
+    }
+}
+
+template<unsigned int op_dim>
+OpGradScalarShape<op_dim>::OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint component_idx)
+: PatchOp<3>(dim, {dim, 1}, OpSizeType::pointOp)
+{
+    auto fe_component = pfev.fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+
+    uint n_dofs = fe_component->n_dofs();
+    this->n_dofs_ = n_dofs;
+    this->shape_[1] = n_dofs;
+
+    this->input_ops_.push_back( pfev.get< Op::Bulk::El::OpInvJac<op_dim> >(dim) );
+    this->input_ops_.push_back( pfev.get< OpRefGradScalar<op_dim> >(dim, component_idx) );
+}
 
 } // end of namespace Op::Bulk::Pt
 
@@ -88,3 +113,19 @@ namespace Pt {
 
 
 #endif /* OP_FUNCTION_IMPL_HH_ */
+
+
+
+// explicit instantiation of template classes
+template class Op::Bulk::El::OpInvJac<1>;
+template class Op::Bulk::El::OpInvJac<2>;
+template class Op::Bulk::El::OpInvJac<3>;
+template class Op::Bulk::El::OpJacDet<1>;
+template class Op::Bulk::El::OpJacDet<2>;
+template class Op::Bulk::El::OpJacDet<3>;
+template class Op::Bulk::Pt::OpRefGradScalar<1>;
+template class Op::Bulk::Pt::OpRefGradScalar<2>;
+template class Op::Bulk::Pt::OpRefGradScalar<3>;
+template class Op::Bulk::Pt::OpGradScalarShape<1>;
+template class Op::Bulk::Pt::OpGradScalarShape<2>;
+template class Op::Bulk::Pt::OpGradScalarShape<3>;

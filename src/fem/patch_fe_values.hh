@@ -182,6 +182,34 @@ public:
         return fe_[Dim<dim>{}]->n_dofs();
     }
 
+    /// Getter for bulk quadrature of given dimension
+    Quadrature *get_bulk_quadrature(uint dim) const {
+        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
+        return patch_point_vals_bulk_[dim-1].get_quadrature();
+    }
+
+    /// Getter for side quadrature of given dimension
+    Quadrature *get_side_quadrature(uint dim) const {
+        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
+        return patch_point_vals_side_[dim-1].get_quadrature();
+    }
+
+    /**
+     * @brief Returns FiniteElement object of given dimension and component index.
+     */
+    template<unsigned int dim>
+    std::shared_ptr<FiniteElement<dim>> fe_comp(uint component_idx) {
+        ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
+        std::shared_ptr<FiniteElement<dim>> fe = fe_[Dim<dim>{}];
+        if (fe->fe_type() == FEMixedSystem) {
+            FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe.get() );
+            return fe_sys->fe()[component_idx];
+        } else {
+            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
+            return fe;
+        }
+    }
+
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
     BulkValues<dim> bulk_values() {
@@ -293,7 +321,7 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType>
-    PatchOp<spacedim>* get(uint dim, bool only_create=false) {
+    PatchOp<spacedim>* get(uint dim) {
         std::string op_name = typeid(OpType).name();
         auto it = operations_[dim-1].find(op_name);
         if (it == operations_[dim-1].end()) {
@@ -302,7 +330,21 @@ public:
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
             return new_op;
         } else {
-            ASSERT_PERMANENT(!only_create)(dim)(op_name).error("Multiple initialization of patch operation.\n");
+            return it->second;
+        }
+    }
+
+    /// Returns operation of given dim and OpType, creates it if doesn't exist
+    template<class OpType>
+    PatchOp<spacedim>* get(uint dim, uint component_idx) {
+        std::string op_name = typeid(OpType).name();
+        auto it = operations_[dim-1].find(op_name);
+        if (it == operations_[dim-1].end()) {
+            PatchOp<spacedim>* new_op = new OpType(dim, *this, component_idx);
+            operations_[dim-1].insert(std::make_pair(op_name, new_op));
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
+            return new_op;
+        } else {
             return it->second;
         }
     }

@@ -98,11 +98,16 @@ public:
 
     // Class similar to current FeView
     FeQArray(PatchPointValues<3> *patch_point_vals, bool is_bulk, unsigned int op_idx, unsigned int n_dofs)
-    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), op_idx_(op_idx), n_dofs_(n_dofs) {
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), op_idx_(op_idx), patch_op_(nullptr), n_dofs_(n_dofs) {
         ASSERT_GT(n_dofs, 0).error("Invalid number of DOFs.\n");
 
         if (is_bulk) patch_point_vals_bulk_ = patch_point_vals;
         else patch_point_vals_side_ = patch_point_vals;
+    }
+
+    FeQArray(PatchOp<3> *patch_op)
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr), op_idx_(0), patch_op_(patch_op), n_dofs_(patch_op->n_dofs()) {
+        ASSERT_GT(n_dofs_, 0).error("Invalid number of DOFs.\n");
     }
 
 
@@ -120,6 +125,7 @@ private:
     PatchPointValues<3> *patch_point_vals_bulk_; ///< Reference to bulk PatchPointValues
     PatchPointValues<3> *patch_point_vals_side_; ///< Reference to side PatchPointValues
     unsigned int op_idx_;                        ///< Index of operation in patch_point_vals_.operations vector
+    PatchOp<3> *patch_op_;                       ///< Pointer to operation
     unsigned int n_dofs_;                        ///< Number of DOFs
 };
 
