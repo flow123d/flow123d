@@ -198,13 +198,11 @@ public:
 //    {}
 
     /// Create bulk accessor of jac determinant entity
+//    inline ElQ<Scalar> determinant()
+//    {
+//        return ElQ<Scalar>(patch_point_vals_, FeBulk::BulkOps::opJacDet);
+//    }
     inline ElQ<Scalar> determinant()
-    {
-        return ElQ<Scalar>(patch_point_vals_, FeBulk::BulkOps::opJacDet);
-    }
-
-    /// Create bulk accessor of jac determinant entity - new implementation of op dependency
-    inline ElQ<Scalar> determinant_new()
     {
         PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim> >(dim);
         return ElQ<Scalar>(op);
@@ -358,17 +356,17 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
+//    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
+//    {
+//        auto fe_component = this->fe_comp(fe_, component_idx);
+//        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+//
+//        uint n_dofs = fe_component->n_dofs();
+//        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3, n_dofs}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
+//
+//        return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
+//    }
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
-    {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3, n_dofs}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
-
-        return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
-    }
-    inline FeQArray<Vector> grad_scalar_shape_new(uint component_idx=0)
     {
         PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim> >(dim, component_idx);
         return FeQArray<Vector>(op);

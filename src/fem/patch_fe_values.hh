@@ -31,14 +31,18 @@
 #include "fem/eigen_tools.hh"
 #include "fem/patch_point_values.hh"
 #include "fem/op_function.hh"
-#include "fem/op_accessors_impl.hh"
-#include "fem/op_factory.hh"
-#include "fem/mapping_p1.hh"
+#include "fem/op_accessors.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
+
+template<unsigned int dim> class BulkValues;
+template<unsigned int dim> class SideValues;
+template<unsigned int dim> class JoinValues;
+
+
 
 template<unsigned int spacedim = 3>
 class PatchFEValues {
@@ -168,8 +172,11 @@ public:
     void reinit_patch()
     {
         for (unsigned int i=0; i<3; ++i) {
-            if (used_quads_[0]) patch_point_vals_bulk_[i].reinit_patch();
-            if (used_quads_[1]) patch_point_vals_side_[i].reinit_patch();
+//            if (used_quads_[0]) patch_point_vals_bulk_[i].reinit_patch();
+//            if (used_quads_[1]) patch_point_vals_side_[i].reinit_patch();
+            for (auto & it : operations_[i]) {
+                it.second->eval();
+            }
         }
     }
 
@@ -212,30 +219,30 @@ public:
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
-    BulkValues<dim> bulk_values() {
-    	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return BulkValues<dim>(&patch_point_vals_bulk_[dim-1], *this, fe_);
-    }
+    BulkValues<dim> bulk_values();
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
-    SideValues<dim> side_values() {
-    	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return SideValues<dim>(&patch_point_vals_side_[dim-1], *this, fe_);
-    }
+    SideValues<dim> side_values();
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
-    JoinValues<dim> join_values() {
-    	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-        return JoinValues<dim>(&patch_point_vals_bulk_[dim-2], &patch_point_vals_side_[dim-1], *this, fe_);
-    }
+    JoinValues<dim> join_values();
 
     /** Following methods are used during update of patch. **/
 
     /// Resize tables of patch_point_vals_
     void resize_tables(TableSizes table_sizes) {
         for (uint i=0; i<3; ++i) {
+            for (auto & it : operations_[i]) {
+                PatchOp<spacedim> *op = it.second;
+                if (op->size_type() == elemOp) {
+                    op->allocate_result( table_sizes.elem_sizes_[op->bulk_side_][i], *patch_fe_data_.patch_arena_ );
+                } else if (op->size_type() == pointOp) {
+                    op->allocate_result( table_sizes.point_sizes_[op->bulk_side_][i], *patch_fe_data_.patch_arena_ );
+                }
+            }
+
             if (used_quads_[0]) patch_point_vals_bulk_[i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
             if (used_quads_[1]) patch_point_vals_side_[i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
         }
@@ -243,54 +250,41 @@ public:
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        arma::mat coords;
-        switch (cell.dim()) {
-        case 1:
-            coords = MappingP1<1,spacedim>::element_map(cell.elm());
-            return patch_point_vals_bulk_[0].register_element(coords, element_patch_idx);
-            break;
-        case 2:
-        	coords = MappingP1<2,spacedim>::element_map(cell.elm());
-            return patch_point_vals_bulk_[1].register_element(coords, element_patch_idx);
-            break;
-        case 3:
-        	coords = MappingP1<3,spacedim>::element_map(cell.elm());
-            return patch_point_vals_bulk_[2].register_element(coords, element_patch_idx);
-            break;
-        default:
-        	ASSERT(false);
-        	return 0;
-            break;
-        }
+        ElementAccessor<spacedim> elm = cell.elm();
+    	arma::mat coords(spacedim, cell.dim()+1);
+        for (unsigned int i=0; i<cell.dim()+1; i++)
+            coords.col(i) = *elm.node(i);
+
+        PatchPointValues<spacedim> &ppv = patch_point_vals_bulk_[cell.dim()-1];
+    	if (ppv.elements_map_[element_patch_idx] != (uint)-1) {
+    	    // Return index of element on patch if it is registered repeatedly
+    	    return ppv.elements_map_[element_patch_idx];
+    	}
+
+        auto coords_mat = ppv.op_el_coords_->result_matrix();
+        std::size_t i_elem = ppv.i_elem_;
+        for (uint i_col=0; i_col<coords.n_cols; ++i_col)
+            for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
+                coords_mat(i_row, i_col)(i_elem) = coords(i_row, i_col);
+            }
+
+        ppv.elements_map_[element_patch_idx] = ppv.i_elem_;
+        return ppv.i_elem_++;
     }
 
     /// Register side to patch_point_vals_ table by dimension of side
     uint register_side(DHCellSide cell_side) {
+        ElementAccessor<spacedim> elm = cell_side.cell().elm();
+        arma::mat elm_coords(spacedim, cell_side.dim()+1);
+        for (unsigned int i=0; i<cell_side.dim()+1; i++)
+            elm_coords.col(i) = *elm.node(i);
+
         arma::mat side_coords(spacedim, cell_side.dim());
         for (unsigned int n=0; n<cell_side.dim(); n++)
             for (unsigned int c=0; c<spacedim; c++)
                 side_coords(c,n) = (*cell_side.side().node(n))[c];
 
-        arma::mat elm_coords;
-        DHCellAccessor cell = cell_side.cell();
-        switch (cell.dim()) {
-        case 1:
-            elm_coords = MappingP1<1,spacedim>::element_map(cell.elm());
-            return patch_point_vals_side_[0].register_side(elm_coords, side_coords, cell_side.side_idx());
-            break;
-        case 2:
-            elm_coords = MappingP1<2,spacedim>::element_map(cell.elm());
-            return patch_point_vals_side_[1].register_side(elm_coords, side_coords, cell_side.side_idx());
-            break;
-        case 3:
-            elm_coords = MappingP1<3,spacedim>::element_map(cell.elm());
-            return patch_point_vals_side_[2].register_side(elm_coords, side_coords, cell_side.side_idx());
-            break;
-        default:
-            ASSERT(false);
-            return 0;
-            break;
-        }
+        return patch_point_vals_side_[cell_side.dim()-1].register_side(elm_coords, side_coords, cell_side.side_idx());
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
@@ -390,12 +384,14 @@ private:
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
-    std::vector< std::unordered_map<std::string, PatchOp<spacedim> *> > operations_;
+    std::vector< std::map<std::string, PatchOp<spacedim> *> > operations_;
 
     template <class ValueType>
     friend class ElQ;
     template <class ValueType>
     friend class FeQ;
+    friend class PatchOp<spacedim>;
+    friend class Op::Bulk::El::OpCoords;
 };
 
 

@@ -24,13 +24,17 @@
 #include <Eigen/Dense>
 
 #include "fem/eigen_tools.hh"
-#include "fem/op_function.hh"
+//#include "fem/op_function.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
 
 
+template<unsigned int spacedim> class PatchOp;
 template<unsigned int spacedim> class PatchFEValues;
+namespace Op::Bulk::El {
+    class OpCoords;
+}
 template <class ValueType> class ElQ;      // not necessary after merge with patch_fe_values.hh
 template <class ValueType> class FeQ;
 template<unsigned int dim> class BulkValues;
@@ -38,6 +42,19 @@ template<unsigned int dim> class SideValues;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
+
+
+/// Distinguishes operations by type and size of output rows
+enum OpSizeType
+{
+	elemOp,      ///< operation is evaluated on elements or sides
+	pointOp,     ///< operation is evaluated on quadrature points
+	fixedSizeOp  ///< operation has fixed size and it is filled during initialization
+};
+
+
+/// Type for conciseness
+using ReinitFunction = std::function<void(PatchOp<3> *, IntTableArena &)>;
 
 
 
@@ -154,7 +171,8 @@ public:
      * @param dim Set dimension
      */
     PatchPointValues(uint dim, uint quad_order, bool is_bulk, PatchFeData &patch_fe_data)
-    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data), needs_zero_values_(false) {
+    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
+      op_el_coords_(nullptr), op_sd_coords_(nullptr), needs_zero_values_(false) {
         reset();
 
         if (is_bulk) {
@@ -188,10 +206,10 @@ public:
 	 * Destructor.
 	 */
     virtual ~PatchPointValues() {
-	    for (uint i=0; i<operations_.size(); ++i)
-	    	if (operations_[i] != nullptr) delete operations_[i];
-	    if (needs_zero_values_)
-	        delete zero_values_;
+//        for (uint i=0; i<operations_.size(); ++i)
+//        	if (operations_[i] != nullptr) delete operations_[i];
+        if (needs_zero_values_)
+            delete zero_values_;
 	}
 
     /**
@@ -239,38 +257,37 @@ public:
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
 	    }
-        for (auto *elOp : operations_) {
-            if (elOp == nullptr) continue;
-            if (elOp->size_type() != fixedSizeOp) {
-                elOp->allocate_result(sizes[elOp->size_type()], *patch_fe_data_.patch_arena_);
-            }
-        }
+//        for (auto *elOp : operations_) {
+//            if (elOp == nullptr) continue;
+//            if (elOp->size_type() != fixedSizeOp) {
+//                elOp->allocate_result(sizes[elOp->size_type()], *patch_fe_data_.patch_arena_);
+//            }
+//        }
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
-    /**
-     * Register element, add to coords operation
-     *
-     * @param coords            Coordinates of element nodes.
-     * @param element_patch_idx Index of element on patch.
-     */
-    uint register_element(arma::mat coords, uint element_patch_idx) {
-    	if (elements_map_[element_patch_idx] != (uint)-1) {
-    	    // Return index of element on patch if it is registered repeatedly
-    	    return elements_map_[element_patch_idx];
-    	}
-
-    	PatchOp<spacedim> &op = *( operations_[FeBulk::BulkOps::opElCoords] );
-        auto coords_mat = op.result_matrix();
-        std::size_t i_elem = i_elem_;
-        for (uint i_col=0; i_col<coords.n_cols; ++i_col)
-            for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
-                coords_mat(i_row, i_col)(i_elem) = coords(i_row, i_col);
-            }
-
-        elements_map_[element_patch_idx] = i_elem_;
-        return i_elem_++;
-    }
+//    /**
+//     * Register element, add to coords operation
+//     *
+//     * @param coords            Coordinates of element nodes.
+//     * @param element_patch_idx Index of element on patch.
+//     */
+//    uint register_element(arma::mat coords, uint element_patch_idx) {
+//    	if (ppv.elements_map_[element_patch_idx] != (uint)-1) {
+//    	    // Return index of element on patch if it is registered repeatedly
+//    	    return ppv.elements_map_[element_patch_idx];
+//    	}
+//
+//        auto coords_mat = ppv.op_el_coords_.result_matrix();
+//        std::size_t i_elem = ppv.i_elem_;
+//        for (uint i_col=0; i_col<coords.n_cols; ++i_col)
+//            for (uint i_row=0; i_row<coords.n_rows; ++i_row) {
+//                coords_mat(i_row, i_col)(i_elem) = coords(i_row, i_col);
+//            }
+//
+//        ppv.elements_map_[element_patch_idx] = ppv.i_elem_;
+//        return ppv.i_elem_++;
+//    }
 
     /**
      * Register side, add to coords operations
@@ -279,28 +296,28 @@ public:
      * @param side_coords Coordinates of side nodes.
      * @param side_idx    Index of side on element.
      */
-    uint register_side(arma::mat elm_coords, arma::mat side_coords, uint side_idx) {
-    	{
-            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opElCoords] );
-            auto coords_mat = op.result_matrix();
-            std::size_t i_elem = i_elem_;
-            for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
-                for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
-                    coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
-                }
-    	}
-
-    	{
-            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opSideCoords] );
-            auto coords_mat = op.result_matrix();
-            std::size_t i_elem = i_elem_;
-            for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
-                for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
-                    coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
-                }
-    	}
-
-    	int_table_(3)(i_elem_) = side_idx;
+    uint register_side(FMT_UNUSED arma::mat elm_coords, FMT_UNUSED arma::mat side_coords, FMT_UNUSED uint side_idx) {
+//    	{
+//            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opElCoords] );
+//            auto coords_mat = op.result_matrix();
+//            std::size_t i_elem = i_elem_;
+//            for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
+//                for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
+//                    coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
+//                }
+//    	}
+//
+//    	{
+//            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opSideCoords] );
+//            auto coords_mat = op.result_matrix();
+//            std::size_t i_elem = i_elem_;
+//            for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
+//                for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
+//                    coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
+//                }
+//    	}
+//
+//    	int_table_(3)(i_elem_) = side_idx;
 
         return i_elem_++;
     }
@@ -375,17 +392,18 @@ public:
      * @param n_dofs         Number of DOFs
      * @param size_type      Type of operation by size of rows
      */
-    PatchOp<spacedim> *make_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, uint n_dofs,
-            OpSizeType size_type = pointOp) {
-        if (operations_[op_idx] == nullptr) {
-            std::vector<PatchOp<spacedim> *> input_ops_ptr;
-            for (uint i_op : this->op_dependency_[op_idx]) {
-                ASSERT_PTR(operations_[i_op]);
-                input_ops_ptr.push_back(operations_[i_op]);
-            }
-            operations_[op_idx] = new PatchOp<spacedim>(this->dim_, shape, reinit_f, size_type, input_ops_ptr, n_dofs);
-        }
-    	return operations_[op_idx];
+    PatchOp<spacedim> *make_fe_op(FMT_UNUSED uint op_idx, FMT_UNUSED std::initializer_list<uint> shape, FMT_UNUSED ReinitFunction reinit_f, FMT_UNUSED uint n_dofs,
+            FMT_UNUSED OpSizeType size_type = pointOp) {
+//        if (operations_[op_idx] == nullptr) {
+//            std::vector<PatchOp<spacedim> *> input_ops_ptr;
+//            for (uint i_op : this->op_dependency_[op_idx]) {
+//                ASSERT_PTR(operations_[i_op]);
+//                input_ops_ptr.push_back(operations_[i_op]);
+//            }
+//            operations_[op_idx] = new PatchOp<spacedim>(this->dim_, shape, reinit_f, size_type, input_ops_ptr, n_dofs);
+//        }
+//    	return operations_[op_idx];
+    	return nullptr;
     }
 
     /**
@@ -407,10 +425,10 @@ public:
      * Calls reinit functions defined on each operations.
      */
     void reinit_patch() {
-        if (n_elems_ == 0) return; // skip if tables are empty
-        for (uint i=0; i<operations_.size(); ++i) {
-            if (operations_[i] != nullptr) operations_[i]->reinit_function(operations_, int_table_);
-        }
+//        if (n_elems_ == 0) return; // skip if tables are empty
+//        for (uint i=0; i<operations_.size(); ++i) {
+//            if (operations_[i] != nullptr) operations_[i]->reinit_function(operations_, int_table_);
+//        }
     }
 
     /**
@@ -419,8 +437,9 @@ public:
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
      */
-    inline Scalar scalar_elem_value(uint op_idx, uint point_idx) const {
-        return operations_[op_idx]->raw_result()(0)( int_table_(1)(points_map_[point_idx]) );
+    inline Scalar scalar_elem_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx) const {
+//        return operations_[op_idx]->raw_result()(0)( int_table_(1)(points_map_[point_idx]) );
+        return 0.0;
     }
 
     /**
@@ -429,12 +448,12 @@ public:
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
      */
-    inline Vector vector_elem_value(uint op_idx, uint point_idx) const {
+    inline Vector vector_elem_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx) const {
         Vector val;
-        const auto &op_matrix = operations_[op_idx]->raw_result();
-        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
-        for (uint i=0; i<3; ++i)
-            val(i) = op_matrix(i)(op_matrix_idx);
+//        const auto &op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+//        for (uint i=0; i<3; ++i)
+//            val(i) = op_matrix(i)(op_matrix_idx);
         return val;
     }
 
@@ -444,13 +463,13 @@ public:
      * @param op_idx      Index of operation in operations vector
      * @param point_idx   Index of quadrature point in ElementCacheMap
      */
-    inline Tensor tensor_elem_value(uint op_idx, uint point_idx) const {
+    inline Tensor tensor_elem_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx) const {
         Tensor val;
-        const auto &op_matrix = operations_[op_idx]->raw_result();
-        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
-        for (uint i=0; i<3; ++i)
-            for (uint j=0; j<3; ++j)
-                val(i,j) = op_matrix(i+j*spacedim)(op_matrix_idx);
+//        const auto &op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+//        for (uint i=0; i<3; ++i)
+//            for (uint j=0; j<3; ++j)
+//                val(i,j) = op_matrix(i+j*spacedim)(op_matrix_idx);
         return val;
     }
 
@@ -461,8 +480,9 @@ public:
      * @param point_idx   Index of quadrature point in ElementCacheMap
      * @param i_dof       Index of DOF
      */
-    inline Scalar scalar_value(uint op_idx, uint point_idx, uint i_dof=0) const {
-        return operations_[op_idx]->raw_result()(i_dof)(points_map_[point_idx]);
+    inline Scalar scalar_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx, FMT_UNUSED uint i_dof=0) const {
+//        return operations_[op_idx]->raw_result()(i_dof)(points_map_[point_idx]);
+        return 0.0;
     }
 
     /**
@@ -472,12 +492,12 @@ public:
      * @param point_idx   Index of quadrature point in ElementCacheMap
      * @param i_dof       Index of DOF
      */
-    inline Vector vector_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+    inline Vector vector_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx, FMT_UNUSED uint i_dof=0) const {
         Vector val;
-        auto op_matrix = operations_[op_idx]->raw_result();
-        uint op_matrix_idx = points_map_[point_idx];
-        for (uint i=0; i<3; ++i)
-            val(i) = op_matrix(i + 3*i_dof)(op_matrix_idx);
+//        auto op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = points_map_[point_idx];
+//        for (uint i=0; i<3; ++i)
+//            val(i) = op_matrix(i + 3*i_dof)(op_matrix_idx);
         return val;
     }
 
@@ -488,12 +508,12 @@ public:
      * @param point_idx   Index of quadrature point in ElementCacheMap
      * @param i_dof       Index of DOF
      */
-    inline Tensor tensor_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+    inline Tensor tensor_value(FMT_UNUSED uint op_idx, FMT_UNUSED uint point_idx, FMT_UNUSED uint i_dof=0) const {
         Tensor val;
-        auto op_matrix = operations_[op_idx]->raw_result();
-        uint op_matrix_idx = points_map_[point_idx];
-        for (uint i=0; i<9; ++i)
-            val(i) = op_matrix(i+9*i_dof)(op_matrix_idx);
+//        auto op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = points_map_[point_idx];
+//        for (uint i=0; i<9; ++i)
+//            val(i) = op_matrix(i+9*i_dof)(op_matrix_idx);
         return val;
     }
 
@@ -530,37 +550,37 @@ public:
      * @param points Allows switched off output of point table,
      * @param ints   Allows switched off output of int (connectivity to elements) table,
      */
-    void print_data_tables(std::ostream& stream, bool points, bool ints) const {
-        if (points) {
-            stream << "Point vals: " << std::endl;
-            for (auto *op : operations_) {
-                if (op == nullptr) continue;
-            	auto mat = op->raw_result();
-                for (uint i_mat=0; i_mat<mat.rows()*mat.cols(); ++i_mat) {
-                    if (mat(i_mat).data_size()==0) stream << "<empty>";
-                    else {
-                        const double *vals = mat(i_mat).data_ptr();
-                        for (size_t i_val=0; i_val<mat(i_mat).data_size(); ++i_val)
-                            stream << vals[i_val] << " ";
-                    }
-                    stream << std::endl;
-                }
-                stream << " --- end of operation ---" << std::endl;
-            }
-        }
-        if (ints) {
-            stream << "Int vals: " << int_table_.rows() << " - " << int_table_.cols() << std::endl;
-            for (uint i_row=0; i_row<int_table_.rows(); ++i_row) {
-                if (int_table_(i_row).data_size()==0) stream << "<empty>";
-                else {
-                    const uint *vals = int_table_(i_row).data_ptr();
-                    for (size_t i_val=0; i_val<int_table_(i_row).data_size(); ++i_val)
-                        stream << vals[i_val] << " ";
-                }
-                stream << std::endl;
-            }
-            stream << std::endl;
-        }
+    void print_data_tables(FMT_UNUSED std::ostream& stream, FMT_UNUSED bool points, FMT_UNUSED bool ints) const {
+//        if (points) {
+//            stream << "Point vals: " << std::endl;
+//            for (auto *op : operations_) {
+//                if (op == nullptr) continue;
+//            	auto mat = op->raw_result();
+//                for (uint i_mat=0; i_mat<mat.rows()*mat.cols(); ++i_mat) {
+//                    if (mat(i_mat).data_size()==0) stream << "<empty>";
+//                    else {
+//                        const double *vals = mat(i_mat).data_ptr();
+//                        for (size_t i_val=0; i_val<mat(i_mat).data_size(); ++i_val)
+//                            stream << vals[i_val] << " ";
+//                    }
+//                    stream << std::endl;
+//                }
+//                stream << " --- end of operation ---" << std::endl;
+//            }
+//        }
+//        if (ints) {
+//            stream << "Int vals: " << int_table_.rows() << " - " << int_table_.cols() << std::endl;
+//            for (uint i_row=0; i_row<int_table_.rows(); ++i_row) {
+//                if (int_table_(i_row).data_size()==0) stream << "<empty>";
+//                else {
+//                    const uint *vals = int_table_(i_row).data_ptr();
+//                    for (size_t i_val=0; i_val<int_table_(i_row).data_size(); ++i_val)
+//                        stream << vals[i_val] << " ";
+//                }
+//                stream << std::endl;
+//            }
+//            stream << std::endl;
+//        }
     }
 
     /**
@@ -569,44 +589,45 @@ public:
      * Development method.
      * @param bulk_side Needs set 0 (bulk) or 1 (side) for correct output of operation names.
      */
-    void print_operations(std::ostream& stream, uint bulk_side) const {
-        std::vector< std::vector<std::string> > op_names =
-        {
-            { "weights", "ref_scalar", "ref_vector", "ref_scalar_grad", "ref_vector_grad", "el_coords", "jacobian", "inv_jac", "jac_det",
-              "pt_coords", "JxW", "scalar_shape", "vector_shape", "grad_scalar_shape", "grad_vector_shape", "vector_sym_grad", "vector_divergence" },
-            { "weights", "ref_scalar", "ref_vector", "ref_scalar_grad", "ref_vector_grad", "el_coords", "el_jac", "el_inv_jac", "side_coords",
-              "side_jac", "side_jac_det", "pt_coords", "JxW", "normal_vec", "scalar_shape", "vector_shape", "grad_scalar_shape", "grad_vector_shape",
-              "vector_sym_grad", "vector_divergence" }
-        };
-        stream << std::setfill(' ') << " Operation" << std::setw(12) << "" << "Shape" << std::setw(2) << ""
-                << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
-        for (uint i=0; i<operations_.size(); ++i) {
-            if (operations_[i] == nullptr) continue;
-            stream << " " << std::left << std::setw(20) << op_names[bulk_side][i] << "" << " " << std::setw(6) << operations_[i]->format_shape() << "" << " "
-                << std::setw(7) << operations_[i]->n_dofs() << "" << " ";
-            //auto &input_ops = operations_[i]->input_ops();
-            for (auto i_o : op_dependency_[i]) stream << op_names[bulk_side][i_o] << " ";
-            stream << std::endl;
-        }
+    void print_operations(FMT_UNUSED std::ostream& stream, FMT_UNUSED uint bulk_side) const {
+//        std::vector< std::vector<std::string> > op_names =
+//        {
+//            { "weights", "ref_scalar", "ref_vector", "ref_scalar_grad", "ref_vector_grad", "el_coords", "jacobian", "inv_jac", "jac_det",
+//              "pt_coords", "JxW", "scalar_shape", "vector_shape", "grad_scalar_shape", "grad_vector_shape", "vector_sym_grad", "vector_divergence" },
+//            { "weights", "ref_scalar", "ref_vector", "ref_scalar_grad", "ref_vector_grad", "el_coords", "el_jac", "el_inv_jac", "side_coords",
+//              "side_jac", "side_jac_det", "pt_coords", "JxW", "normal_vec", "scalar_shape", "vector_shape", "grad_scalar_shape", "grad_vector_shape",
+//              "vector_sym_grad", "vector_divergence" }
+//        };
+//        stream << std::setfill(' ') << " Operation" << std::setw(12) << "" << "Shape" << std::setw(2) << ""
+//                << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
+//        for (uint i=0; i<operations_.size(); ++i) {
+//            if (operations_[i] == nullptr) continue;
+//            stream << " " << std::left << std::setw(20) << op_names[bulk_side][i] << "" << " " << std::setw(6) << operations_[i]->format_shape() << "" << " "
+//                << std::setw(7) << operations_[i]->n_dofs() << "" << " ";
+//            //auto &input_ops = operations_[i]->input_ops();
+//            for (auto i_o : op_dependency_[i]) stream << op_names[bulk_side][i_o] << " ";
+//            stream << std::endl;
+//        }
     }
 
 protected:
     /// Specialized constructor of zero values object. Do not use in other cases!
-    PatchPointValues(uint dim, std::vector<PatchOp<spacedim> *> &ref_ops, bool is_bulk, PatchFeData &patch_fe_data)
-    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data), needs_zero_values_(false) {
+    PatchPointValues(uint dim, FMT_UNUSED std::vector<PatchOp<spacedim> *> &ref_ops, bool is_bulk, PatchFeData &patch_fe_data)
+    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
+      op_el_coords_(nullptr), op_sd_coords_(nullptr), needs_zero_values_(false) {
         reset();
 
         if (is_bulk) op_dependency_ = std::vector< std::vector<unsigned int> >(FeBulk::BulkOps::opNItems);
         else op_dependency_ = std::vector< std::vector<unsigned int> >(FeSide::SideOps::opNItems);
 
-        operations_.resize(ref_ops.size(), nullptr);
-        for (uint i_op = 0; i_op < ref_ops.size(); ++i_op ) {
-            auto *op = ref_ops[i_op];
-            if (op == nullptr) continue;
-
-            auto *new_op = make_fe_op(i_op, {op->shape()[0], op->shape()[1]}, &common_reinit::op_base, op->n_dofs(), op->size_type());
-            new_op->allocate_const_result(patch_fe_data_.zero_vec_);
-        }
+//        operations_.resize(ref_ops.size(), nullptr);
+//        for (uint i_op = 0; i_op < ref_ops.size(); ++i_op ) {
+//            auto *op = ref_ops[i_op];
+//            if (op == nullptr) continue;
+//
+//            auto *new_op = make_fe_op(i_op, {op->shape()[0], op->shape()[1]}, &common_reinit::op_base, op->n_dofs(), op->size_type());
+//            new_op->allocate_const_result(patch_fe_data_.zero_vec_);
+//        }
     }
 
     /// Specialized initialization part of bulk PatchPointValues
@@ -632,30 +653,30 @@ protected:
         // initialize vectors
         this->quad_ = new QGauss(dim, 2*quad_order);
         this->int_sizes_ = {pointOp, pointOp, pointOp};
-        this->operations_.resize(FeBulk::BulkOps::opNItems, nullptr);
-
-        // Create fixed operation
-    	auto *weights = this->make_fixed_op( FeBulk::BulkOps::opWeights, {1}, &common_reinit::op_base );
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-        weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
-        auto weights_value = weights->result_matrix();
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            weights_value(0)(i) = point_weights_vec[i];
-
-        // First step: adds element values operations
-        /*auto &el_coords =*/ this->make_new_op( FeBulk::BulkOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
-
-        /*auto &el_jac =*/ this->make_new_op( FeBulk::BulkOps::opJac, {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, OpSizeType::elemOp );
-
-        /*auto &el_inv_jac =*/ this->make_new_op( FeBulk::BulkOps::opInvJac, {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, OpSizeType::elemOp );
-
-        /*auto &el_jac_det =*/ this->make_new_op( FeBulk::BulkOps::opJacDet, {1}, &bulk_reinit::elop_jac_det<dim>, OpSizeType::elemOp );
-
-        // Second step: adds point values operations
-        /*auto &pt_coords =*/ this->make_new_op( FeBulk::BulkOps::opCoords, {spacedim}, &bulk_reinit::ptop_coords );
-
-        /*auto &JxW =*/ this->make_new_op( FeBulk::BulkOps::opJxW, {1}, &bulk_reinit::ptop_JxW );
+//        this->operations_.resize(FeBulk::BulkOps::opNItems, nullptr);
+//
+//        // Create fixed operation
+//    	auto *weights = this->make_fixed_op( FeBulk::BulkOps::opWeights, {1}, &common_reinit::op_base );
+//        // create result vector of weights operation in assembly arena
+//        const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+//        weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
+//        auto weights_value = weights->result_matrix();
+//        for (uint i=0; i<point_weights_vec.size(); ++i)
+//            weights_value(0)(i) = point_weights_vec[i];
+//
+//        // First step: adds element values operations
+//        /*auto &el_coords =*/ this->make_new_op( FeBulk::BulkOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
+//
+//        /*auto &el_jac =*/ this->make_new_op( FeBulk::BulkOps::opJac, {spacedim, this->dim_}, &bulk_reinit::elop_jac<dim>, OpSizeType::elemOp );
+//
+//        /*auto &el_inv_jac =*/ this->make_new_op( FeBulk::BulkOps::opInvJac, {this->dim_, spacedim}, &bulk_reinit::elop_inv_jac<dim>, OpSizeType::elemOp );
+//
+//        /*auto &el_jac_det =*/ this->make_new_op( FeBulk::BulkOps::opJacDet, {1}, &bulk_reinit::elop_jac_det<dim>, OpSizeType::elemOp );
+//
+//        // Second step: adds point values operations
+//        /*auto &pt_coords =*/ this->make_new_op( FeBulk::BulkOps::opCoords, {spacedim}, &bulk_reinit::ptop_coords );
+//
+//        /*auto &JxW =*/ this->make_new_op( FeBulk::BulkOps::opJxW, {1}, &bulk_reinit::ptop_JxW );
     }
 
     /// Specialized initialization part of side PatchPointValues
@@ -684,37 +705,37 @@ protected:
         // initialize vectors
         this->quad_ = new QGauss(dim-1, 2*quad_order);
     	this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
-        this->operations_.resize(FeSide::SideOps::opNItems, nullptr);
-
-        // Create fixed operation
-        auto *weights = this->make_fixed_op( FeSide::SideOps::opWeights, {1},  &common_reinit::op_base ); //lambda_weights );
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-        weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
-        auto weights_value = weights->result_matrix();
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            weights_value(0)(i) = point_weights_vec[i];
-
-        // First step: adds element values operations
-        /*auto &el_coords =*/ this->make_new_op( FeSide::SideOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
-
-        /*auto &el_jac =*/ this->make_new_op( FeSide::SideOps::opElJac, {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, OpSizeType::elemOp );
-
-        /*auto &el_inv_jac =*/ this->make_new_op( FeSide::SideOps::opElInvJac, {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, OpSizeType::elemOp );
-
-        // Second step: adds side values operations
-        /*auto &sd_coords =*/ this->make_new_op( FeSide::SideOps::opSideCoords, {spacedim, this->dim_}, &common_reinit::op_base, OpSizeType::elemOp );
-
-        /*auto &sd_jac =*/ this->make_new_op( FeSide::SideOps::opSideJac, {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, OpSizeType::elemOp );
-
-        /*auto &sd_jac_det =*/ this->make_new_op( FeSide::SideOps::opSideJacDet, {1}, &side_reinit::elop_sd_jac_det<dim>, OpSizeType::elemOp );
-
-        // Third step: adds point values operations
-        /*auto &coords =*/ this->make_new_op( FeSide::SideOps::opCoords, {spacedim}, &side_reinit::ptop_coords );
-
-        /*auto &JxW =*/ this->make_new_op( FeSide::SideOps::opJxW, {1}, &side_reinit::ptop_JxW );
-
-        /*auto &normal_vec =*/ this->make_new_op( FeSide::SideOps::opNormalVec, {spacedim}, &side_reinit::ptop_normal_vec<dim>, OpSizeType::elemOp );
+//        this->operations_.resize(FeSide::SideOps::opNItems, nullptr);
+//
+//        // Create fixed operation
+//        auto *weights = this->make_fixed_op( FeSide::SideOps::opWeights, {1},  &common_reinit::op_base ); //lambda_weights );
+//        // create result vector of weights operation in assembly arena
+//        const std::vector<double> &point_weights_vec = this->quad_->get_weights();
+//        weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
+//        auto weights_value = weights->result_matrix();
+//        for (uint i=0; i<point_weights_vec.size(); ++i)
+//            weights_value(0)(i) = point_weights_vec[i];
+//
+//        // First step: adds element values operations
+//        /*auto &el_coords =*/ this->make_new_op( FeSide::SideOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
+//
+//        /*auto &el_jac =*/ this->make_new_op( FeSide::SideOps::opElJac, {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, OpSizeType::elemOp );
+//
+//        /*auto &el_inv_jac =*/ this->make_new_op( FeSide::SideOps::opElInvJac, {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, OpSizeType::elemOp );
+//
+//        // Second step: adds side values operations
+//        /*auto &sd_coords =*/ this->make_new_op( FeSide::SideOps::opSideCoords, {spacedim, this->dim_}, &common_reinit::op_base, OpSizeType::elemOp );
+//
+//        /*auto &sd_jac =*/ this->make_new_op( FeSide::SideOps::opSideJac, {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, OpSizeType::elemOp );
+//
+//        /*auto &sd_jac_det =*/ this->make_new_op( FeSide::SideOps::opSideJacDet, {1}, &side_reinit::elop_sd_jac_det<dim>, OpSizeType::elemOp );
+//
+//        // Third step: adds point values operations
+//        /*auto &coords =*/ this->make_new_op( FeSide::SideOps::opCoords, {spacedim}, &side_reinit::ptop_coords );
+//
+//        /*auto &JxW =*/ this->make_new_op( FeSide::SideOps::opJxW, {1}, &side_reinit::ptop_JxW );
+//
+//        /*auto &normal_vec =*/ this->make_new_op( FeSide::SideOps::opNormalVec, {spacedim}, &side_reinit::ptop_normal_vec<dim>, OpSizeType::elemOp );
     }
 
     /**
@@ -753,11 +774,15 @@ protected:
 
     PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
+    PatchOp<spacedim> *op_el_coords_;   ///< Pointer to element coords operations (used during patch reinit)
+	PatchOp<spacedim> *op_sd_coords_;   ///< Pointer to side coords operations (used during patch reinit)
+
     bool needs_zero_values_;            ///< Flags hold whether zero_values_ object is needed
     PatchPointValues *zero_values_;     ///< PatchPointValues object returns zero values for all operations
 
     friend class PatchFEValues<spacedim>;
     friend class PatchOp<spacedim>;
+    friend class Op::Bulk::El::OpCoords;
     template <class ValueType>
     friend class ElQ;
     template <class ValueType>

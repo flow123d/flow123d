@@ -21,8 +21,15 @@
 
 #include <Eigen/Dense>
 
-#include "fem/op_function.hh"
 #include "fem/patch_fe_values.hh"
+
+
+template<unsigned int spacedim>
+Scalar PatchOp<spacedim>::scalar_elem_value(uint point_idx) const {
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_bulk_[dim_-1];
+    return result_(0)( ppv.int_table_(1)(ppv.points_map_[point_idx]) );
+}
+
 
 namespace Op {
 
@@ -30,25 +37,35 @@ namespace Bulk {
 
 namespace El {
 
-OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, {3, dim}, OpSizeType::elemOp)
+OpCoords::OpCoords(uint dim, PatchFEValues<3> &pfev)
+: PatchOp<3>(dim, pfev, {3, dim+1}, OpSizeType::elemOp)
 {
+    this->bulk_side_ = 0;
+    pfev.patch_point_vals_bulk_[dim-1].op_el_coords_ = this;
+}
+
+OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)
+: PatchOp<3>(dim, pfev, {3, dim}, OpSizeType::elemOp)
+{
+    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.get< OpCoords >(dim) );
 }
 
 template<unsigned int op_dim>
 OpInvJac<op_dim>::OpInvJac(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, {dim, 3}, OpSizeType::elemOp)
+: PatchOp<3>(dim, pfev, {dim, 3}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, op_dim);
+    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.get< OpJac >(op_dim) );
 }
 
 template<unsigned int op_dim>
 OpJacDet<op_dim>::OpJacDet(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, {1}, OpSizeType::elemOp)
+: PatchOp<3>(dim, pfev, {1}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, dim);
+    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.get< OpJac >(dim) );
 }
 
@@ -58,8 +75,9 @@ namespace Pt {
 
 template<unsigned int op_dim>
 OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint component_idx)
-: PatchOp<3>(dim, {dim, 1}, OpSizeType::fixedSizeOp)
+: PatchOp<3>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
 {
+    this->bulk_side_ = 0;
     auto fe_component = pfev.fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
@@ -80,8 +98,9 @@ OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint 
 
 template<unsigned int op_dim>
 OpGradScalarShape<op_dim>::OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint component_idx)
-: PatchOp<3>(dim, {dim, 1}, OpSizeType::pointOp)
+: PatchOp<3>(dim, pfev, {3, 1}, OpSizeType::pointOp)
 {
+    this->bulk_side_ = 0;
     auto fe_component = pfev.fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
@@ -112,10 +131,6 @@ namespace Pt {
 } // end of namespace Op
 
 
-#endif /* OP_FUNCTION_IMPL_HH_ */
-
-
-
 // explicit instantiation of template classes
 template class Op::Bulk::El::OpInvJac<1>;
 template class Op::Bulk::El::OpInvJac<2>;
@@ -129,3 +144,8 @@ template class Op::Bulk::Pt::OpRefGradScalar<3>;
 template class Op::Bulk::Pt::OpGradScalarShape<1>;
 template class Op::Bulk::Pt::OpGradScalarShape<2>;
 template class Op::Bulk::Pt::OpGradScalarShape<3>;
+
+template class PatchOp<3>;
+
+
+#endif /* OP_FUNCTION_IMPL_HH_ */

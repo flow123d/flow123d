@@ -20,13 +20,16 @@
 #define OP_ACCESSORS_IMPL_HH_
 
 #include "fem/patch_point_values.hh"
+#include "fem/patch_fe_values.hh"
 #include "fem/op_accessors.hh"
+#include "fem/op_function.hh"
 
 
 template <class ValueType>
 ValueType ElQ<ValueType>::operator()(const BulkPoint &point) const {
     unsigned int value_cache_idx = point.elm_cache_map()->element_eval_point(point.elem_patch_idx(), point.eval_point_idx());
-    return patch_point_vals_->scalar_elem_value(op_idx_, value_cache_idx);
+    return patch_op_->scalar_elem_value(value_cache_idx);
+//    return patch_point_vals_->scalar_elem_value(op_idx_, value_cache_idx);
 }
 
 template <>

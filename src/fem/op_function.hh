@@ -32,19 +32,6 @@ template<unsigned int spacedim> class PatchOp;
 template<unsigned int spacedim> class PatchFEValues;
 
 
-/// Type for conciseness
-using ReinitFunction = std::function<void(PatchOp<3> *, IntTableArena &)>;
-
-
-/// Distinguishes operations by type and size of output rows
-enum OpSizeType
-{
-	elemOp,      ///< operation is evaluated on elements or sides
-	pointOp,     ///< operation is evaluated on quadrature points
-	fixedSizeOp  ///< operation has fixed size and it is filled during initialization
-};
-
-
 // TEMPORARY DECLARATION
 static inline void op_empty(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
     // empty
@@ -62,8 +49,8 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, std::initializer_list<uint> shape, OpSizeType size_type)
-    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), reinit_func(&op_empty)
+    PatchOp(uint dim, PatchFEValues<3> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
+    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), patch_fe_(&pfev), reinit_func(&op_empty)
     {}
 
     /**
@@ -74,8 +61,13 @@ public:
     PatchOp(uint dim, std::initializer_list<uint> shape, ReinitFunction reinit_f, OpSizeType size_type,
             std::vector<PatchOp<spacedim> *> input_ops = {}, uint n_dofs = 1)
     : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), input_ops_(input_ops),
-      n_dofs_(n_dofs), reinit_func(reinit_f)
+      n_dofs_(n_dofs), patch_fe_(nullptr), reinit_func(reinit_f)
     {}
+
+    /// Destructor
+    virtual ~PatchOp()
+    {}
+
 
     /// Aligns shape_vec to 2 items (equal to matrix number of dimensions)
     std::vector<uint> set_shape_vec(std::initializer_list<uint> shape) const {
@@ -169,6 +161,92 @@ public:
         return result_;
     }
 
+    /// Reinit function of operation. Implementation in descendants.
+    virtual void eval() {
+        ASSERT(false).error("Must be implemented in descendants.\n");
+    }
+
+    /**
+     * Returns scalar output value of data stored by elements.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Scalar scalar_elem_value(uint point_idx) const;
+
+//    /**
+//     * Returns vector output value of data stored by elements.
+//     *
+//     * @param op_idx      Index of operation in operations vector
+//     * @param point_idx   Index of quadrature point in ElementCacheMap
+//     */
+//    inline Vector vector_elem_value(uint op_idx, uint point_idx) const {
+//        Vector val;
+//        const auto &op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+//        for (uint i=0; i<3; ++i)
+//            val(i) = op_matrix(i)(op_matrix_idx);
+//        return val;
+//    }
+//
+//    /**
+//     * Returns tensor output value of data stored by elements.
+//     *
+//     * @param op_idx      Index of operation in operations vector
+//     * @param point_idx   Index of quadrature point in ElementCacheMap
+//     */
+//    inline Tensor tensor_elem_value(uint op_idx, uint point_idx) const {
+//        Tensor val;
+//        const auto &op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
+//        for (uint i=0; i<3; ++i)
+//            for (uint j=0; j<3; ++j)
+//                val(i,j) = op_matrix(i+j*spacedim)(op_matrix_idx);
+//        return val;
+//    }
+//
+//    /**
+//     * Returns scalar output value on point.
+//     *
+//     * @param op_idx      Index of operation in operations vector
+//     * @param point_idx   Index of quadrature point in ElementCacheMap
+//     * @param i_dof       Index of DOF
+//     */
+//    inline Scalar scalar_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+//        return operations_[op_idx]->raw_result()(i_dof)(points_map_[point_idx]);
+//    }
+//
+//    /**
+//     * Returns vector output value on point.
+//     *
+//     * @param op_idx      Index of operation in operations vector
+//     * @param point_idx   Index of quadrature point in ElementCacheMap
+//     * @param i_dof       Index of DOF
+//     */
+//    inline Vector vector_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+//        Vector val;
+//        auto op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = points_map_[point_idx];
+//        for (uint i=0; i<3; ++i)
+//            val(i) = op_matrix(i + 3*i_dof)(op_matrix_idx);
+//        return val;
+//    }
+//
+//    /**
+//     * Returns tensor output value on point.
+//     *
+//     * @param op_idx      Index of operation in operations vector
+//     * @param point_idx   Index of quadrature point in ElementCacheMap
+//     * @param i_dof       Index of DOF
+//     */
+//    inline Tensor tensor_value(uint op_idx, uint point_idx, uint i_dof=0) const {
+//        Tensor val;
+//        auto op_matrix = operations_[op_idx]->raw_result();
+//        uint op_matrix_idx = points_map_[point_idx];
+//        for (uint i=0; i<9; ++i)
+//            val(i) = op_matrix(i+9*i_dof)(op_matrix_idx);
+//        return val;
+//    }
+
 
 protected:
     /**
@@ -200,13 +278,17 @@ protected:
 
 
     uint dim_;                                    ///< Dimension
+    uint bulk_side_;                              ///< Flag: BulkOp = 0, SideOp = 1
     std::vector<uint> shape_;                     ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> result_;    ///< Result matrix of operation
-    OpSizeType size_type_;                         ///< Type of operation by size of vector (element, point or fixed size)
+    OpSizeType size_type_;                        ///< Type of operation by size of vector (element, point or fixed size)
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
+    PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
 
     ReinitFunction reinit_func;                   ///< Pointer to patch reinit function of element data table specialized by operation
+
+    friend class PatchFEValues<spacedim>;
 };
 
 
@@ -219,11 +301,9 @@ namespace El {
 class OpCoords : public PatchOp<3> {
 public:
     /// Constructor
-    OpCoords(uint dim, FMT_UNUSED PatchFEValues<3> &pfev)
-    : PatchOp<3>(dim, {3, dim+1}, OpSizeType::elemOp)
-      {}
+    OpCoords(uint dim, PatchFEValues<3> &pfev);
 
-    void eval() {}
+    void eval() override {}
 };
 
 class OpJac : public PatchOp<3> {
@@ -231,7 +311,7 @@ public:
     /// Constructor
     OpJac(uint dim, PatchFEValues<3> &pfev);
 
-    void eval() {
+    void eval() override {
         auto jac_value = this->result_matrix();
         auto coords_value = this->input_ops(0)->result_matrix();
         for (unsigned int i=0; i<3; i++)
@@ -246,7 +326,7 @@ public:
     /// Constructor
     OpInvJac(uint dim, PatchFEValues<3> &pfev);
 
-    void eval() {
+    void eval() override {
         auto inv_jac_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
         inv_jac_value = eigen_arena_tools::inverse<3, op_dim>(jac_value);
@@ -259,7 +339,7 @@ public:
     /// Constructor
 	OpJacDet(uint dim, PatchFEValues<3> &pfev);
 
-    void eval() {
+    void eval() override {
         auto jac_det_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
         jac_det_value(0) = eigen_arena_tools::determinant<3, op_dim>(jac_value).abs();
@@ -276,7 +356,7 @@ public:
     /// Constructor
     OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
 
-    void eval() {}
+    void eval() override {}
 };
 
 template<unsigned int op_dim>
@@ -285,7 +365,7 @@ public:
     /// Constructor
 	OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
 
-    void eval() {
+    void eval() override {
         auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
         auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x n_dofs
 
