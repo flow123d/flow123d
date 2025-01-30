@@ -94,7 +94,6 @@ macro(define_test class_name)
 
   # Define variables for output and error log files
   set(COMPILE_OUTPUT "${CMAKE_BINARY_DIR}/${test_binary}_compile_output.txt")
-  set(COMPILE_ERRORS "${CMAKE_BINARY_DIR}/${test_binary}_compile_errors.txt")
   set(XML_REPORT "${CMAKE_BINARY_DIR}/${test_binary}_report.xml")
 
   set (extra_args ${ARGN})
@@ -114,22 +113,18 @@ macro(define_test class_name)
   add_dependencies(${test_binary} update_source_tree)
   
   # Custom command to compile and link the binary
-  add_custom_command(
+ add_custom_command(
       VERBATIM
       OUTPUT ${test_binary}
+      OUTPUT ${XML_REPORT}
       DEPENDS ${test_source}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMAND bash -c "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main > >(tee ${COMPILE_OUTPUT}) 2> >(tee ${COMPILE_ERRORS} >&2)"
+      COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_and_generate_xml.sh 
+        "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main"
+        ${COMPILE_OUTPUT}
+        ${XML_REPORT}
   )
-  
-  # Custom command to generate XML report
-  add_custom_command(
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      OUTPUT ${XML_REPORT}
-      COMMAND python3 ${CMAKE_SOURCE_DIR}/unit_tests/generate_default_xml.py  ${COMPILE_OUTPUT} ${COMPILE_ERRORS} ${XML_REPORT}
-      COMMENT "Generating XML report for ${test_binary}..."
-  )
+
   
   # Custom target to tie the above commands together
   add_custom_target(
