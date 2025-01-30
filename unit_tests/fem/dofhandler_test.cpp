@@ -11,6 +11,8 @@
 #include "tools/mixed.hh"
 #include "system/sys_profiler.hh"
 
+#include "error_compile_for_report_xml.hh"
+
 
 
 
@@ -75,9 +77,9 @@ TEST(DOFHandler, test_all) {
     if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][0] );
     
     // dof at node 3 is shared by elements 2, 3, 4, 5
-    if (own_elem[4] & own_elem[2]) EXPECT_EQ( indices[4][0], indices[2][1] );
-    if (own_elem[2] & own_elem[1]) EXPECT_EQ( indices[2][1], indices[1][2] );
-    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][1] );
+    if (own_elem[4] & own_elem[2]) EXPECT_EQ( indices[4][0], indices[0][0] );
+    if (own_elem[2] & own_elem[1]) EXPECT_EQ( indices[2][1], indices[0][0] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[0][0] );
     
     // dof at node 3 is NOT shared by elements 1 and 5
     if (own_elem[0] & own_elem[4]) EXPECT_NE( indices[0][0], indices[4][0] );

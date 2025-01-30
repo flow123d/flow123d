@@ -94,7 +94,7 @@ macro(define_test class_name)
 
   # Define variables for output and error log files
   set(COMPILE_OUTPUT "${CMAKE_BINARY_DIR}/${test_binary}_compile_output.txt")
-  set(XML_REPORT "${CMAKE_BINARY_DIR}/${test_binary}_report.xml")
+  set(XML_REPORT "${CMAKE_BINARY_DIR}/${class_name}/${class_name}_report.xml")
 
   set (extra_args ${ARGN})
   # Did we get any optional args?
