@@ -37,7 +37,7 @@ jobs:
         name: Flow123d release main build
         steps:
         - name: Checkout
-          uses: actions/checkout@v2
+          uses: actions/checkout@v4
     
         - name: Set variables
           id: vars
@@ -75,7 +75,7 @@ jobs:
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
               config/build/tar_build_dir.sh ${build_dir}              
-        - uses: actions/upload-artifact@v3
+        - uses: actions/upload-artifact@v4
           with:         
             name: build_dir
             path: build_dir.tar   
@@ -90,8 +90,8 @@ jobs:
             status: ${{job.status}}
 
         steps:
-        - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/checkout@v4
+        - uses: actions/download-artifact@v4
           with:
             name: build_dir
 
@@ -118,7 +118,7 @@ jobs:
             config/build/make_packages.sh ${environment} ci ${release_tag} push
     
         - name: upload artifacts
-          uses: actions/upload-artifact@v3
+          uses: actions/upload-artifact@v4
           with:       
             path: |
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
@@ -159,8 +159,8 @@ jobs:
             - test_scripts
             - tools
         steps:  
-        - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/checkout@v4
+        - uses: actions/download-artifact@v4
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
@@ -180,8 +180,8 @@ jobs:
             - {dir: coupling, target: elasticity_asm, notebook: dg_asm_plots }
             #- {dir: fem, target: fem_tools}
         steps:  
-        - uses: actions/checkout@v3
-        - uses: actions/download-artifact@v3
+        - uses: actions/checkout@v4
+        - uses: actions/download-artifact@v4
           with:
             name: build_dir
         - name: Set variables
@@ -208,7 +208,7 @@ jobs:
               ls build_tree/unit_tests/${{matrix.test.dir}}    
 
         - name: "Upload Artifacts: profiler results"
-          uses: actions/upload-artifact@v3
+          uses: actions/upload-artifact@v4
           with:     
             name: ${{matrix.test.target}}
             path: |
