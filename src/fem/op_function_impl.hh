@@ -120,6 +120,27 @@ OpJacDet<op_dim>::OpJacDet(uint dim, PatchFEValues<3> &pfev)
 
 namespace Pt {
 
+OpWeights::OpWeights(uint dim, PatchFEValues<3> &pfev)
+: PatchOp<3>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+{
+    this->bulk_side_ = 0;
+
+    // create result vector of weights operation in assembly arena
+    const std::vector<double> &point_weights_vec = pfev.get_bulk_quadrature(dim)->get_weights();
+    this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
+    for (uint i=0; i<point_weights_vec.size(); ++i)
+        this->result_(0)(i) = point_weights_vec[i];
+}
+
+template<unsigned int op_dim>
+OpJxW<op_dim>::OpJxW(uint dim, PatchFEValues<3> &pfev)
+: PatchOp<3>(dim, pfev, {1}, OpSizeType::pointOp)
+{
+    this->bulk_side_ = 0;
+    this->input_ops_.push_back( pfev.get< OpWeights >(dim) );
+    this->input_ops_.push_back( pfev.get< Op::Bulk::El::OpJacDet<op_dim> >(dim) );
+}
+
 template<unsigned int op_dim>
 OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint component_idx)
 : PatchOp<3>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)

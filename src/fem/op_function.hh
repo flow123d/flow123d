@@ -314,6 +314,43 @@ public:
 
 namespace Pt {
 
+/// Fixed operation points weights
+class OpWeights : public PatchOp<3> {
+public:
+    /// Constructor
+    OpWeights(uint dim, PatchFEValues<3> &pfev);
+
+    void eval() override {}
+};
+
+/// Evaluates coordinates of quadrature points
+class OpCoords : public PatchOp<3> {
+public:
+    /// Constructor
+    OpCoords(uint dim, PatchFEValues<3> &pfev)
+    : PatchOp<3>(dim, pfev, {3}, OpSizeType::pointOp){}
+
+    void eval() override {}
+};
+
+/// Evaluates JxW on quadrature points
+template<unsigned int op_dim>
+class OpJxW : public PatchOp<3> {
+public:
+    /// Constructor
+    OpJxW(uint dim, PatchFEValues<3> &pfev);
+
+    void eval() override {
+        auto weights_value = this->input_ops(0)->result_matrix();
+        auto jac_det_value = this->input_ops(1)->result_matrix();
+        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+        this->result_(0) = jxw_ovec.get_vec();
+    }
+};
+
+/// Fixed operation of gradient scalar reference values
 template<unsigned int op_dim>
 class OpRefGradScalar : public PatchOp<3> {
 public:
@@ -323,6 +360,7 @@ public:
     void eval() override {}
 };
 
+/// Evaluates gradient scalar values
 template<unsigned int op_dim>
 class OpGradScalarShape : public PatchOp<3> {
 public:

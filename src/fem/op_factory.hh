@@ -185,23 +185,21 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opJxW);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpJxW<dim> >(dim);
+        return FeQ<Scalar>(op, true);
     }
 
 	/// Create bulk accessor of coords entity
-    inline ElQ<Vector> coords()
+    inline FeQ<Vector> coords()
     {
-        return ElQ<Vector>(patch_point_vals_, FeBulk::BulkOps::opCoords);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpCoords >(dim);
+        return FeQ<Vector>(op, true);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
 //    {}
 
     /// Create bulk accessor of jac determinant entity
-//    inline ElQ<Scalar> determinant()
-//    {
-//        return ElQ<Scalar>(patch_point_vals_, FeBulk::BulkOps::opJacDet);
-//    }
     inline ElQ<Scalar> determinant()
     {
         PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim> >(dim);
