@@ -26,8 +26,55 @@
 
 template<unsigned int spacedim>
 Scalar PatchOp<spacedim>::scalar_elem_value(uint point_idx) const {
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_bulk_[dim_-1];
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     return result_(0)( ppv.int_table_(1)(ppv.points_map_[point_idx]) );
+}
+
+template<unsigned int spacedim>
+Vector PatchOp<spacedim>::vector_elem_value(uint point_idx) const {
+    Vector val;
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
+    for (uint i=0; i<3; ++i)
+        val(i) = result_(i)(op_matrix_idx);
+    return val;
+}
+
+template<unsigned int spacedim>
+Tensor PatchOp<spacedim>::tensor_elem_value(uint point_idx) const {
+    Tensor val;
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
+    for (uint i=0; i<3; ++i)
+        for (uint j=0; j<3; ++j)
+            val(i,j) = result_(i+j*spacedim)(op_matrix_idx);
+    return val;
+}
+
+template<unsigned int spacedim>
+Scalar PatchOp<spacedim>::scalar_value(uint point_idx, uint i_dof) const {
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    return result_(i_dof)(ppv.points_map_[point_idx]);
+}
+
+template<unsigned int spacedim>
+Vector PatchOp<spacedim>::vector_value(uint point_idx, uint i_dof) const {
+    Vector val;
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    uint op_matrix_idx = ppv.points_map_[point_idx];
+    for (uint i=0; i<3; ++i)
+        val(i) = result_(i + 3*i_dof)(op_matrix_idx);
+    return val;
+}
+
+template<unsigned int spacedim>
+Tensor PatchOp<spacedim>::tensor_value(uint point_idx, uint i_dof) const {
+    Tensor val;
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    uint op_matrix_idx = ppv.points_map_[point_idx];
+    for (uint i=0; i<9; ++i)
+        val(i) = result_(i+9*i_dof)(op_matrix_idx);
+    return val;
 }
 
 
@@ -41,7 +88,7 @@ OpCoords::OpCoords(uint dim, PatchFEValues<3> &pfev)
 : PatchOp<3>(dim, pfev, {3, dim+1}, OpSizeType::elemOp)
 {
     this->bulk_side_ = 0;
-    pfev.patch_point_vals_bulk_[dim-1].op_el_coords_ = this;
+    pfev.patch_point_vals_[0][dim-1].op_el_coords_ = this;
 }
 
 OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)

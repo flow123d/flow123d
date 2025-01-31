@@ -173,79 +173,43 @@ public:
      */
     inline Scalar scalar_elem_value(uint point_idx) const;
 
-//    /**
-//     * Returns vector output value of data stored by elements.
-//     *
-//     * @param op_idx      Index of operation in operations vector
-//     * @param point_idx   Index of quadrature point in ElementCacheMap
-//     */
-//    inline Vector vector_elem_value(uint op_idx, uint point_idx) const {
-//        Vector val;
-//        const auto &op_matrix = operations_[op_idx]->raw_result();
-//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
-//        for (uint i=0; i<3; ++i)
-//            val(i) = op_matrix(i)(op_matrix_idx);
-//        return val;
-//    }
-//
-//    /**
-//     * Returns tensor output value of data stored by elements.
-//     *
-//     * @param op_idx      Index of operation in operations vector
-//     * @param point_idx   Index of quadrature point in ElementCacheMap
-//     */
-//    inline Tensor tensor_elem_value(uint op_idx, uint point_idx) const {
-//        Tensor val;
-//        const auto &op_matrix = operations_[op_idx]->raw_result();
-//        uint op_matrix_idx = int_table_(1)(points_map_[point_idx]);
-//        for (uint i=0; i<3; ++i)
-//            for (uint j=0; j<3; ++j)
-//                val(i,j) = op_matrix(i+j*spacedim)(op_matrix_idx);
-//        return val;
-//    }
-//
-//    /**
-//     * Returns scalar output value on point.
-//     *
-//     * @param op_idx      Index of operation in operations vector
-//     * @param point_idx   Index of quadrature point in ElementCacheMap
-//     * @param i_dof       Index of DOF
-//     */
-//    inline Scalar scalar_value(uint op_idx, uint point_idx, uint i_dof=0) const {
-//        return operations_[op_idx]->raw_result()(i_dof)(points_map_[point_idx]);
-//    }
-//
-//    /**
-//     * Returns vector output value on point.
-//     *
-//     * @param op_idx      Index of operation in operations vector
-//     * @param point_idx   Index of quadrature point in ElementCacheMap
-//     * @param i_dof       Index of DOF
-//     */
-//    inline Vector vector_value(uint op_idx, uint point_idx, uint i_dof=0) const {
-//        Vector val;
-//        auto op_matrix = operations_[op_idx]->raw_result();
-//        uint op_matrix_idx = points_map_[point_idx];
-//        for (uint i=0; i<3; ++i)
-//            val(i) = op_matrix(i + 3*i_dof)(op_matrix_idx);
-//        return val;
-//    }
-//
-//    /**
-//     * Returns tensor output value on point.
-//     *
-//     * @param op_idx      Index of operation in operations vector
-//     * @param point_idx   Index of quadrature point in ElementCacheMap
-//     * @param i_dof       Index of DOF
-//     */
-//    inline Tensor tensor_value(uint op_idx, uint point_idx, uint i_dof=0) const {
-//        Tensor val;
-//        auto op_matrix = operations_[op_idx]->raw_result();
-//        uint op_matrix_idx = points_map_[point_idx];
-//        for (uint i=0; i<9; ++i)
-//            val(i) = op_matrix(i+9*i_dof)(op_matrix_idx);
-//        return val;
-//    }
+    /**
+     * Returns vector output value of data stored by elements.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Vector vector_elem_value(uint point_idx) const;
+
+    /**
+     * Returns tensor output value of data stored by elements.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     */
+    inline Tensor tensor_elem_value(uint point_idx) const;
+
+    /**
+     * Returns scalar output value on point.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     * @param i_dof       Index of DOF
+     */
+    inline Scalar scalar_value(uint point_idx, uint i_dof=0) const;
+
+    /**
+     * Returns vector output value on point.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     * @param i_dof       Index of DOF
+     */
+    inline Vector vector_value(uint point_idx, uint i_dof=0) const;
+
+    /**
+     * Returns tensor output value on point.
+     *
+     * @param point_idx   Index of quadrature point in ElementCacheMap
+     * @param i_dof       Index of DOF
+     */
+    inline Tensor tensor_value(uint point_idx, uint i_dof=0) const;
 
 
 protected:

@@ -369,7 +369,7 @@ public:
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
         PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim> >(dim, component_idx);
-        return FeQArray<Vector>(op);
+        return FeQArray<Vector>(op, true);
     }
 
     /**
