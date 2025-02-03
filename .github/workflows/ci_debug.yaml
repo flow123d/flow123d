@@ -150,14 +150,14 @@ jobs:
           id: check_reports
           run: |
             if ls ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml 1> /dev/null 2>&1; then
-              echo "xmlFound=true" >> $GITHUB_OUTPUT
+              echo "xml_found=true" >> $GITHUB_OUTPUT
             else
-              echo "xmlFound=false" >> $GITHUB_OUTPUT
+              echo "xml_found=false" >> $GITHUB_OUTPUT
             fi
 
         - name: Test Reporter
           uses: dorny/test-reporter@v1
-          if: always() && steps.check_reports.outputs.xmlFound == 'true'
+          if: always() && steps.check_reports.outputs.xml_found == 'true'
           with:
             name: "Test reporter"
             path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
