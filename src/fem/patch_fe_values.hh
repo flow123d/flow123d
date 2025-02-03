@@ -94,7 +94,7 @@ public:
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2),
-      operations_(3)
+      op_dependency_(3)
     {
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[0].push_back( PatchPointValues(dim, 0, true, patch_fe_data_) );
@@ -107,7 +107,7 @@ public:
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2),
       fe_(fe),
-	  operations_(3)
+      op_dependency_(3)
     {
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[0].push_back( PatchPointValues(dim, quad_order, true, patch_fe_data_) );
@@ -169,13 +169,13 @@ public:
     /// Reinit data.
     void reinit_patch()
     {
-        for (unsigned int i=0; i<3; ++i) {
+        for (auto * op : operations_) {
+            op->eval();
+        }
+//        for (unsigned int i=0; i<3; ++i) {
 //            if (used_quads_[0]) patch_point_vals_[0][i].reinit_patch();
 //            if (used_quads_[1]) patch_point_vals_[1][i].reinit_patch();
-            for (auto & it : operations_[i]) {
-                it.second->eval();
-            }
-        }
+//        }
     }
 
     /**
@@ -231,16 +231,14 @@ public:
 
     /// Resize tables of patch_point_vals_
     void resize_tables(TableSizes table_sizes) {
-        for (uint i=0; i<3; ++i) {
-            for (auto & it : operations_[i]) {
-                PatchOp<spacedim> *op = it.second;
-                if (op->size_type() == elemOp) {
-                    op->allocate_result( table_sizes.elem_sizes_[op->bulk_side_][i], *patch_fe_data_.patch_arena_ );
-                } else if (op->size_type() == pointOp) {
-                    op->allocate_result( table_sizes.point_sizes_[op->bulk_side_][i], *patch_fe_data_.patch_arena_ );
-                }
+        for (auto * op : operations_) {
+            if (op->size_type() == elemOp) {
+                op->allocate_result( table_sizes.elem_sizes_[op->bulk_side_][op->dim()-1], *patch_fe_data_.patch_arena_ );
+            } else if (op->size_type() == pointOp) {
+                op->allocate_result( table_sizes.point_sizes_[op->bulk_side_][op->dim()-1], *patch_fe_data_.patch_arena_ );
             }
-
+        }
+        for (uint i=0; i<3; ++i) {
             if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
             if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
         }
@@ -315,10 +313,11 @@ public:
     template<class OpType>
     PatchOp<spacedim>* get(uint dim) {
         std::string op_name = typeid(OpType).name();
-        auto it = operations_[dim-1].find(op_name);
-        if (it == operations_[dim-1].end()) {
+        auto it = op_dependency_[dim-1].find(op_name);
+        if (it == op_dependency_[dim-1].end()) {
             PatchOp<spacedim>* new_op = new OpType(dim, *this);
-            operations_[dim-1].insert(std::make_pair(op_name, new_op));
+            op_dependency_[dim-1].insert(std::make_pair(op_name, new_op));
+            operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
             return new_op;
         } else {
@@ -330,10 +329,11 @@ public:
     template<class OpType>
     PatchOp<spacedim>* get(uint dim, uint component_idx) {
         std::string op_name = typeid(OpType).name();
-        auto it = operations_[dim-1].find(op_name);
-        if (it == operations_[dim-1].end()) {
+        auto it = op_dependency_[dim-1].find(op_name);
+        if (it == op_dependency_[dim-1].end()) {
             PatchOp<spacedim>* new_op = new OpType(dim, *this, component_idx);
-            operations_[dim-1].insert(std::make_pair(op_name, new_op));
+            op_dependency_[dim-1].insert(std::make_pair(op_name, new_op));
+            operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
             return new_op;
         } else {
@@ -382,7 +382,8 @@ private:
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
-    std::vector< std::map<std::string, PatchOp<spacedim> *> > operations_;
+    std::vector< PatchOp<spacedim> *> operations_;
+    std::vector< std::unordered_map<std::string, PatchOp<spacedim> *> > op_dependency_;
 
     template <class ValueType>
     friend class ElQ;
