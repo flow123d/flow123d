@@ -288,39 +288,39 @@ public:
 //        ppv.elements_map_[element_patch_idx] = ppv.i_elem_;
 //        return ppv.i_elem_++;
 //    }
-
-    /**
-     * Register side, add to coords operations
-     *
-     * @param coords      Coordinates of element nodes.
-     * @param side_coords Coordinates of side nodes.
-     * @param side_idx    Index of side on element.
-     */
-    uint register_side(FMT_UNUSED arma::mat elm_coords, FMT_UNUSED arma::mat side_coords, FMT_UNUSED uint side_idx) {
-//    	{
-//            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opElCoords] );
-//            auto coords_mat = op.result_matrix();
-//            std::size_t i_elem = i_elem_;
-//            for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
-//                for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
-//                    coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
-//                }
-//    	}
 //
-//    	{
-//            PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opSideCoords] );
-//            auto coords_mat = op.result_matrix();
-//            std::size_t i_elem = i_elem_;
-//            for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
-//                for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
-//                    coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
-//                }
-//    	}
+//    /**
+//     * Register side, add to coords operations
+//     *
+//     * @param coords      Coordinates of element nodes.
+//     * @param side_coords Coordinates of side nodes.
+//     * @param side_idx    Index of side on element.
+//     */
+//    uint register_side(arma::mat elm_coords, arma::mat side_coords, uint side_idx) {
+//    {
+//        PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opElCoords] );
+//        auto coords_mat = op.result_matrix();
+//        std::size_t i_elem = i_elem_;
+//        for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
+//            for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
+//                coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
+//            }
+//    }
 //
-//    	int_table_(3)(i_elem_) = side_idx;
-
-        return i_elem_++;
-    }
+//    {
+//        PatchOp<spacedim> &op = *( operations_[FeSide::SideOps::opSideCoords] );
+//        auto coords_mat = op.result_matrix();
+//        std::size_t i_elem = i_elem_;
+//        for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
+//            for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
+//                coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
+//            }
+//    }
+//
+//        int_table_(3)(i_elem_) = side_idx;
+//
+//        return i_elem_++;
+//    }
 
     /**
      * Register bulk point, add to int_table_

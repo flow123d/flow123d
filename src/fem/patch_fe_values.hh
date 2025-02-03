@@ -271,16 +271,38 @@ public:
     /// Register side to patch_point_vals_ table by dimension of side
     uint register_side(DHCellSide cell_side) {
         ElementAccessor<spacedim> elm = cell_side.cell().elm();
-        arma::mat elm_coords(spacedim, cell_side.dim()+1);
-        for (unsigned int i=0; i<cell_side.dim()+1; i++)
+        uint dim = cell_side.dim();
+        arma::mat elm_coords(spacedim, dim+1);
+        for (unsigned int i=0; i<dim+1; i++)
             elm_coords.col(i) = *elm.node(i);
 
-        arma::mat side_coords(spacedim, cell_side.dim());
-        for (unsigned int n=0; n<cell_side.dim(); n++)
+        arma::mat side_coords(spacedim, dim);
+        for (unsigned int n=0; n<dim; n++)
             for (unsigned int c=0; c<spacedim; c++)
                 side_coords(c,n) = (*cell_side.side().node(n))[c];
 
-        return patch_point_vals_[1][cell_side.dim()-1].register_side(elm_coords, side_coords, cell_side.side_idx());
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[1][dim-1];
+        {
+            auto coords_mat = ppv.op_el_coords_->result_matrix();
+            std::size_t i_elem = ppv.i_elem_;
+            for (uint i_col=0; i_col<elm_coords.n_cols; ++i_col)
+                for (uint i_row=0; i_row<elm_coords.n_rows; ++i_row) {
+                    coords_mat(i_row, i_col)(i_elem) = elm_coords(i_row, i_col);
+                }
+        }
+
+        {
+            auto coords_mat = ppv.op_sd_coords_->result_matrix();
+            std::size_t i_elem = ppv.i_elem_;
+            for (uint i_col=0; i_col<side_coords.n_cols; ++i_col)
+                for (uint i_row=0; i_row<side_coords.n_rows; ++i_row) {
+                    coords_mat(i_row, i_col)(i_elem) = side_coords(i_row, i_col);
+                }
+        }
+
+        ppv.int_table_(3)(ppv.i_elem_) = cell_side.side_idx();
+
+        return ppv.i_elem_++;
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
