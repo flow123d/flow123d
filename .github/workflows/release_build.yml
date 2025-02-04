@@ -123,7 +123,7 @@ jobs:
 #            flow123d_${release_version}_windows_install.exe
  #         name: release_${release_version}
     - name: upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:       
         path: |
             ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
