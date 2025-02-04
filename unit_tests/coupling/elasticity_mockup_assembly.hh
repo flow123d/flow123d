@@ -71,6 +71,9 @@ public:
     {
         if (cell.dim() != dim) return;
 
+        // Fracture stiffness is assembled in dimjoin_integral.
+        if (cell.elm()->n_neighs_vb() > 0) return;
+
         cell.get_dof_indices(dof_indices_);
 
         // assemble the local stiffness matrix
@@ -84,8 +87,7 @@ public:
             {
                 for (unsigned int j=0; j<n_dofs_; j++)
                     local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(
-                                                2*eq_fields_->lame_mu(p)*arma::dot(sym_grad_deform_(j,p), sym_grad_deform_(i,p))
-                                                + eq_fields_->lame_lambda(p)*div_deform_(j,p)*div_deform_(i,p)
+                                                arma::dot(eq_fields_->stress_tensor(p,sym_grad_deform_(j,p)), sym_grad_deform_(i,p))
                                                )*JxW_(p);
             }
         }
@@ -136,7 +138,7 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline virtual void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
+        if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
@@ -144,16 +146,18 @@ public:
             side_dof_indices_[i] = dof_indices_[i];
         }
 
-		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_[i+n_dofs_ngh_[0]] = dof_indices_[i];
         }
 
-		// Element id's for testing if they belong to local partition.
-		bool own_element_id[2];
-		own_element_id[0] = cell_lower_dim.is_own();
-		own_element_id[1] = cell_higher_dim.is_own();
+        // Element id's for testing if they belong to local partition.
+        bool own_element_id[2];
+        own_element_id[0] = cell_lower_dim.is_own();
+        own_element_id[1] = cell_higher_dim.is_own();
+
+        unsigned int n_neighs = cell_lower_dim.elm()->n_neighs_vb();
 
         for (unsigned int i=0; i<n_dofs_ngh_[0]+n_dofs_ngh_[1]; i++)
             for (unsigned int j=0; j<n_dofs_ngh_[0]+n_dofs_ngh_[1]; j++)
@@ -173,6 +177,8 @@ public:
                 uint i_mat_idx = deform_shape_i->join_idx();
                 arma::vec3 diff_deform_i = (*deform_shape_i)(p_low) - (*deform_shape_i)(p_high);
                 arma::mat33 grad_deform_i = (*deform_grad_i)(p_low);  // low dim element
+                arma::mat33 semi_grad_i = grad_deform_i + n_neighs/eq_fields_->cross_section(p_low)*arma::kron(diff_deform_i,nv.t());
+                arma::mat33 semi_sym_grad_i = 0.5*(semi_grad_i + semi_grad_i.t());
 
                 auto deform_shape_j = deform_join_.begin();
                 auto deform_grad_j = deform_join_grad_.begin();
@@ -180,17 +186,20 @@ public:
                     uint j_mat_idx = deform_shape_j->join_idx();
                     arma::vec3 deform_j_high = (*deform_shape_j)(p_high);
                     arma::vec3 diff_deform_j = (*deform_shape_j)(p_low) - (*deform_shape_j)(p_high);
-                    arma::mat33 grad_deform_j = mat_t( arma::trans((*deform_grad_j)(p_low)), nv);  // low dim element
-                    double div_deform_j = arma::trace(grad_deform_j);
+                    arma::mat33 grad_deform_j = (*deform_grad_j)(p_low);  // low dim element
+                    arma::mat33 semi_grad_j = grad_deform_j + n_neighs/eq_fields_->cross_section(p_low)*arma::kron(diff_deform_j,nv.t());
+                    arma::mat33 semi_sym_grad_j = 0.5*(semi_grad_j + semi_grad_j.t());
 
                     local_matrix_[i_mat_idx * (n_dofs_ngh_[0]+n_dofs_ngh_[1]) + j_mat_idx] +=
-                            eq_fields_->fracture_sigma(p_low)*(
-                             arma::dot(diff_deform_i,
-                              2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(diff_deform_j)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(diff_deform_j,nv)*nv))
-                              + eq_fields_->lame_mu(p_low)*arma::trans(grad_deform_j)*nv
-                              + eq_fields_->lame_lambda(p_low)*div_deform_j*nv
-                             )
-                             - arma::dot(arma::trans(grad_deform_i), eq_fields_->lame_mu(p_low)*arma::kron(nv,deform_j_high.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(deform_j_high,nv)*arma::eye(3,3))
+                            (
+                                     eq_fields_->fracture_sigma(p_low)*eq_fields_->cross_section(p_low) / n_neighs
+                                     * arma::dot(semi_sym_grad_i, eq_fields_->stress_tensor(p_low,semi_sym_grad_j))
+
+                                     // This term corrects the tangential part of the above product so that there is no
+                                     // dependence on fracture_sigma.
+                                     // TODO: Fracture_sigma should be possibly removed and replaced by anisotropic elasticity.
+                                     + (1-eq_fields_->fracture_sigma(p_low))*eq_fields_->cross_section(p_low) / n_neighs
+                                       * arma::dot(0.5*(grad_deform_i+grad_deform_i.t()), eq_fields_->stress_tensor(p_low,0.5*(grad_deform_j+grad_deform_j.t())))
                             )*JxW_side_(p_high);
                 }
             }
