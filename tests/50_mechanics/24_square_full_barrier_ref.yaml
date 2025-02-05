@@ -46,9 +46,11 @@ problem: !Coupling_Sequential
           - region: bulk
             young_modulus: 1
             poisson_ratio: 0.25
+            shear_modulus: 0.4
           - region: fracture
             young_modulus: 100
             poisson_ratio: 0.25
+            shear_modulus: 40
 
           - region: .left_x
             bc_type: displacement

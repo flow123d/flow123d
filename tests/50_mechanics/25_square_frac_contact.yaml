@@ -50,9 +50,11 @@ problem: !Coupling_Sequential
           - region: bulk
             young_modulus: 1
             poisson_ratio: 0.25
+            shear_modulus: 0.4
           - region: fracture
             young_modulus: 1e-6
             poisson_ratio: 0.25
+            shear_modulus: 0.4e-6
             cross_section_min: 0.01
 
           - region: .left_x
