@@ -84,48 +84,51 @@ namespace Bulk {
 
 namespace El {
 
-void OpCoords::eval() {
-    PatchPointValues<3> &ppv = this->patch_fe_->patch_point_vals_[0][this->dim_-1];
+template<unsigned int spacedim>
+void OpCoords<spacedim>::eval() {
+    PatchPointValues<spacedim> &ppv = this->patch_fe_->patch_point_vals_[0][this->dim_-1];
     auto result = this->result_matrix();
 
     for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
         for (uint i_col=0; i_col<this->dim_+1; ++i_col)
-            for (uint i_row=0; i_row<3; ++i_row) {
+            for (uint i_row=0; i_row<spacedim; ++i_row) {
                 result(i_row, i_col)(i_elm) = ( *ppv.elem_list_[i_elm].node(i_col) )(i_row);
             }
 }
 
-OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {3, dim}, OpSizeType::elemOp)
+template<unsigned int spacedim>
+OpJac<spacedim>::OpJac(uint dim, PatchFEValues<spacedim> &pfev)
+: PatchOp<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
 {
     this->bulk_side_ = 0;
-    this->input_ops_.push_back( pfev.get< OpCoords >(dim) );
+    this->input_ops_.push_back( pfev.template get< OpCoords<spacedim> >(dim) );
 }
 
-template<unsigned int op_dim>
-OpInvJac<op_dim>::OpInvJac(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {dim, 3}, OpSizeType::elemOp)
+template<unsigned int op_dim, unsigned int spacedim>
+OpInvJac<op_dim, spacedim>::OpInvJac(uint dim, PatchFEValues<3> &pfev)
+: PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, op_dim);
     this->bulk_side_ = 0;
-    this->input_ops_.push_back( pfev.get< OpJac >(op_dim) );
+    this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(op_dim) );
 }
 
-template<unsigned int op_dim>
-OpJacDet<op_dim>::OpJacDet(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {1}, OpSizeType::elemOp)
+template<unsigned int op_dim, unsigned int spacedim>
+OpJacDet<op_dim, spacedim>::OpJacDet(uint dim, PatchFEValues<spacedim> &pfev)
+: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, dim);
     this->bulk_side_ = 0;
-    this->input_ops_.push_back( pfev.get< OpJac >(dim) );
+    this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(dim) );
 }
 
 } // end of namespace Op::Bulk::El
 
 namespace Pt {
 
-OpWeights::OpWeights(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+template<unsigned int spacedim>
+OpWeights<spacedim>::OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
+: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
 {
     this->bulk_side_ = 0;
 
@@ -136,21 +139,21 @@ OpWeights::OpWeights(uint dim, PatchFEValues<3> &pfev)
         this->result_(0)(i) = point_weights_vec[i];
 }
 
-template<unsigned int op_dim>
-OpJxW<op_dim>::OpJxW(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {1}, OpSizeType::pointOp)
+template<unsigned int op_dim, unsigned int spacedim>
+OpJxW<op_dim, spacedim>::OpJxW(uint dim, PatchFEValues<spacedim> &pfev)
+: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
 {
     this->bulk_side_ = 0;
-    this->input_ops_.push_back( pfev.get< OpWeights >(dim) );
-    this->input_ops_.push_back( pfev.get< Op::Bulk::El::OpJacDet<op_dim> >(dim) );
+    this->input_ops_.push_back( pfev.template get< OpWeights<spacedim> >(dim) );
+    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<op_dim, spacedim> >(dim) );
 }
 
-template<unsigned int op_dim>
-OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint component_idx)
-: PatchOp<3>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
+template<unsigned int op_dim, unsigned int spacedim>
+OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: PatchOp<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
 {
     this->bulk_side_ = 0;
-    auto fe_component = pfev.fe_comp<op_dim>(component_idx);
+    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
     uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
@@ -158,7 +161,7 @@ OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint 
     this->n_dofs_ = n_dofs;
     this->shape_[1] = n_dofs;
 
-    std::vector<std::vector<arma::mat> > ref_shape_grads = this->ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
     this->allocate_result(n_points, pfev.asm_arena());
     auto ref_scalar_value = this->result_matrix();
     for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {
@@ -168,20 +171,20 @@ OpRefGradScalar<op_dim>::OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint 
     }
 }
 
-template<unsigned int op_dim>
-OpGradScalarShape<op_dim>::OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint component_idx)
-: PatchOp<3>(dim, pfev, {3, 1}, OpSizeType::pointOp)
+template<unsigned int op_dim, unsigned int spacedim>
+OpGradScalarShape<op_dim, spacedim>::OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: PatchOp<spacedim>(dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
 {
     this->bulk_side_ = 0;
-    auto fe_component = pfev.fe_comp<op_dim>(component_idx);
+    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
     this->shape_[1] = n_dofs;
 
-    this->input_ops_.push_back( pfev.get< Op::Bulk::El::OpInvJac<op_dim> >(dim) );
-    this->input_ops_.push_back( pfev.get< OpRefGradScalar<op_dim> >(dim, component_idx) );
+    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<op_dim, spacedim> >(dim) );
+    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<op_dim, spacedim> >(dim, component_idx) );
 }
 
 } // end of namespace Op::Bulk::Pt
@@ -204,21 +207,23 @@ namespace Pt {
 
 
 // explicit instantiation of template classes
-template class Op::Bulk::El::OpInvJac<1>;
-template class Op::Bulk::El::OpInvJac<2>;
-template class Op::Bulk::El::OpInvJac<3>;
-template class Op::Bulk::El::OpJacDet<1>;
-template class Op::Bulk::El::OpJacDet<2>;
-template class Op::Bulk::El::OpJacDet<3>;
-template class Op::Bulk::Pt::OpJxW<1>;
-template class Op::Bulk::Pt::OpJxW<2>;
-template class Op::Bulk::Pt::OpJxW<3>;
-template class Op::Bulk::Pt::OpRefGradScalar<1>;
-template class Op::Bulk::Pt::OpRefGradScalar<2>;
-template class Op::Bulk::Pt::OpRefGradScalar<3>;
-template class Op::Bulk::Pt::OpGradScalarShape<1>;
-template class Op::Bulk::Pt::OpGradScalarShape<2>;
-template class Op::Bulk::Pt::OpGradScalarShape<3>;
+template class Op::Bulk::El::OpCoords<3>;
+template class Op::Bulk::El::OpJac<3>;
+template class Op::Bulk::El::OpInvJac<1, 3>;
+template class Op::Bulk::El::OpInvJac<2, 3>;
+template class Op::Bulk::El::OpInvJac<3, 3>;
+template class Op::Bulk::El::OpJacDet<1, 3>;
+template class Op::Bulk::El::OpJacDet<2, 3>;
+template class Op::Bulk::El::OpJacDet<3, 3>;
+template class Op::Bulk::Pt::OpJxW<1, 3>;
+template class Op::Bulk::Pt::OpJxW<2, 3>;
+template class Op::Bulk::Pt::OpJxW<3, 3>;
+template class Op::Bulk::Pt::OpRefGradScalar<1, 3>;
+template class Op::Bulk::Pt::OpRefGradScalar<2, 3>;
+template class Op::Bulk::Pt::OpRefGradScalar<3, 3>;
+template class Op::Bulk::Pt::OpGradScalarShape<1, 3>;
+template class Op::Bulk::Pt::OpGradScalarShape<2, 3>;
+template class Op::Bulk::Pt::OpGradScalarShape<3, 3>;
 
 template class PatchOp<3>;
 

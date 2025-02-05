@@ -262,11 +262,12 @@ namespace Bulk {
 
 namespace El {
 
-class OpCoords : public PatchOp<3> {
+template<unsigned int spacedim>
+class OpCoords : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpCoords(uint dim, PatchFEValues<3> &pfev)
-    : PatchOp<3>(dim, pfev, {3, dim+1}, OpSizeType::elemOp)
+    OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : PatchOp<3>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp)
     {
         this->bulk_side_ = 0;
     }
@@ -274,22 +275,23 @@ public:
     void eval() override;
 };
 
+template<unsigned int spacedim>
 class OpJac : public PatchOp<3> {
 public:
     /// Constructor
-    OpJac(uint dim, PatchFEValues<3> &pfev);
+    OpJac(uint dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto jac_value = this->result_matrix();
         auto coords_value = this->input_ops(0)->result_matrix();
-        for (unsigned int i=0; i<3; i++)
+        for (unsigned int i=0; i<spacedim; i++)
             for (unsigned int j=0; j<this->dim_; j++)
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
 };
 
-template<unsigned int op_dim>
-class OpInvJac : public PatchOp<3> {
+template<unsigned int op_dim, unsigned int spacedim>
+class OpInvJac : public PatchOp<spacedim> {
 public:
     /// Constructor
     OpInvJac(uint dim, PatchFEValues<3> &pfev);
@@ -297,20 +299,20 @@ public:
     void eval() override {
         auto inv_jac_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<3, op_dim>(jac_value);
+        inv_jac_value = eigen_arena_tools::inverse<spacedim, op_dim>(jac_value);
     }
 };
 
-template<unsigned int op_dim>
-class OpJacDet : public PatchOp<3> {
+template<unsigned int op_dim, unsigned int spacedim>
+class OpJacDet : public PatchOp<spacedim> {
 public:
     /// Constructor
-	OpJacDet(uint dim, PatchFEValues<3> &pfev);
+	OpJacDet(uint dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto jac_det_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<3, op_dim>(jac_value).abs();
+        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, op_dim>(jac_value).abs();
     }
 };
 
@@ -319,32 +321,32 @@ public:
 namespace Pt {
 
 /// Fixed operation points weights
-class OpWeights : public PatchOp<3> {
+template<unsigned int spacedim>
+class OpWeights : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpWeights(uint dim, PatchFEValues<3> &pfev);
+    OpWeights(uint dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {}
 };
 
 /// Evaluates coordinates of quadrature points
-class OpCoords : public PatchOp<3> {
+template<unsigned int spacedim>
+class OpCoords : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpCoords(uint dim, PatchFEValues<3> &pfev)
-    : PatchOp<3>(dim, pfev, {3}, OpSizeType::pointOp){}
+    OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp){}
 
-    void eval() override {
-
-    }
+    void eval() override {}
 };
 
 /// Evaluates JxW on quadrature points
-template<unsigned int op_dim>
-class OpJxW : public PatchOp<3> {
+template<unsigned int op_dim, unsigned int spacedim>
+class OpJxW : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpJxW(uint dim, PatchFEValues<3> &pfev);
+    OpJxW(uint dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto weights_value = this->input_ops(0)->result_matrix();
@@ -357,21 +359,21 @@ public:
 };
 
 /// Fixed operation of gradient scalar reference values
-template<unsigned int op_dim>
-class OpRefGradScalar : public PatchOp<3> {
+template<unsigned int op_dim, unsigned int spacedim>
+class OpRefGradScalar : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpRefGradScalar(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
+    OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {}
 };
 
 /// Evaluates gradient scalar values
-template<unsigned int op_dim>
-class OpGradScalarShape : public PatchOp<3> {
+template<unsigned int op_dim, unsigned int spacedim>
+class OpGradScalarShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-	OpGradScalarShape(uint dim, PatchFEValues<3> &pfev, uint n_dofs);
+	OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {
         auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
@@ -385,13 +387,13 @@ public:
         }
 
         Eigen::Matrix<ArenaOVec<double>, op_dim, 3> inv_jac_ovec;
-        for (uint i=0; i<this->dim_*3; ++i) {
+        for (uint i=0; i<this->dim_*spacedim; ++i) {
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
 
         auto result_vec = this->result_matrix();
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-        for (uint i=0; i<3*n_dofs; ++i) {
+        for (uint i=0; i<spacedim*n_dofs; ++i) {
             result_vec(i) = result_ovec(i).get_vec();
         }
     }

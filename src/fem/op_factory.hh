@@ -185,7 +185,7 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpJxW<dim> >(dim);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpJxW<dim, 3> >(dim);
         return FeQ<Scalar>(op, true);
     }
 
@@ -202,7 +202,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim> >(dim);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim, 3> >(dim);
         return ElQ<Scalar>(op);
     }
 
@@ -366,7 +366,7 @@ public:
 //    }
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim> >(dim, component_idx);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(dim, component_idx);
         return FeQArray<Vector>(op, true);
     }
 

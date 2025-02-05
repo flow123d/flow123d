@@ -264,7 +264,7 @@ public:
 
 //        {
 //            // Will be used in Side::ElCoords::eval()
-//        	auto coords_mat = ppv.op_el_coords_->result_matrix();
+//            auto coords_mat = ppv.op_el_coords_->result_matrix();
 //            std::size_t i_elem = ppv.i_elem_;
 //            for (uint i_col=0; i_col<dim+1; ++i_col)
 //                for (uint i_row=0; i_row<spacedim; ++i_row) {
@@ -396,7 +396,7 @@ private:
     template <class ValueType>
     friend class FeQ;
     friend class PatchOp<spacedim>;
-    friend class Op::Bulk::El::OpCoords;
+    friend class Op::Bulk::El::OpCoords<spacedim>;
 };
 
 
