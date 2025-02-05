@@ -464,7 +464,7 @@ void DarcyLMH::init_eq_data()
 //connecting data fields with mesh
 {
 
-    START_TIMER("data init");
+    START_TIMER("Darcy data init");
     eq_data_->mesh = mesh_;
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
@@ -658,6 +658,7 @@ void DarcyLMH::initialize_specific()
 
 void DarcyLMH::zero_time_step()
 {
+    START_TIMER("Darcy zero time step");
 
     /* TODO:
      * - Allow solution reconstruction (pressure and velocity) from initial condition on user request.
@@ -688,12 +689,12 @@ void DarcyLMH::zero_time_step()
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-        START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
         this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
-        END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
+
+    END_TIMER("Darcy zero time step");
 }
 
 //=============================================================================
@@ -701,7 +702,7 @@ void DarcyLMH::zero_time_step()
 //=============================================================================
 void DarcyLMH::update_solution()
 {
-    START_TIMER("Solving MH system");
+    START_TIMER("Darcy solve system");
 
     time_->next_time();
 
@@ -776,7 +777,7 @@ bool DarcyLMH::zero_time_term(bool time_global) {
 
 void DarcyLMH::solve_nonlinear()
 {
-
+    START_TIMER("Darcy solve_nonlinear");
     assembly_linear_system();
     double residual_norm = lin_sys_schur().compute_residual();
     eq_data_->nonlinear_iteration_ = 0;
@@ -852,9 +853,7 @@ void DarcyLMH::solve_nonlinear()
     }
     
 //    reconstruct_solution_from_schur(eq_data_->multidim_assembler);
-    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
     this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
-    END_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
 
     // adapt timestep
     if (! this->zero_time_term()) {
@@ -934,7 +933,7 @@ void DarcyLMH::output_data() {
 
 void DarcyLMH::allocate_mh_matrix()
 {
-    START_TIMER("DarcyLMH::allocate_mh_matrix");
+    START_TIMER("Darcy allocate_mh_matrix");
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -1109,7 +1108,7 @@ void DarcyLMH::allocate_mh_matrix()
 
 void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
   
-    START_TIMER("preallocation");
+    START_TIMER("Darcy preallocation");
 
     // if (schur0 == NULL) { // create Linear System for MH matrix
        
@@ -1204,20 +1203,20 @@ void DarcyLMH::create_linear_system(Input::AbstractRecord in_rec) {
 //                 schur0=ls;
             // }
 
-            START_TIMER("PETSC PREALLOCATION");
+            START_TIMER("PETSc preallocation");
             lin_sys_schur().start_allocation();
             
             allocate_mh_matrix();
             
             eq_data_->full_solution.zero_entries();
             eq_data_->p_edge_solution.zero_entries();
-            END_TIMER("PETSC PREALLOCATION");
+            END_TIMER("PETSc preallocation");
         }
         else {
             THROW( ExcUnknownSolver() );
         }
 
-        END_TIMER("preallocation");
+        END_TIMER("Darcy preallocation");
 }
 
 void DarcyLMH::postprocess()
@@ -1249,7 +1248,7 @@ void DarcyLMH::postprocess()
 //}
 
 void DarcyLMH::assembly_linear_system() {
-    START_TIMER("DarcyFlowMH::assembly_linear_system");
+    START_TIMER("Darcy assembly_linear_system");
 //     DebugOut() << "DarcyLMH::assembly_linear_system\n";
 
     eq_data_->p_edge_solution.local_to_ghost_begin();
@@ -1262,7 +1261,6 @@ void DarcyLMH::assembly_linear_system() {
     {
         //DebugOut()  << "Data changed\n";
         // currently we have no optimization for cases when just time term data or RHS data are changed
-        START_TIMER("full assembly");
 //         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
 //             schur0->start_add_assembly(); // finish allocation and create matrix
 //             schur_compl->start_add_assembly();
@@ -1275,9 +1273,7 @@ void DarcyLMH::assembly_linear_system() {
         
         eq_data_->time_step_ = time_->dt();
 
-        START_TIMER("DarcyLMH::assembly_steady_mh_matrix");
         this->mh_matrix_assembly_->assemble(eq_data_->dh_);; // fill matrix
-        END_TIMER("DarcyLMH::assembly_steady_mh_matrix");
 //        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
         lin_sys_schur().finish_assembly();

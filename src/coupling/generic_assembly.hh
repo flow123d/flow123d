@@ -361,7 +361,7 @@ private:
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
         if (active_integrals_ & ActiveIntegrals::bulk)
-    	    if (cell.is_own()) { // Not ghost
+            if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
     	    }
 
@@ -379,11 +379,29 @@ private:
         }
 
         if (active_integrals_ & ActiveIntegrals::coupling) {
-            bool add_low = true;
-        	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
-                if (cell.dim() != neighb_side.dim()-1) continue;
-                this->add_coupling_integral(cell, neighb_side, add_low);
-                add_low = false;
+            auto coupling_integral = integrals_.coupling_[cell.dim()-1];
+            // Adds data of bulk points only if bulk point were not added during processing of bulk integral
+            bool add_bulk_points = !( (active_integrals_ & ActiveIntegrals::bulk) & cell.is_own() );
+            if (add_bulk_points) {
+                // add points of low dim element only one time and only if they have not been added in BulkIntegral
+                for( DHCellSide ngh_side : cell.neighb_sides() ) {
+                    unsigned int reg_idx_low = cell.elm().region_idx().idx();
+                    for (auto p : coupling_integral->points(ngh_side, &element_cache_map_) ) {
+                        auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+                        element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                    }
+                    break;
+                }
+            }
+        	// Adds data of side points of all neighbour objects
+        	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
+                coupling_integral_data_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
+                		coupling_integral->get_subset_high_idx());
+
+                unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
+                for (auto p : coupling_integral->points(ngh_side, &element_cache_map_) ) {
+                    element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
+                }
             }
         }
     }
@@ -412,23 +430,6 @@ private:
             for (auto p : integrals_.edge_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
                 element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
             }
-        }
-    }
-
-    /// Add data of coupling integral to appropriate data structure.
-    inline void add_coupling_integral(const DHCellAccessor &cell, const DHCellSide &ngh_side, bool add_low) {
-        coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
-                integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
-
-        unsigned int reg_idx_low = cell.elm().region_idx().idx();
-        unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
-        for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
-            element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-
-        	if (add_low) {
-                auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-        	}
         }
     }
 

@@ -30,41 +30,45 @@ EvalPoints::EvalPoints()
 {}
 
 template <unsigned int dim>
-std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad)
-{
+std::shared_ptr<BulkIntegral> EvalPoints::add_bulk(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim());
 
-    dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
-    uint i_subset = dim_eval_points_[dim].add_subset();
-    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), dim, i_subset);
-    this->set_max_size();
-    return bulk_integral;
+    if (bulk_integrals_[dim] == nullptr) {
+        dim_eval_points_[dim].add_local_points<dim>( quad.get_points() );
+        uint i_subset = dim_eval_points_[dim].add_subset();
+        bulk_integrals_[dim] = std::make_shared<BulkIntegral>(shared_from_this(), dim, i_subset);
+        this->set_max_size();
+    }
+    return bulk_integrals_[dim];
 }
 
 template <>
 std::shared_ptr<BulkIntegral> EvalPoints::add_bulk<0>(const Quadrature &quad)
 {
     ASSERT_EQ(0, quad.dim());
-    uint i_subset = dim_eval_points_[0].add_subset();
-    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(shared_from_this(), 0, i_subset);
-    this->set_max_size();
-    return bulk_integral;
+
+    if (bulk_integrals_[0] == nullptr) {
+        uint i_subset = dim_eval_points_[0].add_subset();
+        bulk_integrals_[0] = std::make_shared<BulkIntegral>(shared_from_this(), 0, i_subset);
+        this->set_max_size();
+    }
+    return bulk_integrals_[0];
 }
 
 template <unsigned int dim>
-std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad)
-{
+std::shared_ptr<EdgeIntegral> EvalPoints::add_edge(const Quadrature &quad) {
     ASSERT_EQ(dim, quad.dim()+1);
 
-    for (unsigned int i=0; i<dim+1; ++i) {  // sides
-        Quadrature high_dim_q = quad.make_from_side<dim>(i);
-        dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
+    if (edge_integrals_[dim-1] == nullptr) {
+        for (unsigned int i=0; i<dim+1; ++i) {  // sides
+            Quadrature high_dim_q = quad.make_from_side<dim>(i);
+            dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
+        }
+        uint i_subset = dim_eval_points_[dim].add_subset();
+        edge_integrals_[dim-1] = std::make_shared<EdgeIntegral>(shared_from_this(), dim, i_subset);
+        this->set_max_size();
     }
-    uint i_subset = dim_eval_points_[dim].add_subset();
-    std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(shared_from_this(), dim, i_subset);
-
-    this->set_max_size();
-    return edge_integral;
+    return edge_integrals_[dim-1];
 }
 
 template <unsigned int dim>

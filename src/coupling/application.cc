@@ -81,6 +81,7 @@ Application::Application()
   //passed_argc_(0),
   //passed_argv_(0),
   use_profiler(true),
+  memory_monitoring(false),
   profiler_path(""),
   yaml_balance_output_(false)
 
@@ -338,6 +339,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler,no-profiler", "Turn off profiler output.")
         ("profiler_path,profiler-path", po::value< string >(), "Path to the profiler file")
+        ("memory_monitoring,memory-monitoring", "Switch on memory monitoring.")
         ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
@@ -383,6 +385,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("profiler_path")) {
         profiler_path = vm["profiler_path"].as<string>();
+    }
+
+    if (vm.count("memory_monitoring")) {
+        memory_monitoring=true;
     }
 
     // if there is "help" option
@@ -501,7 +507,8 @@ void Application::init(int argc, char ** argv) {
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 
-    //Profiler::instance();
+    if (use_profiler & memory_monitoring)
+        Profiler::set_memory_monitoring(memory_monitoring);
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
