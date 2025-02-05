@@ -265,9 +265,13 @@ namespace El {
 class OpCoords : public PatchOp<3> {
 public:
     /// Constructor
-    OpCoords(uint dim, PatchFEValues<3> &pfev);
+    OpCoords(uint dim, PatchFEValues<3> &pfev)
+    : PatchOp<3>(dim, pfev, {3, dim+1}, OpSizeType::elemOp)
+    {
+        this->bulk_side_ = 0;
+    }
 
-    void eval() override {}
+    void eval() override;
 };
 
 class OpJac : public PatchOp<3> {
@@ -330,7 +334,9 @@ public:
     OpCoords(uint dim, PatchFEValues<3> &pfev)
     : PatchOp<3>(dim, pfev, {3}, OpSizeType::pointOp){}
 
-    void eval() override {}
+    void eval() override {
+
+    }
 };
 
 /// Evaluates JxW on quadrature points

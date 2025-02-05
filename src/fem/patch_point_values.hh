@@ -172,7 +172,7 @@ public:
      */
     PatchPointValues(uint dim, uint quad_order, bool is_bulk, PatchFeData &patch_fe_data)
     : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
-      op_el_coords_(nullptr), op_sd_coords_(nullptr), needs_zero_values_(false) {
+      needs_zero_values_(false) {
         reset();
 
         if (is_bulk) {
@@ -227,6 +227,8 @@ public:
         n_points_ = 0;
         n_elems_ = 0;
         i_elem_ = 0;
+        elem_list_.clear();
+        side_list_.clear();
     }
 
     /// Getter for dim_
@@ -610,11 +612,11 @@ public:
 //        }
     }
 
-protected:
+//protected:
     /// Specialized constructor of zero values object. Do not use in other cases!
     PatchPointValues(uint dim, FMT_UNUSED std::vector<PatchOp<spacedim> *> &ref_ops, bool is_bulk, PatchFeData &patch_fe_data)
     : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
-      op_el_coords_(nullptr), op_sd_coords_(nullptr), needs_zero_values_(false) {
+      needs_zero_values_(false) {
         reset();
 
         if (is_bulk) op_dependency_ = std::vector< std::vector<unsigned int> >(FeBulk::BulkOps::opNItems);
@@ -774,8 +776,8 @@ protected:
 
     PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
-    PatchOp<spacedim> *op_el_coords_;   ///< Pointer to element coords operations (used during patch reinit)
-	PatchOp<spacedim> *op_sd_coords_;   ///< Pointer to side coords operations (used during patch reinit)
+	std::vector<ElementAccessor<3>> elem_list_; ///< List of elements on patch
+	std::vector<Side> side_list_;               ///< List of sides on patch
 
     bool needs_zero_values_;            ///< Flags hold whether zero_values_ object is needed
     PatchPointValues *zero_values_;     ///< PatchPointValues object returns zero values for all operations

@@ -84,11 +84,15 @@ namespace Bulk {
 
 namespace El {
 
-OpCoords::OpCoords(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<3>(dim, pfev, {3, dim+1}, OpSizeType::elemOp)
-{
-    this->bulk_side_ = 0;
-    pfev.patch_point_vals_[0][dim-1].op_el_coords_ = this;
+void OpCoords::eval() {
+    PatchPointValues<3> &ppv = this->patch_fe_->patch_point_vals_[0][this->dim_-1];
+    auto result = this->result_matrix();
+
+    for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
+        for (uint i_col=0; i_col<this->dim_+1; ++i_col)
+            for (uint i_row=0; i_row<3; ++i_row) {
+                result(i_row, i_col)(i_elm) = ( *ppv.elem_list_[i_elm].node(i_col) )(i_row);
+            }
 }
 
 OpJac::OpJac(uint dim, PatchFEValues<3> &pfev)
