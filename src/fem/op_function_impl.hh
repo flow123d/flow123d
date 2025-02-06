@@ -159,7 +159,6 @@ OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<space
     uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
-    this->shape_[1] = n_dofs;
 
     std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
     this->allocate_result(n_points, pfev.asm_arena());
@@ -181,7 +180,6 @@ OpGradScalarShape<op_dim, spacedim>::OpGradScalarShape(uint dim, PatchFEValues<s
 
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
-    this->shape_[1] = n_dofs;
 
     this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<op_dim, spacedim> >(dim) );
     this->input_ops_.push_back( pfev.template get< OpRefGradScalar<op_dim, spacedim> >(dim, component_idx) );

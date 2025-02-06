@@ -128,27 +128,27 @@ public:
     }
 
     inline void allocate_result(size_t data_size, PatchArena &arena) {
-        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1]);
-        for (uint i=0; i<n_comp(); ++i)
+        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
+        for (uint i=0; i<n_comp()*n_dofs_; ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
     }
 
     inline void allocate_const_result(ArenaVec<double> &value_vec) {
-        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1]);
-        for (uint i=0; i<n_comp(); ++i)
+        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
+        for (uint i=0; i<n_comp()*n_dofs_; ++i)
             result_(i) = value_vec;
     }
 
     /// Return map referenced result as Eigen::Vector
     Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> result_matrix() {
-        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data(), shape_[0], shape_[1]);
+        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data(), shape_[0], shape_[1] * n_dofs_);
     }
 
     /// Return map referenced result of DOF values as Eigen::Matrix
     Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> result_sub_matrix(uint i_dof) {
         ASSERT_LT(i_dof, n_dofs_);
-        uint n_dof_comps = shape_[0] * shape_[1] / n_dofs_;
-        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data()+i_dof*n_dof_comps, shape_[0], shape_[1] / n_dofs_);
+        uint n_dof_comps = shape_[0] * shape_[1];
+        return Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>>(result_.data()+i_dof*n_dof_comps, shape_[0], shape_[1]);
     }
 
     /// Return map referenced result as Eigen::Vector
