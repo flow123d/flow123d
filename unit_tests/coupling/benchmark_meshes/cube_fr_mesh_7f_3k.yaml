@@ -1,0 +1,45 @@
+# repository_mesh.py, 22/11/05 22:45
+# about 4M elements at time about 4 minutes
+# Seems to be on the edge of what is tracktable while providing full resolution of EDZ without anisotropic mesh.
+
+# base of the mesh file name
+
+seed: 1
+mesh_name: cube_fr_mesh_7f_3k
+
+mesh:
+    # mesh step on fractures
+    fracture_mesh_step: 15
+    # mesh step on outer boundary
+    boundary_mesh_step: 35
+
+geometry:
+  # Coordinate system
+  # X - in direction of storage boreholes
+  # Y - perpendicular horizontal
+  # Z - vertical
+  # origin: floor of the lateral tunnel, center, interface with center borehole.
+
+  # depth of the center of the box and of the coordinate system
+  center_depth: 5000
+  # x,y,z dimension
+  box_dimensions: &box [100, 100, 100]
+  # mesh step on fractures
+#  fracture_mesh_step: 10
+  # upper limit on the number of fractures
+#  n_frac_limit: 10
+  # mesh step on outer boundary
+#  boundary_mesh_step: 30
+
+
+fractures:
+    # SKB fracture population for repository domain
+#    population:  !include _fr_Forsmark_repo.yaml
+    population:  !include fractures.yaml
+    # upper limit on the number of (small) fractures
+    n_frac_limit: 15
+
+    fixed_seed: 202 # 202  # in the middle, acute angle , not reaching boundary
+
+    large_min_r: 40
+    large_box:  [70, 70, 70] #[40, 80, 60]

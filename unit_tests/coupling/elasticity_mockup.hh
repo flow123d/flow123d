@@ -86,7 +86,7 @@ public:
         Profiler::instance();
         Profiler::instance()->set_program_info("Flow123d",
                 string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false, false);
+        Profiler::set_memory_monitoring(false);
     }
 
     ~ElasticityMockupTest() {}
@@ -324,6 +324,11 @@ public:
             field_algo->set_value(f_value);
             dirichlet_penalty.set(field_algo, 0.0);
         }
+    }
+
+    arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+    {
+        return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
     }
 
     // Definition of Fields

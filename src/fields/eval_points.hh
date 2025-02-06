@@ -180,14 +180,6 @@ private:
         max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
     }
 
-    /// Create BulkIntegral of appropriate dimension if doesn't exist and return its.
-    template <unsigned int dim>
-    std::shared_ptr<BulkIntegral> get_bulk_integral(const Quadrature &quad);
-
-    /// Create EdgeIntegral of appropriate dimension if doesn't exist and return its.
-    template <unsigned int dim>
-    std::shared_ptr<EdgeIntegral> get_edge_integral(const Quadrature &quad);
-
 
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
