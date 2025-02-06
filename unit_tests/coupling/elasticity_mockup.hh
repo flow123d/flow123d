@@ -326,6 +326,11 @@ public:
         }
     }
 
+    arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+    {
+        return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+    }
+
     // Definition of Fields
     BCField<3, FieldValue<3>::Enum > bc_type;
     BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
@@ -379,6 +384,11 @@ public:
 
     ~EqData() {
         if (ls!=nullptr) delete ls;
+    }
+
+    /// Returns quad_order
+    inline unsigned int quad_order() const {
+        return 1;
     }
 
     /// Create DOF handler objects
