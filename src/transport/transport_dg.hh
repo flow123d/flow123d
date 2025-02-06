@@ -167,6 +167,11 @@ public:
 		    this->time_ = time;
 		}
 
+		/// Getter of dg_order
+		inline unsigned int quad_order() const {
+		    return dg_order;
+		}
+
     	/// @name Parameters of the numerical method
     	// @{
 
