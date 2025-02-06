@@ -19,6 +19,7 @@
 #include "system/global_defs.h"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
+#include "fem/arena_vec.hh"
 
 
 
@@ -271,6 +272,32 @@ vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
     if (dot(n,bar_side) < 0) n = -n;
 
     return n;
+}
+
+
+
+template<unsigned int dim>
+auto RefElement<dim>::normal_vector_array(ArenaVec<uint> loc_side_idx_vec) -> Eigen::Matrix<ArenaVec<double>, dim, 1>
+{
+    Eigen::Matrix<ArenaVec<double>, dim, 1> normal_vec_array;
+    for (uint i=0; i<dim; ++i)
+        normal_vec_array(i) = ArenaVec<double>( loc_side_idx_vec.data_size(), loc_side_idx_vec.arena() );
+    for (uint sid=0; sid<loc_side_idx_vec.data_size(); ++sid) {
+        arma::vec::fixed<dim> n_vec = RefElement<dim>::normal_vector( loc_side_idx_vec(sid) );
+        for (uint i=0; i<dim; ++i) {
+            normal_vec_array(i)(sid) = n_vec(i);
+        }
+    }
+    return normal_vec_array;
+}
+
+
+
+template<>
+auto RefElement<0>::normal_vector_array(FMT_UNUSED ArenaVec<uint> loc_side_idx_array) -> Eigen::Matrix<ArenaVec<double>, 0, 1>
+{
+	Eigen::Matrix<ArenaVec<double>, 0, 1> normal_vec_array;
+    return normal_vec_array;
 }
 
 
