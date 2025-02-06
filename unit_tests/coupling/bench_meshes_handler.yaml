@@ -1,0 +1,44 @@
+### List of processed meshes of benchmark unit tests.
+### 
+### You can execute benchmark tests with different meshes and their sizes.
+### Add or comment items in following arrays.
+### 
+### Example:
+### Benchmark test is DG_asm_bench and you want to process only one type of mesh and two sizes.  
+### Keep active only one item of array 'dg_asm' (eg. 'square_2D_uniform') and two items of 
+### array 'meshes_sizes' (eg. 'small' and 'big'). Comment other items of both arrays. Then test 
+### is executed on two following meshes: 
+###   'square_2D_uniform_small.msh'
+###   'square_2D_uniform_big.msh'
+### 
+### If you want to add new mesh you must add .msh file to directory:
+###   ./build-<name-of-your-branch>/benchmark_meshes/
+
+# Array of DG_asm_bench test
+dg_asm:
+  - square_2D_uniform
+  - square_2D_refined
+  - lshape_2D_uniform
+  - lshape_2D_refined
+  - cube_3D_uniform
+  - cube_3D_refined
+  - lshape_3D_uniform
+  - lshape_3D_refined
+
+# Array of elasticity_asm_bench test
+elasticity_asm:
+  - square_2D_uniform
+  - square_2D_refined
+  - lshape_2D_uniform
+  - lshape_2D_refined
+  - cube_3D_uniform
+  - cube_3D_refined
+  - lshape_3D_uniform
+  - lshape_3D_refined
+
+# Sizes of meshes
+meshes_sizes:
+  - small
+  - medium
+  - big
+

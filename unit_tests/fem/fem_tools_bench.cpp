@@ -337,7 +337,7 @@ public:
         string root_dir=string(UNIT_TESTS_BIN_DIR) + "/fem";
         FilePath::set_io_dirs(".",root_dir,"",".");
         Profiler::instance();
-        Profiler::set_memory_monitoring(false, false);
+        Profiler::set_memory_monitoring(false);
     }
 
     ~FemToolsTest()

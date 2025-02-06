@@ -154,7 +154,7 @@ public:
         Profiler::instance();
         Profiler::instance()->set_program_info("Flow123d",
                 string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false, false);
+        Profiler::set_memory_monitoring(false);
     }
 
     ~DGMockupTest() {}

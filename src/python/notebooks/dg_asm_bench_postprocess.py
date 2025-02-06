@@ -94,7 +94,7 @@ class ProcessTag:
             integral_type='',
             time=0.0,
             time_fraction=0.0,
-            time_fraction_of_reminder=np.NaN,
+            time_fraction_of_reminder=np.nan,
             parent_tag='',
             level=0
             )
