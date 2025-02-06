@@ -157,6 +157,7 @@ public:
 
     /// For development only. TODO remove
     inline const T & operator()(std::size_t item) const {
+        ASSERT_PTR(data_ptr_);
         ASSERT_LT(item, data_size_);
         return data_ptr_[item];
     }
