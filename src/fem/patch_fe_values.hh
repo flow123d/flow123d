@@ -154,6 +154,9 @@ public:
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
+        for (auto * op : operations_) {
+            if (op->size_type_ != OpSizeType::fixedSizeOp) op->create_result();
+        }
     }
 
     /// Reset PatchpointValues structures
@@ -231,13 +234,6 @@ public:
 
     /// Resize tables of patch_point_vals_
     void resize_tables(TableSizes table_sizes) {
-        for (auto * op : operations_) {
-            if (op->size_type() == elemOp) {
-                op->allocate_result( table_sizes.elem_sizes_[op->bulk_side_][op->dim()-1], *patch_fe_data_.patch_arena_ );
-            } else if (op->size_type() == pointOp) {
-                op->allocate_result( table_sizes.point_sizes_[op->bulk_side_][op->dim()-1], *patch_fe_data_.patch_arena_ );
-            }
-        }
         for (uint i=0; i<3; ++i) {
             if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
             if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);

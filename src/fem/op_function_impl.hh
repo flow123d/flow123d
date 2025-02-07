@@ -87,6 +87,7 @@ namespace El {
 template<unsigned int spacedim>
 void OpCoords<spacedim>::eval() {
     PatchPointValues<spacedim> &ppv = this->patch_fe_->patch_point_vals_[0][this->dim_-1];
+    this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
     auto result = this->result_matrix();
 
     for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
@@ -134,6 +135,7 @@ OpWeights<spacedim>::OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
 
     // create result vector of weights operation in assembly arena
     const std::vector<double> &point_weights_vec = pfev.get_bulk_quadrature(dim)->get_weights();
+    this->create_result();
     this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
     for (uint i=0; i<point_weights_vec.size(); ++i)
         this->result_(0)(i) = point_weights_vec[i];
@@ -161,6 +163,7 @@ OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<space
     this->n_dofs_ = n_dofs;
 
     std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    this->create_result();
     this->allocate_result(n_points, pfev.asm_arena());
     auto ref_scalar_value = this->result_matrix();
     for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {

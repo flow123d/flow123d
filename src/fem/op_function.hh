@@ -127,14 +127,16 @@ public:
         reinit_func(this, int_table);
     }
 
-    inline void allocate_result(size_t data_size, PatchArena &arena) {
+    inline void create_result() {
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
+    }
+
+    inline void allocate_result(size_t data_size, PatchArena &arena) {
         for (uint i=0; i<n_comp()*n_dofs_; ++i)
             result_(i) = ArenaVec<double>(data_size, arena);
     }
 
     inline void allocate_const_result(ArenaVec<double> &value_vec) {
-        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
         for (uint i=0; i<n_comp()*n_dofs_; ++i)
             result_(i) = value_vec;
     }
@@ -267,7 +269,7 @@ class OpCoords : public PatchOp<spacedim> {
 public:
     /// Constructor
     OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
-    : PatchOp<3>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp)
+    : PatchOp<spacedim>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp)
     {
         this->bulk_side_ = 0;
     }
