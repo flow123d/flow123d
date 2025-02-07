@@ -99,27 +99,24 @@ void OpCoords<spacedim>::eval() {
 
 template<unsigned int spacedim>
 OpJac<spacedim>::OpJac(uint dim, PatchFEValues<spacedim> &pfev)
-: PatchOp<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
 {
-    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.template get< OpCoords<spacedim> >(dim) );
 }
 
 template<unsigned int op_dim, unsigned int spacedim>
-OpInvJac<op_dim, spacedim>::OpInvJac(uint dim, PatchFEValues<3> &pfev)
-: PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
+OpInvJac<op_dim, spacedim>::OpInvJac(uint dim, PatchFEValues<spacedim> &pfev)
+: Op::Bulk::Base<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, op_dim);
-    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(op_dim) );
 }
 
 template<unsigned int op_dim, unsigned int spacedim>
 OpJacDet<op_dim, spacedim>::OpJacDet(uint dim, PatchFEValues<spacedim> &pfev)
-: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::elemOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, dim);
-    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(dim) );
 }
 
@@ -129,10 +126,8 @@ namespace Pt {
 
 template<unsigned int spacedim>
 OpWeights<spacedim>::OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
-: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
 {
-    this->bulk_side_ = 0;
-
     // create result vector of weights operation in assembly arena
     const std::vector<double> &point_weights_vec = pfev.get_bulk_quadrature(dim)->get_weights();
     this->create_result();
@@ -143,18 +138,16 @@ OpWeights<spacedim>::OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
 
 template<unsigned int op_dim, unsigned int spacedim>
 OpJxW<op_dim, spacedim>::OpJxW(uint dim, PatchFEValues<spacedim> &pfev)
-: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
 {
-    this->bulk_side_ = 0;
     this->input_ops_.push_back( pfev.template get< OpWeights<spacedim> >(dim) );
     this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<op_dim, spacedim> >(dim) );
 }
 
 template<unsigned int op_dim, unsigned int spacedim>
 OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: PatchOp<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
 {
-    this->bulk_side_ = 0;
     auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
@@ -175,9 +168,8 @@ OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<space
 
 template<unsigned int op_dim, unsigned int spacedim>
 OpGradScalarShape<op_dim, spacedim>::OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: PatchOp<spacedim>(dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
+: Op::Bulk::Base<spacedim>(dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
 {
-    this->bulk_side_ = 0;
     auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 

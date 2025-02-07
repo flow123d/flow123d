@@ -262,23 +262,32 @@ namespace Op {
 
 namespace Bulk {
 
-namespace El {
-
+/// Common ancestor of all bulk operations.
 template<unsigned int spacedim>
-class OpCoords : public PatchOp<spacedim> {
+class Base : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp)
+	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
+    : PatchOp<spacedim>(dim, pfev, shape, size_type)
     {
         this->bulk_side_ = 0;
     }
+};
+
+namespace El {
+
+template<unsigned int spacedim>
+class OpCoords : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+    OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Bulk::Base<spacedim>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp) {}
 
     void eval() override;
 };
 
 template<unsigned int spacedim>
-class OpJac : public PatchOp<3> {
+class OpJac : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpJac(uint dim, PatchFEValues<spacedim> &pfev);
@@ -293,10 +302,10 @@ public:
 };
 
 template<unsigned int op_dim, unsigned int spacedim>
-class OpInvJac : public PatchOp<spacedim> {
+class OpInvJac : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-    OpInvJac(uint dim, PatchFEValues<3> &pfev);
+    OpInvJac(uint dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto inv_jac_value = this->result_matrix();
@@ -306,7 +315,7 @@ public:
 };
 
 template<unsigned int op_dim, unsigned int spacedim>
-class OpJacDet : public PatchOp<spacedim> {
+class OpJacDet : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpJacDet(uint dim, PatchFEValues<spacedim> &pfev);
@@ -324,7 +333,7 @@ namespace Pt {
 
 /// Fixed operation points weights
 template<unsigned int spacedim>
-class OpWeights : public PatchOp<spacedim> {
+class OpWeights : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpWeights(uint dim, PatchFEValues<spacedim> &pfev);
@@ -334,18 +343,18 @@ public:
 
 /// Evaluates coordinates of quadrature points
 template<unsigned int spacedim>
-class OpCoords : public PatchOp<spacedim> {
+class OpCoords : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp){}
+    : Op::Bulk::Base<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp){}
 
     void eval() override {}
 };
 
 /// Evaluates JxW on quadrature points
 template<unsigned int op_dim, unsigned int spacedim>
-class OpJxW : public PatchOp<spacedim> {
+class OpJxW : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpJxW(uint dim, PatchFEValues<spacedim> &pfev);
@@ -362,7 +371,7 @@ public:
 
 /// Fixed operation of gradient scalar reference values
 template<unsigned int op_dim, unsigned int spacedim>
-class OpRefGradScalar : public PatchOp<spacedim> {
+class OpRefGradScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
@@ -372,7 +381,7 @@ public:
 
 /// Evaluates gradient scalar values
 template<unsigned int op_dim, unsigned int spacedim>
-class OpGradScalarShape : public PatchOp<spacedim> {
+class OpGradScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
@@ -406,6 +415,18 @@ public:
 } // end of namespace Op::Bulk
 
 namespace Side {
+
+/// Common ancestor of all side operations.
+template<unsigned int spacedim>
+class Base : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
+    : PatchOp<spacedim>(dim, pfev, shape, size_type)
+    {
+        this->bulk_side_ = 1;
+    }
+};
 
 namespace El {
 
