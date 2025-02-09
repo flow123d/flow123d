@@ -144,6 +144,7 @@ jobs:
             echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
 
         - name: Run UNIT tests
+          continue-on-error: true
           run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
         - name: Check if XML reports exist
@@ -160,9 +161,8 @@ jobs:
           if: always() && steps.check_reports.outputs.xml_found == 'true'
           with:
             name: "Test reporter"
-            path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
             reporter: java-junit
-            fail-on-error: false
+            path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
             token: ${{ secrets.GITHUB_TOKEN }}
             list-suites: 'failed'
             list-tests: 'failed'
