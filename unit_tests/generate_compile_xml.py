@@ -1,4 +1,5 @@
 import sys
+import os
 import xml.etree.ElementTree as ET
 
 def create_junit_xml(status, log_file, xml_output):
@@ -7,6 +8,9 @@ def create_junit_xml(status, log_file, xml_output):
     Pokud kompilace selže, nastaví test jako failed a přidá výstup.
     Pokud uspěje, nastaví test jako passed a přidá výstup.
     """
+
+    os.makedirs(os.path.dirname(xml_output), exist_ok=True)
+
     with open(log_file, "r", encoding="utf-8") as f:
         compile_output = f.read()
 
@@ -20,6 +24,7 @@ def create_junit_xml(status, log_file, xml_output):
     else:
         system_out = ET.SubElement(testcase, "system-out")
         system_out.text = compile_output
+
     tree = ET.ElementTree(testsuites)
     with open(xml_output, "wb") as xml_file:
         tree.write(xml_file, encoding="utf-8", xml_declaration=True)
