@@ -155,6 +155,11 @@ jobs:
             else
               echo "xml_found=false" >> $GITHUB_OUTPUT
             fi
+            
+        - name: Debug - List all XML reports
+          run: |
+            find ${{ steps.vars.outputs.builddir }} -name '*.xml' -print
+          
 
         - name: Test Reporter
           uses: dorny/test-reporter@v1
