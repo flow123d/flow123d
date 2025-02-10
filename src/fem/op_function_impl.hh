@@ -145,6 +145,27 @@ OpJxW<op_dim, spacedim>::OpJxW(uint dim, PatchFEValues<spacedim> &pfev)
 }
 
 template<unsigned int op_dim, unsigned int spacedim>
+OpRefScalar<op_dim, spacedim>::OpRefScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+{
+    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+    uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
+    uint n_dofs = fe_component->n_dofs();
+    this->n_dofs_ = n_dofs;
+
+    auto ref_shape_vals = this->template ref_shape_values_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    this->create_result();
+    this->allocate_result(n_points, pfev.asm_arena());
+    auto ref_scalar_value = this->result_matrix();
+    for (unsigned int i_p = 0; i_p < n_points; i_p++)
+        for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+            ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
+        }
+}
+
+template<unsigned int op_dim, unsigned int spacedim>
 OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
 : Op::Bulk::Base<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
 {
@@ -164,6 +185,19 @@ OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<space
             for (uint i_p=0; i_p<n_points; ++i_p)
                 ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
     }
+}
+
+template<unsigned int op_dim, unsigned int spacedim>
+OpScalarShape<op_dim, spacedim>::OpScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
+{
+    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
+
+    uint n_dofs = fe_component->n_dofs();
+    this->n_dofs_ = n_dofs;
+
+    this->input_ops_.push_back( pfev.template get< OpRefScalar<op_dim, spacedim> >(dim, component_idx) );
 }
 
 template<unsigned int op_dim, unsigned int spacedim>
@@ -188,6 +222,32 @@ namespace Side {
 
 namespace El {
 
+template<unsigned int spacedim>
+void OpElCoords<spacedim>::eval() {
+    PatchPointValues<spacedim> &ppv = this->ppv();
+    this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
+    auto result = this->result_matrix();
+
+    for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
+        for (uint i_col=0; i_col<this->dim_+1; ++i_col)
+            for (uint i_row=0; i_row<spacedim; ++i_row) {
+                result(i_row, i_col)(i_elm) = ( *ppv.elem_list_[i_elm].node(i_col) )(i_row);
+            }
+}
+
+template<unsigned int spacedim>
+void OpSdCoords<spacedim>::eval() {
+    PatchPointValues<spacedim> &ppv = this->ppv();
+    this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
+    auto result = this->result_matrix();
+
+    for (uint i_side=0; i_side<ppv.side_list_.size(); ++i_side)
+        for (uint i_col=0; i_col<this->dim_; ++i_col)
+            for (uint i_row=0; i_row<spacedim; ++i_row) {
+                result(i_row, i_col)(i_side) = ( *ppv.side_list_[i_side].node(i_col) )(i_row);
+            }
+}
+
 } // end of namespace Op::Side::El
 
 namespace Pt {
@@ -211,9 +271,15 @@ template class Op::Bulk::El::OpJacDet<3, 3>;
 template class Op::Bulk::Pt::OpJxW<1, 3>;
 template class Op::Bulk::Pt::OpJxW<2, 3>;
 template class Op::Bulk::Pt::OpJxW<3, 3>;
+template class Op::Bulk::Pt::OpRefScalar<1, 3>;
+template class Op::Bulk::Pt::OpRefScalar<2, 3>;
+template class Op::Bulk::Pt::OpRefScalar<3, 3>;
 template class Op::Bulk::Pt::OpRefGradScalar<1, 3>;
 template class Op::Bulk::Pt::OpRefGradScalar<2, 3>;
 template class Op::Bulk::Pt::OpRefGradScalar<3, 3>;
+template class Op::Bulk::Pt::OpScalarShape<1, 3>;
+template class Op::Bulk::Pt::OpScalarShape<2, 3>;
+template class Op::Bulk::Pt::OpScalarShape<3, 3>;
 template class Op::Bulk::Pt::OpGradScalarShape<1, 3>;
 template class Op::Bulk::Pt::OpGradScalarShape<2, 3>;
 template class Op::Bulk::Pt::OpGradScalarShape<3, 3>;

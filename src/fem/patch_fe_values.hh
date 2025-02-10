@@ -258,26 +258,6 @@ public:
         uint dim = cell_side.dim();
         PatchPointValues<spacedim> &ppv = patch_point_vals_[1][dim-1];
 
-//        {
-//            // Will be used in Side::ElCoords::eval()
-//            auto coords_mat = ppv.op_el_coords_->result_matrix();
-//            std::size_t i_elem = ppv.i_elem_;
-//            for (uint i_col=0; i_col<dim+1; ++i_col)
-//                for (uint i_row=0; i_row<spacedim; ++i_row) {
-//                    coords_mat(i_row, i_col)(i_elem) = ( *elm.node(i_col) )(i_row);
-//                }
-//        }
-//
-//        {
-//            // Will be used in Side::SdCoords::eval()
-//            auto coords_mat = ppv.op_sd_coords_->result_matrix();
-//            std::size_t i_elem = ppv.i_elem_;
-//            for (uint i_col=0; i_col<dim; ++i_col)
-//                for (uint i_row=0; i_row<spacedim; ++i_row) {
-//                    coords_mat(i_row, i_col)(i_elem) = (*cell_side.side().node(i_col))[i_row];
-//                }
-//        }
-
         ppv.int_table_(3)(ppv.i_elem_) = cell_side.side_idx();
         ppv.elem_list_.push_back( cell_side.cell().elm() );
         ppv.side_list_.push_back( cell_side.side() );

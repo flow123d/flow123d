@@ -163,6 +163,11 @@ public:
         return result_;
     }
 
+    /// Return reference of PatchPointValues
+    PatchPointValues<spacedim> &ppv() {
+        return patch_fe_->patch_point_vals_[bulk_side_][this->dim_-1];
+    }
+
     /// Reinit function of operation. Implementation in descendants.
     virtual void eval() {
         ASSERT(false).error("Must be implemented in descendants.\n");
@@ -215,6 +220,32 @@ public:
 
 
 protected:
+    /**
+     * @brief Precomputed values of basis functions at the bulk quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    template<unsigned int FE_dim>
+    std::vector<std::vector<arma::vec> > ref_shape_values_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
+        std::vector<std::vector<arma::vec> > ref_shape_vals( q->size(), vector<arma::vec>(fe->n_dofs()) );
+
+        arma::mat shape_values(fe->n_dofs(), fe->n_components());
+        for (unsigned int i=0; i<q->size(); i++)
+        {
+            for (unsigned int j=0; j<fe->n_dofs(); j++)
+            {
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    shape_values(j,c) = fe->shape_value(j, q->point<FE_dim>(i), c);
+
+                ref_shape_vals[i][j] = trans(shape_values.row(j));
+            }
+        }
+
+        return ref_shape_vals;
+    }
+
     /**
      * @brief Precomputed gradients of basis functions at the bulk quadrature points.
      *
@@ -369,6 +400,16 @@ public:
     }
 };
 
+/// Fixed operation of  scalar shape reference values
+template<unsigned int op_dim, unsigned int spacedim>
+class OpRefScalar : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpRefScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+
+    void eval() override {}
+};
+
 /// Fixed operation of gradient scalar reference values
 template<unsigned int op_dim, unsigned int spacedim>
 class OpRefGradScalar : public Op::Bulk::Base<spacedim> {
@@ -377,6 +418,38 @@ public:
     OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {}
+};
+
+/// Evaluates scalar values
+template<unsigned int op_dim, unsigned int spacedim>
+class OpScalarShape : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+
+    void eval() override {
+        auto ref_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_elem = this->ppv().n_elems_;
+
+        ArenaVec<double> elem_vec(n_elem, this->patch_fe_->patch_arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> elem_ovec(elem_vec);
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> ref_ovec(n_dofs);
+        for (uint i=0; i<n_dofs; ++i) {
+            ref_ovec(i) = ArenaOVec<double>( ref_vec(i) );
+        }
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> result_ovec = elem_ovec * ref_ovec;
+        for (uint i=0; i<n_dofs; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
+    }
 };
 
 /// Evaluates gradient scalar values
@@ -429,6 +502,26 @@ public:
 };
 
 namespace El {
+
+template<unsigned int spacedim>
+class OpElCoords : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpElCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp) {}
+
+    void eval() override;
+};
+
+template<unsigned int spacedim>
+class OpSdCoords : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpSdCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp) {}
+
+    void eval() override;
+};
 
 } // end of namespace Op::Side::El
 

@@ -304,13 +304,8 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-
-        uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opScalarShape, {n_dofs}, bulk_reinit::ptop_scalar_shape, n_dofs);
-
-        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opScalarShape, n_dofs);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpScalarShape<dim, 3> >(dim, component_idx);
+        return FeQArray<Scalar>(op, true);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
