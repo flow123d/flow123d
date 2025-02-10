@@ -1,9 +1,13 @@
 #!/bin/bash
 
-# Příkaz ke kompilaci jako jeden argument
-COMPILE_CMD="$1"
-COMPILE_OUTPUT="$2"      # Cesta k výstupnímu souboru kompilace
-XML_REPORT="$3"          # Cesta k XML reportu
+echo "DEBUG: Script started"
+echo "Compile command: $1"
+echo "Compile output: $2"
+echo "XML report: $3"
+
+COMPILE_CMD="$1"         # Commands to compile
+COMPILE_OUTPUT="$2"      # Path to output file
+XML_REPORT="$3"          # Path to XML report
 
 
 {

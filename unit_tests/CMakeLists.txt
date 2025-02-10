@@ -118,7 +118,6 @@ macro(define_test class_name)
       VERBATIM
   )
 
-  
   # Custom target to tie the above commands together
   add_custom_target(
       ${test_binary}_target
