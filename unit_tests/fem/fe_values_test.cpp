@@ -23,8 +23,6 @@
 #include "mesh/region.hh"
 #include "mesh/accessors.hh"
 
-#include "complie_error_for_github"
-
 #define INTEGRATE( _func_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point(i) ) * quad.weight(i);
 
 double test_1_1d( const arma::vec::fixed<1> & p) {
