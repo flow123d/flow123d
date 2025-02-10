@@ -104,17 +104,17 @@ OpJac<spacedim>::OpJac(uint dim, PatchFEValues<spacedim> &pfev)
     this->input_ops_.push_back( pfev.template get< OpCoords<spacedim> >(dim) );
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpInvJac<op_dim, spacedim>::OpInvJac(uint dim, PatchFEValues<spacedim> &pfev)
-: Op::Bulk::Base<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
+template<unsigned int dim, unsigned int spacedim>
+OpInvJac<dim, spacedim>::OpInvJac(uint _dim, PatchFEValues<spacedim> &pfev)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
 {
-    ASSERT_EQ(this->dim_, op_dim);
-    this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(op_dim) );
+    ASSERT_EQ(this->dim_, dim);
+    this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(dim) );
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpJacDet<op_dim, spacedim>::OpJacDet(uint dim, PatchFEValues<spacedim> &pfev)
-: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::elemOp)
+template<unsigned int dim, unsigned int spacedim>
+OpJacDet<dim, spacedim>::OpJacDet(uint _dim, PatchFEValues<spacedim> &pfev)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::elemOp)
 {
     ASSERT_EQ(this->dim_, dim);
     this->input_ops_.push_back( pfev.template get< OpJac<spacedim> >(dim) );
@@ -136,26 +136,27 @@ OpWeights<spacedim>::OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
         this->result_(0)(i) = point_weights_vec[i];
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpJxW<op_dim, spacedim>::OpJxW(uint dim, PatchFEValues<spacedim> &pfev)
-: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
+template<unsigned int dim, unsigned int spacedim>
+OpJxW<dim, spacedim>::OpJxW(uint _dim, PatchFEValues<spacedim> &pfev)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
 {
     this->input_ops_.push_back( pfev.template get< OpWeights<spacedim> >(dim) );
-    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<op_dim, spacedim> >(dim) );
+    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<dim, spacedim> >(dim) );
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpRefScalar<op_dim, spacedim>::OpRefScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+template<unsigned int dim, unsigned int spacedim>
+OpRefScalar<dim, spacedim>::OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp)
 {
-    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(this->dim_, dim);
+    auto fe_component = pfev.template fe_comp<dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-    uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
+    uint n_points = pfev.get_bulk_quadrature(dim)->size();
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
 
-    auto ref_shape_vals = this->template ref_shape_values_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe_component);
     this->create_result();
     this->allocate_result(n_points, pfev.asm_arena());
     auto ref_scalar_value = this->result_matrix();
@@ -165,18 +166,19 @@ OpRefScalar<op_dim, spacedim>::OpRefScalar(uint dim, PatchFEValues<spacedim> &pf
         }
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: Op::Bulk::Base<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
+template<unsigned int dim, unsigned int spacedim>
+OpRefGradScalar<dim, spacedim>::OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
 {
-    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(this->dim_, dim);
+    auto fe_component = pfev.template fe_comp<dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-    uint n_points = pfev.get_bulk_quadrature(op_dim)->size();
+    uint n_points = pfev.get_bulk_quadrature(dim)->size();
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
 
-    std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<op_dim>(pfev.get_bulk_quadrature(op_dim), fe_component);
+    std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe_component);
     this->create_result();
     this->allocate_result(n_points, pfev.asm_arena());
     auto ref_scalar_value = this->result_matrix();
@@ -187,31 +189,33 @@ OpRefGradScalar<op_dim, spacedim>::OpRefGradScalar(uint dim, PatchFEValues<space
     }
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpScalarShape<op_dim, spacedim>::OpScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: Op::Bulk::Base<spacedim>(dim, pfev, {1}, OpSizeType::pointOp)
+template<unsigned int dim, unsigned int spacedim>
+OpScalarShape<dim, spacedim>::OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
 {
-    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(this->dim_, dim);
+    auto fe_component = pfev.template fe_comp<dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
 
-    this->input_ops_.push_back( pfev.template get< OpRefScalar<op_dim, spacedim> >(dim, component_idx) );
+    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim> >(dim, component_idx) );
 }
 
-template<unsigned int op_dim, unsigned int spacedim>
-OpGradScalarShape<op_dim, spacedim>::OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint component_idx)
-: Op::Bulk::Base<spacedim>(dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
+template<unsigned int dim, unsigned int spacedim>
+OpGradScalarShape<dim, spacedim>::OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
 {
-    auto fe_component = pfev.template fe_comp<op_dim>(component_idx);
+    ASSERT_EQ(this->dim_, dim);
+    auto fe_component = pfev.template fe_comp<dim>(component_idx);
     ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
     uint n_dofs = fe_component->n_dofs();
     this->n_dofs_ = n_dofs;
 
-    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<op_dim, spacedim> >(dim) );
-    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<op_dim, spacedim> >(dim, component_idx) );
+    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim> >(dim) );
+    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim> >(dim, component_idx) );
 }
 
 } // end of namespace Op::Bulk::Pt

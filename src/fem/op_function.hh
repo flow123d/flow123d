@@ -86,10 +86,10 @@ public:
         return shape_[0] * shape_[1];
     }
 
-    /// Getter for dimension
-    inline uint dim() const {
-        return dim_;
-    }
+//    /// Getter for dimension
+//    inline uint dimension() const { // dim is in conflict with template of some descendants
+//        return dim_;
+//    }
 
     /// Getter for size_type_
     OpSizeType size_type() const {
@@ -332,29 +332,29 @@ public:
     }
 };
 
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpInvJac : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-    OpInvJac(uint dim, PatchFEValues<spacedim> &pfev);
+    OpInvJac(uint _dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto inv_jac_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<spacedim, op_dim>(jac_value);
+        inv_jac_value = eigen_arena_tools::inverse<spacedim, dim>(jac_value);
     }
 };
 
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpJacDet : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpJacDet(uint dim, PatchFEValues<spacedim> &pfev);
+	OpJacDet(uint _dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto jac_det_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, op_dim>(jac_value).abs();
+        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, dim>(jac_value).abs();
     }
 };
 
@@ -384,11 +384,11 @@ public:
 };
 
 /// Evaluates JxW on quadrature points
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpJxW : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-    OpJxW(uint dim, PatchFEValues<spacedim> &pfev);
+    OpJxW(uint _dim, PatchFEValues<spacedim> &pfev);
 
     void eval() override {
         auto weights_value = this->input_ops(0)->result_matrix();
@@ -401,31 +401,31 @@ public:
 };
 
 /// Fixed operation of  scalar shape reference values
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpRefScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpRefScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+	OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {}
 };
 
 /// Fixed operation of gradient scalar reference values
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpRefGradScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-    OpRefGradScalar(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+    OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {}
 };
 
 /// Evaluates scalar values
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {
         auto ref_vec = this->input_ops(0)->result_matrix();
@@ -453,11 +453,11 @@ public:
 };
 
 /// Evaluates gradient scalar values
-template<unsigned int op_dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim>
 class OpGradScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpGradScalarShape(uint dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
+	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint n_dofs);
 
     void eval() override {
         auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
@@ -470,7 +470,7 @@ public:
             ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i));
         }
 
-        Eigen::Matrix<ArenaOVec<double>, op_dim, 3> inv_jac_ovec;
+        Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
         for (uint i=0; i<this->dim_*spacedim; ++i) {
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
