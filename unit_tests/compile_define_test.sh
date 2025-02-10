@@ -19,7 +19,6 @@ mkdir -p "$(dirname "$XML_REPORT")"
 STATUS=$?
 
 printf "Compile status: %d\n" "$STATUS"
-cat "$COMPILE_OUTPUT"
 python3 "$(dirname "$0")/generate_compile_xml.py" "$STATUS" "$COMPILE_OUTPUT" "$XML_REPORT"
 
 exit $STATUS
