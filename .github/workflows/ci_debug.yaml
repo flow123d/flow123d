@@ -160,7 +160,7 @@ jobs:
           uses: dorny/test-reporter@v1
           if: always() && steps.check_reports.outputs.xml_found == 'true'
           with:
-            name: "Test reporter"
+            name: "Test reporter ${{ matrix.test_dir }}"
             reporter: java-junit
             path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
             token: ${{ secrets.GITHUB_TOKEN }}
