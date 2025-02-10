@@ -110,8 +110,7 @@ macro(define_test class_name)
       OUTPUT ${CMAKE_BINARY_DIR}/${test_binary} ${XML_REPORT}
       DEPENDS ${test_source}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMAND echo "Compiling ${test_source} and generating XML report"
-      COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/compile_define_test.sh
+      COMMAND bash ${CMAKE_SOURCE_DIR}/unit_tests/compile_define_test.sh
           "${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main"
           ${COMPILE_OUTPUT}
           ${XML_REPORT}
