@@ -338,9 +338,9 @@ class PatchFETestScalar : public PatchFETestBase {
 public:
 	PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
-//	  scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
-//	  scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
-//	  scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
+      scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
+      scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
+      scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
 //	  scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
 //	  scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
 //	  scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
@@ -387,8 +387,8 @@ public:
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
             double jxw = 0.0, jxw_ref = 0.0;
             double det = 0.0, det_ref = 0.0;
-//            double scalar_shape_dof0 = 0.0, scalar_shape_dof0_ref = 0.0;
-//            double scalar_shape_dof1 = 0.0, scalar_shape_dof1_ref = 0.0;
+            double scalar_shape_dof0 = 0.0, scalar_shape_dof0_ref = 0.0;
+            double scalar_shape_dof1 = 0.0, scalar_shape_dof1_ref = 0.0;
             arma::vec3 grad_scalar_dof0("0 0 0");
             arma::vec3 grad_scalar_dof0_ref("0 0 0");
             arma::vec3 grad_scalar_dof1("0 0 0");
@@ -398,25 +398,25 @@ public:
                 fe_values_[0].reinit(elm);
                 jxw = jxw_1d_(p);
                 det = det_1d_(p);
-//                scalar_shape_dof0 = scalar_shape_1d_.shape(0)(p);
+                scalar_shape_dof0 = scalar_shape_1d_.shape(0)(p);
                 grad_scalar_dof0 = grad_scalar_shape_1d_.shape(0)(p);
                 jxw_ref = fe_values_[0].JxW(0);
                 det_ref = fe_values_[0].determinant(0);
-//                scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
+                scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[0].shape_grad(0, 0);
                 break;
             case 2:
                 fe_values_[1].reinit(elm);
                 jxw = jxw_2d_(p);
                 det = det_2d_(p);
-//                scalar_shape_dof0 = scalar_shape_2d_.shape(0)(p);
-//                scalar_shape_dof1 = scalar_shape_2d_.shape(1)(p);
+                scalar_shape_dof0 = scalar_shape_2d_.shape(0)(p);
+                scalar_shape_dof1 = scalar_shape_2d_.shape(1)(p);
                 grad_scalar_dof0 = grad_scalar_shape_2d_.shape(0)(p);
                 grad_scalar_dof1 = grad_scalar_shape_2d_.shape(1)(p);
                 jxw_ref = fe_values_[1].JxW(0);
                 det_ref = fe_values_[1].determinant(0);
-//                scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
-//                scalar_shape_dof1_ref = fe_values_[1].shape_value(1, 0);
+                scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
+                scalar_shape_dof1_ref = fe_values_[1].shape_value(1, 0);
                 grad_scalar_dof0_ref = fe_values_[1].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[1].shape_grad(1, 0);
                 break;
@@ -424,22 +424,22 @@ public:
                 fe_values_[2].reinit(elm);
                 jxw = jxw_3d_(p);
                 det = det_3d_(p);
-//                scalar_shape_dof0 = scalar_shape_3d_.shape(0)(p);
-//                scalar_shape_dof1 = scalar_shape_3d_.shape(1)(p);
+                scalar_shape_dof0 = scalar_shape_3d_.shape(0)(p);
+                scalar_shape_dof1 = scalar_shape_3d_.shape(1)(p);
                 grad_scalar_dof0 = grad_scalar_shape_3d_.shape(0)(p);
                 grad_scalar_dof1 = grad_scalar_shape_3d_.shape(1)(p);
                 jxw_ref = fe_values_[2].JxW(0);
                 det_ref = fe_values_[2].determinant(0);
-//                scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
-//                scalar_shape_dof1_ref = fe_values_[2].shape_value(1, 0);
+                scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
+                scalar_shape_dof1_ref = fe_values_[2].shape_value(1, 0);
                 grad_scalar_dof0_ref = fe_values_[2].shape_grad(0, 0);
                 grad_scalar_dof1_ref = fe_values_[2].shape_grad(1, 0);
                 break;
             }
             EXPECT_DOUBLE_EQ( jxw, jxw_ref );
             EXPECT_DOUBLE_EQ( det, det_ref );
-//            EXPECT_DOUBLE_EQ( scalar_shape_dof0, scalar_shape_dof0_ref );
-//            EXPECT_DOUBLE_EQ( scalar_shape_dof1, scalar_shape_dof1_ref );
+            EXPECT_DOUBLE_EQ( scalar_shape_dof0, scalar_shape_dof0_ref );
+            EXPECT_DOUBLE_EQ( scalar_shape_dof1, scalar_shape_dof1_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof0, grad_scalar_dof0_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof1, grad_scalar_dof1_ref );
         }
@@ -568,9 +568,9 @@ public:
 //    FeQArray<Vector> ref_grad_scalar_side_1d_;
 //    FeQArray<Vector> ref_grad_scalar_side_2d_;
 //    FeQArray<Vector> ref_grad_scalar_side_3d_;
-//    FeQArray<Scalar> scalar_shape_1d_;
-//    FeQArray<Scalar> scalar_shape_2d_;
-//    FeQArray<Scalar> scalar_shape_3d_;
+    FeQArray<Scalar> scalar_shape_1d_;
+    FeQArray<Scalar> scalar_shape_2d_;
+    FeQArray<Scalar> scalar_shape_3d_;
 //    FeQArray<Scalar> scalar_shape_side_1d_;
 //    FeQArray<Scalar> scalar_shape_side_2d_;
 //    FeQArray<Scalar> scalar_shape_side_3d_;
