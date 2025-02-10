@@ -105,6 +105,9 @@ macro(define_test class_name)
   endif ()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
 
+
+  set(dir_test_target_libs "-lsystem_lib -lflow123d_lib")
+
   # Custom command to compile and generate XML report
   add_custom_command(
       OUTPUT ${CMAKE_BINARY_DIR}/${test_binary} ${XML_REPORT}
