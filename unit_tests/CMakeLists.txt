@@ -93,7 +93,7 @@ macro(define_test class_name)
   #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
 
   set(COMPILE_OUTPUT "${CMAKE_BINARY_DIR}/${test_binary}_compile_output.txt")
-  set(XML_REPORT "${CMAKE_BINARY_DIR}/unit_tests/${class_name}/${class_name}_report.xml")
+  set(XML_REPORT "${CMAKE_BINARY_DIR}/unit_tests/${test_binary}/${class_name}_report.xml")
 
   set (extra_args ${ARGN})
   # Did we get any optional args?
