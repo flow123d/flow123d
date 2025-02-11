@@ -92,8 +92,8 @@ namespace El {
 
 template<unsigned int spacedim>
 void OpCoords<spacedim>::eval() {
-    PatchPointValues<spacedim> &ppv = this->patch_fe_->patch_point_vals_[0][this->dim_-1];
-    this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
+    PatchPointValues<spacedim> &ppv = this->ppv();
+    this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
     auto result = this->result_matrix();
 
     for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)

@@ -31,9 +31,6 @@
 
 template<unsigned int spacedim> class PatchOp;
 template<unsigned int spacedim> class PatchFEValues;
-namespace Op::Bulk::El {
-    template<unsigned int spacedim> class OpCoords;
-}
 template <class ValueType> class ElQ;      // not necessary after merge with patch_fe_values.hh
 template <class ValueType> class FeQ;
 template<unsigned int dim> class BulkValues;
@@ -509,7 +506,6 @@ public:
 
     friend class PatchFEValues<spacedim>;
     friend class PatchOp<spacedim>;
-    friend class Op::Bulk::El::OpCoords<spacedim>;
     template <class ValueType>
     friend class ElQ;
     template <class ValueType>

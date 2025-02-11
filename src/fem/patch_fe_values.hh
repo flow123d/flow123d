@@ -405,7 +405,6 @@ private:
     template <class ValueType>
     friend class FeQ;
     friend class PatchOp<spacedim>;
-    friend class Op::Bulk::El::OpCoords<spacedim>;
 };
 
 
