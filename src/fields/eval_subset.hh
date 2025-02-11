@@ -85,6 +85,11 @@ public:
         return local_point_idx_;
     }
 
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
+    }
+
     /// Iterates to next point.
     void inc() {
     	this->local_point_idx_++;
@@ -142,6 +147,11 @@ public:
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return side_begin_ + local_point_idx_;
+    }
+
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, eval_point_idx());
     }
 
     /// Comparison of accessors.
