@@ -152,6 +152,8 @@ jobs:
         runs-on: ubuntu-latest
         needs: 
             - unit_tests
+        outputs:
+            status: ${{ job.status }}
         continue-on-error: True # should remove
         steps:
             - name: Checkout
@@ -160,6 +162,9 @@ jobs:
               uses: actions/download-artifact@v4
               with:
                 name: build_dir
+            - name: Extract build artifact
+              run: |
+                tar -xf build_dir.tar
             - name: Set variables
               id: vars
               run: |
@@ -193,7 +198,7 @@ jobs:
         name: Workflow conclusion from all job results 
         
         #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [build_doc, unit_tests, integration_tests]
+        needs: [build_doc, unit-test-report, integration_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:
