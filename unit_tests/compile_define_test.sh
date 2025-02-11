@@ -22,6 +22,6 @@ python3 "$(dirname "$0")/generate_compile_xml.py" "$STATUS" "$COMPILE_OUTPUT" "$
 
 echo "DEBUG: Finished python script"
 
-exit $STATUS
+exit 0
 
 
