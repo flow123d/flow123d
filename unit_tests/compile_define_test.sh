@@ -28,7 +28,12 @@ else
     STATUS=127
 fi
 
+echo "DEBUG: Starting python script"
+
 python3 "$(dirname "$0")/generate_compile_xml.py" "$STATUS" "$COMPILE_OUTPUT" "$XML_REPORT"
+
+echo "DEBUG: Finished python script"
+
 exit $STATUS
 
 

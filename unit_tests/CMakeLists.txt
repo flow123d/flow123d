@@ -110,7 +110,7 @@ macro(define_test class_name)
 
   # Custom command to compile and generate XML report
   add_custom_command(
-      OUTPUT ${test_binary} ${XML_REPORT}
+      OUTPUT ${test_binary}
       DEPENDS ${test_source}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMAND bash ${CMAKE_SOURCE_DIR}/unit_tests/compile_define_test.sh
