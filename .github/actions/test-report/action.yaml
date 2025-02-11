@@ -4,7 +4,9 @@ inputs:
   path-to-xml: 
     description: 'Path to the XML file containing the test results'
     required: true
-    default: 'unit_tests/*.xml'
+  github-token:
+    description: 'GitHub token'
+    required: true
 runs:
   using: 'composite'
   steps:
@@ -15,6 +17,6 @@ runs:
         name: "Test reporter"
         reporter: java-junit
         path:  ${{ inputs.path-to-xml }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ inputs.github-token }}
         list-suites: 'failed'
         list-tests: 'failed'

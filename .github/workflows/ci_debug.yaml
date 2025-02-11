@@ -148,10 +148,10 @@ jobs:
           run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
     unit-test-report:
+        name: Unit Test Report
         runs-on: ubuntu-latest
         needs: 
             - unit_tests
-        name: Unit Test Report
         continue-on-error: True # should remove
         steps:
             - name: Checkout
@@ -170,6 +170,7 @@ jobs:
               uses: ./.github/actions/test-report
               with:
                 path-to-xml: ${{ steps.vars.outputs.builddir }}/unit_tests/**/*.xml
+                github-token: ${{ secrets.GITHUB_TOKEN }}
 
     build_doc:
         needs: [build]
