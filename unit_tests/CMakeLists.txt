@@ -92,11 +92,6 @@ macro(define_test class_name)
   set(test_valgrind "${class_name}-valgrind")
   #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
 
-  set(COMPILE_OUTPUT "${CMAKE_BINARY_DIR}/${test_binary}_compile_output.txt")
-
-  file(RELATIVE_PATH REL_PATH ${CMAKE_SOURCE_DIR}/unit_tests ${CMAKE_CURRENT_SOURCE_DIR})
-  set(XML_REPORT "${CMAKE_BINARY_DIR}/unit_tests/${REL_PATH}/${class_name}_report.xml")
-
   set (extra_args ${ARGN})
   # Did we get any optional args?
   list(LENGTH extra_args extra_count)
@@ -107,6 +102,11 @@ macro(define_test class_name)
   endif ()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
 
+  # executable rule
+  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
+  add_dependencies(${test_binary} update_source_tree)
 
   # Custom command to compile and generate XML report
   add_custom_command(

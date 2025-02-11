@@ -145,32 +145,27 @@ jobs:
 
         - name: Run UNIT tests
           continue-on-error: true
-          run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+          run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-        - name: Check if XML reports exist
-          id: check_reports
-          run: |
-            if ls ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml 1> /dev/null 2>&1; then
-              echo "xml_found=true" >> $GITHUB_OUTPUT
-            else
-              echo "xml_found=false" >> $GITHUB_OUTPUT
-            fi
-            
-        - name: Debug - List all XML reports
-          run: |
-            find ${{ steps.vars.outputs.builddir }} -name '*.xml' -print
-          
-
-        - name: Test Reporter
-          uses: dorny/test-reporter@v1
-          if: always() && steps.check_reports.outputs.xml_found == 'true'
-          with:
-            name: "Test reporter ${{ matrix.test_dir }}"
-            reporter: java-junit
-            path:  ${{ steps.vars.outputs.builddir }}/unit_tests/${{matrix.test_dir}}/*.xml
-            token: ${{ secrets.GITHUB_TOKEN }}
-            list-suites: 'failed'
-            list-tests: 'failed'
+    unit-test-report:
+        runs-on: ubuntu-latest
+        needs: 
+            - unit_tests
+        name: Unit Test Report
+        continue-on-error: True # should remove
+        steps:
+            - name: Checkout
+              uses: actions/download-artifact@v4
+            - name: Set variables
+              id: vars
+              run: |
+                git_branch=`git rev-parse --abbrev-ref HEAD`
+                build_dir=build-${git_branch}
+                echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+            - name: Test Reporter 
+              uses: ./.github/actions/test-report
+              with:
+                path-to-xml: ${{ steps.vars.outputs.builddir }}/unit_tests/**/*.xml
 
     build_doc:
         needs: [build]
