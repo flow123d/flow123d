@@ -121,24 +121,17 @@ macro(define_test class_name)
       VERBATIM
   )
 
-  # Custom target to tie the above commands together
-  add_custom_target(
-      ${test_binary}_target
-      DEPENDS ${CMAKE_BINARY_DIR}/${test_binary} ${XML_REPORT}
-      COMMENT "Custom target for compiling, linking, and generating XML report"
-  )
-
   # rule to run the test
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_binary}_target
+      DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_binary}_target
+      DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
