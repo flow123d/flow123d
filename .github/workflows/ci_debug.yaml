@@ -147,6 +147,12 @@ jobs:
           continue-on-error: true
           run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
+        - name: Artifact unit tests
+          uses: actions/upload-artifact@v4
+          with:         
+            name: unit_tests
+            path: build_tree/unit_tests
+
     unit-test-report:
         name: Unit Test Report
         runs-on: ubuntu-latest
@@ -154,27 +160,17 @@ jobs:
             - unit_tests
         outputs:
             status: ${{ job.status }}
-        continue-on-error: True # should remove
         steps:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Download build_dir artifact
               uses: actions/download-artifact@v4
               with:
-                name: build_dir
-            - name: Extract build artifact
-              run: |
-                tar -xf build_dir.tar
-            - name: Set variables
-              id: vars
-              run: |
-                git_branch=`git rev-parse --abbrev-ref HEAD`
-                build_dir=build-${git_branch}
-                echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
+                name: unit_tests
             - name: Test Reporter 
               uses: ./.github/actions/test-report
               with:
-                path-to-xml: ${{ steps.vars.outputs.builddir }}/unit_tests/**/*.xml
+                path-to-xml: unit_tests/**/*.xml
                 github-token: ${{ secrets.GITHUB_TOKEN }}
 
     build_doc:
