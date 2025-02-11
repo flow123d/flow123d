@@ -24,53 +24,59 @@
 #include "fem/patch_fe_values.hh"
 
 
-template<unsigned int spacedim>
-Scalar PatchOp<spacedim>::scalar_elem_value(uint point_idx) const {
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+template<>
+template<>
+Scalar PatchOp<3>::elem_value<Scalar>(uint point_idx) const {
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     return result_(0)( ppv.int_table_(1)(ppv.points_map_[point_idx]) );
 }
 
-template<unsigned int spacedim>
-Vector PatchOp<spacedim>::vector_elem_value(uint point_idx) const {
+template<>
+template<>
+Vector PatchOp<3>::elem_value<Vector>(uint point_idx) const {
     Vector val;
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         val(i) = result_(i)(op_matrix_idx);
     return val;
 }
 
-template<unsigned int spacedim>
-Tensor PatchOp<spacedim>::tensor_elem_value(uint point_idx) const {
+template<>
+template<>
+Tensor PatchOp<3>::elem_value<Tensor>(uint point_idx) const {
     Tensor val;
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         for (uint j=0; j<3; ++j)
-            val(i,j) = result_(i+j*spacedim)(op_matrix_idx);
+            val(i,j) = result_(i+j*3)(op_matrix_idx);
     return val;
 }
 
-template<unsigned int spacedim>
-Scalar PatchOp<spacedim>::scalar_value(uint point_idx, uint i_dof) const {
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+template<>
+template<>
+Scalar PatchOp<3>::point_value<Scalar>(uint point_idx, uint i_dof) const {
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     return result_(i_dof)(ppv.points_map_[point_idx]);
 }
 
-template<unsigned int spacedim>
-Vector PatchOp<spacedim>::vector_value(uint point_idx, uint i_dof) const {
+template<>
+template<>
+Vector PatchOp<3>::point_value<Vector>(uint point_idx, uint i_dof) const {
     Vector val;
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     uint op_matrix_idx = ppv.points_map_[point_idx];
     for (uint i=0; i<3; ++i)
         val(i) = result_(i + 3*i_dof)(op_matrix_idx);
     return val;
 }
 
-template<unsigned int spacedim>
-Tensor PatchOp<spacedim>::tensor_value(uint point_idx, uint i_dof) const {
+template<>
+template<>
+Tensor PatchOp<3>::point_value<Tensor>(uint point_idx, uint i_dof) const {
     Tensor val;
-    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
     uint op_matrix_idx = ppv.points_map_[point_idx];
     for (uint i=0; i<9; ++i)
         val(i) = result_(i+9*i_dof)(op_matrix_idx);

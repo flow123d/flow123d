@@ -174,49 +174,21 @@ public:
     }
 
     /**
-     * Returns scalar output value of data stored by elements.
+     * Returns output value of data stored by elements.
      *
      * @param point_idx   Index of quadrature point in ElementCacheMap
      */
-    inline Scalar scalar_elem_value(uint point_idx) const;
+    template <class ValueType>
+    ValueType elem_value(uint point_idx) const;
 
     /**
-     * Returns vector output value of data stored by elements.
-     *
-     * @param point_idx   Index of quadrature point in ElementCacheMap
-     */
-    inline Vector vector_elem_value(uint point_idx) const;
-
-    /**
-     * Returns tensor output value of data stored by elements.
-     *
-     * @param point_idx   Index of quadrature point in ElementCacheMap
-     */
-    inline Tensor tensor_elem_value(uint point_idx) const;
-
-    /**
-     * Returns scalar output value on point.
+     * Returns output value on quadrature point.
      *
      * @param point_idx   Index of quadrature point in ElementCacheMap
      * @param i_dof       Index of DOF
      */
-    inline Scalar scalar_value(uint point_idx, uint i_dof=0) const;
-
-    /**
-     * Returns vector output value on point.
-     *
-     * @param point_idx   Index of quadrature point in ElementCacheMap
-     * @param i_dof       Index of DOF
-     */
-    inline Vector vector_value(uint point_idx, uint i_dof=0) const;
-
-    /**
-     * Returns tensor output value on point.
-     *
-     * @param point_idx   Index of quadrature point in ElementCacheMap
-     * @param i_dof       Index of DOF
-     */
-    inline Tensor tensor_value(uint point_idx, uint i_dof=0) const;
+    template <class ValueType>
+    ValueType point_value(uint point_idx, uint i_dof=0) const;
 
 
 protected:

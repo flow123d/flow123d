@@ -228,8 +228,7 @@ public:
             uint elm_pos = patch_fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(dim, element_patch_idx) ) {
-                unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx, i_point++);
+                patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
             }
         }
 //        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
@@ -240,8 +239,7 @@ public:
 //            	uint side_pos = patch_fe_values_.register_side(edge_side);
 //                uint i_point = 0;
 //                for (auto p : this->edge_points(dim, edge_side) ) {
-//                    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-//                    patch_fe_values_.register_side_point(edge_side, side_pos, value_cache_idx, i_point++);
+//                    patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
 //                }
 //            }
 //        }
@@ -258,12 +256,10 @@ public:
 //            uint i_bulk_point = 0, i_side_point = 0;
 //            for (auto p_high : this->coupling_points(dim, coupling_integral_data_[i].side) )
 //            {
-//                unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
-//                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, value_cache_idx, i_side_point++);
+//                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
 //                if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
 //                    auto p_low = p_high.lower_dim(coupling_integral_data_[i].cell);
-//                    value_cache_idx = p_low.elm_cache_map()->element_eval_point(p_low.elem_patch_idx(), p_low.eval_point_idx());
-//                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, value_cache_idx, i_bulk_point++);
+//                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
 //                }
 //            }
 //            last_element_idx = coupling_integral_data_[i].cell.elm_idx();
