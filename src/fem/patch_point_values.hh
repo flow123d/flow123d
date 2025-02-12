@@ -335,18 +335,6 @@ public:
     }
 
 
-    /**
-     * Reinitializes patch data.
-     *
-     * Calls reinit functions defined on each operations.
-     */
-    void reinit_patch() {
-//        if (n_elems_ == 0) return; // skip if tables are empty
-//        for (uint i=0; i<operations_.size(); ++i) {
-//            if (operations_[i] != nullptr) operations_[i]->reinit_function(operations_, int_table_);
-//        }
-    }
-
     /// return reference to assembly arena
     inline AssemblyArena &asm_arena() const {
     	return patch_fe_data_.asm_arena_;

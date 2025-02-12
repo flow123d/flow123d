@@ -28,14 +28,8 @@
 
 
 
-template<unsigned int spacedim> class PatchOp;
 template<unsigned int spacedim> class PatchFEValues;
 
-
-// TEMPORARY DECLARATION
-static inline void op_empty(FMT_UNUSED PatchOp<3> * result_op, FMT_UNUSED IntTableArena &el_table) {
-    // empty
-}
 
 
 /**
@@ -50,7 +44,7 @@ public:
      * Set all data members.
      */
     PatchOp(uint dim, PatchFEValues<3> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), patch_fe_(&pfev), reinit_func(&op_empty)
+    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), patch_fe_(&pfev)
     {}
 
     /**
@@ -58,10 +52,10 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, std::initializer_list<uint> shape, ReinitFunction reinit_f, OpSizeType size_type,
+    PatchOp(uint dim, std::initializer_list<uint> shape, FMT_UNUSED ReinitFunction reinit_f, OpSizeType size_type,
             std::vector<PatchOp<spacedim> *> input_ops = {}, uint n_dofs = 1)
     : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), input_ops_(input_ops),
-      n_dofs_(n_dofs), patch_fe_(nullptr), reinit_func(reinit_f)
+      n_dofs_(n_dofs), patch_fe_(nullptr)
     {}
 
     /// Destructor
@@ -120,11 +114,6 @@ public:
         std::stringstream ss;
         ss << shape_[0] << "x" << shape_[1];
         return ss.str();
-    }
-
-    /// Call reinit function on element table if function is defined
-    inline void reinit_function(FMT_UNUSED std::vector<PatchOp<spacedim> *> &operations, IntTableArena &int_table) {
-        reinit_func(this, int_table);
     }
 
     inline void create_result() {
@@ -254,8 +243,6 @@ protected:
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
-
-    ReinitFunction reinit_func;                   ///< Pointer to patch reinit function of element data table specialized by operation
 
     friend class PatchFEValues<spacedim>;
 };

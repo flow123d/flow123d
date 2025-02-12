@@ -175,10 +175,6 @@ public:
         for (auto * op : operations_) {
             op->eval();
         }
-//        for (unsigned int i=0; i<3; ++i) {
-//            if (used_quads_[0]) patch_point_vals_[0][i].reinit_patch();
-//            if (used_quads_[1]) patch_point_vals_[1][i].reinit_patch();
-//        }
     }
 
     /**
