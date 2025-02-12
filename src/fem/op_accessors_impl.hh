@@ -22,7 +22,7 @@
 #include "fem/patch_point_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "fem/op_accessors.hh"
-#include "fem/op_function.hh"
+#include "fem/patch_op.hh"
 
 
 template <class ValueType>

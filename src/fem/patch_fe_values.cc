@@ -20,7 +20,7 @@
 
 #include "fem/patch_fe_values.hh"
 #include "fem/op_factory.hh"
-#include "fem/op_function_impl.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/op_accessors_impl.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"

@@ -30,7 +30,7 @@
 #include "fem/fe_system.hh"                   // for FESystem
 #include "fem/eigen_tools.hh"
 #include "fem/patch_point_values.hh"
-#include "fem/op_function.hh"
+#include "fem/patch_op.hh"
 #include "fem/op_accessors.hh"
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
