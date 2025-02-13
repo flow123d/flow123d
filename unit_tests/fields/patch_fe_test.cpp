@@ -98,13 +98,13 @@ public:
       det_3d_( this->patch_fe_values_.bulk_values<3>().determinant() ),
       jxw_1d_( this->patch_fe_values_.bulk_values<1>().JxW() ),
       jxw_2d_( this->patch_fe_values_.bulk_values<2>().JxW() ),
-      jxw_3d_( this->patch_fe_values_.bulk_values<3>().JxW() )//,
-//      jxw_side_1d_( this->patch_fe_values_.side_values<1>().JxW() ),
-//      jxw_side_2d_( this->patch_fe_values_.side_values<2>().JxW() ),
-//      jxw_side_3d_( this->patch_fe_values_.side_values<3>().JxW() ),
-//       normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
-//      normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
-//      normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
+      jxw_3d_( this->patch_fe_values_.bulk_values<3>().JxW() ),
+      jxw_side_1d_( this->patch_fe_values_.side_values<1>().JxW() ),
+      jxw_side_2d_( this->patch_fe_values_.side_values<2>().JxW() ),
+      jxw_side_3d_( this->patch_fe_values_.side_values<3>().JxW() ),
+      normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
+      normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
+      normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -195,29 +195,29 @@ public:
             }
         }
 
-        // Coupling integral
-        bool add_low = true;
-    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
-            if (cell.dim() != neighb_side.dim()-1) continue;
-            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
-                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
-            table_sizes_.elem_sizes_[1][cell.dim()]++;
-            if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
-
-            unsigned int reg_idx_low = cell.elm().region_idx().idx();
-            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
-            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
-                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
-                table_sizes_.point_sizes_[1][cell.dim()]++;
-
-                if (add_low) {
-                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                    table_sizes_.point_sizes_[0][cell.dim()-1]++;
-                }
-            }
-            add_low = false;
-        }
+//        // Coupling integral
+//        bool add_low = true;
+//    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+//            if (cell.dim() != neighb_side.dim()-1) continue;
+//            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
+//                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
+//            table_sizes_.elem_sizes_[1][cell.dim()]++;
+//            if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
+//
+//            unsigned int reg_idx_low = cell.elm().region_idx().idx();
+//            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
+//            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
+//                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
+//                table_sizes_.point_sizes_[1][cell.dim()]++;
+//
+//                if (add_low) {
+//                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+//                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+//                    table_sizes_.point_sizes_[0][cell.dim()-1]++;
+//                }
+//            }
+//            add_low = false;
+//        }
     }
 
     void update_patch() {
@@ -231,18 +231,18 @@ public:
                 patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
             }
         }
-//        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-//        	auto range = edge_integral_data_[i].edge_side_range;
-//            uint dim = range.begin()->dim();
-//            for( DHCellSide edge_side : range )
-//            {
-//            	uint side_pos = patch_fe_values_.register_side(edge_side);
-//                uint i_point = 0;
-//                for (auto p : this->edge_points(dim, edge_side) ) {
-//                    patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
-//                }
-//            }
-//        }
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+            auto range = edge_integral_data_[i].edge_side_range;
+            uint dim = range.begin()->dim();
+            for( DHCellSide edge_side : range )
+            {
+                uint side_pos = patch_fe_values_.register_side(edge_side);
+                uint i_point = 0;
+                for (auto p : this->edge_points(dim, edge_side) ) {
+                    patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
+                }
+            }
+        }
 //        uint side_pos, element_patch_idx, elm_pos=0;
 //        uint last_element_idx = -1;
 //        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
@@ -308,12 +308,12 @@ public:
     FeQ<Scalar> jxw_1d_;
     FeQ<Scalar> jxw_2d_;
     FeQ<Scalar> jxw_3d_;
-//    FeQ<Scalar> jxw_side_1d_;
-//    FeQ<Scalar> jxw_side_2d_;
-//    FeQ<Scalar> jxw_side_3d_;
-//    ElQ<Vector> normal_vec_1d_;
-//    ElQ<Vector> normal_vec_2d_;
-//    ElQ<Vector> normal_vec_3d_;
+    FeQ<Scalar> jxw_side_1d_;
+    FeQ<Scalar> jxw_side_2d_;
+    FeQ<Scalar> jxw_side_3d_;
+    ElQ<Vector> normal_vec_1d_;
+    ElQ<Vector> normal_vec_2d_;
+    ElQ<Vector> normal_vec_3d_;
 
     /**
      * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
@@ -439,60 +439,60 @@ public:
             EXPECT_ARMA_EQ( grad_scalar_dof0, grad_scalar_dof0_ref );
             EXPECT_ARMA_EQ( grad_scalar_dof1, grad_scalar_dof1_ref );
         }
-//
-//        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-//        	auto range = edge_integral_data_[i].edge_side_range;
-//
-//            auto zero_edge_side = *range.begin();
-//            auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
-//
-//            double jxw = 0.0, jxw_ref = 0.0;
+
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+            auto range = edge_integral_data_[i].edge_side_range;
+
+            auto zero_edge_side = *range.begin();
+            auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
+
+            double jxw = 0.0, jxw_ref = 0.0;
 //            double scalar_shape = 0.0, scalar_shape_ref = 0.0;
-//            arma::vec3 normal_vec = {0.0, 0.0, 0.0};
-//            arma::vec3 normal_vec_ref = {0.0, 0.0, 0.0};
+            arma::vec3 normal_vec = {0.0, 0.0, 0.0};
+            arma::vec3 normal_vec_ref = {0.0, 0.0, 0.0};
 //            arma::vec3 grad_scalar("0 0 0");
 //            arma::vec3 grad_scalar_ref("0 0 0");
-//            switch (zero_edge_side.dim()) {
-//            case 1:
-//                jxw = jxw_side_1d_(p);
-//                normal_vec = normal_vec_1d_(p);
+            switch (zero_edge_side.dim()) {
+            case 1:
+                jxw = jxw_side_1d_(p);
+                normal_vec = normal_vec_1d_(p);
 //                scalar_shape = scalar_shape_side_1d_.shape(0)(p);
-//            	grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
-//                fe_values_side_[0].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[0].JxW(0);
-//                normal_vec_ref = fe_values_side_[0].normal_vector(0);
+//                grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
+                fe_values_side_[0].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[0].JxW(0);
+                normal_vec_ref = fe_values_side_[0].normal_vector(0);
 //                scalar_shape_ref = fe_values_side_[0].shape_value(0, 0);
 //                grad_scalar_ref = fe_values_side_[0].shape_grad(0, 0);
-//                break;
-//            case 2:
-//            	jxw = jxw_side_2d_(p);
-//                normal_vec = normal_vec_2d_(p);
+                break;
+            case 2:
+                jxw = jxw_side_2d_(p);
+                normal_vec = normal_vec_2d_(p);
 //                scalar_shape = scalar_shape_side_2d_.shape(0)(p);
-//            	grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
-//                fe_values_side_[1].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[1].JxW(0);
-//                normal_vec_ref = fe_values_side_[1].normal_vector(0);
+//                grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
+                fe_values_side_[1].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[1].JxW(0);
+                normal_vec_ref = fe_values_side_[1].normal_vector(0);
 //                scalar_shape_ref = fe_values_side_[1].shape_value(0, 0);
 //                grad_scalar_ref = fe_values_side_[1].shape_grad(0, 0);
-//                break;
-//            case 3:
-//            	jxw = jxw_side_3d_(p);
-//                normal_vec = normal_vec_3d_(p);
+                break;
+            case 3:
+                jxw = jxw_side_3d_(p);
+                normal_vec = normal_vec_3d_(p);
 //                scalar_shape = scalar_shape_side_3d_.shape(0)(p);
-//            	grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
-//                fe_values_side_[2].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[2].JxW(0);
-//                normal_vec_ref = fe_values_side_[2].normal_vector(0);
+//                grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
+                fe_values_side_[2].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[2].JxW(0);
+                normal_vec_ref = fe_values_side_[2].normal_vector(0);
 //                scalar_shape_ref = fe_values_side_[2].shape_value(0, 0);
 //                grad_scalar_ref = fe_values_side_[2].shape_grad(0, 0);
-//                break;
-//            }
-//            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
-//            EXPECT_ARMA_EQ( normal_vec, normal_vec_ref );
+                break;
+            }
+            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_ARMA_EQ( normal_vec, normal_vec_ref );
 //            EXPECT_DOUBLE_EQ( scalar_shape, scalar_shape_ref );
 //            EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
-//        }
-//
+        }
+
 //        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
 //            DHCellAccessor cell_lower_dim = coupling_integral_data_[i].cell;
 //            DHCellSide neighb_side = coupling_integral_data_[i].side;;

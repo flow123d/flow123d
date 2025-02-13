@@ -347,7 +347,7 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
+        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
         auto result = this->result_matrix();
 
         for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
@@ -360,15 +360,52 @@ public:
 };
 
 template<unsigned int spacedim>
-class OpSdCoords : public Op::Side::Base<spacedim> {
+class OpElJac : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
-	OpSdCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    OpElJac(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
+    {
+        this->input_ops_.push_back( pfev.template get< OpElCoords<spacedim> >(dim) );
+    }
+
+    void eval() override {
+        auto jac_value = this->result_matrix();
+        auto coords_value = this->input_ops(0)->result_matrix();
+        for (unsigned int i=0; i<spacedim; i++)
+            for (unsigned int j=0; j<this->dim_; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
+    }
+};
+
+template<unsigned int dim, unsigned int spacedim>
+class OpElInvJac : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpElInvJac(uint _dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->input_ops_.push_back( pfev.template get< OpElJac<spacedim> >(dim) );
+    }
+
+    void eval() override {
+        auto inv_jac_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<spacedim, dim>(jac_value);
+    }
+};
+
+template<unsigned int spacedim>
+class OpSideCoords : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpSideCoords(uint dim, PatchFEValues<spacedim> &pfev)
     : Op::Side::Base<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp) {}
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems_, *this->patch_fe_->patch_fe_data_.patch_arena_ );
+        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
         auto result = this->result_matrix();
 
         for (uint i_side=0; i_side<ppv.side_list_.size(); ++i_side)
@@ -380,9 +417,151 @@ public:
 
 };
 
+template<unsigned int spacedim>
+class OpSideJac : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpSideJac(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {spacedim, dim-1}, OpSizeType::elemOp)
+    {
+        this->input_ops_.push_back( pfev.template get< OpSideCoords<spacedim> >(dim) );
+    }
+
+    void eval() override {
+        auto jac_value = this->result_matrix();
+        auto coords_value = this->input_ops(0)->result_matrix();
+        for (unsigned int i=0; i<spacedim; i++)
+            for (unsigned int j=0; j<this->dim_-1; j++)
+                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
+    }
+};
+
+template<unsigned int dim, unsigned int spacedim>
+class OpSideJacDet : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpSideJacDet(uint _dim, PatchFEValues<spacedim> &pfev)
+	: Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::elemOp)
+	{
+	    ASSERT_EQ(this->dim_, dim);
+	    this->input_ops_.push_back( pfev.template get< OpSideJac<spacedim> >(dim) );
+	}
+
+    void eval() override {
+        auto jac_det_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, dim-1>(jac_value).abs();
+    }
+};
+
+/// Template specialization of previous: dim=1
+template<unsigned int spacedim>
+class OpSideJacDet<1, spacedim> : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpSideJacDet(uint _dim, PatchFEValues<spacedim> &pfev)
+	: Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::elemOp)
+	{
+	    ASSERT_EQ(this->dim_, 1);
+	}
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
+        auto jac_det_value = this->result_matrix();
+        for (uint i=0;i<ppv.n_elems_; ++i) {
+            jac_det_value(0,0)(i) = 1.0;
+        }
+    }
+};
+
 } // end of namespace Op::Side::El
 
 namespace Pt {
+
+/// Fixed operation points weights
+template<unsigned int spacedim>
+class OpWeights : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpWeights(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+    {
+        // create result vector of weights operation in assembly arena
+        const std::vector<double> &point_weights_vec = pfev.get_side_quadrature(dim)->get_weights();
+        this->create_result();
+        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
+        for (uint i=0; i<point_weights_vec.size(); ++i)
+            this->result_(0)(i) = point_weights_vec[i];
+    }
+
+    void eval() override {}
+};
+
+/// Evaluates coordinates of quadrature points
+template<unsigned int spacedim>
+class OpCoords : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpCoords(uint dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp){}
+
+    void eval() override {}
+};
+
+/// Evaluates JxW on quadrature points
+template<unsigned int dim, unsigned int spacedim>
+class OpJxW : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpJxW(uint _dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+    {
+        this->input_ops_.push_back( pfev.template get< OpWeights<spacedim> >(dim) );
+        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpSideJacDet<dim, spacedim> >(dim) );
+    }
+
+    void eval() override {
+        auto weights_value = this->input_ops(0)->result_matrix();
+        auto jac_det_value = this->input_ops(1)->result_matrix();
+        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+        this->result_(0) = jxw_ovec.get_vec();
+    }
+};
+
+/// Evaluates normal vector on quadrature points
+template<unsigned int dim, unsigned int spacedim>
+class OpNormalVec : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpNormalVec(uint _dim, PatchFEValues<spacedim> &pfev)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::elemOp)
+    {
+        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim> >(dim) );
+    }
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        auto normal_value = this->result_matrix();
+        auto inv_jac_value = this->input_ops(0)->result_matrix();
+        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(3) );
+
+        ArenaVec<double> norm_vec( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
+        Eigen::VectorXd A(3);
+        for (uint i=0; i<normal_value(0).data_size(); ++i) {
+            A(0) = normal_value(0)(i);
+            A(1) = normal_value(1)(i);
+            A(2) = normal_value(2)(i);
+            norm_vec(i) = A.norm();
+        }
+
+        for (uint i=0; i<3; ++i) {
+            normal_value(i) = normal_value(i) / norm_vec;
+        }
+    }
+};
 
 } // end of namespace Op::Side::Pt
 

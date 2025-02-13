@@ -466,7 +466,8 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(patch_point_vals_, false, FeSide::SideOps::opJxW);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::Pt::OpJxW<dim, 3> >(dim);
+        return FeQ<Scalar>(op, false);
     }
 
     /**
@@ -476,7 +477,8 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(patch_point_vals_, FeSide::SideOps::opNormalVec);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::Pt::OpNormalVec<dim, 3> >(dim);
+        return ElQ<Vector>(op);
 	}
 
 	/// Create side accessor of coords entity
@@ -488,7 +490,8 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>(patch_point_vals_, FeSide::SideOps::opSideJacDet);
+        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::El::OpSideJacDet<dim, 3> >(dim);
+        return ElQ<Scalar>(op);
     }
 
     inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)
