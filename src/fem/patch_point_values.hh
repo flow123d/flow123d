@@ -419,37 +419,6 @@ public:
             // TODO ?? define and use opElJacDet
         this->op_dependency_[FeSide::SideOps::opVectorSymGrad] = {FeSide::SideOps::opGradVectorShape};
         this->op_dependency_[FeSide::SideOps::opVectorDivergence] = {FeSide::SideOps::opGradVectorShape};
-        this->operations_.resize(FeSide::SideOps::opNItems, nullptr);
-
-        // Create fixed operation
-        auto *weights = this->make_fixed_op( FeSide::SideOps::opWeights, {1},  &common_reinit::op_base ); //lambda_weights );
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = this->quad_->get_weights();
-        weights->allocate_result(point_weights_vec.size(), this->patch_fe_data_.asm_arena_);
-        auto weights_value = weights->result_matrix();
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            weights_value(0)(i) = point_weights_vec[i];
-
-        // First step: adds element values operations
-        auto &el_coords = this->make_new_op( FeSide::SideOps::opElCoords, {spacedim, this->dim_+1}, &common_reinit::op_base, OpSizeType::elemOp );
-
-        auto &el_jac = this->make_new_op( FeSide::SideOps::opElJac, {spacedim, this->dim_}, &side_reinit::elop_el_jac<dim>, OpSizeType::elemOp );
-
-        auto &el_inv_jac / this->make_new_op( FeSide::SideOps::opElInvJac, {this->dim_, spacedim}, &side_reinit::elop_el_inv_jac<dim>, OpSizeType::elemOp );
-
-        // Second step: adds side values operations
-        auto &sd_coords = this->make_new_op( FeSide::SideOps::opSideCoords, {spacedim, this->dim_}, &common_reinit::op_base, OpSizeType::elemOp );
-
-        auto &sd_jac = this->make_new_op( FeSide::SideOps::opSideJac, {spacedim, this->dim_-1}, &side_reinit::elop_sd_jac<dim>, OpSizeType::elemOp );
-
-        auto &sd_jac_det = this->make_new_op( FeSide::SideOps::opSideJacDet, {1}, &side_reinit::elop_sd_jac_det<dim>, OpSizeType::elemOp );
-
-        // Third step: adds point values operations
-        auto &coords = this->make_new_op( FeSide::SideOps::opCoords, {spacedim}, &side_reinit::ptop_coords );
-
-        auto &JxW = this->make_new_op( FeSide::SideOps::opJxW, {1}, &side_reinit::ptop_JxW );
-
-        auto &normal_vec = this->make_new_op( FeSide::SideOps::opNormalVec, {spacedim}, &side_reinit::ptop_normal_vec<dim>, OpSizeType::elemOp );
 */
 
 
