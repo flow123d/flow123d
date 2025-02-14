@@ -316,8 +316,7 @@ public:
     	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        PatchOp<3> *op = this->template make_patch_op< Op::Bulk::Pt::OpScalarShape<dim, 3> >(fe_component);
-        return FeQArray<Scalar>(op, true);
+        return FeQArray<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpScalarShape<dim, 3> >(fe_component), true);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
@@ -366,8 +365,7 @@ public:
     	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        PatchOp<3> *op = this->template make_patch_op< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(fe_component);
-        return FeQArray<Vector>(op, true);
+        return FeQArray<Vector>(this->template make_patch_op< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(fe_component), true);
     }
 
     /**
@@ -595,10 +593,7 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
-        uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opScalarShape, {n_dofs}, side_reinit::ptop_scalar_shape, n_dofs);
-
-        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opScalarShape, n_dofs);
+        return FeQArray<Scalar>(this->template make_patch_op< Op::Side::Pt::OpScalarShape<dim, 3> >(fe_component), false);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
@@ -640,10 +635,7 @@ public:
         auto fe_component = this->fe_comp(fe_, component_idx);
         ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-        uint n_dofs = fe_component->n_dofs();
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opGradScalarShape, {3, n_dofs}, side_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
-
-        return FeQArray<Vector>(patch_point_vals_, false, FeSide::SideOps::opGradScalarShape, n_dofs);
+        return FeQArray<Vector>(this->template make_patch_op< Op::Side::Pt::OpGradScalarShape<dim, 3> >(fe_component), false);
     }
 
     /**

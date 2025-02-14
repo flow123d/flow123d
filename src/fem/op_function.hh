@@ -551,6 +551,153 @@ public:
     }
 };
 
+/// Fixed operation of  scalar shape reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefScalar : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_side_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+
+        auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_scalar_value = this->result_matrix();
+        for (unsigned int s=0; s<dim+1; ++s) {
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+                    ref_scalar_value(s, i_dof)(i_p) = ref_shape_vals[s][i_p][i_dof][0];
+                }
+        }
+	}
+
+    void eval() override {}
+};
+
+/// Fixed operation of gradient scalar reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefGradScalar : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, dim}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_side_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+
+        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_scalar_value = this->result_matrix();
+        for (unsigned int s=0; s<dim+1; ++s)
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                for (uint i_p=0; i_p<n_points; ++i_p)
+                    for (uint c=0; c<dim; ++c)
+                        ref_scalar_value(s,dim*i_dof+c)(i_p) = ref_shape_grads[s][i_p][i_dof](c);
+    }
+
+    void eval() override {}
+};
+
+/// Evaluates scalar values
+template<unsigned int dim, unsigned int spacedim>
+class OpScalarShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+	: Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+	{
+	    ASSERT_EQ(this->dim_, dim);
+
+	    this->n_dofs_ = fe->n_dofs();
+	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        this->allocate_result(ppv.n_points_, ppv.patch_arena());
+
+        auto ref_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.int_table_(3).data_size();        // number of sides on patch
+        uint n_patch_points = ppv.int_table_(4).data_size(); // number of points on patch
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt) {
+                result_vec(i_dof)(i_pt) = ref_vec(ppv.int_table_(4)(i_pt), i_dof)(i_pt / n_sides);
+            }
+        }
+    }
+};
+
+/// Evaluates gradient scalar values
+template<unsigned int dim, unsigned int spacedim>
+class OpGradScalarShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+	: Op::Side::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
+	{
+	    ASSERT_EQ(this->dim_, dim);
+
+	    this->n_dofs_ = fe->n_dofs();
+	    this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim> >(dim) );
+	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        this->allocate_result(ppv.n_points_, ppv.patch_arena());
+
+        auto ref_shape_grads = this->input_ops(1)->result_matrix();
+        auto grad_scalar_shape_value = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_points = ref_shape_grads(0).data_size();
+        uint n_sides = ppv.int_table_(3).data_size();
+        uint n_patch_points = ppv.int_table_(4).data_size();
+
+        // Expands inverse jacobian to inv_jac_expd_value
+        auto inv_jac_value = this->input_ops(0)->result_matrix();
+        Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
+        for (uint i=0; i<dim*3; ++i) {
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        	for (uint j=0; j<n_patch_points; ++j)
+        	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_sides);
+        }
+
+        // Fill ref shape gradients by q_point. DOF and side_idx
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_grads_expd(dim, n_dofs);
+        for (uint i=0; i<dim*n_dofs; ++i) {
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        }
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_pt=0; i_pt<n_points; ++i_pt) {
+                uint i_begin = i_pt * n_sides;
+                for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
+                    for (uint i_c=0; i_c<dim; ++i_c) {
+                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(ppv.int_table_(3)(i_sd), i_dof*dim+i_c)(i_pt);
+                    }
+                }
+            }
+        }
+
+        // computes operation result
+        grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
+    }
+};
+
 } // end of namespace Op::Side::Pt
 
 } // end of namespace Side
