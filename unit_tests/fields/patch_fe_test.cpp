@@ -337,15 +337,15 @@ public:
       scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
       scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
       scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
-//	  scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
-//	  scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
-//	  scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
-	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
-	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
-	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() )//,
-//	  grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
-//	  grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
-//	  grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() ),
+      scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
+      scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
+      scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
+      grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
+      grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
+      grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
+      grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
+      grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
+      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() )//,
 //	  conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
 //	  conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
     {}
@@ -447,50 +447,50 @@ public:
             auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
 
             double jxw = 0.0, jxw_ref = 0.0;
-//            double scalar_shape = 0.0, scalar_shape_ref = 0.0;
+            double scalar_shape = 0.0, scalar_shape_ref = 0.0;
             arma::vec3 normal_vec = {0.0, 0.0, 0.0};
             arma::vec3 normal_vec_ref = {0.0, 0.0, 0.0};
-//            arma::vec3 grad_scalar("0 0 0");
-//            arma::vec3 grad_scalar_ref("0 0 0");
+            arma::vec3 grad_scalar("0 0 0");
+            arma::vec3 grad_scalar_ref("0 0 0");
             switch (zero_edge_side.dim()) {
             case 1:
                 jxw = jxw_side_1d_(p);
                 normal_vec = normal_vec_1d_(p);
-//                scalar_shape = scalar_shape_side_1d_.shape(0)(p);
-//                grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
+                scalar_shape = scalar_shape_side_1d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
-//                scalar_shape_ref = fe_values_side_[0].shape_value(0, 0);
-//                grad_scalar_ref = fe_values_side_[0].shape_grad(0, 0);
+                scalar_shape_ref = fe_values_side_[0].shape_value(0, 0);
+                grad_scalar_ref = fe_values_side_[0].shape_grad(0, 0);
                 break;
             case 2:
                 jxw = jxw_side_2d_(p);
                 normal_vec = normal_vec_2d_(p);
-//                scalar_shape = scalar_shape_side_2d_.shape(0)(p);
-//                grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
+                scalar_shape = scalar_shape_side_2d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
-//                scalar_shape_ref = fe_values_side_[1].shape_value(0, 0);
-//                grad_scalar_ref = fe_values_side_[1].shape_grad(0, 0);
+                scalar_shape_ref = fe_values_side_[1].shape_value(0, 0);
+                grad_scalar_ref = fe_values_side_[1].shape_grad(0, 0);
                 break;
             case 3:
                 jxw = jxw_side_3d_(p);
                 normal_vec = normal_vec_3d_(p);
-//                scalar_shape = scalar_shape_side_3d_.shape(0)(p);
-//                grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
+                scalar_shape = scalar_shape_side_3d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
-//                scalar_shape_ref = fe_values_side_[2].shape_value(0, 0);
-//                grad_scalar_ref = fe_values_side_[2].shape_grad(0, 0);
+                scalar_shape_ref = fe_values_side_[2].shape_value(0, 0);
+                grad_scalar_ref = fe_values_side_[2].shape_grad(0, 0);
                 break;
             }
             EXPECT_DOUBLE_EQ( jxw, jxw_ref );
             EXPECT_ARMA_EQ( normal_vec, normal_vec_ref );
-//            EXPECT_DOUBLE_EQ( scalar_shape, scalar_shape_ref );
-//            EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
+            EXPECT_DOUBLE_EQ( scalar_shape, scalar_shape_ref );
+            EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
         }
 
 //        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
@@ -552,30 +552,18 @@ public:
 
     }
 
-//    FeQArray<Scalar> ref_scalar_1d_;
-//    FeQArray<Scalar> ref_scalar_2d_;
-//    FeQArray<Scalar> ref_scalar_3d_;
-//    FeQArray<Scalar> ref_scalar_side_1d_;
-//    FeQArray<Scalar> ref_scalar_side_2d_;
-//    FeQArray<Scalar> ref_scalar_side_3d_;
-//    FeQArray<Vector> ref_grad_scalar_1d_;
-//    FeQArray<Vector> ref_grad_scalar_2d_;
-//    FeQArray<Vector> ref_grad_scalar_3d_;
-//    FeQArray<Vector> ref_grad_scalar_side_1d_;
-//    FeQArray<Vector> ref_grad_scalar_side_2d_;
-//    FeQArray<Vector> ref_grad_scalar_side_3d_;
     FeQArray<Scalar> scalar_shape_1d_;
     FeQArray<Scalar> scalar_shape_2d_;
     FeQArray<Scalar> scalar_shape_3d_;
-//    FeQArray<Scalar> scalar_shape_side_1d_;
-//    FeQArray<Scalar> scalar_shape_side_2d_;
-//    FeQArray<Scalar> scalar_shape_side_3d_;
+    FeQArray<Scalar> scalar_shape_side_1d_;
+    FeQArray<Scalar> scalar_shape_side_2d_;
+    FeQArray<Scalar> scalar_shape_side_3d_;
     FeQArray<Vector> grad_scalar_shape_1d_;
     FeQArray<Vector> grad_scalar_shape_2d_;
     FeQArray<Vector> grad_scalar_shape_3d_;
-//    FeQArray<Vector> grad_scalar_shape_side_1d_;
-//    FeQArray<Vector> grad_scalar_shape_side_2d_;
-//    FeQArray<Vector> grad_scalar_shape_side_3d_;
+    FeQArray<Vector> grad_scalar_shape_side_1d_;
+    FeQArray<Vector> grad_scalar_shape_side_2d_;
+    FeQArray<Vector> grad_scalar_shape_side_3d_;
 //    FeQJoin<Scalar> conc_join_shape_2d_;
 //    FeQJoin<Scalar> conc_join_shape_3d_;
 };
