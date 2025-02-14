@@ -163,6 +163,18 @@ protected:
         return ref_shape_grads;
     }
 
+    /// Factory method. Creates operation of given OpType.
+    template<class OpType>
+    PatchOp<3> *make_patch_op() {
+    	return patch_fe_values_.get< OpType >(dim);
+    }
+
+    /// Factory method. Same as previous but creates FE operation.
+    template<class OpType>
+    PatchOp<3> *make_patch_op(std::shared_ptr<FiniteElement<dim>> fe) {
+    	return patch_fe_values_.get< OpType, dim >(fe);
+    }
+
     PatchFEValues<3> &patch_fe_values_;
 };
 
@@ -185,15 +197,13 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpJxW<dim, 3> >(dim);
-        return FeQ<Scalar>(op, true);
+        return FeQ<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpJxW<dim, 3> >(), true);
     }
 
 	/// Create bulk accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpCoords >(dim);
-        return FeQ<Vector>(op, true);
+        return FeQ<Vector>(this->template make_patch_op< Op::Bulk::Pt::OpCoords >(), true);
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -202,8 +212,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::El::OpJacDet<dim, 3> >(dim);
-        return ElQ<Scalar>(op);
+        return ElQ<Scalar>( this->template make_patch_op< Op::Bulk::El::OpJacDet<dim, 3> >() );
     }
 
     inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)
@@ -304,7 +313,10 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpScalarShape<dim, 3> >(dim, component_idx);
+    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        PatchOp<3> *op = this->template make_patch_op< Op::Bulk::Pt::OpScalarShape<dim, 3> >(fe_component);
         return FeQArray<Scalar>(op, true);
     }
 
@@ -349,19 +361,12 @@ public:
      *
      * @param component_idx Number of the shape function.
      */
-//    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
-//    {
-//        auto fe_component = this->fe_comp(fe_, component_idx);
-//        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-//
-//        uint n_dofs = fe_component->n_dofs();
-//        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opGradScalarShape, {3, n_dofs}, bulk_reinit::ptop_scalar_shape_grads<dim>, n_dofs);
-//
-//        return FeQArray<Vector>(patch_point_vals_, true, FeBulk::BulkOps::opGradScalarShape, n_dofs);
-//    }
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(dim, component_idx);
+    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
+        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
+
+        PatchOp<3> *op = this->template make_patch_op< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(fe_component);
         return FeQArray<Vector>(op, true);
     }
 
@@ -466,8 +471,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::Pt::OpJxW<dim, 3> >(dim);
-        return FeQ<Scalar>(op, false);
+        return FeQ<Scalar>(this->template make_patch_op< Op::Side::Pt::OpJxW<dim, 3> >(), false);
     }
 
     /**
@@ -477,21 +481,19 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::Pt::OpNormalVec<dim, 3> >(dim);
-        return ElQ<Vector>(op);
+        return ElQ<Vector>(this->template make_patch_op< Op::Side::Pt::OpNormalVec<dim, 3> >());
 	}
 
 	/// Create side accessor of coords entity
-    inline ElQ<Vector> coords()
+    inline FeQ<Vector> coords()
     {
-        return ElQ<Vector>(patch_point_vals_, FeSide::SideOps::opCoords);
+        return FeQ<Vector>(this->template make_patch_op< Op::Side::Pt::OpCoords >(), false);
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        PatchOp<3> *op = this->patch_fe_values_.template get< Op::Side::El::OpSideJacDet<dim, 3> >(dim);
-        return ElQ<Scalar>(op);
+        return ElQ<Scalar>(this->template make_patch_op< Op::Side::El::OpSideJacDet<dim, 3> >());
     }
 
     inline FeQArray<Scalar> ref_scalar(uint component_idx = 0)

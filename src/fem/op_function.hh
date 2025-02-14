@@ -178,18 +178,16 @@ template<unsigned int dim, unsigned int spacedim>
 class OpRefScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+	OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
 	: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp)
 	{
 	    ASSERT_EQ(this->dim_, dim);
-	    auto fe_component = pfev.template fe_comp<dim>(component_idx);
-	    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
 	    uint n_points = pfev.get_bulk_quadrature(dim)->size();
-	    uint n_dofs = fe_component->n_dofs();
+	    uint n_dofs = fe->n_dofs();
 	    this->n_dofs_ = n_dofs;
 
-	    auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe_component);
+	    auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
 	    this->create_result();
 	    this->allocate_result(n_points, pfev.asm_arena());
 	    auto ref_scalar_value = this->result_matrix();
@@ -207,18 +205,16 @@ template<unsigned int dim, unsigned int spacedim>
 class OpRefGradScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-    OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+    OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
     {
         ASSERT_EQ(this->dim_, dim);
-        auto fe_component = pfev.template fe_comp<dim>(component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
 
         uint n_points = pfev.get_bulk_quadrature(dim)->size();
-        uint n_dofs = fe_component->n_dofs();
+        uint n_dofs = fe->n_dofs();
         this->n_dofs_ = n_dofs;
 
-        std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe_component);
+        std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
         this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
@@ -237,17 +233,13 @@ template<unsigned int dim, unsigned int spacedim>
 class OpScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
 	: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
 	{
 	    ASSERT_EQ(this->dim_, dim);
-	    auto fe_component = pfev.template fe_comp<dim>(component_idx);
-	    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-	    uint n_dofs = fe_component->n_dofs();
-	    this->n_dofs_ = n_dofs;
-
-	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim> >(dim, component_idx) );
+	    this->n_dofs_ = fe->n_dofs();
+	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
 	}
 
     void eval() override {
@@ -280,18 +272,14 @@ template<unsigned int dim, unsigned int spacedim>
 class OpGradScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, uint component_idx)
+	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
 	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
 	{
 	    ASSERT_EQ(this->dim_, dim);
-	    auto fe_component = pfev.template fe_comp<dim>(component_idx);
-	    ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
 
-	    uint n_dofs = fe_component->n_dofs();
-	    this->n_dofs_ = n_dofs;
-
+	    this->n_dofs_ = fe->n_dofs();
 	    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim> >(dim) );
-	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim> >(dim, component_idx) );
+	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
 	}
 
     void eval() override {

@@ -304,12 +304,12 @@ public:
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType>
-    PatchOp<spacedim>* get(uint dim, uint component_idx) {
+    template<class OpType, unsigned int dim>
+    PatchOp<spacedim>* get(std::shared_ptr<FiniteElement<dim>> fe) {
         std::string op_name = typeid(OpType).name();
         auto it = op_dependency_[dim-1].find(op_name);
         if (it == op_dependency_[dim-1].end()) {
-            PatchOp<spacedim>* new_op = new OpType(dim, *this, component_idx);
+            PatchOp<spacedim>* new_op = new OpType(dim, *this, fe);
             op_dependency_[dim-1].insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
