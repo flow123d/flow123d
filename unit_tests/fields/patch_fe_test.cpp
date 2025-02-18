@@ -572,223 +572,223 @@ public:
 /**
  * Specialization defining FE vector operations
  */
-//class PatchFETestVector : public PatchFETestBase {
-//public:
-//	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-//    : PatchFETestBase(quad_order, dh),
-//      vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().vector_shape() ),
-//      vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().vector_shape() ),
-//      vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().vector_shape() ),
-//      vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().vector_shape() ),
-//      vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().vector_shape() ),
-//      vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().vector_shape() ),
-//      grad_vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_vector_shape() ),
-//      grad_vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_vector_shape() ),
-//      grad_vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_vector_shape() ),
-//      grad_vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_vector_shape() ),
-//      grad_vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_vector_shape() ),
-//      grad_vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_vector_shape() ),
-//      sym_grad_1d_( this->patch_fe_values_.bulk_values<1>().vector_sym_grad() ),
-//      sym_grad_2d_( this->patch_fe_values_.bulk_values<2>().vector_sym_grad() ),
-//      sym_grad_3d_( this->patch_fe_values_.bulk_values<3>().vector_sym_grad() ),
-//      sym_grad_side_1d_( this->patch_fe_values_.side_values<1>().vector_sym_grad() ),
-//      sym_grad_side_2d_( this->patch_fe_values_.side_values<2>().vector_sym_grad() ),
-//      sym_grad_side_3d_( this->patch_fe_values_.side_values<3>().vector_sym_grad() ),
-//      divergence_1d_( this->patch_fe_values_.bulk_values<1>().vector_divergence() ),
-//      divergence_2d_( this->patch_fe_values_.bulk_values<2>().vector_divergence() ),
-//      divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
-//      divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
-//      divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
-//      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() ),
+class PatchFETestVector : public PatchFETestBase {
+public:
+	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : PatchFETestBase(quad_order, dh),
+      vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().vector_shape() ),
+      vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().vector_shape() ),
+      vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().vector_shape() ),
+      vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().vector_shape() ),
+      vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().vector_shape() ),
+      vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().vector_shape() ),
+      grad_vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_vector_shape() ),
+      grad_vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_vector_shape() ),
+      grad_vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_vector_shape() ),
+      grad_vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_vector_shape() ),
+      grad_vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_vector_shape() ),
+      grad_vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_vector_shape() ),
+      sym_grad_1d_( this->patch_fe_values_.bulk_values<1>().vector_sym_grad() ),
+      sym_grad_2d_( this->patch_fe_values_.bulk_values<2>().vector_sym_grad() ),
+      sym_grad_3d_( this->patch_fe_values_.bulk_values<3>().vector_sym_grad() ),
+      sym_grad_side_1d_( this->patch_fe_values_.side_values<1>().vector_sym_grad() ),
+      sym_grad_side_2d_( this->patch_fe_values_.side_values<2>().vector_sym_grad() ),
+      sym_grad_side_3d_( this->patch_fe_values_.side_values<3>().vector_sym_grad() ),
+      divergence_1d_( this->patch_fe_values_.bulk_values<1>().vector_divergence() ),
+      divergence_2d_( this->patch_fe_values_.bulk_values<2>().vector_divergence() ),
+      divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
+      divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
+      divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
+      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() )//,
 //      vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
 //      vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
 //      vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
 //      vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
-//    {
-//	    vec_view_1d_ = &fe_values_[0].vector_view(0);
-//	    vec_view_2d_ = &fe_values_[1].vector_view(0);
-//	    vec_view_3d_ = &fe_values_[2].vector_view(0);
-//	    vec_view_side_1d_ = &fe_values_side_[0].vector_view(0);
-//	    vec_view_side_2d_ = &fe_values_side_[1].vector_view(0);
-//	    vec_view_side_3d_ = &fe_values_side_[2].vector_view(0);
-//    }
-//
-//    ~PatchFETestVector() {}
-//
-//    void reinit_patch_fe() override {
-//        START_TIMER("reinit_patch");
-//        patch_fe_values_.reinit_patch();
-//        END_TIMER("reinit_patch");
-//    }
-//
-//    void test_evaluation(bool print_tables=false) {
-//        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-//            add_integrals(*cell_it);
-//        }
-//        bulk_integral_data_.make_permanent();
-//        edge_integral_data_.make_permanent();
-//        coupling_integral_data_.make_permanent();
-//        element_cache_map_.make_paermanent_eval_points();
-//        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
-//        update_patch();
-//
-//        if (print_tables) {
-////            std::stringstream ss1;
-////            patch_fe_values_.print_data_tables(ss1, true, false, false);
-////            WarningOut() << ss1.str();
-//            std::stringstream ss2;
-//            patch_fe_values_.print_operations(ss2);
-//            WarningOut() << ss2.str();
-//        }
-//
-//        for(auto dh_cell : dh_->local_range() ) {
-//            ElementAccessor<3> elm = dh_cell.elm();
-//            auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
-//            double jxw = 0.0, jxw_ref = 0.0;
-//            arma::vec3 vector_shape_dof0 = {0.0, 0.0, 0.0};
-//            arma::vec3 vector_shape_dof0_ref = {0.0, 0.0, 0.0};
-//            arma::vec3 vector_shape_dof1 = {0.0, 0.0, 0.0};
-//            arma::vec3 vector_shape_dof1_ref = {0.0, 0.0, 0.0};
-//            arma::mat33 grad_vector_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 grad_vector_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 grad_vector_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 grad_vector_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            double div_dof0 = 0.0, div_dof0_ref = 0.0;
-//            double div_dof1 = 0.0, div_dof1_ref = 0.0;
-//            switch (dh_cell.dim()) {
-//            case 1:
-//                fe_values_[0].reinit(elm);
-//                jxw = jxw_1d_(p);
-//                vector_shape_dof0 = vector_shape_1d_.shape(0)(p);
-//                grad_vector_dof0 = grad_vector_shape_1d_.shape(0)(p);
-//                sym_grad_dof0 = sym_grad_1d_.shape(0)(p);
-//                div_dof0 = divergence_1d_.shape(0)(p);
-//                jxw_ref = fe_values_[0].JxW(0);
-//                vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
-//                grad_vector_dof0_ref = vec_view_1d_->grad(0, 0);
-//                sym_grad_dof0_ref = vec_view_1d_->sym_grad(0, 0);
-//                div_dof0_ref = vec_view_1d_->divergence(0, 0);
-//                break;
-//            case 2:
-//                fe_values_[1].reinit(elm);
-//                jxw = jxw_2d_(p);
-//                vector_shape_dof0 = vector_shape_2d_.shape(0)(p);
-//                vector_shape_dof1 = vector_shape_2d_.shape(1)(p);
-//                grad_vector_dof0 = grad_vector_shape_2d_.shape(0)(p);
-//                grad_vector_dof1 = grad_vector_shape_2d_.shape(1)(p);
-//                sym_grad_dof0 = sym_grad_2d_.shape(0)(p);
-//                sym_grad_dof1 = sym_grad_2d_.shape(1)(p);
-//                div_dof0 = divergence_2d_.shape(0)(p);
-//                div_dof1 = divergence_2d_.shape(1)(p);
-//                jxw_ref = fe_values_[1].JxW(0);
-//                vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
-//                vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
-//                grad_vector_dof0_ref = vec_view_2d_->grad(0, 0);
-//                grad_vector_dof1_ref = vec_view_2d_->grad(1, 0);
-//                sym_grad_dof0_ref = vec_view_2d_->sym_grad(0, 0);
-//                sym_grad_dof1_ref = vec_view_2d_->sym_grad(1, 0);
-//                div_dof0_ref = vec_view_2d_->divergence(0, 0);
-//                div_dof1_ref = vec_view_2d_->divergence(1, 0);
-//                break;
-//            case 3:
-//                fe_values_[2].reinit(elm);
-//                jxw = jxw_3d_(p);
-//                vector_shape_dof0 = vector_shape_3d_.shape(0)(p);
-//                vector_shape_dof1 = vector_shape_3d_.shape(1)(p);
-//                grad_vector_dof0 = grad_vector_shape_3d_.shape(0)(p);
-//                grad_vector_dof1 = grad_vector_shape_3d_.shape(1)(p);
-//                sym_grad_dof0 = sym_grad_3d_.shape(0)(p);
-//                sym_grad_dof1 = sym_grad_3d_.shape(1)(p);
-//                div_dof0 = divergence_3d_.shape(0)(p);
-//                div_dof1 = divergence_3d_.shape(1)(p);
-//                jxw_ref = fe_values_[2].JxW(0);
-//                vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
-//                vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
-//                grad_vector_dof0_ref = vec_view_3d_->grad(0, 0);
-//                grad_vector_dof1_ref = vec_view_3d_->grad(1, 0);
-//                sym_grad_dof0_ref = vec_view_3d_->sym_grad(0, 0);
-//                sym_grad_dof1_ref = vec_view_3d_->sym_grad(1, 0);
-//                div_dof0_ref = vec_view_3d_->divergence(0, 0);
-//                div_dof1_ref = vec_view_3d_->divergence(1, 0);
-//                break;
-//            }
-//            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
-//            EXPECT_ARMA_EQ( vector_shape_dof0, vector_shape_dof0_ref );
-//            EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
-//            EXPECT_ARMA_EQ( grad_vector_dof0, grad_vector_dof0_ref );
-//            EXPECT_ARMA_EQ( grad_vector_dof1, grad_vector_dof1_ref );
-//            EXPECT_ARMA_EQ( sym_grad_dof0, sym_grad_dof0_ref );
-//            EXPECT_ARMA_EQ( sym_grad_dof1, sym_grad_dof1_ref );
-//            EXPECT_DOUBLE_EQ( div_dof0, div_dof0_ref );
-//            EXPECT_DOUBLE_EQ( div_dof1, div_dof1_ref );
-//        }
-//
-//        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-//            auto range = edge_integral_data_[i].edge_side_range;
-//
-//            auto zero_edge_side = *range.begin();
-//            auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
-//
-//            double jxw = 0.0, jxw_ref = 0.0;
-//            arma::vec3 vector_shape = {0.0, 0.0, 0.0};
-//            arma::vec3 vector_shape_ref = {0.0, 0.0, 0.0};
-//            arma::mat33 grad_vector = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 grad_vector_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            arma::mat33 sym_grad_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-//            double div = 0.0, div_ref = 0.0;
-//            switch (zero_edge_side.dim()) {
-//            case 1:
-//                jxw = jxw_side_1d_(p);
-//                vector_shape = vector_shape_side_1d_.shape(0)(p);
-//                grad_vector = grad_vector_shape_side_1d_.shape(0)(p);
-//                sym_grad = sym_grad_side_1d_.shape(0)(p);
-//                div = divergence_side_1d_.shape(0)(p);
-//                fe_values_side_[0].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[0].JxW(0);
-//                vector_shape_ref = vec_view_side_1d_->value(0, 0);
-//                grad_vector_ref = vec_view_side_1d_->grad(0, 0);
-//                sym_grad_ref = vec_view_side_1d_->sym_grad(0, 0);
-//                div_ref = vec_view_side_1d_->divergence(0, 0);
-//                break;
-//            case 2:
-//                jxw = jxw_side_2d_(p);
-//                vector_shape = vector_shape_side_2d_.shape(0)(p);
-//                grad_vector = grad_vector_shape_side_2d_.shape(0)(p);
-//                sym_grad = sym_grad_side_2d_.shape(0)(p);
-//                div = divergence_side_2d_.shape(0)(p);
-//                fe_values_side_[1].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[1].JxW(0);
-//                vector_shape_ref = vec_view_side_2d_->value(0, 0);
-//                grad_vector_ref = vec_view_side_2d_->grad(0, 0);
-//                sym_grad_ref = vec_view_side_2d_->sym_grad(0, 0);
-//                div_ref = vec_view_side_2d_->divergence(0, 0);
-//                break;
-//            case 3:
-//                jxw = jxw_side_3d_(p);
-//                vector_shape = vector_shape_side_3d_.shape(0)(p);
-//                grad_vector = grad_vector_shape_side_3d_.shape(0)(p);
-//                sym_grad = sym_grad_side_3d_.shape(0)(p);
-//                div = divergence_side_3d_.shape(0)(p);
-//                fe_values_side_[2].reinit(zero_edge_side.side());
-//                jxw_ref = fe_values_side_[2].JxW(0);
-//                vector_shape_ref = vec_view_side_3d_->value(0, 0);
-//                grad_vector_ref = vec_view_side_3d_->grad(0, 0);
-//                sym_grad_ref = vec_view_side_3d_->sym_grad(0, 0);
-//                div_ref = vec_view_side_3d_->divergence(0, 0);
-//                break;
-//            }
-//            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
-//            EXPECT_ARMA_EQ( vector_shape, vector_shape_ref );
-//            EXPECT_ARMA_EQ( grad_vector, grad_vector_ref );
-//            EXPECT_ARMA_EQ( sym_grad, sym_grad_ref );
-//            EXPECT_DOUBLE_EQ( div, div_ref );
-//        }
-//
+    {
+	    vec_view_1d_ = &fe_values_[0].vector_view(0);
+	    vec_view_2d_ = &fe_values_[1].vector_view(0);
+	    vec_view_3d_ = &fe_values_[2].vector_view(0);
+	    vec_view_side_1d_ = &fe_values_side_[0].vector_view(0);
+	    vec_view_side_2d_ = &fe_values_side_[1].vector_view(0);
+	    vec_view_side_3d_ = &fe_values_side_[2].vector_view(0);
+    }
+
+    ~PatchFETestVector() {}
+
+    void reinit_patch_fe() override {
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
+            add_integrals(*cell_it);
+        }
+        bulk_integral_data_.make_permanent();
+        edge_integral_data_.make_permanent();
+        coupling_integral_data_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+//            std::stringstream ss1;
+//            patch_fe_values_.print_data_tables(ss1, true, false, false);
+//            WarningOut() << ss1.str();
+            std::stringstream ss2;
+            patch_fe_values_.print_operations(ss2);
+            WarningOut() << ss2.str();
+        }
+
+        for(auto dh_cell : dh_->local_range() ) {
+            ElementAccessor<3> elm = dh_cell.elm();
+            auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
+            double jxw = 0.0, jxw_ref = 0.0;
+            arma::vec3 vector_shape_dof0 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof0_ref = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1_ref = {0.0, 0.0, 0.0};
+            arma::mat33 grad_vector_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 grad_vector_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 grad_vector_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 grad_vector_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            double div_dof0 = 0.0, div_dof0_ref = 0.0;
+            double div_dof1 = 0.0, div_dof1_ref = 0.0;
+            switch (dh_cell.dim()) {
+            case 1:
+                fe_values_[0].reinit(elm);
+                jxw = jxw_1d_(p);
+                vector_shape_dof0 = vector_shape_1d_.shape(0)(p);
+                grad_vector_dof0 = grad_vector_shape_1d_.shape(0)(p);
+                sym_grad_dof0 = sym_grad_1d_.shape(0)(p);
+                div_dof0 = divergence_1d_.shape(0)(p);
+                jxw_ref = fe_values_[0].JxW(0);
+                vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
+                grad_vector_dof0_ref = vec_view_1d_->grad(0, 0);
+                sym_grad_dof0_ref = vec_view_1d_->sym_grad(0, 0);
+                div_dof0_ref = vec_view_1d_->divergence(0, 0);
+                break;
+            case 2:
+                fe_values_[1].reinit(elm);
+                jxw = jxw_2d_(p);
+                vector_shape_dof0 = vector_shape_2d_.shape(0)(p);
+                vector_shape_dof1 = vector_shape_2d_.shape(1)(p);
+                grad_vector_dof0 = grad_vector_shape_2d_.shape(0)(p);
+                grad_vector_dof1 = grad_vector_shape_2d_.shape(1)(p);
+                sym_grad_dof0 = sym_grad_2d_.shape(0)(p);
+                sym_grad_dof1 = sym_grad_2d_.shape(1)(p);
+                div_dof0 = divergence_2d_.shape(0)(p);
+                div_dof1 = divergence_2d_.shape(1)(p);
+                jxw_ref = fe_values_[1].JxW(0);
+                vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
+                vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
+                grad_vector_dof0_ref = vec_view_2d_->grad(0, 0);
+                grad_vector_dof1_ref = vec_view_2d_->grad(1, 0);
+                sym_grad_dof0_ref = vec_view_2d_->sym_grad(0, 0);
+                sym_grad_dof1_ref = vec_view_2d_->sym_grad(1, 0);
+                div_dof0_ref = vec_view_2d_->divergence(0, 0);
+                div_dof1_ref = vec_view_2d_->divergence(1, 0);
+                break;
+            case 3:
+                fe_values_[2].reinit(elm);
+                jxw = jxw_3d_(p);
+                vector_shape_dof0 = vector_shape_3d_.shape(0)(p);
+                vector_shape_dof1 = vector_shape_3d_.shape(1)(p);
+                grad_vector_dof0 = grad_vector_shape_3d_.shape(0)(p);
+                grad_vector_dof1 = grad_vector_shape_3d_.shape(1)(p);
+                sym_grad_dof0 = sym_grad_3d_.shape(0)(p);
+                sym_grad_dof1 = sym_grad_3d_.shape(1)(p);
+                div_dof0 = divergence_3d_.shape(0)(p);
+                div_dof1 = divergence_3d_.shape(1)(p);
+                jxw_ref = fe_values_[2].JxW(0);
+                vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
+                vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
+                grad_vector_dof0_ref = vec_view_3d_->grad(0, 0);
+                grad_vector_dof1_ref = vec_view_3d_->grad(1, 0);
+                sym_grad_dof0_ref = vec_view_3d_->sym_grad(0, 0);
+                sym_grad_dof1_ref = vec_view_3d_->sym_grad(1, 0);
+                div_dof0_ref = vec_view_3d_->divergence(0, 0);
+                div_dof1_ref = vec_view_3d_->divergence(1, 0);
+                break;
+            }
+            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_ARMA_EQ( vector_shape_dof0, vector_shape_dof0_ref );
+            EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
+            EXPECT_ARMA_EQ( grad_vector_dof0, grad_vector_dof0_ref );
+            EXPECT_ARMA_EQ( grad_vector_dof1, grad_vector_dof1_ref );
+            EXPECT_ARMA_EQ( sym_grad_dof0, sym_grad_dof0_ref );
+            EXPECT_ARMA_EQ( sym_grad_dof1, sym_grad_dof1_ref );
+            EXPECT_DOUBLE_EQ( div_dof0, div_dof0_ref );
+            EXPECT_DOUBLE_EQ( div_dof1, div_dof1_ref );
+        }
+
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+            auto range = edge_integral_data_[i].edge_side_range;
+
+            auto zero_edge_side = *range.begin();
+            auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
+
+            double jxw = 0.0, jxw_ref = 0.0;
+            arma::vec3 vector_shape = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_ref = {0.0, 0.0, 0.0};
+            arma::mat33 grad_vector = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 grad_vector_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            arma::mat33 sym_grad_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            double div = 0.0, div_ref = 0.0;
+            switch (zero_edge_side.dim()) {
+            case 1:
+                jxw = jxw_side_1d_(p);
+                vector_shape = vector_shape_side_1d_.shape(0)(p);
+                grad_vector = grad_vector_shape_side_1d_.shape(0)(p);
+                sym_grad = sym_grad_side_1d_.shape(0)(p);
+                div = divergence_side_1d_.shape(0)(p);
+                fe_values_side_[0].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[0].JxW(0);
+                vector_shape_ref = vec_view_side_1d_->value(0, 0);
+                grad_vector_ref = vec_view_side_1d_->grad(0, 0);
+                sym_grad_ref = vec_view_side_1d_->sym_grad(0, 0);
+                div_ref = vec_view_side_1d_->divergence(0, 0);
+                break;
+            case 2:
+                jxw = jxw_side_2d_(p);
+                vector_shape = vector_shape_side_2d_.shape(0)(p);
+                grad_vector = grad_vector_shape_side_2d_.shape(0)(p);
+                sym_grad = sym_grad_side_2d_.shape(0)(p);
+                div = divergence_side_2d_.shape(0)(p);
+                fe_values_side_[1].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[1].JxW(0);
+                vector_shape_ref = vec_view_side_2d_->value(0, 0);
+                grad_vector_ref = vec_view_side_2d_->grad(0, 0);
+                sym_grad_ref = vec_view_side_2d_->sym_grad(0, 0);
+                div_ref = vec_view_side_2d_->divergence(0, 0);
+                break;
+            case 3:
+                jxw = jxw_side_3d_(p);
+                vector_shape = vector_shape_side_3d_.shape(0)(p);
+                grad_vector = grad_vector_shape_side_3d_.shape(0)(p);
+                sym_grad = sym_grad_side_3d_.shape(0)(p);
+                div = divergence_side_3d_.shape(0)(p);
+                fe_values_side_[2].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[2].JxW(0);
+                vector_shape_ref = vec_view_side_3d_->value(0, 0);
+                grad_vector_ref = vec_view_side_3d_->grad(0, 0);
+                sym_grad_ref = vec_view_side_3d_->sym_grad(0, 0);
+                div_ref = vec_view_side_3d_->divergence(0, 0);
+                break;
+            }
+            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_ARMA_EQ( vector_shape, vector_shape_ref );
+            EXPECT_ARMA_EQ( grad_vector, grad_vector_ref );
+            EXPECT_ARMA_EQ( sym_grad, sym_grad_ref );
+            EXPECT_DOUBLE_EQ( div, div_ref );
+        }
+
 //        arma::vec3 arma_zero_vec = arma::zeros(3);
 //        arma::mat33 arma_zero_mat = arma::zeros(3,3);
 //        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
@@ -872,47 +872,47 @@ public:
 //                break;
 //            }
 //        }
-//
-//    }
-//
-//    ///< Vector view in cell calculation.
-//    const FEValuesViews::Vector<3> * vec_view_1d_;
-//    const FEValuesViews::Vector<3> * vec_view_2d_;
-//    const FEValuesViews::Vector<3> * vec_view_3d_;
-//    ///< Vector view in SIDE calculation.
-//    const FEValuesViews::Vector<3> * vec_view_side_1d_;
-//    const FEValuesViews::Vector<3> * vec_view_side_2d_;
-//    const FEValuesViews::Vector<3> * vec_view_side_3d_;
-//
-//    FeQArray<Vector> vector_shape_1d_;
-//    FeQArray<Vector> vector_shape_2d_;
-//    FeQArray<Vector> vector_shape_3d_;
-//    FeQArray<Vector> vector_shape_side_1d_;
-//    FeQArray<Vector> vector_shape_side_2d_;
-//    FeQArray<Vector> vector_shape_side_3d_;
-//    FeQArray<Tensor> grad_vector_shape_1d_;
-//    FeQArray<Tensor> grad_vector_shape_2d_;
-//    FeQArray<Tensor> grad_vector_shape_3d_;
-//    FeQArray<Tensor> grad_vector_shape_side_1d_;
-//    FeQArray<Tensor> grad_vector_shape_side_2d_;
-//    FeQArray<Tensor> grad_vector_shape_side_3d_;
-//    FeQArray<Tensor> sym_grad_1d_;
-//    FeQArray<Tensor> sym_grad_2d_;
-//    FeQArray<Tensor> sym_grad_3d_;
-//    FeQArray<Tensor> sym_grad_side_1d_;
-//    FeQArray<Tensor> sym_grad_side_2d_;
-//    FeQArray<Tensor> sym_grad_side_3d_;
-//    FeQArray<Scalar> divergence_1d_;
-//    FeQArray<Scalar> divergence_2d_;
-//    FeQArray<Scalar> divergence_3d_;
-//    FeQArray<Scalar> divergence_side_1d_;
-//    FeQArray<Scalar> divergence_side_2d_;
-//    FeQArray<Scalar> divergence_side_3d_;
+
+    }
+
+    ///< Vector view in cell calculation.
+    const FEValuesViews::Vector<3> * vec_view_1d_;
+    const FEValuesViews::Vector<3> * vec_view_2d_;
+    const FEValuesViews::Vector<3> * vec_view_3d_;
+    ///< Vector view in SIDE calculation.
+    const FEValuesViews::Vector<3> * vec_view_side_1d_;
+    const FEValuesViews::Vector<3> * vec_view_side_2d_;
+    const FEValuesViews::Vector<3> * vec_view_side_3d_;
+
+    FeQArray<Vector> vector_shape_1d_;
+    FeQArray<Vector> vector_shape_2d_;
+    FeQArray<Vector> vector_shape_3d_;
+    FeQArray<Vector> vector_shape_side_1d_;
+    FeQArray<Vector> vector_shape_side_2d_;
+    FeQArray<Vector> vector_shape_side_3d_;
+    FeQArray<Tensor> grad_vector_shape_1d_;
+    FeQArray<Tensor> grad_vector_shape_2d_;
+    FeQArray<Tensor> grad_vector_shape_3d_;
+    FeQArray<Tensor> grad_vector_shape_side_1d_;
+    FeQArray<Tensor> grad_vector_shape_side_2d_;
+    FeQArray<Tensor> grad_vector_shape_side_3d_;
+    FeQArray<Tensor> sym_grad_1d_;
+    FeQArray<Tensor> sym_grad_2d_;
+    FeQArray<Tensor> sym_grad_3d_;
+    FeQArray<Tensor> sym_grad_side_1d_;
+    FeQArray<Tensor> sym_grad_side_2d_;
+    FeQArray<Tensor> sym_grad_side_3d_;
+    FeQArray<Scalar> divergence_1d_;
+    FeQArray<Scalar> divergence_2d_;
+    FeQArray<Scalar> divergence_3d_;
+    FeQArray<Scalar> divergence_side_1d_;
+    FeQArray<Scalar> divergence_side_2d_;
+    FeQArray<Scalar> divergence_side_3d_;
 //    FeQJoin<Vector> vector_join_2d_;
 //    FeQJoin<Vector> vector_join_3d_;
 //    FeQJoin<Tensor> vector_join_grad_2d_;
 //    FeQJoin<Tensor> vector_join_grad_3d_;
-//};
+};
 
 
 /**
@@ -982,19 +982,19 @@ void compare_evaluation_func_scalar(Mesh* mesh, unsigned int quad_order, bool pr
 }
 
 /// Complete test with FE scalar operations
-//void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
-//    MixedPtr<FE_P> fe_p( quad_order );
-//    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
-//    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
-//    dh->distribute_dofs(ds);
-//
-//    PatchFETestVector patch_fe(quad_order, dh);
-//    patch_fe.initialize();
-//    patch_fe.test_evaluation(print_fa_data);
-//    patch_fe.reset();
-//    patch_fe.test_evaluation();
-//}
+void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    MixedPtr<FE_P> fe_p( quad_order );
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFETestVector patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
 
 
 
@@ -1009,7 +1009,7 @@ TEST(PatchFeTest, complete_evaluation) {
     // two tests with different quad_order and Scalar / Vector FE operations
     compare_evaluation_func_scalar(mesh, 1, true);
     compare_evaluation_func_scalar(mesh, 2);
-//    compare_evaluation_func_vector(mesh, 1, true);
+    compare_evaluation_func_vector(mesh, 1, true);
 }
 
 //TEST(PatchFeTest, speed_comparation) {
