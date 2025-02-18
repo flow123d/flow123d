@@ -26,6 +26,48 @@
 
 namespace Op {
 
+/// Base class of bulk and side vector symmetric gradients
+template<unsigned int dim, unsigned int spacedim>
+class VectorSymGradBase : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    VectorSymGradBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
+    : PatchOp<spacedim>(_dim, pfev, shape, size_type)
+    {
+        ASSERT_EQ(this->dim_, dim);
+    }
+
+    void eval() override {
+        for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > grad_vector_dof = this->input_ops(0)->result_sub_matrix(i_dof);
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > sym_grad_dof = this->result_sub_matrix(i_dof);
+            sym_grad_dof = 0.5 * (grad_vector_dof.transpose() + grad_vector_dof);
+        }
+    }
+};
+
+/// Base class of bulk and side vector divergence
+template<unsigned int dim, unsigned int spacedim>
+class VectorDivergenceBase : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    VectorDivergenceBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
+    : PatchOp<spacedim>(_dim, pfev, shape, size_type)
+    {
+        ASSERT_EQ(this->dim_, dim);
+    }
+
+    void eval() override {
+        auto divergence_value = this->result_matrix();
+
+        for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > grad_vector_dof = this->input_ops(0)->result_sub_matrix(i_dof);
+            divergence_value(i_dof) = grad_vector_dof(0,0) + grad_vector_dof(1,1) + grad_vector_dof(2,2);
+        }
+    }
+};
+
+
 namespace Bulk {
 
 /// Common ancestor of all bulk operations.
@@ -540,6 +582,34 @@ public:
 
 private:
     PatchOp<spacedim> *in_op_;
+};
+
+/// Evaluates vector symmetric gradients
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorSymGrad : public Op::VectorSymGradBase<dim, spacedim> {
+public:
+    /// Constructor
+	OpVectorSymGrad(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp)
+    {
+        this->bulk_side_ = 0;
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
+    }
+};
+
+/// Evaluates vector divergence
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorDivergence : public Op::VectorDivergenceBase<dim, spacedim> {
+public:
+    /// Constructor
+	OpVectorDivergence(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+    {
+        this->bulk_side_ = 0;
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
+    }
 };
 
 } // end of namespace Op::Bulk::Pt
@@ -1184,6 +1254,34 @@ public:
 
 private:
     PatchOp<spacedim> *in_op_;
+};
+
+/// Evaluates vector symmetric gradients
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorSymGrad : public Op::VectorSymGradBase<dim, spacedim> {
+public:
+    /// Constructor
+	OpVectorSymGrad(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp)
+    {
+        this->bulk_side_ = 1;
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
+    }
+};
+
+/// Evaluates vector divergence
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorDivergence : public Op::VectorDivergenceBase<dim, spacedim> {
+public:
+    /// Constructor
+	OpVectorDivergence(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+    {
+        this->bulk_side_ = 1;
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
+    }
 };
 
 } // end of namespace Op::Side::Pt

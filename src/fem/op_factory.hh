@@ -363,12 +363,7 @@ public:
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-        uint n_dofs = fe_component->n_dofs();
-        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorSymGrad, {3,3*n_dofs}, common_reinit::ptop_vector_sym_grad, n_dofs);
-
-        return FeQArray<Tensor>(patch_point_vals_, true, FeBulk::BulkOps::opVectorSymGrad, n_dofs);
+        return FeQArray<Tensor>(this->template make_patch_op< Op::Bulk::Pt::OpVectorSymGrad<dim, 3> >(fe_component), true);
     }
 
     /**
@@ -380,12 +375,7 @@ public:
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-        uint n_dofs = fe_component->n_dofs();
-        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        patch_point_vals_->make_fe_op(FeBulk::BulkOps::opVectorDivergence, {n_dofs}, common_reinit::ptop_vector_divergence, n_dofs);
-
-        return FeQArray<Scalar>(patch_point_vals_, true, FeBulk::BulkOps::opVectorDivergence, n_dofs);
+        return FeQArray<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpVectorDivergence<dim, 3> >(fe_component), true);
     }
 
 private:
@@ -572,12 +562,7 @@ public:
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-        uint n_dofs = fe_component->n_dofs();
-        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorSymGrad, {3,3*n_dofs}, common_reinit::ptop_vector_sym_grad, n_dofs);
-
-        return FeQArray<Tensor>(patch_point_vals_, false, FeSide::SideOps::opVectorSymGrad, n_dofs);
+        return FeQArray<Tensor>(this->template make_patch_op< Op::Side::Pt::OpVectorSymGrad<dim, 3> >(fe_component), false);
     }
 
     /**
@@ -589,12 +574,7 @@ public:
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-        uint n_dofs = fe_component->n_dofs();
-        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        patch_point_vals_->make_fe_op(FeSide::SideOps::opVectorDivergence, {n_dofs}, common_reinit::ptop_vector_divergence, n_dofs);
-
-        return FeQArray<Scalar>(patch_point_vals_, false, FeSide::SideOps::opVectorDivergence, n_dofs);
+        return FeQArray<Scalar>(this->template make_patch_op< Op::Side::Pt::OpVectorDivergence<dim, 3> >(fe_component), false);
     }
 
 private:
