@@ -322,33 +322,7 @@ public:
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-
-        uint n_dofs = fe_component->n_dofs();
-        uint vector_shape_op_idx = FeBulk::BulkOps::opVectorShape;
-
-        switch (fe_component->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_shape, n_dofs);
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_contravariant_shape, n_dofs);
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, bulk_reinit::ptop_vector_piola_shape, n_dofs);
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-
-        return FeQArray<Vector>(patch_point_vals_, true, vector_shape_op_idx, fe_component->n_dofs());
+        return FeQArray<Vector>(this->template make_patch_op< Op::Bulk::Pt::DispatchVectorShape<dim, 3> >(fe_component), true);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -377,42 +351,7 @@ public:
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-
-        uint n_dofs = fe_component->n_dofs();
-        uint vector_shape_grads_op_idx = FeBulk::BulkOps::opGradVectorShape;
-
-        switch (fe_component->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3*n_dofs},
-                                             bulk_reinit::ptop_vector_shape_grads<dim>,
-                                             n_dofs);
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3*n_dofs},
-                                             bulk_reinit::ptop_vector_contravariant_shape_grads<dim>,
-                                             n_dofs);
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                              {3, 3*n_dofs},
-                                              bulk_reinit::ptop_vector_piola_shape_grads<dim>,
-                                              n_dofs);
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-
-        return FeQArray<Tensor>(patch_point_vals_, true, vector_shape_grads_op_idx, n_dofs);
+        return FeQArray<Tensor>(this->template make_patch_op< Op::Bulk::Pt::DispatchGradVectorShape<dim, 3> >(fe_component), true);
     }
 
     /**
@@ -600,33 +539,7 @@ public:
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-        //ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-
-        uint n_dofs = fe_component->n_dofs();
-        uint vector_shape_op_idx = FeSide::SideOps::opVectorShape;
-
-        switch (fe_component->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_shape, n_dofs);
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_contravariant_shape, n_dofs);
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_op_idx, {3, n_dofs}, side_reinit::ptop_vector_piola_shape, n_dofs);
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-        return FeQArray<Vector>(patch_point_vals_, false, vector_shape_op_idx, n_dofs);
+        return FeQArray<Vector>(this->template make_patch_op< Op::Side::Pt::DispatchVectorShape<dim, 3> >(fe_component), false);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
@@ -647,42 +560,7 @@ public:
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
         auto fe_component = this->fe_comp(fe_, component_idx);
-
-        uint n_dofs = fe_component->n_dofs();
-        uint vector_shape_grads_op_idx = FeSide::SideOps::opGradVectorShape;
-
-        switch (fe_component->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3*n_dofs},
-                                             side_reinit::ptop_vector_shape_grads<dim>,
-                                             n_dofs);
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                             {3, 3*n_dofs},
-                                             side_reinit::ptop_vector_contravariant_shape_grads<dim>,
-                                             n_dofs);
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Grad vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                patch_point_vals_->make_fe_op(vector_shape_grads_op_idx,
-                                              {3, 3*n_dofs},
-                                              side_reinit::ptop_vector_piola_shape_grads<dim>,
-                                              n_dofs);
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-
-        return FeQArray<Tensor>(patch_point_vals_, false, vector_shape_grads_op_idx, n_dofs);
+        return FeQArray<Tensor>(this->template make_patch_op< Op::Side::Pt::DispatchGradVectorShape<dim, 3> >(fe_component), false);
     }
 
     /**

@@ -178,23 +178,51 @@ template<unsigned int dim, unsigned int spacedim>
 class OpRefScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
-	OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp)
+    OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+
+        auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_scalar_value = this->result_matrix();
+        for (unsigned int i_p = 0; i_p < n_points; i_p++)
+            for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+                ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
+            }
+    }
+
+    void eval() override {}
+};
+
+/// Fixed operation of  scalar shape reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefVector : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpRefVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::fixedSizeOp)
 	{
-	    ASSERT_EQ(this->dim_, dim);
+        ASSERT_EQ(this->dim_, dim);
 
-	    uint n_points = pfev.get_bulk_quadrature(dim)->size();
-	    uint n_dofs = fe->n_dofs();
-	    this->n_dofs_ = n_dofs;
+        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
 
-	    auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
-	    this->create_result();
-	    this->allocate_result(n_points, pfev.asm_arena());
-	    auto ref_scalar_value = this->result_matrix();
-	    for (unsigned int i_p = 0; i_p < n_points; i_p++)
-	        for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
-	            ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
-	        }
+        auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_vector_value = this->result_matrix();
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_p=0; i_p<n_points; ++i_p)
+                for (uint c=0; c<spacedim; ++c)
+                    ref_vector_value(c, i_dof)(i_p) = ref_shape_vals[i_p][i_dof](c);
 	}
 
     void eval() override {}
@@ -222,6 +250,35 @@ public:
             for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
+        }
+    }
+
+    void eval() override {}
+};
+
+/// Fixed operation of gradient scalar reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefGradVector : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpRefGradVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+
+        std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_vector_value = this->result_matrix();
+        for (uint i_c=0; i_c<spacedim; ++i_c) {
+            for (uint i_dim=0; i_dim<dim; ++i_dim)
+                for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                    for (uint i_p=0; i_p<n_points; ++i_p)
+                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = ref_shape_grads[i_p][i_dof](i_dim, i_c);
         }
     }
 
@@ -267,6 +324,93 @@ public:
     }
 };
 
+/// Evaluates vector values (FEType == FEVector)
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorShape : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< OpRefVector<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = dispatch_op_.result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_elem = this->ppv().n_elems_;
+
+        ArenaVec<double> elem_vec(n_elem, this->patch_fe_->patch_arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> elem_ovec(elem_vec);
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(3, n_dofs);
+        for (uint c=0; c<3*n_dofs; ++c) {
+            ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(c));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
+        for (uint c=0; c<3*n_dofs; ++c)
+            result_vec(c) = result_ovec(c).get_vec();
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
+// class OpVectorCovariantShape
+// class OpVectorPiolaShape
+
+/// Dispatch class of vector values
+template<unsigned int dim, unsigned int spacedim>
+class DispatchVectorShape : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+    DispatchVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->n_dofs_ = fe->n_dofs();
+
+        switch (fe->fe_type()) {
+            case FEVector:
+            {
+                in_op_ = new OpVectorShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpVectorCovariantShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpVectorPiolaShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+	}
+
+    void eval() override {
+        in_op_->eval();
+    }
+
+private:
+    PatchOp<spacedim> *in_op_;
+};
+
 /// Evaluates gradient scalar values
 template<unsigned int dim, unsigned int spacedim>
 class OpGradScalarShape : public Op::Bulk::Base<spacedim> {
@@ -304,6 +448,98 @@ public:
             result_vec(i) = result_ovec(i).get_vec();
         }
     }
+};
+
+/// Evaluates vector values (FEType == FEVector)
+template<unsigned int dim, unsigned int spacedim>
+class OpGradVectorShape : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	OpGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim> >(dim) );
+        this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim
+        auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x spacedim
+        auto result_vec = dispatch_op_.result_matrix();            // spacedim x spacedim
+
+        uint n_dofs = this->n_dofs();
+
+        Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
+        for (uint i=0; i<dim*3; ++i) {
+            inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, dim, 3> ref_grads_ovec;
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i=0; i<3*dim; ++i) {
+                ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i_dof*3*dim + i));
+            }
+
+            Eigen::Matrix<ArenaOVec<double>, 3, 3> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+            for (uint i=0; i<3; ++i) {
+                for (uint j=0; j<3; ++j) {
+                   result_vec(j,i+3*i_dof) = result_ovec(i,j).get_vec();
+                }
+            }
+        }
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
+// class OpGradVectorCovariantShape
+// class OpGradVectorPiolaShape
+
+/// Dispatch class of vector values
+template<unsigned int dim, unsigned int spacedim>
+class DispatchGradVectorShape : public Op::Bulk::Base<spacedim> {
+public:
+    /// Constructor
+	DispatchGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->n_dofs_ = fe->n_dofs();
+
+        switch (fe->fe_type()) {
+            case FEVector:
+            {
+                in_op_ = new OpGradVectorShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpGradVectorCovariantShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpGradVectorPiolaShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+	}
+
+    void eval() override {
+        in_op_->eval();
+    }
+
+private:
+    PatchOp<spacedim> *in_op_;
 };
 
 } // end of namespace Op::Bulk::Pt
@@ -580,6 +816,35 @@ public:
     void eval() override {}
 };
 
+/// Fixed operation of vector shape reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefVector : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    OpRefVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_side_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_vector_value = this->result_matrix();
+        auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
+
+        for (unsigned int s=0; s<dim+1; ++s)
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++)
+                    for (uint c=0; c<spacedim; ++c)
+                        ref_vector_value(s,3*i_dof+c)(i_p) = ref_shape_vals[s][i_p][i_dof][c];
+	}
+
+    void eval() override {}
+};
+
 /// Fixed operation of gradient scalar reference values
 template<unsigned int dim, unsigned int spacedim>
 class OpRefGradScalar : public Op::Side::Base<spacedim> {
@@ -603,6 +868,37 @@ public:
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     for (uint c=0; c<dim; ++c)
                         ref_scalar_value(s,dim*i_dof+c)(i_p) = ref_shape_grads[s][i_p][i_dof](c);
+    }
+
+    void eval() override {}
+};
+
+/// Fixed operation of gradient scalar reference values
+template<unsigned int dim, unsigned int spacedim>
+class OpRefGradVector : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpRefGradVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {(dim+1)*dim, spacedim}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        uint n_points = pfev.get_side_quadrature(dim)->size();
+        uint n_dofs = fe->n_dofs();
+        this->n_dofs_ = n_dofs;
+        uint n_sides = dim+1;
+
+        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
+        this->create_result();
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_vector_value = this->result_matrix();
+        for (uint i_sd=0; i_sd<n_sides; ++i_sd)
+            for (uint i_c=0; i_c<spacedim; ++i_c)
+                for (uint i_dim=0; i_dim<dim; ++i_dim)
+                    for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                        for (uint i_p=0; i_p<n_points; ++i_p) {
+                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = ref_shape_grads[i_sd][i_p][i_dof](i_dim, i_c);
+                        }
     }
 
     void eval() override {}
@@ -639,6 +935,91 @@ public:
             }
         }
     }
+};
+
+/// Evaluates vector values (FEType == FEVector)
+template<unsigned int dim, unsigned int spacedim>
+class OpVectorShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< OpRefVector<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        dispatch_op_.allocate_result(ppv.n_points_, ppv.patch_arena());
+
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();  // dim+1 x spacedim
+        auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
+
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.int_table_(3).data_size();
+        uint n_patch_points = ppv.int_table_(4).data_size();
+
+        for (uint c=0; c<3*n_dofs; c++)
+        	result_vec(c) = ArenaVec<double>(n_patch_points, ppv.patch_arena());
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
+                for (uint c=0; c<3; c++)
+                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(4)(i_pt),3*i_dof+c)(i_pt / n_sides);
+        }
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
+// class OpVectorCovariantShape
+// class OpVectorPiolaShape
+
+/// Dispatch class of vector values
+template<unsigned int dim, unsigned int spacedim>
+class DispatchVectorShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+    DispatchVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->n_dofs_ = fe->n_dofs();
+
+        switch (fe->fe_type()) {
+            case FEVector:
+            {
+                in_op_ = new OpVectorShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpVectorCovariantShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpVectorPiolaShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+	}
+
+    void eval() override {
+        in_op_->eval();
+    }
+
+private:
+    PatchOp<spacedim> *in_op_;
 };
 
 /// Evaluates gradient scalar values
@@ -696,6 +1077,113 @@ public:
         // computes operation result
         grad_scalar_shape_value = inv_jac_expd_value.transpose() * ref_shape_grads_expd;
     }
+};
+
+/// Evaluates vector values (FEType == FEVector)
+template<unsigned int dim, unsigned int spacedim>
+class OpGradVectorShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	OpGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    {
+        ASSERT_EQ(this->dim_, dim);
+
+        this->n_dofs_ = fe->n_dofs();
+        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim> >(dim) );
+        this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
+	}
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        auto inv_jac_value = this->input_ops(0)->result_matrix();    // dim x spacedim
+        auto ref_vector_grad = this->input_ops(1)->result_matrix();  // n_sides*dim x spacedim
+
+        uint n_dofs = this->n_dofs();
+        uint n_points = ref_vector_grad(0).data_size();
+        uint n_patch_sides = ppv.int_table_(3).data_size();
+        uint n_patch_points = ppv.int_table_(4).data_size();
+
+        // Expands inverse jacobian to inv_jac_expd_value
+        Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
+        for (uint i=0; i<dim*3; ++i) {
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        	for (uint j=0; j<n_patch_points; ++j)
+        	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_patch_sides);
+        }
+
+        // Fill ref shape gradients by q_point. DOF and side_idx
+        Eigen::Matrix<ArenaVec<double>, dim, 3> ref_shape_grads_expd;
+        for (uint i=0; i<3*dim; ++i) {
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        }
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+
+            for (uint i_pt=0; i_pt<n_points; ++i_pt) {
+                uint i_begin = i_pt * n_patch_sides;
+                for (uint i_sd=0; i_sd<n_patch_sides; ++i_sd) {
+                    for (uint i_dim=0; i_dim<dim; ++i_dim) {
+                        for (uint i_c=0; i_c<3; ++i_c) {
+                            ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(3)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
+                        }
+                    }
+                }
+            }
+
+            // computes operation result
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = dispatch_op_.result_sub_matrix(i_dof);
+            res_submat = (inv_jac_expd_value.transpose() * ref_shape_grads_expd).transpose();
+        }
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
+// class OpGradVectorCovariantShape
+// class OpGradVectorPiolaShape
+
+/// Dispatch class of vector values
+template<unsigned int dim, unsigned int spacedim>
+class DispatchGradVectorShape : public Op::Side::Base<spacedim> {
+public:
+    /// Constructor
+	DispatchGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->n_dofs_ = fe->n_dofs();
+
+        switch (fe->fe_type()) {
+            case FEVector:
+            {
+                in_op_ = new OpGradVectorShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorContravariant:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpGradVectorCovariantShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            case FEVectorPiola:
+            {
+                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
+                //in_op_ = new OpGradVectorPiolaShape<dim, spacedim>(_dim, pfev, fe, *this);
+                break;
+            }
+            default:
+                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
+        }
+
+	}
+
+    void eval() override {
+        in_op_->eval();
+    }
+
+private:
+    PatchOp<spacedim> *in_op_;
 };
 
 } // end of namespace Op::Side::Pt
