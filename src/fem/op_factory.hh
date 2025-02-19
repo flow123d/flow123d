@@ -47,122 +47,6 @@ protected:
         }
     }
 
-    /**
-     * @brief Precomputed values of basis functions at the bulk quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    template<unsigned int FE_dim>
-    std::vector<std::vector<arma::vec> > ref_shape_values_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
-        std::vector<std::vector<arma::vec> > ref_shape_vals( q->size(), vector<arma::vec>(fe->n_dofs()) );
-
-        arma::mat shape_values(fe->n_dofs(), fe->n_components());
-        for (unsigned int i=0; i<q->size(); i++)
-        {
-            for (unsigned int j=0; j<fe->n_dofs(); j++)
-            {
-                for (unsigned int c=0; c<fe->n_components(); c++)
-                    shape_values(j,c) = fe->shape_value(j, q->point<FE_dim>(i), c);
-
-                ref_shape_vals[i][j] = trans(shape_values.row(j));
-            }
-        }
-
-        return ref_shape_vals;
-    }
-
-    /**
-     * @brief Precomputed values of basis functions at the side quadrature points.
-     *
-     * Dimensions:   (sides)
-     *             x (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    template<unsigned int FE_dim>
-    std::vector< std::vector<std::vector<arma::vec> > > ref_shape_values_side(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
-        std::vector< std::vector<std::vector<arma::vec> > > ref_shape_vals( FE_dim+1, std::vector<std::vector<arma::vec> >(q->size(), vector<arma::vec>(fe->n_dofs())) );
-
-        arma::mat shape_values(fe->n_dofs(), fe->n_components());
-
-        for (unsigned int sid=0; sid<FE_dim+1; sid++) {
-            auto quad = q->make_from_side<FE_dim>(sid);
-        	for (unsigned int i=0; i<quad.size(); i++)
-            {
-                for (unsigned int j=0; j<fe->n_dofs(); j++)
-                {
-                    for (unsigned int c=0; c<fe->n_components(); c++) {
-                        shape_values(j,c) = fe->shape_value(j, quad.template point<FE_dim>(i), c);
-                    }
-
-                    ref_shape_vals[sid][i][j] = trans(shape_values.row(j));
-                }
-            }
-        }
-
-        return ref_shape_vals;
-    }
-
-    /**
-     * @brief Precomputed gradients of basis functions at the bulk quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
-     */
-    template<unsigned int FE_dim>
-    std::vector<std::vector<arma::mat> > ref_shape_gradients_bulk(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
-    	std::vector<std::vector<arma::mat> > ref_shape_grads( q->size(), vector<arma::mat>(fe->n_dofs()) );
-
-        arma::mat grad(FE_dim, fe->n_components());
-        for (unsigned int i_pt=0; i_pt<q->size(); i_pt++)
-        {
-            for (unsigned int i_dof=0; i_dof<fe->n_dofs(); i_dof++)
-            {
-                grad.zeros();
-                for (unsigned int c=0; c<fe->n_components(); c++)
-                    grad.col(c) += fe->shape_grad(i_dof, q->point<FE_dim>(i_pt), c);
-
-                ref_shape_grads[i_pt][i_dof] = grad;
-            }
-        }
-
-        return ref_shape_grads;
-    }
-
-    /**
-     * @brief Precomputed gradients of basis functions at the side quadrature points.
-     *
-     * Dimensions:   (sides)
-     *             x (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
-     */
-    template<unsigned int FE_dim>
-    std::vector<std::vector<std::vector<arma::mat> > > ref_shape_gradients_side(Quadrature *q, std::shared_ptr<FiniteElement<FE_dim>> fe) {
-        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads( FE_dim+1, std::vector<std::vector<arma::mat> >(q->size(), vector<arma::mat>(fe->n_dofs())) );
-
-        arma::mat grad(dim, fe->n_components());
-        for (unsigned int sid=0; sid<FE_dim+1; sid++) {
-            auto quad = q->make_from_side<FE_dim>(sid);
-            for (unsigned int i_pt=0; i_pt<quad.size(); i_pt++)
-            {
-                for (unsigned int i_dof=0; i_dof<fe->n_dofs(); i_dof++)
-                {
-                    grad.zeros();
-                    for (unsigned int c=0; c<fe->n_components(); c++)
-                        grad.col(c) += fe->shape_grad(i_dof, quad.template point<FE_dim>(i_pt), c);
-
-                    ref_shape_grads[sid][i_pt][i_dof] = grad;
-                }
-            }
-        }
-
-        return ref_shape_grads;
-    }
-
     /// Factory method. Creates operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_patch_op() {
@@ -183,9 +67,8 @@ class BulkValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	BulkValues(PatchPointValues<3> *patch_point_vals, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev), patch_point_vals_(patch_point_vals) {
-	    ASSERT_EQ(patch_point_vals->dim(), dim);
+	BulkValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev) {
 	    fe_ = fe[Dim<dim>{}];
 	}
 
@@ -289,7 +172,6 @@ public:
     }
 
 private:
-    PatchPointValues<3> *patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
@@ -299,9 +181,8 @@ class SideValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	SideValues(PatchPointValues<3> *patch_point_vals, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev), patch_point_vals_(patch_point_vals) {
-	    ASSERT_EQ(patch_point_vals->dim(), dim);
+	SideValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev) {
 	    fe_ = fe[Dim<dim>{}];
 	}
 
@@ -395,7 +276,6 @@ public:
     }
 
 private:
-    PatchPointValues<3> *patch_point_vals_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
@@ -405,10 +285,8 @@ class JoinValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	JoinValues(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev), patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side) {
-	    ASSERT_EQ(patch_point_vals_bulk->dim(), dim-1);
-	    ASSERT_EQ(patch_point_vals_side->dim(), dim);
+	JoinValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev) {
 	    fe_high_dim_ = fe[Dim<dim>{}];
 	    fe_low_dim_ = fe[Dim<dim-1>{}];
 	}
@@ -463,8 +341,6 @@ public:
     }
 
 private:
-    PatchPointValues<3> *patch_point_vals_bulk_;
-    PatchPointValues<3> *patch_point_vals_side_;
     std::shared_ptr< FiniteElement<dim> > fe_high_dim_;
     std::shared_ptr< FiniteElement<dim-1> > fe_low_dim_;
 };
@@ -475,8 +351,7 @@ class JoinValues<1> : public BaseValues<1>
 {
 public:
 	/// Constructor
-	JoinValues(FMT_UNUSED PatchPointValues<3> *patch_point_vals_bulk, FMT_UNUSED PatchPointValues<3> *patch_point_vals_side,
-	        PatchFEValues<3> &pfev, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	JoinValues(PatchFEValues<3> &pfev, FMT_UNUSED MixedPtr<FiniteElement> fe)
 	: BaseValues<1>(pfev) {}
 
     inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)

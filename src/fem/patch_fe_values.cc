@@ -32,21 +32,21 @@ template<unsigned int spacedim>
 template<unsigned int dim>
 BulkValues<dim> PatchFEValues<spacedim>::bulk_values() {
   	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-    return BulkValues<dim>(&patch_point_vals_[0][dim-1], *this, fe_);
+    return BulkValues<dim>(*this, fe_);
 }
 
 template<unsigned int spacedim>
 template<unsigned int dim>
 SideValues<dim> PatchFEValues<spacedim>::side_values() {
    	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-    return SideValues<dim>(&patch_point_vals_[1][dim-1], *this, fe_);
+    return SideValues<dim>(*this, fe_);
 }
 
 template<unsigned int spacedim>
 template<unsigned int dim>
 JoinValues<dim> PatchFEValues<spacedim>::join_values() {
    	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-    return JoinValues<dim>(&patch_point_vals_[0][dim-2], &patch_point_vals_[1][dim-1], *this, fe_);
+    return JoinValues<dim>(*this, fe_);
 }
 
 
