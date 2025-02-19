@@ -243,27 +243,27 @@ public:
                 }
             }
         }
-//        uint side_pos, element_patch_idx, elm_pos=0;
-//        uint last_element_idx = -1;
-//        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
-//            uint dim = coupling_integral_data_[i].side.dim();
-//            side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side);
-//            if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
-//                element_patch_idx = this->element_cache_map_.position_in_cache(coupling_integral_data_[i].cell.elm_idx());
-//                elm_pos = patch_fe_values_.register_element(coupling_integral_data_[i].cell, element_patch_idx);
-//            }
-//
-//            uint i_bulk_point = 0, i_side_point = 0;
-//            for (auto p_high : this->coupling_points(dim, coupling_integral_data_[i].side) )
-//            {
-//                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
-//                if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
-//                    auto p_low = p_high.lower_dim(coupling_integral_data_[i].cell);
-//                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
-//                }
-//            }
-//            last_element_idx = coupling_integral_data_[i].cell.elm_idx();
-//        }
+        uint side_pos, element_patch_idx, elm_pos=0;
+        uint last_element_idx = -1;
+        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
+            uint dim = coupling_integral_data_[i].side.dim();
+            side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side);
+            if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
+                element_patch_idx = this->element_cache_map_.position_in_cache(coupling_integral_data_[i].cell.elm_idx());
+                elm_pos = patch_fe_values_.register_element(coupling_integral_data_[i].cell, element_patch_idx);
+            }
+
+            uint i_bulk_point = 0, i_side_point = 0;
+            for (auto p_high : this->coupling_points(dim, coupling_integral_data_[i].side) )
+            {
+                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
+                if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
+                    auto p_low = p_high.lower_dim(coupling_integral_data_[i].cell);
+                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                }
+            }
+            last_element_idx = coupling_integral_data_[i].cell.elm_idx();
+        }
 
         this->reinit_patch_fe();
     }
@@ -345,9 +345,9 @@ public:
       grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
       grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
       grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
-      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() )//,
-//	  conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
-//	  conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
+      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() ),
+      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
+      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
     {}
 
     ~PatchFETestScalar() {}
@@ -493,62 +493,62 @@ public:
             EXPECT_ARMA_EQ( grad_scalar, grad_scalar_ref );
         }
 
-//        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
-//            DHCellAccessor cell_lower_dim = coupling_integral_data_[i].cell;
-//            DHCellSide neighb_side = coupling_integral_data_[i].side;;
-//            //std::cout << " el high " << neighb_side.elem_idx() << ", el low: " << cell_lower_dim.elm_idx() << std::endl;
-//
-//            auto p_high = *( coupling_points(neighb_side.dim(), neighb_side).begin() );
-//            auto p_low = p_high.lower_dim(cell_lower_dim);
-//
-//            uint i_dof_high=0, i_dof_low=0;
-//            switch (neighb_side.dim()) {
-//            case 2:
-//                fe_values_[0].reinit(cell_lower_dim.elm());
-//                fe_values_side_[1].reinit(neighb_side.side());
-//                for (uint i_dof=0; i_dof<conc_join_shape_2d_.n_dofs_both(); ++i_dof) {
-//                    if (conc_join_shape_2d_.is_high_dim(i_dof)) {
-//                        auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
-//                        auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
-//                        EXPECT_DOUBLE_EQ( result, ref );
-//                        auto result_low = conc_join_shape_2d_.shape(i_dof)(p_low);
-//                        EXPECT_DOUBLE_EQ( result_low, 0.0 );
-//                    	i_dof_high++;
-//                    }
-//                    else {
-//                        auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
-//                        auto ref = fe_values_[0].shape_value(i_dof_low, 0);
-//                        EXPECT_DOUBLE_EQ( result, ref );
-//                        auto result_high = conc_join_shape_2d_.shape(i_dof)(p_high);
-//                        EXPECT_DOUBLE_EQ( result_high, 0.0 );
-//                        i_dof_low++;
-//                    }
-//                }
-//                break;
-//            case 3:
-//                fe_values_[1].reinit(cell_lower_dim.elm());
-//                fe_values_side_[2].reinit(neighb_side.side());
-//                for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
-//                	if (conc_join_shape_3d_.is_high_dim(i_dof)) {
-//                        auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
-//                        auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
-//                        EXPECT_DOUBLE_EQ( result, ref );
-//                        auto result_low = conc_join_shape_3d_.shape(i_dof)(p_low);
-//                        EXPECT_DOUBLE_EQ( result_low, 0.0 );
-//                        i_dof_high++;
-//                	}
-//                	else {
-//                   	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
-//                        auto ref = fe_values_[1].shape_value(i_dof_low, 0);
-//                        EXPECT_DOUBLE_EQ( result, ref );
-//                        auto result_high = conc_join_shape_3d_.shape(i_dof)(p_high);
-//                        EXPECT_DOUBLE_EQ( result_high, 0.0 );
-//                        i_dof_low++;
-//                	}
-//                }
-//                break;
-//            }
-//        }
+        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
+            DHCellAccessor cell_lower_dim = coupling_integral_data_[i].cell;
+            DHCellSide neighb_side = coupling_integral_data_[i].side;;
+            //std::cout << " el high " << neighb_side.elem_idx() << ", el low: " << cell_lower_dim.elm_idx() << std::endl;
+
+            auto p_high = *( coupling_points(neighb_side.dim(), neighb_side).begin() );
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+
+            uint i_dof_high=0, i_dof_low=0;
+            switch (neighb_side.dim()) {
+            case 2:
+                fe_values_[0].reinit(cell_lower_dim.elm());
+                fe_values_side_[1].reinit(neighb_side.side());
+                for (uint i_dof=0; i_dof<conc_join_shape_2d_.n_dofs_both(); ++i_dof) {
+                    if (conc_join_shape_2d_.is_high_dim(i_dof)) {
+                        auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
+                        auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
+                        EXPECT_DOUBLE_EQ( result, ref );
+                        auto result_low = conc_join_shape_2d_.shape(i_dof)(p_low);
+                        EXPECT_DOUBLE_EQ( result_low, 0.0 );
+                    	i_dof_high++;
+                    }
+                    else {
+                        auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
+                        auto ref = fe_values_[0].shape_value(i_dof_low, 0);
+                        EXPECT_DOUBLE_EQ( result, ref );
+                        auto result_high = conc_join_shape_2d_.shape(i_dof)(p_high);
+                        EXPECT_DOUBLE_EQ( result_high, 0.0 );
+                        i_dof_low++;
+                    }
+                }
+                break;
+            case 3:
+                fe_values_[1].reinit(cell_lower_dim.elm());
+                fe_values_side_[2].reinit(neighb_side.side());
+                for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
+                    if (conc_join_shape_3d_.is_high_dim(i_dof)) {
+                        auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
+                        auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
+                        EXPECT_DOUBLE_EQ( result, ref );
+                        auto result_low = conc_join_shape_3d_.shape(i_dof)(p_low);
+                        EXPECT_DOUBLE_EQ( result_low, 0.0 );
+                        i_dof_high++;
+                    }
+                    else {
+                   	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
+                        auto ref = fe_values_[1].shape_value(i_dof_low, 0);
+                        EXPECT_DOUBLE_EQ( result, ref );
+                        auto result_high = conc_join_shape_3d_.shape(i_dof)(p_high);
+                        EXPECT_DOUBLE_EQ( result_high, 0.0 );
+                        i_dof_low++;
+                    }
+                }
+                break;
+            }
+        }
 
     }
 
@@ -564,8 +564,8 @@ public:
     FeQArray<Vector> grad_scalar_shape_side_1d_;
     FeQArray<Vector> grad_scalar_shape_side_2d_;
     FeQArray<Vector> grad_scalar_shape_side_3d_;
-//    FeQJoin<Scalar> conc_join_shape_2d_;
-//    FeQJoin<Scalar> conc_join_shape_3d_;
+    FeQJoin<Scalar> conc_join_shape_2d_;
+    FeQJoin<Scalar> conc_join_shape_3d_;
 };
 
 
@@ -599,11 +599,11 @@ public:
       divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
       divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
       divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
-      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() )//,
-//      vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
-//      vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
-//      vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
-//      vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
+      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() ),
+      vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
+      vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
+      vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
+      vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
     {
 	    vec_view_1d_ = &fe_values_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_[1].vector_view(0);
@@ -789,89 +789,89 @@ public:
             EXPECT_DOUBLE_EQ( div, div_ref );
         }
 
-//        arma::vec3 arma_zero_vec = arma::zeros(3);
-//        arma::mat33 arma_zero_mat = arma::zeros(3,3);
-//        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
-//            DHCellAccessor cell_lower_dim = coupling_integral_data_[i].cell;
-//            DHCellSide neighb_side = coupling_integral_data_[i].side;;
-//            //std::cout << " el high " << neighb_side.elem_idx() << ", el low: " << cell_lower_dim.elm_idx() << std::endl;
-//
-//            auto p_high = *( coupling_points(neighb_side.dim(), neighb_side).begin() );
-//            p_high.inc();
-//            auto p_low = p_high.lower_dim(cell_lower_dim);
-//
-//            uint i_dof_high=0, i_dof_low=0;
-//            switch (neighb_side.dim()) {
-//            case 2:
-//                fe_values_[0].reinit(cell_lower_dim.elm());
-//                fe_values_side_[1].reinit(neighb_side.side());
-//                for (uint i_dof=0; i_dof<vector_join_2d_.n_dofs_both(); ++i_dof) {
-//                    if (vector_join_2d_.is_high_dim(i_dof)) {
-//                        auto result = vector_join_2d_.shape(i_dof)(p_high);
-//                        auto ref = vec_view_side_2d_->value(i_dof_high, 1);
-//                        EXPECT_ARMA_EQ( result, ref );
-//                        auto result_low = vector_join_2d_.shape(i_dof)(p_low);
-//                        EXPECT_ARMA_EQ( result_low, arma_zero_vec );
-//
-//                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_high);
-//                        auto grad_ref = vec_view_side_2d_->grad(i_dof_high, 1);
-//                        EXPECT_ARMA_EQ( grad_result, grad_ref );
-//                        auto grad_result_low = vector_join_grad_2d_.shape(i_dof)(p_low);
-//                        EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
-//                        i_dof_high++;
-//                    }
-//                    else {
-//                        auto result = vector_join_2d_.shape(i_dof)(p_low);
-//                        auto ref = vec_view_1d_->value(i_dof_low, 1);
-//                        EXPECT_ARMA_EQ( result, ref );
-//                        auto result_high = vector_join_2d_.shape(i_dof)(p_high);
-//                        EXPECT_ARMA_EQ( result_high, arma_zero_vec );
-//
-//                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_low);
-//                        auto grad_ref = vec_view_1d_->grad(i_dof_low, 1);
-//                        EXPECT_ARMA_EQ( grad_result, grad_ref );
-//                        auto grad_result_high = vector_join_grad_2d_.shape(i_dof)(p_high);
-//                        EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
-//                        i_dof_low++;
-//                    }
-//                }
-//                break;
-//            case 3:
-//                fe_values_[1].reinit(cell_lower_dim.elm());
-//                fe_values_side_[2].reinit(neighb_side.side());
-//                for (uint i_dof=0; i_dof<vector_join_3d_.n_dofs_both(); ++i_dof) {
-//                    if (vector_join_3d_.is_high_dim(i_dof)) {
-//                        auto result = vector_join_3d_.shape(i_dof)(p_high);
-//                        auto ref = vec_view_side_3d_->value(i_dof_high, 1);
-//                        EXPECT_ARMA_EQ( result, ref );
-//                        auto result_low = vector_join_3d_.shape(i_dof)(p_low);
-//                        EXPECT_ARMA_EQ( result_low, arma_zero_vec );
-//
-//                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_high);
-//                        auto grad_ref = vec_view_side_3d_->grad(i_dof_high, 1);
-//                        EXPECT_ARMA_EQ( grad_result, grad_ref );
-//                        auto grad_result_low = vector_join_grad_3d_.shape(i_dof)(p_low);
-//                        EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
-//                        i_dof_high++;
-//                    }
-//                    else {
-//                        auto result = vector_join_3d_.shape(i_dof)(p_low);
-//                        auto ref = vec_view_2d_->value(i_dof_low, 1);
-//                        EXPECT_ARMA_EQ( result, ref );
-//                        auto result_high = vector_join_3d_.shape(i_dof)(p_high);
-//                        EXPECT_ARMA_EQ( result_high, arma_zero_vec );
-//
-//                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_low);
-//                        auto grad_ref = vec_view_2d_->grad(i_dof_low, 1);
-//                        EXPECT_ARMA_EQ( grad_result, grad_ref );
-//                        auto grad_result_high = vector_join_grad_3d_.shape(i_dof)(p_high);
-//                        EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
-//                        i_dof_low++;
-//                    }
-//                }
-//                break;
-//            }
-//        }
+        arma::vec3 arma_zero_vec = arma::zeros(3);
+        arma::mat33 arma_zero_mat = arma::zeros(3,3);
+        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
+            DHCellAccessor cell_lower_dim = coupling_integral_data_[i].cell;
+            DHCellSide neighb_side = coupling_integral_data_[i].side;;
+            //std::cout << " el high " << neighb_side.elem_idx() << ", el low: " << cell_lower_dim.elm_idx() << std::endl;
+
+            auto p_high = *( coupling_points(neighb_side.dim(), neighb_side).begin() );
+            p_high.inc();
+            auto p_low = p_high.lower_dim(cell_lower_dim);
+
+            uint i_dof_high=0, i_dof_low=0;
+            switch (neighb_side.dim()) {
+            case 2:
+                fe_values_[0].reinit(cell_lower_dim.elm());
+                fe_values_side_[1].reinit(neighb_side.side());
+                for (uint i_dof=0; i_dof<vector_join_2d_.n_dofs_both(); ++i_dof) {
+                    if (vector_join_2d_.is_high_dim(i_dof)) {
+                        auto result = vector_join_2d_.shape(i_dof)(p_high);
+                        auto ref = vec_view_side_2d_->value(i_dof_high, 1);
+                        EXPECT_ARMA_EQ( result, ref );
+                        auto result_low = vector_join_2d_.shape(i_dof)(p_low);
+                        EXPECT_ARMA_EQ( result_low, arma_zero_vec );
+
+                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_high);
+                        auto grad_ref = vec_view_side_2d_->grad(i_dof_high, 1);
+                        EXPECT_ARMA_EQ( grad_result, grad_ref );
+                        auto grad_result_low = vector_join_grad_2d_.shape(i_dof)(p_low);
+                        EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
+                        i_dof_high++;
+                    }
+                    else {
+                        auto result = vector_join_2d_.shape(i_dof)(p_low);
+                        auto ref = vec_view_1d_->value(i_dof_low, 1);
+                        EXPECT_ARMA_EQ( result, ref );
+                        auto result_high = vector_join_2d_.shape(i_dof)(p_high);
+                        EXPECT_ARMA_EQ( result_high, arma_zero_vec );
+
+                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_low);
+                        auto grad_ref = vec_view_1d_->grad(i_dof_low, 1);
+                        EXPECT_ARMA_EQ( grad_result, grad_ref );
+                        auto grad_result_high = vector_join_grad_2d_.shape(i_dof)(p_high);
+                        EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
+                        i_dof_low++;
+                    }
+                }
+                break;
+            case 3:
+                fe_values_[1].reinit(cell_lower_dim.elm());
+                fe_values_side_[2].reinit(neighb_side.side());
+                for (uint i_dof=0; i_dof<vector_join_3d_.n_dofs_both(); ++i_dof) {
+                    if (vector_join_3d_.is_high_dim(i_dof)) {
+                        auto result = vector_join_3d_.shape(i_dof)(p_high);
+                        auto ref = vec_view_side_3d_->value(i_dof_high, 1);
+                        EXPECT_ARMA_EQ( result, ref );
+                        auto result_low = vector_join_3d_.shape(i_dof)(p_low);
+                        EXPECT_ARMA_EQ( result_low, arma_zero_vec );
+
+                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_high);
+                        auto grad_ref = vec_view_side_3d_->grad(i_dof_high, 1);
+                        EXPECT_ARMA_EQ( grad_result, grad_ref );
+                        auto grad_result_low = vector_join_grad_3d_.shape(i_dof)(p_low);
+                        EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
+                        i_dof_high++;
+                    }
+                    else {
+                        auto result = vector_join_3d_.shape(i_dof)(p_low);
+                        auto ref = vec_view_2d_->value(i_dof_low, 1);
+                        EXPECT_ARMA_EQ( result, ref );
+                        auto result_high = vector_join_3d_.shape(i_dof)(p_high);
+                        EXPECT_ARMA_EQ( result_high, arma_zero_vec );
+
+                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_low);
+                        auto grad_ref = vec_view_2d_->grad(i_dof_low, 1);
+                        EXPECT_ARMA_EQ( grad_result, grad_ref );
+                        auto grad_result_high = vector_join_grad_3d_.shape(i_dof)(p_high);
+                        EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
+                        i_dof_low++;
+                    }
+                }
+                break;
+            }
+        }
 
     }
 
@@ -908,10 +908,10 @@ public:
     FeQArray<Scalar> divergence_side_1d_;
     FeQArray<Scalar> divergence_side_2d_;
     FeQArray<Scalar> divergence_side_3d_;
-//    FeQJoin<Vector> vector_join_2d_;
-//    FeQJoin<Vector> vector_join_3d_;
-//    FeQJoin<Tensor> vector_join_grad_2d_;
-//    FeQJoin<Tensor> vector_join_grad_3d_;
+    FeQJoin<Vector> vector_join_2d_;
+    FeQJoin<Vector> vector_join_3d_;
+    FeQJoin<Tensor> vector_join_grad_2d_;
+    FeQJoin<Tensor> vector_join_grad_3d_;
 };
 
 
