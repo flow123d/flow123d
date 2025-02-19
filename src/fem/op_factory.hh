@@ -418,124 +418,48 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        uint n_dofs_low = fe_component_low->n_dofs();
-        patch_point_vals_bulk_->make_fe_op(FeBulk::BulkOps::opScalarShape, {n_dofs_low}, bulk_reinit::ptop_scalar_shape, n_dofs_low);
-        patch_point_vals_bulk_->zero_values_needed();
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpScalarShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        uint n_dofs_high = fe_component_high->n_dofs();
-        patch_point_vals_side_->make_fe_op(FeSide::SideOps::opScalarShape, {n_dofs_high}, side_reinit::ptop_scalar_shape, n_dofs_high);
-        patch_point_vals_side_->zero_values_needed();
+        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::OpScalarShape<dim, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
 
-        return FeQJoin<Scalar>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high,
-                               FeBulk::BulkOps::opScalarShape, FeSide::SideOps::opScalarShape);
+        return FeQJoin<Scalar>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
     }
 
     inline FeQJoin<Vector> vector_join_shape(uint component_idx = 0)
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        uint op_idx_bulk = FeBulk::BulkOps::opVectorShape;
-        uint n_dofs_low = fe_component_low->n_dofs();
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        uint op_idx_side = FeSide::SideOps::opVectorShape;
-        uint n_dofs_high = fe_component_high->n_dofs();
+        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchVectorShape<dim, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
-        switch (fe_component_low->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_bulk_->make_fe_op(op_idx_bulk, {3, n_dofs_low}, bulk_reinit::ptop_vector_shape, n_dofs_low);
-                patch_point_vals_side_->make_fe_op(op_idx_side, {3, n_dofs_high}, side_reinit::ptop_vector_shape, n_dofs_high);
-                patch_point_vals_bulk_->zero_values_needed();
-                patch_point_vals_side_->zero_values_needed();
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                //patch_point_vals_.make_fe_op({3}, bulk_reinit::ptop_vector_contravariant_shape, fe_component->n_dofs());
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //patch_point_vals_.make_fe_op({3}, bulk_reinit::ptop_vector_piola_shape, fe_component->n_dofs());
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-
-        return FeQJoin<Vector>(patch_point_vals_bulk_, patch_point_vals_side_, n_dofs_low, n_dofs_high, op_idx_bulk, op_idx_side);
+        return FeQJoin<Vector>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
     }
 
     inline FeQJoin<Tensor> gradient_vector_join_shape(uint component_idx = 0)
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        uint op_idx_bulk = FeBulk::BulkOps::opGradVectorShape;
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchGradVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        uint op_idx_side = FeSide::SideOps::opGradVectorShape;
+        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchGradVectorShape<dim, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
-        switch (fe_component_low->fe_type()) {
-            case FEVector:
-            {
-                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
-                                                  {3, 3-fe_component_low->n_dofs()},
-                                                  bulk_reinit::ptop_vector_shape_grads<dim-1>,
-                                                  fe_component_low->n_dofs());
-
-                patch_point_vals_side_->make_fe_op(op_idx_side,
-                                                  {3, 3*fe_component_high->n_dofs()},
-                                                  side_reinit::ptop_vector_shape_grads<dim>,
-                                                  fe_component_high->n_dofs());
-
-                patch_point_vals_bulk_->zero_values_needed();
-                patch_point_vals_side_->zero_values_needed();
-                break;
-            }
-            case FEVectorContravariant:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-//                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
-//                                                  {3, 3},
-//                                                  bulk_reinit::ptop_vector_contravariant_shape_grads<dim-1>,
-//                                                  fe_component_low->n_dofs());
-//
-//                patch_point_vals_side_->make_fe_op(op_idx_side,
-//                                                  {3, 3},
-//                                                  side_reinit::ptop_vector_contravariant_shape_grads<dim>,
-//                                                  fe_component_high->n_dofs());
-                break;
-            }
-            case FEVectorPiola:
-            {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-//                patch_point_vals_bulk_->make_fe_op(op_idx_bulk,
-//                                                  {3, 3},
-//                                                  bulk_reinit::ptop_vector_piola_shape_grads<dim-1>,
-//                                                  fe_component_low->n_dofs());
-//
-//                patch_point_vals_side_->make_fe_op(op_idx_side,
-//                                                  {3, 3},
-//                                                  side_reinit::ptop_vector_piola_shape_grads<dim>,
-//                                                  fe_component_high->n_dofs());
-                break;
-            }
-            default:
-                ASSERT(false).error("Type of FiniteElement of grad_vector_shape accessor must be FEVector, FEVectorPiola or FEVectorContravariant!\n");
-        }
-
-        return FeQJoin<Tensor>(patch_point_vals_bulk_, patch_point_vals_side_, fe_component_low->n_dofs(),
-                fe_component_high->n_dofs(), op_idx_bulk, op_idx_side);
+        return FeQJoin<Tensor>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
     }
 
 private:

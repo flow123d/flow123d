@@ -151,7 +151,9 @@ class FeQJoin {
 public:
     /// Default constructor
     FeQJoin()
-    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr) {}
+    : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr),
+      patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr)
+    {}
 
     /**
      * Constructor
@@ -166,7 +168,7 @@ public:
     FeQJoin(PatchPointValues<3> *patch_point_vals_bulk, PatchPointValues<3> *patch_point_vals_side, unsigned int n_dofs_bulk,
             unsigned int n_dofs_side, unsigned int op_idx_bulk, unsigned int op_idx_side)
     : patch_point_vals_bulk_(patch_point_vals_bulk), patch_point_vals_side_(patch_point_vals_side),
-      patch_op_bulk_(nullptr), patch_op_side_(nullptr),
+      patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr),
       n_dofs_high_(n_dofs_side), n_dofs_low_(n_dofs_bulk), op_idx_bulk_(op_idx_bulk), op_idx_side_(op_idx_side) {}
 
     /**
@@ -175,9 +177,9 @@ public:
      * @param patch_op_bulk  Pointer to PatchOP bulk object.
      * @param patch_op_side  Pointer to PatchOp side object.
      */
-    FeQJoin(PatchOp<3> *patch_op_bulk, PatchOp<3> *patch_op_side)
+    FeQJoin(PatchOp<3> *patch_op_bulk, PatchOp<3> *patch_op_side, PatchOp<3> *patch_op_zero_bulk, PatchOp<3> *patch_op_zero_side)
     : patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr),
-      patch_op_bulk_(patch_op_bulk), patch_op_side_(patch_op_side),
+      patch_op_bulk_(patch_op_bulk), patch_op_side_(patch_op_side), patch_op_zero_bulk_(patch_op_zero_bulk), patch_op_zero_side_(patch_op_zero_side),
       n_dofs_high_(patch_op_side->n_dofs()), n_dofs_low_(patch_op_bulk->n_dofs()), op_idx_bulk_(0), op_idx_side_(0) {}
 
 
@@ -214,9 +216,9 @@ public:
          *      2) Test difference of vectors
          */
         if (this->is_high_dim(i_join_idx))
-            return FeQ<ValueType>(nullptr, patch_op_side_, i_join_idx - n_dofs_low()); // patch_op_side_->zero_values() instead nullptr
+            return FeQ<ValueType>(patch_op_zero_bulk_, patch_op_side_, i_join_idx - n_dofs_low());
         else
-            return FeQ<ValueType>(patch_op_bulk_, nullptr, i_join_idx); // patch_op_bulk_->zero_values() instead nullptr
+            return FeQ<ValueType>(patch_op_bulk_, patch_op_zero_side_, i_join_idx);
     }
 
 
@@ -224,8 +226,10 @@ private:
     // attributes:
     PatchPointValues<3> *patch_point_vals_bulk_;  ///< Pointer to bulk PatchPointValues - obsolete
     PatchPointValues<3> *patch_point_vals_side_;  ///< Pointer to side PatchPointValues - obsolete
-    PatchOp<3> *patch_op_bulk_;                  ///< Pointer to bulk operation
-    PatchOp<3> *patch_op_side_;                  ///< Pointer to side operation
+    PatchOp<3> *patch_op_bulk_;                   ///< Pointer to bulk operation
+    PatchOp<3> *patch_op_side_;                   ///< Pointer to side operation
+    PatchOp<3> *patch_op_zero_bulk_;              ///< Pointer to bulk zero operation
+    PatchOp<3> *patch_op_zero_side_;              ///< Pointer to side zero operation
     unsigned int n_dofs_high_;                    ///< Number of DOFs on high-dim element
     unsigned int n_dofs_low_;                     ///< Number of DOFs on low-dim element
     unsigned int op_idx_bulk_;                    ///< Index of operation in patch_point_vals_bulk_.operations vector - obsolete

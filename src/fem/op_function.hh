@@ -67,6 +67,25 @@ public:
     }
 };
 
+/// Class represents zero operation of Join quantities.
+template<unsigned int dim, unsigned int bulk_side, unsigned int spacedim>
+class OpZero : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	OpZero(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::fixedSizeOp)
+    {
+        ASSERT_EQ(this->dim_, dim);
+        this->bulk_side_ = bulk_side;
+        this->n_dofs_ = fe->n_dofs();;
+
+        this->create_result();
+        this->allocate_const_result( this->ppv().patch_fe_data_.zero_vec_ );
+    }
+
+    void eval() override {}
+};
+
 
 namespace Bulk {
 

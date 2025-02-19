@@ -152,7 +152,7 @@ public:
     }
 
     /// Return reference of PatchPointValues
-    PatchPointValues<spacedim> &ppv() {
+    inline PatchPointValues<spacedim> &ppv() {
         return patch_fe_->patch_point_vals_[bulk_side_][this->dim_-1];
     }
 
