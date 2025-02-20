@@ -216,9 +216,9 @@ public:
          *      2) Test difference of vectors
          */
         if (this->is_high_dim(i_join_idx))
-            return FeQ<ValueType>(patch_op_zero_bulk_, patch_op_side_, i_join_idx - n_dofs_low());
+            return FeQ<ValueType>(patch_op_zero_side_, patch_op_side_, i_join_idx - n_dofs_low());
         else
-            return FeQ<ValueType>(patch_op_bulk_, patch_op_zero_side_, i_join_idx);
+            return FeQ<ValueType>(patch_op_bulk_, patch_op_zero_bulk_, i_join_idx);
     }
 
 
