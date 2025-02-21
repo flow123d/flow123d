@@ -20,7 +20,6 @@
 #define OP_FACTORY_HH_
 
 #include "fem/eigen_tools.hh"
-#include "fem/patch_point_values.hh"
 #include "fem/op_function.hh"
 #include "fem/op_accessors_impl.hh"
 

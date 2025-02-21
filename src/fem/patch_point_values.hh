@@ -31,10 +31,6 @@
 
 template<unsigned int spacedim> class PatchOp;
 template<unsigned int spacedim> class PatchFEValues;
-template <class ValueType> class ElQ;      // not necessary after merge with patch_fe_values.hh
-template <class ValueType> class FeQ;
-template<unsigned int dim> class BulkValues;
-template<unsigned int dim> class SideValues;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
@@ -47,88 +43,6 @@ enum OpSizeType
 	pointOp,     ///< operation is evaluated on quadrature points
 	fixedSizeOp  ///< operation has fixed size and it is filled during initialization
 };
-
-
-/// Type for conciseness
-using ReinitFunction = std::function<void(PatchOp<3> *, IntTableArena &)>;
-
-
-
-
-namespace FeBulk {
-    /**
-     * Enumeration of element bulk operations
-     *
-     * Operations are stored in fix order. Order in enum is equal to order
-     * in PatchPointVale::operations_ vector. FE operations are added dynamically
-     * by request of user.
-     */
-    enum BulkOps
-    {
-        /// fixed operations (reference data filled once during initialization)
-        opWeights,            ///< weight of quadrature point
-        opRefScalar,          ///< Scalar reference
-        opRefVector,          ///< Vector reference
-        opRefScalarGrad,      ///< Gradient scalar reference
-        opRefVectorGrad,      ///< Gradient vector reference
-        /// operations evaluated on elements
-        opElCoords,           ///< coordinations of all nodes of element
-        opJac,                ///< Jacobian of element
-        opInvJac,             ///< inverse Jacobian
-        opJacDet,             ///< determinant of Jacobian
-        /// operations evaluated on quadrature points
-        opCoords,             ///< coordinations of quadrature point
-        opJxW,                ///< JxW value of quadrature point
-        /// FE operations
-        opScalarShape,        ///< Scalar shape operation
-        opVectorShape,        ///< Vector shape operation
-        opGradScalarShape,    ///< Scalar shape gradient
-        opGradVectorShape,    ///< Vector shape gradient
-        opVectorSymGrad,      ///< Vector symmetric gradient
-        opVectorDivergence,   ///< Vector divergence
-        opNItems              ///< Holds number of valid FE operations and value of invalid FE operation
-    };
-}
-
-
-namespace FeSide {
-    /**
-     * Enumeration of element side operations
-     *
-     * Operations are stored in fix order. Order in enum is equal to order
-     * in PatchPointVale::operations_ vector. FE operations are added dynamically
-     * by request of user.
-     */
-    enum SideOps
-    {
-        /// fixed operations (reference data filled once during initialization)
-        opWeights,              ///< weight of quadrature point
-        opRefScalar,            ///< Scalar reference
-        opRefVector,            ///< Vector reference
-        opRefScalarGrad,        ///< Gradient scalar reference
-        opRefVectorGrad,        ///< Gradient vector reference
-        /// operations evaluated on elements
-        opElCoords,             ///< coordinations of all nodes of element
-        opElJac,                ///< Jacobian of element
-        opElInvJac,             ///< inverse Jacobian of element
-        /// operations evaluated on sides
-        opSideCoords,           ///< coordinations of all nodes of side
-        opSideJac,              ///< Jacobian of element
-        opSideJacDet,           ///< determinant of Jacobian of side
-        /// operations evaluated on quadrature points
-        opCoords,               ///< coordinations of quadrature point
-        opJxW,                  ///< JxW value of quadrature point
-        opNormalVec,            ///< normal vector of quadrature point
-        /// FE operations
-        opScalarShape,         ///< Scalar shape operation
-        opVectorShape,         ///< Vector shape operation
-        opGradScalarShape,     ///< Scalar shape gradient
-        opGradVectorShape,     ///< Vector shape gradient
-        opVectorSymGrad,       ///< Vector symmetric gradient
-        opVectorDivergence,    ///< Vector divergence
-        opNItems               ///< Holds number of valid FE operations and value of invalid FE operation
-    };
-}
 
 
 
@@ -167,8 +81,7 @@ public:
      * @param dim Set dimension
      */
     PatchPointValues(uint dim, uint quad_order, bool is_bulk, PatchFeData &patch_fe_data)
-    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
-      needs_zero_values_(false) {
+    : elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data) {
         reset();
 
         if (is_bulk) {
@@ -183,10 +96,7 @@ public:
 	/**
 	 * Destructor.
 	 */
-    virtual ~PatchPointValues() {
-        if (needs_zero_values_)
-            delete zero_values_;
-	}
+    virtual ~PatchPointValues() {}
 
     /**
      * Initialize object, set number of columns (quantities) in tables.
@@ -194,8 +104,6 @@ public:
     void initialize() {
         this->reset();
         int_table_.resize(int_sizes_.size());
-        if (needs_zero_values_)
-        	this->create_zero_values();
     }
 
     /// Reset number of columns (points and elements)
@@ -205,11 +113,6 @@ public:
         i_elem_ = 0;
         elem_list_.clear();
         side_list_.clear();
-    }
-
-    /// Getter for dim_
-    inline uint dim() const {
-        return dim_;
     }
 
     /// Getter for n_elems_
@@ -276,65 +179,6 @@ public:
         return point_pos;
     }
 
-    /**
-     * Adds accessor of new operation to operations_ vector
-     *
-     * @param op_idx         Index of operation in operations_ vector
-     * @param shape          Shape of function output
-     * @param reinit_f       Reinitialize function
-     * @param size_type Type of operation by size of rows
-     */
-    PatchOp<spacedim> *make_new_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, OpSizeType size_type = pointOp) {
-    	return make_fe_op(op_idx, shape, reinit_f, 1, size_type);
-    }
-
-    /**
-     * Adds accessor of new operation with fixed data size (ref data) to operations_ vector
-     *
-     * @param op_idx         Index of operation in operations_ vector
-     * @param shape          Shape of function output
-     * @param reinit_f       Reinitialize function
-     */
-    PatchOp<spacedim> *make_fixed_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f) {
-        return make_fe_op(op_idx, shape, reinit_f, 1, fixedSizeOp);
-    }
-
-    /**
-     * Adds accessor of FE operation and adds operation dynamically to operations_ vector
-     *
-     * @param op_idx         Index of operation in operations_ vector
-     * @param shape          Shape of function output
-     * @param reinit_f       Reinitialize function
-     * @param n_dofs         Number of DOFs
-     * @param size_type      Type of operation by size of rows
-     */
-    PatchOp<spacedim> *make_fe_op(FMT_UNUSED uint op_idx, FMT_UNUSED std::initializer_list<uint> shape, FMT_UNUSED ReinitFunction reinit_f, FMT_UNUSED uint n_dofs,
-            FMT_UNUSED OpSizeType size_type = pointOp) {
-//        if (operations_[op_idx] == nullptr) {
-//            std::vector<PatchOp<spacedim> *> input_ops_ptr;
-//            for (uint i_op : this->op_dependency_[op_idx]) {
-//                ASSERT_PTR(operations_[i_op]);
-//                input_ops_ptr.push_back(operations_[i_op]);
-//            }
-//            operations_[op_idx] = new PatchOp<spacedim>(this->dim_, shape, reinit_f, size_type, input_ops_ptr, n_dofs);
-//        }
-//    	return operations_[op_idx];
-    	return nullptr;
-    }
-
-    /**
-     * Adds accessor of new operation with fixed data size (ref data) to operations_ vector
-     *
-     * @param op_idx         Index of operation in operations_ vector
-     * @param shape          Shape of function output
-     * @param reinit_f       Reinitialize function
-     * @param n_dofs         Number of DOFs
-     */
-    PatchOp<spacedim> *make_fixed_fe_op(uint op_idx, std::initializer_list<uint> shape, ReinitFunction reinit_f, uint n_dofs) {
-    	return make_fe_op(op_idx, shape, reinit_f, n_dofs, fixedSizeOp);
-    }
-
-
     /// return reference to assembly arena
     inline AssemblyArena &asm_arena() const {
     	return patch_fe_data_.asm_arena_;
@@ -345,82 +189,7 @@ public:
     	return *patch_fe_data_.patch_arena_;
     }
 
-    /// Set flag needs_zero_values_ to true
-    inline void zero_values_needed() {
-        needs_zero_values_ = true;
-    }
-
-
-    inline PatchPointValues *zero_values() {
-        ASSERT_PTR(zero_values_);
-        return zero_values_;
-    }
-
-    /// Create zero_values_ object
-    void create_zero_values() {
-	    ASSERT_PERMANENT(false);
-        // zero_values_ = new PatchPointValues(dim_, operations_, is_bulk_, patch_fe_data_);
-    }
-
 //protected:
-    /// Specialized constructor of zero values object. Do not use in other cases!
-    PatchPointValues(uint dim, FMT_UNUSED std::vector<PatchOp<spacedim> *> &ref_ops, bool is_bulk, PatchFeData &patch_fe_data)
-    : dim_(dim), is_bulk_(is_bulk), elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data),
-      needs_zero_values_(false) {
-        reset();
-
-//        if (is_bulk) op_dependency_ = std::vector< std::vector<unsigned int> >(FeBulk::BulkOps::opNItems);
-//        else op_dependency_ = std::vector< std::vector<unsigned int> >(FeSide::SideOps::opNItems);
-//
-//        operations_.resize(ref_ops.size(), nullptr);
-//        for (uint i_op = 0; i_op < ref_ops.size(); ++i_op ) {
-//            auto *op = ref_ops[i_op];
-//            if (op == nullptr) continue;
-//
-//            auto *new_op = make_fe_op(i_op, {op->shape()[0], op->shape()[1]}, &common_reinit::op_base, op->n_dofs(), op->size_type());
-//            new_op->allocate_const_result(patch_fe_data_.zero_vec_);
-//        }
-    }
-
-    /// Dependencies of bulk operations
-/*      this->op_dependency_ = std::vector< std::vector<unsigned int> >(FeBulk::BulkOps::opNItems);
-        this->op_dependency_[FeBulk::BulkOps::opJac] = {FeBulk::BulkOps::opElCoords};
-        this->op_dependency_[FeBulk::BulkOps::opInvJac] = {FeBulk::BulkOps::opJac};
-        this->op_dependency_[FeBulk::BulkOps::opJacDet] = {FeBulk::BulkOps::opJac};
-        this->op_dependency_[FeBulk::BulkOps::opJxW] = {FeBulk::BulkOps::opWeights, FeBulk::BulkOps::opJacDet};
-        this->op_dependency_[FeBulk::BulkOps::opScalarShape] = {FeBulk::BulkOps::opRefScalar};
-        this->op_dependency_[FeBulk::BulkOps::opVectorShape] = {FeBulk::BulkOps::opRefVector};
-        // VectorContravariant: {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac}
-        // VectorPiola: {FeBulk::BulkOps::opRefVector, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}
-        this->op_dependency_[FeBulk::BulkOps::opGradScalarShape] = {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefScalarGrad};
-        this->op_dependency_[FeBulk::BulkOps::opGradVectorShape] = {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad};
-        // VectorContravariant: {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac}
-        // VectorPiola: {FeBulk::BulkOps::opInvJac, FeBulk::BulkOps::opRefVectorGrad, FeBulk::BulkOps::opJac, FeBulk::BulkOps::opJacDet}
-        this->op_dependency_[FeBulk::BulkOps::opVectorSymGrad] = {FeBulk::BulkOps::opGradVectorShape};
-        this->op_dependency_[FeBulk::BulkOps::opVectorDivergence] = {FeBulk::BulkOps::opGradVectorShape};
-*/
-
-    /// Dependencies of side operations -
-/*      this->op_dependency_ = std::vector< std::vector<unsigned int> >(FeSide::SideOps::opNItems);
-        this->op_dependency_[FeSide::SideOps::opElJac] = {FeSide::SideOps::opElCoords};
-        this->op_dependency_[FeSide::SideOps::opElInvJac] = {FeSide::SideOps::opElJac};
-        this->op_dependency_[FeSide::SideOps::opSideJac] = {FeSide::SideOps::opSideCoords};
-        this->op_dependency_[FeSide::SideOps::opSideJacDet] = {FeSide::SideOps::opSideJac};
-        this->op_dependency_[FeSide::SideOps::opJxW] = {FeSide::SideOps::opWeights, FeSide::SideOps::opSideJacDet};
-        this->op_dependency_[FeSide::SideOps::opNormalVec] = {FeSide::SideOps::opElInvJac};
-        this->op_dependency_[FeSide::SideOps::opScalarShape] = {FeSide::SideOps::opRefScalar};
-        this->op_dependency_[FeSide::SideOps::opVectorShape] = {FeSide::SideOps::opRefVector};
-        // VectorContravariant: {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac}
-        // VectorPiola: {FeSide::SideOps::opRefVector, FeSide::SideOps::opSideJac, FeSide::SideOps::opSideJacDet}
-        this->op_dependency_[FeSide::SideOps::opGradScalarShape] = {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefScalarGrad};
-        this->op_dependency_[FeSide::SideOps::opGradVectorShape] = {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad};
-        // VectorContravariant: {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac}
-        // VectorPiola: {FeSide::SideOps::opElInvJac, FeSide::SideOps::opRefVectorGrad, FeSide::SideOps::opElJac, FeSide::SideOps::opSideJacDet}
-            // TODO ?? define and use opElJacDet
-        this->op_dependency_[FeSide::SideOps::opVectorSymGrad] = {FeSide::SideOps::opGradVectorShape};
-        this->op_dependency_[FeSide::SideOps::opVectorDivergence] = {FeSide::SideOps::opGradVectorShape};
-*/
-
 
     /**
      * Hold integer values of quadrature points of defined operations.
@@ -440,11 +209,6 @@ public:
     std::vector<OpSizeType> int_sizes_;
 
 
-    /// Vector of all defined operations
-    //std::vector<PatchOp<spacedim> *> operations_;
-
-    uint dim_;                          ///< Dimension
-    bool is_bulk_;                      ///< Flag, bulk or side PatchPointValues
     uint n_points_;                     ///< Number of points in patch
     uint n_elems_;                      ///< Number of elements in patch
     uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
@@ -458,21 +222,8 @@ public:
 	std::vector<ElementAccessor<3>> elem_list_; ///< List of elements on patch
 	std::vector<Side> side_list_;               ///< List of sides on patch
 
-    bool needs_zero_values_;            ///< Flags hold whether zero_values_ object is needed
-    PatchPointValues *zero_values_;     ///< PatchPointValues object returns zero values for all operations
-
     friend class PatchFEValues<spacedim>;
     friend class PatchOp<spacedim>;
-    template <class ValueType>
-    friend class ElQ;
-    template <class ValueType>
-    friend class FeQ;
-    template<unsigned int dim>
-    friend class BulkValues;
-    template<unsigned int dim>
-    friend class SideValues;
-    template<unsigned int dim>
-    friend class JoinValues;
 };
 
 

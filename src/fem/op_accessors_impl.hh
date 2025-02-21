@@ -19,7 +19,6 @@
 #ifndef OP_ACCESSORS_IMPL_HH_
 #define OP_ACCESSORS_IMPL_HH_
 
-#include "fem/patch_point_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "fem/op_accessors.hh"
 #include "fem/patch_op.hh"
