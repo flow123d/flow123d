@@ -73,6 +73,11 @@ public:
 //        return dim_;
 //    }
 
+    /// Getter for bulk_side flag
+    inline uint bulk_side() const {
+        return bulk_side_;
+    }
+
     /// Getter for size_type_
     OpSizeType size_type() const {
         return size_type_;

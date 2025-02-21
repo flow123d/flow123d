@@ -113,34 +113,34 @@ public:
 
         UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
         UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
-        fe_values_[0].initialize(*patch_fe_values_.get_quadrature(1, true), *fe_[Dim<1>{}], u);
-        fe_values_[1].initialize(*patch_fe_values_.get_quadrature(2, true), *fe_[Dim<2>{}], u);
-        fe_values_[2].initialize(*patch_fe_values_.get_quadrature(3, true), *fe_[Dim<3>{}], u);
-        fe_values_side_[0].initialize(*patch_fe_values_.get_quadrature(1, false), *fe_[Dim<1>{}], u_side);
-        fe_values_side_[1].initialize(*patch_fe_values_.get_quadrature(2, false), *fe_[Dim<2>{}], u_side);
-        fe_values_side_[2].initialize(*patch_fe_values_.get_quadrature(3, false), *fe_[Dim<3>{}], u_side);
+        fe_values_[0].initialize(*patch_fe_values_.get_bulk_quadrature(1), *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*patch_fe_values_.get_bulk_quadrature(2), *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*patch_fe_values_.get_bulk_quadrature(3), *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*patch_fe_values_.get_side_quadrature(1), *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*patch_fe_values_.get_side_quadrature(2), *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*patch_fe_values_.get_side_quadrature(3), *fe_[Dim<3>{}], u_side);
     }
 
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_quadrature(1,true));
-        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_quadrature(2,true));
-        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_quadrature(3,true));
-        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_quadrature(1,false));
-        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_quadrature(2,false));
-        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_quadrature(3,false));
-        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_quadrature(1,true));
-        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_quadrature(2,true));
+        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_bulk_quadrature(1));
+        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_bulk_quadrature(2));
+        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_bulk_quadrature(3));
+        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_side_quadrature(1));
+        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_side_quadrature(2));
+        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_side_quadrature(3));
+        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_bulk_quadrature(1));
+        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_bulk_quadrature(2));
     }
 
     void initialize() {
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,true));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,true));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,true));
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,false));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,false));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,false));
+        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_bulk_quadrature(1));
+        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_bulk_quadrature(2));
+        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_bulk_quadrature(3));
+        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_side_quadrature(1));
+        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_side_quadrature(2));
+        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_side_quadrature(3));
         this->patch_fe_values_.init_finalize();
     }
 

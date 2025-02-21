@@ -126,12 +126,6 @@ public:
     ~PatchFEValues()
     {}
 
-    /// Return bulk or side quadrature of given dimension
-    Quadrature *get_quadrature(uint dim, bool is_bulk) const {
-        if (is_bulk) return patch_point_vals_[0][dim-1].get_quadrature();
-        else return patch_point_vals_[1][dim-1].get_quadrature();
-    }
-
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
 	 *
@@ -396,10 +390,6 @@ private:
     std::vector< PatchOp<spacedim> *> operations_;
     std::vector< std::unordered_map<std::string, PatchOp<spacedim> *> > op_dependency_;
 
-    template <class ValueType>
-    friend class ElQ;
-    template <class ValueType>
-    friend class FeQ;
     friend class PatchOp<spacedim>;
 };
 

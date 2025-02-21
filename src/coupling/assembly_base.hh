@@ -219,8 +219,8 @@ public:
 
 	AssemblyBasePatch(PatchFEValues<3> *fe_values)
 	: AssemblyBase<dim>(), fe_values_(fe_values) {
-	    this->quad_ = fe_values_->get_quadrature(dim, true); // bulk quadrature
-	    this->quad_low_  = fe_values_->get_quadrature(dim, false); // side quadrature
+	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
+	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
 	}
 
     /// Register cell points of volume integral
