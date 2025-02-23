@@ -152,11 +152,11 @@ jobs:
             config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test 2>&1 | tee test.log
             echo "${PIPESTATUS[0]}" > test_status.txt
 
-        #- name: Generate JUnit XML report
-        #  if: always()
-        #  run: |
-        #    TEST_STATUS=$(cat test_status.txt)
-        #    python3 path/to/your_script.py ${TEST_STATUS} test.log junit-report.xml
+        - name: Generate JUnit XML report
+          if: always()
+          run: |
+            TEST_STATUS=$(cat test_status.txt)
+            python3 unit_tests/generate_compile_xml.py ${TEST_STATUS} test.log build_tree/unit_tests/${{matrix.test_dir}}/junit-report.xml
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
@@ -179,14 +179,16 @@ jobs:
               with:
                 pattern: unit_tests_*
                 path: unit_tests
-            - name: Test Reporter 
-              uses: ./.github/actions/test-report
+            - name: Report tests
+              uses: dorny/test-reporter@v1
               with:
-                path-to-xml: unit_tests/**/*.xml
-                github-token: ${{ secrets.GITHUB_TOKEN }}
+                name: Unit Tests Report
+                path:  unit_tests/**/*.xml
+                reporter: java-junit
+                list-suites: failed
+                list-tests: failed
                 fail-on-error: true
                 fail-on-empty: true
-                reporter: java-junit
 
     build_doc:
         needs: [build]
