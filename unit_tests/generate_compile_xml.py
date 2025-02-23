@@ -32,4 +32,3 @@ if __name__ == "__main__":
     xml_output = sys.argv[3]
 
     create_junit_xml(status, log_file, xml_output)
-    sys.exit(status)

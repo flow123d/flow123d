@@ -156,7 +156,7 @@ jobs:
           if: always()
           run: |
             TEST_STATUS=$(cat test_status.txt)
-            python3 unit_tests/generate_compile_xml.py ${TEST_STATUS} test.log build_tree/unit_tests/${{matrix.test_dir}}/junit-report.xml
+            python3 unit_tests/generate_compile_xml.py ${TEST_STATUS} test.log build_tree/unit_tests/${{matrix.test_dir}}/compile_report.xml
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
@@ -185,7 +185,6 @@ jobs:
                 name: Unit Tests Report
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
-                list-suites: failed
                 list-tests: failed
                 fail-on-error: true
                 fail-on-empty: true
