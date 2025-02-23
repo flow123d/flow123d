@@ -20,9 +20,9 @@ on:
 env:
   autopull:  0
 permissions:
-  contents: read
-  actions: read
+  actions: write
   checks: write
+  pull-requests: write 
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -186,8 +186,17 @@ jobs:
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
                 list-tests: failed
-                fail-on-error: true
-                fail-on-empty: true
+                #fail-on-error: true
+                #fail-on-empty: true
+            - name: Publish Report
+              uses: turing85/publish-report@v2
+              with:
+                report-name: Publish Unit Tests Report
+                report-path: unit_tests/**/*.xml
+                report-reporter: java-junit
+                report-list-suites: failed
+                report-list-tests: failed
+                report-fail-on-error: true
 
     build_doc:
         needs: [build]
