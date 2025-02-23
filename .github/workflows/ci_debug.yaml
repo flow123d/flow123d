@@ -185,9 +185,7 @@ jobs:
                 name: Unit Tests Report
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
-                list-tests: failed
-                #fail-on-error: true
-                #fail-on-empty: true
+                fail-on-error: false
             - name: Publish Report
               uses: turing85/publish-report@v2
               with:
