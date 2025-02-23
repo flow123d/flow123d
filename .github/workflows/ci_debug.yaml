@@ -147,11 +147,11 @@ jobs:
           continue-on-error: true
           run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-        - name: Artifact unit tests
+        - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
           with:         
-            name: unit_tests
-            path: build_tree/unit_tests
+            name: unit_tests_${{ matrix.test_dir }}
+            path: build_tree/unit_tests/${{ matrix.test_dir }}
 
     unit-test-report:
         name: Unit Test Report
@@ -163,10 +163,11 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-            - name: Download build_dir artifact
+            - name: Download all unit tests artifacts
               uses: actions/download-artifact@v4
               with:
-                name: unit_tests
+                pattern: unit_tests_*
+                path: unit_tests
             - name: Test Reporter 
               uses: ./.github/actions/test-report
               with:
