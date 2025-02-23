@@ -143,9 +143,17 @@ jobs:
             build_dir=build-${git_branch}
             echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
 
-        - name: Run UNIT tests
+        - name: Run UNIT tests and capture log
           continue-on-error: true
-          run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+          run: |
+            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test 2>&1 | tee test.log
+            echo "${PIPESTATUS[0]}" > test_status.txt
+
+        #- name: Generate JUnit XML report
+        #  if: always()
+        #  run: |
+        #    TEST_STATUS=$(cat test_status.txt)
+        #    python3 path/to/your_script.py ${TEST_STATUS} test.log junit-report.xml
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
@@ -173,6 +181,9 @@ jobs:
               with:
                 path-to-xml: unit_tests/**/*.xml
                 github-token: ${{ secrets.GITHUB_TOKEN }}
+                fail-on-error: true
+                fail-on-empty: true
+                reporter: java-junit
 
     build_doc:
         needs: [build]
