@@ -195,6 +195,9 @@ jobs:
                 report-list-suites: failed
                 report-list-tests: failed
                 report-fail-on-error: true
+                comment-enabled: true
+                comment-header: publist-test-report
+                recreate-comment: true
 
     build_doc:
         needs: [build]
