@@ -1,4 +1,3 @@
-import sys
 import os
 import xml.etree.ElementTree as ET
 import argparse
@@ -29,4 +28,4 @@ if __name__ == "__main__":
     parser.add_argument("--run_id", type=str, required=True, help="Run ID")
     
     args = parser.parse_args()
-    create_junit_xml(args.status, args.url, args.output, args.repository, args.sha, args.run_id)
+    create_junit_xml(args.status, args.output, args.url, args.repository, args.sha, args.run_id)
