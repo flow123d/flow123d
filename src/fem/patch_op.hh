@@ -42,9 +42,12 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, PatchFEValues<3> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(1), patch_fe_(&pfev)
-    {}
+    PatchOp(uint dim, PatchFEValues<3> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
+    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(n_dofs), patch_fe_(&pfev)
+    {
+        ASSERT_GT(n_dofs, 0);
+        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
+    }
 
     /// Destructor
     virtual ~PatchOp()
@@ -107,10 +110,6 @@ public:
         std::stringstream ss;
         ss << shape_[0] << "x" << shape_[1];
         return ss.str();
-    }
-
-    inline void create_result() {
-        result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
     }
 
     inline void allocate_result(size_t data_size, PatchArena &arena) {

@@ -148,9 +148,6 @@ public:
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
-        for (auto * op : operations_) {
-            if (op->size_type_ != OpSizeType::fixedSizeOp) op->create_result();
-        }
     }
 
     /// Reset PatchpointValues structures

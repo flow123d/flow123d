@@ -31,8 +31,8 @@ template<unsigned int dim, unsigned int spacedim>
 class VectorSymGradBase : public PatchOp<spacedim> {
 public:
     /// Constructor
-    VectorSymGradBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : PatchOp<spacedim>(_dim, pfev, shape, size_type)
+    VectorSymGradBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs)
+    : PatchOp<spacedim>(_dim, pfev, shape, size_type, n_dofs)
     {
         ASSERT_EQ(this->dim_, dim);
     }
@@ -51,8 +51,8 @@ template<unsigned int dim, unsigned int spacedim>
 class VectorDivergenceBase : public PatchOp<spacedim> {
 public:
     /// Constructor
-    VectorDivergenceBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : PatchOp<spacedim>(_dim, pfev, shape, size_type)
+    VectorDivergenceBase(uint _dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs)
+    : PatchOp<spacedim>(_dim, pfev, shape, size_type, n_dofs)
     {
         ASSERT_EQ(this->dim_, dim);
     }
@@ -73,13 +73,11 @@ class OpZero : public PatchOp<spacedim> {
 public:
     /// Constructor
 	OpZero(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::fixedSizeOp)
+    : PatchOp<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
         this->bulk_side_ = bulk_side;
-        this->n_dofs_ = fe->n_dofs();;
 
-        this->create_result();
         this->allocate_const_result( this->ppv().patch_fe_data_.zero_vec_ );
     }
 
@@ -94,8 +92,8 @@ template<unsigned int spacedim>
 class Base : public PatchOp<spacedim> {
 public:
     /// Constructor
-	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : PatchOp<spacedim>(dim, pfev, shape, size_type)
+	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
+    : PatchOp<spacedim>(dim, pfev, shape, size_type, n_dofs)
     {
         this->bulk_side_ = 0;
     }
@@ -192,7 +190,6 @@ public:
     {
         // create result vector of weights operation in assembly arena
         const std::vector<double> &point_weights_vec = pfev.get_bulk_quadrature(dim)->get_weights();
-        this->create_result();
         this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
         for (uint i=0; i<point_weights_vec.size(); ++i)
             this->result_(0)(i) = point_weights_vec[i];
@@ -240,20 +237,17 @@ class OpRefScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_bulk_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (unsigned int i_p = 0; i_p < n_points; i_p++)
-            for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+            for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++) {
                 ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
             }
     }
@@ -267,20 +261,17 @@ class OpRefVector : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpRefVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::fixedSizeOp)
+	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
 	{
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_bulk_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
 
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
                 for (uint c=0; c<spacedim; ++c)
                     ref_vector_value(c, i_dof)(i_p) = ref_shape_vals[i_p][i_dof](c);
@@ -295,20 +286,17 @@ class OpRefGradScalar : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_bulk_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
         }
@@ -323,21 +311,18 @@ class OpRefGradVector : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpRefGradVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_bulk_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
         for (uint i_c=0; i_c<spacedim; ++i_c) {
             for (uint i_dim=0; i_dim<dim; ++i_dim)
-                for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
                         ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = ref_shape_grads[i_p][i_dof](i_dim, i_c);
         }
@@ -352,11 +337,10 @@ class OpScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+	: Op::Bulk::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
 	{
 	    ASSERT_EQ(this->dim_, dim);
 
-	    this->n_dofs_ = fe->n_dofs();
 	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
 	}
 
@@ -391,11 +375,10 @@ class OpVectorShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         ASSERT_EQ(this->dim_, dim);
 
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< OpRefVector<dim, spacedim>, dim >(fe) );
 	}
 
@@ -435,10 +418,9 @@ class DispatchVectorShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
     DispatchVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), in_op_(nullptr)
     {
         ASSERT_EQ(this->dim_, dim);
-        this->n_dofs_ = fe->n_dofs();
 
         switch (fe->fe_type()) {
             case FEVector:
@@ -478,11 +460,10 @@ class OpGradScalarShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
+	: Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
 	{
 	    ASSERT_EQ(this->dim_, dim);
 
-	    this->n_dofs_ = fe->n_dofs();
 	    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim> >(dim) );
 	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
 	}
@@ -517,11 +498,10 @@ class OpGradVectorShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	OpGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         ASSERT_EQ(this->dim_, dim);
 
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim> >(dim) );
         this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
 	}
@@ -566,10 +546,9 @@ class DispatchGradVectorShape : public Op::Bulk::Base<spacedim> {
 public:
     /// Constructor
 	DispatchGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    : Op::Bulk::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), in_op_(nullptr)
     {
         ASSERT_EQ(this->dim_, dim);
-        this->n_dofs_ = fe->n_dofs();
 
         switch (fe->fe_type()) {
             case FEVector:
@@ -609,10 +588,9 @@ class OpVectorSymGrad : public Op::VectorSymGradBase<dim, spacedim> {
 public:
     /// Constructor
 	OpVectorSymGrad(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp)
+    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs())
     {
         this->bulk_side_ = 0;
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
     }
 };
@@ -623,10 +601,9 @@ class OpVectorDivergence : public Op::VectorDivergenceBase<dim, spacedim> {
 public:
     /// Constructor
 	OpVectorDivergence(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
     {
         this->bulk_side_ = 0;
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
     }
 };
@@ -642,8 +619,8 @@ template<unsigned int spacedim>
 class Base : public PatchOp<spacedim> {
 public:
     /// Constructor
-	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type)
-    : PatchOp<spacedim>(dim, pfev, shape, size_type)
+	Base(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
+    : PatchOp<spacedim>(dim, pfev, shape, size_type, n_dofs)
     {
         this->bulk_side_ = 1;
     }
@@ -802,7 +779,6 @@ public:
     {
         // create result vector of weights operation in assembly arena
         const std::vector<double> &point_weights_vec = pfev.get_side_quadrature(dim)->get_weights();
-        this->create_result();
         this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
         for (uint i=0; i<point_weights_vec.size(); ++i)
             this->result_(0)(i) = point_weights_vec[i];
@@ -882,21 +858,18 @@ class OpRefScalar : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
     OpRefScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1}, OpSizeType::fixedSizeOp)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_side_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (unsigned int s=0; s<dim+1; ++s) {
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++) {
+                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++) {
                     ref_scalar_value(s, i_dof)(i_p) = ref_shape_vals[s][i_p][i_dof][0];
                 }
         }
@@ -911,22 +884,19 @@ class OpRefVector : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
     OpRefVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_side_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
         auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
 
         for (unsigned int s=0; s<dim+1; ++s)
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < n_dofs; i_dof++)
+                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
                     for (uint c=0; c<spacedim; ++c)
                         ref_vector_value(s,3*i_dof+c)(i_p) = ref_shape_vals[s][i_p][i_dof][c];
 	}
@@ -940,20 +910,17 @@ class OpRefGradScalar : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
     OpRefGradScalar(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, dim}, OpSizeType::fixedSizeOp)
+    : Op::Side::Base<spacedim>(_dim, pfev, {dim+1, dim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_side_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
 
         std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (unsigned int s=0; s<dim+1; ++s)
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+            for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     for (uint c=0; c<dim; ++c)
                         ref_scalar_value(s,dim*i_dof+c)(i_p) = ref_shape_grads[s][i_p][i_dof](c);
@@ -968,23 +935,20 @@ class OpRefGradVector : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	OpRefGradVector(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {(dim+1)*dim, spacedim}, OpSizeType::fixedSizeOp)
+    : Op::Side::Base<spacedim>(_dim, pfev, {(dim+1)*dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         ASSERT_EQ(this->dim_, dim);
 
         uint n_points = pfev.get_side_quadrature(dim)->size();
-        uint n_dofs = fe->n_dofs();
-        this->n_dofs_ = n_dofs;
         uint n_sides = dim+1;
 
         std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
-        this->create_result();
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
         for (uint i_sd=0; i_sd<n_sides; ++i_sd)
             for (uint i_c=0; i_c<spacedim; ++i_c)
                 for (uint i_dim=0; i_dim<dim; ++i_dim)
-                    for (uint i_dof=0; i_dof<n_dofs; ++i_dof)
+                    for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p) {
                             ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = ref_shape_grads[i_sd][i_p][i_dof](i_dim, i_c);
                         }
@@ -999,11 +963,10 @@ class OpScalarShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	OpScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+	: Op::Side::Base<spacedim>(_dim, pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
 	{
 	    ASSERT_EQ(this->dim_, dim);
 
-	    this->n_dofs_ = fe->n_dofs();
 	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
 	}
 
@@ -1032,11 +995,10 @@ class OpVectorShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	OpVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         ASSERT_EQ(this->dim_, dim);
 
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< OpRefVector<dim, spacedim>, dim >(fe) );
 	}
 
@@ -1074,10 +1036,9 @@ class DispatchVectorShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
     DispatchVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), in_op_(nullptr)
     {
         ASSERT_EQ(this->dim_, dim);
-        this->n_dofs_ = fe->n_dofs();
 
         switch (fe->fe_type()) {
             case FEVector:
@@ -1117,11 +1078,10 @@ class OpGradScalarShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	OpGradScalarShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Side::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp)
+	: Op::Side::Base<spacedim>(_dim, pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
 	{
 	    ASSERT_EQ(this->dim_, dim);
 
-	    this->n_dofs_ = fe->n_dofs();
 	    this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim> >(dim) );
 	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
 	}
@@ -1174,11 +1134,10 @@ class OpGradVectorShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	OpGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), dispatch_op_(dispatch_op)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         ASSERT_EQ(this->dim_, dim);
 
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim> >(dim) );
         this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
 	}
@@ -1238,10 +1197,9 @@ class DispatchGradVectorShape : public Op::Side::Base<spacedim> {
 public:
     /// Constructor
 	DispatchGradVectorShape(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp), in_op_(nullptr)
+    : Op::Side::Base<spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), in_op_(nullptr)
     {
         ASSERT_EQ(this->dim_, dim);
-        this->n_dofs_ = fe->n_dofs();
 
         switch (fe->fe_type()) {
             case FEVector:
@@ -1281,10 +1239,9 @@ class OpVectorSymGrad : public Op::VectorSymGradBase<dim, spacedim> {
 public:
     /// Constructor
 	OpVectorSymGrad(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp)
+    : Op::VectorSymGradBase<dim, spacedim>(_dim, pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs())
     {
         this->bulk_side_ = 1;
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
     }
 };
@@ -1295,10 +1252,9 @@ class OpVectorDivergence : public Op::VectorDivergenceBase<dim, spacedim> {
 public:
     /// Constructor
 	OpVectorDivergence(uint _dim, PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp)
+    : Op::VectorDivergenceBase<dim, spacedim>(_dim, pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
     {
         this->bulk_side_ = 1;
-        this->n_dofs_ = fe->n_dofs();
         this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, spacedim>, dim >(fe) );
     }
 };
