@@ -10,8 +10,8 @@ def create_junit_xml(status, xml_output, url, repository, sha, run_id):
 
     testsuites = ET.Element("testsuites")
     testsuite = ET.SubElement(testsuites, "testsuite", name="CompilationTests", tests="1", failures="1" if status != 0 else "0", errors="0", time="0.0")
-    testcase = ET.SubElement(testsuite, "testcase", classname="Compilation", name="CompileTest", time="0.0")
-    failure = ET.SubElement(testcase, "failure", message="Compilation failed", type="CompileError")
+    testcase = ET.SubElement(testsuite, "testcase", classname="Compilation", name="Compilation Failed", time="0.0")
+    failure = ET.SubElement(testcase, "failure", message="Compilation Failed", type="CompileError")
     failure.text = f"{url}/{repository}/commit/{sha}/checks/{run_id}"
 
     tree = ET.ElementTree(testsuites)
