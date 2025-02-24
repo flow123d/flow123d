@@ -181,25 +181,13 @@ jobs:
               with:
                 pattern: unit_tests_*
                 path: unit_tests
-            #- name: Report tests
-            #  uses: dorny/test-reporter@v1
-            #  with:
-            #    name: Unit Tests Report
-            #    path:  unit_tests/**/*.xml
-            #    reporter: java-junit
-            #    fail-on-error: false
-            - name: Publish Report
-              uses: turing85/publish-report@v2
+            - name: Report tests
+              uses: dorny/test-reporter@v1
               with:
-                report-name: Publish Unit Tests Report
-                report-path: unit_tests/**/*.xml
-                report-reporter: java-junit
-                report-list-suites: failed
-                report-list-tests: failed
-                report-fail-on-error: true
-                comment-enabled: true
-                comment-header: publist-test-report
-                recreate-comment: true
+                name: Unit Tests Report
+                path:  unit_tests/**/*.xml
+                reporter: java-junit
+                fail-on-error: true
 
     build_doc:
         needs: [build]
