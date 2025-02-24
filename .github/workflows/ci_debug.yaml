@@ -149,14 +149,16 @@ jobs:
         - name: Run UNIT tests and capture log
           continue-on-error: true
           run: |
-            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test 2>&1 | tee test.log
+            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
             echo "${PIPESTATUS[0]}" > test_status.txt
 
         - name: Generate JUnit XML report
           if: always()
           run: |
             TEST_STATUS=$(cat test_status.txt)
-            python3 unit_tests/generate_compile_xml.py ${TEST_STATUS} test.log build_tree/unit_tests/${{matrix.test_dir}}/compile_report.xml
+            python3 unit_tests/generate_compile_xml.py --status ${TEST_STATUS} --url ${{ github.server_url }} \
+            --output build_tree/unit_tests/${{matrix.test_dir}}/compile_report.xml \
+            --repository ${{ github.repository }} --sha ${{ github.sha }} --run_id ${{ github.run_id }}
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
@@ -179,13 +181,13 @@ jobs:
               with:
                 pattern: unit_tests_*
                 path: unit_tests
-            - name: Report tests
-              uses: dorny/test-reporter@v1
-              with:
-                name: Unit Tests Report
-                path:  unit_tests/**/*.xml
-                reporter: java-junit
-                fail-on-error: false
+            #- name: Report tests
+            #  uses: dorny/test-reporter@v1
+            #  with:
+            #    name: Unit Tests Report
+            #    path:  unit_tests/**/*.xml
+            #    reporter: java-junit
+            #    fail-on-error: false
             - name: Publish Report
               uses: turing85/publish-report@v2
               with:
