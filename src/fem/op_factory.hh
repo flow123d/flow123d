@@ -49,7 +49,7 @@ protected:
     /// Factory method. Creates operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_patch_op() {
-    	return patch_fe_values_.get< OpType >(dim);
+    	return patch_fe_values_.get< OpType, dim >();
     }
 
     /// Factory method. Same as previous but creates FE operation.

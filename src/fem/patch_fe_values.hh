@@ -93,8 +93,7 @@ public:
 
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
-      patch_point_vals_(2),
-      op_dependency_(3)
+      patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[0].push_back( PatchPointValues(dim, 0, true, patch_fe_data_) );
@@ -106,8 +105,7 @@ public:
     PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2),
-      fe_(fe),
-      op_dependency_(3)
+      fe_(fe)
     {
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[0].push_back( PatchPointValues(dim, quad_order, true, patch_fe_data_) );
@@ -279,13 +277,13 @@ public:
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType>
-    PatchOp<spacedim>* get(uint dim) {
+    template<class OpType, unsigned int dim>
+    PatchOp<spacedim>* get() {
         std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_[dim-1].find(op_name);
-        if (it == op_dependency_[dim-1].end()) {
-            PatchOp<spacedim>* new_op = new OpType(dim, *this);
-            op_dependency_[dim-1].insert(std::make_pair(op_name, new_op));
+        auto it = op_dependency_.find(op_name);
+        if (it == op_dependency_.end()) {
+            PatchOp<spacedim>* new_op = new OpType(*this);
+            op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
             return new_op;
@@ -298,10 +296,10 @@ public:
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get(std::shared_ptr<FiniteElement<dim>> fe) {
         std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_[dim-1].find(op_name);
-        if (it == op_dependency_[dim-1].end()) {
-            PatchOp<spacedim>* new_op = new OpType(dim, *this, fe);
-            op_dependency_[dim-1].insert(std::make_pair(op_name, new_op));
+        auto it = op_dependency_.find(op_name);
+        if (it == op_dependency_.end()) {
+            PatchOp<spacedim>* new_op = new OpType(*this, fe);
+            op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
             return new_op;
@@ -385,7 +383,7 @@ private:
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    std::vector< std::unordered_map<std::string, PatchOp<spacedim> *> > op_dependency_;
+    std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
 
     friend class PatchOp<spacedim>;
 };
