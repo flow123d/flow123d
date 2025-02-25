@@ -183,6 +183,7 @@ jobs:
                 path: unit_tests
             - name: Report tests
               uses: dorny/test-reporter@v1
+              id: test-reporter
               with:
                 name: Unit Tests Report
                 path:  unit_tests/**/*.xml
@@ -191,6 +192,24 @@ jobs:
                 list-suites: failed
                 list-tests: failed
                 only-summary: true
+            - name: Find Comment
+              uses: peter-evans/find-comment@v3
+              if: ${{ github.event_name == 'pull_request' }}
+              id: find-comment
+              with:
+                issue-number: ${{ github.event.pull_request.number }}
+                comment-author: 'github-actions[bot]'
+                body-includes: Build output
+            - name: Create or update comment
+              uses: peter-evans/create-or-update-comment@v4
+              if: ${{ github.event_name == 'pull_request' }}
+              with:
+                comment-id: ${{ steps.find-comment.outputs.comment-id }}
+                issue-number: ${{ github.event.pull_request.number }}
+                body: |
+                  Build output
+                  ${{ steps.test-reporter.outputs.url_html }}
+                edit-mode: replace
 
     build_doc:
         needs: [build]
@@ -213,7 +232,7 @@ jobs:
         name: Workflow conclusion from all job results 
         
         #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [build_doc, unit_tests, integration_tests]
+        needs: [build_doc, unit-test-report, integration_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:
