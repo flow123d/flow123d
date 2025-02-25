@@ -1,9 +1,9 @@
 name: Flow123d debug CI
 
 on: 
-    pull_request:
-      branches:
-        - "**"
+    push:
+        branches:
+          - "**"
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
         inputs:
