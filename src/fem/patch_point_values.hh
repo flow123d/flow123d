@@ -29,8 +29,6 @@
 #include "fem/arena_vec.hh"
 
 
-template<unsigned int spacedim> class PatchOp;
-template<unsigned int spacedim> class PatchFEValues;
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
@@ -221,9 +219,6 @@ public:
 
 	std::vector<ElementAccessor<3>> elem_list_; ///< List of elements on patch
 	std::vector<Side> side_list_;               ///< List of sides on patch
-
-    friend class PatchFEValues<spacedim>;
-    friend class PatchOp<spacedim>;
 };
 
 
