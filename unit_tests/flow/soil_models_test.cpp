@@ -16,6 +16,7 @@
 
 #include "flow/soil_models.hh"
 
+#include "moc_github_actions_error.hh"
 using namespace std;
 
 template <class Model>
