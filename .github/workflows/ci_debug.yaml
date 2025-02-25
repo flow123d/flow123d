@@ -188,7 +188,7 @@ jobs:
                 name: Unit Tests Report
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
-                fail-on-error: true
+                fail-on-error: false
                 list-suites: failed
                 list-tests: failed
                 only-summary: true
@@ -210,6 +210,13 @@ jobs:
                   Build output
                   ${{ steps.test-reporter.outputs.url_html }}
                 edit-mode: replace
+            - name: Check test report status
+              if: always()
+              run: |
+                if [ "${{ steps.test-reporter.outputs.failed }}" -gt 0 ]; then
+                  echo "Test report failed."
+                  exit 1
+                fi
 
     build_doc:
         needs: [build]
