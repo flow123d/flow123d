@@ -194,7 +194,7 @@ jobs:
                 only-summary: true
             - name: Find Comment
               uses: peter-evans/find-comment@v3
-              if: ${{ github.event_name == 'pull_request' }}
+              if: ${{ github.event.pull_request != null }}
               id: find-comment
               with:
                 issue-number: ${{ github.event.pull_request.number }}
@@ -202,7 +202,7 @@ jobs:
                 body-includes: Build output
             - name: Create or update comment
               uses: peter-evans/create-or-update-comment@v4
-              if: ${{ github.event_name == 'pull_request' }}
+              if: ${{ github.event.pull_request != null }}
               with:
                 comment-id: ${{ steps.find-comment.outputs.comment-id }}
                 issue-number: ${{ github.event.pull_request.number }}
