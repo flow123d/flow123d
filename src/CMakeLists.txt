@@ -258,6 +258,9 @@ add_library(fem_lib
     fem/fe_values_views.cc
     fem/mapping_p1.cc
     fem/patch_fe_values.cc
+    fem/eval_subset.cc
+    fem/eval_points.cc
+    fem/element_cache_map.cc
 )
 target_link_libraries(fem_lib
     mesh_lib 
@@ -320,9 +323,6 @@ add_library(coupling_lib
     fields/table_function.cc
     fields/field_time_function.cc
     fields/field_fe.cc
-    fields/eval_subset.cc
-    fields/eval_points.cc
-    fields/field_value_cache.cc
     fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc

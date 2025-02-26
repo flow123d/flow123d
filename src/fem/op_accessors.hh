@@ -19,7 +19,7 @@
 #ifndef OP_ACCESSORS_HH_
 #define OP_ACCESSORS_HH_
 
-#include "fields/eval_subset.hh"
+#include "fem/eval_subset.hh"
 
 template<unsigned int spacedim> class PatchPointValues;
 template<unsigned int spacedim> class PatchOp;

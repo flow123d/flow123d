@@ -19,9 +19,9 @@
 #define GENERIC_ASSEMBLY_HH_
 
 #include "quadrature/quadrature_lib.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "tools/revertable_list.hh"

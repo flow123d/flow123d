@@ -31,8 +31,8 @@
 
 #include <memory>
 #include <armadillo>
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"

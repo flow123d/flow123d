@@ -21,8 +21,8 @@
 
 #include "coupling/generic_assembly.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fem/update_flags.hh"
 //#include "fem/op_factory.hh"
 
