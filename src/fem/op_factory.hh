@@ -296,13 +296,13 @@ public:
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpScalarShape<dim-1, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
         auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::OpScalarShape<dim, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         return FeQJoin<Scalar>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
     }
@@ -312,12 +312,12 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchVectorShape<dim, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<Vector>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
@@ -328,12 +328,12 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchGradVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, 0, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchGradVectorShape<dim, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, 1, 3> >(fe_component_high);
+        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<Tensor>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);

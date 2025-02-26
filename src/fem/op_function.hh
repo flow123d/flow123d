@@ -86,6 +86,43 @@ public:
     }
 };
 
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class OpElInvJac : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	OpElInvJac(PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
+    {
+        this->bulk_side_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::OpElJac<dim, Domain, spacedim>, dim >() );
+    }
+
+    void eval() override {
+        auto inv_jac_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        inv_jac_value = eigen_arena_tools::inverse<spacedim, dim>(jac_value);
+    }
+};
+
+/// Fixed operation points weights
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class Weights : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    Weights(PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp)
+    {
+        this->bulk_side_ = Domain::domain();
+        // create result vector of weights operation in assembly arena
+        const std::vector<double> &point_weights_vec = this->ppv().get_quadrature()->get_weights();
+        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
+        for (uint i=0; i<point_weights_vec.size(); ++i)
+            this->result_(0)(i) = point_weights_vec[i];
+    }
+
+    void eval() override {}
+};
+
 /// Base class of bulk and side vector symmetric gradients
 template<unsigned int dim, unsigned int spacedim = 3>
 class VectorSymGradBase : public PatchOp<spacedim> {
@@ -124,14 +161,14 @@ public:
 };
 
 /// Class represents zero operation of Join quantities.
-template<unsigned int dim, unsigned int bulk_side, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class OpZero : public PatchOp<spacedim> {
 public:
     /// Constructor
 	OpZero(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
-        this->bulk_side_ = bulk_side;
+        this->bulk_side_ = Domain::domain();
         this->allocate_const_result( this->ppv().patch_fe_data_.zero_vec_ );
     }
 
@@ -156,23 +193,6 @@ public:
 namespace El {
 
 template<unsigned int dim, unsigned int spacedim = 3>
-class OpInvJac : public Op::Bulk::Base<dim, spacedim> {
-public:
-    /// Constructor
-    OpInvJac(PatchFEValues<spacedim> &pfev)
-    : Op::Bulk::Base<dim, spacedim>(pfev, {dim, spacedim}, OpSizeType::elemOp)
-    {
-        this->input_ops_.push_back( pfev.template get< Op::OpElJac<dim, Op::BulkDomain, spacedim>, dim >() );
-    }
-
-    void eval() override {
-        auto inv_jac_value = this->result_matrix();
-        auto jac_value = this->input_ops(0)->result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<spacedim, dim>(jac_value);
-    }
-};
-
-template<unsigned int dim, unsigned int spacedim = 3>
 class OpJacDet : public Op::Bulk::Base<dim, spacedim> {
 public:
     /// Constructor
@@ -193,24 +213,6 @@ public:
 
 namespace Pt {
 
-/// Fixed operation points weights
-template<unsigned int dim, unsigned int spacedim = 3>
-class OpWeights : public Op::Bulk::Base<dim, spacedim> {
-public:
-    /// Constructor
-    OpWeights(PatchFEValues<spacedim> &pfev)
-    : Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::fixedSizeOp)
-    {
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = pfev.get_bulk_quadrature(dim)->get_weights();
-        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            this->result_(0)(i) = point_weights_vec[i];
-    }
-
-    void eval() override {}
-};
-
 /// Evaluates coordinates of quadrature points
 template<unsigned int dim, unsigned int spacedim = 3>
 class OpCoords : public Op::Bulk::Base<dim, spacedim> {
@@ -230,7 +232,7 @@ public:
     OpJxW(PatchFEValues<spacedim> &pfev)
     : Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp)
     {
-        this->input_ops_.push_back( pfev.template get< OpWeights<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, BulkDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<dim, spacedim>, dim >() );
     }
 
@@ -458,12 +460,12 @@ template<unsigned int dim, unsigned int spacedim = 3>
 class OpGradScalarShape : public Op::Bulk::Base<dim, spacedim> {
 public:
     /// Constructor
-	OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
-	{
-	    this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim>, dim >() );
-	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
-	}
+    OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
+    {
+        this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::BulkDomain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
+    }
 
     void eval() override {
         auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
@@ -497,7 +499,7 @@ public:
 	OpGradVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
     : Op::Bulk::Base<dim, spacedim>(pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
-        this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpInvJac<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::BulkDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
 	}
 
@@ -622,23 +624,6 @@ public:
 namespace El {
 
 template<unsigned int dim, unsigned int spacedim = 3>
-class OpElInvJac : public Op::Side::Base<dim, spacedim> {
-public:
-    /// Constructor
-	OpElInvJac(PatchFEValues<spacedim> &pfev)
-    : Op::Side::Base<dim, spacedim>(pfev, {dim, spacedim}, OpSizeType::elemOp)
-    {
-        this->input_ops_.push_back( pfev.template get< Op::OpElJac<dim, Op::SideDomain, spacedim>, dim >() );
-    }
-
-    void eval() override {
-        auto inv_jac_value = this->result_matrix();
-        auto jac_value = this->input_ops(0)->result_matrix();
-        inv_jac_value = eigen_arena_tools::inverse<spacedim, dim>(jac_value);
-    }
-};
-
-template<unsigned int dim, unsigned int spacedim = 3>
 class OpSideCoords : public Op::Side::Base<dim, spacedim> {
 public:
     /// Constructor
@@ -718,24 +703,6 @@ public:
 
 namespace Pt {
 
-/// Fixed operation points weights
-template<unsigned int dim, unsigned int spacedim = 3>
-class OpWeights : public Op::Side::Base<dim, spacedim> {
-public:
-    /// Constructor
-    OpWeights(PatchFEValues<spacedim> &pfev)
-    : Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::fixedSizeOp)
-    {
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = pfev.get_side_quadrature(dim)->get_weights();
-        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            this->result_(0)(i) = point_weights_vec[i];
-    }
-
-    void eval() override {}
-};
-
 /// Evaluates coordinates of quadrature points
 template<unsigned int dim, unsigned int spacedim = 3>
 class OpCoords : public Op::Side::Base<dim, spacedim> {
@@ -755,7 +722,7 @@ public:
     OpJxW(PatchFEValues<spacedim> &pfev)
     : Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp)
     {
-        this->input_ops_.push_back( pfev.template get< OpWeights<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, SideDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< Op::Side::El::OpSideJacDet<dim, spacedim>, dim >() );
     }
 
@@ -777,7 +744,7 @@ public:
     OpNormalVec(PatchFEValues<spacedim> &pfev)
     : Op::Side::Base<dim, spacedim>(pfev, {spacedim}, OpSizeType::elemOp)
     {
-        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::SideDomain, spacedim>, dim >() );
     }
 
     void eval() override {
@@ -1012,12 +979,12 @@ template<unsigned int dim, unsigned int spacedim = 3>
 class OpGradScalarShape : public Op::Side::Base<dim, spacedim> {
 public:
     /// Constructor
-	OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Side::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
-	{
-	    this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim>, dim >() );
-	    this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
-	}
+    OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
+    {
+        this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::SideDomain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
+    }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
@@ -1069,7 +1036,7 @@ public:
 	OpGradVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
     : Op::Side::Base<dim, spacedim>(pfev, {spacedim, spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
-        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpElInvJac<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::SideDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< OpRefGradVector<dim, spacedim>, dim >(fe) );
 	}
 
