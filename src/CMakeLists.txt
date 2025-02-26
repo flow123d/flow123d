@@ -265,6 +265,7 @@ add_library(fem_lib
 target_link_libraries(fem_lib
     mesh_lib 
     armadillo 
+    bparser  
     ${Boost_LIBRARIES})
 
 
@@ -331,7 +332,6 @@ add_library(coupling_lib
 target_link_libraries(coupling_lib
     input_lib mesh_lib tools_lib fem_lib io_lib
     fieldproxypy
-    bparser  
     armadillo
     ${Boost_LIBRARIES}
     ${PYTHON_LIBRARIES})
