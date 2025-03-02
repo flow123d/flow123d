@@ -154,7 +154,7 @@ jobs:
             build_dir=build-${git_branch}
             echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
 
-        - name: Run UNIT tests and capture log
+        - name: Run UNIT tests
           continue-on-error: true
           id: unit_tests
           run: |

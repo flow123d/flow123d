@@ -6,6 +6,9 @@ if [ "$#" -lt 2 ]; then
     exit 1
 fi
 
+echo "Xml output: $1"
+echo "Compilation command: $2"
+
 XML_OUTPUT="$1"
 COMMANDS="$@"
 
