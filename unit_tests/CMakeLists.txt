@@ -109,7 +109,7 @@ macro(define_test class_name)
   add_dependencies(${test_binary} update_source_tree)
 
   add_custom_target(${test_name}_compile
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/compile_and_report.sh ${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${test_binary}
+      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh ${CMAKE_CURRENT_BINARY_DIR}/${test_name}-compilation-report.xml ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
