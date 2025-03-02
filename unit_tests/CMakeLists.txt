@@ -103,24 +103,27 @@ macro(define_test class_name)
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
   # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
+  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
   target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
 
+  add_custom_target(${test_name}_compile
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/compile_and_report.sh ${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${test_binary}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
-
-  # rule to run the test
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      DEPENDS ${test_name}_compile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
-  # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+      DEPENDS ${test_name}_compile
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
 
   # register the test into dir_test_target
   add_dependencies(${dir_test_target} ${test_name})

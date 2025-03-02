@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+import os
+import xml.etree.ElementTree as ET
+import argparse
+
+def create_junit_xml(status, xml_output, log):
+    os.makedirs(os.path.dirname(xml_output), exist_ok=True)
+
+    testsuites = ET.Element("testsuites")
+    testsuite = ET.SubElement(
+        testsuites, "testsuite", 
+        name="CompilationTests", 
+        tests="1", 
+        failures="1" if status != 0 else "0",
+        errors="0", 
+        time="0.0"
+    )
+    testcase = ET.SubElement(
+        testsuite, "testcase", 
+        classname="Compilation", 
+        name="Compilation", 
+        time="0.0"
+    )
+    if status != 0:
+        failure = ET.SubElement(
+            testcase, "failure", 
+            message="Compilation Failed", 
+            type="CompileError"
+        )
+        failure.text = log
+
+    tree = ET.ElementTree(testsuites)
+    with open(xml_output, "wb") as xml_file:
+        tree.write(xml_file, encoding="utf-8", xml_declaration=True)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate JUnit XML report for compilation")
+    parser.add_argument("--status", type=int, required=True, help="Compilation status")
+    parser.add_argument("--output", type=str, required=True, help="Path to the output XML file")
+    parser.add_argument("--log", type=str, required=True, help="Compilation output and error log")
+    
+    args = parser.parse_args()
+    create_junit_xml(args.status, args.output, args.log)

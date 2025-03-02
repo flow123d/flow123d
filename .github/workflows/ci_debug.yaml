@@ -156,17 +156,9 @@ jobs:
 
         - name: Run UNIT tests and capture log
           continue-on-error: true
+          id: unit_tests
           run: |
-            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test 2>&1 | tee test.log
-            echo "${PIPESTATUS[0]}" > test_status.txt
-
-        - name: Generate JUnit XML report
-          if: always()
-          run: |
-            TEST_STATUS=$(cat test_status.txt)
-            python3 unit_tests/generate_compile_xml.py --status ${TEST_STATUS} --url ${{ github.server_url }} \
-            --output build_tree/unit_tests/${{matrix.test_dir}}/compile_report.xml \
-            --repository ${{ github.repository }} --sha ${{ github.sha }} --run_id ${{ github.run_id }}
+            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
@@ -215,8 +207,7 @@ jobs:
                 comment-id: ${{ steps.find-comment.outputs.comment-id }}
                 issue-number: 1580
                 body: |
-                  Test Report URL:
-                  ${{ steps.test-reporter.outputs.url_html }}
+                  Test Report URL [here](${{ steps.test-reporter.outputs.url_html }})
                 edit-mode: replace
             - name: Check test report status
               if: always()
