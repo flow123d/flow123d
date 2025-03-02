@@ -6,15 +6,16 @@ if [ "$#" -lt 2 ]; then
     exit 1
 fi
 
-echo "Xml output: $1"
-echo "Compilation command: $2"
-
 XML_OUTPUT="$1"
+shift
 COMMANDS="$@"
-
 LOG_TMP=$(mktemp)
 
-COMMANDS > "$LOG_TMP" 2>&1
+echo "Xml output: $XML_OUTPUT"
+echo "Compilation command: $COMMANDS"
+
+
+eval "$COMMANDS" > "$LOG_TMP" 2>&1
 STATUS=$?
 
 python3 compile_reporter.py --status "$STATUS" --output "$XML_OUTPUT" --log "$(cat "$LOG_TMP")"
