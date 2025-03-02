@@ -101,28 +101,31 @@ macro(define_test class_name)
       set(test_timeout ${TEST_TIMEOUT})
   endif ()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
-  
-  # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
-  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
-  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
-  add_dependencies(${test_binary} update_source_tree)
 
+  add_custom_command(
+    OUTPUT ${test_binary}
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh 
+            ${CMAKE_CURRENT_BINARY_DIR}/${test_name}-compile-report.xml
+            ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
+    VERBATIM
+  )
 
-  add_custom_target(${test_name}_compile
-      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh ${CMAKE_CURRENT_BINARY_DIR}/${test_name}-compilation-report.xml ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR} --target ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  add_custom_target(${test_name}_target ALL
+    DEPENDS ${test_binary}
+    COMMENT "Custom target for compiling, linking, and generating XML report for ${test_binary}"
   )
 
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_name}_compile
+      DEPENDS ${test_name}_target
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 
   add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_name}_compile
+      DEPENDS ${test_name}_target
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
 

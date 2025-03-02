@@ -1,24 +1,23 @@
 #!/bin/bash
-# Usage: ./compile_and_report.sh <xml_output> <compile command and his arguments>
+# Usage: ./compile_and_report.sh <xml_report_file> <compilation command and its arguments>
 
 if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 <xml_output> <compilation_command>"
+    echo "Usage: $0 <xml_report_file> <compilation_command>"
     exit 1
 fi
 
-XML_OUTPUT="$1"
+XML_REPORT="$1"
 shift
 COMMANDS="$@"
 LOG_TMP=$(mktemp)
 
-echo "Xml output: $XML_OUTPUT"
-echo "Compilation command: $COMMANDS"
-
+echo "XML report will be generated at: ${XML_REPORT}"
+echo "Compilation command: $@"
 
 eval "$COMMANDS" > "$LOG_TMP" 2>&1
 STATUS=$?
 
-python3 compile_reporter.py --status "$STATUS" --output "$XML_OUTPUT" --log "$(cat "$LOG_TMP")"
+python3 "$(dirname "$0")/generate_jtest_xml.py" --status "$STATUS" --output "$XML_REPORT" --log "$(cat "$LOG_TMP")"
 
 rm "$LOG_TMP"
 exit "$STATUS"
