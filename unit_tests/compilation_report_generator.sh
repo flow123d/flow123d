@@ -28,7 +28,7 @@ cat ${LOG_OUTPUT} ${LOG_ERRORS} > ${LOG_COMBINED}
 
 # Generate report
 echo "Generating compilation report..."
-python "$(pwd)/compilation_reporter.py" \
+python3 "$(pwd)/compilation_reporter.py" \
     --status ${COMPILE_STATUS} \
     --output ${OUTPUT_REPORT} \
     --log "$(cat ${LOG_COMBINED})"
