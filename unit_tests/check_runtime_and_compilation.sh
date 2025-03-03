@@ -10,7 +10,7 @@ shift 3
 COMPILER_COMMAND=$@
 
 LOG_TMP=$(mktemp)
-SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 echo "Compiling ${CLASS_NAME} with type ${REPORT_TYPE} to generate report at ${OUTPUT_FILE}"
 echo "Command: ${COMPILER_COMMAND}"
