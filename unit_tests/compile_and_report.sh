@@ -1,23 +1,35 @@
 #!/bin/bash
-# Usage: ./compile_and_report.sh <xml_report_file> <compilation command and its arguments>
 
-if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 <xml_report_file> <compilation_command>"
-    exit 1
+# Script to generate compilation report XML
+# Usage: compile_report_generator.sh [class_name] [log_file] [output_xml]
+
+CLASS_NAME=$1
+LOG_FILE=$2
+OUTPUT_XML=$3
+
+# Check if the binary exists - if it does, build was successful
+TEST_BINARY="${CMAKE_CURRENT_BINARY_DIR}/${CLASS_NAME}_test_bin"
+if [ -f "$TEST_BINARY" ] || [ -f "${TEST_BINARY}.exe" ]; then
+    BUILD_STATUS=0
+else
+    BUILD_STATUS=1
 fi
 
-XML_REPORT="$1"
-shift
-COMMANDS="$@"
-LOG_TMP=$(mktemp)
+# Get the log content
+LOG_CONTENT=$(cat "$LOG_FILE")
 
-echo "XML report will be generated at: ${XML_REPORT}"
-echo "Compilation command: $@"
+# Call the Python script to generate the report
+python ${CMAKE_SOURCE_DIR}/unit_tests/compilation_reporter.py \
+    --status $BUILD_STATUS \
+    --output "$OUTPUT_XML" \
+    --log "$LOG_CONTENT" \
+    --class "$CLASS_NAME"
 
-eval "$COMMANDS" > "$LOG_TMP" 2>&1
-STATUS=$?
+# Print status message
+if [ $BUILD_STATUS -eq 0 ]; then
+    echo "Compilation of $CLASS_NAME successful. Report generated at $OUTPUT_XML"
+else
+    echo "Compilation of $CLASS_NAME failed. Report generated at $OUTPUT_XML"
+fi
 
-python3 "$(dirname "$0")/generate_jtest_xml.py" --status "$STATUS" --output "$XML_REPORT" --log "$(cat "$LOG_TMP")"
-
-rm "$LOG_TMP"
-exit "$STATUS"
+exit $BUILD_STATUS

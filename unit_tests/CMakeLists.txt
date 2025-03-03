@@ -90,8 +90,8 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
-  #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
-
+  set(compile_report "${class_name}-compile-report.xml")
+  
   set (extra_args ${ARGN})
   # Did we get any optional args?
   list(LENGTH extra_args extra_count)
@@ -101,40 +101,45 @@ macro(define_test class_name)
       set(test_timeout ${TEST_TIMEOUT})
   endif ()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
-
-  add_custom_command(
-    OUTPUT ${test_binary}
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh 
-            ${CMAKE_CURRENT_BINARY_DIR}/${test_name}-compile-report.xml
-            ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -o ${test_binary} ${test_source} -Wno-error ${dir_test_target_libs} -lgtest -lgtest_main
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
-    VERBATIM
+  
+  # executable rule
+  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
+  add_dependencies(${test_binary} update_source_tree)
+  
+  # Add compilation report targets
+  add_custom_target(${class_name}_compile_report
+      COMMAND ${CMAKE_COMMAND} -E echo "Building ${test_binary} for compilation report..."
+      COMMAND ${CMAKE_COMMAND} -E env 
+          cmake --build ${CMAKE_BINARY_DIR} --target ${test_binary} --config $<CONFIG> > ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log 2>&1 || echo "Build failed with $$?"
+      COMMAND ${CMAKE_COMMAND} -E echo "Checking build status..."
+      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_report_generator.sh ${class_name} ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
+      COMMENT "Generating compilation report for ${class_name}"
+      VERBATIM
   )
-
-  add_custom_target(${test_name}_target ALL
-    DEPENDS ${test_binary}
-    COMMENT "Custom target for compiling, linking, and generating XML report for ${test_binary}"
-  )
-
+  
+  # rule to run the test
   add_custom_target(${test_name}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_name}_target
+      DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
-
+  
+  # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
       COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_name}_target
+      DEPENDS ${test_binary}
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
-
+  
   # register the test into dir_test_target
   add_dependencies(${dir_test_target} ${test_name})
-
-  # let ctest call make with appropriate  target
+  add_dependencies(${dir_test_target} ${class_name}_compile_report)
+  
+  # let ctest call make with appropriate target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
-endmacro()
+endmacro(define_test)
 
 #################################
 # MACRO define_mpi_test
