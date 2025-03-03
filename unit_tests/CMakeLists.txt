@@ -90,7 +90,8 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
-  set(compile_report "${class_name}-compile-report.xml")
+  set(compilation_report "${class_name}-compilation-report.xml")
+  set(runtime_report "${class_name}-runtime-report.xml")
   
   set(extra_args ${ARGN})
   # Did we get any optional args?
@@ -111,21 +112,22 @@ macro(define_test class_name)
   
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compilation_report_generator.sh
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
+            compilation
             ${class_name}
-            ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
-            ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
-            ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
-            ${CMAKE_CXX_COMPILER}
-            "${CMAKE_CXX_FLAGS} -Wno-error"
-            "${library_flags}"
+            ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
+            ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -Wno-error -o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} ${CMAKE_CURRENT_SOURCE_DIR}/${test_source} ${library_flags}
     COMMENT "Compiling ${class_name} test and generating report"
     VERBATIM
   )
   
   # rule to run the test (depends on successful compilation)
   add_custom_target(${test_name}
-    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
+            runtime
+            ${class_name}
+            ${CMAKE_CURRENT_BINARY_DIR}/${runtime_report}
+            ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
     DEPENDS ${class_name}_compile
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
