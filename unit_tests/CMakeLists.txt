@@ -90,8 +90,8 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
-  set(compilation_report "${class_name}-compilation-report.xml")
-  set(runtime_report "${class_name}-runtime-report.xml")
+  set(compilation_report "${class_name}_compilation_report.xml")
+  set(runtime_report "${class_name}_runtime_report.xml")
   
   set(extra_args ${ARGN})
   # Did we get any optional args?
