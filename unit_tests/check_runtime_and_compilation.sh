@@ -21,7 +21,7 @@ STATUS=$?
 
 # Generate report
 echo "Generating compilation report..."
-python3 "../compilation_reporter.py" \
+python3 "$(dirname "$0")/../compilation_reporter.py" \
     --status ${STATUS} \
     --output ${OUTPUT_FILE} \
     --log "$(cat ${LOG_TMP})" \
