@@ -10,6 +10,7 @@ shift 3
 COMPILER_COMMAND=$@
 
 LOG_TMP=$(mktemp)
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 echo "Compiling ${CLASS_NAME} with type ${REPORT_TYPE} to generate report at ${OUTPUT_FILE}"
 echo "Command: ${COMPILER_COMMAND}"
@@ -21,7 +22,7 @@ STATUS=$?
 
 # Generate report
 echo "Generating compilation report..."
-python3 "$(dirname "$0")/../compilation_reporter.py" \
+python3 "$SCRIPT_DIR/compilation_reporter.py" \
     --status ${STATUS} \
     --output ${OUTPUT_FILE} \
     --log "$(cat ${LOG_TMP})" \
