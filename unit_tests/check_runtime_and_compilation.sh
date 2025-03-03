@@ -22,7 +22,7 @@ STATUS=$?
 
 # Generate report
 echo "Generating compilation report..."
-python3 "$SCRIPT_DIR/compilation_reporter.py" \
+python3 "$SCRIPT_DIR/runtime_and_compilation_reporter.py" \
     --status ${STATUS} \
     --output ${OUTPUT_FILE} \
     --log "$(cat ${LOG_TMP})" \
