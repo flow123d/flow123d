@@ -92,14 +92,14 @@ macro(define_test class_name)
   set(test_valgrind "${class_name}-valgrind")
   set(compile_report "${class_name}-compile-report.xml")
   
-  set (extra_args ${ARGN})
+  set(extra_args ${ARGN})
   # Did we get any optional args?
   list(LENGTH extra_args extra_count)
-  if (${extra_count} GREATER 0)
-      list(GET extra_args 0 test_timeout)
+  if(${extra_count} GREATER 0)
+    list(GET extra_args 0 test_timeout)
   else () 
-      set(test_timeout ${TEST_TIMEOUT})
-  endif ()
+    set(test_timeout ${TEST_TIMEOUT})
+  endif()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
   # executable rule
@@ -114,7 +114,7 @@ macro(define_test class_name)
       COMMAND ${CMAKE_COMMAND} -E env 
           cmake --build ${CMAKE_BINARY_DIR} --target ${test_binary} --config $<CONFIG> > ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log 2>&1 || echo "Build failed with $$?"
       COMMAND ${CMAKE_COMMAND} -E echo "Checking build status..."
-      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_report_generator.sh ${class_name} ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
+      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compilation_report_generator.sh ${class_name} ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
       COMMENT "Generating compilation report for ${class_name}"
       VERBATIM
   )

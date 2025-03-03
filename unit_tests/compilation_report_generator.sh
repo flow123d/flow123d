@@ -19,11 +19,7 @@ fi
 LOG_CONTENT=$(cat "$LOG_FILE")
 
 # Call the Python script to generate the report
-python ${CMAKE_SOURCE_DIR}/unit_tests/compilation_reporter.py \
-    --status $BUILD_STATUS \
-    --output "$OUTPUT_XML" \
-    --log "$LOG_CONTENT" \
-    --class "$CLASS_NAME"
+python3 compilation_reporter.py --status $BUILD_STATUS --output "$OUTPUT_XML" --log "$LOG_CONTENT" --class "$CLASS_NAME"
 
 # Print status message
 if [ $BUILD_STATUS -eq 0 ]; then
