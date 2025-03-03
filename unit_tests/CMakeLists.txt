@@ -97,45 +97,48 @@ macro(define_test class_name)
   list(LENGTH extra_args extra_count)
   if(${extra_count} GREATER 0)
     list(GET extra_args 0 test_timeout)
-  else () 
+  else()
     set(test_timeout ${TEST_TIMEOUT})
   endif()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
-  # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
-  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
-  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
-  add_dependencies(${test_binary} update_source_tree)
+  # Create a string with all the library flags
+  set(library_flags "")
+  foreach(lib ${dir_test_target_libs})
+    set(library_flags "${library_flags} -l${lib}")
+  endforeach()
+  set(library_flags "${library_flags} -lgtest -lgtest_main")
   
-  # Add compilation report targets
-  add_custom_target(${class_name}_compile_report
-      COMMAND ${CMAKE_COMMAND} -E echo "Building ${test_binary} for compilation report..."
-      COMMAND ${CMAKE_COMMAND} -E env 
-          cmake --build ${CMAKE_BINARY_DIR} --target ${test_binary} --config $<CONFIG> > ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log 2>&1 || echo "Build failed with $$?"
-      COMMAND ${CMAKE_COMMAND} -E echo "Checking build status..."
-      COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compilation_report_generator.sh ${class_name} ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_build.log ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
-      COMMENT "Generating compilation report for ${class_name}"
-      VERBATIM
+  # Custom target for compilation and report generation
+  add_custom_target(${class_name}_compile
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh
+            ${class_name}
+            ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
+            ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+            ${CMAKE_CURRENT_BINARY_DIR}/${compile_report}
+            ${CMAKE_CXX_COMPILER}
+            "${CMAKE_CXX_FLAGS} -Wno-error"
+            "${library_flags}"
+    COMMENT "Compiling ${class_name} test and generating report"
+    VERBATIM
   )
   
-  # rule to run the test
+  # rule to run the test (depends on successful compilation)
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+    DEPENDS ${class_name}_compile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+    DEPENDS ${class_name}_compile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   
   # register the test into dir_test_target
   add_dependencies(${dir_test_target} ${test_name})
-  add_dependencies(${dir_test_target} ${class_name}_compile_report)
   
   # let ctest call make with appropriate target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
