@@ -58,7 +58,15 @@ protected:
     	return patch_fe_values_.get< OpType, dim >(fe);
     }
 
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, unsigned int> class OpType>
+    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
+    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
+    	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, 3> >(fe_component));
+    }
+
     PatchFEValues<3> &patch_fe_values_;
+    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 template<unsigned int dim>
@@ -68,7 +76,7 @@ public:
 	/// Constructor
 	BulkValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
 	: BaseValues<dim>(pfev) {
-	    fe_ = fe[Dim<dim>{}];
+	    this->fe_ = fe[Dim<dim>{}];
 	}
 
     /**
@@ -105,16 +113,12 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-
-        return FeQArray<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpScalarShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Scalar, Op::Bulk::Pt::OpScalarShape>(component_idx);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Vector>(this->template make_patch_op< Op::Bulk::Pt::DispatchVectorShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Vector, Op::Bulk::Pt::DispatchVectorShape>(component_idx);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -128,10 +132,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-
-        return FeQArray<Vector>(this->template make_patch_op< Op::Bulk::Pt::OpGradScalarShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Vector, Op::Bulk::Pt::OpGradScalarShape>(component_idx);
     }
 
     /**
@@ -142,8 +143,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Tensor>(this->template make_patch_op< Op::Bulk::Pt::DispatchGradVectorShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Tensor, Op::Bulk::Pt::DispatchGradVectorShape>(component_idx);
     }
 
     /**
@@ -154,8 +154,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Tensor>(this->template make_patch_op< Op::Bulk::Pt::OpVectorSymGrad<dim, 3> >(fe_component));
+        return this->template make_qarray<Tensor, Op::Bulk::Pt::OpVectorSymGrad>(component_idx);
     }
 
     /**
@@ -166,12 +165,8 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpVectorDivergence<dim, 3> >(fe_component));
+        return this->template make_qarray<Scalar, Op::Bulk::Pt::OpVectorDivergence>(component_idx);
     }
-
-private:
-    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 
@@ -182,7 +177,7 @@ public:
 	/// Constructor
 	SideValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
 	: BaseValues<dim>(pfev) {
-	    fe_ = fe[Dim<dim>{}];
+	    this->fe_ = fe[Dim<dim>{}];
 	}
 
     /// Same as BulkValues::JxW but register at side quadrature points.
@@ -216,26 +211,19 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-
-        return FeQArray<Scalar>(this->template make_patch_op< Op::Side::Pt::OpScalarShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Scalar, Op::Side::Pt::OpScalarShape>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Vector>(this->template make_patch_op< Op::Side::Pt::DispatchVectorShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Vector, Op::Side::Pt::DispatchVectorShape>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        ASSERT_EQ(fe_component->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape accessor must be FEScalar!\n");
-
-        return FeQArray<Vector>(this->template make_patch_op< Op::Side::Pt::OpGradScalarShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Vector, Op::Side::Pt::OpGradScalarShape>(component_idx);
     }
 
     /**
@@ -246,8 +234,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Tensor>(this->template make_patch_op< Op::Side::Pt::DispatchGradVectorShape<dim, 3> >(fe_component));
+        return this->template make_qarray<Tensor, Op::Side::Pt::DispatchGradVectorShape>(component_idx);
     }
 
     /**
@@ -258,8 +245,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Tensor>(this->template make_patch_op< Op::Side::Pt::OpVectorSymGrad<dim, 3> >(fe_component));
+        return this->template make_qarray<Tensor, Op::Side::Pt::OpVectorSymGrad>(component_idx);
     }
 
     /**
@@ -270,12 +256,8 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        auto fe_component = this->fe_comp(fe_, component_idx);
-        return FeQArray<Scalar>(this->template make_patch_op< Op::Side::Pt::OpVectorDivergence<dim, 3> >(fe_component));
+        return this->template make_qarray<Scalar, Op::Side::Pt::OpVectorDivergence>(component_idx);
     }
-
-private:
-    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 

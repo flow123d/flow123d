@@ -343,11 +343,12 @@ template<unsigned int dim, unsigned int spacedim = 3>
 class OpScalarShape : public Op::Bulk::Base<dim, spacedim> {
 public:
     /// Constructor
-	OpScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
-	{
-	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
-	}
+    OpScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
+        this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
+    }
 
     void eval() override {
         auto ref_vec = this->input_ops(0)->result_matrix();
@@ -463,6 +464,7 @@ public:
     OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : Op::Bulk::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
     {
+        ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::BulkDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
     }
@@ -870,11 +872,12 @@ template<unsigned int dim, unsigned int spacedim = 3>
 class OpScalarShape : public Op::Side::Base<dim, spacedim> {
 public:
     /// Constructor
-	OpScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
-	{
-	    this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
-	}
+    OpScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
+    : Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
+        this->input_ops_.push_back( pfev.template get< OpRefScalar<dim, spacedim>, dim >(fe) );
+    }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
@@ -982,6 +985,7 @@ public:
     OpGradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : Op::Side::Base<dim, spacedim>(pfev, {spacedim, 1}, OpSizeType::pointOp, fe->n_dofs())
     {
+        ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->input_ops_.push_back( pfev.template get< Op::OpElInvJac<dim, Op::SideDomain, spacedim>, dim >() );
         this->input_ops_.push_back( pfev.template get< OpRefGradScalar<dim, spacedim>, dim >(fe) );
     }
