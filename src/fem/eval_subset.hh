@@ -31,8 +31,8 @@
 
 #include <memory>
 #include <armadillo>
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
@@ -83,6 +83,11 @@ public:
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return local_point_idx_;
+    }
+
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
     }
 
     /// Iterates to next point.
@@ -142,6 +147,11 @@ public:
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return side_begin_ + local_point_idx_;
+    }
+
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, eval_point_idx());
     }
 
     /// Comparison of accessors.

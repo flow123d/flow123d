@@ -16,9 +16,9 @@
  * @author  David Flanderka
  */
 
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 
 
 /******************************************************************************

@@ -11,20 +11,20 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    field_value_cache.hh
+ * @file    element_cache_map.hh
  * @brief
  * @author  David Flanderka
  */
 
-#ifndef FIELD_VALUE_CACHE_HH_
-#define FIELD_VALUE_CACHE_HH_
+#ifndef ELEMENT_CACHE_MAP_HH_
+#define ELEMENT_CACHE_MAP_HH_
 
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "system/armor.hh"
-#include "fields/eval_points.hh"
+#include "fem/eval_points.hh"
 #include "mesh/accessors.hh"
 #include "tools/mixed.hh"
 #include "tools/revertable_list.hh"
@@ -395,4 +395,4 @@ protected:
 
 
 
-#endif /* FIELD_VALUE_CACHE_HH_ */
+#endif /* ELEMENT_CACHE_MAP_HH_ */

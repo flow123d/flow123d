@@ -21,9 +21,10 @@
 
 #include "coupling/generic_assembly.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fem/update_flags.hh"
+//#include "fem/op_factory.hh"
 
 
 
@@ -218,8 +219,8 @@ public:
 
 	AssemblyBasePatch(PatchFEValues<3> *fe_values)
 	: AssemblyBase<dim>(), fe_values_(fe_values) {
-	    this->quad_ = fe_values_->get_quadrature(dim, true); // bulk quadrature
-	    this->quad_low_  = fe_values_->get_quadrature(dim, false); // side quadrature
+	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
+	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
 	}
 
     /// Register cell points of volume integral
@@ -230,8 +231,7 @@ public:
             uint elm_pos = fe_values_->register_element(bulk_integral_data[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(element_patch_idx) ) {
-                unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                fe_values_->register_bulk_point(bulk_integral_data[i].cell, elm_pos, value_cache_idx, i_point++);
+                fe_values_->register_bulk_point(bulk_integral_data[i].cell, elm_pos, p.value_cache_idx(), i_point++);
             }
         }
     }
@@ -243,8 +243,7 @@ public:
         	uint side_pos = fe_values_->register_side(boundary_integral_data[i].side);
             uint i_point = 0;
             for (auto p : this->boundary_points(boundary_integral_data[i].side) ) {
-        	    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                fe_values_->register_side_point(boundary_integral_data[i].side, side_pos, value_cache_idx, i_point++);
+                fe_values_->register_side_point(boundary_integral_data[i].side, side_pos, p.value_cache_idx(), i_point++);
             }
         }
     }
@@ -259,8 +258,7 @@ public:
             	uint side_pos = fe_values_->register_side(edge_side);
                 uint i_point = 0;
                 for (auto p : this->edge_points(edge_side) ) {
-                    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                    fe_values_->register_side_point(edge_side, side_pos, value_cache_idx, i_point++);
+                    fe_values_->register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -282,12 +280,10 @@ public:
             uint i_bulk_point = 0, i_side_point = 0;
             for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
             {
-                unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
-                fe_values_->register_side_point(coupling_integral_data[i].side, side_pos, value_cache_idx, i_side_point++);
+                fe_values_->register_side_point(coupling_integral_data[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
                 if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
                     auto p_low = p_high.lower_dim(coupling_integral_data[i].cell);
-            	    value_cache_idx = p_low.elm_cache_map()->element_eval_point(p_low.elem_patch_idx(), p_low.eval_point_idx());
-                    fe_values_->register_bulk_point(coupling_integral_data[i].cell, elm_pos, value_cache_idx, i_bulk_point++);
+                    fe_values_->register_bulk_point(coupling_integral_data[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                 }
             }
             last_element_idx = coupling_integral_data[i].cell.elm_idx();
