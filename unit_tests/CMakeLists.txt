@@ -111,7 +111,7 @@ macro(define_test class_name)
   
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compile_and_report.sh
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/compilation_report_generator.sh
             ${class_name}
             ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
             ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
