@@ -7,13 +7,13 @@ REPORT_TYPE=$1
 CLASS_NAME=$2
 OUTPUT_FILE=$3
 shift 3
-COMPILER_COMMAND=( "$@" )
+COMPILER_COMMAND=("$@")
 
 LOG_TMP=$(mktemp)
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 echo "Compiling ${CLASS_NAME} with type ${REPORT_TYPE} to generate report at ${OUTPUT_FILE}"
-echo "Command: ${COMPILER_COMMAND}"
+echo "Command: ${COMPILER_COMMAND[@]}"
 
 # Compile and capture output
 "${COMPILER_COMMAND[@]}" > "$LOG_TMP" 2>&1

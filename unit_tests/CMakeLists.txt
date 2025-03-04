@@ -104,11 +104,13 @@ macro(define_test class_name)
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
   # Create a string with all the library flags
-  set(library_flags "")
-  foreach(lib ${dir_test_target_libs})
-    set(library_flags "${library_flags} -l${lib}")
-  endforeach()
-  set(library_flags "${library_flags} -lgtest -lgtest_main")
+  #set(library_flags "")
+  #foreach(lib ${dir_test_target_libs})
+  #  set(library_flags "${library_flags} -l${lib}")
+  #endforeach()
+  #set(library_flags "${library_flags} -lgtest -lgtest_main")
+
+  string(REPLACE ";" " " lib_flags "${dir_test_target_libs}")
   
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile
@@ -116,7 +118,11 @@ macro(define_test class_name)
             compilation
             ${class_name}
             ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
-            ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} -Wno-error -o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} ${CMAKE_CURRENT_SOURCE_DIR}/${test_source} ${library_flags}
+            ${CMAKE_CXX_COMPILER}
+            "${CMAKE_CXX_FLAGS} -Wno-error"
+            "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
+            "${lib_flags} -lgtest -lgtest_main"
     COMMENT "Compiling ${class_name} test and generating report"
     VERBATIM
   )
