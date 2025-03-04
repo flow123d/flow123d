@@ -74,22 +74,22 @@ public:
 
 };
 
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class OpElJac : public PatchOp<spacedim> {
+template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+class Jac : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpElJac(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
+    Jac(PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {spacedim, ElDomain::n_nodes(dim)-1}, OpSizeType::elemOp)
     {
         this->bulk_side_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Op::BulkDomain, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, ElDomain, Domain, spacedim>, dim >() );
     }
 
     void eval() override {
         auto jac_value = this->result_matrix();
         auto coords_value = this->input_ops(0)->result_matrix();
         for (unsigned int i=0; i<spacedim; i++)
-            for (unsigned int j=0; j<this->dim_; j++)
+            for (unsigned int j=0; j<ElDomain::n_nodes(dim)-1; j++)
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
 };
@@ -102,7 +102,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::elemOp)
     {
         this->bulk_side_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::OpElJac<dim, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, BulkDomain, Domain, spacedim>, dim >() );
     }
 
     void eval() override {
@@ -207,7 +207,7 @@ public:
 	OpJacDet(PatchFEValues<spacedim> &pfev)
 	: Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::elemOp)
 	{
-	    this->input_ops_.push_back( pfev.template get< Op::OpElJac<dim, Op::BulkDomain, spacedim>, dim >() );
+	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Op::BulkDomain, Op::BulkDomain, spacedim>, dim >() );
 	}
 
     void eval() override {
@@ -634,32 +634,13 @@ public:
 namespace El {
 
 template<unsigned int dim, unsigned int spacedim = 3>
-class OpSideJac : public Op::Side::Base<dim, spacedim> {
-public:
-    /// Constructor
-	OpSideJac(PatchFEValues<spacedim> &pfev)
-    : Op::Side::Base<dim, spacedim>(pfev, {spacedim, dim-1}, OpSizeType::elemOp)
-    {
-        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );
-    }
-
-    void eval() override {
-        auto jac_value = this->result_matrix();
-        auto coords_value = this->input_ops(0)->result_matrix();
-        for (unsigned int i=0; i<spacedim; i++)
-            for (unsigned int j=0; j<this->dim_-1; j++)
-                jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
-    }
-};
-
-template<unsigned int dim, unsigned int spacedim = 3>
 class OpSideJacDet : public Op::Side::Base<dim, spacedim> {
 public:
     /// Constructor
 	OpSideJacDet(PatchFEValues<spacedim> &pfev)
 	: Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::elemOp)
 	{
-	    this->input_ops_.push_back( pfev.template get< OpSideJac<dim, spacedim>, dim >() );
+	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );
 	}
 
     void eval() override {
