@@ -27,6 +27,8 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
+#include "mesh/accessors.hh"
+
 
 
 using Scalar = double;
@@ -187,6 +189,9 @@ public:
     	return *patch_fe_data_.patch_arena_;
     }
 
+    template<class ElementDomain>
+    NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
+
 //protected:
 
     /**
@@ -220,6 +225,7 @@ public:
 	std::vector<ElementAccessor<3>> elem_list_; ///< List of elements on patch
 	std::vector<Side> side_list_;               ///< List of sides on patch
 };
+
 
 
 #endif /* PATCH_POINT_VALUES_HH_ */

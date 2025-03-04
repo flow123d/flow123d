@@ -32,6 +32,10 @@ public:
     static uint domain() {
         return 0;
     }
+
+    static inline uint n_nodes(uint dim) {
+        return dim+1;
+    }
 };
 
 /// Class used as template type for type resolution Bulk / Side
@@ -40,15 +44,19 @@ public:
     static uint domain() {
         return 1;
     }
+
+    static inline uint n_nodes(uint dim) {
+        return dim;
+    }
 };
 
 
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class OpElCoords : public PatchOp<spacedim> {
+template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+class Coords : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpElCoords(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, dim+1}, OpSizeType::elemOp) {
+    Coords(PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {spacedim, ElDomain::n_nodes(dim)}, OpSizeType::elemOp) {
         this->bulk_side_ = Domain::domain();
     }
 
@@ -58,9 +66,9 @@ public:
         auto result = this->result_matrix();
 
         for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
-            for (uint i_col=0; i_col<this->dim_+1; ++i_col)
+            for (uint i_col=0; i_col<ElDomain::n_nodes(dim); ++i_col)
                 for (uint i_row=0; i_row<spacedim; ++i_row) {
-                    result(i_row, i_col)(i_elm) = ( *ppv.elem_list_[i_elm].node(i_col) )(i_row);
+                    result(i_row, i_col)(i_elm) = ( *ppv.template node<ElDomain>(i_elm, i_col) )(i_row);
                 }
     }
 
@@ -74,7 +82,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, {spacedim, dim}, OpSizeType::elemOp)
     {
         this->bulk_side_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::OpElCoords<dim, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Op::BulkDomain, Domain, spacedim>, dim >() );
     }
 
     void eval() override {
@@ -626,34 +634,13 @@ public:
 namespace El {
 
 template<unsigned int dim, unsigned int spacedim = 3>
-class OpSideCoords : public Op::Side::Base<dim, spacedim> {
-public:
-    /// Constructor
-	OpSideCoords(PatchFEValues<spacedim> &pfev)
-    : Op::Side::Base<dim, spacedim>(pfev, {spacedim, dim}, OpSizeType::elemOp) {}
-
-    void eval() override {
-        PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
-        auto result = this->result_matrix();
-
-        for (uint i_side=0; i_side<ppv.side_list_.size(); ++i_side)
-            for (uint i_col=0; i_col<this->dim_; ++i_col)
-                for (uint i_row=0; i_row<spacedim; ++i_row) {
-                    result(i_row, i_col)(i_side) = ( *ppv.side_list_[i_side].node(i_col) )(i_row);
-                }
-    }
-
-};
-
-template<unsigned int dim, unsigned int spacedim = 3>
 class OpSideJac : public Op::Side::Base<dim, spacedim> {
 public:
     /// Constructor
 	OpSideJac(PatchFEValues<spacedim> &pfev)
     : Op::Side::Base<dim, spacedim>(pfev, {spacedim, dim-1}, OpSizeType::elemOp)
     {
-        this->input_ops_.push_back( pfev.template get< OpSideCoords<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );
     }
 
     void eval() override {
