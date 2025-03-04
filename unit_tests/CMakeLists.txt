@@ -110,23 +110,21 @@ macro(define_test class_name)
   #endforeach()
   #set(library_flags "${library_flags} -lgtest -lgtest_main")
 
+  set(my_includes "-I${CMAKE_SOURCE_DIR}/unit_tests")
+
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile ALL
-    COMMAND /bin/sh -c " \
-      ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh \
-        compilation \
-        ${class_name} \
-        ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_compilation_report.xml \
-        ${CMAKE_CXX_COMPILER} \
-        \"${CMAKE_CXX_FLAGS} -Wno-error\" \
-        -o \
-        ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} \
-        ${CMAKE_CURRENT_SOURCE_DIR}/${test_source} \
-        ${dir_test_target_libs} \
-        -lgtest \
-        -lgtest_main"
-    VERBATIM
+    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
+      compilation
+      ${class_name}
+      ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
+      ${CMAKE_CXX_COMPILER}
+      "${CMAKE_CXX_FLAGS} -Wno-error ${my_includes}"
+      "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
+      "${lib_flags} -lgtest -lgtest_main"
     COMMENT "Compiling ${class_name} test and generating report"
+    VERBATIM
   )
 
 
