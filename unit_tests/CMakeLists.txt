@@ -110,30 +110,34 @@ macro(define_test class_name)
   #endforeach()
   #set(library_flags "${library_flags} -lgtest -lgtest_main")
 
-  string(REPLACE ";" " " lib_flags "${dir_test_target_libs}")
-  
   # Custom target for compilation and report generation
-  add_custom_target(${class_name}_compile
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
-            compilation
-            ${class_name}
-            ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
-            ${CMAKE_CXX_COMPILER}
-            "${CMAKE_CXX_FLAGS} -Wno-error"
-            "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
-            "${lib_flags} -lgtest -lgtest_main"
-    COMMENT "Compiling ${class_name} test and generating report"
+  add_custom_target(${class_name}_compile ALL
+    COMMAND /bin/sh -c " \
+      ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh \
+        compilation \
+        ${class_name} \
+        ${CMAKE_CURRENT_BINARY_DIR}/${class_name}_compilation_report.xml \
+        ${CMAKE_CXX_COMPILER} \
+        \"${CMAKE_CXX_FLAGS} -Wno-error\" \
+        -o \
+        ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} \
+        ${CMAKE_CURRENT_SOURCE_DIR}/${test_source} \
+        ${dir_test_target_libs} \
+        -lgtest \
+        -lgtest_main"
     VERBATIM
+    COMMENT "Compiling ${class_name} test and generating report"
   )
-  
+
+
   # rule to run the test (depends on successful compilation)
+  #${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
+  #          runtime
+  #          ${class_name}
+  #          ${CMAKE_CURRENT_BINARY_DIR}/${runtime_report}
+  #          
   add_custom_target(${test_name}
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
-            runtime
-            ${class_name}
-            ${CMAKE_CURRENT_BINARY_DIR}/${runtime_report}
-            ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
     DEPENDS ${class_name}_compile
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
