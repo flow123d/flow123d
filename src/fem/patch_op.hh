@@ -42,7 +42,7 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, PatchFEValues<3> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
+    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
     : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(n_dofs), patch_fe_(&pfev)
     {
         ASSERT_GT(n_dofs, 0);

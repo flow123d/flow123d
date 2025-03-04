@@ -151,7 +151,7 @@ public:
     /// Reset PatchpointValues structures
     void reset()
     {
-        for (unsigned int i=0; i<3; ++i) {
+        for (unsigned int i=0; i<spacedim; ++i) {
             if (used_quads_[0]) patch_point_vals_[0][i].reset();
             if (used_quads_[1]) patch_point_vals_[1][i].reset();
         }
@@ -219,7 +219,7 @@ public:
 
     /// Resize tables of patch_point_vals_
     void resize_tables(TableSizes table_sizes) {
-        for (uint i=0; i<3; ++i) {
+        for (uint i=0; i<spacedim; ++i) {
             if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
             if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
         }
@@ -311,13 +311,13 @@ public:
     /// Temporary development method
     void print_data_tables(ostream& stream, bool points, bool ints, bool only_bulk=true) const {
         stream << endl << "Table of patch FE data:" << endl;
-        for (uint i=0; i<3; ++i) {
+        for (uint i=0; i<spacedim; ++i) {
             stream << std::setfill('-') << setw(100) << "" << endl;
             stream << "Bulk, dimension " << (i+1) << endl;
 //            patch_point_vals_[0][i].print_data_tables(stream, points, ints);
         }
         if (!only_bulk)
-            for (uint i=0; i<3; ++i) {
+            for (uint i=0; i<spacedim; ++i) {
                 stream << std::setfill('-') << setw(100) << "" << endl;
                 stream << "Side, dimension " << (i+1) << endl;
 //                patch_point_vals_[1][i].print_data_tables(stream, points, ints);

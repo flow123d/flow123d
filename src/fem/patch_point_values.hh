@@ -222,8 +222,8 @@ public:
 
     PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
-	std::vector<ElementAccessor<3>> elem_list_; ///< List of elements on patch
-	std::vector<Side> side_list_;               ///< List of sides on patch
+	std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
+	std::vector<Side> side_list_;                       ///< List of sides on patch
 };
 
 

@@ -408,12 +408,12 @@ public:
         ArenaOVec<double> elem_ovec(elem_vec);
 
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(3, n_dofs);
-        for (uint c=0; c<3*n_dofs; ++c) {
+        for (uint c=0; c<spacedim*n_dofs; ++c) {
             ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(c));
         }
 
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
-        for (uint c=0; c<3*n_dofs; ++c)
+        for (uint c=0; c<spacedim*n_dofs; ++c)
             result_vec(c) = result_ovec(c).get_vec();
     }
 
@@ -521,20 +521,20 @@ public:
         uint n_dofs = this->n_dofs();
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
-        for (uint i=0; i<dim*3; ++i) {
+        for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_ovec(i) = ArenaOVec(inv_jac_vec(i));
         }
 
-        Eigen::Matrix<ArenaOVec<double>, dim, 3> ref_grads_ovec;
+        Eigen::Matrix<ArenaOVec<double>, dim, spacedim> ref_grads_ovec;
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            for (uint i=0; i<3*dim; ++i) {
+            for (uint i=0; i<spacedim*dim; ++i) {
                 ref_grads_ovec(i) = ArenaOVec(ref_grads_vec(i_dof*3*dim + i));
             }
 
-            Eigen::Matrix<ArenaOVec<double>, 3, 3> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
-            for (uint i=0; i<3; ++i) {
-                for (uint j=0; j<3; ++j) {
-                   result_vec(j,i+3*i_dof) = result_ovec(i,j).get_vec();
+            Eigen::Matrix<ArenaOVec<double>, spacedim, spacedim> result_ovec = inv_jac_ovec.transpose() * ref_grads_ovec;
+            for (uint i=0; i<spacedim; ++i) {
+                for (uint j=0; j<spacedim; ++j) {
+                   result_vec(j,i+spacedim*i_dof) = result_ovec(i,j).get_vec();
                 }
             }
         }
@@ -751,7 +751,7 @@ public:
             norm_vec(i) = A.norm();
         }
 
-        for (uint i=0; i<3; ++i) {
+        for (uint i=0; i<spacedim; ++i) {
             normal_value(i) = normal_value(i) / norm_vec;
         }
     }
@@ -907,12 +907,12 @@ public:
         uint n_sides = ppv.n_elems_;
         uint n_patch_points = ppv.n_points_;
 
-        for (uint c=0; c<3*n_dofs; c++)
+        for (uint c=0; c<spacedim*n_dofs; c++)
         	result_vec(c) = ArenaVec<double>(n_patch_points, ppv.patch_arena());
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
-                for (uint c=0; c<3; c++)
+                for (uint c=0; c<spacedim; c++)
                     result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(4)(i_pt),3*i_dof+c)(i_pt / n_sides);
         }
     }
@@ -1051,7 +1051,7 @@ public:
 
         // Fill ref shape gradients by q_point. DOF and side_idx
         Eigen::Matrix<ArenaVec<double>, dim, 3> ref_shape_grads_expd;
-        for (uint i=0; i<3*dim; ++i) {
+        for (uint i=0; i<spacedim*dim; ++i) {
             ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
         }
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
@@ -1060,7 +1060,7 @@ public:
                 uint i_begin = i_pt * n_patch_sides;
                 for (uint i_sd=0; i_sd<n_patch_sides; ++i_sd) {
                     for (uint i_dim=0; i_dim<dim; ++i_dim) {
-                        for (uint i_c=0; i_c<3; ++i_c) {
+                        for (uint i_c=0; i_c<spacedim; ++i_c) {
                             ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(3)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
                         }
                     }
