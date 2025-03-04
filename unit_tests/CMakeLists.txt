@@ -110,7 +110,15 @@ macro(define_test class_name)
   set(library_flags "${library_flags} -lgtest -lgtest_main")
 
   set(my_includes "-I${CMAKE_SOURCE_DIR}/unit_tests")
-
+  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source} )
+  message(STATUS  "UNIT_INCLUDES: ${INCLUDE_DIRECTORIES}")
+  get_target_property(INCLUDES ${test_binary} INCLUDE_DIRECTORIES)
+  if(INCLUDES)
+        message(STATUS "Include directories for ${test_binary}: ${INCLUDES}")
+  else()
+        message(STATUS "${test_binary} has no include directories set (property is NOTFOUND).")
+  endif()
+  
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile
     COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
@@ -118,14 +126,14 @@ macro(define_test class_name)
       ${class_name}
       ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
       ${CMAKE_CXX_COMPILER}
-      "${CMAKE_CXX_FLAGS} -Wno-error ${my_includes}"
+      "${CMAKE_CXX_FLAGS} -Wno-error -I${INCLUDES}"
       "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
       "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
       "${library_flags}"
     COMMENT "Compiling ${class_name} test and generating report"
     VERBATIM
   )
-
+  add_dependencies(${class_name}_compile update_source_tree)
 
   # rule to run the test (depends on successful compilation)
   #${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
