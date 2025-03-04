@@ -19,7 +19,6 @@ echo "Command: ${COMPILER_COMMAND[@]}"
 "${COMPILER_COMMAND[@]}" > "$LOG_TMP" 2>&1
 STATUS=$?
 
-
 # Generate report
 echo "Generating compilation report..."
 python3 "$SCRIPT_DIR/runtime_and_compilation_reporter.py" \

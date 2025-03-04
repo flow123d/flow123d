@@ -103,21 +103,28 @@ macro(define_test class_name)
   endif()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
+  # Explicitly collect include directories
+  get_property(GLOBAL_INCLUDES GLOBAL PROPERTY INCLUDE_DIRECTORIES)
+  get_directory_property(LOCAL_INCLUDES INCLUDE_DIRECTORIES)
+  list(APPEND ALL_INCLUDES ${GLOBAL_INCLUDES} ${LOCAL_INCLUDES})
+
+  # Remove duplicates and create include flags
+  list(REMOVE_DUPLICATES ALL_INCLUDES)
+  set(INCLUDE_FLAGS "")
+  foreach(include_dir ${ALL_INCLUDES})
+    list(APPEND INCLUDE_FLAGS "-I${include_dir}")
+  endforeach()
+
   set(library_flags "")
   foreach(lib ${dir_test_target_libs})
     set(library_flags "${library_flags} -l${lib}")
   endforeach()
   set(library_flags "${library_flags} -lgtest -lgtest_main")
-
-  set(my_includes "-I${CMAKE_SOURCE_DIR}/unit_tests")
-  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source} )
-  message(STATUS  "UNIT_INCLUDES: ${INCLUDE_DIRECTORIES}")
-  get_target_property(INCLUDES ${test_binary} INCLUDE_DIRECTORIES)
-  if(INCLUDES)
-        message(STATUS "Include directories for ${test_binary}: ${INCLUDES}")
-  else()
-        message(STATUS "${test_binary} has no include directories set (property is NOTFOUND).")
-  endif()
+  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
+  
+  # Print debug information
+  message(STATUS "ALL INCLUDE DIRECTORIES: ${ALL_INCLUDES}")
+  message(STATUS "INCLUDE FLAGS: ${INCLUDE_FLAGS}")
   
   # Custom target for compilation and report generation
   add_custom_target(${class_name}_compile
@@ -126,13 +133,14 @@ macro(define_test class_name)
       ${class_name}
       ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
       ${CMAKE_CXX_COMPILER}
-      "${CMAKE_CXX_FLAGS} -Wno-error -I${INCLUDES}"
+      "${CMAKE_CXX_FLAGS} -Wno-error ${INCLUDE_FLAGS}"
       "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
       "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
       "${library_flags}"
     COMMENT "Compiling ${class_name} test and generating report"
     VERBATIM
   )
+
   add_dependencies(${class_name}_compile update_source_tree)
 
   # rule to run the test (depends on successful compilation)
