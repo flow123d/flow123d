@@ -33,7 +33,7 @@ public:
         return 0;
     }
 
-    static inline uint n_nodes(uint dim) {
+    static inline constexpr uint n_nodes(uint dim) {
         return dim+1;
     }
 };
@@ -45,7 +45,7 @@ public:
         return 1;
     }
 
-    static inline uint n_nodes(uint dim) {
+    static inline constexpr uint n_nodes(uint dim) {
         return dim;
     }
 };
@@ -94,6 +94,44 @@ public:
     }
 };
 
+template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+class JacDet : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	JacDet(PatchFEValues<spacedim> &pfev)
+	: PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::elemOp)
+	{
+        this->bulk_side_ = Domain::domain();
+	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, ElDomain, Domain, spacedim>, dim >() );
+	}
+
+    void eval() override {
+        auto jac_det_value = this->result_matrix();
+        auto jac_value = this->input_ops(0)->result_matrix();
+        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, ElDomain::n_nodes(dim)-1>(jac_value).abs();
+    }
+};
+
+/// Template specialization of previous: dim=1
+template<>
+class JacDet<1, Op::SideDomain, Op::SideDomain, 3> : public PatchOp<3> {
+public:
+    /// Constructor
+    JacDet(PatchFEValues<3> &pfev)
+    : PatchOp<3>(1, pfev, {1}, OpSizeType::elemOp)
+    {
+        this->bulk_side_ = 1;
+    }
+
+    void eval() override {
+        PatchPointValues<3> &ppv = this->ppv();
+        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
+        auto jac_det_value = this->result_matrix();
+        for (uint i=0;i<ppv.n_elems_; ++i) {
+            jac_det_value(0,0)(i) = 1.0;
+        }
+    }
+};
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class OpElInvJac : public PatchOp<spacedim> {
 public:
@@ -198,27 +236,6 @@ public:
     }
 };
 
-namespace El {
-
-template<unsigned int dim, unsigned int spacedim = 3>
-class OpJacDet : public Op::Bulk::Base<dim, spacedim> {
-public:
-    /// Constructor
-	OpJacDet(PatchFEValues<spacedim> &pfev)
-	: Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::elemOp)
-	{
-	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Op::BulkDomain, Op::BulkDomain, spacedim>, dim >() );
-	}
-
-    void eval() override {
-        auto jac_det_value = this->result_matrix();
-        auto jac_value = this->input_ops(0)->result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, dim>(jac_value).abs();
-    }
-};
-
-} // end of namespace Op::Bulk::El
-
 namespace Pt {
 
 /// Evaluates coordinates of quadrature points
@@ -241,7 +258,7 @@ public:
     : Op::Bulk::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp)
     {
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, BulkDomain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::Bulk::El::OpJacDet<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, BulkDomain, BulkDomain, spacedim>, dim >() );
     }
 
     void eval() override {
@@ -631,46 +648,6 @@ public:
     }
 };
 
-namespace El {
-
-template<unsigned int dim, unsigned int spacedim = 3>
-class OpSideJacDet : public Op::Side::Base<dim, spacedim> {
-public:
-    /// Constructor
-	OpSideJacDet(PatchFEValues<spacedim> &pfev)
-	: Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::elemOp)
-	{
-	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );
-	}
-
-    void eval() override {
-        auto jac_det_value = this->result_matrix();
-        auto jac_value = this->input_ops(0)->result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, dim-1>(jac_value).abs();
-    }
-};
-
-/// Template specialization of previous: dim=1
-template<>
-class OpSideJacDet<1, 3> : public Op::Side::Base<1, 3> {
-public:
-    /// Constructor
-	OpSideJacDet(PatchFEValues<3> &pfev)
-	: Op::Side::Base<1, 3>(pfev, {1}, OpSizeType::elemOp)
-	{}
-
-    void eval() override {
-        PatchPointValues<3> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
-        auto jac_det_value = this->result_matrix();
-        for (uint i=0;i<ppv.n_elems_; ++i) {
-            jac_det_value(0,0)(i) = 1.0;
-        }
-    }
-};
-
-} // end of namespace Op::Side::El
-
 namespace Pt {
 
 /// Evaluates coordinates of quadrature points
@@ -692,8 +669,8 @@ public:
     OpJxW(PatchFEValues<spacedim> &pfev)
     : Op::Side::Base<dim, spacedim>(pfev, {1}, OpSizeType::pointOp)
     {
-        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, SideDomain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::Side::El::OpSideJacDet<dim, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );
     }
 
     void eval() override {
