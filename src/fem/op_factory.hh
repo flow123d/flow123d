@@ -87,7 +87,7 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::Bulk::Pt::OpJxW<dim, 3> >());
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >());
     }
 
 	/// Create bulk accessor of coords entity
@@ -183,7 +183,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::Side::Pt::OpJxW<dim, 3> >());
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::SideDomain, 3> >());
     }
 
     /**
