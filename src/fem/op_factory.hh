@@ -93,7 +93,7 @@ public:
 	/// Create bulk accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        return FeQ<Vector>(this->template make_patch_op< Op::Bulk::Pt::OpCoords >());
+        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<dim, Op::BulkDomain, 3> >());
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -199,7 +199,7 @@ public:
 	/// Create side accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        return FeQ<Vector>(this->template make_patch_op< Op::Side::Pt::OpCoords >());
+        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<dim, Op::SideDomain, 3> >());
     }
 
     /// Create bulk accessor of jac determinant entity
