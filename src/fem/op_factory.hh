@@ -59,8 +59,15 @@ protected:
     }
 
     /// Factory method. Same as previous but creates FE operation.
-    template<class ValueType, template<unsigned int, unsigned int> class OpType>
+    template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
     FeQArray<ValueType> make_qarray(uint component_idx = 0) {
+    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
+    	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, Domain, 3> >(fe_component));
+    }
+
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, unsigned int> class OpType>
+    FeQArray<ValueType> make_qarray2(uint component_idx = 0) {
     	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
     	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, 3> >(fe_component));
     }
@@ -113,12 +120,12 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::Bulk::Pt::OpScalarShape>(component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::Bulk::Pt::DispatchVectorShape>(component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -132,7 +139,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::Bulk::Pt::OpGradScalarShape>(component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -143,7 +150,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::Bulk::Pt::DispatchGradVectorShape>(component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -154,7 +161,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::Bulk::Pt::OpVectorSymGrad>(component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -165,7 +172,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::Bulk::Pt::OpVectorDivergence>(component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
     }
 };
 
@@ -211,19 +218,19 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::Side::Pt::OpScalarShape>(component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::Side::Pt::DispatchVectorShape>(component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::Side::Pt::OpGradScalarShape>(component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -234,7 +241,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::Side::Pt::DispatchGradVectorShape>(component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -245,7 +252,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::Side::Pt::OpVectorSymGrad>(component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -256,7 +263,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::Side::Pt::OpVectorDivergence>(component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
     }
 };
 
@@ -277,13 +284,13 @@ public:
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
         ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::OpScalarShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::ScalarShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
         auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
         ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::OpScalarShape<dim, 3> >(fe_component_high);
+        auto *high_dim_op = this->template make_patch_op< Op::ScalarShape<dim, Op::SideDomain, 3> >(fe_component_high);
         auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         return FeQJoin<Scalar>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
@@ -293,12 +300,12 @@ public:
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::DispatchVectorShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
         auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchVectorShape<dim, 3> >(fe_component_high);
+        auto *high_dim_op = this->template make_patch_op< Op::DispatchVectorShape<dim, Op::SideDomain, 3> >(fe_component_high);
         auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
@@ -309,12 +316,12 @@ public:
     {
     	// element of lower dim (bulk points)
         auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::Bulk::Pt::DispatchGradVectorShape<dim-1, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_op = this->patch_fe_values_.template get< Op::DispatchGradVectorShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
         auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
         // element of higher dim (side points)
         auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        auto *high_dim_op = this->template make_patch_op< Op::Side::Pt::DispatchGradVectorShape<dim, 3> >(fe_component_high);
+        auto *high_dim_op = this->template make_patch_op< Op::DispatchGradVectorShape<dim, Op::SideDomain, 3> >(fe_component_high);
         auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
