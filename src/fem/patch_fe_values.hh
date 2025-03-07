@@ -188,12 +188,10 @@ public:
     }
 
     /**
-     * @brief Returns FiniteElement object of given dimension and component index.
+     * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
      */
     template<unsigned int dim>
-    std::shared_ptr<FiniteElement<dim>> fe_comp(uint component_idx) {
-        ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
-        std::shared_ptr<FiniteElement<dim>> fe = fe_[Dim<dim>{}];
+    std::shared_ptr<FiniteElement<dim>> fe_comp(std::shared_ptr< FiniteElement<dim> > fe, uint component_idx) {
         if (fe->fe_type() == FEMixedSystem) {
             FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>( fe.get() );
             return fe_sys->fe()[component_idx];
@@ -202,6 +200,7 @@ public:
             return fe;
         }
     }
+
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>

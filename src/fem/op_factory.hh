@@ -34,18 +34,6 @@ protected:
 	BaseValues(PatchFEValues<3> &pfev) : patch_fe_values_(pfev)
 	{}
 
-    /// Return FiniteElement of \p component_idx for FESystem or \p fe for other types
-    template<unsigned int FE_dim>
-    std::shared_ptr<FiniteElement<FE_dim>> fe_comp(std::shared_ptr< FiniteElement<FE_dim> > fe, uint component_idx) {
-        if (fe->fe_type() == FEMixedSystem) {
-            FESystem<FE_dim> *fe_sys = dynamic_cast<FESystem<FE_dim>*>( fe.get() );
-            return fe_sys->fe()[component_idx];
-        } else {
-            ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
-            return fe;
-        }
-    }
-
     /// Factory method. Creates operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_patch_op() {
@@ -53,16 +41,10 @@ protected:
     }
 
     /// Factory method. Same as previous but creates FE operation.
-    template<class OpType>
-    PatchOp<3> *make_patch_op(std::shared_ptr<FiniteElement<dim>> fe) {
-    	return patch_fe_values_.get< OpType, dim >(fe);
-    }
-
-    /// Factory method. Same as previous but creates FE operation.
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
     FeQArray<ValueType> make_qarray(uint component_idx = 0) {
-    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
-    	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, Domain, 3> >(fe_component));
+    	std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_.fe_comp(fe_, component_idx);
+    	return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(fe_component));
     }
 
     PatchFEValues<3> &patch_fe_values_;
@@ -262,66 +244,50 @@ public:
 
 
 template<unsigned int dim>
-class JoinValues : public BaseValues<dim>
+class JoinValues
 {
 public:
 	/// Constructor
 	JoinValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev) {
+	: patch_fe_values_(pfev) {
 	    fe_high_dim_ = fe[Dim<dim>{}];
 	    fe_low_dim_ = fe[Dim<dim-1>{}];
 	}
 
-    inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
-    {
-    	// element of lower dim (bulk points)
-        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        ASSERT_EQ(fe_component_low->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::ScalarShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, class, unsigned int> class OpType>
+    FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
+        // element of lower dim (bulk points)
+        auto fe_component_low = patch_fe_values_.fe_comp(fe_low_dim_, component_idx);
+        auto *low_dim_op = patch_fe_values_.template get< OpType<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
+        auto *low_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
 
     	// element of higher dim (side points)
-        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        ASSERT_EQ(fe_component_high->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape accessor must be FEScalar!\n");
-        auto *high_dim_op = this->template make_patch_op< Op::ScalarShape<dim, Op::SideDomain, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
+        auto fe_component_high = patch_fe_values_.fe_comp(fe_high_dim_, component_idx);
+        auto *high_dim_op = patch_fe_values_.template get< OpType<dim, Op::SideDomain, 3>, dim >(fe_component_high);
+        auto *high_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim, Op::SideDomain, 3>, dim >(fe_component_high);
 
-        return FeQJoin<Scalar>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
+        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
+        return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
+    }
+
+    inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
+    {
+        return this->template make_qjoin<Scalar, Op::ScalarShape>(component_idx);
     }
 
     inline FeQJoin<Vector> vector_join_shape(uint component_idx = 0)
     {
-    	// element of lower dim (bulk points)
-        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::DispatchVectorShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
-
-        // element of higher dim (side points)
-        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        auto *high_dim_op = this->template make_patch_op< Op::DispatchVectorShape<dim, Op::SideDomain, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
-
-        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
-        return FeQJoin<Vector>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
+        return this->template make_qjoin<Vector, Op::DispatchVectorShape>(component_idx);
     }
 
     inline FeQJoin<Tensor> gradient_vector_join_shape(uint component_idx = 0)
     {
-    	// element of lower dim (bulk points)
-        auto fe_component_low = this->fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = this->patch_fe_values_.template get< Op::DispatchGradVectorShape<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_.template get< Op::OpZero<dim-1, Op::BulkDomain, 3>, dim-1 >(fe_component_low);
-
-        // element of higher dim (side points)
-        auto fe_component_high = this->fe_comp(fe_high_dim_, component_idx);
-        auto *high_dim_op = this->template make_patch_op< Op::DispatchGradVectorShape<dim, Op::SideDomain, 3> >(fe_component_high);
-        auto *high_dim_zero_op = this->template make_patch_op< Op::OpZero<dim, Op::SideDomain, 3> >(fe_component_high);
-
-        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
-        return FeQJoin<Tensor>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
+        return this->template make_qjoin<Tensor, Op::DispatchGradVectorShape>(component_idx);
     }
 
 private:
+    PatchFEValues<3> &patch_fe_values_;
     std::shared_ptr< FiniteElement<dim> > fe_high_dim_;
     std::shared_ptr< FiniteElement<dim-1> > fe_low_dim_;
 };
