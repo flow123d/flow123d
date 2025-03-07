@@ -877,7 +877,6 @@ public:
     }
 };
 
-/* ************************************************* */
 /// Evaluates vector vector divergence
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorDivergence : public PatchOp<spacedim> {
@@ -919,12 +918,12 @@ namespace Side {
 
 namespace Pt {
 
-/// Evaluates normal vector on quadrature points
+/// Evaluates normal vector on side quadrature points
 template<unsigned int dim, unsigned int spacedim = 3>
-class OpNormalVec : public PatchOp<spacedim> {
+class NormalVec : public PatchOp<spacedim> {
 public:
     /// Constructor
-    OpNormalVec(PatchFEValues<spacedim> &pfev)
+    NormalVec(PatchFEValues<spacedim> &pfev)
     : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::elemOp)
     {
         this->bulk_side_ = 1;

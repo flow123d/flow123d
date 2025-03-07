@@ -65,13 +65,6 @@ protected:
     	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, Domain, 3> >(fe_component));
     }
 
-    /// Factory method. Same as previous but creates FE operation.
-    template<class ValueType, template<unsigned int, unsigned int> class OpType>
-    FeQArray<ValueType> make_qarray2(uint component_idx = 0) {
-    	std::shared_ptr<FiniteElement<dim>> fe_component = this->fe_comp(fe_, component_idx);
-    	return FeQArray<ValueType>(this->template make_patch_op< OpType<dim, 3> >(fe_component));
-    }
-
     PatchFEValues<3> &patch_fe_values_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
@@ -200,7 +193,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(this->template make_patch_op< Op::Side::Pt::OpNormalVec<dim, 3> >());
+        return ElQ<Vector>(this->template make_patch_op< Op::Side::Pt::NormalVec<dim, 3> >());
 	}
 
 	/// Create side accessor of coords entity
