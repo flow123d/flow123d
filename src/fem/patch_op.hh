@@ -33,8 +33,8 @@ template<unsigned int spacedim> class PatchFEValues;
 /// Distinguishes bulk and side domain
 enum ElemDomain
 {
-	bulk,
-	side
+    domain_bulk,
+    domain_side
 };
 
 

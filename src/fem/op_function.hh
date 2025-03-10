@@ -30,7 +30,7 @@ namespace Op {
 class BulkDomain {
 public:
     static ElemDomain domain() {
-        return ElemDomain::bulk;
+        return ElemDomain::domain_bulk;
     }
 
     static inline constexpr uint n_nodes(uint dim) {
@@ -42,7 +42,7 @@ public:
 class SideDomain {
 public:
     static ElemDomain domain() {
-        return ElemDomain::side;
+        return ElemDomain::domain_side;
     }
 
     static inline constexpr uint n_nodes(uint dim) {
