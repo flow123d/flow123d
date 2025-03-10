@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Set variables
       id: vars
@@ -115,7 +115,7 @@ jobs:
         
               
 #    - name: Release
-#      uses: softprops/action-gh-release@v1
+#      uses: softprops/action-gh-release@v2
 #      with:
 #          files: |
 #            flow123d_${release_version}_doc.pdf
@@ -123,7 +123,7 @@ jobs:
 #            flow123d_${release_version}_windows_install.exe
  #         name: release_${release_version}
     - name: upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:       
         path: |
             ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
@@ -146,7 +146,7 @@ jobs:
     - name: Release add assets
       # Whole action triggered by release change.
       # We add created assets: PDF, and installation packages
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: |
