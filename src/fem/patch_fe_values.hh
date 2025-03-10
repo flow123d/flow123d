@@ -307,62 +307,15 @@ public:
         }
     }
 
-    /// Temporary development method
-    void print_data_tables(ostream& stream, bool points, bool ints, bool only_bulk=true) const {
-        stream << endl << "Table of patch FE data:" << endl;
-        for (uint i=0; i<spacedim; ++i) {
-            stream << std::setfill('-') << setw(100) << "" << endl;
-            stream << "Bulk, dimension " << (i+1) << endl;
-//            patch_point_vals_[0][i].print_data_tables(stream, points, ints);
-        }
-        if (!only_bulk)
-            for (uint i=0; i<spacedim; ++i) {
-                stream << std::setfill('-') << setw(100) << "" << endl;
-                stream << "Side, dimension " << (i+1) << endl;
-//                patch_point_vals_[1][i].print_data_tables(stream, points, ints);
-            }
-        if (points) {
-            stream << "Point vals: " << std::endl;
-//            for (auto *op : operations_) {
-//                if (op == nullptr) continue;
-//            	auto mat = op->raw_result();
-//                for (uint i_mat=0; i_mat<mat.rows()*mat.cols(); ++i_mat) {
-//                    if (mat(i_mat).data_size()==0) stream << "<empty>";
-//                    else {
-//                        const double *vals = mat(i_mat).data_ptr();
-//                        for (size_t i_val=0; i_val<mat(i_mat).data_size(); ++i_val)
-//                            stream << vals[i_val] << " ";
-//                    }
-//                    stream << std::endl;
-//                }
-//                stream << " --- end of operation ---" << std::endl;
-//            }
-        }
-        if (ints) {
-            stream << "Int vals: " << std::endl;
-//            for (uint i_row=0; i_row<int_table_.rows(); ++i_row) {
-//                if (int_table_(i_row).data_size()==0) stream << "<empty>";
-//                else {
-//                    const uint *vals = int_table_(i_row).data_ptr();
-//                    for (size_t i_val=0; i_val<int_table_(i_row).data_size(); ++i_val)
-//                        stream << vals[i_val] << " ";
-//                }
-//                stream << std::endl;
-//            }
-//            stream << std::endl;
-        }
-        stream << std::setfill('=') << setw(100) << "" << endl;
-    }
-
-    /// Temporary development method
+    /// Print table of all used operations - development method
     void print_operations(ostream& stream) const {
         stream << endl << "Table of patch FE operations:" << endl;
         stream << std::setfill('-') << setw(160) << "" << endl;
 
-        stream << std::setfill(' ') << " Operation" << std::setw(41) << "" << "Type" << std::setw(5) << "" << "Shape" << std::setw(2) << ""
+        stream << std::setfill(' ') << " Operation" << std::setw(51) << "" << "Type" << std::setw(5) << "" << "Shape" << std::setw(2) << ""
                 << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
         for (uint i=0; i<operations_.size(); ++i) {
-            stream << " " << std::left << std::setw(50) << typeid(*operations_[i]).name() << "";
+            stream << " " << std::left << std::setw(60) << typeid(*operations_[i]).name() << "";
             stream << operations_[i]->dim_ << "D " << (operations_[i]->domain_ ? "side" : "bulk");
         	stream << "  " << std::setw(6) << operations_[i]->format_shape() << "" << " "
                 << std::setw(7) << operations_[i]->n_dofs() << "" << " ";

@@ -370,12 +370,9 @@ public:
         update_patch();
 
         if (print_tables) {
-//            std::stringstream ss1;
-//            patch_fe_values_.print_data_tables(ss1, true, false, false);
-//            WarningOut() << ss1.str();
-            std::stringstream ss2;
-            patch_fe_values_.print_operations(ss2);
-            WarningOut() << ss2.str();
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
         }
 
         for(auto dh_cell : dh_->local_range() ) {
@@ -633,12 +630,9 @@ public:
         update_patch();
 
         if (print_tables) {
-//            std::stringstream ss1;
-//            patch_fe_values_.print_data_tables(ss1, true, false, false);
-//            WarningOut() << ss1.str();
-            std::stringstream ss2;
-            patch_fe_values_.print_operations(ss2);
-            WarningOut() << ss2.str();
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
         }
 
         for(auto dh_cell : dh_->local_range() ) {
