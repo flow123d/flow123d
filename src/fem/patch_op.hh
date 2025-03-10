@@ -30,6 +30,13 @@
 template<unsigned int spacedim> class PatchFEValues;
 
 
+/// Distinguishes bulk and side domain
+enum ElemDomain
+{
+	bulk,
+	side
+};
+
 
 /**
  * @brief Class represents element or FE operations.
@@ -77,8 +84,8 @@ public:
 //    }
 
     /// Getter for bulk_side flag
-    inline uint bulk_side() const {
-        return bulk_side_;
+    inline ElemDomain domain() const {
+        return domain_;
     }
 
     /// Getter for size_type_
@@ -146,7 +153,7 @@ public:
 
     /// Return reference of PatchPointValues
     inline PatchPointValues<spacedim> &ppv() {
-        return patch_fe_->patch_point_vals_[bulk_side_][this->dim_-1];
+        return patch_fe_->patch_point_vals_[domain_][this->dim_-1];
     }
 
     /// Reinit function of operation. Implementation in descendants.
@@ -288,7 +295,7 @@ protected:
     }
 
     uint dim_;                                    ///< Dimension
-    uint bulk_side_;                              ///< Flag: BulkOp = 0, SideOp = 1
+    ElemDomain domain_;                           ///< Flag: BulkOp = 0, SideOp = 1
     std::vector<uint> shape_;                     ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> result_;    ///< Result matrix of operation
     OpSizeType size_type_;                        ///< Type of operation by size of vector (element, point or fixed size)

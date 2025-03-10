@@ -363,7 +363,7 @@ public:
                 << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
         for (uint i=0; i<operations_.size(); ++i) {
             stream << " " << std::left << std::setw(50) << typeid(*operations_[i]).name() << "";
-            stream << operations_[i]->dim_ << "D " << (operations_[i]->bulk_side_ ? "side" : "bulk");
+            stream << operations_[i]->dim_ << "D " << (operations_[i]->domain_ ? "side" : "bulk");
         	stream << "  " << std::setw(6) << operations_[i]->format_shape() << "" << " "
                 << std::setw(7) << operations_[i]->n_dofs() << "" << " ";
             for (auto *i_o : operations_[i]->input_ops_) stream << typeid(*i_o).name() << "  ";

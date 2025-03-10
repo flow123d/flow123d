@@ -20,9 +20,9 @@
 #define OP_ACCESSORS_HH_
 
 #include "fem/eval_subset.hh"
+#include "fem/patch_op.hh"
 
-template<unsigned int spacedim> class PatchPointValues;
-template<unsigned int spacedim> class PatchOp;
+//template<unsigned int spacedim> class PatchOp;
 
 using Scalar = double;
 using Vector = arma::vec3;
@@ -58,7 +58,7 @@ public:
     // Class similar to current FeView
     FeQ(PatchOp<3> *patch_op)
     : patch_op_bulk_(nullptr), patch_op_side_(nullptr), i_shape_fn_idx_(0) {
-        if (patch_op->bulk_side()==0) patch_op_bulk_ = patch_op;
+        if (patch_op->domain()==0) patch_op_bulk_ = patch_op;
         else patch_op_side_ = patch_op;
     }
 
@@ -89,7 +89,7 @@ public:
     : patch_op_bulk_(nullptr), patch_op_side_(nullptr), n_dofs_(patch_op->n_dofs()) {
         ASSERT_GT(n_dofs_, 0).error("Invalid number of DOFs.\n");
 
-        if (patch_op->bulk_side()==0) patch_op_bulk_ = patch_op;
+        if (patch_op->domain()==0) patch_op_bulk_ = patch_op;
         else patch_op_side_ = patch_op;
     }
 

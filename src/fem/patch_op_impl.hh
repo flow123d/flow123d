@@ -28,7 +28,7 @@
 template<>
 template<>
 Scalar PatchOp<3>::elem_value<Scalar>(uint point_idx) const {
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     return result_(0)( ppv.int_table_(1)(ppv.points_map_[point_idx]) );
 }
 
@@ -36,7 +36,7 @@ template<>
 template<>
 Vector PatchOp<3>::elem_value<Vector>(uint point_idx) const {
     Vector val;
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         val(i) = result_(i)(op_matrix_idx);
@@ -47,7 +47,7 @@ template<>
 template<>
 Tensor PatchOp<3>::elem_value<Tensor>(uint point_idx) const {
     Tensor val;
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     uint op_matrix_idx = ppv.int_table_(1)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         for (uint j=0; j<3; ++j)
@@ -58,7 +58,7 @@ Tensor PatchOp<3>::elem_value<Tensor>(uint point_idx) const {
 template<>
 template<>
 Scalar PatchOp<3>::point_value<Scalar>(uint point_idx, uint i_dof) const {
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     return result_(i_dof)(ppv.points_map_[point_idx]);
 }
 
@@ -66,7 +66,7 @@ template<>
 template<>
 Vector PatchOp<3>::point_value<Vector>(uint point_idx, uint i_dof) const {
     Vector val;
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     uint op_matrix_idx = ppv.points_map_[point_idx];
     for (uint i=0; i<3; ++i)
         val(i) = result_(i + 3*i_dof)(op_matrix_idx);
@@ -77,7 +77,7 @@ template<>
 template<>
 Tensor PatchOp<3>::point_value<Tensor>(uint point_idx, uint i_dof) const {
     Tensor val;
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[bulk_side_][dim_-1];
+    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
     uint op_matrix_idx = ppv.points_map_[point_idx];
     for (uint i=0; i<9; ++i)
         val(i) = result_(i+9*i_dof)(op_matrix_idx);
