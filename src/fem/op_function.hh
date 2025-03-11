@@ -270,15 +270,14 @@ public:
     : PatchOp<spacedim>(dim, pfev, {1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_bulk_quadrature(dim);
+        uint n_points = quad->size();
 
-        auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (unsigned int i_p = 0; i_p < n_points; i_p++)
-            for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++) {
-                ref_scalar_value(i_dof)(i_p) = ref_shape_vals[i_p][i_dof][0];
-            }
+            for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
+                ref_scalar_value(i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p));
     }
 
     void eval() override {}
@@ -293,18 +292,18 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim+1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = pfev.get_side_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_side_quadrature(dim);
+        uint n_points = quad->size();
 
-        auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
         for (unsigned int s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++) {
-                    ref_scalar_value(s, i_dof)(i_p) = ref_shape_vals[s][i_p][i_dof][0];
-                }
+                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
+                    ref_scalar_value(s, i_dof)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p));
         }
-	}
+    }
 
     void eval() override {}
 };
@@ -318,16 +317,16 @@ public:
 	: PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
 	{
         this->domain_ = Domain::domain();
-        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_bulk_quadrature(dim);
+        uint n_points = quad->size();
 
-        auto ref_shape_vals = this->template ref_shape_values_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
 
         for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
                 for (uint c=0; c<spacedim; ++c)
-                    ref_vector_value(c, i_dof)(i_p) = ref_shape_vals[i_p][i_dof](c);
+                    ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
 	}
 
     void eval() override {}
@@ -342,18 +341,20 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = pfev.get_side_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_side_quadrature(dim);
+        uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
-        auto ref_shape_vals = this->template ref_shape_values_side<dim>(pfev.get_side_quadrature(dim), fe);
 
-        for (unsigned int s=0; s<dim+1; ++s)
+        for (unsigned int s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
                 for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
                     for (uint c=0; c<spacedim; ++c)
-                        ref_vector_value(s,3*i_dof+c)(i_p) = ref_shape_vals[s][i_p][i_dof][c];
-	}
+                        ref_vector_value(s,3*i_dof+c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), c);
+        }
+    }
 
     void eval() override {}
 };
@@ -367,16 +368,15 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim, 1}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_bulk_quadrature(dim);
+        uint n_points = quad->size();
 
-        std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row) {
+        for (uint i_row=0; i_row<ref_scalar_value.rows(); ++i_row)
             for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
-                    ref_scalar_value(i_row, i_dof)(i_p) = ref_shape_grads[i_p][i_dof](i_row);
-        }
+                    ref_scalar_value(i_row, i_dof)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p))[i_row];
     }
 
     void eval() override {}
@@ -391,16 +391,18 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim+1, dim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = pfev.get_side_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_side_quadrature(dim);
+        uint n_points = quad->size();
 
-        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (unsigned int s=0; s<dim+1; ++s)
+        for (unsigned int s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
             for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                 for (uint i_p=0; i_p<n_points; ++i_p)
                     for (uint c=0; c<dim; ++c)
-                        ref_scalar_value(s,dim*i_dof+c)(i_p) = ref_shape_grads[s][i_p][i_dof](c);
+                        ref_scalar_value(s,dim*i_dof+c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p))[c];
+        }
     }
 
     void eval() override {}
@@ -415,16 +417,16 @@ public:
     : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        uint n_points = pfev.get_bulk_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_bulk_quadrature(dim);
+        uint n_points = quad->size();
 
-        std::vector<std::vector<arma::mat> > ref_shape_grads = this->template ref_shape_gradients_bulk<dim>(pfev.get_bulk_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
         for (uint i_c=0; i_c<spacedim; ++i_c) {
             for (uint i_dim=0; i_dim<dim; ++i_dim)
                 for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = ref_shape_grads[i_p][i_dof](i_dim, i_c);
+                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p), i_c)[i_dim];
         }
     }
 
@@ -440,19 +442,20 @@ public:
     : PatchOp<spacedim>(dim, pfev, {(dim+1)*dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = pfev.get_side_quadrature(dim)->size();
+        Quadrature *quad = pfev.get_side_quadrature(dim);
+        uint n_points = quad->size();
         uint n_sides = dim+1;
 
-        std::vector<std::vector<std::vector<arma::mat> > > ref_shape_grads = this->template ref_shape_gradients_side<dim>(pfev.get_side_quadrature(dim), fe);
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
-        for (uint i_sd=0; i_sd<n_sides; ++i_sd)
+        for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
+            Quadrature side_q = quad->make_from_side<dim>(i_sd);
             for (uint i_c=0; i_c<spacedim; ++i_c)
                 for (uint i_dim=0; i_dim<dim; ++i_dim)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
-                        for (uint i_p=0; i_p<n_points; ++i_p) {
-                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = ref_shape_grads[i_sd][i_p][i_dof](i_dim, i_c);
-                        }
+                        for (uint i_p=0; i_p<n_points; ++i_p)
+                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p), i_c)[i_dim];
+        }
     }
 
     void eval() override {}
