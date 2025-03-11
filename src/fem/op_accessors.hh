@@ -22,8 +22,6 @@
 #include "fem/eval_subset.hh"
 #include "fem/patch_op.hh"
 
-//template<unsigned int spacedim> class PatchOp;
-
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;

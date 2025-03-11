@@ -175,7 +175,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(this->template make_patch_op< Op::Side::Pt::NormalVec<dim, 3> >());
+        return ElQ<Vector>(this->template make_patch_op< Op::NormalVec<dim, 3> >());
 	}
 
 	/// Create side accessor of coords entity

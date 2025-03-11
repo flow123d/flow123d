@@ -228,6 +228,39 @@ public:
     }
 };
 
+/// Evaluates normal vector on side quadrature points
+template<unsigned int dim, unsigned int spacedim = 3>
+class NormalVec : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    NormalVec(PatchFEValues<spacedim> &pfev)
+    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::elemOp)
+    {
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >() );
+    }
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        auto normal_value = this->result_matrix();
+        auto inv_jac_value = this->input_ops(0)->result_matrix();
+        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(3) );
+
+        ArenaVec<double> norm_vec( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
+        Eigen::VectorXd A(3);
+        for (uint i=0; i<normal_value(0).data_size(); ++i) {
+            A(0) = normal_value(0)(i);
+            A(1) = normal_value(1)(i);
+            A(2) = normal_value(2)(i);
+            norm_vec(i) = A.norm();
+        }
+
+        for (uint i=0; i<spacedim; ++i) {
+            normal_value(i) = normal_value(i) / norm_vec;
+        }
+    }
+};
+
 /// Fixed operation of scalar shape reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefScalar : public PatchOp<spacedim> {
@@ -913,47 +946,6 @@ public:
 
     void eval() override {}
 };
-
-namespace Side {
-
-namespace Pt {
-
-/// Evaluates normal vector on side quadrature points
-template<unsigned int dim, unsigned int spacedim = 3>
-class NormalVec : public PatchOp<spacedim> {
-public:
-    /// Constructor
-    NormalVec(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::elemOp)
-    {
-        this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >() );
-    }
-
-    void eval() override {
-        PatchPointValues<spacedim> &ppv = this->ppv();
-        auto normal_value = this->result_matrix();
-        auto inv_jac_value = this->input_ops(0)->result_matrix();
-        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(3) );
-
-        ArenaVec<double> norm_vec( ppv.n_elems_, *ppv.patch_fe_data_.patch_arena_ );
-        Eigen::VectorXd A(3);
-        for (uint i=0; i<normal_value(0).data_size(); ++i) {
-            A(0) = normal_value(0)(i);
-            A(1) = normal_value(1)(i);
-            A(2) = normal_value(2)(i);
-            norm_vec(i) = A.norm();
-        }
-
-        for (uint i=0; i<spacedim; ++i) {
-            normal_value(i) = normal_value(i) / norm_vec;
-        }
-    }
-};
-
-} // end of namespace Op::Side::Pt
-
-} // end of namespace Side
 
 } // end of namespace Op
 
