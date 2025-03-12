@@ -6,6 +6,7 @@
 #include "elasticity_mockup.hh"
 #include "fem/fe_p.hh"
 #include "fem/patch_fe_values.hh"
+#include "fem/op_factory.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
@@ -305,13 +306,13 @@ public:
     ~Stiffness_EvalFields() {}
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) override {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(DHCellSide cell_side) override {}
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) override {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -620,13 +621,13 @@ public:
     ~Rhs_EvalFields() {}
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) override {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(DHCellSide cell_side) override {}
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) override {}
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

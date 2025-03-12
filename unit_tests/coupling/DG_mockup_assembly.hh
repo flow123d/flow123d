@@ -6,6 +6,7 @@
 #include "DG_mockup.hh"
 #include "fem/fe_p.hh"
 #include "fem/patch_fe_values.hh"
+#include "fem/op_factory.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
@@ -134,7 +135,7 @@ public:
     ~Mass_ComputeLocal() {}
 
 protected:
-    void cell_integral_set_values(unsigned int sbi) override {}
+    void cell_integral_set_values(FMT_UNUSED unsigned int sbi) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -158,7 +159,7 @@ public:
     /// Destructor.
     ~Mass_EvalFields() {}
 
-    void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+    void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -731,13 +732,13 @@ public:
     ~Stiffness_ComputeLocal() {}
 
 protected:
-    void cell_integral_set_values(unsigned int sbi) override {}
+    void cell_integral_set_values(FMT_UNUSED unsigned int sbi) override {}
 
-    void boundary_side_integral_set_values(unsigned int sbi) override {}
+    void boundary_side_integral_set_values(FMT_UNUSED unsigned int sbi) override {}
 
-    void edge_integral_set_values(unsigned int sbi, unsigned int n_dofs, int m, int n, int sd[2]) override {}
+    void edge_integral_set_values(FMT_UNUSED unsigned int sbi, FMT_UNUSED unsigned int n_dofs, FMT_UNUSED int m, FMT_UNUSED int n, FMT_UNUSED int sd[2]) override {}
 
-    void dimjoin_intergral_set_values(unsigned int sbi, unsigned int n_dofs[2]) override {}
+    void dimjoin_intergral_set_values(FMT_UNUSED unsigned int sbi, FMT_UNUSED unsigned int n_dofs[2]) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -762,18 +763,18 @@ public:
     ~Stiffness_EvalFields() {}
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+    inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) override {}
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(DHCellSide cell_side) override {}
+    inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) override {}
 
 
     /// Assembles the fluxes between sides of elements of the same dimension.
-    inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {}
+    inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {}
 
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
+    inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -825,7 +826,6 @@ public:
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        ElementAccessor<3> elm = cell.elm();
         double source;
 
         cell.get_dof_indices(dof_indices_);
@@ -905,7 +905,7 @@ public:
     ~Sources_ComputeLocal() {}
 
 protected:
-    virtual void cell_integral_set_values(unsigned int sbi) {}
+    virtual void cell_integral_set_values(FMT_UNUSED unsigned int sbi) {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -929,7 +929,7 @@ public:
     /// Destructor.
     ~Sources_EvalFields() {}
 
-    void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+    void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) override {}
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
