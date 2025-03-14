@@ -86,11 +86,11 @@ endif()
 
 # when the precompiled headers are used in the future
 #if (${PRECOMPILED_HEADERS})
-#    ADD_PRECOMPILED_HEADER(system_lib "pre_system.hh")
+#    ADD_PRECOMPILED_HEADER(flow123d_system "pre_system.hh")
 #endif()
 
-# system_lib
-add_library(system_lib SHARED
+# flow123d_system
+add_library(flow123d_system SHARED
     system/python_loader.cc
     system/math_fce.cc
     system/sys_profiler.cc
@@ -108,7 +108,7 @@ add_library(system_lib SHARED
     system/fmt/ostream.cc
     system/fmt/posix.cc
 )
-target_link_libraries(system_lib PUBLIC 
+target_link_libraries(flow123d_system PUBLIC 
 	MPI::MPI_CXX
     pybind11::embed 
     ${PERMON_LIBRARY}
@@ -117,13 +117,13 @@ target_link_libraries(system_lib PUBLIC
     ${Boost_LIBRARIES} 
     ${PYTHON_LIBRARIES}
     nlohmann_json::nlohmann_json)
-set_target_properties(system_lib 
+set_target_properties(flow123d_system 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
                INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )    
-add_dependencies(system_lib update_source_tree)
+add_dependencies(flow123d_system update_source_tree)
 
 
 # input_lib
@@ -150,7 +150,7 @@ add_library(input_lib
     input/csv_tokenizer.cc
 )
 target_link_libraries(input_lib 
-    system_lib json_spirit
+    flow123d_system json_spirit
     ${YamlCpp_LIBRARY})
 #    -Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive)
 
@@ -291,10 +291,10 @@ target_link_libraries(io_lib
 
 
 # Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
-pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
-#pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
+pybind11_add_module("flow123d_python_api" SHARED "fields/python_field_proxy.cc")
+#pybind11_add_module("flow123d_python_api" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
 #add_executable(flow123dpy fields/python_field_proxy.cc)
-target_link_libraries(fieldproxypy system_lib armadillo) 
+target_link_libraries(flow123d_python_api flow123d_system armadillo) 
 
 
 
@@ -329,7 +329,7 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     input_lib mesh_lib tools_lib fem_lib io_lib
-    fieldproxypy
+    flow123d_python_api
     bparser  
     armadillo
     ${Boost_LIBRARIES}
@@ -340,7 +340,7 @@ target_link_libraries(coupling_lib
 set(sources_lib_non_system
 )
 # all remaining sources 
-add_library(flow123d_lib SHARED 
+add_library(flow123d_core SHARED 
     flow/darcy_flow_mh_output.cc
     # flow/darcy_flow_mh.cc
     flow/darcy_flow_lmh.cc
@@ -374,10 +374,10 @@ add_library(flow123d_lib SHARED
 
 )    
     
-target_link_libraries(flow123d_lib 
+target_link_libraries(flow123d_core
     fem_lib mesh_lib la_lib input_lib io_lib
     tools_lib coupling_lib
-    system_lib 
+    flow123d_system 
     bparser
     armadillo 
 #    ${TBB_LIBRARIES}
@@ -388,13 +388,13 @@ target_link_libraries(flow123d_lib
     ${PETSC_EXTERNAL_LIB} 
     ${Boost_LIBRARIES}
 )
-set_target_properties(flow123d_lib 
+set_target_properties(flow123d_core 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
                INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )
-add_dependencies(flow123d_lib rev_num_always)    
+add_dependencies(flow123d_core rev_num_always)    
 
-#add_dependencies(flow123d_lib tbb)
+#add_dependencies(flow123d_core tbb)
 

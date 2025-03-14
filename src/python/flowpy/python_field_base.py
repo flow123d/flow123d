@@ -4,7 +4,7 @@
 import types
 from typing import *
 import numpy as np
-from fieldproxypy import FieldCacheProxy     # neccessary for conversion to numpy array
+from flow123d_python_api import FieldCacheProxy     # neccessary for conversion to numpy array
 
 class PythonFieldBase:
     """

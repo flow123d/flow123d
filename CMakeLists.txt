@@ -916,8 +916,8 @@ if( PETSC_FOUND )
   ### add target for flow123d binary
   add_executable(bin/flow123d src/main.cc)
   target_link_libraries(bin/flow123d 
-        flow123d_lib 
-        system_lib
+        flow123d_core 
+        flow123d_system
         ${PETSC_ADDITIONAL_LIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}
@@ -986,9 +986,11 @@ install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/)
 #install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
-install(FILES build_tree/src/libflow123d_lib.so  DESTINATION lib/)
-install(FILES build_tree/src/libsystem_lib.so  DESTINATION lib/)
+install(FILES build_tree/src/libflow123d_core.so  DESTINATION lib/)
+install(FILES build_tree/src/libflow123d_system.so  DESTINATION lib/)
 install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)
+install(FILES build_tree/third_party/bparser/libflow123d_python_api.so  DESTINATION lib/python)
+
 
 # plain files
 install(FILES     bin/README                DESTINATION bin/)
