@@ -152,7 +152,7 @@ public:
     }
 
     /// Return reference of PatchPointValues
-    inline PatchPointValues<spacedim> &ppv() {
+    inline PatchPointValues<spacedim> &ppv() const {
         return patch_fe_->patch_point_vals_[domain_][this->dim_-1];
     }
 
@@ -165,7 +165,7 @@ public:
      * @param point_idx   Index of quadrature point in ElementCacheMap
      */
     template <class ValueType>
-    ValueType elem_value(uint point_idx) const;
+    inline ValueType elem_value(uint point_idx) const;
 
     /**
      * Returns output value on quadrature point.
@@ -174,7 +174,7 @@ public:
      * @param i_dof       Index of DOF
      */
     template <class ValueType>
-    ValueType point_value(uint point_idx, uint i_dof=0) const;
+    inline ValueType point_value(uint point_idx, uint i_dof=0) const;
 
 
 protected:

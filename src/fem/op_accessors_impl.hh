@@ -25,23 +25,23 @@
 
 
 template <class ValueType>
-ValueType ElQ<ValueType>::operator()(const BulkPoint &point) const {
+inline ValueType ElQ<ValueType>::operator()(const BulkPoint &point) const {
     return patch_op_->elem_value<ValueType>( point.value_cache_idx() );
 }
 
 template <class ValueType>
-ValueType ElQ<ValueType>::operator()(const SidePoint &point) const {
+inline ValueType ElQ<ValueType>::operator()(const SidePoint &point) const {
     return patch_op_->elem_value<ValueType>( point.value_cache_idx() );
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(const BulkPoint &point) const {
+inline ValueType FeQ<ValueType>::operator()(const BulkPoint &point) const {
     ASSERT_PTR(patch_op_bulk_);
     return patch_op_bulk_->point_value<ValueType>(point.value_cache_idx(), i_shape_fn_idx_);
 }
 
 template <class ValueType>
-ValueType FeQ<ValueType>::operator()(const SidePoint &point) const {
+inline ValueType FeQ<ValueType>::operator()(const SidePoint &point) const {
     ASSERT_PTR(patch_op_side_);
     return patch_op_side_->point_value<ValueType>(point.value_cache_idx(), i_shape_fn_idx_);
 }

@@ -11,6 +11,7 @@
 #include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "fem/op_factory.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/fe_p.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
