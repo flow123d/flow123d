@@ -27,17 +27,17 @@ Options:
 import pathfix
 pathfix.append_to_path()
 
-import system.versions
-system.versions.require_version_3()
+import py123d.system.versions as py123d_vers
+py123d_vers.require_version_3()
 
 import os
 import sys
 import json
 from optparse import OptionParser
-from utils.logger import Logger
-from ist.base import InputType
-from ist.utils.htmltree import htmltree
-from ist.nodes import TypeRecord, TypeAbstract, TypeSelection, TypeString, TypeDouble, TypeInteger, TypeBool, TypeArray, \
+from py123d.utils.logger import Logger
+from py123d.ist.base import InputType
+from py123d.ist.utils.htmltree import htmltree
+from py123d.ist.nodes import TypeRecord, TypeAbstract, TypeSelection, TypeString, TypeDouble, TypeInteger, TypeBool, TypeArray, \
     TypeParameter, TypeFilename, TypeTuple
 
 
@@ -100,7 +100,7 @@ def main():
     options, args = parse_args(parser)
 
     # create instance of formatter
-    from ist.ist_formatter_module import ISTFormatter
+    from py123d.ist.ist_formatter_module import ISTFormatter
     formatter = ISTFormatter()
 
     # read input json file
@@ -144,7 +144,7 @@ def main():
     if options.format.lower() in ('tex', 'latex'):
         Logger.instance().info('-' * 80)
         Logger.instance().info('Formatting ist to tex format')
-        from ist.utils.texlist2 import TexList
+        from py123d.ist.utils.texlist2 import TexList
         TexList.PRETTY_FORMAT = options.debug
         formatter.json2latex(items, options.output, info=ist_info)
         if os.path.isfile(options.output):

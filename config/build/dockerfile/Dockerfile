@@ -1,17 +1,17 @@
-# Stage 1: Build stage (source_image)
+# This Dockerfile will install flow123d into a flow123d/install image
 ARG source_image
+ARG base_image
 FROM ${source_image} as source_image
 
-# Stage 2: Production image
 ARG base_image
 FROM ${base_image}
 
-# Build-time metadata as defined at http://label-schema.org
+ARG base_image
+ARG source_location
 ARG flow_version
+ARG flow_install_location=/opt/flow123d
 ARG git_hash
 ARG build_date
-ARG source_location
-ARG flow_install_location=/opt/flow123d
 
 LABEL org.label-schema.build-date="$build_date" \
       org.label-schema.name="Flow123d" \
@@ -37,21 +37,38 @@ RUN cp ${flow_install_location}/lib/*.so /usr/local/lib/ && \
 # Install Python extension modules (e.g., libpy.so) into Python’s platlib directory
 # ---------------------------------------------------------
 RUN cp ${flow_install_location}/lib/python/*.so \
-       $(python -c "import sysconfig; print(sysconfig.get_path('platlib'))") && \
+       $(python3 -c "import sysconfig; print(sysconfig.get_path('platlib'))") && \
     rm -f ${flow_install_location}/lib/python/*.so
 
 # ---------------------------------------------------------
 # Install pure Python code (e.g., flow123d package) into Python’s purelib directory
 # ---------------------------------------------------------
-RUN cp ${flow_install_location}/lib/python/src/*.py \
-       $(python -c "import sysconfig; print(sysconfig.get_path('purelib'))")
+RUN cp -r ${flow_install_location}/lib/python/py123d \
+       $(python3 -c "import sysconfig; print(sysconfig.get_path('purelib'))")
 
 # Copy additional local files (e.g., user-installed pip packages)
-COPY --from=source_image /root/.local /root/.local
+#COPY --from=source_image /root/.local /root/.local
+
+
+# Update systemwide dynamic linker setting.
+# Add additional library directories for the dynamic linker
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/flow123d.conf && \
+    for dir in /usr/local/*; do \
+      if [ -d "$dir/lib" ]; then \
+         echo "$dir/lib" >> /etc/ld.so.conf.d/flow123d.conf; \
+      fi; \
+    done && ldconfig
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}
 
 # Update PATH to include binaries from the local installation and user-local
 ENV PATH="/root/.local/bin:${flow_install_location}/bin:${PATH}"
 
-# Optionally, save the image version info for runtime use:
-# RUN echo ${flow_version} > /.dockerversion
+# ---------------------------------------------------------
+# Install Python dependencies from requirements.txt in the build context
+# ---------------------------------------------------------
+COPY requirements.txt /tmp/requirements.txt
+RUN pip3 install --no-cache-dir -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+#Optionally, save the image version info for runtime use:
+#RUN echo ${flow_version} > /.dockerversion
       

@@ -76,7 +76,7 @@ echo "target_image: '${target_image}'"
 
 ######################################################################################################### setup container
 # Recreate build files and dirs
-rm -rf ${build_dir_host}
+rm -rf ${build_dir_host} 
 mkdir ${build_dir_host} && tar xf build_dir.tar -C ${build_dir_host} --strip-components 1
 rm -f build_tree
 ln -s ${build_dir_host} build_tree
@@ -123,7 +123,7 @@ ${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ
 #${dexec} make -C ${{flow_repo_location}} doxy-doc
 
 # Local install of source Python packages
-${dexec} pip install --user -r ${flow_repo_location}/config/build/requirements.txt
+#${dexec} pip install --user -r ${flow_repo_location}/config/build/requirements.txt
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"
@@ -146,6 +146,7 @@ docker pull "flow123d/${install_image}"
 build_date=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
 #cp ${destination}/${cmake_package_name} project/src/docker/create/default/${cmake_package_name}
+export DOCKER_BUILDKIT=1
 docker build \
      --build-arg base_image=flow123d/${install_image} \
      --build-arg source_image=flow123d/temporary_build \
