@@ -11,16 +11,16 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    field_value_cache.cc
+ * @file    element_cache_map.cc
  * @brief
  * @author  David Flanderka
  */
 
 #include <limits>
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/eval_subset.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "create_processor.hh"
 #include "mesh/accessors.hh"
@@ -36,6 +36,7 @@ const unsigned int ElementCacheMap::undef_elem_idx = std::numeric_limits<unsigne
 
 ElementCacheMap::ElementCacheMap()
 : simd_size_double(bparser::get_simd_size()), elm_idx_(CacheMapElementNumber::get(), ElementCacheMap::undef_elem_idx),
+  bdr_elm_idx_(CacheMapElementNumber::get(), ElementCacheMap::undef_elem_idx),
   ready_to_reading_(false), element_eval_points_map_(nullptr), eval_point_data_(0),
   regions_starts_(2*ElementCacheMap::regions_in_chunk,ElementCacheMap::regions_in_chunk),
   element_starts_(2*ElementCacheMap::elements_in_chunk,ElementCacheMap::elements_in_chunk) {}
@@ -74,6 +75,7 @@ void ElementCacheMap::create_patch() {
     element_to_map_.clear();
     element_to_map_bdr_.clear();
     std::fill(elm_idx_.begin(), elm_idx_.end(), ElementCacheMap::undef_elem_idx);
+    std::fill(bdr_elm_idx_.begin(), bdr_elm_idx_.end(), ElementCacheMap::undef_elem_idx);
 
     for (auto it=eval_point_data_tmp.begin(); it!=eval_point_data_tmp.end(); ++it) {
         is_new_reg = (it->i_reg_ != last_region_idx);
@@ -89,11 +91,13 @@ void ElementCacheMap::create_patch() {
                 regions_starts_.emplace_back( element_starts_.temporary_size() );
                 last_region_idx = it->i_reg_;
             }
-			elm_idx_[element_starts_.temporary_size()] = it->i_element_;
-            if (it->i_reg_ % 2 == 1) // bulk region > to element_to_map_ (bulk)
-			    element_to_map_[it->i_element_] = element_starts_.temporary_size();
-            else // boundary region to element_to_map_bdr_ (boundary)
+            if (it->i_reg_ % 2 == 1) { // bulk region > to element_to_map_ (bulk)
+                elm_idx_[element_starts_.temporary_size()] = it->i_element_;
+                element_to_map_[it->i_element_] = element_starts_.temporary_size();
+            } else { // boundary region to element_to_map_bdr_ (boundary)
+                bdr_elm_idx_[element_starts_.temporary_size()] = it->i_element_;
                 element_to_map_bdr_[it->i_element_] = element_starts_.temporary_size();
+            }
             element_starts_.emplace_back(i_pos);
             last_element_idx = it->i_element_;
         }

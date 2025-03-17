@@ -63,6 +63,8 @@ public:
         
         static const Input::Type::Selection & get_bc_type_selection();
 
+        arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor);
+
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
@@ -108,6 +110,7 @@ public:
 
 	};
 
+	/// Data of equation parameters
 	class EqData {
 	public:
 
@@ -121,12 +124,15 @@ public:
 		}
 
 		/// Create DOF handler objects
-        void create_dh(Mesh * mesh, unsigned int fe_order);
+        void create_dh(Mesh * mesh);
+
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 1;
+        }
 
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
     	/// @name Solution of algebraic system
     	// @{
@@ -144,6 +150,30 @@ public:
 
     	/// Shared Balance object
     	std::shared_ptr<Balance> balance_;
+
+	};
+
+
+	/// Data of output parameters
+	class OutputEqData {
+	public:
+
+		OutputEqData()
+        {}
+
+		~OutputEqData() {}
+
+		/// Create DOF handler objects
+        void create_dh(Mesh * mesh);
+
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 0;
+        }
+
+        /// Objects for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
 	};
 
@@ -229,6 +259,9 @@ private:
 	/// Data for model parameters.
 	std::shared_ptr<EqData> eq_data_;
 
+	/// Data for output parameters.
+	std::shared_ptr<OutputEqData> output_eq_data_;
+
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
 
@@ -260,12 +293,6 @@ private:
 
 };
 
-
-/*
- * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
- */
-double lame_mu(double young, double poisson);
-double lame_lambda(double young, double poisson);
 
 
 
