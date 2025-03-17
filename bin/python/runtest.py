@@ -6,16 +6,16 @@ import pathfix
 import sys
 pathfix.init()
 # ----------------------------------------------
-from utils.globals import check_modules
+from py123d.utils.globals import check_modules
 if not check_modules('psutil', 'yaml', 'shutil', 'importlib', 'platform', 'loguru'):
     sys.exit(1)
 # ----------------------------------------------
-from loggers import printf
-import utils.parsers as parsers
-import utils.argparser as argparser
-from utils.timer import Timer
-from scripts.core.execution import BinExecutor
-from scripts.runtest_module import do_work
+from py123d.loggers import printf
+import py123d.utils.parsers as parsers
+import py123d.utils.argparser as argparser
+from py123d.utils.timer import Timer
+from py123d.scripts.core.execution import BinExecutor
+from py123d.scripts.runtest_module import do_work
 # ----------------------------------------------
 
 

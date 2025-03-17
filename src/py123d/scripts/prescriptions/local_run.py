@@ -54,7 +54,7 @@ class LocalRun(AbstractRun):
     Class LocalRun creates PyPy object and creates comparison threads
     """
 
-    module_path = 'scripts.comparisons.modules'
+    module_path = 'py123d.scripts.comparisons.modules'
 
     def __init__(self, case):
         super(LocalRun, self).__init__(case)
