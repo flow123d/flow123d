@@ -11,30 +11,38 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    patch_point_values.cc
+ * @file    patch_point_values_impl.hh
  * @brief   Store finite element data on the actual patch
  *          such as shape function values, gradients, Jacobian
  *          of the mapping from the reference cell etc.
  * @author  David Flanderka
  */
 
+#ifndef PATCH_POINT_VALUES_HH_IMPL_
+#define PATCH_POINT_VALUES_HH_IMPL_
+
 #include "fem/patch_point_values.hh"
 
 
-template<unsigned int spacedim>
-void PatchPointValues<spacedim>::create_zero_operations(std::vector<PatchOp<spacedim> *> &ref_ops) {
-    operations_.resize(ref_ops.size(), nullptr);
-    for (uint i_op = 0; i_op < ref_ops.size(); ++i_op ) {
-        auto *op = ref_ops[i_op];
-        if (op == nullptr) continue;
+namespace Op {
+    class BulkDomain;
+    class SideDomain;
+}
 
-        auto *new_op = make_fe_op(i_op, {op->shape()[0], op->shape()[1]}, &common_reinit::op_base, op->n_dofs(), op->size_type());
-        new_op->allocate_const_result(patch_fe_data_.zero_vec_);
-    }
+// Template specialized methods
+
+template<>
+template<>
+NodeAccessor<3> PatchPointValues<3>::node<Op::BulkDomain>(unsigned int i_elm, unsigned int i_n) {
+    return elem_list_[i_elm].node(i_n);
+}
+
+template<>
+template<>
+NodeAccessor<3> PatchPointValues<3>::node<Op::SideDomain>(unsigned int i_elm, unsigned int i_n) {
+    return side_list_[i_elm].node(i_n);
 }
 
 
-template class PatchPointValues<3>;
-template class PatchOp<3>;
-template class FeBulk::PatchPointValues<3>;
-template class FeSide::PatchPointValues<3>;
+
+#endif /* PATCH_POINT_VALUES_HH_IMPL_ */

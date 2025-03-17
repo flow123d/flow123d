@@ -23,9 +23,11 @@
 #include "mechanics/elasticity.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
+#include "fem/op_factory.hh"
+#include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 
 
 /**
@@ -46,10 +48,6 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      ref_vals_( this->bulk_values().ref_vector() ),
-      ref_vals_side_( this->side_values().ref_vector() ),
-      grad_ref_vals_( this->bulk_values().ref_vector_grad() ),
-      grad_ref_vals_side_( this->side_values().ref_vector_grad() ),
       deform_side_( this->side_values().vector_shape() ),
       grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
@@ -253,10 +251,6 @@ private:
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQArray<Vector> ref_vals_;
-    FeQArray<Vector> ref_vals_side_;
-    FeQArray<Tensor> grad_ref_vals_;
-    FeQArray<Tensor> grad_ref_vals_side_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
@@ -285,10 +279,6 @@ public:
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-	  ref_vals_( this->bulk_values().ref_vector() ),
-      ref_vals_side_( this->side_values().ref_vector() ),
-	  grad_ref_vals_( this->bulk_values().ref_vector_grad() ),
-      grad_ref_vals_side_( this->side_values().ref_vector_grad() ),
       deform_( this->bulk_values().vector_shape() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
@@ -518,10 +508,6 @@ private:
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQArray<Vector> ref_vals_;
-    FeQArray<Vector> ref_vals_side_;
-    FeQArray<Tensor> grad_ref_vals_;
-    FeQArray<Tensor> grad_ref_vals_side_;
     FeQArray<Vector> deform_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
@@ -547,8 +533,6 @@ public:
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       normal_( this->side_values().normal_vector() ),
-      ref_vals_side_( this->side_values().ref_vector() ),
-	  grad_ref_vals_( this->bulk_values().ref_vector_grad() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
@@ -672,8 +656,6 @@ private:
 
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
-    FeQArray<Vector> ref_vals_side_;
-    FeQArray<Tensor> grad_ref_vals_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
@@ -711,7 +693,6 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
-      ref_vals_side_( this->side_values().ref_vector() ),
       deform_side_( this->side_values().vector_shape() ) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
@@ -789,7 +770,6 @@ private:
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
-    FeQArray<Vector> ref_vals_side_;
     FeQArray<Vector> deform_side_;
 
 

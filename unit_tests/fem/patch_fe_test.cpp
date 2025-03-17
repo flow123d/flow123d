@@ -5,11 +5,13 @@
 #include "arma_expect.hh"
 
 #include "quadrature/quadrature_lib.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
+#include "fem/op_factory.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/fe_p.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
@@ -88,22 +90,22 @@ public:
 
     PatchFETestBase(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : dh_(dh), patch_fe_values_(quad_order, dh_->ds()->fe()),
-	  fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
-	  bulk_integral_data_(20, 10),
-	  edge_integral_data_(12, 6),
-	  coupling_integral_data_(12, 6),
-	  det_1d_( this->patch_fe_values_.bulk_values<1>().determinant() ),
-	  det_2d_( this->patch_fe_values_.bulk_values<2>().determinant() ),
-	  det_3d_( this->patch_fe_values_.bulk_values<3>().determinant() ),
-	  jxw_1d_( this->patch_fe_values_.bulk_values<1>().JxW() ),
-	  jxw_2d_( this->patch_fe_values_.bulk_values<2>().JxW() ),
-	  jxw_3d_( this->patch_fe_values_.bulk_values<3>().JxW() ),
-	  jxw_side_1d_( this->patch_fe_values_.side_values<1>().JxW() ),
-	  jxw_side_2d_( this->patch_fe_values_.side_values<2>().JxW() ),
-	  jxw_side_3d_( this->patch_fe_values_.side_values<3>().JxW() ),
-	  normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
-	  normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
-	  normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
+      fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
+      bulk_integral_data_(20, 10),
+      edge_integral_data_(12, 6),
+      coupling_integral_data_(12, 6),
+      det_1d_( this->patch_fe_values_.bulk_values<1>().determinant() ),
+      det_2d_( this->patch_fe_values_.bulk_values<2>().determinant() ),
+      det_3d_( this->patch_fe_values_.bulk_values<3>().determinant() ),
+      jxw_1d_( this->patch_fe_values_.bulk_values<1>().JxW() ),
+      jxw_2d_( this->patch_fe_values_.bulk_values<2>().JxW() ),
+      jxw_3d_( this->patch_fe_values_.bulk_values<3>().JxW() ),
+      jxw_side_1d_( this->patch_fe_values_.side_values<1>().JxW() ),
+      jxw_side_2d_( this->patch_fe_values_.side_values<2>().JxW() ),
+      jxw_side_3d_( this->patch_fe_values_.side_values<3>().JxW() ),
+      normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
+      normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
+      normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
@@ -112,34 +114,34 @@ public:
 
         UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
         UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
-        fe_values_[0].initialize(*patch_fe_values_.get_quadrature(1, true), *fe_[Dim<1>{}], u);
-        fe_values_[1].initialize(*patch_fe_values_.get_quadrature(2, true), *fe_[Dim<2>{}], u);
-        fe_values_[2].initialize(*patch_fe_values_.get_quadrature(3, true), *fe_[Dim<3>{}], u);
-        fe_values_side_[0].initialize(*patch_fe_values_.get_quadrature(1, false), *fe_[Dim<1>{}], u_side);
-        fe_values_side_[1].initialize(*patch_fe_values_.get_quadrature(2, false), *fe_[Dim<2>{}], u_side);
-        fe_values_side_[2].initialize(*patch_fe_values_.get_quadrature(3, false), *fe_[Dim<3>{}], u_side);
+        fe_values_[0].initialize(*patch_fe_values_.get_bulk_quadrature(1), *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*patch_fe_values_.get_bulk_quadrature(2), *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*patch_fe_values_.get_bulk_quadrature(3), *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*patch_fe_values_.get_side_quadrature(1), *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*patch_fe_values_.get_side_quadrature(2), *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*patch_fe_values_.get_side_quadrature(3), *fe_[Dim<3>{}], u_side);
     }
 
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_quadrature(1,true));
-        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_quadrature(2,true));
-        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_quadrature(3,true));
-        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_quadrature(1,false));
-        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_quadrature(2,false));
-        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_quadrature(3,false));
-        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_quadrature(1,true));
-        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_quadrature(2,true));
+        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_bulk_quadrature(1));
+        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_bulk_quadrature(2));
+        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_bulk_quadrature(3));
+        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_side_quadrature(1));
+        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_side_quadrature(2));
+        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_side_quadrature(3));
+        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_bulk_quadrature(1));
+        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_bulk_quadrature(2));
     }
 
     void initialize() {
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,true));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,true));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,true));
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,false));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,false));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,false));
+        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_bulk_quadrature(1));
+        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_bulk_quadrature(2));
+        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_bulk_quadrature(3));
+        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_side_quadrature(1));
+        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_side_quadrature(2));
+        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_side_quadrature(3));
         this->patch_fe_values_.init_finalize();
     }
 
@@ -194,29 +196,29 @@ public:
             }
         }
 
-        // Coupling integral
-        bool add_low = true;
-    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
-            if (cell.dim() != neighb_side.dim()-1) continue;
-            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
-                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
-            table_sizes_.elem_sizes_[1][cell.dim()]++;
-            if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
-
-            unsigned int reg_idx_low = cell.elm().region_idx().idx();
-            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
-            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
-                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
-                table_sizes_.point_sizes_[1][cell.dim()]++;
-
-                if (add_low) {
-                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                    table_sizes_.point_sizes_[0][cell.dim()-1]++;
-                }
-            }
-            add_low = false;
-        }
+//        // Coupling integral
+//        bool add_low = true;
+//    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+//            if (cell.dim() != neighb_side.dim()-1) continue;
+//            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
+//                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
+//            table_sizes_.elem_sizes_[1][cell.dim()]++;
+//            if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
+//
+//            unsigned int reg_idx_low = cell.elm().region_idx().idx();
+//            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
+//            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
+//                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
+//                table_sizes_.point_sizes_[1][cell.dim()]++;
+//
+//                if (add_low) {
+//                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+//                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+//                    table_sizes_.point_sizes_[0][cell.dim()-1]++;
+//                }
+//            }
+//            add_low = false;
+//        }
     }
 
     void update_patch() {
@@ -227,20 +229,18 @@ public:
             uint elm_pos = patch_fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(dim, element_patch_idx) ) {
-                unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, value_cache_idx, i_point++);
+                patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
             }
         }
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-        	auto range = edge_integral_data_[i].edge_side_range;
+            auto range = edge_integral_data_[i].edge_side_range;
             uint dim = range.begin()->dim();
             for( DHCellSide edge_side : range )
             {
-            	uint side_pos = patch_fe_values_.register_side(edge_side);
+                uint side_pos = patch_fe_values_.register_side(edge_side);
                 uint i_point = 0;
                 for (auto p : this->edge_points(dim, edge_side) ) {
-                    unsigned int value_cache_idx = p.elm_cache_map()->element_eval_point(p.elem_patch_idx(), p.eval_point_idx());
-                    patch_fe_values_.register_side_point(edge_side, side_pos, value_cache_idx, i_point++);
+                    patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -257,16 +257,15 @@ public:
             uint i_bulk_point = 0, i_side_point = 0;
             for (auto p_high : this->coupling_points(dim, coupling_integral_data_[i].side) )
             {
-                unsigned int value_cache_idx = p_high.elm_cache_map()->element_eval_point(p_high.elem_patch_idx(), p_high.eval_point_idx());
-                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, value_cache_idx, i_side_point++);
+                patch_fe_values_.register_side_point(coupling_integral_data_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
                 if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
                     auto p_low = p_high.lower_dim(coupling_integral_data_[i].cell);
-                    value_cache_idx = p_low.elm_cache_map()->element_eval_point(p_low.elem_patch_idx(), p_low.eval_point_idx());
-                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, value_cache_idx, i_bulk_point++);
+                    patch_fe_values_.register_bulk_point(coupling_integral_data_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                 }
             }
             last_element_idx = coupling_integral_data_[i].cell.elm_idx();
         }
+
         this->reinit_patch_fe();
     }
 
@@ -336,32 +335,20 @@ class PatchFETestScalar : public PatchFETestBase {
 public:
 	PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
-	  ref_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar() ),
-	  ref_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar() ),
-	  ref_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar() ),
-	  ref_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar() ),
-	  ref_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar() ),
-	  ref_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar() ),
-	  ref_grad_scalar_1d_( this->patch_fe_values_.bulk_values<1>().ref_scalar_grad() ),
-	  ref_grad_scalar_2d_( this->patch_fe_values_.bulk_values<2>().ref_scalar_grad() ),
-	  ref_grad_scalar_3d_( this->patch_fe_values_.bulk_values<3>().ref_scalar_grad() ),
-	  ref_grad_scalar_side_1d_( this->patch_fe_values_.side_values<1>().ref_scalar_grad() ),
-	  ref_grad_scalar_side_2d_( this->patch_fe_values_.side_values<2>().ref_scalar_grad() ),
-	  ref_grad_scalar_side_3d_( this->patch_fe_values_.side_values<3>().ref_scalar_grad() ),
-	  scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
-	  scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
-	  scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
-	  scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
-	  scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
-	  scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
-	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
-	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
-	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
-	  grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
-	  grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
-	  grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() ),
-	  conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
-	  conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
+      scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
+      scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
+      scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
+      scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
+      scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
+      scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
+      grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
+      grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
+      grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
+      grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
+      grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
+      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() ),
+      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
+      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
     {}
 
     ~PatchFETestScalar() {}
@@ -384,12 +371,9 @@ public:
         update_patch();
 
         if (print_tables) {
-//            std::stringstream ss1;
-//            patch_fe_values_.print_data_tables(ss1, true, false, false);
-//            WarningOut() << ss1.str();
-            std::stringstream ss2;
-            patch_fe_values_.print_operations(ss2);
-            WarningOut() << ss2.str();
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
         }
 
         for(auto dh_cell : dh_->local_range() ) {
@@ -409,7 +393,7 @@ public:
                 jxw = jxw_1d_(p);
                 det = det_1d_(p);
                 scalar_shape_dof0 = scalar_shape_1d_.shape(0)(p);
-            	grad_scalar_dof0 = grad_scalar_shape_1d_.shape(0)(p);
+                grad_scalar_dof0 = grad_scalar_shape_1d_.shape(0)(p);
                 jxw_ref = fe_values_[0].JxW(0);
                 det_ref = fe_values_[0].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
@@ -421,8 +405,8 @@ public:
                 det = det_2d_(p);
                 scalar_shape_dof0 = scalar_shape_2d_.shape(0)(p);
                 scalar_shape_dof1 = scalar_shape_2d_.shape(1)(p);
-            	grad_scalar_dof0 = grad_scalar_shape_2d_.shape(0)(p);
-            	grad_scalar_dof1 = grad_scalar_shape_2d_.shape(1)(p);
+                grad_scalar_dof0 = grad_scalar_shape_2d_.shape(0)(p);
+                grad_scalar_dof1 = grad_scalar_shape_2d_.shape(1)(p);
                 jxw_ref = fe_values_[1].JxW(0);
                 det_ref = fe_values_[1].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
@@ -436,8 +420,8 @@ public:
                 det = det_3d_(p);
                 scalar_shape_dof0 = scalar_shape_3d_.shape(0)(p);
                 scalar_shape_dof1 = scalar_shape_3d_.shape(1)(p);
-            	grad_scalar_dof0 = grad_scalar_shape_3d_.shape(0)(p);
-            	grad_scalar_dof1 = grad_scalar_shape_3d_.shape(1)(p);
+                grad_scalar_dof0 = grad_scalar_shape_3d_.shape(0)(p);
+                grad_scalar_dof1 = grad_scalar_shape_3d_.shape(1)(p);
                 jxw_ref = fe_values_[2].JxW(0);
                 det_ref = fe_values_[2].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
@@ -455,7 +439,7 @@ public:
         }
 
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-        	auto range = edge_integral_data_[i].edge_side_range;
+            auto range = edge_integral_data_[i].edge_side_range;
 
             auto zero_edge_side = *range.begin();
             auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
@@ -471,7 +455,7 @@ public:
                 jxw = jxw_side_1d_(p);
                 normal_vec = normal_vec_1d_(p);
                 scalar_shape = scalar_shape_side_1d_.shape(0)(p);
-            	grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
@@ -479,10 +463,10 @@ public:
                 grad_scalar_ref = fe_values_side_[0].shape_grad(0, 0);
                 break;
             case 2:
-            	jxw = jxw_side_2d_(p);
+                jxw = jxw_side_2d_(p);
                 normal_vec = normal_vec_2d_(p);
                 scalar_shape = scalar_shape_side_2d_.shape(0)(p);
-            	grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
@@ -490,10 +474,10 @@ public:
                 grad_scalar_ref = fe_values_side_[1].shape_grad(0, 0);
                 break;
             case 3:
-            	jxw = jxw_side_3d_(p);
+                jxw = jxw_side_3d_(p);
                 normal_vec = normal_vec_3d_(p);
                 scalar_shape = scalar_shape_side_3d_.shape(0)(p);
-            	grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
+                grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
@@ -543,22 +527,22 @@ public:
                 fe_values_[1].reinit(cell_lower_dim.elm());
                 fe_values_side_[2].reinit(neighb_side.side());
                 for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
-                	if (conc_join_shape_3d_.is_high_dim(i_dof)) {
+                    if (conc_join_shape_3d_.is_high_dim(i_dof)) {
                         auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
                         auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
                         auto result_low = conc_join_shape_3d_.shape(i_dof)(p_low);
                         EXPECT_DOUBLE_EQ( result_low, 0.0 );
                         i_dof_high++;
-                	}
-                	else {
+                    }
+                    else {
                    	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
                         auto ref = fe_values_[1].shape_value(i_dof_low, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
                         auto result_high = conc_join_shape_3d_.shape(i_dof)(p_high);
                         EXPECT_DOUBLE_EQ( result_high, 0.0 );
                         i_dof_low++;
-                	}
+                    }
                 }
                 break;
             }
@@ -566,18 +550,6 @@ public:
 
     }
 
-    FeQArray<Scalar> ref_scalar_1d_;
-    FeQArray<Scalar> ref_scalar_2d_;
-    FeQArray<Scalar> ref_scalar_3d_;
-    FeQArray<Scalar> ref_scalar_side_1d_;
-    FeQArray<Scalar> ref_scalar_side_2d_;
-    FeQArray<Scalar> ref_scalar_side_3d_;
-    FeQArray<Vector> ref_grad_scalar_1d_;
-    FeQArray<Vector> ref_grad_scalar_2d_;
-    FeQArray<Vector> ref_grad_scalar_3d_;
-    FeQArray<Vector> ref_grad_scalar_side_1d_;
-    FeQArray<Vector> ref_grad_scalar_side_2d_;
-    FeQArray<Vector> ref_grad_scalar_side_3d_;
     FeQArray<Scalar> scalar_shape_1d_;
     FeQArray<Scalar> scalar_shape_2d_;
     FeQArray<Scalar> scalar_shape_3d_;
@@ -602,18 +574,6 @@ class PatchFETestVector : public PatchFETestBase {
 public:
 	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
-      ref_vector_1d_( this->patch_fe_values_.bulk_values<1>().ref_vector() ),
-      ref_vector_2d_( this->patch_fe_values_.bulk_values<2>().ref_vector() ),
-      ref_vector_3d_( this->patch_fe_values_.bulk_values<3>().ref_vector() ),
-      ref_vector_side_1d_( this->patch_fe_values_.side_values<1>().ref_vector() ),
-      ref_vector_side_2d_( this->patch_fe_values_.side_values<2>().ref_vector() ),
-      ref_vector_side_3d_( this->patch_fe_values_.side_values<3>().ref_vector() ),
-      ref_grad_vector_1d_( this->patch_fe_values_.bulk_values<1>().ref_vector_grad() ),
-      ref_grad_vector_2d_( this->patch_fe_values_.bulk_values<2>().ref_vector_grad() ),
-      ref_grad_vector_3d_( this->patch_fe_values_.bulk_values<3>().ref_vector_grad() ),
-      ref_grad_vector_side_1d_( this->patch_fe_values_.side_values<1>().ref_vector_grad() ),
-      ref_grad_vector_side_2d_( this->patch_fe_values_.side_values<2>().ref_vector_grad() ),
-      ref_grad_vector_side_3d_( this->patch_fe_values_.side_values<3>().ref_vector_grad() ),
       vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().vector_shape() ),
       vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().vector_shape() ),
       vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().vector_shape() ),
@@ -626,22 +586,22 @@ public:
       grad_vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_vector_shape() ),
       grad_vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_vector_shape() ),
       grad_vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_vector_shape() ),
-	  sym_grad_1d_( this->patch_fe_values_.bulk_values<1>().vector_sym_grad() ),
-	  sym_grad_2d_( this->patch_fe_values_.bulk_values<2>().vector_sym_grad() ),
-	  sym_grad_3d_( this->patch_fe_values_.bulk_values<3>().vector_sym_grad() ),
-	  sym_grad_side_1d_( this->patch_fe_values_.side_values<1>().vector_sym_grad() ),
-	  sym_grad_side_2d_( this->patch_fe_values_.side_values<2>().vector_sym_grad() ),
-	  sym_grad_side_3d_( this->patch_fe_values_.side_values<3>().vector_sym_grad() ),
-	  divergence_1d_( this->patch_fe_values_.bulk_values<1>().vector_divergence() ),
-	  divergence_2d_( this->patch_fe_values_.bulk_values<2>().vector_divergence() ),
-	  divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
-	  divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
-	  divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
-	  divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() ),
-	  vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
-	  vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
-	  vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
-	  vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
+      sym_grad_1d_( this->patch_fe_values_.bulk_values<1>().vector_sym_grad() ),
+      sym_grad_2d_( this->patch_fe_values_.bulk_values<2>().vector_sym_grad() ),
+      sym_grad_3d_( this->patch_fe_values_.bulk_values<3>().vector_sym_grad() ),
+      sym_grad_side_1d_( this->patch_fe_values_.side_values<1>().vector_sym_grad() ),
+      sym_grad_side_2d_( this->patch_fe_values_.side_values<2>().vector_sym_grad() ),
+      sym_grad_side_3d_( this->patch_fe_values_.side_values<3>().vector_sym_grad() ),
+      divergence_1d_( this->patch_fe_values_.bulk_values<1>().vector_divergence() ),
+      divergence_2d_( this->patch_fe_values_.bulk_values<2>().vector_divergence() ),
+      divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
+      divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
+      divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
+      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() ),
+      vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
+      vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
+      vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
+      vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
     {
 	    vec_view_1d_ = &fe_values_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_[1].vector_view(0);
@@ -671,12 +631,9 @@ public:
         update_patch();
 
         if (print_tables) {
-//            std::stringstream ss1;
-//            patch_fe_values_.print_data_tables(ss1, true, false, false);
-//            WarningOut() << ss1.str();
-            std::stringstream ss2;
-            patch_fe_values_.print_operations(ss2);
-            WarningOut() << ss2.str();
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
         }
 
         for(auto dh_cell : dh_->local_range() ) {
@@ -922,18 +879,6 @@ public:
     const FEValuesViews::Vector<3> * vec_view_side_2d_;
     const FEValuesViews::Vector<3> * vec_view_side_3d_;
 
-    FeQArray<Vector> ref_vector_1d_;
-    FeQArray<Vector> ref_vector_2d_;
-    FeQArray<Vector> ref_vector_3d_;
-    FeQArray<Vector> ref_vector_side_1d_;
-    FeQArray<Vector> ref_vector_side_2d_;
-    FeQArray<Vector> ref_vector_side_3d_;
-    FeQArray<Tensor> ref_grad_vector_1d_;
-    FeQArray<Tensor> ref_grad_vector_2d_;
-    FeQArray<Tensor> ref_grad_vector_3d_;
-    FeQArray<Tensor> ref_grad_vector_side_1d_;
-    FeQArray<Tensor> ref_grad_vector_side_2d_;
-    FeQArray<Tensor> ref_grad_vector_side_3d_;
     FeQArray<Vector> vector_shape_1d_;
     FeQArray<Vector> vector_shape_2d_;
     FeQArray<Vector> vector_shape_3d_;
@@ -1112,3 +1057,137 @@ TEST(PatchFeTest, arena_alloc) {
     patch_arena->reset();
     std::cout << "Reset: " << vec1.data_size() << ", " << vec2.data_size() << ", " << vec3.data_size() << ", " << c[0] << std::endl;
 }
+
+///*************************************************
+// * New test of operation dependency
+// */
+//
+//class PatchFETestDependency {
+//public:
+//
+//	PatchFETestDependency(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+//    : dh_(dh), patch_fe_values_(quad_order, dh_->ds()->fe()),
+//	  fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
+//	  det_1d_( this->patch_fe_values_.bulk_values<1>().determinant_new() ),
+//	  det_2d_( this->patch_fe_values_.bulk_values<2>().determinant_new() ),
+//	  det_3d_( this->patch_fe_values_.bulk_values<3>().determinant_new() ),
+//	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape_new() ),
+//	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape_new() ),
+//	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape_new() )
+//    {
+//        eval_points_ = std::make_shared<EvalPoints>();
+//        // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
+//        this->create_integrals();
+//        element_cache_map_.init(eval_points_);
+//
+//        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
+//        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
+//        fe_values_[0].initialize(*patch_fe_values_.get_quadrature(1, true), *fe_[Dim<1>{}], u);
+//        fe_values_[1].initialize(*patch_fe_values_.get_quadrature(2, true), *fe_[Dim<2>{}], u);
+//        fe_values_[2].initialize(*patch_fe_values_.get_quadrature(3, true), *fe_[Dim<3>{}], u);
+//        fe_values_side_[0].initialize(*patch_fe_values_.get_quadrature(1, false), *fe_[Dim<1>{}], u_side);
+//        fe_values_side_[1].initialize(*patch_fe_values_.get_quadrature(2, false), *fe_[Dim<2>{}], u_side);
+//        fe_values_side_[2].initialize(*patch_fe_values_.get_quadrature(3, false), *fe_[Dim<3>{}], u_side);
+//    }
+//
+//    ~PatchFETestDependency() {}
+//
+//    void create_integrals() {
+//        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_quadrature(1,true));
+//        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_quadrature(2,true));
+//        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_quadrature(3,true));
+//        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_quadrature(1,false));
+//        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_quadrature(2,false));
+//        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_quadrature(3,false));
+//        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_quadrature(1,true));
+//        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_quadrature(2,true));
+//    }
+//
+//    void initialize() {
+//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,true));
+//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,true));
+//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,true));
+//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,false));
+//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,false));
+//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,false));
+//        this->patch_fe_values_.init_finalize();
+//    }
+//
+//    /// Return BulkPoint range of appropriate dimension
+//    inline Range< BulkPoint > bulk_points(unsigned int dim, unsigned int element_patch_idx) const {
+//        return bulk_integrals_[dim-1]->points(element_patch_idx, &element_cache_map_);
+//    }
+//
+//    /// Return EdgePoint range of appropriate dimension
+//    inline Range< EdgePoint > edge_points(unsigned int dim, const DHCellSide &cell_side) const {
+//	    return edge_integrals_[dim-1]->points(cell_side, &element_cache_map_);
+//    }
+//
+//    /// Return CouplingPoint range of appropriate dimension
+//    inline Range< CouplingPoint > coupling_points(unsigned int dim, const DHCellSide &cell_side) const {
+//        ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
+//	    return coupling_integrals_[dim-2]->points(cell_side, &element_cache_map_);
+//    }
+//
+//    //virtual void reinit_patch_fe() =0;
+//
+//	/// Perform profiler output.
+//    void profiler_output(std::string file_name) {
+//		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+//		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+//	}
+//
+//    /// reset patch data
+//    void reset() {
+//        element_cache_map_.clear_element_eval_points_map();
+//        patch_fe_values_.reset();
+//    }
+//
+//
+//    std::shared_ptr<DOFHandlerMultiDim> dh_;
+//    PatchFEValues<3> patch_fe_values_;                                     ///< Common FEValues object over all dimensions
+//
+//    MixedPtr<FiniteElement> fe_;
+//    std::vector<FEValues<3>> fe_values_;                                   ///< FeValues object of elements of dim 1,2,3
+//    std::vector<FEValues<3>> fe_values_side_;                              ///< FeValues object of sides of dim 0,1,2
+//
+//    std::shared_ptr<EvalPoints> eval_points_;                              ///< EvalPoints object shared by all integrals
+//    ElementCacheMap element_cache_map_;                                    ///< ElementCacheMap according to EvalPoints
+//    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;          ///< Bulk integrals of dim 1,2,3
+//    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;          ///< Edge integrals of dim 1,2,3
+//    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;  ///< Coupling integrals of dim 1-2,2-3
+//    ElQ<Scalar> det_1d_;
+//    ElQ<Scalar> det_2d_;
+//    ElQ<Scalar> det_3d_;
+//    FeQArray<Vector> grad_scalar_shape_1d_;
+//    FeQArray<Vector> grad_scalar_shape_2d_;
+//    FeQArray<Vector> grad_scalar_shape_3d_;
+//};
+//
+///// Complete test with FE scalar operations
+//void eval_func_scalar(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+//	MixedPtr<FE_P_disc> fe(quad_order);
+//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+//    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+//    dh->distribute_dofs(ds);
+//
+//    PatchFETestDependency patch_fe(quad_order, dh);
+//    patch_fe.initialize();
+////    patch_fe.test_evaluation(print_fa_data);
+////    patch_fe.reset();
+////    patch_fe.test_evaluation();
+//}
+//
+//TEST(PatchFeTest, new_op_dependency) {
+//    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+//    Profiler::instance();
+//    PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+//
+//    std::string input_str = "{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }";
+//    Mesh* mesh = mesh_full_constructor(input_str);
+//
+//    // two tests with different quad_order and Scalar / Vector FE operations
+//    eval_func_scalar(mesh, 1);
+//    eval_func_scalar(mesh, 2);
+//}
+

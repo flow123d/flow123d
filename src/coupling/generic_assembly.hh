@@ -19,9 +19,9 @@
 #define GENERIC_ASSEMBLY_HH_
 
 #include "quadrature/quadrature_lib.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "tools/revertable_list.hh"
@@ -176,9 +176,6 @@ public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : use_patch_fe_values_(false),
-	  asm_1d_tmp_(nullptr),
-	  asm_2d_tmp_(nullptr),
-	  asm_3d_tmp_(nullptr),
 	  multidim_assembly_(eq_fields, eq_data),
 	  min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
@@ -193,11 +190,7 @@ public:
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : fe_values_(eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
-//      multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
-	  asm_1d_tmp_(std::make_shared<DimAssembly<1>>(eq_fields, eq_data, &this->fe_values_)),
-	  asm_2d_tmp_(std::make_shared<DimAssembly<2>>(eq_fields, eq_data, &this->fe_values_)),
-	  asm_3d_tmp_(std::make_shared<DimAssembly<3>>(eq_fields, eq_data, &this->fe_values_)),
-	  multidim_assembly_(asm_1d_tmp_, asm_2d_tmp_, asm_3d_tmp_),
+      multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
       min_edge_sides_(2),
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
@@ -497,9 +490,6 @@ private:
 
     PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
-    std::shared_ptr< DimAssembly<1> > asm_1d_tmp_;                   ///< Temporary objects, allow violation of PatchFEValues dependencies
-    std::shared_ptr< DimAssembly<2> > asm_2d_tmp_;
-    std::shared_ptr< DimAssembly<3> > asm_3d_tmp_;
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 
     /// Holds mask of active integrals.
