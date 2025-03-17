@@ -81,7 +81,7 @@ class ProfilerJSONDecoder(json.JSONDecoder):
 
 def get_formater_instance(cls, styles=[]):
     """Method returns class instance upon given name in profiler.formatters.* ns"""
-    module = importlib.import_module("profiler.formatters." + cls)
+    module = importlib.import_module("py123d.profiler.formatters." + cls)
     class_ = getattr(module, cls)
     instance = class_()
 

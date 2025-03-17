@@ -37,7 +37,7 @@ system.versions.require_version_3()
 
 import sys
 from optparse import OptionParser
-from profiler.profiler_formatter_module import ProfilerFormatter
+from py123d.profiler.profiler_formatter_module import ProfilerFormatter
 
 
 def create_parser():
