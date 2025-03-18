@@ -11,17 +11,38 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    patch_point_values.cc
+ * @file    patch_point_values_impl.hh
  * @brief   Store finite element data on the actual patch
  *          such as shape function values, gradients, Jacobian
  *          of the mapping from the reference cell etc.
  * @author  David Flanderka
  */
 
+#ifndef PATCH_POINT_VALUES_HH_IMPL_
+#define PATCH_POINT_VALUES_HH_IMPL_
+
 #include "fem/patch_point_values.hh"
 
 
-template class PatchPointValues<3>;
-template class ElOp<3>;
-template class FeBulk::PatchPointValues<3>;
-template class FeSide::PatchPointValues<3>;
+namespace Op {
+    class BulkDomain;
+    class SideDomain;
+}
+
+// Template specialized methods
+
+template<>
+template<>
+NodeAccessor<3> PatchPointValues<3>::node<Op::BulkDomain>(unsigned int i_elm, unsigned int i_n) {
+    return elem_list_[i_elm].node(i_n);
+}
+
+template<>
+template<>
+NodeAccessor<3> PatchPointValues<3>::node<Op::SideDomain>(unsigned int i_elm, unsigned int i_n) {
+    return side_list_[i_elm].node(i_n);
+}
+
+
+
+#endif /* PATCH_POINT_VALUES_HH_IMPL_ */

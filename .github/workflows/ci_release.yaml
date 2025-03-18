@@ -9,6 +9,7 @@ on:
         - JB_shared_system
         - JB_release_tests        
         - 3.9.1
+        - DF_patch_fe_mechanics
         - DF_profiler_memory_monitor
     
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'

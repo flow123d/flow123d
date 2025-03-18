@@ -22,9 +22,9 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/eval_subset.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "tools/unit_si.hh"

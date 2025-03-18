@@ -19,8 +19,8 @@
 #define FIELD_COORDS_HH_
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
-#include "fields/field_value_cache.hh"                 // for FieldValueCache
-#include "fields/eval_points.hh"                       // for EvalPoints
+#include "fem/element_cache_map.hh"                 // for FieldValueCache
+#include "fem/eval_points.hh"                       // for EvalPoints
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
 #include "mesh/point.hh"                               // for Point
