@@ -59,8 +59,8 @@ class markdown2html(object):
         html_secured = markdown.markdown(secured_markdown, extensions=[
             'markdown.extensions.sane_lists',
             'markdown.extensions.nl2br',
-            'ist.formatters.extensions.md_links',
-            'ist.formatters.extensions.md_strike'])
+            'py123d.ist.formatters.extensions.md_links',
+            'py123d.ist.formatters.extensions.md_strike'])
         html = self._md_latex.finish(html_secured)
 
         if not reduce_to_tree:
