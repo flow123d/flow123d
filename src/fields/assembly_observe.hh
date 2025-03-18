@@ -23,7 +23,7 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "fem/dofhandler.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "io/observe.hh"
 
 
@@ -80,7 +80,7 @@ public:
             element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
         }
         bulk_integral_data_.make_permanent();
-        element_cache_map_.eval_point_data_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
 
         this->reallocate_cache();
         element_cache_map_.create_patch();

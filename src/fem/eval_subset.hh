@@ -31,8 +31,8 @@
 
 #include <memory>
 #include <armadillo>
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
@@ -83,6 +83,11 @@ public:
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return local_point_idx_;
+    }
+
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
     }
 
     /// Iterates to next point.
@@ -144,6 +149,11 @@ public:
         return side_begin_ + local_point_idx_;
     }
 
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, eval_point_idx());
+    }
+
     /// Comparison of accessors.
     bool operator==(const SidePoint& other) {
         ASSERT_EQ(elem_patch_idx_, other.elem_patch_idx_);
@@ -203,14 +213,6 @@ public:
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
-
-    /**
-     * Return BulkPoint with local_point_idx according to index of quadrature point in element (not on patch).
-     * Temporary method. Used only in dimjoin_integral.
-     *
-     * TODO Remove after complete implementation of new PatchFEValeus.
-     */
-    inline BulkPoint lower_dim_converted(DHCellAccessor cell_lower) const;
 
     /// Intermediate step in implementation of PatcFEValues.
     unsigned int side_idx() const override;
@@ -520,12 +522,6 @@ inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
-}
-
-/// Temporary method.
-inline BulkPoint CouplingPoint::lower_dim_converted(DHCellAccessor cell_lower) const {
-    unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
-    return BulkPoint(elm_cache_map_, i_elm, local_point_idx_);
 }
 
 

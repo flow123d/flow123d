@@ -19,8 +19,8 @@
 #define FIELD_DEPTH_HH_
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
-#include "fields/field_value_cache.hh"                 // for FieldValueCache
-#include "fields/eval_points.hh"                       // for EvalPoints
+#include "fem/element_cache_map.hh"                    // for FieldValueCache
+#include "fem/eval_points.hh"                          // for EvalPoints
 #include "fields/field_coords.hh"
 #include "fields/surface_depth.hh"
 #include "fem/mapping_p1.hh"
