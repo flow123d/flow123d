@@ -27,7 +27,7 @@ def runtest_call(*args, **kwargs):
 
 
 def exec_call(*args, **kwargs):
-    import py123d.bin.exec_parallel
+    from py123d.bin import exec_parallel
     from scripts.exec_parallel_module import do_work as exec_do_work
 
     parser = exec_parallel.create_parser()

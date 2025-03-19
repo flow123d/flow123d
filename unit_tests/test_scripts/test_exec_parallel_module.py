@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import test_scripts
 test_scripts.fix_paths()
 # ----------------------------------------------
-import py123d.bin.exec_parallel as script
+from py123d.bin import exec_parallel as script
 import utils.argparser as argparser
 from scripts.exec_parallel_module import do_work
 # ----------------------------------------------

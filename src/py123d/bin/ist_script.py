@@ -24,7 +24,7 @@ Options:
 """
 
 
-import py123d.bin.pathfix
+from py123d.bin import pathfix
 pathfix.append_to_path()
 
 import py123d.system.versions as py123d_vers
