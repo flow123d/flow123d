@@ -641,17 +641,17 @@ flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python)    # first is py123
 # create shortcuts for runtest
 
 # use relative path
-set(PYTHON_RUNTEST ../bin/python/runtest.py)
+set(PYTHON_RUNTEST ../src/py123d/bin/runtest.py)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
 
 # make shortcut also for exec_parallel.py
-set(PYTHON_RUNTEST ../bin/python/exec_parallel.py)
+set(PYTHON_RUNTEST ../src/py123d/bin/exec_parallel.py)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/exec_parallel @ONLY)
 
 # restore absolute path
-set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/src/py123d/bin/runtest.py)
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")

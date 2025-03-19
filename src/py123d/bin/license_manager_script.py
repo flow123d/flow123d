@@ -185,7 +185,7 @@ file new_license.txt contains following:
 
 from __future__ import absolute_import
 
-import pathfix
+import py123d.bin.pathfix
 pathfix.append_to_path()
 
 import system.versions

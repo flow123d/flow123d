@@ -18,7 +18,7 @@ from scripts.pbs.modules.local_pbs import Module
 
 
 def runtest_call(*args, **kwargs):
-    import runtest
+    import py123d/bin/runtest
     from scripts.runtest_module import do_work as runtest_do_work
 
     parser = runtest.create_parser()
@@ -27,7 +27,7 @@ def runtest_call(*args, **kwargs):
 
 
 def exec_call(*args, **kwargs):
-    import exec_parallel
+    import py123d.bin.exec_parallel
     from scripts.exec_parallel_module import do_work as exec_do_work
 
     parser = exec_parallel.create_parser()

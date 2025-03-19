@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import pathfix
+import py123d.bin.pathfix
 import sys
 pathfix.init()
 # ----------------------------------------------
