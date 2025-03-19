@@ -15,7 +15,6 @@ LABEL org.label-schema.build-date=${build_date} \
 FROM source_image as final
 
 COPY --from=source_image /opt/flow123d ${flow_install_location}
-COPY --from=source_image /root/.local /root/.local
 
 RUN sudo pip install vtk
 
