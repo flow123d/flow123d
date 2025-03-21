@@ -57,7 +57,8 @@ def append_to_path():
     add_path('lib')
     add_path('..', 'lib')
     # path to src/python if COPY_PYTHON is disabled
-    add_path('..', '..', 'src')
+    add_path('..', '..')
+    #add_path('..', '..', 'src')
     
     # path to lib/flow123d after install
     #add_path('..', '..', 'lib', 'py123d', 'flow123d')

@@ -36,7 +36,7 @@ Useful when there is not known precise file name only location
 """
 
 
-from py123d.bin import pathfix
+import pathfix
 pathfix.append_to_path()
 
 import system.versions

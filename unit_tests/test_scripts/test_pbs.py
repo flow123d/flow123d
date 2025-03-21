@@ -18,7 +18,7 @@ from scripts.pbs.modules.local_pbs import Module
 
 
 def runtest_call(*args, **kwargs):
-    import py123d/bin/runtest
+    import runtest
     from scripts.runtest_module import do_work as runtest_do_work
 
     parser = runtest.create_parser()
