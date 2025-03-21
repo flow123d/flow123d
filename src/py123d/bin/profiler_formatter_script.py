@@ -29,7 +29,7 @@ Options:
 
 from __future__ import absolute_import
 
-from py123d.bin import pathfix
+import pathfix
 pathfix.append_to_path()
 
 import system.versions
