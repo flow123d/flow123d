@@ -16,8 +16,8 @@
  * @author  David Flanderka
  */
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
+#include "fem/eval_points.hh"
+#include "fem/eval_subset.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/ref_element.hh"
 #include <memory>

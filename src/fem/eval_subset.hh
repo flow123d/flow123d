@@ -31,8 +31,8 @@
 
 #include <memory>
 #include <armadillo>
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
@@ -85,6 +85,11 @@ public:
         return local_point_idx_;
     }
 
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, local_point_idx_);
+    }
+
     /// Iterates to next point.
     void inc() {
     	this->local_point_idx_++;
@@ -131,9 +136,22 @@ public:
 	inline SidePoint(DHCellSide cell_side, const ElementCacheMap *elm_cache_map,
 	        const EdgeIntegral *edge_integral, unsigned int local_point_idx);
 
+    /// Return local index in quadrature. Temporary method - intermediate step in implementation of PatcFEValues.
+    inline unsigned int local_point_idx() const {
+        return local_point_idx_;
+    }
+
+    /// Intermediate step in implementation of PatcFEValues.
+    virtual unsigned int side_idx() const =0;
+
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return side_begin_ + local_point_idx_;
+    }
+
+    /// Return index in ElementCacheMap
+    inline unsigned int value_cache_idx() const {
+        return elm_cache_map_->element_eval_point(elem_patch_idx_, eval_point_idx());
     }
 
     /// Comparison of accessors.
@@ -168,6 +186,9 @@ public:
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline EdgePoint point_on(const DHCellSide &edg_side) const;
 
+    /// Intermediate step in implementation of PatcFEValues.
+    unsigned int side_idx() const override;
+
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
@@ -193,6 +214,9 @@ public:
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
 
+    /// Intermediate step in implementation of PatcFEValues.
+    unsigned int side_idx() const override;
+
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
@@ -217,6 +241,9 @@ public:
 
     /// Return corresponds BulkPoint on boundary element.
     inline BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
+
+    /// Intermediate step in implementation of PatcFEValues.
+    unsigned int side_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
@@ -357,6 +384,8 @@ private:
 
     friend class EvalPoints;
     friend class EdgePoint;
+    friend class CouplingPoint;
+    friend class BoundaryPoint;
     friend class CouplingIntegral;
     friend class BoundaryIntegral;
 };
