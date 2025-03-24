@@ -185,7 +185,7 @@ jobs:
               uses: dorny/test-reporter@v1
               id: test-reporter
               with:
-                name: Unit Tests Report
+                name: Reports of unit test # Rename
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
                 fail-on-error: false
@@ -209,11 +209,13 @@ jobs:
                 body: |
                   Test Report URL [here](${{ steps.test-reporter.outputs.url_html }})
                 edit-mode: replace
+            # Print out url for test reports
             - name: Check test report status
               if: always()
               run: |
                 if [ "${{ steps.test-reporter.outputs.failed }}" -gt 0 ]; then
                   echo "Test report failed."
+                  echo "Url for test review: "
                   exit 1
                 fi
 

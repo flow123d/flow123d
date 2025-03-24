@@ -133,10 +133,10 @@ macro(define_test class_name)
       ${class_name}
       ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
       ${CMAKE_CXX_COMPILER}
-      "${CMAKE_CXX_FLAGS} -Wno-error ${INCLUDE_FLAGS}"
-      "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
-      "${library_flags}"
+      ${CMAKE_CXX_FLAGS} -Wno-error ${INCLUDE_FLAGS}
+      -o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+      ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
+      ${library_flags}
     COMMENT "Compiling ${class_name} test and generating report"
     VERBATIM
   )
@@ -168,6 +168,56 @@ macro(define_test class_name)
   # let ctest call make with appropriate target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
 endmacro(define_test)
+
+
+macro(define_test class_name)
+  set(test_source "${class_name}_test.cpp")
+  set(test_binary "${class_name}_test_bin")
+  set(test_name "${class_name}-test")
+  set(test_valgrind "${class_name}-valgrind")
+  #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
+  set (extra_args ${ARGN})
+
+  # Did we get any optional args?
+  list(LENGTH extra_args extra_count)
+  if (${extra_count} GREATER 0)
+      list(GET extra_args 0 test_timeout)
+  else () 
+      set(test_timeout ${TEST_TIMEOUT})
+  endif ()
+  if(${extra_count} GREATER 0)
+    list(GET extra_args 0 test_timeout)
+  else()
+    set(test_timeout ${TEST_TIMEOUT})
+  endif()
+  math(EXPR valgrind_timeout "${test_timeout} * 1000")
+
+  # executable rule
+  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
+  add_dependencies(${test_binary} update_source_tree)
+
+  # rule to run the test    
+  add_custom_target(${test_name}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+      DEPENDS ${test_binary}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+  # rule to run the test under valgrind
+  add_custom_target(${test_valgrind}
+      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+      DEPENDS ${test_binary}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+
+  # register the test into dir_test_target
+  add_dependencies(${dir_test_target} ${test_name})
+
+  # let ctest call make with appropriate  target
+  
+  # let ctest call make with appropriate target
+  add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
+endmacro()
 
 #################################
 # MACRO define_mpi_test
