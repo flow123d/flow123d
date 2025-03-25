@@ -128,7 +128,8 @@ public:
 
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
+      normal_( this->side_values().normal_vector() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -152,9 +153,6 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
-
-        fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_normal_vectors);
 
         fe_values_old_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
 
@@ -238,8 +236,7 @@ public:
         auto p_high = *( this->coupling_points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
-        fe_values_side_.reinit(neighb_side.side());
-        nv_ = fe_values_side_.normal_vector(0);
+        nv_ = normal_(p_high);
 
         ngh_value_ = eq_fields_->sigma(p_low) *
                         2*eq_fields_->conductivity(p_low) *
@@ -773,9 +770,6 @@ protected:
     QGauss quad_rt_;
     FEValues<3> fe_values_old_;
 
-    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
-    FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
-
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
 
@@ -790,6 +784,9 @@ protected:
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
 
     LocalSystem loc_schur_;
+
+    /// Declarations of FE quantities
+    ElQ<Vector> normal_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
