@@ -294,7 +294,9 @@ target_link_libraries(io_lib
 pybind11_add_module("fieldproxypy" SHARED "fields/python_field_proxy.cc")
 #pybind11_add_module("fieldproxypy" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
 #add_executable(flow123dpy fields/python_field_proxy.cc)
-target_link_libraries(fieldproxypy system_lib armadillo) 
+
+# Have to link in PRIVATE mode to be consistent of linking done by pybind11_add_module.
+target_link_libraries(fieldproxypy PRIVATE system_lib armadillo) 
 
 
 

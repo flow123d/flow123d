@@ -1,9 +1,11 @@
+#set(ORIG_CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+#set(CMAKE_CXX_COMPILER ${CMAKE_SOURCE_DIR}/unit_tests/cpp_wrapper.py)
 
 enable_testing()
 
 # Set timeout for one unit test
 
-enable_testing()
+#enable_testing()
 
 # Set timeout for one unit test
 set(TEST_TIMEOUT 15) # [s] Hard limit for Jenkins. Unit tests should run under 10 s.
@@ -104,44 +106,62 @@ macro(define_test class_name)
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
   
   # Explicitly collect include directories
-  get_property(GLOBAL_INCLUDES GLOBAL PROPERTY INCLUDE_DIRECTORIES)
-  get_directory_property(LOCAL_INCLUDES INCLUDE_DIRECTORIES)
-  list(APPEND ALL_INCLUDES ${GLOBAL_INCLUDES} ${LOCAL_INCLUDES})
+  # get_property(GLOBAL_INCLUDES GLOBAL PROPERTY INCLUDE_DIRECTORIES)
+  # get_directory_property(LOCAL_INCLUDES INCLUDE_DIRECTORIES)
+  # list(APPEND ALL_INCLUDES ${GLOBAL_INCLUDES} ${LOCAL_INCLUDES})
 
   # Remove duplicates and create include flags
-  list(REMOVE_DUPLICATES ALL_INCLUDES)
-  set(INCLUDE_FLAGS "")
-  foreach(include_dir ${ALL_INCLUDES})
-    list(APPEND INCLUDE_FLAGS "-I${include_dir}")
-  endforeach()
+  # list(REMOVE_DUPLICATES ALL_INCLUDES)
+  # set(INCLUDE_FLAGS "")
+  # foreach(include_dir ${ALL_INCLUDES})
+  #   list(APPEND INCLUDE_FLAGS "-I${include_dir}")
+  # endforeach()
 
-  set(library_flags "")
-  foreach(lib ${dir_test_target_libs})
-    set(library_flags "${library_flags} -l${lib}")
-  endforeach()
-  set(library_flags "${library_flags} -lgtest -lgtest_main")
+  # Create an interface target that aggregates all link dependencies
+#   add_library(${class_name}_interface_lib INTERFACE)
+#   target_link_libraries(${class_name}_interface_lib INTERFACE ${dir_test_target_libs} gtest gtest_main)
+#   add_dependencies(${class_name}_interface_lib update_source_tree)
+#   
+#   get_target_property(TEST_LIBS ${class_name}_interface_lib INTERFACE_LINK_LIBRARIES)
+#   message(STATUS "Libraries for unit tests: ${TEST_LIBS}")
+#   
+  
+  #set(library_flags "")
+  #foreach(lib ${dir_test_target_libs})
+  #  set(library_flags "${library_flags} -l${lib}")
+  #endforeach()
+  #set(library_flags "${library_flags} -lgtest -lgtest_main")
+  
+  #set(CMAKE_CXX_COMPILER_LAUNCHER ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report})
+  #set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CCACHE_PROGRAM}")
+  #set(RULE_LUNCH_COMPILE ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report})
   add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
+  set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+  set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;compilation;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+  target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
+  add_dependencies(${test_binary} update_source_tree)
   
   # Print debug information
-  message(STATUS "ALL INCLUDE DIRECTORIES: ${ALL_INCLUDES}")
-  message(STATUS "INCLUDE FLAGS: ${INCLUDE_FLAGS}")
+  #message(STATUS "ALL INCLUDE DIRECTORIES: ${ALL_INCLUDES}")
+  #message(STATUS "INCLUDE FLAGS: ${INCLUDE_FLAGS}")
+  
   
   # Custom target for compilation and report generation
-  add_custom_target(${class_name}_compile
-    COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
-      compilation
-      ${class_name}
-      ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
-      ${CMAKE_CXX_COMPILER}
-      "${CMAKE_CXX_FLAGS} -Wno-error ${INCLUDE_FLAGS}"
-      "-o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}"
-      "${CMAKE_CURRENT_SOURCE_DIR}/${test_source}"
-      "${library_flags}"
-    COMMENT "Compiling ${class_name} test and generating report"
-    VERBATIM
-  )
+  # add_custom_target(${class_name}_compile
+  #   COMMAND ${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
+  #     compilation
+  #     ${class_name}
+  #     ${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}
+  #     ${CMAKE_CXX_COMPILER}
+  #     ${CMAKE_CXX_FLAGS} -Wno-error ${INCLUDE_FLAGS}
+  #     -o ${CMAKE_CURRENT_BINARY_DIR}/${test_binary}
+  #     ${CMAKE_CURRENT_SOURCE_DIR}/${test_source}
+  #     ${TEST_LIBS}
+  #   COMMENT "Compiling ${class_name} test and generating report"
+  #   VERBATIM
+  # )
 
-  add_dependencies(${class_name}_compile update_source_tree)
+  #add_dependencies(${class_name}_compile update_source_tree)
 
   # rule to run the test (depends on successful compilation)
   #${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
@@ -151,14 +171,14 @@ macro(define_test class_name)
   #          
   add_custom_target(${test_name}
     COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-    DEPENDS ${class_name}_compile
+    DEPENDS ${test_binary}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
     COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-    DEPENDS ${class_name}_compile
+    DEPENDS ${test_binary}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
   
@@ -346,3 +366,6 @@ add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
                   DEPENDS jenkins_jobs_template.yaml
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
+
+
+#set(CMAKE_CXX_COMPILER ${ORIG_CMAKE_CXX_COMPILER})
