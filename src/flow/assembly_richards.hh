@@ -150,8 +150,8 @@ public:
 
     static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
 
-    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, fe_values), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -406,8 +406,8 @@ public:
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
-    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data, fe_values) {
     }
 
     /// Integral over element.
