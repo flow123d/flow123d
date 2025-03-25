@@ -36,8 +36,11 @@ Useful when there is not known precise file name only location
 """
 
 
-import pathfix
-pathfix.append_to_path()
+try:
+    import pathfix
+    pathfix.append_to_path()
+except ModuleNotFoundError:
+    pass
 
 import system.versions
 system.versions.require_version_3()

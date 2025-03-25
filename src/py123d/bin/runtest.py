@@ -2,9 +2,12 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import pathfix
 import sys
-pathfix.init()
+try:
+    import pathfix
+    pathfix.init()
+except ModuleNotFoundError:
+    pass
 # ----------------------------------------------
 from py123d.utils.globals import check_modules
 if not check_modules('psutil', 'yaml', 'shutil', 'importlib', 'platform', 'loguru'):

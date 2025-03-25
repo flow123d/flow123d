@@ -24,8 +24,11 @@ Options:
 """
 
 
-import pathfix
-pathfix.append_to_path()
+try:
+    import pathfix
+    pathfix.append_to_path()
+except ModuleNotFoundError:
+    pass
 
 import py123d.system.versions as py123d_vers
 py123d_vers.require_version_3()

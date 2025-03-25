@@ -185,8 +185,11 @@ file new_license.txt contains following:
 
 from __future__ import absolute_import
 
-import pathfix
-pathfix.append_to_path()
+try:
+    import pathfix
+    pathfix.append_to_path()
+except ModuleNotFoundError:
+    pass
 
 import system.versions
 system.versions.require_version_3()

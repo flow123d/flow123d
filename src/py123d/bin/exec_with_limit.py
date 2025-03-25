@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-import pathfix
-pathfix.init()
+try:
+    import pathfix
+    pathfix.init()
+except ModuleNotFoundError:
+    pass
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
