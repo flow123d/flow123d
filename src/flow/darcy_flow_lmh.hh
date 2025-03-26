@@ -175,6 +175,8 @@ public:
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > water_source_sigma;
+        Field<3, FieldValue<3>::Scalar > water_source_ref_pressure;
         Field<3, FieldValue<3>::Scalar > sigma;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization

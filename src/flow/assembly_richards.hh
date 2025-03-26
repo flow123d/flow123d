@@ -158,6 +158,8 @@ public:
         this->used_fields_ += eq_fields_->anisotropy;
         this->used_fields_ += eq_fields_->sigma;
         this->used_fields_ += eq_fields_->water_source_density;
+        this->used_fields_ += eq_fields_->water_source_sigma;
+        this->used_fields_ += eq_fields_->water_source_ref_pressure;
         this->used_fields_ += eq_fields_->extra_source;
         this->used_fields_ += eq_fields_->storativity;
         this->used_fields_ += eq_fields_->extra_storativity;
@@ -241,7 +243,9 @@ protected:
 
         // set lumped source
         diagonal_coef_ = ele.measure() * eq_fields_->cross_section(p) / ele->n_sides();
-        source_diagonal_ = diagonal_coef_ * ( eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
+        source_diagonal_ = diagonal_coef_ * ( eq_fields_->water_source_density(p) +
+                                              eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p) +
+                                              eq_fields_->extra_source(p));
 
         VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
 
@@ -279,7 +283,7 @@ protected:
                              << "\n");
                 */
                 eq_data_->loc_system_[cell.local_idx()].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                                            -mass_diagonal_/eq_data_->time_step_,
+                                            -diagonal_coef_*eq_fields_->water_source_sigma(p)-mass_diagonal_/eq_data_->time_step_,
                                             -source_diagonal_ - mass_rhs_);
             }
 
@@ -287,7 +291,7 @@ protected:
                                                {0.0}, diagonal_coef_*water_content_vec.get(local_side));
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
                                                 {this->eq_data_->loc_system_[cell.local_idx()].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]},
-                                                {0},{source_diagonal_});
+                                                {diagonal_coef_*eq_fields_->water_source_sigma(p)},{source_diagonal_});
         }
     }
 

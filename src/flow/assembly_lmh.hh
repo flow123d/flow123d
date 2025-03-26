@@ -132,6 +132,8 @@ public:
         this->used_fields_ += eq_fields_->anisotropy;
         this->used_fields_ += eq_fields_->sigma;
         this->used_fields_ += eq_fields_->water_source_density;
+        this->used_fields_ += eq_fields_->water_source_sigma;
+        this->used_fields_ += eq_fields_->water_source_ref_pressure;
         this->used_fields_ += eq_fields_->extra_source;
         this->used_fields_ += eq_fields_->storativity;
         this->used_fields_ += eq_fields_->extra_storativity;
@@ -429,7 +431,10 @@ protected:
         // compute lumped source
         uint n_sides = cell.elm()->n_sides();
         coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section(p);
-        source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
+        source_term_ = coef_ * (eq_fields_->water_source_density(p) +
+                                eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p) +
+                                eq_fields_->extra_source(p));
+        double source_term_diag_ = coef_ * eq_fields_->water_source_sigma(p);
 
         // in unsteady, compute time term
         time_term_diag_ = 0.0;
@@ -463,11 +468,11 @@ protected:
             }
 
             eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                            -time_term_diag_,
+                            -source_term_diag_ - time_term_diag_,
                             -source_term_ - time_term_rhs_);
 
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
+                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {source_term_diag_}, {source_term_});
         }
     }
 
@@ -728,6 +733,7 @@ protected:
 
         edge_source_term_ = edge_scale_ *
                 ( eq_fields_->water_source_density(p)
+                + eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p)
                 + eq_fields_->extra_source(p));
     }
 
@@ -743,14 +749,14 @@ protected:
 
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
 
+            double new_pressure = eq_data_->p_edge_solution.get(loc_dof_vec[i]);
             if( ! eq_data_->use_steady_assembly_)
             {
-                double new_pressure = eq_data_->p_edge_solution.get(loc_dof_vec[i]);
                 double old_pressure = eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
                 time_term_ = edge_scale_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
                              / eq_data_->time_step_ * (new_pressure - old_pressure);
             }
-            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_;
+            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_ - edge_scale_ * eq_fields_->water_source_sigma(p)*new_pressure;
         }
     }
 

@@ -207,6 +207,16 @@ DarcyLMH::EqFields::EqFields()
             .input_default("0.0")
             .units( UnitSI().s(-1) );
 
+    *this += water_source_sigma.name("water_source_sigma")
+            .description("Water source transition coefficient.")
+            .input_default("0.0")
+            .units( UnitSI().m(-1).s(-1) );
+
+    *this += water_source_ref_pressure.name("water_source_ref_pressure")
+            .description("Water source reference pressure.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
+
     *this += bc_type.name("bc_type")
             .description("Boundary condition type.")
             .input_selection( get_bc_type_selection() )
