@@ -28,8 +28,12 @@ def find_base_dir():
     Attempts to find base directory from pathfix's module's location
     """
     import os
-    import pathfix
-    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '../..', '..'))
+    path = ""
+    try:
+        import pathfix
+        path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '../..', '..'))
+    except ModuleNotFoundError:
+        pass
     return path
 
 
