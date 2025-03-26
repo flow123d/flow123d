@@ -28,8 +28,7 @@ def find_base_dir():
     Attempts to find base directory from pathfix's module's location
     """
     import os
-    import pathfix
-    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(pathfix.__file__)), '../..', '..'))
+    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..', '../..'))
     return path
 
 
