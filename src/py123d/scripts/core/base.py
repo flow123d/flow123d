@@ -370,10 +370,6 @@ class Paths(object):
         return cls._base_dir
 
     @classmethod
-    def artifact_yaml(cls):
-        return cls.join(cls.flow123d_root(), 'config', 'artifacts.yaml')
-
-    @classmethod
     def test_paths(cls, *paths):
         status = True
         for path in paths:
