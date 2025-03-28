@@ -11,9 +11,11 @@ import datetime
 import math
 import json
 import threading
+from pathlib import Path
 # ----------------------------------------------
 from py123d.loggers import printf
 from simplejson import JSONEncoder
+from py123d.__init__ import py123d_package_dir 
 # ----------------------------------------------
 
 
@@ -398,22 +400,25 @@ class Paths(object):
     # -----------------------------------
 
     @classmethod
-    @make_relative
     def bin_dir(cls):
-        return cls.join(cls.flow123d_root(), 'bin')
+        try:
+            import pathfix
+            bin_dir = Path().joinpath(py123d_package_dir, "../../bin/")
+            return str(bin_dir)
+        except ModuleNotFoundError:
+            pass
+        return "/opt/flow123d/bin"
+        #return cls.join(cls.flow123d_root(), 'bin')
 
     @classmethod
-    @make_relative
     def ndiff(cls):
         return cls.path_to(cls.bin_dir(), 'ndiff', 'ndiff.pl')
 
     @classmethod
-    @make_relative
     def flow123d(cls):
         return cls.path_to(cls.bin_dir(), flow123d_name)
 
     @classmethod
-    @make_relative
     def mpiexec(cls):
         return cls.path_to(cls.bin_dir(), mpiexec_name)
 
