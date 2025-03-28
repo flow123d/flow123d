@@ -2,15 +2,10 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-try:
-    import pathfix
-    pathfix.init()
-except ModuleNotFoundError:
-    pass
+
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
-from scripts.core.base import Paths, GlobalResult
 import utils.parsers as parsers
 import utils.argparser as argparser
 from utils.timer import Timer
