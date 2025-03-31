@@ -29,11 +29,8 @@ Options:
 
 from __future__ import absolute_import
 
-try:
-    import pathfix
-    pathfix.append_to_path()
-except ModuleNotFoundError:
-    pass
+import pathfix
+pathfix.append_to_path()
 
 import system.versions
 system.versions.require_version_3()
