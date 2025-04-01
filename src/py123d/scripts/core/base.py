@@ -248,17 +248,6 @@ class Printer(object):
             cls.set_level(cls.LEVEL_CONSOLE)
 
 
-def make_relative(f):
-    """
-    Wrapper which return value as absolute base value
-    :param f:
-    """
-    def wrapper(*args, **kwargs):
-        path = f(*args, **kwargs)
-        return str(Path(path).absolute())
-    return wrapper
-
-
 class PathFilters(object):
     """
     Class PathFilters serves as filter library for filtering files and folders
@@ -367,9 +356,8 @@ class Paths(object):
         return status
 
     @classmethod
-    @make_relative
     def temp_file(cls, name='{date}-{time}-{rnd}.log'):
-        return cls.path_to(cls.temp_name(name))
+        return cls.path_to( str(Path(cls.temp_name(name)).absolute()) )
 
     @classmethod
     def temp_name(cls, name='{date}-{time}-{rnd}.log'):
@@ -409,24 +397,20 @@ class Paths(object):
     # -----------------------------------
 
     @classmethod
-    @make_relative
     def path_to(cls, *args):
-        return os.path.join(cls.current_dir(), *args)
+        return str(Path(cls.current_dir(), *args).absolute())
 
     @classmethod
-    @make_relative
     def join(cls, path, *paths):
-        return os.path.join(path, *paths)
+        return str(Path(path, *paths).absolute())
 
     @classmethod
-    @make_relative
     def dirname(cls, path):
-        return os.path.dirname(path)
+        return str(Path(path).parent.absolute())
 
     @classmethod
-    @make_relative
     def without_ext(cls, path):
-        return os.path.splitext(path)[0]
+        return str(Path(path).with_suffix("").absolute())
 
     @classmethod
     def browse(cls, path, filters=()):
