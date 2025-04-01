@@ -3,7 +3,7 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from py123d.loggers import printf
-from py123d.scripts.core.base import Printer, Paths, PathFormat
+from py123d.scripts.core.base import Printer, Paths
 # ----------------------------------------------
 
 
@@ -24,7 +24,6 @@ class ScriptModule(object):
 
     def _prepare(self):
         # configure path
-        Paths.format = PathFormat.ABSOLUTE
         if self.arg_options.root:
             Paths.init(self.arg_options.root)
             printf.out(

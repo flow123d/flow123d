@@ -250,17 +250,12 @@ class Printer(object):
 
 def make_relative(f):
     """
-    Wrapper which return value as relative absolute or non-changed base on
-    value Paths.format
+    Wrapper which return value as absolute base value
     :param f:
     """
     def wrapper(*args, **kwargs):
         path = f(*args, **kwargs)
-        if Paths.format == PathFormat.RELATIVE:
-            return os.path.relpath(os.path.abspath(path), Paths.flow123d_root())
-        elif Paths.format == PathFormat.ABSOLUTE:
-            return os.path.abspath(path)
-        return path
+        return str(Path(path).absolute())
     return wrapper
 
 
@@ -325,23 +320,12 @@ class PathFilters(object):
         return lambda x: x.endswith(suffix)
 
 
-class PathFormat(object):
-    """
-    Class PathFormat is enum class for different path formats
-    """
-
-    CUSTOM = 0
-    RELATIVE = 1
-    ABSOLUTE = 2
-
-
 class Paths(object):
     """
     Class Paths is helper class when dealing with files and folders
     """
 
     _base_dir = find_base_dir()
-    format = PathFormat.ABSOLUTE
     cur_dir = os.getcwd()
 
     @classmethod
