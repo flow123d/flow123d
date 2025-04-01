@@ -22,10 +22,11 @@ on:
 env:
   autopull:  0
 permissions:
-  actions: write
+  contents: read
+  actions: read
+  issues: read
   checks: write
   pull-requests: write
-  issues: write
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -156,7 +157,6 @@ jobs:
 
         - name: Run UNIT tests
           continue-on-error: true
-          id: unit_tests
           run: |
             config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
@@ -165,6 +165,7 @@ jobs:
           with:         
             name: unit_tests_${{ matrix.test_dir }}
             path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
+            if-no-files-found: ignore
 
     unit-test-report:
         name: Unit Test Report
@@ -181,43 +182,24 @@ jobs:
               with:
                 pattern: unit_tests_*
                 path: unit_tests
+            - name: Publish Test Results
+              uses: EnricoMi/publish-unit-test-result-action@v2
+              with:
+                files: unit_tests/**/*.xml
+                fail_on: nothing
             - name: Report tests
               uses: dorny/test-reporter@v1
               id: test-reporter
               with:
-                name: Reports of unit test # Rename
+                name: Reports of unit test
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
-                fail-on-error: false
+                fail-on-error: true                
+                fail-on-empty: true
                 list-suites: failed
                 list-tests: failed
                 only-summary: true
-            - name: Find Comment
-              uses: peter-evans/find-comment@v3
-              # if ${{ github.event.pull_request != null }}
-              id: find-comment
-              with:
-                issue-number: ${{ github.event.pull_request.number }}
-                comment-author: 'github-actions[bot]'
-                body-includes: Test Report URL
-            - name: Create or update comment
-              uses: peter-evans/create-or-update-comment@v4
-              # if ${{ github.event.pull_request != null }}
-              with:
-                comment-id: ${{ steps.find-comment.outputs.comment-id }}
-                issue-number: 1580
-                body: |
-                  Test Report URL [here](${{ steps.test-reporter.outputs.url_html }})
-                edit-mode: replace
-            # Print out url for test reports
-            - name: Check test report status
-              if: always()
-              run: |
-                if [ "${{ steps.test-reporter.outputs.failed }}" -gt 0 ]; then
-                  echo "Test report failed."
-                  echo "Url for test review: "
-                  exit 1
-                fi
+                artifact: unit_tests_*
 
     build_doc:
         needs: [build]

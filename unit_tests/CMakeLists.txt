@@ -118,14 +118,7 @@ macro(define_test class_name)
   #message(STATUS "ALL INCLUDE DIRECTORIES: ${ALL_INCLUDES}")
   #message(STATUS "INCLUDE FLAGS: ${INCLUDE_FLAGS}")
   
-  
-  
-  # rule to run the test (depends on successful compilation)
-  #${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh
-  #          runtime
-  #          ${class_name}
-  #          ${CMAKE_CURRENT_BINARY_DIR}/${runtime_report}
-  #          
+  # rule to run the test (depends on successful compilation)      
   add_custom_target(${test_name}
     COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
     DEPENDS ${test_binary}
@@ -177,8 +170,15 @@ macro(define_mpi_test class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else()
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
-  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
+    set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;compilation;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    set_target_properties(${test_binary} PROPERTIES CXX_LINKER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;compilation;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main ${MPI_CXX_LIBRARIES})
+    add_dependencies(${test_binary} update_source_tree)
+
+    get_target_property(target_launcher ${test_binary} CXX_COMPILER_LAUNCHER)
+    message(STATUS "${test_binary} LAUNCHER ${target_launcher}") 
+
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
@@ -238,8 +238,15 @@ macro(define_mpi_benchmark class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else()
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
-  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+    add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
+    set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+    set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;compilation;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    set_target_properties(${test_binary} PROPERTIES CXX_LINKER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;compilation;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+    add_dependencies(${test_binary} update_source_tree)
+    
+    get_target_property(target_launcher ${test_binary} CXX_COMPILER_LAUNCHER)
+    message(STATUS "${test_binary} LAUNCHER ${target_launcher}") 
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
