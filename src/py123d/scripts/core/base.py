@@ -357,7 +357,7 @@ class Paths(object):
 
     @classmethod
     def temp_file(cls, name='{date}-{time}-{rnd}.log'):
-        return cls.path_to( str(Path(cls.temp_name(name)).absolute()) )
+        return str(Path(cls.current_dir(), cls.temp_name(name)).absolute())
 
     @classmethod
     def temp_name(cls, name='{date}-{time}-{rnd}.log'):
@@ -372,33 +372,32 @@ class Paths(object):
     # -----------------------------------
 
     @classmethod
-    def bin_dir(cls):
+    def flow123d_bin_dir(cls):
+        """
+        Returns path to flow123d bin dir containing Flow123d, mpiexec and ndiff
+        TODO: Simplify, remove try block and use system variable
+        """
         try:
             import pathfix
-            bin_dir = Path().joinpath(py123d_package_dir, "../../bin/")
-            return str(bin_dir)
+            return Path().joinpath(py123d_package_dir, "../../bin/")
         except ModuleNotFoundError:
             pass
-        return "/opt/flow123d/bin"
+        return Path("/opt/flow123d/bin")
         #return cls.join(cls.flow123d_root(), 'bin')
 
     @classmethod
     def ndiff(cls):
-        return cls.path_to(cls.bin_dir(), 'ndiff', 'ndiff.pl')
+        return Path(cls.flow123d_bin_dir(), 'ndiff', 'ndiff.pl')
 
     @classmethod
     def flow123d(cls):
-        return cls.path_to(cls.bin_dir(), flow123d_name)
+        return Path(cls.flow123d_bin_dir(), flow123d_name)
 
     @classmethod
     def mpiexec(cls):
-        return cls.path_to(cls.bin_dir(), mpiexec_name)
+        return Path(cls.flow123d_bin_dir(), mpiexec_name)
 
     # -----------------------------------
-
-    @classmethod
-    def path_to(cls, *args):
-        return str(Path(cls.current_dir(), *args).absolute())
 
     @classmethod
     def join(cls, path, *paths):
