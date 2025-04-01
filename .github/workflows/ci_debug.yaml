@@ -199,7 +199,6 @@ jobs:
                 list-suites: failed
                 list-tests: failed
                 only-summary: true
-                artifact: unit_tests_*
 
     build_doc:
         needs: [build]

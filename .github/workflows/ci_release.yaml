@@ -191,6 +191,11 @@ jobs:
       steps:
           - name: Checkout
             uses: actions/checkout@v4
+          - name: Download all unit tests artifacts
+            uses: actions/download-artifact@v4
+            with:
+              pattern: unit_tests_*
+              path: unit_tests
           - name: Report tests
             uses: dorny/test-reporter@v1
             id: test-reporter
@@ -198,12 +203,11 @@ jobs:
               name: Reports of unit test
               path:  unit_tests/**/*.xml
               reporter: java-junit
-              fail-on-error: true
+              fail-on-error: true                
               fail-on-empty: true
               list-suites: failed
               list-tests: failed
               only-summary: true
-              artifact: unit_tests_*
 
     benchmarks:
         needs: [build]
