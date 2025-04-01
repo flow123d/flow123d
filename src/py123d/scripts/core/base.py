@@ -345,6 +345,13 @@ class Paths(object):
         return cls._base_dir
 
     @classmethod
+    def python_script_dir(cls):
+        """
+        Returns path to directory containing python scripts
+        """
+        return py123d_package_dir
+
+    @classmethod
     def test_paths(cls, *paths):
         status = True
         for path in paths:
@@ -372,18 +379,24 @@ class Paths(object):
     # -----------------------------------
 
     @classmethod
-    def flow123d_bin_dir(cls):
+    def flow123d_dir(cls):
         """
-        Returns path to flow123d bin dir containing Flow123d, mpiexec and ndiff
+        Returns path to flow123d root dir
         TODO: Simplify, remove try block and use system variable
         """
         try:
             import pathfix
-            return Path().joinpath(py123d_package_dir, "../../bin/")
+            return Path().joinpath(py123d_package_dir, "../../")
         except ModuleNotFoundError:
             pass
-        return Path("/opt/flow123d/bin")
-        #return cls.join(cls.flow123d_root(), 'bin')
+        return Path("/opt/flow123d")
+
+    @classmethod
+    def flow123d_bin_dir(cls):
+        """
+        Returns path to flow123d bin dir containing Flow123d, mpiexec and ndiff
+        """
+        return Path(cls.flow123d_dir(), "bin")
 
     @classmethod
     def ndiff(cls):
