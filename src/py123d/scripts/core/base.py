@@ -11,7 +11,7 @@ import datetime
 import math
 import json
 import threading
-from pathlib import Path
+from pathlib import Path, PurePath
 # ----------------------------------------------
 from py123d.loggers import printf
 from simplejson import JSONEncoder
@@ -267,15 +267,15 @@ class PathFilters(object):
 
     @staticmethod
     def filter_type_is_file():
-        return lambda x: os.path.isfile(x)
+        return lambda x: Path(x).is_file()
 
     @staticmethod
     def filter_type_is_dir():
-        return lambda x: os.path.isdir(x)
+        return lambda x: Path(x).is_dir()
 
     @staticmethod
     def filter_exists():
-        return lambda x: os.path
+        return lambda x: Path(x).exists()
 
     @staticmethod
     def filter_wildcards(fmt=""):
@@ -471,7 +471,7 @@ class Paths(object):
 
     @classmethod
     def filesize(cls, path, as_string=False):
-        size = os.path.getsize(path)
+        size = Path(path).stat().st_size
         if not as_string:
             return size
 
@@ -499,54 +499,54 @@ class Paths(object):
                 break
         return cls.relpath(path, p)
 
-    @classmethod
-    def split(cls, path):
-        """
-        :rtype: list[str]
-        """
-        path = cls.abspath(path)
-        folders = []
-        while 1:
-            path, folder = os.path.split(path)
-            if folder != "":
-                folders.append(folder)
-            else:
-                if path != "":
-                    folders.append(path)
-
-                break
-        folders.reverse()
-        return folders
+#    @classmethod
+#    def split(cls, path):
+#        """
+#        :rtype: list[str]
+#        """
+#        path = cls.abspath(path)
+#        folders = []
+#        while 1:
+#            path, folder = os.path.split(path)
+#            if folder != "":
+#                folders.append(folder)
+#            else:
+#                if path != "":
+#                    folders.append(path)
+#
+#                break
+#        folders.reverse()
+#        return folders
 
     # -----------------------------------
 
     @staticmethod
     def is_file(*args, **kwargs):
-        return os.path.isfile(*args, **kwargs)
+        return Path(*args, **kwargs).is_file()
 
     @staticmethod
     def is_dir(*args, **kwargs):
-        return os.path.isdir(*args, **kwargs)
+        return Path(*args, **kwargs).is_dir()
 
     @staticmethod
     def exists(*args, **kwargs):
-        return os.path.exists(*args, **kwargs)
+        return Path(*args, **kwargs).exists()
 
     @staticmethod
     def abspath(*args, **kwargs):
-        return os.path.abspath(*args, **kwargs)
+        return str(Path(*args, **kwargs).absolute())
 
     @staticmethod
     def relpath(*args, **kwargs):
-        return os.path.relpath(*args, **kwargs)
+        return str(PurePath(args[0]).relative_to(args[1]))
 
     @staticmethod
     def realpath(*args, **kwargs):
-        return os.path.realpath(*args, **kwargs)
+        return str(Path(*args, **kwargs).resolve())
 
     @staticmethod
     def basename(*args, **kwargs):
-        return os.path.basename(*args, **kwargs)
+        return PurePath(*args, **kwargs).name
 
     @staticmethod
     def unlink(*args, **kwargs):
