@@ -384,14 +384,13 @@ class Paths(object):
         Returns path to flow123d root dir
         TODO: Simplify, remove try block and use system variable
         """
-        try:
-            import pathfix
-            print("Old path: " + str(Path().joinpath(py123d_package_dir, "../../")) )
-            print("New path: " + str(Path(os.getenv('FLOW123D_DIR')).resolve()) )
-            return Path().joinpath(py123d_package_dir, "../../")
-        except ModuleNotFoundError:
-            pass
-        return Path("/opt/flow123d")
+        return Path(os.getenv('FLOW123D_DIR')).resolve()
+        #try:
+        #    import pathfix
+        #    return Path().joinpath(py123d_package_dir, "../../")
+        #except ModuleNotFoundError:
+        #    pass
+        #return Path("/opt/flow123d")
 
     @classmethod
     def flow123d_bin_dir(cls):
@@ -467,9 +466,12 @@ class Paths(object):
     def ensure_path(cls, f, is_file=True):
         if not f:
             return
-        p = Path(f).parent if is_file else Path(f)
-        if p and not p.exists():
-            p.mkdir()
+        p = os.path.dirname(f) if is_file else f
+        if p and not os.path.exists(p):
+            os.makedirs(p)
+        #p = Path(f).parent if is_file else Path(f)
+        #if p and not p.exists():
+        #    p.mkdir()
 
     @classmethod
     def filesize(cls, path, as_string=False):
