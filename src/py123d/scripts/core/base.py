@@ -319,6 +319,7 @@ class Paths(object):
 
     @classmethod
     def init(cls, v=None):
+        print("DEBUG: call of Paths.init")
         if not v:
             return cls._base_dir
 
@@ -337,12 +338,12 @@ class Paths(object):
         """
         return cls.cur_dir
 
-    @classmethod
-    def flow123d_root(cls):
-        """
-        Returns path to flow123d root
-        """
-        return cls._base_dir
+#    @classmethod
+#    def flow123d_root(cls):
+#        """
+#        Returns path to flow123d root
+#        """
+#        return cls._base_dir
 
     @classmethod
     def python_script_dir(cls):
