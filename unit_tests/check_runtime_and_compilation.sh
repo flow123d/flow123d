@@ -1,14 +1,10 @@
 #!/bin/bash
 # compile_and_report.sh
-# Usage: ./compile_and_report.sh [class_name] [source_file] [output_binary] [output_report] [compiler] [flags] [libs]
+# Usage: ./compile_and_report.sh <class_name> <output_file> <compiler_command>
 
-# Arguments
-echo "Arguments: $@"
-
-REPORT_TYPE=$1
-CLASS_NAME=$2
-OUTPUT_FILE=$3
-shift 3
+CLASS_NAME=$1
+OUTPUT_FILE=$2
+shift 2
 COMPILER_COMMAND=("$@")
 
 LOG_TMP=$(mktemp)
