@@ -18,7 +18,7 @@
 #include "system/file_path.hh"
 #include "system/sys_profiler.hh"
 #include "system/armor.hh"
-
+#include "moc_error_handler.hh"
 
 class FemToolsTest : public testing::Test {
 public:
