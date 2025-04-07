@@ -988,6 +988,7 @@ install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/)
 #install(PROGRAMS  bin/yaml_converter/YAMLConverter.py     DESTINATION bin/yaml_converter)
 #install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
+install(PROGRAMS  bin/ndiff/Diff.pm        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 install(TARGETS flow123d_system flow123d_core 
   LIBRARY DESTINATION lib/
