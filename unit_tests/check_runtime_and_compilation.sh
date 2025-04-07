@@ -13,23 +13,19 @@ SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 echo "Compiling ${CLASS_NAME} to run tests and generate report at ${OUTPUT_FILE}"
 echo "Command: ${COMPILER_COMMAND[@]}"
 
-# Compile and capture output
 "${COMPILER_COMMAND[@]}" > "$LOG_TMP" 2>&1
 STATUS=$?
 
-# Generate report
-echo "Generating compilation report..."
-python3 "$SCRIPT_DIR/runtime_and_compilation_reporter.py" \
-    --status ${STATUS} \
-    --output ${OUTPUT_FILE} \
-    --log "$(cat ${LOG_TMP})" \
-    --class-name ${CLASS_NAME}
-
 echo "Compilation status: ${STATUS}"
 if [ ${STATUS} -eq 0 ]; then
-    echo "Compilation of ${CLASS_NAME} successful. Report generated at ${OUTPUT_FILE}"
+    echo "Compilation of ${CLASS_NAME} successful."
 else
     echo "Compilation of ${CLASS_NAME} failed. Report generated at ${OUTPUT_FILE}"
+    echo "Generating compilation report..."
+    python3 "$SCRIPT_DIR/runtime_and_compilation_reporter.py" \
+        --output ${OUTPUT_FILE} \
+        --log "$(cat ${LOG_TMP})" \
+        --class-name ${CLASS_NAME}
 fi
 
 exit ${STATUS}

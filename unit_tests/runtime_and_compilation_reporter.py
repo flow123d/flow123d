@@ -2,10 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 import argparse
 
-def create_junit_xml(status, xml_output, log, class_name):
-    if status == 0:
-        return
-
+def create_junit_xml(class_name, log, xml_output):
     os.makedirs(os.path.dirname(xml_output), exist_ok=True)
 
     testsuites = ET.Element("testsuites")
@@ -13,7 +10,7 @@ def create_junit_xml(status, xml_output, log, class_name):
         testsuites, "testsuite", 
         name=class_name, 
         tests="1", 
-        failures="1" if status != 0 else "0",
+        failures="1",
         errors="0", 
         time="0.0"
     )
@@ -38,10 +35,9 @@ def create_junit_xml(status, xml_output, log, class_name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate JUnit XML report for compilation")
-    parser.add_argument("--status", type=int, required=True, help="Compilation status")
     parser.add_argument("--output", type=str, required=True, help="Path to the output XML file")
     parser.add_argument("--log", type=str, required=True, help="Compilation output and error log")
     parser.add_argument("--class-name", type=str, default="Compilation", help="Class name for the test case")
     
     args = parser.parse_args()
-    create_junit_xml(args.status, args.output, args.log, args.class_name)
+    create_junit_xml(args.class_name, args.log, args.output)

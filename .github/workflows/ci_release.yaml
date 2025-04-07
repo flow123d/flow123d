@@ -30,7 +30,10 @@ env:
   DOCKER_USER: ${{secrets.DOCKER_HUB_FLOW123D_USERNAME}}
   DOCKER_PASSWORD: ${{secrets.DOCKER_HUB_FLOW123D_TOKEN}}
   environment: gnu
-  
+permissions:
+  contents: read
+  actions: read
+  checks: write
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -163,13 +166,6 @@ jobs:
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
-
-        - name: Set variables
-          id: vars
-          run: |
-            git_branch=`git rev-parse --abbrev-ref HEAD`
-            build_dir=build-${git_branch}
-            echo "build_dir=${build_dir}" >> $GITHUB_OUTPUT
         
         - name: Run UNIT tests
           run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test

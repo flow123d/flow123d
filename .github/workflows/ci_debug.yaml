@@ -1,11 +1,8 @@
 name: Flow123d debug CI
 
 on: 
-    pull_request:
-      branches:
-        - "**"
     push:
-      branches:
+        branches: 
         - "**"
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
@@ -24,9 +21,7 @@ env:
 permissions:
   contents: read
   actions: read
-  issues: read
   checks: write
-  pull-requests: write
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -142,13 +137,6 @@ jobs:
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
-
-        - name: Set variables
-          id: vars
-          run: |
-            git_branch=`git rev-parse --abbrev-ref HEAD`
-            build_dir=build-${git_branch}
-            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
 
         - name: Run UNIT tests
           continue-on-error: true
