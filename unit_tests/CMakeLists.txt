@@ -93,7 +93,6 @@ macro(define_test class_name)
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
   set(compilation_report "${class_name}_compilation_report.xml")
-  set(runtime_report "${class_name}_runtime_report.xml")
   
   set(extra_args ${ARGN})
   # Did we get any optional args?
@@ -155,6 +154,7 @@ macro(define_mpi_test class_name n_proc)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-${n_proc}-test")
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  set(compilation_report "${class_name}_compilation_report.xml")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
 
   set (extra_args ${ARGN})
@@ -223,6 +223,7 @@ macro(define_mpi_benchmark class_name n_proc)
   set(test_binary "${class_name}_bench_bin")
   set(test_name "${class_name}-${n_proc}-bench")
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  set(compilation_report "${class_name}_compilation_report.xml")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
 
   set (extra_args ${ARGN})

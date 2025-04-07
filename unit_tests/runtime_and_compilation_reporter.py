@@ -2,7 +2,7 @@ import os
 import xml.etree.ElementTree as ET
 import argparse
 
-def create_junit_xml(status, xml_output, log, class_name, report_type):
+def create_junit_xml(status, xml_output, log, class_name):
     if status == 0:
         return
 
@@ -20,14 +20,14 @@ def create_junit_xml(status, xml_output, log, class_name, report_type):
     testcase = ET.SubElement(
         testsuite, "testcase", 
         classname=class_name, 
-        name=f"{report_type}-failed-for-{class_name}", 
+        name=f"compilation-failed-for-{class_name}", 
         time="0.0"
     )
 
     failure = ET.SubElement(
         testcase, "failure", 
-        message=f"{report_type} failed for {class_name}", 
-        type=f"{report_type}-failed-for-{class_name}",
+        message=f"Compilation failed for {class_name}", 
+        type=f"compilation-failed-for-{class_name}",
         text=log
     )
     failure.text = log
@@ -42,7 +42,6 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=str, required=True, help="Path to the output XML file")
     parser.add_argument("--log", type=str, required=True, help="Compilation output and error log")
     parser.add_argument("--class-name", type=str, default="Compilation", help="Class name for the test case")
-    parser.add_argument("--report-type", type=str, default="compilation", help="Type of report to generate")
     
     args = parser.parse_args()
-    create_junit_xml(args.status, args.output, args.log, args.class_name, args.report_type)
+    create_junit_xml(args.status, args.output, args.log, args.class_name)
