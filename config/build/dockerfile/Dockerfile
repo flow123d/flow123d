@@ -63,6 +63,9 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}
 # Update PATH to include binaries from the local installation and user-local
 ENV PATH="/root/.local/bin:${flow_install_location}/bin:${PATH}"
 
+# Set path to flow123d root dir
+ENV FLOW123D_DIR="/opt/flow123d"
+
 # ---------------------------------------------------------
 # Install Python dependencies from requirements.txt in the build context
 # ---------------------------------------------------------

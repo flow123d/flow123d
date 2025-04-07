@@ -49,7 +49,7 @@ def get_pbs_module(hostname_hint=None):
     :rtype : scripts.pbs.modules.pbs_tarkil_cesnet_cz
     """
     pbs_module_path = None
-    host_file = Paths.join(Paths.flow123d_root(), 'config', 'host_table.yaml')
+    host_file = Paths.join(Paths.flow123d_dir(), 'config', 'host_table.yaml')
     host_file_exists = Paths.exists(host_file)
     hostname = hostname_hint or platform.node()
     from_host = False

@@ -139,7 +139,7 @@ class PyPy(ExtendedThread):
         """
         import subprocess
         try:
-            root = Paths.flow123d_root()
+            root = Paths.flow123d_dir()
             # get current hash(%H) and date(%ct) from git repo
             result = subprocess.check_output('git show -s --format=%H,%ct HEAD'.split(), cwd=root).decode()
             sha, date = str(result).strip().split(',')

@@ -11,7 +11,7 @@ import datetime
 import math
 import json
 import threading
-from pathlib import Path
+from pathlib import Path, PurePath
 # ----------------------------------------------
 from py123d.loggers import printf
 from simplejson import JSONEncoder
@@ -248,22 +248,6 @@ class Printer(object):
             cls.set_level(cls.LEVEL_CONSOLE)
 
 
-def make_relative(f):
-    """
-    Wrapper which return value as relative absolute or non-changed base on
-    value Paths.format
-    :param f:
-    """
-    def wrapper(*args, **kwargs):
-        path = f(*args, **kwargs)
-        if Paths.format == PathFormat.RELATIVE:
-            return os.path.relpath(os.path.abspath(path), Paths.flow123d_root())
-        elif Paths.format == PathFormat.ABSOLUTE:
-            return os.path.abspath(path)
-        return path
-    return wrapper
-
-
 class PathFilters(object):
     """
     Class PathFilters serves as filter library for filtering files and folders
@@ -283,15 +267,15 @@ class PathFilters(object):
 
     @staticmethod
     def filter_type_is_file():
-        return lambda x: os.path.isfile(x)
+        return lambda x: Path(x).is_file()
 
     @staticmethod
     def filter_type_is_dir():
-        return lambda x: os.path.isdir(x)
+        return lambda x: Path(x).is_dir()
 
     @staticmethod
     def filter_exists():
-        return lambda x: os.path
+        return lambda x: Path(x).exists()
 
     @staticmethod
     def filter_wildcards(fmt=""):
@@ -325,27 +309,17 @@ class PathFilters(object):
         return lambda x: x.endswith(suffix)
 
 
-class PathFormat(object):
-    """
-    Class PathFormat is enum class for different path formats
-    """
-
-    CUSTOM = 0
-    RELATIVE = 1
-    ABSOLUTE = 2
-
-
 class Paths(object):
     """
     Class Paths is helper class when dealing with files and folders
     """
 
     _base_dir = find_base_dir()
-    format = PathFormat.ABSOLUTE
     cur_dir = os.getcwd()
 
     @classmethod
     def init(cls, v=None):
+        print("DEBUG: call of Paths.init")
         if not v:
             return cls._base_dir
 
@@ -364,12 +338,19 @@ class Paths(object):
         """
         return cls.cur_dir
 
+#    @classmethod
+#    def flow123d_root(cls):
+#        """
+#        Returns path to flow123d root
+#        """
+#        return cls._base_dir
+
     @classmethod
-    def flow123d_root(cls):
+    def python_script_dir(cls):
         """
-        Returns path to flow123d root
+        Returns path to directory containing python scripts
         """
-        return cls._base_dir
+        return py123d_package_dir
 
     @classmethod
     def test_paths(cls, *paths):
@@ -383,9 +364,8 @@ class Paths(object):
         return status
 
     @classmethod
-    @make_relative
     def temp_file(cls, name='{date}-{time}-{rnd}.log'):
-        return cls.path_to(cls.temp_name(name))
+        return str(Path(cls.current_dir(), cls.temp_name(name)).absolute())
 
     @classmethod
     def temp_name(cls, name='{date}-{time}-{rnd}.log'):
@@ -400,49 +380,51 @@ class Paths(object):
     # -----------------------------------
 
     @classmethod
-    def bin_dir(cls):
-        try:
-            import pathfix
-            bin_dir = Path().joinpath(py123d_package_dir, "../../bin/")
-            return str(bin_dir)
-        except ModuleNotFoundError:
-            pass
-        return "/opt/flow123d/bin"
-        #return cls.join(cls.flow123d_root(), 'bin')
+    def flow123d_dir(cls):
+        """
+        Returns path to flow123d root dir
+        TODO: Simplify, remove try block and use system variable
+        """
+        return Path(os.getenv('FLOW123D_DIR')).resolve()
+        #try:
+        #    import pathfix
+        #    return Path().joinpath(py123d_package_dir, "../../")
+        #except ModuleNotFoundError:
+        #    pass
+        #return Path("/opt/flow123d")
+
+    @classmethod
+    def flow123d_bin_dir(cls):
+        """
+        Returns path to flow123d bin dir containing Flow123d, mpiexec and ndiff
+        """
+        return Path(cls.flow123d_dir(), "bin")
 
     @classmethod
     def ndiff(cls):
-        return cls.path_to(cls.bin_dir(), 'ndiff', 'ndiff.pl')
+        return Path(cls.flow123d_bin_dir(), 'ndiff', 'ndiff.pl')
 
     @classmethod
     def flow123d(cls):
-        return cls.path_to(cls.bin_dir(), flow123d_name)
+        return Path(cls.flow123d_bin_dir(), flow123d_name)
 
     @classmethod
     def mpiexec(cls):
-        return cls.path_to(cls.bin_dir(), mpiexec_name)
+        return Path(cls.flow123d_bin_dir(), mpiexec_name)
 
     # -----------------------------------
 
     @classmethod
-    @make_relative
-    def path_to(cls, *args):
-        return os.path.join(cls.current_dir(), *args)
-
-    @classmethod
-    @make_relative
     def join(cls, path, *paths):
-        return os.path.join(path, *paths)
+        return str(Path(path, *paths).absolute())
 
     @classmethod
-    @make_relative
     def dirname(cls, path):
-        return os.path.dirname(path)
+        return str(Path(path).parent.absolute())
 
     @classmethod
-    @make_relative
     def without_ext(cls, path):
-        return os.path.splitext(path)[0]
+        return str(Path(path).with_suffix("").absolute())
 
     @classmethod
     def browse(cls, path, filters=()):
@@ -488,10 +470,13 @@ class Paths(object):
         p = os.path.dirname(f) if is_file else f
         if p and not os.path.exists(p):
             os.makedirs(p)
+        #p = Path(f).parent if is_file else Path(f)
+        #if p and not p.exists():
+        #    p.mkdir()
 
     @classmethod
     def filesize(cls, path, as_string=False):
-        size = os.path.getsize(path)
+        size = Path(path).stat().st_size
         if not as_string:
             return size
 
@@ -519,54 +504,54 @@ class Paths(object):
                 break
         return cls.relpath(path, p)
 
-    @classmethod
-    def split(cls, path):
-        """
-        :rtype: list[str]
-        """
-        path = cls.abspath(path)
-        folders = []
-        while 1:
-            path, folder = os.path.split(path)
-            if folder != "":
-                folders.append(folder)
-            else:
-                if path != "":
-                    folders.append(path)
-
-                break
-        folders.reverse()
-        return folders
+#    @classmethod
+#    def split(cls, path):
+#        """
+#        :rtype: list[str]
+#        """
+#        path = cls.abspath(path)
+#        folders = []
+#        while 1:
+#            path, folder = os.path.split(path)
+#            if folder != "":
+#                folders.append(folder)
+#            else:
+#                if path != "":
+#                    folders.append(path)
+#
+#                break
+#        folders.reverse()
+#        return folders
 
     # -----------------------------------
 
     @staticmethod
     def is_file(*args, **kwargs):
-        return os.path.isfile(*args, **kwargs)
+        return Path(*args, **kwargs).is_file()
 
     @staticmethod
     def is_dir(*args, **kwargs):
-        return os.path.isdir(*args, **kwargs)
+        return Path(*args, **kwargs).is_dir()
 
     @staticmethod
     def exists(*args, **kwargs):
-        return os.path.exists(*args, **kwargs)
+        return Path(*args, **kwargs).exists()
 
     @staticmethod
     def abspath(*args, **kwargs):
-        return os.path.abspath(*args, **kwargs)
+        return str(Path(*args, **kwargs).absolute())
 
     @staticmethod
     def relpath(*args, **kwargs):
-        return os.path.relpath(*args, **kwargs)
+        return str(PurePath(args[0]).relative_to(args[1]))
 
     @staticmethod
     def realpath(*args, **kwargs):
-        return os.path.realpath(*args, **kwargs)
+        return str(Path(*args, **kwargs).resolve())
 
     @staticmethod
     def basename(*args, **kwargs):
-        return os.path.basename(*args, **kwargs)
+        return PurePath(*args, **kwargs).name
 
     @staticmethod
     def unlink(*args, **kwargs):
