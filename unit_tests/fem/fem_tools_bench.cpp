@@ -19,7 +19,6 @@
 #include "system/sys_profiler.hh"
 #include "system/armor.hh"
 
-#include "test_error_moc_actions.hh"
 
 class FemToolsTest : public testing::Test {
 public:
