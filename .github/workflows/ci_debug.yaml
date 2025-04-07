@@ -182,11 +182,6 @@ jobs:
               with:
                 pattern: unit_tests_*
                 path: unit_tests
-            - name: Publish Test Results
-              uses: EnricoMi/publish-unit-test-result-action@v2
-              with:
-                files: unit_tests/**/*.xml
-                fail_on: nothing
             - name: Report tests
               uses: dorny/test-reporter@v1
               id: test-reporter
