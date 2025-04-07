@@ -5,7 +5,7 @@
 
 #include "system/system.hh"
 #include "coupling/application.hh"
-
+#include "moc_mpi_bench_test_error.hh"
 
 class ApplicationBaseTest : public testing::Test, public Application {
 public:
