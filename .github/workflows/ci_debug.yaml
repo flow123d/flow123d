@@ -35,11 +35,6 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Check pull request number and event
-          run: |
-            echo "Pull request number: ${{ github.event.pull_request.number }}"
-            echo "Event name: ${{ github.event_name }}"
-            echo "Pull request: ${{ github.event.pull_request }}"
         - name: Set variables
           id: vars
           run: |            
