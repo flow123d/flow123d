@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 # ----------------------------------------------
 from py123d.scripts import psutils
 from py123d.scripts.core.base import IO, Paths, Command
@@ -39,7 +40,7 @@ class OutputMode(object):
 
             # open file manually when append or write
             if self.mode in {self.WRITE, self.APPEND}:
-                Paths.ensure_path(self.filename)
+                Path(self.filename).parent.mkdir(parents=True, exist_ok=True)
                 self.fp = open(self.filename, 'w+' if self.mode is self.WRITE else 'a+')
 
             # create temp file otherwise

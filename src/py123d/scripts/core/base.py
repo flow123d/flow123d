@@ -597,7 +597,7 @@ class IO(object):
 
     @classmethod
     def write(cls, name, string, mode='w'):
-        Paths.ensure_path(name)
+        Path(name).parent.mkdir(parents=True, exist_ok=True)
         with open(name, mode, encoding='utf-8', errors='replace') as fp:
             fp.write(string)
         return True

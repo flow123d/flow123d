@@ -4,6 +4,7 @@
 # ----------------------------------------------
 import itertools
 import yaml
+from pathlib import Path
 # ----------------------------------------------
 from copy import deepcopy
 # ----------------------------------------------
@@ -54,7 +55,7 @@ class ConfigCase(object):
         else:
             # create temp folder where files will be
             tmp_folder = Paths.temp_file(o.get('tmp') + '-{date}-{time}-{rnd}')
-            Paths.ensure_path(tmp_folder, is_file=False)
+            Path(tmp_folder).mkdir(parents=True, exist_ok=True)
 
             self.fs = yamlc.ConfigCaseFiles(
                 root=tmp_folder,
