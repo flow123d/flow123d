@@ -26,7 +26,8 @@ class ModuleRuntest(ScriptModule):
 
     @staticmethod
     def list_tests():
-        test_dir = Paths.join(Paths.flow123d_bin_dir(), 'tests')
+        test_dir = Paths.join(Paths.flow123d_dir(), 'tests')
+        print("DEBUG: list_tests method on dir  - " + test_dir)
         tests = Paths.walk(test_dir, [
             PathFilters.filter_type_is_file(),
             PathFilters.filter_endswith('.yaml'),
