@@ -4,4 +4,10 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 #  populated by configure_file call
-/usr/bin/python3 ${SCRIPT_DIR}/../src/py123d/bin/runtest.py "$@"
+EXECUTABLE="${SCRIPT_DIR}/../src/py123d/bin/runtest.py"
+ if [ ! -x "${EXECUTABLE}" ]
+ then
+     python3 -m py123d.bin.runtest
+ else 
+     /usr/bin/python3 ${EXECUTABLE} "$@"
+ fi
