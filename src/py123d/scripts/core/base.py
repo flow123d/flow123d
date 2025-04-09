@@ -338,13 +338,6 @@ class Paths(object):
         """
         return cls.cur_dir
 
-#    @classmethod
-#    def flow123d_root(cls):
-#        """
-#        Returns path to flow123d root
-#        """
-#        return cls._base_dir
-
     @classmethod
     def python_script_dir(cls):
         """
@@ -383,15 +376,8 @@ class Paths(object):
     def flow123d_dir(cls):
         """
         Returns path to flow123d root dir
-        TODO: Simplify, remove try block and use system variable
         """
         return Path(os.getenv('FLOW123D_DIR')).resolve()
-        #try:
-        #    import pathfix
-        #    return Path().joinpath(py123d_package_dir, "../../")
-        #except ModuleNotFoundError:
-        #    pass
-        #return Path("/opt/flow123d")
 
     @classmethod
     def flow123d_bin_dir(cls):
