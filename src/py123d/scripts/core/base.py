@@ -317,19 +317,19 @@ class Paths(object):
     _base_dir = find_base_dir()
     cur_dir = os.getcwd()
 
-    @classmethod
-    def init(cls, v=None):
-        print("DEBUG: call of Paths.init")
-        if not v:
-            return cls._base_dir
-
-        if os.path.isfile(v):
-            # if file is given, we assume file in bin/python was given
-            cls._base_dir = os.path.dirname(os.path.dirname(os.path.realpath(v)))
-        else:
-            # if dir was given we just convert it to real path and use it
-            cls._base_dir = os.path.realpath(v)
-        return cls._base_dir
+#    @classmethod
+#    def init(cls, v=None):
+#        print("DEBUG: call of Paths.init")
+#        if not v:
+#            return cls._base_dir
+#
+#        if os.path.isfile(v):
+#            # if file is given, we assume file in bin/python was given
+#            cls._base_dir = os.path.dirname(os.path.dirname(os.path.realpath(v)))
+#        else:
+#            # if dir was given we just convert it to real path and use it
+#            cls._base_dir = os.path.realpath(v)
+#        return cls._base_dir
 
     @classmethod
     def current_dir(cls):
@@ -449,16 +449,13 @@ class Paths(object):
                     break
         return result
 
-    @classmethod
-    def ensure_path(cls, f, is_file=True):
-        if not f:
-            return
-        p = os.path.dirname(f) if is_file else f
-        if p and not os.path.exists(p):
-            os.makedirs(p)
-        #p = Path(f).parent if is_file else Path(f)
-        #if p and not p.exists():
-        #    p.mkdir()
+#    @classmethod
+#    def ensure_path(cls, f, is_file=True):
+#        if not f:
+#            return
+#        p = os.path.dirname(f) if is_file else f
+#        if p and not os.path.exists(p):
+#            os.makedirs(p)
 
     @classmethod
     def filesize(cls, path, as_string=False):
