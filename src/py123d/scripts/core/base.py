@@ -25,15 +25,6 @@ flow123d_name = "flow123d" if is_linux else "flow123d.exe"
 mpiexec_name = "mpiexec" if is_linux else "mpiexec.hydra"
 
 
-def find_base_dir():
-    """
-    Attempts to find base directory from pathfix's module's location
-    """
-    import os
-    path = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..', '../..'))
-    return path
-
-
 class GlobalResult(object):
     """
     Class GlobalResult stores global result which can be dumped to json
@@ -314,22 +305,7 @@ class Paths(object):
     Class Paths is helper class when dealing with files and folders
     """
 
-    _base_dir = find_base_dir()
     cur_dir = os.getcwd()
-
-#    @classmethod
-#    def init(cls, v=None):
-#        print("DEBUG: call of Paths.init")
-#        if not v:
-#            return cls._base_dir
-#
-#        if os.path.isfile(v):
-#            # if file is given, we assume file in bin/python was given
-#            cls._base_dir = os.path.dirname(os.path.dirname(os.path.realpath(v)))
-#        else:
-#            # if dir was given we just convert it to real path and use it
-#            cls._base_dir = os.path.realpath(v)
-#        return cls._base_dir
 
     @classmethod
     def current_dir(cls):
@@ -449,14 +425,6 @@ class Paths(object):
                     break
         return result
 
-#    @classmethod
-#    def ensure_path(cls, f, is_file=True):
-#        if not f:
-#            return
-#        p = os.path.dirname(f) if is_file else f
-#        if p and not os.path.exists(p):
-#            os.makedirs(p)
-
     @classmethod
     def filesize(cls, path, as_string=False):
         size = Path(path).stat().st_size
@@ -486,25 +454,6 @@ class Paths(object):
             if p.endswith(endswith):
                 break
         return cls.relpath(path, p)
-
-#    @classmethod
-#    def split(cls, path):
-#        """
-#        :rtype: list[str]
-#        """
-#        path = cls.abspath(path)
-#        folders = []
-#        while 1:
-#            path, folder = os.path.split(path)
-#            if folder != "":
-#                folders.append(folder)
-#            else:
-#                if path != "":
-#                    folders.append(path)
-#
-#                break
-#        folders.reverse()
-#        return folders
 
     # -----------------------------------
 

@@ -38,12 +38,6 @@ class AbstractRun(object):
         """
 
         # build replacements map for the current case
-        print("DBG replacment dict:")
-        print("  FLOW123D_DIR:           " + str(Paths.flow123d_dir()))
-        print("  CURRENT_TEST_DIR:       " + self.case.fs.root)
-        print("  CURRENT_OUTPUT_DIR:     " + self.case.fs.root)
-        print("  CURRENT_REF_OUTPUT_DIR: " + self.case.fs.output)
-        print("  TESTS_DIR:              " + self.case.fs.root)
         replacements = dict(
             FLOW123D_DIR=str(Paths.flow123d_dir()),
             CURRENT_TEST_DIR=self.case.fs.root,
