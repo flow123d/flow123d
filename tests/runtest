@@ -2,8 +2,8 @@
 # Simple script which will use correct python version and execute runtest.py
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PYTHON_PATH=${PYTHON_PATH}:${SCRIPT_DIR}/../src/
-echo "-- PYTHON_PATH ${PYTHON_PATH}"
+export PYTHONPATH=${PYTHONPATH}:${SCRIPT_DIR}/../src/
+echo "-- PYTHONPATH ${PYTHONPATH}"
 
 #  populated by configure_file call
 EXECUTABLE="${SCRIPT_DIR}/../src/py123d/bin/runtest.py"
