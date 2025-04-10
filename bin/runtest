@@ -4,7 +4,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export PYTHONPATH=${PYTHONPATH}:${SCRIPT_DIR}/../src/
 
-#  populated by configure_file call
+# populated by configure_file call
 EXECUTABLE="${SCRIPT_DIR}/../src/py123d/bin/runtest.py"
 if [ ! -x "${EXECUTABLE}" ]
 then
