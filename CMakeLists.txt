@@ -981,7 +981,7 @@ message(STATUS "===========================================")
 # binary files
 
 install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
-install(PROGRAMS  bin/runtest               DESTINATION bin/)
+#install(PROGRAMS  bin/runtest               DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
 install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
 #install(PROGRAMS  bin/yaml_converter/yaml_converter.py    DESTINATION bin/yaml_converter)
