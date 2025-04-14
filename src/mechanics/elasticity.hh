@@ -77,14 +77,15 @@ public:
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > cross_section_min;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
-        Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
         Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::TensorFixed> output_total_stress;
         Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
+        Field<3, FieldValue<3>::Scalar> output_mean_total_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
         
@@ -99,8 +100,6 @@ public:
 
         std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr;
-        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
 
@@ -187,11 +186,9 @@ public:
 	// Recompute fields for output (stress, divergence etc.)
 	void update_output_fields();
     
-    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential,
-                            const Field<3, FieldValue<3>::Scalar> &ref_potential)
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
     {
         eq_fields_->potential_load = potential;
-        eq_fields_->ref_potential_load = ref_potential;
     }
 
     void calculate_cumulative_balance();

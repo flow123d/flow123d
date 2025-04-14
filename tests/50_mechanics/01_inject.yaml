@@ -71,7 +71,7 @@ problem: !Coupling_Sequential
             - step: 2
           fields:
             - displacement
-            - stress
+            - effective_stress
             - cross_section_updated
             - displacement_divergence
             - region_id

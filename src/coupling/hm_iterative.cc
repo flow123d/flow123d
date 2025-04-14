@@ -32,9 +32,9 @@ namespace it = Input::Type;
 
 
 struct fn_pressure_potential {
-    inline double operator() (double alpha, double density, double gravity, double pressure)
+    inline double operator() (double alpha, double density, double gravity, double pressure, double init_pressure)
     {
-        return -alpha*density*gravity*pressure;
+        return -alpha*density*gravity*(pressure - init_pressure);
     }
 };
 
@@ -154,11 +154,6 @@ HM_Iterative::EqFields::EqFields()
                      .units(UnitSI().dimensionless())
                      .flags(FieldFlag::equation_external_output);
 
-    *this += ref_pressure_potential.name("ref_pressure_potential")
-                     .description("Pressure potential on boundary (taking into account the flow boundary condition.")
-                     .units(UnitSI().m())
-                     .flags(FieldFlag::equation_result);
-    
     *this += flow_source.name("extra_flow_source")
                      .description("Coupling term entering the flow equation.")
                      .units(UnitSI().s(-1))
@@ -178,12 +173,10 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
         alpha,
         density,
         gravity,
-        eq_data.flow_->eq_fields().field_edge_pressure
+        eq_data.flow_->eq_fields().field_edge_pressure,
+        eq_data.flow_->eq_fields().init_pressure
         ), 0.0);
     
-    ref_potential_ptr_ = create_field_fe<3, FieldValue<3>::Scalar>(mesh, MixedPtr<FE_CR>());
-    ref_pressure_potential.set(ref_potential_ptr_, 0.0);
-
     beta.set(Model<3, FieldValue<3>::Scalar>::create(
         fn_hm_coupling_beta(beta_),
         alpha,
@@ -219,7 +212,6 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record),
   IterativeCoupling(in_record),
-  flow_potential_assembly_(nullptr),
   residual_assembly_(nullptr)
 {
 	START_TIMER("HM constructor");
@@ -244,9 +236,11 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     // setup coupling fields and finish initialization of flow
     eq_data_->mechanics_->eq_fields()["cross_section"].copy_from(eq_data_->flow_->eq_fields()["cross_section"]);
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["cross_section_updated"];
-    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["effective_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["total_stress"];
     eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["von_mises_stress"];
-    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_effective_stress"];
+    eq_data_->flow_->eq_fields() += eq_data_->mechanics_->eq_fields()["mean_total_stress"];
     eq_data_->flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )
@@ -260,7 +254,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     eq_fields_->set_input_list( in_record.val<Input::Array>("input_fields"), time() );
 
     eq_fields_->initialize(*mesh_, *eq_data_, time_, input_record_.val<double>("iteration_parameter"));
-    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential, eq_fields_->ref_pressure_potential);
+    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential);
 
     eq_fields_->add_coords_field();
 }
@@ -268,7 +262,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get());
     residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get());
 
     Input::Array user_fields_arr;
@@ -352,17 +345,8 @@ void HM_Iterative::update_after_converged()
 
 void HM_Iterative::update_potential()
 {
-    auto ref_potential_vec_ = eq_fields_->ref_potential_ptr_->vec();
-    auto dh = eq_fields_->ref_potential_ptr_->get_dofhandler();
-
-    ref_potential_vec_.zero_entries();
-    flow_potential_assembly_->assemble(dh);
-    
-    ref_potential_vec_.local_to_ghost_begin();
-    ref_potential_vec_.local_to_ghost_end();
     eq_fields_->pressure_potential.set_time_result_changed();
-    eq_fields_->ref_pressure_potential.set_time_result_changed();
-    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential, eq_fields_->ref_pressure_potential);
+    eq_data_->mechanics_->set_potential_load(eq_fields_->pressure_potential);
 }
 
 
@@ -402,7 +386,6 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 HM_Iterative::~HM_Iterative() {
 	eq_data_->flow_.reset();
     eq_data_->mechanics_.reset();
-    if (flow_potential_assembly_ != nullptr) delete flow_potential_assembly_;
     if (residual_assembly_ != nullptr) delete residual_assembly_;
 }
 
