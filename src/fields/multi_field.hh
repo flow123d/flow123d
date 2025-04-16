@@ -247,6 +247,7 @@ public:
     /// Implements FieldCommon::set_field_quad_order
     void set_field_quad_order(unsigned int fields_quad_order) override
     {
+        this->fields_quad_order_ = fields_quad_order;
         for (auto &field : sub_fields_) field.set_field_quad_order(fields_quad_order);
     }
 
@@ -299,6 +300,9 @@ private:
      * set_Time method of actual object.
      */
     const MultiField<spacedim, typename FieldValue<spacedim>::Enum > *no_check_control_field_;
+
+    /// Holds quad_order of fields. See Field::fields_quad_order_
+    unsigned int fields_quad_order_;
 };
 
 

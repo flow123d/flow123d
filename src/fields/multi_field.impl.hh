@@ -37,7 +37,8 @@ namespace it = Input::Type;
 template<int spacedim, class Value>
 MultiField<spacedim, Value>::MultiField()
 : FieldCommon(),
-  no_check_control_field_(nullptr)
+  no_check_control_field_(nullptr),
+  fields_quad_order_(0)
 {
 // 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
@@ -51,7 +52,8 @@ MultiField<spacedim, Value>::MultiField(const MultiField &other)
 : FieldCommon(other),
   sub_fields_(other.sub_fields_),
   full_input_list_(other.full_input_list_),
-  no_check_control_field_(other.no_check_control_field_)
+  no_check_control_field_(other.no_check_control_field_),
+  fields_quad_order_(other.fields_quad_order_)
 {
 	this->multifield_ = true;
 	this->set_shape( Value::NRows_, Value::NCols_ );
@@ -267,6 +269,7 @@ void MultiField<spacedim, Value>::setup_components() {
 //     	sub_fields_[i_comp].set_limit_side(this->limit_side_);
         sub_fields_[i_comp].input_selection(shared_->input_element_selection_);
     	sub_fields_[i_comp].add_factory( std::make_shared<MultiFieldFactory>(i_comp) );
+    	sub_fields_[i_comp].fields_quad_order_ = this->fields_quad_order_;
 
     	if (this->shared_->input_default_!="") {
     		sub_fields_[i_comp].shared_->input_default_ = this->shared_->input_default_;
