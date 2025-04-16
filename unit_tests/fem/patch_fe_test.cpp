@@ -109,7 +109,7 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
-        this->create_integrals();
+        this->create_integrals(quad_order);
         element_cache_map_.init(eval_points_);
 
         UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
@@ -124,15 +124,15 @@ public:
 
     ~PatchFETestBase() {}
 
-    void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_bulk_quadrature(1));
-        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_bulk_quadrature(2));
-        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_bulk_quadrature(3));
-        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_side_quadrature(1));
-        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_side_quadrature(2));
-        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_side_quadrature(3));
-        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_bulk_quadrature(1));
-        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_bulk_quadrature(2));
+    void create_integrals(unsigned int quad_order) {
+        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_bulk_quadrature(1), quad_order);
+        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_bulk_quadrature(2), quad_order);
+        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_bulk_quadrature(3), quad_order);
+        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_side_quadrature(1), quad_order);
+        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_side_quadrature(2), quad_order);
+        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_side_quadrature(3), quad_order);
+        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_bulk_quadrature(1), quad_order);
+        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_bulk_quadrature(2), quad_order);
     }
 
     void initialize() {
