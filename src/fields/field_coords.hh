@@ -99,6 +99,10 @@ public:
     void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const override
     {}
 
+    /// Implements FieldCommon::set_field_quad_order
+    void set_field_quad_order(FMT_UNUSED unsigned int fields_quad_order) override
+    {}
+
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();

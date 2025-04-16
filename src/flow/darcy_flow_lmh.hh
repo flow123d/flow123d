@@ -213,10 +213,11 @@ public:
         void init();     ///< Initialize vectors, ...
         void reset();    ///< Reset data members
 
-        /// Returns quad_order
-        inline unsigned int quad_order() const {
-            return 0;
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {0, 0};
         }
+
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head

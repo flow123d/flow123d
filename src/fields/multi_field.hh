@@ -244,6 +244,12 @@ public:
     /// Implements FieldCommon::cache_reallocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
+    /// Implements FieldCommon::set_field_quad_order
+    void set_field_quad_order(unsigned int fields_quad_order) override
+    {
+        for (auto &field : sub_fields_) field.set_field_quad_order(fields_quad_order);
+    }
+
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 

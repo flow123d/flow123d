@@ -136,6 +136,11 @@ public:
 		    this->cfl_source_.resize(lsize);
 		}
 
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {0, 0};
+        }
+
         /**
          * Temporary solution how to pass velocity field form the flow model.
          * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other

@@ -76,27 +76,27 @@ public:
     }
 
     /// Create integrals according to dim of assembly object
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals, unsigned int asm_quad_order) {
     	if (active_integrals_ & ActiveIntegrals::bulk) {
     	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
-    	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
+    	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_, asm_quad_order);
     		integrals.bulk_[dim-1] = integrals_.bulk_;
     	}
     	if (active_integrals_ & ActiveIntegrals::edge) {
     	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
-    	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
+    	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_, asm_quad_order);
     	    integrals.edge_[dim-1] = integrals_.edge_;
     	}
        	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
     	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
     	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
-    	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
+    	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_, asm_quad_order);
        	    integrals.coupling_[dim-2] = integrals_.coupling_;
        	}
        	if (active_integrals_ & ActiveIntegrals::boundary) {
     	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
     	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
-    	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
+    	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_, asm_quad_order);
        	    integrals.boundary_[dim-1] = integrals_.boundary_;
        	}
     }

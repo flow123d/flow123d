@@ -41,8 +41,8 @@ BulkIntegral::~BulkIntegral()
  * Implementation of EdgeIntegral methods
  */
 
-EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, uint i_subset)
-: BaseIntegral(eval_points, dim),
+EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, uint i_subset, unsigned int asm_quad_order)
+: BaseIntegral(eval_points, dim, asm_quad_order),
   subset_index_(i_subset)
 {
 
@@ -63,8 +63,8 @@ EdgeIntegral::~EdgeIntegral() {
  * Implementation of CouplingIntegral methods
  */
 
-CouplingIntegral::CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
- : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()),
+CouplingIntegral::CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral, unsigned int asm_quad_order)
+ : BaseIntegral(edge_integral->eval_points(), edge_integral->dim(), asm_quad_order),
    edge_integral_(edge_integral), bulk_integral_(bulk_integral)
 {
     ASSERT_EQ(edge_integral->dim()-1, bulk_integral->dim());
@@ -82,8 +82,8 @@ CouplingIntegral::~CouplingIntegral()
  * Implementation of BoundaryIntegral methods
  */
 
-BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
- : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()),
+BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral, unsigned int asm_quad_order)
+ : BaseIntegral(edge_integral->eval_points(), edge_integral->dim(), asm_quad_order),
    edge_integral_(edge_integral), bulk_integral_(bulk_integral)
 {}
 

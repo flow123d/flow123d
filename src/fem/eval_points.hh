@@ -91,19 +91,19 @@ public:
      * Returns an object referencing to the EvalPoints and list of its points.
      */
     template <unsigned int dim>
-    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &);
+    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &, unsigned int);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
-    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
+    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &, unsigned int);
 
     /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
     template <unsigned int dim>
-    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
+    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &, unsigned int);
 
     /// The same as add_bulk but for edge points on boundary sides.
     template <unsigned int dim>
-    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
+    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &, unsigned int);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {

@@ -183,12 +183,12 @@ public:
 	  coupling_integral_data_(12, 6),
 	  boundary_integral_data_(8, 4)
     {
-    	initialize();
+    	initialize(eq_fields, eq_data);
     }
 
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : fe_values_(eq_data->quad_order(), dh->ds()->fe()),
+    : fe_values_(eq_data->quad_order()[0], dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
       min_edge_sides_(2),
@@ -197,7 +197,7 @@ public:
       coupling_integral_data_(12, 6),
       boundary_integral_data_(8, 4)
     {
-    	initialize();
+    	initialize(eq_fields, eq_data);
     }
 
     /// Getter to set of assembly objects
@@ -277,12 +277,12 @@ public:
 
 private:
     /// Common part of GenericAssemblz constructors.
-    void initialize() {
+    void initialize(typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data) {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
+        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_, eq_data->quad_order()[0]);
+        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_, eq_data->quad_order()[0]);
+        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_, eq_data->quad_order()[0]);
         element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);
@@ -291,6 +291,7 @@ private:
             fe_values_.init_finalize();
         }
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
+        eq_fields->set_field_quad_order(eq_data->quad_order()[1]);
     }
 
     /// Call assemblations when patch is filled
