@@ -171,10 +171,10 @@ public:
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
             Quadrature *q_bdr = new QGauss(2, 0);
-            mass_eval[0] = eval_points_->add_bulk<1>(*q_bulk_1d );
-            mass_eval[1] = eval_points_->add_bulk<2>(*q_bulk_2d );
-            mass_eval[2] = eval_points_->add_bulk<3>(*q_bulk_3d );
-            bdr_eval = eval_points_->add_boundary<3>(*q_bdr );
+            mass_eval[0] = eval_points_->add_bulk<1>(*q_bulk_1d, 0 );
+            mass_eval[1] = eval_points_->add_bulk<2>(*q_bulk_2d, 0 );
+            mass_eval[2] = eval_points_->add_bulk<3>(*q_bulk_3d, 0 );
+            bdr_eval = eval_points_->add_boundary<3>(*q_bdr, 0 );
             this->init(eval_points_);
         }
 

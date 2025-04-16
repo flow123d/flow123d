@@ -37,7 +37,7 @@ class FieldEvalPythonTest : public FieldEvalBaseTest {
 public:
 
     class EqData : public FieldEvalBaseTest::EqData {
-        EqData() : FieldEvalBaseTest::EqData() {}
+        EqData() : FieldEvalBaseTest::EqData(0, 0) {}
     };
 
     FieldEvalPythonTest() : FieldEvalBaseTest() {}
