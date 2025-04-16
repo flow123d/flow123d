@@ -181,6 +181,7 @@ public:
                         .flags_add(in_main_matrix);
 
             // Asumme following types:
+            std::cout << "YYYY " << asm_quad_order << " - " << fields_quad_order << std::endl;
             eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk1 = new QGauss(1, asm_quad_order);
             Quadrature *q_bulk2 = new QGauss(2, asm_quad_order);
@@ -295,12 +296,12 @@ public:
         RefField &_field;
     };
 
-    FieldEvalBaseTest() {
+    FieldEvalBaseTest(unsigned int asm_quad_order=0, unsigned int fields_quad_order=0) {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-        eq_data_ = std::make_shared<EqData>(0, 0);
+        eq_data_ = std::make_shared<EqData>(asm_quad_order, fields_quad_order);
     }
 
     ~FieldEvalBaseTest() {

@@ -44,6 +44,8 @@ define_mpi_test(field_time_function 1)
 
 define_mpi_test(generic_field 1)
 
+define_mpi_test(field_quad_order 1)
+
 #define_mpi_test(field_speed 1 30)
 #define_mpi_test(field_constant_speed 1)
 #define_mpi_test(field_fe_speed 1)
