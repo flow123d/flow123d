@@ -59,8 +59,8 @@ public:
     {}
 
     /// Constructor
-    BulkPoint(const ElementCacheMap *elm_cache_map, uint elem_idx, uint loc_point_idx, unsigned int asm_quad_order)
-    : elm_cache_map_(elm_cache_map), elem_patch_idx_(elem_idx), local_point_idx_(loc_point_idx), asm_quad_order_(asm_quad_order)
+    BulkPoint(const ElementCacheMap *elm_cache_map, uint elem_idx, uint loc_point_idx, uint bulk_begin, uint asm_quad_order)
+    : elm_cache_map_(elm_cache_map), elem_patch_idx_(elem_idx), local_point_idx_(loc_point_idx), bulk_begin_(bulk_begin), asm_quad_order_(asm_quad_order)
 	{}
 
     /// Getter of EvalPoints object.
@@ -100,6 +100,11 @@ public:
     	this->local_point_idx_++;
     }
 
+    /// Getter of bulk_begin_
+    inline unsigned int bulk_begin() const {
+        return bulk_begin_;
+    }
+
     /// Comparison of accessors.
     bool operator==(const BulkPoint& other) {
         ASSERT_EQ(elem_patch_idx_, other.elem_patch_idx_);
@@ -113,6 +118,8 @@ protected:
     unsigned int elem_patch_idx_;
     /// Index of the local point in the integral object.
     unsigned int local_point_idx_;
+    /// Begin column (first index) of bulk point in patch point table
+    unsigned int bulk_begin_;
     /// Quadrature order of assembly
     unsigned int asm_quad_order_;
 };
@@ -161,6 +168,11 @@ public:
         return elm_cache_map_->element_eval_point(elem_patch_idx_, eval_point_idx());
     }
 
+    /// Getter of side_begin_
+    inline unsigned int side_begin() const {
+        return side_begin_;
+    }
+
     /// Comparison of accessors.
     bool operator==(const SidePoint& other) {
         ASSERT_EQ(elem_patch_idx_, other.elem_patch_idx_);
@@ -172,7 +184,7 @@ public:
 protected:
     //// local_point_idx_ here have meaning of index within the side.
 
-    /// Index of side in element
+    /// Begin column (first index) of side point in patch point table
     unsigned int side_begin_;
 
 };
@@ -324,8 +336,8 @@ public:
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, begin_idx_, asm_quad_order_));
-        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, end_idx_, asm_quad_order_));
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, begin_idx_, begin_idx_, asm_quad_order_));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, end_idx_, begin_idx_, asm_quad_order_));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
@@ -375,9 +387,9 @@ public:
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0, asm_quad_order_), this, begin_idx));
+                BulkPoint(elm_cache_map, element_patch_idx, 0, 0, asm_quad_order_), this, begin_idx));
         auto end_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(elm_cache_map, element_patch_idx, n_points_per_side_, asm_quad_order_), this, begin_idx));
+                BulkPoint(elm_cache_map, element_patch_idx, n_points_per_side_, 0, asm_quad_order_), this, begin_idx));
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
@@ -433,11 +445,12 @@ public:
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = edge_integral_->side_begin(cell_side);
+        uint side_begin_idx = edge_integral_->side_begin(cell_side);
+        uint bulk_begin_idx = this->bulk_begin();
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0, asm_quad_order_), this, begin_idx) );
+                BulkPoint(elm_cache_map, element_patch_idx, 0, bulk_begin_idx, asm_quad_order_), this, side_begin_idx) );
         auto end_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_, asm_quad_order_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_, bulk_begin_idx, asm_quad_order_), this, side_begin_idx) );;
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
@@ -485,11 +498,12 @@ public:
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = edge_integral_->side_begin(cell_side);
+        uint side_begin_idx = edge_integral_->side_begin(cell_side);
+        uint bulk_begin_idx = this->bulk_begin();
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0, asm_quad_order_), this, begin_idx) );
+                BulkPoint(elm_cache_map, element_patch_idx, 0, bulk_begin_idx, asm_quad_order_), this, side_begin_idx) );
         auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_, asm_quad_order_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_, bulk_begin_idx, asm_quad_order_), this, side_begin_idx) );;
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
@@ -516,7 +530,7 @@ EdgePoint::EdgePoint(BulkPoint bulk, const EdgeIntegral *edge_integral, uint sid
 inline EdgePoint EdgePoint::point_on(const DHCellSide &edg_side) const {
     uint element_patch_idx = elm_cache_map_->position_in_cache(edg_side.element().idx());
     uint side_begin = integral_->side_begin(edg_side);
-    return EdgePoint(BulkPoint(elm_cache_map_, element_patch_idx, local_point_idx_, asm_quad_order_),
+    return EdgePoint(BulkPoint(elm_cache_map_, element_patch_idx, local_point_idx_, 0, asm_quad_order_),
             integral_, side_begin);
 }
 
@@ -530,7 +544,7 @@ CouplingPoint::CouplingPoint(BulkPoint bulk, const CouplingIntegral *coupling_in
 inline BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
-    return BulkPoint(elm_cache_map_, i_elm, i_ep, asm_quad_order_);
+    return BulkPoint(elm_cache_map_, i_elm, i_ep, this->bulk_begin(), asm_quad_order_);
 }
 
 
@@ -547,7 +561,7 @@ inline BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx(), true);
     unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
     //DebugOut() << "begin:" << integral_->bulk_begin() << "iloc " << local_point_idx_;
-    return BulkPoint(elm_cache_map_, i_elm, i_ep, asm_quad_order_);
+    return BulkPoint(elm_cache_map_, i_elm, i_ep, this->bulk_begin(), asm_quad_order_);
 }
 
 #endif /* EVAL_SUBSET_HH_ */
