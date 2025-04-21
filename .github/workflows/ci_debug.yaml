@@ -139,9 +139,7 @@ jobs:
             name: build_dir
 
         - name: Run UNIT tests
-          continue-on-error: true
-          run: |
-            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+          run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
