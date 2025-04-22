@@ -314,7 +314,7 @@ class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
 	RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
+	: PatchOp<spacedim>(dim, pfev, {fe->n_components()}, OpSizeType::fixedSizeOp, fe->n_dofs())
 	{
         this->domain_ = Domain::domain();
         Quadrature *quad = pfev.get_bulk_quadrature(dim);
@@ -325,7 +325,7 @@ public:
 
         for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
-                for (uint c=0; c<spacedim; ++c)
+                for (uint c=0; c<fe->n_components(); ++c)
                     ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
 	}
 
@@ -338,7 +338,7 @@ class RefVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, {dim+1, fe->n_components()}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
         Quadrature *quad = pfev.get_side_quadrature(dim);
@@ -351,7 +351,7 @@ public:
             Quadrature side_q = quad->make_from_side<dim>(s);
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
                 for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
-                    for (uint c=0; c<spacedim; ++c)
+                    for (uint c=0; c<fe->n_components(); ++c)
                         ref_vector_value(s,3*i_dof+c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), c);
         }
     }
@@ -416,6 +416,7 @@ public:
 	RefGradVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
+        // TODO: check if shape is set correctly (spacedim can be wrong)
         this->domain_ = Domain::domain();
         Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
@@ -426,7 +427,7 @@ public:
             for (uint i_dim=0; i_dim<dim; ++i_dim)
                 for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p), i_c)[i_dim];
+                        ref_vector_value(i_dim,spacedim*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p), i_c)[i_dim];
         }
     }
 
@@ -454,7 +455,7 @@ public:
                 for (uint i_dim=0; i_dim<dim; ++i_dim)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p), i_c)[i_dim];
+                            ref_vector_value(i_sd*dim+i_dim, spacedim*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p), i_c)[i_dim];
         }
     }
 
