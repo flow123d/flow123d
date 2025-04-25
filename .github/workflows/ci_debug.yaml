@@ -50,6 +50,7 @@ jobs:
         - name: Benchmark meshes
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
+              config/build/create_gmsh_image.sh
               config/build/create_unit_test_meshes.sh ${build_dir}/benchmark_meshes
         - name: Tarball build dir
           run: |
