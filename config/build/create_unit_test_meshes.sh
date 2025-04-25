@@ -16,6 +16,12 @@ set -x
 # SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 # cd ${SCRIPTPATH}
 
+
+# Build temporary gmsh image
+flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+docker build ${flow_repo_host}/config/build/gmsh_dockerfile -t flow_gmsh
+
+
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/../../build_tree/benchmark_meshes"
 OUTPUT_DIR="${1:-${DEFAULT_OUTPUT_DIR}}"
