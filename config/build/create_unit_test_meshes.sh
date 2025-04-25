@@ -36,7 +36,8 @@ mkdir -p ${OUTPUT_DIR}
 echo "pwd: $(pwd)"
 
 
-DOCKER_IMAGE="flow123d/endorse_ci:e67f54"
+#DOCKER_IMAGE="flow123d/endorse_ci:e67f54"
+DOCKER_IMAGE="flow-gmsh"
 DOCKER_CONTAINER="endorse-ci"
 echo "start docker container: '${DOCKER_IMAGE}'"
 # docker run -t -d --name ${DOCKER_CONTAINER} -w /$(pwd) -v /$(pwd):/$(pwd) ${DOCKER_IMAGE}
