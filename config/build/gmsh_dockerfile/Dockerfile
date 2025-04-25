@@ -1,20 +1,16 @@
-# This Dockerfile generates benchmark meshes
-FROM ubuntu:latest
+FROM flow123d/install-gnu:4.0.1 as installer
+FROM flow123d/ci-gnu:4.0.0a01_0b2509
 
-# Install Python and venv
-RUN apt-get update && apt-get install -y python3 python3-pip python3-venv
+# Install system packages and GUI dependencies
+RUN sudo apt-get update && apt install -y \
+    python3 python3-pip python3-venv \
+    curl libglu1-mesa redis git
 
-# Create virtual environment and activate it
+# Set up Python virtual environment
 RUN python3 -m venv /opt/venv
-
-# Upgrade pip in the virtual environment
-RUN /opt/venv/bin/pip install --upgrade pip
-
-# Add venv to PATH so later RUN commands use it
 ENV PATH="/opt/venv/bin:$PATH"
 
-RUN python3 -m pip install gmsh
-COPY gmsh.sh /usr/local/bin/gmsh
-RUN chmod u+x /usr/local/bin/gmsh
-
-CMD gmsh
+RUN sudo python3 -m pip install --upgrade numpy>=1.23.3
+# install mpi4py using mpi in base container
+COPY --from=installer /.mpiccpath /.mpiccpath
+RUN env MPICC=$(cat /.mpiccpath) python3 -m pip install --no-cache-dir --ignore-installed  mpi4py
