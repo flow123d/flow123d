@@ -186,7 +186,7 @@ jobs:
         strategy:
           matrix:
             test:
-            # unit_test_subdir,   target in the subdir,   processing notebook in src/python/notebooks
+            # unit_test_subdir,   target in the subdir,   processing notebook in src/py123d/notebooks
             - {dir: coupling, target: dg_asm, notebook: dg_asm_plots }
             - {dir: coupling, target: elasticity_asm, notebook: dg_asm_plots }
             #- {dir: fem, target: fem_tools}
@@ -227,7 +227,7 @@ jobs:
 
         - name: Run postprocessing notebook
           run: |
-            cd src/python/notebooks
+            cd src/py123d/notebooks
             pip install nbconvert jupyter papermill -r requirements.txt
             git_branch=`git rev-parse --abbrev-ref HEAD`
             build_dir=build-${git_branch}
@@ -237,7 +237,7 @@ jobs:
           uses: peaceiris/actions-gh-pages@v4.0.0
           with:
               github_token: ${{ secrets.GITHUB_TOKEN }}
-              publish_dir: ./src/python/notebooks/public   
+              publish_dir: ./src/py123d/notebooks/public   
               commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
 
     integration_tests:
