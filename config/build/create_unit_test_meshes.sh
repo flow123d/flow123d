@@ -21,6 +21,7 @@ set -x
 flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
 docker build ${flow_repo_host}/config/build/gmsh_dockerfile -t flow_gmsh
 
+docker images
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/../../build_tree/benchmark_meshes"
@@ -43,8 +44,8 @@ echo "pwd: $(pwd)"
 
 
 #DOCKER_IMAGE="flow123d/endorse_ci:e67f54"
-DOCKER_IMAGE="flow-gmsh"
-DOCKER_CONTAINER="endorse-ci"
+DOCKER_IMAGE="flow_gmsh"
+DOCKER_CONTAINER="gmsh-cont"
 echo "start docker container: '${DOCKER_IMAGE}'"
 # docker run -t -d --name ${DOCKER_CONTAINER} -w /$(pwd) -v /$(pwd):/$(pwd) ${DOCKER_IMAGE}
 DE_EXEC="docker exec -u $(id -u):$(id -g) ${DOCKER_CONTAINER}"
