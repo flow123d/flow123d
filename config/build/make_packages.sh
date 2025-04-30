@@ -43,8 +43,6 @@ build_container=contgnurelease
 ###############################
 # Conatiners and images names and tags
 imagesversion=`cat ${flow_repo_host}/config/build/image_tag`
-#release_version=`cat ${flow_repo_host}/version`      
-
 
 
 git_hash=`git rev-parse --short=6 HEAD`
@@ -66,7 +64,6 @@ fi
 
 echo "Variables summary"
 echo "build_container: '${build_container}'"
-#echo "release_version: '${release_version}'"
 echo "environment: '${environment}'"
 echo "imagesversion: '${imagesversion}'"
 echo "release_tag: '${release_tag}'"
@@ -89,9 +86,6 @@ make update-submodules
 # docker rm -f  || echo "container not running"
 bin/fterm update
 bin/fterm rel_$environment --detach ${build_container} #-v `pwd`:${flow_repo_location} 
-#docker rm -f ${build_container}
-#bin/fterm rel_$environment -- -di --name ${build_container} --volume `pwd`:${flow_repo_location}
-#bin/fterm rel_$environment -- --privileged -di --name ${build_container} --volume `pwd`:${flow_repo_location}
 
 dexec="docker exec ${build_container}"      # execute command which will follow
 dcp="docker cp ${build_container}"          # Copy files/folders between a container and the local filesystem
@@ -113,17 +107,8 @@ ${dexec} git config --global --add safe.directory '*'
 
 dexec_setvars_make package
 
-#${dexec} ls ${flow_repo_location}/build_tree/
-#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages
-#${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux
 ${dexec} ls ${flow_repo_location}/build_tree/_CPack_Packages/Linux/TGZ
 
-#${dexec} make -C ${{flow_repo_location}} FORCE_DOC_UPDATE=1 ref-doc
-#${dexec} make -C ${{flow_repo_location}} html-doc
-#${dexec} make -C ${{flow_repo_location}} doxy-doc
-
-# Local install of source Python packages
-#${dexec} pip install --user -r ${flow_repo_location}/config/build/requirements.txt
 
 ############################################################################################# docker image
 install_image="install-${environment}:${imagesversion}"
@@ -145,7 +130,6 @@ docker pull "flow123d/${install_image}"
 
 build_date=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 
-#cp ${destination}/${cmake_package_name} project/src/docker/create/default/${cmake_package_name}
 export DOCKER_BUILDKIT=1
 docker build \
      --build-arg base_image=flow123d/${install_image} \

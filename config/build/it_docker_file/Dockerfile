@@ -1,3 +1,5 @@
+# Augmented image derived from flow123d release used for integration tests.
+#
 ARG source_image
 FROM ${source_image} as source_image
 

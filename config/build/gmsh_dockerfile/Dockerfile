@@ -1,3 +1,5 @@
+# Image used for preparation of benchmark meshes.
+#
 FROM flow123d/install-gnu:4.0.1 as installer
 FROM flow123d/ci-gnu:4.0.0a01_0b2509
 

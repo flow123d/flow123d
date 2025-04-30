@@ -1,4 +1,5 @@
 # This Dockerfile will install flow123d into a flow123d/install image
+#
 ARG source_image
 ARG base_image
 FROM ${source_image} as source_image

@@ -26,17 +26,3 @@ config/build/auto_build.sh rel ${environment} ci ${release_tag}
 config/build/tar_build_dir.sh ${build_dir}              
 config/build/make_packages.sh ${environment} ci ${release_tag}
 config/build/make_integration_test_image.sh ${environment} ${release_tag} 
-    
-    
-    
-    
-
-#docker run -it -v ./tests:/home/flow/tests flow123d/ci-gnu:4.0.0_xyz bash
-
-
-# Run instegration tests with integrated image
-
-# for d in `ls tests`; do
-#     config/build/run_tests_with_it_image.sh ${environment} ${release_tag} ./runtest tests/$d --keep-going
-# done
-

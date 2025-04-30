@@ -53,16 +53,10 @@ def append_to_path():
 
     # print_debug()
 
-    # path to lib
-    add_path('lib')
-    add_path('..', 'lib')
-    # path to src/python if COPY_PYTHON is disabled
+    # path to py123d package
+    #add_path('lib')
+    #add_path('..', 'lib')
     add_path('..', '..')
-    #add_path('..', '..', 'src')
-    
-    # path to lib/flow123d after install
-    #add_path('..', '..', 'lib', 'py123d', 'flow123d')
-    #add_path('..', '..', 'lib', 'python', 'dist-packages')
 
 # alias
 init = append_to_path
