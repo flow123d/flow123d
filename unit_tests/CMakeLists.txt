@@ -1,8 +1,3 @@
-
-enable_testing()
-
-# Set timeout for one unit test
-
 enable_testing()
 
 # Set timeout for one unit test
@@ -10,7 +5,11 @@ set(TEST_TIMEOUT 15) # [s] Hard limit for Jenkins. Unit tests should run under 1
 # Set timeout for one unit test running under valgrind
 set(VALGRIND_TIMEOUT 15000) # 1000x
 
+
 # build gtest itself
+message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+
+set(CMAKE_REQUIRED_LIBRARIES "")
 set(GTEST_SOURCE_DIR "${CMAKE_SOURCE_DIR}/third_party/gtest-1.10.0")
 set(GTEST_BINARY_DIR "${CMAKE_BINARY_DIR}/third_party/gtest-1.10.0")
 include_directories( ${GTEST_SOURCE_DIR}/googletest/include ${CMAKE_SOURCE_DIR}/unit_tests )

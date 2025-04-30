@@ -7,19 +7,12 @@ set -x
 #
 #  Create meshes in the directory <OUTPUT_DIR>. 
 #  MAX_SIZE is one of [small|medium|big], with 'big' default. 
+#
+# assumption: OUTPUT_DIR is under the root dir of flow123d repository
 
-
-# suppose that
-# - pwd is the root dir of flow123d repository
-# - OUTPUT_DIR is also under the root dir of flow123d repository
-
-# SCRIPTPATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-# cd ${SCRIPTPATH}
-
-
-# Build temporary gmsh image
-flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
-docker build ${flow_repo_host}/config/build/gmsh_dockerfile -t flow_gmsh
+#####################################
+# Process arguments
+#####################################
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DEFAULT_OUTPUT_DIR="${SCRIPT_DIR}/../../build_tree/benchmark_meshes"
@@ -40,9 +33,16 @@ done
 mkdir -p ${OUTPUT_DIR}
 echo "pwd: $(pwd)"
 
+#####################################
+# Prepare container
+#####################################
 
-#DOCKER_IMAGE="flow123d/endorse_ci:e67f54"
+# Build temporary gmsh image
 DOCKER_IMAGE="flow_gmsh"
+flow_repo_host="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/../.. && pwd )"
+docker build ${flow_repo_host}/config/build/gmsh_dockerfile -t ${DOCKER_IMAGE}
+
+# Gmsh execution vars to run in a running container
 DOCKER_CONTAINER="gmsh-cont"
 echo "start docker container: '${DOCKER_IMAGE}'"
 # docker run -t -d --name ${DOCKER_CONTAINER} -w /$(pwd) -v /$(pwd):/$(pwd) ${DOCKER_IMAGE}
@@ -81,8 +81,19 @@ cleanup_container() {
     docker rm "${DOCKER_CONTAINER}"
 }
 
+##############################################
+# Fractured meshes
+##############################################
+
+
+
 # Function to clone and prepare the repository
+# TODO:
+# use proper installation of endorse (dependency on 'endorse common')
+# or better get rid of endorse dependency, use just bgem
+# then followign would be mostly unneccesary
 prepare_repository() {
+
     echo "Installing required packages..."
     ${DE_EXEC} sudo apt-get update
     ${DE_EXEC} sudo apt-get install -y git
@@ -109,17 +120,18 @@ prepare_repository() {
     echo "Repository prepared."
 }
 
+
+
+
 create_fractured_meshes() {
     echo "Creating fractured meshes using bgem..."
     ${DE_EXEC} python unit_tests/coupling/benchmark_meshes/create_fractured_mesh.py ${OUTPUT_DIR}
 }
 
-open_container
-prepare_repository
-create_fractured_meshes
-# exit 0
 
-
+####################################################
+# Bulk meshes
+####################################################
 
 # target element counts:
 # SMALL     3 000
@@ -192,6 +204,16 @@ function make_mesh_variants {
     make_mesh ${uniform_step} ${uniform_step} ${dim[$i_mesh]} ${i_size}
   done
 }
+
+
+##################################
+# Main script
+##################################
+
+open_container
+prepare_repository
+create_fractured_meshes
+# exit 0
 
 for i in ${!geos[@]}; do
   make_mesh_variants $i

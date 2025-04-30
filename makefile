@@ -44,13 +44,13 @@ all: build-flow123d
 # Just build flow123d with existing configuration.
 fast-flow123d:
 #	./check_dates.sh
-	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
+	@cd $(BUILD_DIR) && $(MAKE) flow123d
 	
 
 # Build flow, update configuration and dependencies.
 .PHONY : build-flow123d
 build-flow123d: cmake
-	@cd $(BUILD_DIR) && $(MAKE) bin/flow123d
+	@cd $(BUILD_DIR) && $(MAKE) flow123d
 
 
 # This target only configure the build process.

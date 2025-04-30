@@ -14,7 +14,16 @@
 # since CMakeList.txt can be called by generated makefiles.
 execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-cmake_policy(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16)
+
+# cmake_policy(SET CMP0017 NEW)
+# if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+#     cmake_policy(SET CMP0037 OLD)
+# endif()
+#if(POLICY CMP0075)
+cmake_policy(SET CMP0075 NEW)
+#endif()
+
 
 
 # Include settings given by user first
@@ -87,17 +96,11 @@ endif(USE_CCACHE)
 
 
 # Project name and language(s)
-project(Flow123d CXX C Fortran)
+project(Flow123d CXX C Fortran) 
 
-# CMake version required for pre-build this project
-cmake_minimum_required(VERSION 2.8.8)
     
 set(CMAKE_C_DEPENDS_USE_COMPILER ON)
 
-cmake_policy(SET CMP0017 NEW)
-if (${CMAKE_VERSION} VERSION_GREATER 3.0)
-    cmake_policy(SET CMP0037 OLD)
-endif()
 
 
 # allow duplicate custom targets for makefiles
@@ -107,7 +110,7 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS 1) #variable that can be tested
 
 ################################################################################# set CMake Modules
 # Set all module paths
-set(CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules" "${CMAKE_ROOT}/Modules")
+set(CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
@@ -775,14 +778,6 @@ macro(make_link_in_source FILE)
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
 
-# use wreappers instead of links (or copy) for executables
-#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/flow123d)
-#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/flow123d)
-#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/mpiexec)
-#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/mpiexec)
-
-#make_link_in_source(bin/flow123d)
-#make_link_in_source(bin/mpiexec)
 
 make_link_in_source(bin/tests/Makefile)
 make_link_in_source(unit_tests/Makefile)
@@ -826,8 +821,11 @@ include_directories(
 	${BPARSER_INCLUDES}
 )
 
+message(STATUS "==== Processing 'src' ====") 
 add_subdirectory(src)
+message(STATUS "==== Processing 'doc' ====") 
 add_subdirectory(doc)
+message(STATUS "==== Processing 'unit_tests' ====") 
 add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 # install benchmark miniapp
@@ -879,15 +877,15 @@ if( PETSC_FOUND )
   endif()
   
   ### add target for flow123d binary
-  add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d 
+  add_executable(flow123d src/main.cc)
+  target_link_libraries(flow123d 
         flow123d_core 
         flow123d_system
         ${PETSC_ADDITIONAL_LIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}
   )     # set libraries linked to main binary (order matter)
-  add_dependencies("bin/flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
+  add_dependencies("flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -895,10 +893,11 @@ if( PETSC_FOUND )
   # INSTALL_RPATH should be used for target relinging during its instalation, however that does not happen
   # for the pacakging directory we use to install to the image therefore we rather set both ../lib and ../src
   # and use just BUILD_RPATH.
-  set_target_properties("bin/flow123d"  PROPERTIES 
-               BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib")
- else()
+  set_target_properties("flow123d"  PROPERTIES 
+         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+         BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+         INSTALL_RPATH "$ORIGIN/../lib")
+else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
@@ -937,7 +936,7 @@ message(STATUS "===========================================")
 
 # binary files
 
-install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
+install(TARGETS flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
 install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)

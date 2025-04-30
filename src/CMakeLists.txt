@@ -292,10 +292,13 @@ target_link_libraries(io_lib
 
 # Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
 pybind11_add_module("flow123d_python_api" SHARED "fields/python_field_proxy.cc")
-#pybind11_add_module("flow123d_python_api" MODULE "${CMAKE_SOURCE_DIR}/src/fields/python_field_proxy.cc")
-#add_executable(flow123dpy fields/python_field_proxy.cc)
-target_link_libraries(flow123d_python_api flow123d_system armadillo) 
 
+# use the same keyword‐style that pybind11_tools used:
+target_link_libraries(flow123d_python_api
+  PRIVATE
+    flow123d_system
+    armadillo
+)
 
 
 # coupling_lib  
