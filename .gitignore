@@ -7,6 +7,7 @@ passphrase_authenticated_user
 certificates
 flow123d
 
+**/.ipynb_checkpoints
 
 config.cmake
 profiler_info*[.log, .json, .txt]

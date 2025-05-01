@@ -601,7 +601,7 @@ void _transform_profiler_data (const string &json_filepath, const string &output
     if (json_filepath == "") return;
 
     // grab module and function by importing module profiler_formatter_module.py
-    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    auto python_module = PythonLoader::load_module_by_name ("py123d.profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //
