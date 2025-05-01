@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs system_lib flow123d_lib)
+set(libs flow123d_system flow123d_core)
 add_test_directory("${libs}")
 
 define_test(soil_models)

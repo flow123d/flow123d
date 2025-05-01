@@ -1,3 +1,5 @@
+# Augmented image derived from flow123d release used for integration tests.
+#
 ARG source_image
 FROM ${source_image} as source_image
 
@@ -15,7 +17,6 @@ LABEL org.label-schema.build-date=${build_date} \
 FROM source_image as final
 
 COPY --from=source_image /opt/flow123d ${flow_install_location}
-COPY --from=source_image /root/.local /root/.local
 
 RUN sudo pip install vtk
 

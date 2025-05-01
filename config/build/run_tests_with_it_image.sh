@@ -16,8 +16,8 @@ cd ${flow_repo_host}
 
 target_image="flow123d/it-${environment}:${release_tag}"
 
-container_id=$(docker run -d --tty=true --interactive=false -v ${flow_repo_host}/tests:/opt/flow123d/bin/tests ${target_image})
+container_id=$(docker run -d --tty=true --interactive=false -v ${flow_repo_host}/tests:/opt/flow123d/tests ${target_image})
 
 trap 'docker stop ${container_id}; docker rm ${container_id}' EXIT
 
-docker exec ${container_id} bash -c "cd /opt/flow123d/bin && ${command_with_args}"
+docker exec ${container_id} bash -c "cd /opt/flow123d/tests && ${command_with_args}"
