@@ -48,6 +48,7 @@ problem: !Coupling_Sequential
           - region: BULK
             young_modulus: 80
             poisson_ratio: 0.2
+            shear_modulus: 33.3
 
           - region: [.left_x, .right_x]
             bc_type: displacement_n

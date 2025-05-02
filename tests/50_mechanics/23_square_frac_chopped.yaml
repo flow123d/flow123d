@@ -52,9 +52,12 @@ problem: !Coupling_Sequential
           - region: bulk
             young_modulus: 1
             poisson_ratio: 0.25
+            shear_modulus: 0.4
           - region: fracture
+            principal_axes: [ [0, 1, 0], [1, 0, 0], [0, 0, 1] ]
             young_modulus: 1e-6
             poisson_ratio: 0.25
+            shear_modulus: 0.4e-6
             fracture_sigma: 0.5001
 
           - region: .left_x
