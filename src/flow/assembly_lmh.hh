@@ -129,9 +129,9 @@ public:
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
-      normal_( this->side_values().normal_vector() ) {
-      //JxW_( this->bulk_values().JxW() ),
-      //vel_shape_( this->bulk_values().vector_shape() ) {
+      normal_( this->side_values().normal_vector() ),
+      JxW_( this->bulk_values().JxW() ),
+      vel_shape_( this->bulk_values().vector_shape() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -789,8 +789,8 @@ protected:
 
     /// Declarations of FE quantities
     ElQ<Vector> normal_;
-//    FeQ<Scalar> JxW_;
-//    FeQArray<Vector> vel_shape_;
+    FeQ<Scalar> JxW_;
+    FeQArray<Vector> vel_shape_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
