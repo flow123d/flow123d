@@ -25,7 +25,6 @@
 #include "system/system.hh"
 
 
-//#include <boost/bind.hpp>
 
 namespace it = Input::Type;
 
@@ -65,7 +64,7 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &par
         : LinSys( rows_ds ),
           params_(params),
           init_guess_nonzero(false),
-          matrix_(0)
+          matrix_(NULL)
 {
     // create PETSC vectors:
     PetscErrorCode ierr;
@@ -75,11 +74,11 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &par
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
     VecDuplicate(rhs_, &residual_);
 
-    matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
     matrix_changed_ = true;
     rhs_changed_ = true;
 }
+
 
 LinSys_PETSC::LinSys_PETSC( LinSys_PETSC &other )
 	: LinSys(other), params_(other.params_), v_rhs_(NULL), solution_precision_(other.solution_precision_)
@@ -205,6 +204,7 @@ void LinSys_PETSC::preallocate_values(int nrow,int *rows,int ncol,int *cols)
     }
 }
 
+
 void LinSys_PETSC::preallocate_matrix()
 {
 	ASSERT_EQ(status_, ALLOCATE).error("Linear system has to be in ALLOCATE status.");
@@ -217,8 +217,10 @@ void LinSys_PETSC::preallocate_matrix()
     VecAssemblyBegin(on_vec_);
     VecAssemblyBegin(off_vec_);
 
-    on_nz  = new PetscInt[ rows_ds_->lsize() ];
-    off_nz = new PetscInt[ rows_ds_->lsize() ];
+    unsigned int lsize = rows_ds_->lsize();
+
+    on_nz  = new PetscInt[ lsize ];
+    off_nz = new PetscInt[ lsize ];
 
     VecAssemblyEnd(on_vec_);
     VecAssemblyEnd(off_vec_);
@@ -226,9 +228,9 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( on_vec_,  &on_array );
     VecGetArray( off_vec_, &off_array );
 
-    for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
-        on_nz[i]  = std::min( rows_ds_->lsize(), static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
-        off_nz[i] = std::min( rows_ds_->size() - rows_ds_->lsize(), static_cast<uint>( off_array[i]+0.1 ) );
+    for ( unsigned int i=0; i<lsize; i++ ) {
+        on_nz[i]  = std::min( lsize, static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - lsize, static_cast<uint>( off_array[i]+0.1 ) );
     }
 
     VecRestoreArray(on_vec_,&on_array);
@@ -242,7 +244,7 @@ void LinSys_PETSC::preallocate_matrix()
     	chkerr(MatDestroy(&matrix_));
     }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-                           0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
+                                0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);

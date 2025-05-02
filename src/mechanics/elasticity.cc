@@ -56,7 +56,7 @@ const Record & Elasticity::get_input_type() {
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
                     "Parameters of output stream.")
-           .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+           .declare_key("solver", LinSys_PERMON::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
 		   .declare_key("input_fields", Array(
 		        Elasticity::EqFields()
@@ -279,6 +279,13 @@ Elasticity::EqFields::EqFields()
 
 }
 
+Elasticity::EqData::~EqData()
+{
+    if (ls!=nullptr) delete ls;
+    if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
+    if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
+}
+
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 {
 	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
@@ -406,17 +413,15 @@ void Elasticity::initialize()
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
+    petsc_default_opts = "-permon_pc_type hypre";
     
     // allocate matrix and vector structures
-    LinSys *ls;
+#ifndef FLOW123D_HAVE_PERMON
+    ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
+#endif //FLOW123D_HAVE_PERMON
+    LinSys_PERMON *ls = new LinSys_PERMON(*eq_data_->dh_, petsc_default_opts);
     has_contact_ = input_rec.val<bool>("contact");
     if (has_contact_) {
-#ifndef FLOW123D_HAVE_PERMON
-        ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
-#endif //FLOW123D_HAVE_PERMON
-        ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
-
         // allocate constraint matrix and vector
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
         for (auto cell : eq_data_->dh_->own_range())
@@ -431,12 +436,9 @@ void Elasticity::initialize()
                         eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
         MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
-        ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+        ls->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    } else {
-        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
-        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
@@ -637,4 +639,7 @@ void Elasticity::assemble_constraint_matrix()
     VecAssemblyEnd(eq_data_->constraint_vec);
 }
 
-
+const Vec &Elasticity::get_solution()
+{
+    return eq_data_->ls->get_solution();
+}
