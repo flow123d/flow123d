@@ -617,32 +617,34 @@ public:
     : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(fe) );    // input_ops_[0] ... RefVector
-        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Domain, Domain, spacedim>, dim >() );    // input_ops_[1] ... Jac
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >() ); // input_ops_[2] ... JacDet
+        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(fe) );    // input_ops_[0] ... RefVector dim x n_dofs
+        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Domain, Domain, spacedim>, dim >() );    // input_ops_[1] ... Jac       spacedim x dim
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >() ); // input_ops_[2] ... JacDet    1
 	}
 
     void eval() override {
         auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto jac_vec = this->input_ops(1)->result_matrix();
+        auto jac_det_vec = this->input_ops(2)->result_matrix();
         auto result_vec = dispatch_op_.result_matrix();
 
         uint n_dofs = this->n_dofs();
-        uint n_elem = this->ppv().n_elems_;
 
-        ArenaVec<double> elem_vec(n_elem, this->patch_fe_->patch_arena());
-        for (uint i=0; i<n_elem; ++i) {
-            elem_vec(i) = 1.0;
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> jac_div_det_vec = jac_vec / jac_det_vec(0);
+        Eigen::Matrix<ArenaOVec<double>, spacedim, dim> jac_div_det_ovec;
+        for (uint c=0; c<spacedim*this->dim_; ++c) {
+            jac_div_det_ovec(c) = ArenaOVec<double>(jac_div_det_vec(c));
         }
-        ArenaOVec<double> elem_ovec(elem_vec);
 
-        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(3, n_dofs);
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(dim, n_dofs);
+        for (uint c=0; c<dim*n_dofs; ++c) {
+            ref_shape_ovec(c) = ArenaOVec<double>(ref_shape_vec(c));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = jac_div_det_ovec * ref_shape_ovec;
         for (uint c=0; c<spacedim*n_dofs; ++c) {
-            ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(c));
+            result_vec(c) = result_ovec(c).get_vec(); // segfault on this line
         }
-
-        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
-        for (uint c=0; c<spacedim*n_dofs; ++c)
-            result_vec(c) = result_ovec(c).get_vec();
     }
 
 private:
