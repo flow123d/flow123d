@@ -646,6 +646,22 @@ message(STATUS "PugiXml_INCLUDE_DIR = ${PugiXml_INCLUDE_DIR}")
 message(STATUS "=======================================================\n\n")
 
 
+#################################################################################
+#  GMSH_4_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== GMSH_4_0 =======================================")
+message(STATUS "=======================================================")
+message(STATUS "Gmsh_ROOT_HINT = ${Gmsh_ROOT_HINT}")
+
+find_package(Gmsh REQUIRED)
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Gmsh_FOUND = ${Gmsh_FOUND}")
+message(STATUS "Gmsh_LIBRARY = ${Gmsh_LIBRARY}")
+message(STATUS "Gmsh_INCLUDE_DIR = ${Gmsh_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
+
+
 message(STATUS "Installing HTML documentation")
 include(InstallHTMLDOC)
 
