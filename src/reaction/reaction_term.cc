@@ -59,7 +59,7 @@ ReactionTerm::~ReactionTerm()
 
 
 ReactionTerm::EqData::EqData()
-{}
+: EqDataBase(0) {}
 
 
 
