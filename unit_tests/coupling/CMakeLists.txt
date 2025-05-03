@@ -24,7 +24,7 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-set(libs  flow123d_lib) #coupling_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs  flow123d_core) #coupling_lib fem_lib flow123d_system ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 add_test_directory("${libs}")
 
 
