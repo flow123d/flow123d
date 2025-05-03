@@ -1,4 +1,6 @@
-enable_testing()
+#set(ORIG_CMAKE_CXX_COMPILER ${CMAKE_CXX_COMPILER})
+#set(CMAKE_CXX_COMPILER ${CMAKE_SOURCE_DIR}/unit_tests/cpp_wrapper.py)
+#enable_testing()
 
 # Set timeout for one unit test
 set(TEST_TIMEOUT 15) # [s] Hard limit for Jenkins. Unit tests should run under 10 s.
@@ -89,44 +91,53 @@ macro(define_test class_name)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-test")
   set(test_valgrind "${class_name}-valgrind")
-  #message(STATUS "adding test: ${test_binary} cxx flags: ${CMAKE_CXX_FLAGS}")
-
-  set (extra_args ${ARGN})
+  set(compilation_report "${class_name}_compilation_report.xml")
+  
+  set(extra_args ${ARGN})
   # Did we get any optional args?
   list(LENGTH extra_args extra_count)
-  if (${extra_count} GREATER 0)
-      list(GET extra_args 0 test_timeout)
-  else () 
-      set(test_timeout ${TEST_TIMEOUT})
-  endif ()
+  if(${extra_count} GREATER 0)
+    list(GET extra_args 0 test_timeout)
+  else()
+    set(test_timeout ${TEST_TIMEOUT})
+  endif()
   math(EXPR valgrind_timeout "${test_timeout} * 1000")
-  
-  # executable rule
-  add_executable(${test_binary} EXCLUDE_FROM_ALL  ${test_source} )
+    
+  add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source})
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+  set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+  set_target_properties(${test_binary} PROPERTIES CXX_LINKER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
   target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main)
   add_dependencies(${test_binary} update_source_tree)
-
-
-
-  # rule to run the test
+  
+  get_target_property(target_launcher ${test_binary} CXX_COMPILER_LAUNCHER)
+  message(STATUS "${test_binary} LAUNCHER ${target_launcher}") 
+  # Print debug information
+  #message(STATUS "ALL INCLUDE DIRECTORIES: ${ALL_INCLUDES}")
+  #message(STATUS "INCLUDE FLAGS: ${INCLUDE_FLAGS}")
+  
+  # rule to run the test (depends on successful compilation)      
   add_custom_target(${test_name}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${test_timeout} ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_name}.xml"
+    DEPENDS ${test_binary}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+  
   # rule to run the test under valgrind
   add_custom_target(${test_valgrind}
-      COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
-      DEPENDS ${test_binary}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-
+    COMMAND ${CMAKE_SOURCE_DIR}/bin/time_limit.sh -t ${valgrind_timeout} valgrind --num-callers=50 --suppressions=${CMAKE_SOURCE_DIR}/bin/python.supp ${CMAKE_CURRENT_BINARY_DIR}/${test_binary} --gtest_output="xml:${CMAKE_CURRENT_BINARY_DIR}/${test_valgrind}.xml"
+    DEPENDS ${test_binary}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+  
   # register the test into dir_test_target
   add_dependencies(${dir_test_target} ${test_name})
-
-  # let ctest call make with appropriate  target
+  
+  # let ctest call make with appropriate target
   add_test(NAME ${test_name} COMMAND ${CMAKE_MAKE_PROGRAM} ${test_name})
-endmacro()
+endmacro(define_test)
+
+
 
 #################################
 # MACRO define_mpi_test
@@ -142,6 +153,7 @@ macro(define_mpi_test class_name n_proc)
   set(test_binary "${class_name}_test_bin")
   set(test_name "${class_name}-${n_proc}-test")
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  set(compilation_report "${class_name}_compilation_report.xml")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
 
   set (extra_args ${ARGN})
@@ -157,8 +169,15 @@ macro(define_mpi_test class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else()
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
-  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+  	add_executable(${test_binary} EXCLUDE_FROM_ALL ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
+    set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    set_target_properties(${test_binary} PROPERTIES CXX_LINKER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main ${MPI_CXX_LIBRARIES})
+    add_dependencies(${test_binary} update_source_tree)
+
+    get_target_property(target_launcher ${test_binary} CXX_COMPILER_LAUNCHER)
+    message(STATUS "${test_binary} LAUNCHER ${target_launcher}") 
+
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
@@ -203,6 +222,7 @@ macro(define_mpi_benchmark class_name n_proc)
   set(test_binary "${class_name}_bench_bin")
   set(test_name "${class_name}-${n_proc}-bench")
   set(test_valgrind "${class_name}-${n_proc}-valgrind")
+  set(compilation_report "${class_name}_compilation_report.xml")
   #message(STATUS "adding mpi test: ${test_binary} on nprocs: ${n_proc} cxx flags: ${CMAKE_CXX_FLAGS}")
 
   set (extra_args ${ARGN})
@@ -218,8 +238,15 @@ macro(define_mpi_benchmark class_name n_proc)
   # executable rule
   if(TARGET ${test_binary})
   else()
-  	add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
-  	target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+    add_executable(${test_binary} EXCLUDE_FROM_ALL   ${test_source} $<TARGET_OBJECTS:gtest_mpi_obj>)
+    set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
+    set_target_properties(${test_binary} PROPERTIES CXX_COMPILER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    set_target_properties(${test_binary} PROPERTIES CXX_LINKER_LAUNCHER "${CMAKE_SOURCE_DIR}/unit_tests/check_runtime_and_compilation.sh;${class_name};${CMAKE_CURRENT_BINARY_DIR}/${compilation_report}")
+    target_link_libraries(${test_binary} ${dir_test_target_libs} gtest gtest_main  ${MPI_CXX_LIBRARIES})
+    add_dependencies(${test_binary} update_source_tree)
+    
+    get_target_property(target_launcher ${test_binary} CXX_COMPILER_LAUNCHER)
+    message(STATUS "${test_binary} LAUNCHER ${target_launcher}") 
   	# add_dependencies(${test_binary} mpiexec_link)      # make
   endif()
   set_target_properties(${test_binary} PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -Wno-error")
@@ -305,3 +332,6 @@ add_custom_command(OUTPUT ${JENKINS_JOBS_FILE}
                   DEPENDS jenkins_jobs_template.yaml
                   WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
                   )
+
+
+#set(CMAKE_CXX_COMPILER ${ORIG_CMAKE_CXX_COMPILER})
