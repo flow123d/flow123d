@@ -13,8 +13,6 @@
 #include "quadrature/qmidpoint.hh"
 #include "arma_expect.hh"
 
-#include "test_error_moc_actions.hh"
-
 #define INTEGRATE(dim,  _func_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point<dim>(i)) * quad.weight(i);
 
 double test_1_1d( const arma::vec::fixed<1> & p) {

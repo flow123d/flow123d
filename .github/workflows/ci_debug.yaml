@@ -1,11 +1,8 @@
 name: Flow123d debug CI
 
 on: 
-    pull_request:
-      branches:
-        - "**"
     push:
-      branches:
+        branches: 
         - "**"
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
@@ -22,10 +19,9 @@ on:
 env:
   autopull:  0
 permissions:
-  actions: write
+  contents: read
+  actions: read
   checks: write
-  pull-requests: write
-  issues: write
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -34,11 +30,6 @@ jobs:
         steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Check pull request number and event
-          run: |
-            echo "Pull request number: ${{ github.event.pull_request.number }}"
-            echo "Event name: ${{ github.event_name }}"
-            echo "Pull request: ${{ github.event.pull_request }}"
         - name: Set variables
           id: vars
           run: |            
@@ -147,24 +138,15 @@ jobs:
           with:
             name: build_dir
 
-        - name: Set variables
-          id: vars
-          run: |
-            git_branch=`git rev-parse --abbrev-ref HEAD`
-            build_dir=build-${git_branch}
-            echo "builddir=${build_dir}" >> $GITHUB_OUTPUT
-
         - name: Run UNIT tests
-          continue-on-error: true
-          id: unit_tests
-          run: |
-            config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+          run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
           uses: actions/upload-artifact@v4
           with:         
             name: unit_tests_${{ matrix.test_dir }}
             path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
+            if-no-files-found: ignore
 
     unit-test-report:
         name: Unit Test Report
@@ -185,39 +167,14 @@ jobs:
               uses: dorny/test-reporter@v1
               id: test-reporter
               with:
-                name: Reports of unit test # Rename
+                name: Reports of unit test
                 path:  unit_tests/**/*.xml
                 reporter: java-junit
-                fail-on-error: false
+                fail-on-error: true                
+                fail-on-empty: true
                 list-suites: failed
                 list-tests: failed
                 only-summary: true
-            - name: Find Comment
-              uses: peter-evans/find-comment@v3
-              # if ${{ github.event.pull_request != null }}
-              id: find-comment
-              with:
-                issue-number: ${{ github.event.pull_request.number }}
-                comment-author: 'github-actions[bot]'
-                body-includes: Test Report URL
-            - name: Create or update comment
-              uses: peter-evans/create-or-update-comment@v4
-              # if ${{ github.event.pull_request != null }}
-              with:
-                comment-id: ${{ steps.find-comment.outputs.comment-id }}
-                issue-number: 1580
-                body: |
-                  Test Report URL [here](${{ steps.test-reporter.outputs.url_html }})
-                edit-mode: replace
-            # Print out url for test reports
-            - name: Check test report status
-              if: always()
-              run: |
-                if [ "${{ steps.test-reporter.outputs.failed }}" -gt 0 ]; then
-                  echo "Test report failed."
-                  echo "Url for test review: "
-                  exit 1
-                fi
 
     build_doc:
         needs: [build]
