@@ -204,7 +204,7 @@ jobs:
               pattern: unit_tests_*
               path: unit_tests
           - name: Report tests
-            uses: dorny/test-reporter@v1
+            uses: dorny/test-reporter@v2
             id: test-reporter
             with:
               name: Reports of unit test
