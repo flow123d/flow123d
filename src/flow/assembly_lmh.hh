@@ -191,7 +191,7 @@ public:
         auto p = *( this->bulk_points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, eq_fields_->conductivity(p));
+        this->asm_sides(cell, element_patch_idx, eq_fields_->conductivity(p));
         this->asm_element();
         this->asm_source_term_darcy(cell, p);
     }
@@ -363,9 +363,10 @@ protected:
     }
 
     /// Part of cell_integral method, common in all descendants
-    inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
+    inline void asm_sides(const DHCellAccessor& cell, unsigned int element_patch_idx, double conductivity)
     {
         auto ele = cell.elm();
+        auto p = *( this->bulk_points(element_patch_idx).begin() );
         double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
 
         fe_values_old_.reinit(ele);
@@ -387,6 +388,26 @@ protected:
                     eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
                 }
             }
+
+//        ASSERT_EQ(fe_values_old_.n_dofs(), this->n_dofs());
+//        for (auto qp : this->bulk_points(element_patch_idx) )
+//        {
+//            for (unsigned int i=0; i<this->n_dofs(); i++) {
+//                double rhs_val = arma::dot(eq_data_->gravity_vec_, vel_shape_.shape(i)(qp))
+//                           * JxW_(qp);
+//
+//                for (unsigned int j=0; j<this->n_dofs(); j++) {
+//                    std::cout << "for B " << j << std::endl;
+//                    double mat_val =
+//                        arma::dot( vel_shape_.shape(i)(qp),
+//                                   (eq_fields_->anisotropy(qp)).i() * vel_shape_.shape(j)(qp)
+//                                 )
+//                        * scale_sides * JxW_(qp);
+//
+//                    eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
+//                }
+//            }
+//        }
 
     // assemble matrix for weights in BDDCML
     // approximation to diagonal of
