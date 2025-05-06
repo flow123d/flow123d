@@ -2,13 +2,13 @@ name: CI build, tests and alpha release of images and packages
 # Build the ci-<env>:<version>_<commit> image and CI packages on SHARE/docker-images/<version>_<commit>
 # Triggered on push to specified branches.
 
-on: 
+on:
   push:
     branches:
       - master
       - JB_shared_system
-      - JB_release_tests   
-      - JB_py123d    
+      - JB_release_tests
+      - JB_py123d
       - 3.9.1
       - DF_profiler_memory_monitor
       - SM_CI_GNU_Integration_tests
@@ -52,7 +52,7 @@ jobs:
 
       - name: Set variables
         id: vars
-        run: |            
+        run: |
           git_branch=`git rev-parse --abbrev-ref HEAD`
           git_commit=`git rev-parse --short=6 HEAD`
 
@@ -82,7 +82,7 @@ jobs:
 
       - name: Build Flow123d
         run: |
-          # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>               
+          # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>
           config/build/auto_build.sh rel ${environment} ci ${{ needs.create-env.outputs.release-tag }}
 
       - name: Benchmark meshes
@@ -94,9 +94,9 @@ jobs:
         run: config/build/tar_build_dir.sh ${{ needs.create-env.outputs.build-dir }}
 
       - uses: actions/upload-artifact@v4
-        with:         
+        with:
           name: ${{ env.artifact-dir }}
-          path: build_dir.tar   
+          path: build_dir.tar
 
   packages:
     name: Images and installation packages
@@ -125,13 +125,13 @@ jobs:
 
       - name: upload artifacts
         uses: actions/upload-artifact@v4
-        with:       
+        with:
           path: |
-            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_doc.pdf 
-            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_linux_install.json 
-            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_linux_install.tar.gz 
-            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_windows_install.exe 
-            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_windows_install.json 
+            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_doc.pdf
+            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_linux_install.json
+            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_linux_install.tar.gz
+            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_windows_install.exe
+            ${{ needs.create-env.outputs.pub-dir }}/flow123d_${{ needs.create-env.outputs.release-tag }}_windows_install.json
 
       - name: SCP upload to Share
         run: |
@@ -143,12 +143,12 @@ jobs:
   unit-tests:
     name: Unit Test ${{ matrix.test_dir }}
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - build
     permissions:
       contents: read
       actions: read
-      checks: write     
+      checks: write
     strategy:
       fail-fast: false
       matrix:
@@ -185,20 +185,20 @@ jobs:
         id: test-reporter
         with:
           name: Reports of unit test
-          path:  unit_tests/**/*.xml
+          path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
           reporter: java-junit
-          fail-on-error: true                
+          fail-on-error: true
           fail-on-empty: true
           list-suites: failed
           list-tests: failed
           only-summary: true
 
   benchmarks:
-    name: Benchmarks 
+    name: Benchmarks
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - build
-      - create-env    
+      - create-env
     strategy:
       matrix:
         test:
@@ -216,14 +216,14 @@ jobs:
           name: ${{ env.artifact-dir }}
 
       - name: Run Benchmark
-        run: |              
+        run: |
           config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{ matrix.test.dir }} -k ${{ matrix.test.target }}_bench_bin
-          config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{ matrix.test.dir }}/${{ matrix.test.target }} 
+          config/build/run_with_build_dir.sh -c rel_gnu bin/run_benchmark.sh -t=3600 -np=1 -nr=4 ${{ matrix.test.dir }}/${{ matrix.test.target }}
           ls build_tree/unit_tests/${{ matrix.test.dir }}
 
       - name: "Upload Artifacts: profiler results"
         uses: actions/upload-artifact@v4
-        with:     
+        with:
           name: ${{ matrix.test.target }}
           path: build_tree/unit_tests/${{ matrix.test.dir }}/${{ matrix.test.target }}-1-bench_profiler_*.json
 
@@ -235,18 +235,18 @@ jobs:
           build_dir=build-${git_branch}
           papermill ${{ matrix.test.notebook }}.ipynb ${{ matrix.test.notebook }}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{ matrix.test.dir }}/${{ matrix.test.target }}-1-bench_profiler_*.json"
           jupyter nbconvert --to html --execute ${{ matrix.test.notebook }}_out.ipynb --output-dir public
-  
+
       - name: GitHub Pages action
         uses: peaceiris/actions-gh-pages@v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./src/py123d/notebooks/public   
+          publish_dir: ./src/py123d/notebooks/public
           commit_message: "Benchmark ${{ matrix.test.target }}, ${{ needs.create-env.outputs.dev-version }}"
 
   integration-tests:
     name: Integration Test ${{matrix.test_dir}}
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - packages
       - create-env
     strategy:
@@ -278,49 +278,9 @@ jobs:
         - 34_sorption_dg
         - 40_heat
         - 50_mechanics
-    steps: 
+    steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Run integration tests
         run: config/build/run_tests_with_it_image.sh ${environment} ${{ needs.create-env.outputs.release-tag }} ./runtest ${{matrix.test_dir}} --keep-going --batch
-
-  #conclusion:
-  #  name: Workflow conclusion from all job results   
-  #  runs-on: ubuntu-latest
-  #  if: ${{ always() }}
-  #  needs:
-  #    - packages
-  #    - unit-tests
-  #    - integration-tests
-  #  
-  #  # continue-on-error jobs always reports sucess to the workflow
-  #  steps:
-  #    - name: Install gh command
-  #      run: |
-  #        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-  #        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-  #          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-  #          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-  #          && sudo apt update \
-  #          && sudo apt install gh -y
-  #    - name: Check status of all jobs
-  #      env:
-  #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #      run: |
-  #        echo "run_id: ${{ github.run_id }}"
-  #        echo "run_number: ${{ github.run_number }}"
-  #        echo "run_attempt: ${{ github.run_attempt }}"
-  #        
-  #        # get the status of jobs selected by name:
-  #        statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
-  #        
-  #        # get the status of all jobs
-  #        statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
-  #        # check if any job has failed
-  #        if echo "$statuses" | grep -q failure; then
-  #            echo "One or more jobs have failed"
-  #            exit 1
-  #        else
-  #            echo "All jobs have succeeded"
-  #        fi
