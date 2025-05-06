@@ -32,9 +32,7 @@ jobs:
       - name: Set variables
         id: vars
         run: |            
-          git_branch=`git rev-parse --abbrev-ref HEAD`
-          build_dir=build-${git_branch}
-
+          build_dir=build-$(git rev-parse --abbrev-ref HEAD)
           echo "build-dir=${build_dir}" >> $GITHUB_OUTPUT
 
       - name: Check vars
@@ -62,14 +60,13 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:         
         name: ${{ env.artifact-dir }}
-        path: build-dir.tar
+        path: build_dir.tar
   
   integration-tests:
     name: Integration Test ${{ matrix.test_dir }}
     runs-on: ubuntu-latest
     needs: 
       - build
-    continue-on-error: True
     outputs:
       status: ${{ job.status }}
     strategy:
@@ -121,7 +118,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - build
-    continue-on-error: True
     outputs:
       status: ${{ job.status }}      
     permissions:
@@ -174,7 +170,6 @@ jobs:
   build-doc:
     name: Test build doc
     runs-on: ubuntu-latest
-    continue-on-error: True
     needs: 
       - build
     outputs:

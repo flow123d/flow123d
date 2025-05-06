@@ -23,6 +23,7 @@
 #include "mesh/region.hh"
 #include "mesh/accessors.hh"
 #include "fem/fe_system.hh"
+#include "moc_test_error.hh"
 
 
 
