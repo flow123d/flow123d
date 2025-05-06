@@ -1,7 +1,7 @@
 name: Flow123d debug CI
 
-on: 
-  push:
+on:
+  pull_request:
     branches: 
       - "**"
   # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
@@ -37,7 +37,7 @@ jobs:
       - name: Set variables
         id: vars
         run: |            
-          git-branch=$(git rev-parse --abbrev-ref HEAD)
+          git-branch=`git rev-parse --abbrev-ref HEAD`
           build-dir=build-${git-branch}
 
           echo "build-dir=${build-dir}" >> $GITHUB_OUTPUT

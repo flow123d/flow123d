@@ -52,17 +52,17 @@ jobs:
       - name: Set variables
         id: vars
         run: |            
-          git-branch=$(git rev-parse --abbrev-ref HEAD)
-          git-commit=$(git rev-parse --short=6 HEAD)
+          git_branch=`git rev-parse --abbrev-ref HEAD`
+          git_commit=`git rev-parse --short=6 HEAD`
 
-          build-dir=build-${git-branch}
-          release-tag=`cat version`_${git-commit}
+          build-dir=build-${git_branch}
+          release-tag=`cat version`_${git_commit}
 
           echo "build-dir=${build-dir}" >> $GITHUB_OUTPUT
           echo "release-tag=${release-tag}" >> $GITHUB_OUTPUT
           echo "pub-dir=publish_${environment}" >> $GITHUB_OUTPUT
-          echo "dev-version=${git-branch}_${git-commit}" >>$GITHUB_OUTPUT
-          echo "git-commit=${git-commit}" >> $GITHUB_OUTPUT
+          echo "dev-version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT
+          echo "git-commit=${git_commit}" >> $GITHUB_OUTPUT
 
       - name: Check vars
         run: |
@@ -139,7 +139,7 @@ jobs:
           ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
 
   # Run unit tests with release build, similar to the debug build
-  unit_tests:
+  unit-tests:
     name: Unit Test ${{ matrix.test_dir }}
     runs-on: ubuntu-latest
     needs: 
@@ -241,7 +241,7 @@ jobs:
           publish_dir: ./src/py123d/notebooks/public   
           commit_message: "Benchmark ${{ matrix.test.target }}, ${{ needs.create-env.outputs.dev-version }}"
 
-  integration_tests:
+  integration-tests:
     name: Integration Test ${{matrix.test_dir}}
     runs-on: ubuntu-latest
     needs: 
@@ -295,8 +295,8 @@ jobs:
     if: ${{ always() }}
     needs:
       - packages
-      - unit_tests
-      - integration_tests
+      - unit-tests
+      - integration-tests
     
     # continue-on-error jobs always reports sucess to the workflow
     steps:
