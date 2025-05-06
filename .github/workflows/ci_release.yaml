@@ -49,6 +49,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set variables
         id: vars
         run: |            
@@ -83,12 +84,15 @@ jobs:
         run: |
           # auto_build.sh <build_type> <environment> <image_name_base> <release_tag>               
           config/build/auto_build.sh rel ${environment} ci ${{ needs.create-env.outputs.release-tag }}
+
       - name: Benchmark meshes
         run: |
           echo "Benchmark meshes build_dir=" ${{ needs.create-env.outputs.build-dir }}
           bin/create_meshes.sh
+
       - name: Tarball build dir
-        run: config/build/tar_build_dir.sh ${{ needs.create-env.outputs.build-dir }}              
+        run: config/build/tar_build_dir.sh ${{ needs.create-env.outputs.build-dir }}
+
       - uses: actions/upload-artifact@v4
         with:         
           name: ${{ env.artifact-dir }}
@@ -100,12 +104,10 @@ jobs:
     needs:
       - build
       - create-env
-    continue-on-error: True
-    outputs:
-      status: ${{ job.status }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Download build dir
         uses: actions/download-artifact@v4
         with:
@@ -143,14 +145,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - build
-    continue-on-error: True
-    outputs:
-      status: ${{ job.status }}
     permissions:
       contents: read
       actions: read
       checks: write     
     strategy:
+      fail-fast: false
       matrix:
         test_dir:
         - coupling
@@ -167,40 +167,38 @@ jobs:
         - test_scripts
         - tools
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-    - name: Download build dir
-      uses: actions/download-artifact@v4
-      with:
-        name: ${{ env.artifact-dir }}
-    
-    - name: Run UNIT tests
-      id: unit-test
-      run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Report tests
-      if: ${{ steps.unit-test.outcome == 'failure' }}
-      uses: dorny/test-reporter@v1
-      id: test-reporter
-      with:
-        name: Reports of unit test
-        path:  unit_tests/**/*.xml
-        reporter: java-junit
-        fail-on-error: true                
-        fail-on-empty: true
-        list-suites: failed
-        list-tests: failed
-        only-summary: true
+      - name: Download build dir
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.artifact-dir }}
+
+      - name: Run unit tests
+        id: unit-test
+        run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+      - name: Unit test report ${{ matrix.test_dir }}
+        if: ${{ always() && steps.unit-test.outcome == 'failure' }}
+        uses: dorny/test-reporter@v1
+        id: test-reporter
+        with:
+          name: Reports of unit test
+          path:  unit_tests/**/*.xml
+          reporter: java-junit
+          fail-on-error: true                
+          fail-on-empty: true
+          list-suites: failed
+          list-tests: failed
+          only-summary: true
 
   benchmarks:
     name: Benchmarks 
     runs-on: ubuntu-latest
     needs: 
       - build
-      - create-env
-    continue-on-error: True
-    outputs:
-      status: ${{ job.status }}        
+      - create-env    
     strategy:
       matrix:
         test:
@@ -211,6 +209,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Download build dir
         uses: actions/download-artifact@v4
         with:
@@ -250,10 +249,8 @@ jobs:
     needs: 
       - packages
       - create-env
-    continue-on-error: True
-    outputs:
-      status: ${{ job.status }}
     strategy:
+      fail-fast: false
       matrix:
         test_dir:
         - 01_cmd_line
@@ -284,50 +281,46 @@ jobs:
     steps: 
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run integration tests
-        run: | 
-          config/build/run_tests_with_it_image.sh ${environment} ${{ needs.create-env.outputs.release-tag }} \
-          ./runtest ${{matrix.test_dir}} --keep-going --batch
-      - name: Report
-        run: |
-          echo "Job status: ${{ job.status }}"
 
-  conclusion:
-    name: Workflow conclusion from all job results   
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    needs:
-      - packages
-      - unit-tests
-      - integration-tests
-    
-    # continue-on-error jobs always reports sucess to the workflow
-    steps:
-      - name: Install gh command
-        run: |
-          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-            && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-            && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-            && sudo apt update \
-            && sudo apt install gh -y
-      - name: Check status of all jobs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "run_id: ${{ github.run_id }}"
-          echo "run_number: ${{ github.run_number }}"
-          echo "run_attempt: ${{ github.run_attempt }}"
-          
-          # get the status of jobs selected by name:
-          statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
-          
-          # get the status of all jobs
-          statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
-          # check if any job has failed
-          if echo "$statuses" | grep -q failure; then
-              echo "One or more jobs have failed"
-              exit 1
-          else
-              echo "All jobs have succeeded"
-          fi
+      - name: Run integration tests
+        run: config/build/run_tests_with_it_image.sh ${environment} ${{ needs.create-env.outputs.release-tag }} ./runtest ${{matrix.test_dir}} --keep-going --batch
+
+  #conclusion:
+  #  name: Workflow conclusion from all job results   
+  #  runs-on: ubuntu-latest
+  #  if: ${{ always() }}
+  #  needs:
+  #    - packages
+  #    - unit-tests
+  #    - integration-tests
+  #  
+  #  # continue-on-error jobs always reports sucess to the workflow
+  #  steps:
+  #    - name: Install gh command
+  #      run: |
+  #        type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+  #        curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+  #          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+  #          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+  #          && sudo apt update \
+  #          && sudo apt install gh -y
+  #    - name: Check status of all jobs
+  #      env:
+  #        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #      run: |
+  #        echo "run_id: ${{ github.run_id }}"
+  #        echo "run_number: ${{ github.run_number }}"
+  #        echo "run_attempt: ${{ github.run_attempt }}"
+  #        
+  #        # get the status of jobs selected by name:
+  #        statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[] | select(.name | startswith("Integration")) | .conclusion')
+  #        
+  #        # get the status of all jobs
+  #        statuses=$(gh api "repos/flow123d/flow123d/actions/runs/${{ github.run_id }}/jobs" --jq '.jobs[].conclusion')
+  #        # check if any job has failed
+  #        if echo "$statuses" | grep -q failure; then
+  #            echo "One or more jobs have failed"
+  #            exit 1
+  #        else
+  #            echo "All jobs have succeeded"
+  #        fi
