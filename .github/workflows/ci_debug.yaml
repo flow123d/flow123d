@@ -16,12 +16,7 @@ on:
         required: false
         default: gnu
 env:
-  autopull: 0
   artifact-dir: build-dir
-permissions:
-  contents: read
-  actions: read
-  checks: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-ci-debug
   cancel-in-progress: true
@@ -37,10 +32,10 @@ jobs:
       - name: Set variables
         id: vars
         run: |            
-          git-branch=`git rev-parse --abbrev-ref HEAD`
-          build-dir=build-${git-branch}
+          git_branch=`git rev-parse --abbrev-ref HEAD`
+          build_dir=build-${git_branch}
 
-          echo "build-dir=${build-dir}" >> $GITHUB_OUTPUT
+          echo "build-dir=${build_dir}" >> $GITHUB_OUTPUT
 
       - name: Check vars
         run: |
@@ -128,7 +123,11 @@ jobs:
       - build
     continue-on-error: True
     outputs:
-      status: ${{ job.status }}       
+      status: ${{ job.status }}      
+    permissions:
+      contents: read
+      actions: read
+      checks: write 
     strategy:
       matrix:
         test_dir:

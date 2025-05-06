@@ -55,14 +55,13 @@ jobs:
           git_branch=`git rev-parse --abbrev-ref HEAD`
           git_commit=`git rev-parse --short=6 HEAD`
 
-          build-dir=build-${git_branch}
-          release-tag=`cat version`_${git_commit}
+          build_dir=build-${git_branch}
+          release_tag=`cat version`_${git_commit}
 
-          echo "build-dir=${build-dir}" >> $GITHUB_OUTPUT
-          echo "release-tag=${release-tag}" >> $GITHUB_OUTPUT
+          echo "build-dir=${build_dir}" >> $GITHUB_OUTPUT
+          echo "release-tag=${release_tag}" >> $GITHUB_OUTPUT
           echo "pub-dir=publish_${environment}" >> $GITHUB_OUTPUT
           echo "dev-version=${git_branch}_${git_commit}" >>$GITHUB_OUTPUT
-          echo "git-commit=${git_commit}" >> $GITHUB_OUTPUT
 
       - name: Check vars
         run: |
@@ -146,7 +145,11 @@ jobs:
       - build
     continue-on-error: True
     outputs:
-      status: ${{ job.status }}        
+      status: ${{ job.status }}
+    permissions:
+      contents: read
+      actions: read
+      checks: write     
     strategy:
       matrix:
         test_dir:
