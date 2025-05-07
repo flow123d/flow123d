@@ -148,12 +148,12 @@ jobs:
         id: unit-test
         run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
-      - name: Unit test report ${{ matrix.test_dir }}
+      - name: Unit test reporter
         if: ${{ always() && steps.unit-test.outcome == 'failure' }}
         uses: dorny/test-reporter@v1
         id: test-reporter
         with:
-          name: Reports of unit test
+          name: Reports of ${{ matrix.test_dir }}
           path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
           reporter: java-junit
           fail-on-error: true
