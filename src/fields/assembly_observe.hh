@@ -45,7 +45,6 @@ public:
             std::shared_ptr<Observe> observe)
     : multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
     {
-        eval_points_ = std::make_shared<EvalPoints>();
         multidim_assembly_[1_d]->create_observe_integrals(eval_points_, integrals_);
         multidim_assembly_[2_d]->create_observe_integrals(eval_points_, integrals_);
         multidim_assembly_[3_d]->create_observe_integrals(eval_points_, integrals_);
@@ -175,8 +174,8 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            this->integrals_.bulk_ = eval_points->add_bulk<dim>(*this->quad_);
-            integrals.bulk_[dim-1] = this->integrals_.bulk_;
+            this->integrals_.bulk_.emplace_back( eval_points->add_bulk<dim>(*this->quad_) );
+            integrals.bulk_[dim-1] = this->integrals_.bulk_[0];
         }
     }
 
