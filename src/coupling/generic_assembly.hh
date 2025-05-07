@@ -279,10 +279,6 @@ public:
 private:
     /// Common part of GenericAssemblz constructors.
     void initialize() {
-        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals();
-        multidim_assembly_[2_d]->create_integrals();
-        multidim_assembly_[3_d]->create_integrals();
         element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);
