@@ -43,7 +43,7 @@ public:
     /// Constructor
     GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
             std::shared_ptr<Observe> observe)
-    : multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
+    : multidim_assembly_(eq_fields, observe_fields_list, observe.get(), this->eval_points_), observe_(observe), bulk_integral_data_(20, 10)
     {
         multidim_assembly_[1_d]->create_observe_integrals(eval_points_, integrals_);
         multidim_assembly_[2_d]->create_observe_integrals(eval_points_, integrals_);
@@ -116,8 +116,8 @@ public:
     static constexpr const char * name() { return "AssemblyObserveOutput"; }
 
     /// Constructor.
-    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), observe_(observe) {
+    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBase<dim>(eval_points), eq_fields_(eq_fields), observe_(observe) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 

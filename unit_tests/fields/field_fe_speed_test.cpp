@@ -198,8 +198,8 @@ public:
     static constexpr const char * name() { return "AssemblyFETest"; }
 
     /// Constructor.
-    AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyDimTest(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBase<dim>(eq_data->order, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
         this->used_fields_.set_mesh( *eq_fields_->mesh() );
         this->used_fields_ += *eq_fields_;

@@ -41,8 +41,9 @@ public:
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
     /// Constructor
-    AssemblyBase(unsigned int quad_order)
-    : min_edge_sides_(2),
+    AssemblyBase(unsigned int quad_order, std::shared_ptr<EvalPoints> eval_points)
+    : eval_points_(eval_points),
+      min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6),
@@ -363,9 +364,10 @@ protected:
      *
      * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
      */
-    AssemblyBase()
+    AssemblyBase(std::shared_ptr<EvalPoints> eval_points)
     : quad_(nullptr), quad_low_(nullptr),
-	  min_edge_sides_(2),
+      eval_points_(eval_points),
+      min_edge_sides_(2),
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6),
@@ -412,8 +414,8 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
-	AssemblyBasePatch(PatchFEValues<3> *fe_values)
-	: AssemblyBase<dim>(), fe_values_(fe_values) {
+	AssemblyBasePatch(PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
+	: AssemblyBase<dim>(eval_points), fe_values_(fe_values) {
 	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
 	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
 	}
