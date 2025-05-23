@@ -120,7 +120,7 @@ public:
     	this->reset_offsets();
     	for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
             element_patch_idx = this->element_cache_map_->position_in_cache(this->bulk_integral_data_[i].cell.elm_idx());
-            auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
+            auto p = *( bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() ); // evaluation point (in element center)
             field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx());
             val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->bulk_integral_data_[i].cell.elm_idx());
             this->offsets_[field_value_cache_position] = val_idx;
@@ -129,6 +129,14 @@ public:
             f_acc->fill_data_value(this->offsets_);
         }
     }
+
+private:
+    /// Implements @p AssemblyBase::make_integrals
+    void make_integrals() override {
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
+    }
+
+    std::shared_ptr<BulkIntegral> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -177,7 +185,7 @@ public:
     	for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
             element_patch_idx = this->element_cache_map_->position_in_cache(this->bulk_integral_data_[i].cell.elm_idx());
             val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->bulk_integral_data_[i].cell.elm_idx()) ];
-            auto p = *( this->bulk_points(element_patch_idx).begin() );
+            auto p = *( bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
             field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx());
             for (uint j=0; j<this->bulk_integral_data_[i].cell.dim()+1; ++j) {
                 this->offsets_[field_value_cache_position+j] = val_idx+j;
@@ -189,7 +197,14 @@ public:
     }
 
 private:
+    /// Implements @p AssemblyBase::make_integrals
+    void make_integrals() override {
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
+    }
+
     std::shared_ptr< std::vector<unsigned int> > offset_vec_;   ///< Holds offsets of individual local elements
+
+    std::shared_ptr<BulkIntegral> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

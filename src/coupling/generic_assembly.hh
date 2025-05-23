@@ -144,7 +144,6 @@ public:
 	};
 
     GenericAssemblyBase()
-    : eval_points_( std::make_shared<EvalPoints>() )
     {}
 
     virtual ~GenericAssemblyBase(){}
@@ -279,6 +278,11 @@ public:
 private:
     /// Common part of GenericAssemblz constructors.
     void initialize() {
+        eval_points_ = std::make_shared<EvalPoints>();
+        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
+        multidim_assembly_[1_d]->create_integrals(eval_points_);
+        multidim_assembly_[2_d]->create_integrals(eval_points_);
+        multidim_assembly_[3_d]->create_integrals(eval_points_);
         element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);

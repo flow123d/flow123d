@@ -81,28 +81,10 @@ public:
         return active_integrals_;
     }
 
-    /// Create and return BulkIntegral of given quadrature
-    std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
-        integrals_.bulk_.emplace_back( eval_points_->template add_bulk<dim>(*quad) );
-        return integrals_.bulk_.back();;
-    }
-
-    /// Create and return EdgeIntegral of given quadrature
-    std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
-        integrals_.edge_.emplace_back( eval_points_->template add_edge<dim>(*quad) );
-        return integrals_.edge_.back();;
-    }
-
-    /// Create and return CouplingIntegral of given quadrature
-    std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
-        integrals_.coupling_.emplace_back( eval_points_->template add_coupling<dim>(*quad) );
-        return integrals_.coupling_.back();;
-    }
-
-    /// Create and return BoundaryIntegral of given quadrature
-    std::shared_ptr<BoundaryIntegral> create_boundary_integral(Quadrature *quad) {
-        integrals_.boundary_.emplace_back( eval_points_->template add_boundary<dim>(*quad) );
-        return integrals_.boundary_.back();;
+    /// Set shared_ptr to EvalPoints and create integral accessors
+    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+        eval_points_ = eval_points;
+        make_integrals();
     }
 
     /**
@@ -347,6 +329,33 @@ protected:
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6),
       boundary_integral_data_(8, 4) {}
+
+    // Create integral accessors in descendants if accessors are needed
+    virtual void make_integrals() {}
+
+    /// Create and return BulkIntegral of given quadrature
+    std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
+        integrals_.bulk_.emplace_back( eval_points_->template add_bulk<dim>(*quad) );
+        return integrals_.bulk_.back();
+    }
+
+    /// Create and return EdgeIntegral of given quadrature
+    std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
+        integrals_.edge_.emplace_back( eval_points_->template add_edge<dim>(*quad) );
+        return integrals_.edge_.back();
+    }
+
+    /// Create and return CouplingIntegral of given quadrature
+    std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
+        integrals_.coupling_.emplace_back( eval_points_->template add_coupling<dim>(*quad) );
+        return integrals_.coupling_.back();
+    }
+
+    /// Create and return BoundaryIntegral of given quadrature
+    std::shared_ptr<BoundaryIntegral> create_boundary_integral(Quadrature *quad) {
+        integrals_.boundary_.emplace_back( eval_points_->template add_boundary<dim>(*quad) );
+        return integrals_.boundary_.back();
+    }
 
     /// Print update flags to string format.
     std::string print_update_flags(UpdateFlags u) const {

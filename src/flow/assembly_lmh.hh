@@ -76,7 +76,7 @@ public:
         ASSERT(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         double init_value = eq_fields_->init_pressure(p);
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
@@ -97,6 +97,11 @@ public:
 
 
 protected:
+    /// Implements @p AssemblyBase::make_integrals
+    void make_integrals() override {
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
+    }
+
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
@@ -106,6 +111,8 @@ protected:
 
     /// Vector of pre-computed local DOF indices
     LocDofVec l_indices_;
+
+    std::shared_ptr<BulkIntegral> bulk_integral_;        ///< Bulk integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -182,7 +189,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, eq_fields_->conductivity(p));
@@ -201,7 +208,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( bdr_integral_->points(cell_side, this->element_cache_map_).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -229,7 +236,7 @@ public:
         bulk_local_idx_ = cell_lower_dim.local_idx();
 
         // Evaluation points
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        auto p_high = *( coupling_integral_->points(neighb_side, this->element_cache_map_).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         fe_values_side_.reinit(neighb_side.side());
@@ -705,7 +712,7 @@ protected:
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
         	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
-        	auto p = *( this->bulk_points(pos_in_cache).begin() );
+        	auto p = *( bulk_integral_->points(pos_in_cache, this->element_cache_map_).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
@@ -754,6 +761,13 @@ protected:
         }
     }
 
+    /// Implements @p AssemblyBase::make_integrals
+    void make_integrals() override {
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
+        bdr_integral_ = this->create_boundary_integral(this->quad_low_);
+        if (dim>1) coupling_integral_ = this->create_coupling_integral(this->quad_low_);
+    }
+
 
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
@@ -785,6 +799,10 @@ protected:
 
     LocalSystem loc_schur_;
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;           ///< Bulk integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;   ///< Coupling integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;        ///< Boundary integral of assembly class
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -809,7 +827,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity
