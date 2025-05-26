@@ -205,7 +205,7 @@ public:
 
         for (auto integral_it : integrals_.boundary_) {
             boundary_integral_data_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
-                    integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx());
+                    integral_it->get_subset_high_idx());
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
             table_sizes_tmp.elem_sizes_[1][dim-1]++;
