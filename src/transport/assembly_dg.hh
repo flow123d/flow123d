@@ -44,10 +44,11 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
-      conc_shape_( this->bulk_values().scalar_shape() ) {
+      conc_shape_( this->bulk_values().scalar_shape() ),
+	  bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -85,7 +86,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
                     local_matrix_[i*ndofs_+j] = 0;
-                    for (auto p : this->bulk_points(element_patch_idx) )
+                    for (auto p : bulk_integral_->points(element_patch_idx, this->element_cache_map_) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
                                 conc_shape_.shape(j)(p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -97,7 +98,7 @@ public:
             {
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
-                for (auto p : this->bulk_points(element_patch_idx) )
+                for (auto p : bulk_integral_->points(element_patch_idx, this->element_cache_map_) )
                 {
                     local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_.shape(i)(p)*JxW_(p);
                     local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -140,6 +141,7 @@ public:
 
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> conc_shape_;
+        std::shared_ptr<BulkIntegral> bulk_integral_;             ///< Bulk integral of assembly class
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -233,8 +235,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -684,8 +686,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -801,8 +803,8 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       conc_shape_( this->side_values().scalar_shape() ),
@@ -1008,8 +1010,8 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       init_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -1099,8 +1101,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBase<dim>(eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
 

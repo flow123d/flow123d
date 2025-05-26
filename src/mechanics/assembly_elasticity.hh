@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -274,8 +274,8 @@ public:
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -530,8 +530,8 @@ public:
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
@@ -689,8 +689,8 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ) {

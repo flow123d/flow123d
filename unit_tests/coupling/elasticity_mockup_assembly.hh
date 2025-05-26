@@ -26,8 +26,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -331,8 +331,8 @@ public:
     static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    Rhs_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    Rhs_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),

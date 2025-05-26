@@ -60,8 +60,8 @@ public:
     static constexpr const char * name() { return "L2DifferenceAssembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data) {
+    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBase<dim>(2, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
@@ -265,8 +265,8 @@ public:
     static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
+    : AssemblyBase<dim>(0, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }
