@@ -380,7 +380,7 @@ void Mesh::check_mesh_on_read() {
     	    quality = -quality;
     	}
     	if (quality < 4*std::numeric_limits<double>::epsilon())
-    	    THROW( ExcBadElement() << EI_Quality(quality) << EI_ElemId(ele.idx()) );
+    	    THROW( ExcBadElement() << EI_Quality(quality) << EI_ElemId( find_elem_id(ele.idx()) ) );
         if ( quality< 0.001)
             WarningOut().fmt("Bad quality element ID={}, ({}<0.001).\n", ele.idx(), quality);
 
@@ -593,7 +593,7 @@ bool MeshBase::find_lower_dim_element( vector<unsigned int> &element_list, unsig
             *e_dest=*ele;
             ++e_dest;
         } else if (element_vec_[*ele].dim() == dim-1) { // get only first element of lower dimension
-            if (is_neighbour) THROW(ExcTooMatchingIds() << EI_ElemId(this->elem_index(*ele)) << EI_ElemIdOther(this->elem_index(element_idx)) );
+            if (is_neighbour) THROW(ExcTooMatchingIds() << EI_ElemId(this->find_elem_id(*ele)) << EI_ElemIdOther(this->find_elem_id(element_idx)) );
 
             is_neighbour = true;
             element_idx = *ele;
@@ -648,7 +648,7 @@ void Mesh::make_neighbours_and_edges()
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
-            THROW( ExcBdrElemMatchRegular() << EI_ElemId(bc_ele.idx()) << EI_ElemIdOther(this->elem_index(ngh_element_idx)) );
+            THROW( ExcBdrElemMatchRegular() << EI_ElemId(bc_mesh()->find_elem_id(bc_ele.idx())) << EI_ElemIdOther(this->find_elem_id(ngh_element_idx)) );
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
