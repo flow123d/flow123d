@@ -41,8 +41,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyConvection"; }
 
     /// Constructor.
-    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(0, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -124,8 +124,8 @@ public:
     static constexpr const char * name() { return "InitCondAssemblyConvection"; }
 
     /// Constructor.
-    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(0, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc;
     }
@@ -189,8 +189,8 @@ public:
     static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
 
     /// Constructor.
-    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(0, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->sources_sigma;
@@ -364,8 +364,8 @@ public:
     static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
 
     /// Constructor.
-    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(0, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::edge | ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->flow_flux;
     }

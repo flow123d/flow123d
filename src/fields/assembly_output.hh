@@ -44,15 +44,15 @@ public:
     typedef EquationOutput EqData;
 
     /// Constructor.
-    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(quad_order, eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
-    AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBase<dim>(eval_points), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
@@ -107,8 +107,8 @@ public:
     static constexpr const char * name() { return "AssemblyOutputElemData"; }
 
     /// Constructor.
-    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data, eval_points) {}
+    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}
@@ -157,8 +157,8 @@ public:
     static constexpr const char * name() { return "AssemblyOutputNodeData"; }
 
     /// Constructor.
-    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyOutputBase<dim>(eq_fields, eq_data, eval_points) {
+    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyOutputBase<dim>(eq_fields, eq_data) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {

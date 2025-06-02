@@ -178,7 +178,7 @@ public:
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
-      multidim_assembly_(eq_fields, eq_data, this->eval_points_)
+      multidim_assembly_(eq_fields, eq_data)
     {
     	initialize();
     }
@@ -188,7 +188,7 @@ public:
     : GenericAssemblyBase(),
       fe_values_(eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
-      multidim_assembly_(eq_fields, eq_data, this->eval_points_, &this->fe_values_)
+      multidim_assembly_(eq_fields, eq_data, &this->fe_values_)
     {
     	initialize();
     }

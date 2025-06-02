@@ -27,8 +27,8 @@ public:
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
+    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -255,8 +255,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -796,8 +796,8 @@ public:
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values, std::shared_ptr<EvalPoints> eval_points)
-    : AssemblyBasePatch<dim>(fe_values, eval_points), eq_fields_(eq_fields), eq_data_(eq_data),
+    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
