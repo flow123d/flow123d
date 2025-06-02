@@ -442,7 +442,7 @@ void Mesh::check_mesh_on_read() {
             for (uint ele_node=0; ele_node<bc_ele->n_nodes(); ele_node++) {
                 uint inode_orig = bc_ele->node_idx(ele_node);
                 uint inode = nodes_new_idx[inode_orig];
-                ASSERT_PERMANENT(inode != undef_idx)( bc_mesh_->find_elem_id(bc_ele.idx()) );
+                ASSERT(inode != undef_idx)( bc_mesh_->find_elem_id(bc_ele.idx()) );
                 const_cast<Element*>(bc_ele.element())->nodes_[ele_node] = inode;
             }
         }
