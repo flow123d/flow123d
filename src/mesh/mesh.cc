@@ -437,6 +437,10 @@ void Mesh::check_mesh_on_read() {
             }
         }
 
+        // Same as previous but updates node-element numbering of boundary mesh
+        // TODO It is posible to change version of C++ to c++20 and update boost >= 1.78.
+        // Then we can use join_view function to merge both loops updating node-element numbering
+        // but join_view makes copies of vectors and it is necessary to fix this problem.
         for (uint i = 0; i < bc_mesh_->n_elements(); ++i) {
             ElementAccessor<3> bc_ele = bc_mesh_->element_accessor(i);
             for (uint ele_node=0; ele_node<bc_ele->n_nodes(); ele_node++) {
