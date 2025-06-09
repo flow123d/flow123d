@@ -39,15 +39,6 @@ enum ActiveIntegrals {
 };
 
 
-/// Set of all used integral necessary in assemblation
-struct AssemblyIntegrals {
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
-    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
-};
-
-
 /**
  * Common interface class for all Assembly classes.
  */
@@ -155,7 +146,6 @@ public:
     }
 
 protected:
-    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
 };
@@ -280,9 +270,14 @@ private:
     void initialize() {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(eval_points_);
-        multidim_assembly_[2_d]->create_integrals(eval_points_);
-        multidim_assembly_[3_d]->create_integrals(eval_points_);
+        eval_points_->create_integrals( {
+            multidim_assembly_[1_d]->integrals(),
+            multidim_assembly_[2_d]->integrals(),
+		    multidim_assembly_[3_d]->integrals()
+        } );
+        multidim_assembly_[1_d]->set_eval_points(eval_points_);
+        multidim_assembly_[2_d]->set_eval_points(eval_points_);
+        multidim_assembly_[3_d]->set_eval_points(eval_points_);
         element_cache_map_.init(eval_points_);
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);

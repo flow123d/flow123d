@@ -81,9 +81,8 @@ public:
     }
 
     /// Set shared_ptr to EvalPoints and create integral accessors
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points) {
+    void set_eval_points(std::shared_ptr<EvalPoints> eval_points) {
         eval_points_ = eval_points;
-        make_integrals();
     }
 
     /**
@@ -112,7 +111,7 @@ public:
         }
 
         if (integrals_.coupling_.size() > 0) {
-        	for (auto coupling_integral : integrals_.coupling_) {
+        	for (auto coupling_integral : integrals_.coupling_()) {
                 // Adds data of bulk points only if bulk point were not added during processing of bulk integral
                 bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
                 if (add_bulk_points) {
@@ -130,8 +129,8 @@ public:
                 }
             	// Adds data of side points of all neighbour objects
             	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
-                    coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
-                            integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
+                    coupling_integral_data_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
+                            coupling_integral->get_subset_high_idx());
                     table_sizes_tmp.elem_sizes_[1][cell.dim()]++;
 
                     unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
@@ -163,7 +162,7 @@ public:
     inline void add_volume_integral(const DHCellAccessor &cell, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(cell.dim(), dim);
 
-        for (auto integral_it : integrals_.bulk_) {
+        for (auto integral_it : integrals_.bulk_()) {
             uint subset_idx = integral_it->get_subset_idx();
             bulk_integral_data_.emplace_back(cell, subset_idx);
 
@@ -184,7 +183,7 @@ public:
 	    auto range = cell_side.edge_sides();
         ASSERT_EQ(range.begin()->dim(), dim);
 
-        for (auto integral_it : integrals_.edge_) {
+        for (auto integral_it : integrals_.edge_()) {
             edge_integral_data_.emplace_back(range, integral_it->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
@@ -202,7 +201,7 @@ public:
     inline void add_boundary_integral(const DHCellSide &bdr_side, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(bdr_side.dim(), dim);
 
-        for (auto integral_it : integrals_.boundary_) {
+        for (auto integral_it : integrals_.boundary_()) {
             boundary_integral_data_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
                     integral_it->get_subset_high_idx());
 
@@ -223,28 +222,28 @@ public:
     /// Return BulkPoint range of appropriate dimension
     /// Obsolete method - must be removed
     inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
-        return integrals_.bulk_[0]->points(element_patch_idx, element_cache_map_);
+        return (*integrals_.bulk_().begin())->points(element_patch_idx, element_cache_map_);
     }
 
     /// Return EdgePoint range of appropriate dimension
     /// Obsolete method - must be removed
     inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_[0]->points(cell_side, element_cache_map_);
+	    return (*integrals_.edge_().begin())->points(cell_side, element_cache_map_);
     }
 
     /// Return CouplingPoint range of appropriate dimension
     /// Obsolete method - must be removed
     inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_[0]->points(cell_side, element_cache_map_);
+	    return (*integrals_.coupling_().begin())->points(cell_side, element_cache_map_);
     }
 
     /// Return BoundaryPoint range of appropriate dimension
     /// Obsolete method - must be removed
     inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_[0]->points(cell_side, element_cache_map_);
+	    return (*integrals_.boundary_().begin())->points(cell_side, element_cache_map_);
     }
 
     /// Assembles the cell integrals for the given dimension.
@@ -306,15 +305,12 @@ public:
         boundary_integral_data_.reset();
     }
 
-protected:
-    /// Set of integral of given dimension necessary in assemblation
-    struct DimIntegrals {
-        std::vector< std::shared_ptr<BulkIntegral> > bulk_;          ///< Bulk integrals of elements
-        std::vector< std::shared_ptr<EdgeIntegral> > edge_;          ///< Edge integrals between elements of same dimensions
-        std::vector< std::shared_ptr<CouplingIntegral> > coupling_;  ///< Coupling integrals between elements of dimensions dim and dim-1
-        std::vector< std::shared_ptr<BoundaryIntegral> > boundary_;  ///< Boundary integrals betwwen side and boundary element of dim-1
-    };
+    /// Getter of integrals_
+    DimIntegrals integrals() const {
+    	return integrals_;
+    }
 
+protected:
     /**
      * Default constructor.
      *
@@ -328,31 +324,25 @@ protected:
       coupling_integral_data_(12, 6),
       boundary_integral_data_(8, 4) {}
 
-    // Create integral accessors in descendants if accessors are needed
-    virtual void make_integrals() {}
-
     /// Create and return BulkIntegral of given quadrature
     std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
-        integrals_.bulk_.emplace_back( eval_points_->template add_bulk<dim>(*quad) );
-        return integrals_.bulk_.back();
+        return integrals_.bulk_.create_and_return(quad, quad->dim());
     }
 
     /// Create and return EdgeIntegral of given quadrature
     std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
-        integrals_.edge_.emplace_back( eval_points_->template add_edge<dim>(*quad) );
-        return integrals_.edge_.back();
+        return integrals_.edge_.create_and_return(quad, quad->dim()+1);
     }
 
     /// Create and return CouplingIntegral of given quadrature
     std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
-        integrals_.coupling_.emplace_back( eval_points_->template add_coupling<dim>(*quad) );
-        return integrals_.coupling_.back();
+        if (dim==1) return nullptr;
+        else return integrals_.coupling_.create_and_return(quad, quad->dim()+1);
     }
 
     /// Create and return BoundaryIntegral of given quadrature
     std::shared_ptr<BoundaryIntegral> create_boundary_integral(Quadrature *quad) {
-        integrals_.boundary_.emplace_back( eval_points_->template add_boundary<dim>(*quad) );
-        return integrals_.boundary_.back();
+        return integrals_.boundary_.create_and_return(quad, quad->dim()+1);
     }
 
     /// Print update flags to string format.
@@ -404,7 +394,7 @@ public:
 
     /// Register cell points of volume integral
     inline void add_patch_bulk_points() override {
-        for (auto integral_it : this->integrals_.bulk_) {
+        for (auto integral_it : this->integrals_.bulk_()) {
             for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
                 if ( this->bulk_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
                 uint element_patch_idx = this->element_cache_map_->position_in_cache(this->bulk_integral_data_[i].cell.elm_idx());
@@ -419,7 +409,7 @@ public:
 
     /// Register side points of boundary side integral
     inline void add_patch_bdr_side_points() override {
-        for (auto integral_it : this->integrals_.boundary_) {
+        for (auto integral_it : this->integrals_.boundary_()) {
             for (unsigned int i=0; i<this->boundary_integral_data_.permanent_size(); ++i) {
                 if ( this->boundary_integral_data_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
             	uint side_pos = fe_values_->register_side(this->boundary_integral_data_[i].side);
@@ -433,7 +423,7 @@ public:
 
     /// Register side points of edge integral
     inline void add_patch_edge_points() override {
-        for (auto integral_it : this->integrals_.edge_) {
+        for (auto integral_it : this->integrals_.edge_()) {
             for (unsigned int i=0; i<this->edge_integral_data_.permanent_size(); ++i) {
                 if ( this->edge_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
             	auto range = this->edge_integral_data_[i].edge_side_range;
@@ -451,7 +441,7 @@ public:
 
     /// Register bulk and side points of coupling integral
     inline void add_patch_coupling_integrals() override {
-        for (auto integral_it : this->integrals_.coupling_) {
+        for (auto integral_it : this->integrals_.coupling_()) {
             uint side_pos, element_patch_idx, elm_pos=0;
             uint last_element_idx = -1;
 

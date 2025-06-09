@@ -263,11 +263,15 @@ private:
 class BaseIntegral {
 public:
     /// Default constructor
-	BaseIntegral() : eval_points_(nullptr), dim_(0) {}
+	BaseIntegral() : eval_points_(nullptr), dim_(0), quad_(nullptr) {}
+
+    /// Constructor of bulk or side subset - obsolete constructor
+	BaseIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
+	 : eval_points_(eval_points), dim_(dim), quad_(nullptr) {}
 
     /// Constructor of bulk or side subset
-	BaseIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim)
-	 : eval_points_(eval_points), dim_(dim) {}
+	BaseIntegral(Quadrature *quad, unsigned int dim)
+	 : eval_points_(nullptr), dim_(dim), quad_(quad) {}
 
     /// Destructor
     virtual ~BaseIntegral();
@@ -281,11 +285,18 @@ public:
     unsigned int dim() const {
     	return dim_;
     }
+
+    /// Returns quadrature.
+    Quadrature *quad() const {
+    	return quad_;
+    }
 protected:
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
     /// Dimension of the cell on which points are placed
     unsigned int dim_;
+    /// Pointer to Quadrature that represents quadrature points of integral.
+    Quadrature *quad_;
 };
 
 /**
@@ -296,16 +307,25 @@ public:
     /// Default constructor
 	BulkIntegral() : BaseIntegral() {}
 
-    /// Constructor of bulk integral
-	BulkIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, uint i_subset)
-	 : BaseIntegral(eval_points, dim), subset_index_(i_subset)
-	{
-	    begin_idx_ = eval_points_->subset_begin(dim_, subset_index_);
-	    end_idx_ = eval_points_->subset_end(dim_, subset_index_);
-	}
+    /// Constructor of bulk integral- obsolete constructor
+	BulkIntegral(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
 
     /// Destructor
     ~BulkIntegral();
+
+    /// Initialize integral object
+    template <unsigned int dim>
+	void init(std::shared_ptr<EvalPoints> eval_points)
+	{
+        ASSERT_EQ(dim, this->dim_);
+        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of BulkIntegral object!\n");
+
+	    this->eval_points_ = eval_points;
+	    subset_index_ = this->eval_points_->add_bulk<dim>(*this->quad_);
+	    begin_idx_ = eval_points_->subset_begin(dim_, subset_index_);
+	    end_idx_ = eval_points_->subset_end(dim_, subset_index_);
+	}
 
     /// Return index of data block according to subset in EvalPoints object
     inline int get_subset_idx() const {
@@ -340,10 +360,30 @@ public:
     }
 
     /// Constructor of edge integral
-	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, uint i_subset);
+	EdgeIntegral(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
 
     /// Destructor
     ~EdgeIntegral();
+
+    /// Initialize integral object
+    template <unsigned int dim>
+    void init(std::shared_ptr<EvalPoints> eval_points)
+    {
+        ASSERT_EQ(dim, this->dim_);
+        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of EdgeIntegral object!\n");
+
+	    this->eval_points_ = eval_points;
+	    subset_index_ = this->eval_points_->add_edge<dim>(*this->quad_);
+
+        begin_idx_ = eval_points_->subset_begin(dim, subset_index_);
+        uint end_idx = eval_points_->subset_end(dim, subset_index_);
+        n_sides_ = dim + 1;
+        //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
+        n_points_per_side_ = (end_idx - begin_idx_) / n_sides();
+        //DebugOut() << "points per side: " << n_points_per_side_;
+
+    }
 
     /// Getter of n_sides
     inline unsigned int n_sides() const {
@@ -401,10 +441,21 @@ public:
 	CouplingIntegral() : BaseIntegral() {}
 
     /// Constructor of ngh integral
-	CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral);
+	CouplingIntegral(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
 
     /// Destructor
     ~CouplingIntegral();
+
+    /// Initialize integral object
+    void init(std::shared_ptr<EvalPoints> eval_points, std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
+    {
+        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of CouplingIntegral object!\n");
+
+	    this->eval_points_ = eval_points;
+	    this->bulk_integral_ = bulk_integral;
+	    this->edge_integral_ = edge_integral;
+    }
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
     inline int get_subset_high_idx() const {
@@ -449,11 +500,22 @@ public:
     /// Default constructor
     BoundaryIntegral() : BaseIntegral() {}
 
-    /// Constructor of bulk subset
-    BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral);
+    /// Constructor of ngh integral
+    BoundaryIntegral(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
 
     /// Destructor
     ~BoundaryIntegral();
+
+    /// Initialize integral object
+    void init(std::shared_ptr<EvalPoints> eval_points, std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
+    {
+        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of BoundaryIntegral object!\n");
+
+	    this->eval_points_ = eval_points;
+	    this->bulk_integral_ = bulk_integral;
+	    this->edge_integral_ = edge_integral;
+    }
 
     /// Return index of data block according to subset of higher dim in EvalPoints object
     inline int get_subset_high_idx() const {

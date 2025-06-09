@@ -27,6 +27,15 @@
 #include "io/observe.hh"
 
 
+/// Set of all used integral necessary in assemblation
+struct AssemblyIntegrals {
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
+    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
+    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
+};
+
+
 /**
  * @brief Generic class of observe output assemblation.
  *
@@ -102,6 +111,7 @@ private:
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
+    AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
     MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
     std::shared_ptr<Observe> observe_;                            ///< Shared Observe object.
     RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
@@ -155,7 +165,7 @@ public:
 
 
     /// Create bulk integral according to dim
-    void create_observe_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+    void create_observe_integrals(FMT_UNUSED std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
         std::vector<arma::vec> reg_points;
 
         auto &patch_point_data = observe_->patch_point_data();
@@ -175,8 +185,7 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            this->integrals_.bulk_.emplace_back( eval_points->add_bulk<dim>(*this->quad_) );
-            integrals.bulk_[dim-1] = this->integrals_.bulk_[0];
+            integrals.bulk_[dim-1] = this->integrals_.bulk_.create_and_return(this->quad_, this->quad_->dim());
         }
     }
 
