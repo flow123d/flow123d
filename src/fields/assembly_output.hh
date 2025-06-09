@@ -108,7 +108,8 @@ public:
 
     /// Constructor.
     AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
+    : AssemblyOutputBase<dim>(0, eq_fields, eq_data),
+	  bulk_integral_( this->create_bulk_integral(this->quad_) ){}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}
@@ -131,11 +132,6 @@ public:
     }
 
 private:
-    /// Implements @p AssemblyBase::make_integrals
-    void make_integrals() override {
-        bulk_integral_ = this->create_bulk_integral(this->quad_);
-    }
-
     std::shared_ptr<BulkIntegral> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
@@ -160,6 +156,7 @@ public:
     AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
     : AssemblyOutputBase<dim>(eq_fields, eq_data) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
             this->quad_->weight(i) = 1.0;
@@ -197,11 +194,6 @@ public:
     }
 
 private:
-    /// Implements @p AssemblyBase::make_integrals
-    void make_integrals() override {
-        bulk_integral_ = this->create_bulk_integral(this->quad_);
-    }
-
     std::shared_ptr< std::vector<unsigned int> > offset_vec_;   ///< Holds offsets of individual local elements
 
     std::shared_ptr<BulkIntegral> bulk_integral_;
