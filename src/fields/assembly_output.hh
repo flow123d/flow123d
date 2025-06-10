@@ -116,7 +116,6 @@ public:
 
     /// Assembles the cell integrals for the given dimension.
     inline void assemble_cell_integrals() {
-    	if (dim!=1) return;  // Perform full output in one loop
     	unsigned int element_patch_idx, field_value_cache_position, val_idx;
     	this->reset_offsets();
     	for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
@@ -176,7 +175,6 @@ public:
 
     /// Assembles the cell integrals for the given dimension.
     inline void assemble_cell_integrals() {
-    	if (dim!=1) return;  // Perform full output in one loop
     	unsigned int element_patch_idx, field_value_cache_position, val_idx;
     	this->reset_offsets();
     	for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
