@@ -334,7 +334,6 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     input_lib mesh_lib tools_lib fem_lib io_lib
-    fieldproxypy
     flow123d_python_api
     bparser  
     armadillo
