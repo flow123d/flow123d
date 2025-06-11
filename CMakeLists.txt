@@ -815,6 +815,7 @@ include_directories(
     ${YamlCpp_INCLUDE_DIR}
     ${PugiXml_INCLUDE_DIR}
     ${Zlib_INCLUDE_DIR}
+    ${EIGEN_ROOT}
 #    ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
 #    ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include

@@ -26,7 +26,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "io/output_time.hh"
 #include "io/element_data_cache.hh"
 #include "mesh/ref_element.hh"

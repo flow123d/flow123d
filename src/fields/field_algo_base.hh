@@ -36,7 +36,7 @@
 #include <armadillo>                       // for operator%, operator<<
 #include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
 #include "fields/field_flag.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
 #include "mesh/accessors.hh"
