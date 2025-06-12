@@ -36,7 +36,8 @@ public:
 
     /// Constructor.
     InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+	  bulk_integral_( this->create_bulk_integral(this->quad_)) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -64,7 +65,7 @@ public:
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
         const DHCellAccessor dh_cell = cell.cell_with_other_dh(this->eq_data_->dh_.get());
 
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
@@ -131,6 +132,9 @@ private:
     EqFields *eq_fields_;
     EqData *eq_data_;
 
+    /// Bulk integral of assembly class
+    std::shared_ptr<BulkIntegral> bulk_integral_;
+
     LocDofVec cr_disc_dofs_;                 ///< Vector of local DOF indices pre-computed on different DOF handlers
     LocDofVec edge_indices_;                 ///< Dofs of discontinuous fields on element edges.
     double storativity_;
@@ -189,7 +193,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, this->compute_conductivity(cell, p));
@@ -204,7 +208,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->bdr_integral_->points(cell_side, this->element_cache_map_).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -416,7 +420,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity
