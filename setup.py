@@ -3,6 +3,25 @@ import re
 import subprocess
 import sys
 
+
+
+######################################
+# This approach assumes compiled Python C++ API and only check it is available.
+######################################
+from setuptools import setup, find_packages
+import sys
+
+try:
+    import flow123d_python_api
+except ImportError:
+    sys.exit("Error: flow123d_python_api module not found. Please ensure the compiled library is installed.")
+
+
+######################################
+# Following approach tries to compile flow123d through CMake.
+######################################
+
+
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
@@ -107,6 +126,11 @@ class CMakeBuild(build_ext):
         subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
 
 
+
+######################################
+# Main configuration part.
+######################################
+
 # The information here can also be placed in setup.cfg - better separation of
 # logic and declaration, and simpler if you include description/version in a file.
 setup(
@@ -124,7 +148,14 @@ setup(
     python_requires=">=3.6",
     license='GPL 3.0',
     url='https://github.com/flow123d/bih',
-
+    packages=find_packages("src"),
+    package_dir={"": "src"},
+    entry_points={
+        "console_scripts": [
+            "flow123d=flow123d.__main__:main",
+            # other user scripts
+        ]
+    },
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers        
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
@@ -138,7 +169,7 @@ setup(
         # 'Programming Language :: Python :: Implementation :: Stackless',
         'Topic :: Scientific/Engineering',
     ],
-    
+        
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
     ],
