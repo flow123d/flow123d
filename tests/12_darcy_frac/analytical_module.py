@@ -6,7 +6,7 @@
 
 
 import math
-import flowpy
+from py123d import field as flowpy
 import numpy as np
 
 class Parameters :
