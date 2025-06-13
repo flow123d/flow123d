@@ -336,8 +336,8 @@ protected:
 
     /// Create and return CouplingIntegral of given quadrature
     std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
-        if (dim==1) return nullptr;
-        else return integrals_.coupling_.create_and_return(quad, quad->dim()+1);
+        if (dim==3) return nullptr;
+        else return integrals_.coupling_.create_and_return(quad, quad->dim());
     }
 
     /// Create and return BoundaryIntegral of given quadrature

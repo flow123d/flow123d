@@ -131,7 +131,7 @@ public:
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) ) {
+      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -156,8 +156,10 @@ public:
         //this->balance_ = eq_data_->balance_;
         this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_normal_vectors);
+        if (dim < 3) {
+            fe_ = std::make_shared< FE_P_disc<dim+1> >(0);
+            fe_values_side_.initialize(*this->quad_, *fe_, update_normal_vectors);
+        }
 
         fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
 
@@ -227,8 +229,8 @@ public:
      * Common in all descendants.
      */
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int neigh_idx = ngh_idx(cell_lower_dim, neighb_side); // TODO use better evaluation of neighbour_idx
         unsigned int loc_dof_higher = (2*(cell_lower_dim.dim()+1) + 1) + neigh_idx; // loc dof of higher ele edge
@@ -249,9 +251,9 @@ public:
 						eq_fields_->cross_section(p_low) *      // crossection of lower dim.
                         neighb_side.measure();
 
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], eq_data_->loc_ele_dof[dim-2], -ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], loc_dof_higher,                ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-2],  ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], eq_data_->loc_ele_dof[dim-1], -ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], loc_dof_higher,                ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-1],  ngh_value_);
         eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               loc_dof_higher,               -ngh_value_);
 
 //             // update matrix for weights in BDDCML
@@ -773,7 +775,7 @@ protected:
     QGauss quad_rt_;
     FEValues<3> fe_values_;
 
-    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim+1>> fe_;                  ///< Finite element for the solution of the advection-diffusion equation.
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
 
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.

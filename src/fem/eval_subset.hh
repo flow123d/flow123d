@@ -473,7 +473,7 @@ public:
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_EQ(cell_side.dim(), dim_);
+        ASSERT_EQ(cell_side.dim(), dim_+1);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(

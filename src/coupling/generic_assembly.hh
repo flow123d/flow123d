@@ -329,8 +329,8 @@ private:
 
         {
             START_TIMER("assemble_fluxes_elem_side");
+            multidim_assembly_[1_d]->assemble_neighbour_integrals();
             multidim_assembly_[2_d]->assemble_neighbour_integrals();
-            multidim_assembly_[3_d]->assemble_neighbour_integrals();
             END_TIMER("assemble_fluxes_elem_side");
         }
         // clean integral data
@@ -360,8 +360,8 @@ private:
         multidim_assembly_[2_d]->add_patch_edge_points();
         multidim_assembly_[3_d]->add_patch_edge_points();
 
+        multidim_assembly_[1_d]->add_patch_coupling_integrals();
         multidim_assembly_[2_d]->add_patch_coupling_integrals();
-        multidim_assembly_[3_d]->add_patch_coupling_integrals();
 
         this->fe_values_.reinit_patch();
     }
