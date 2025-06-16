@@ -37,22 +37,26 @@ class VTKDiff(InPlaceComparison):
         self.output.write(message)
         self.have_match = False
         
-    def check_nans(dataset):
+    def check_nans(self, dataset, source_str):
         names = self.get_array_names(dataset)
         for name in names:
-            array = nps.vtk_to_numpy(ref_data.GetArray(names.index(name)))
+            array = nps.vtk_to_numpy(dataset.GetArray(names.index(name)))
             if np.any(np.isnan(array)):
-                self.error(f"Reference array {name} contains NaNs.") 
+                self.error(f"{source_str} array {name} contains NaNs.") 
                 return True
                 
         return False
 
     def compare_pipeline(self, f_ref, f_test):
         vtu_ref = self.read_vtu(f_ref)
-        if check_nans(vtu_ref):
+        if self.check_nans(vtu_ref.GetOutput().GetCellData(), "Reference"):
+            return 
+        if self.check_nans(vtu_ref.GetOutput().GetPointData(), "Reference"):
             return 
         vtu_test = self.read_vtu(f_test)
-        if check_nans(vtu_test):
+        if self.check_nans(vtu_test.GetOutput().GetCellData(), "Test"):
+            return 
+        if self.check_nans(vtu_test.GetOutput().GetPointData(), "Test"):
             return 
         
         if self.interpolate:
