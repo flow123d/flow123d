@@ -144,7 +144,7 @@ public:
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
             element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            auto p = *( bulk_integral_->points(element_patch_idx, this->element_cache_map_).begin()); // evaluation point
+            auto p = *( this->points(bulk_integral_, element_patch_idx).begin()); // evaluation point
             field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
             val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
