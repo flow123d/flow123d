@@ -356,7 +356,7 @@ protected:
  */
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
 public:
-    typedef SidePoint PointType;
+    typedef EdgePoint PointType;
     typedef DHCellSide MeshItem;
 
     /// Default constructor
@@ -477,7 +477,7 @@ public:
     }
 
     inline uint bulk_begin() const {
-        return eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx());
+        return eval_points_->subset_begin(dim_, bulk_integral_->get_subset_idx());
     }
 
     /// Returns range of side local points for appropriate cell side accessor
