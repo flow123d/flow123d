@@ -246,6 +246,12 @@ public:
 	    return (*integrals_.boundary_().begin())->points(cell_side, element_cache_map_);
     }
 
+    /// Return point range of appropriate dimension
+    template <class QIntegral>
+    Range< typename QIntegral::PointType > points(std::shared_ptr<QIntegral> integral, typename QIntegral::MeshItem mesh_item) const {
+    	return integral->points(mesh_item, element_cache_map_);
+    }
+
     /// Assembles the cell integrals for the given dimension.
     virtual inline void assemble_cell_integrals() {
     	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {

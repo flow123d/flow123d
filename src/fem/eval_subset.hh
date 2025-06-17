@@ -304,6 +304,9 @@ protected:
  */
 class BulkIntegral : public BaseIntegral, public std::enable_shared_from_this<BulkIntegral> {
 public:
+    typedef BulkPoint PointType;
+    typedef unsigned int MeshItem;
+
     /// Default constructor
 	BulkIntegral() : BaseIntegral() {}
 
@@ -353,6 +356,9 @@ protected:
  */
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
 public:
+    typedef SidePoint PointType;
+    typedef DHCellSide MeshItem;
+
     /// Default constructor
 	EdgeIntegral() : BaseIntegral()
     {
@@ -437,6 +443,9 @@ private:
  */
 class CouplingIntegral : public BaseIntegral, public std::enable_shared_from_this<CouplingIntegral> {
 public:
+    typedef CouplingPoint PointType;
+    typedef DHCellSide MeshItem;
+
     /// Default constructor
 	CouplingIntegral() : BaseIntegral() {}
 
@@ -497,6 +506,9 @@ private:
  */
 class BoundaryIntegral : public BaseIntegral, public std::enable_shared_from_this<BoundaryIntegral> {
 public:
+    typedef BoundaryPoint PointType;
+    typedef DHCellSide MeshItem;
+
     /// Default constructor
     BoundaryIntegral() : BaseIntegral() {}
 
