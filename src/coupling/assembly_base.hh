@@ -488,6 +488,11 @@ public:
         return fe_values_->template side_values<dim>();
     }
 
+    /// Return SideValues object
+    inline SideValues<dim+1> side_values_high_dim() {
+        return fe_values_->template side_values<dim+1>();
+    }
+
     /// Return JoinValues object
     inline JoinValues<dim> join_values() {
         return fe_values_->template join_values<dim>();
