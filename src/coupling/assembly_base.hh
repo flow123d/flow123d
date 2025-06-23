@@ -473,9 +473,14 @@ public:
         }
     }
 
-    /// Return BulkValues object
+    /// Return number of DOFs
     inline unsigned int n_dofs() {
         return fe_values_->template n_dofs<dim>();
+    }
+
+    /// Return number of DOFs of higher dim element
+    inline unsigned int n_dofs_high() {
+        return fe_values_->template n_dofs_high<dim>();
     }
 
     /// Return BulkValues object

@@ -175,6 +175,12 @@ public:
         return fe_[Dim<dim>{}]->n_dofs();
     }
 
+    /**
+     * @brief Returns the number of shape functions og higher dim element.
+     */
+    template<unsigned int dim>
+    unsigned int n_dofs_high() const;
+
     /// Getter for bulk quadrature of given dimension
     Quadrature *get_bulk_quadrature(uint dim) const {
         ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
