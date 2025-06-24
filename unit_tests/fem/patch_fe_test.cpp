@@ -125,14 +125,23 @@ public:
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_bulk_quadrature(1));
-        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_bulk_quadrature(2));
-        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_bulk_quadrature(3));
-        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_side_quadrature(1));
-        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_side_quadrature(2));
-        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_side_quadrature(3));
-        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_bulk_quadrature(1));
-        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_bulk_quadrature(2));
+        bulk_integrals_[0] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
+        bulk_integrals_[1] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
+        bulk_integrals_[2] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(3), 3);
+        edge_integrals_[0] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(1), 1);
+        edge_integrals_[1] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(2), 2);
+        edge_integrals_[2] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(3), 3);
+        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
+        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
+
+        coupling_integrals_[0]->init(eval_points_, bulk_integrals_[0], edge_integrals_[1]);
+        coupling_integrals_[1]->init(eval_points_, bulk_integrals_[1], edge_integrals_[2]);
+        bulk_integrals_[0]->init<1>(eval_points_);
+        bulk_integrals_[1]->init<2>(eval_points_);
+        bulk_integrals_[2]->init<3>(eval_points_);
+        edge_integrals_[0]->init<1>(eval_points_);
+        edge_integrals_[1]->init<2>(eval_points_);
+        edge_integrals_[2]->init<3>(eval_points_);
     }
 
     void initialize() {
