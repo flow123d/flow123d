@@ -1122,8 +1122,7 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data),
-      init_integral_( this->create_bulk_integral(this->quad_) ) {
+    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
 
@@ -1133,6 +1132,7 @@ public:
             this->quad_->weight(i) = 1.0;
             this->quad_->set(i) = RefElement<dim>::node_coords(i);
         }
+        init_integral_ = this->create_bulk_integral(this->quad_);
     }
 
     /// Destructor.
