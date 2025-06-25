@@ -219,33 +219,6 @@ public:
         }
     }
 
-    /// Return BulkPoint range of appropriate dimension
-    /// Obsolete method - must be removed
-    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
-        return (*integrals_.bulk_().begin())->points(element_patch_idx, element_cache_map_);
-    }
-
-    /// Return EdgePoint range of appropriate dimension
-    /// Obsolete method - must be removed
-    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
-        ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return (*integrals_.edge_().begin())->points(cell_side, element_cache_map_);
-    }
-
-    /// Return CouplingPoint range of appropriate dimension
-    /// Obsolete method - must be removed
-    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
-        ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return (*integrals_.coupling_().begin())->points(cell_side, element_cache_map_);
-    }
-
-    /// Return BoundaryPoint range of appropriate dimension
-    /// Obsolete method - must be removed
-    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
-        ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return (*integrals_.boundary_().begin())->points(cell_side, element_cache_map_);
-    }
-
     /// Return point range of appropriate dimension
     template <class QIntegral>
     Range< typename QIntegral::PointType > points(std::shared_ptr<QIntegral> integral, typename QIntegral::MeshItem mesh_item) const {
