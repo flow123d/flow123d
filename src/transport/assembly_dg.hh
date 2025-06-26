@@ -126,6 +126,11 @@ public:
     }
 
     private:
+        /// Resize list of BulkIntegral data.
+        void set_integral_data_lists() override {
+            this->integral_data_.bulk_.reinit_default_list( 300 / (dim+1), 1 );
+        }
+
         /// Data objects shared with TransportDG
         EqFields *eq_fields_;
         EqData *eq_data_;

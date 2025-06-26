@@ -28,6 +28,16 @@
 
 
 
+/// Set of integral data of given dimension used in assemblation
+struct IntegralData {
+public:
+    RevertableList<GenericAssemblyBase::BulkIntegralData>       bulk_;      ///< Holds data for computing bulk integrals.
+    RevertableList<GenericAssemblyBase::EdgeIntegralData>       edge_;      ///< Holds data for computing edge integrals.
+    RevertableList<GenericAssemblyBase::CouplingIntegralData>   coupling_;  ///< Holds data for computing couplings integrals.
+    RevertableList<GenericAssemblyBase::BoundaryIntegralData>   boundary_;  ///< Holds data for computing boundary integrals.
+};
+
+
 /**
  * Base class define empty methods, these methods can be overwite in descendants.
  */
@@ -42,11 +52,7 @@ public:
 
     /// Constructor
     AssemblyBase(unsigned int quad_order)
-    : min_edge_sides_(2),
-	  bulk_integral_data_(20, 10),
-      edge_integral_data_(12, 6),
-      coupling_integral_data_(12, 6),
-      boundary_integral_data_(8, 4) {
+    : AssemblyBase<dim>() {
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
     }
@@ -129,7 +135,7 @@ public:
                 }
             	// Adds data of side points of all neighbour objects
             	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
-                    coupling_integral_data_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
+                    integral_data_.coupling_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
                             coupling_integral->get_subset_high_idx());
                     table_sizes_tmp.elem_sizes_[1][cell.dim()]++;
 
@@ -143,16 +149,16 @@ public:
         }
 
         if (element_cache_map_->get_simd_rounded_size() > CacheMapElementNumber::get()) {
-            bulk_integral_data_.revert_temporary();
-            edge_integral_data_.revert_temporary();
-            coupling_integral_data_.revert_temporary();
-            boundary_integral_data_.revert_temporary();
+            integral_data_.bulk_.revert_temporary();
+            integral_data_.edge_.revert_temporary();
+            integral_data_.coupling_.revert_temporary();
+            integral_data_.boundary_.revert_temporary();
             return true;
         } else {
-            bulk_integral_data_.make_permanent();
-            edge_integral_data_.make_permanent();
-            coupling_integral_data_.make_permanent();
-            boundary_integral_data_.make_permanent();
+            integral_data_.bulk_.make_permanent();
+            integral_data_.edge_.make_permanent();
+            integral_data_.coupling_.make_permanent();
+            integral_data_.boundary_.make_permanent();
             return false;
         }
 
@@ -164,7 +170,7 @@ public:
 
         for (auto integral_it : integrals_.bulk_()) {
             uint subset_idx = integral_it->get_subset_idx();
-            bulk_integral_data_.emplace_back(cell, subset_idx);
+            integral_data_.bulk_.emplace_back(cell, subset_idx);
 
             unsigned int reg_idx = cell.elm().region_idx().idx();
             table_sizes_tmp.elem_sizes_[0][dim-1]++;
@@ -184,7 +190,7 @@ public:
         ASSERT_EQ(range.begin()->dim(), dim);
 
         for (auto integral_it : integrals_.edge_()) {
-            edge_integral_data_.emplace_back(range, integral_it->get_subset_idx());
+            integral_data_.edge_.emplace_back(range, integral_it->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
                 unsigned int reg_idx = edge_side.element().region_idx().idx();
@@ -202,7 +208,7 @@ public:
         ASSERT_EQ(bdr_side.dim(), dim);
 
         for (auto integral_it : integrals_.boundary_()) {
-            boundary_integral_data_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
+            integral_data_.boundary_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
                     integral_it->get_subset_high_idx());
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
@@ -227,8 +233,8 @@ public:
 
     /// Assembles the cell integrals for the given dimension.
     virtual inline void assemble_cell_integrals() {
-    	for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
-            this->cell_integral(bulk_integral_data_[i].cell, element_cache_map_->position_in_cache(bulk_integral_data_[i].cell.elm_idx()));
+    	for (unsigned int i=0; i<integral_data_.bulk_.permanent_size(); ++i) {
+            this->cell_integral(integral_data_.bulk_[i].cell, element_cache_map_->position_in_cache(integral_data_.bulk_[i].cell.elm_idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
@@ -240,22 +246,22 @@ public:
 
     /// Assembles the boundary side integrals for the given dimension.
     inline void assemble_boundary_side_integrals() {
-        for (unsigned int i=0; i<boundary_integral_data_.permanent_size(); ++i) {
-            this->boundary_side_integral(boundary_integral_data_[i].side);
+        for (unsigned int i=0; i<integral_data_.boundary_.permanent_size(); ++i) {
+            this->boundary_side_integral(integral_data_.boundary_[i].side);
         }
     }
 
     /// Assembles the edge integrals for the given dimension.
     inline void assemble_edge_integrals() {
-        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
-            this->edge_integral(edge_integral_data_[i].edge_side_range);
+        for (unsigned int i=0; i<integral_data_.edge_.permanent_size(); ++i) {
+            this->edge_integral(integral_data_.edge_[i].edge_side_range);
         }
     }
 
     /// Assembles the neighbours integrals for the given dimension.
     inline void assemble_neighbour_integrals() {
-        for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
-            this->dimjoin_intergral(coupling_integral_data_[i].cell, coupling_integral_data_[i].side);
+        for (unsigned int i=0; i<integral_data_.coupling_.permanent_size(); ++i) {
+            this->dimjoin_intergral(integral_data_.coupling_[i].cell, integral_data_.coupling_[i].side);
         }
     }
 
@@ -278,10 +284,10 @@ public:
 
     /// Clean all integral data structures
     void clean_integral_data() {
-        bulk_integral_data_.reset();
-        edge_integral_data_.reset();
-        coupling_integral_data_.reset();
-        boundary_integral_data_.reset();
+        integral_data_.bulk_.reset();
+        integral_data_.edge_.reset();
+        integral_data_.coupling_.reset();
+        integral_data_.boundary_.reset();
     }
 
     /// Getter of integrals_
@@ -297,11 +303,12 @@ protected:
      */
     AssemblyBase()
     : quad_(nullptr), quad_low_(nullptr),
-      min_edge_sides_(2),
-      bulk_integral_data_(20, 10),
-      edge_integral_data_(12, 6),
-      coupling_integral_data_(12, 6),
-      boundary_integral_data_(8, 4) {}
+      min_edge_sides_(2) {
+        this->set_integral_data_lists();
+    }
+
+    /// Allow to set base parameters of RevertibleLists holds in \p integral_data_ in descendant classes.
+    virtual void set_integral_data_lists() {}
 
     /// Create and return BulkIntegral of given quadrature
     std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
@@ -346,12 +353,8 @@ protected:
      */
     unsigned int min_edge_sides_;
 
-    // Following variables hold data of all integrals depending of actual computed element.
-    // TODO sizes of arrays should be set dynamically, depend on number of elements in ElementCacheMap,
-    RevertableList<BulkIntegralData>       bulk_integral_data_;      ///< Holds data for computing bulk integrals.
-    RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
-    RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
-    RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
+    /// Holds data for computing different types of integrals.
+    IntegralData integral_data_;
 
 };
 
@@ -374,13 +377,13 @@ public:
     /// Register cell points of volume integral
     inline void add_patch_bulk_points() override {
         for (auto integral_it : this->integrals_.bulk_()) {
-            for (unsigned int i=0; i<this->bulk_integral_data_.permanent_size(); ++i) {
-                if ( this->bulk_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
-                uint element_patch_idx = this->element_cache_map_->position_in_cache(this->bulk_integral_data_[i].cell.elm_idx());
-                uint elm_pos = fe_values_->register_element(this->bulk_integral_data_[i].cell, element_patch_idx);
+            for (unsigned int i=0; i<this->integral_data_.bulk_.permanent_size(); ++i) {
+                if ( this->integral_data_.bulk_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+                uint element_patch_idx = this->element_cache_map_->position_in_cache(this->integral_data_.bulk_[i].cell.elm_idx());
+                uint elm_pos = fe_values_->register_element(this->integral_data_.bulk_[i].cell, element_patch_idx);
                 uint i_point = 0;
                 for (auto p : integral_it->points(element_patch_idx, this->element_cache_map_) ) {
-                    fe_values_->register_bulk_point(this->bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
+                    fe_values_->register_bulk_point(this->integral_data_.bulk_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -389,12 +392,12 @@ public:
     /// Register side points of boundary side integral
     inline void add_patch_bdr_side_points() override {
         for (auto integral_it : this->integrals_.boundary_()) {
-            for (unsigned int i=0; i<this->boundary_integral_data_.permanent_size(); ++i) {
-                if ( this->boundary_integral_data_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
-            	uint side_pos = fe_values_->register_side(this->boundary_integral_data_[i].side);
+            for (unsigned int i=0; i<this->integral_data_.boundary_.permanent_size(); ++i) {
+                if ( this->integral_data_.boundary_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
+            	uint side_pos = fe_values_->register_side(this->integral_data_.boundary_[i].side);
                 uint i_point = 0;
-                for (auto p : integral_it->points(this->boundary_integral_data_[i].side, this->element_cache_map_) ) {
-                    fe_values_->register_side_point(this->boundary_integral_data_[i].side, side_pos, p.value_cache_idx(), i_point++);
+                for (auto p : integral_it->points(this->integral_data_.boundary_[i].side, this->element_cache_map_) ) {
+                    fe_values_->register_side_point(this->integral_data_.boundary_[i].side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -403,9 +406,9 @@ public:
     /// Register side points of edge integral
     inline void add_patch_edge_points() override {
         for (auto integral_it : this->integrals_.edge_()) {
-            for (unsigned int i=0; i<this->edge_integral_data_.permanent_size(); ++i) {
-                if ( this->edge_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
-            	auto range = this->edge_integral_data_[i].edge_side_range;
+            for (unsigned int i=0; i<this->integral_data_.edge_.permanent_size(); ++i) {
+                if ( this->integral_data_.edge_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+            	auto range = this->integral_data_.edge_[i].edge_side_range;
                 for( DHCellSide edge_side : range )
                 {
                 	uint side_pos = fe_values_->register_side(edge_side);
@@ -424,24 +427,24 @@ public:
             uint side_pos, element_patch_idx, elm_pos=0;
             uint last_element_idx = -1;
 
-            for (unsigned int i=0; i<this->coupling_integral_data_.permanent_size(); ++i) {
-                if ( this->coupling_integral_data_[i].bulk_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
-                side_pos = fe_values_->register_side(this->coupling_integral_data_[i].side);
-                if (this->coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
-                    element_patch_idx = this->element_cache_map_->position_in_cache(this->coupling_integral_data_[i].cell.elm_idx());
-                    elm_pos = fe_values_->register_element(this->coupling_integral_data_[i].cell, element_patch_idx);
+            for (unsigned int i=0; i<this->integral_data_.coupling_.permanent_size(); ++i) {
+                if ( this->integral_data_.coupling_[i].bulk_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
+                side_pos = fe_values_->register_side(this->integral_data_.coupling_[i].side);
+                if (this->integral_data_.coupling_[i].cell.elm_idx() != last_element_idx) {
+                    element_patch_idx = this->element_cache_map_->position_in_cache(this->integral_data_.coupling_[i].cell.elm_idx());
+                    elm_pos = fe_values_->register_element(this->integral_data_.coupling_[i].cell, element_patch_idx);
                 }
 
                 uint i_bulk_point = 0, i_side_point = 0;
-                for (auto p_high : integral_it->points(this->coupling_integral_data_[i].side, this->element_cache_map_) )
+                for (auto p_high : integral_it->points(this->integral_data_.coupling_[i].side, this->element_cache_map_) )
                 {
-                    fe_values_->register_side_point(this->coupling_integral_data_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
-                    if (this->coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
-                        auto p_low = p_high.lower_dim(this->coupling_integral_data_[i].cell);
-                        fe_values_->register_bulk_point(this->coupling_integral_data_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                    fe_values_->register_side_point(this->integral_data_.coupling_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
+                    if (this->integral_data_.coupling_[i].cell.elm_idx() != last_element_idx) {
+                        auto p_low = p_high.lower_dim(this->integral_data_.coupling_[i].cell);
+                        fe_values_->register_bulk_point(this->integral_data_.coupling_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                     }
                 }
-                last_element_idx = this->coupling_integral_data_[i].cell.elm_idx();
+                last_element_idx = this->integral_data_.coupling_[i].cell.elm_idx();
             }
         }
     }
