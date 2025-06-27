@@ -164,7 +164,13 @@ template < template<IntDim...> class DimAssembly>
 class GenericAssembly : public GenericAssemblyBase
 {
 public:
-    /// Constructor
+    /**
+     * Constructor.
+     *
+     * Used in equations working with 'old' FeValues objects in evaluation.
+     * @param eq_fields   Descendant of FieldSet declared in equation
+     * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
+     */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
@@ -173,7 +179,14 @@ public:
     	initialize();
     }
 
-    /// Constructor
+    /**
+     * Constructor.
+     *
+     * Used in equations working with 'new' PatchFeValues objects in evaluation.
+     * @param eq_fields   Descendant of FieldSet declared in equation
+     * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
+     * @param dh          DOF handler object
+     */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(),
       fe_values_(eq_data->quad_order(), dh->ds()->fe()),
@@ -188,6 +201,7 @@ public:
         return multidim_assembly_;
     }
 
+    /// Allows rewrite number of minimal edge sides.
     void set_min_edge_sides(unsigned int val) {
     	multidim_assembly_[1_d]->set_min_edge_sides(val);
     	multidim_assembly_[2_d]->set_min_edge_sides(val);
@@ -260,7 +274,7 @@ public:
         END_TIMER( DimAssembly<1>::name() );
     }
 
-    /// Return ElementCacheMap
+    /// Getter to ElementCacheMap
     inline const ElementCacheMap &cache_map() const {
         return element_cache_map_;
     }
@@ -345,6 +359,7 @@ private:
         }
     }
 
+    /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
     	fe_values_.resize_tables(table_sizes_);
 
