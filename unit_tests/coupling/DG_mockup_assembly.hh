@@ -31,7 +31,6 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
     }
@@ -265,7 +264,6 @@ public:
       conc_grad_( this->bulk_values().grad_scalar_shape() ),
 	  conc_grad_side_( this->side_values().grad_scalar_shape() ),
       conc_join_shape_( this->join_values().scalar_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -800,7 +798,6 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
         this->used_fields_ += eq_fields_->sources_sigma_out;

@@ -43,7 +43,6 @@ public:
     InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
 
@@ -101,7 +100,6 @@ public:
     ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
         this->used_fields_ += eq_fields_->diffusion_rate_immobile;
@@ -215,7 +213,6 @@ public:
     InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
 
@@ -273,7 +270,6 @@ public:
     ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;
         this->used_fields_ += eq_fields_->no_sorbing_surface_cond;

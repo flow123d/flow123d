@@ -29,16 +29,6 @@
 
 
 
-/// Allow set mask of active integrals.
-enum ActiveIntegrals {
-    no_intg  =      0,
-    bulk     = 0x0001,
-    edge     = 0x0002,
-    coupling = 0x0004,
-    boundary = 0x0008
-};
-
-
 /**
  * Common interface class for all Assembly classes.
  */
@@ -299,7 +289,6 @@ private:
         if (use_patch_fe_values_) {
             fe_values_.init_finalize();
         }
-        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
 
     /// Call assemblations when patch is filled
@@ -391,9 +380,6 @@ private:
     PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
-
-    /// Holds mask of active integrals.
-    int active_integrals_;
 
     /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
     PatchFEValues<3>::TableSizes table_sizes_;

@@ -46,14 +46,12 @@ public:
     /// Constructor.
     AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
     AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
 

@@ -45,7 +45,6 @@ public:
     FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ) {
-        this->active_integrals_ = (ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->alpha;
         this->used_fields_ += eq_fields_->density;
         this->used_fields_ += eq_fields_->gravity;
@@ -135,7 +134,6 @@ public:
     ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)) {
-        this->active_integrals_ = (ActiveIntegrals::bulk);
         this->used_fields_ += eq_data_->flow_->eq_fields().field_ele_pressure;
         this->used_fields_ += eq_fields_->old_iter_pressure;
     }

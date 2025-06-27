@@ -63,7 +63,6 @@ public:
     L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->ref_pressure;
@@ -270,7 +269,6 @@ public:
     OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }
 

@@ -109,11 +109,6 @@ public:
      */
     virtual void end() {}
 
-    /// Getter of active_integrals.- obsolete method
-    inline int n_active_integrals() const {
-        return active_integrals_;
-    }
-
     /**
      * Set shared_ptr to EvalPoints and create integral accessors
      *
@@ -126,7 +121,6 @@ public:
     /**
      * Add data of integrals to appropriate structure and register elements to ElementCacheMap.
      *
-     * Types of used integrals must be set in data member \p active_integrals_.
      * Return true if patch is full to its maximal capacity.
      * Method is called from GenericAssembly::assembly method.
      */
@@ -442,7 +436,6 @@ protected:
 
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
-    int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
     ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
     std::shared_ptr<EvalPoints> eval_points_;              ///< EvalPoints shared with GenericAssembly object.

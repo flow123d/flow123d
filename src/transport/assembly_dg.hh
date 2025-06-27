@@ -49,7 +49,6 @@ public:
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
     }
@@ -256,7 +255,6 @@ public:
       conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
       conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       conc_join_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -710,7 +708,6 @@ public:
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
         this->used_fields_ += eq_fields_->sources_sigma_out;
@@ -831,7 +828,6 @@ public:
       conc_shape_( this->side_values().scalar_shape() ),
 	  conc_grad_( this->side_values().grad_scalar_shape() ),
       conc_integral_( this->create_boundary_integral(this->quad_low_) ) {
-        this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -1038,7 +1034,6 @@ public:
       JxW_( this->bulk_values().JxW() ),
       init_shape_( this->bulk_values().scalar_shape() ),
       init_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
 
@@ -1128,7 +1123,6 @@ public:
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
 
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);

@@ -59,7 +59,6 @@ public:
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -300,7 +299,6 @@ public:
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -561,7 +559,6 @@ public:
       div_deform_( this->bulk_values().vector_divergence() ),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       coupling_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -724,7 +721,6 @@ public:
       normal_( this->side_values_high_dim().normal_vector() ),
       deform_side_( this->side_values_high_dim().vector_shape() ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
     }

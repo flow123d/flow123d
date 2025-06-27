@@ -44,7 +44,6 @@ public:
     MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
     }
@@ -131,7 +130,6 @@ public:
     InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc;
     }
 
@@ -201,7 +199,6 @@ public:
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->sources_sigma;
         this->used_fields_ += eq_fields_->sources_density;
@@ -381,7 +378,6 @@ public:
     : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
       edge_integral_( this->create_edge_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ) {
-        this->active_integrals_ = ActiveIntegrals::edge | ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->flow_flux;
     }
 
