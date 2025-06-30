@@ -137,7 +137,7 @@ public:
     }
 
     /// Assembles the cell integrals for the given dimension.
-    inline void assemble_cell_integrals(const RevertableList<GenericAssemblyBase::BulkIntegralData> &bulk_integral_data) {
+    inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
         unsigned int element_patch_idx, field_value_cache_position, val_idx;
         this->reset_offsets();
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {

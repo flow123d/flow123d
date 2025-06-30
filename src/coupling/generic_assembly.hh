@@ -35,95 +35,6 @@
 class GenericAssemblyBase
 {
 public:
-	/**
-	 * Helper structure holds data of cell (bulk) integral
-	 *
-	 * Data is specified by cell and subset index in EvalPoint object
-	 */
-    struct BulkIntegralData {
-    	/// Default constructor
-        BulkIntegralData() {}
-
-        /// Constructor with data mebers initialization
-        BulkIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
-        : cell(dhcell), subset_index(subset_idx) {}
-
-        /// Copy constructor
-        BulkIntegralData(const BulkIntegralData &other)
-        : cell(other.cell), subset_index(other.subset_index) {}
-
-        DHCellAccessor cell;          ///< Specified cell (element)
-        unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
-    };
-
-	/**
-	 * Helper structure holds data of edge integral
-	 *
-	 * Data is specified by side and subset index in EvalPoint object
-	 */
-    struct EdgeIntegralData {
-    	/// Default constructor
-    	EdgeIntegralData()
-    	: edge_side_range(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() ), make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() )) {}
-
-        /// Copy constructor
-    	EdgeIntegralData(const EdgeIntegralData &other)
-        : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
-
-        /// Constructor with data mebers initialization
-    	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
-        : edge_side_range(range), subset_index(subset_idx) {}
-
-    	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;   ///< Specified cell side (element)
-        unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
-	};
-
-	/**
-	 * Helper structure holds data of neighbour (coupling) integral
-	 *
-	 * Data is specified by cell, side and their subset indices in EvalPoint object
-	 */
-    struct CouplingIntegralData {
-    	/// Default constructor
-       	CouplingIntegralData() {}
-
-        /// Constructor with data mebers initialization
-       	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
-        : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
-
-        /// Copy constructor
-       	CouplingIntegralData(const CouplingIntegralData &other)
-        : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
-
-        DHCellAccessor cell;
-	    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
-        DHCellSide side;                   ///< Specified cell side (higher dim element)
-	    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
-    };
-
-	/**
-	 * Helper structure holds data of boundary integral
-	 *
-	 * Data is specified by side and subset indices of side and appropriate boundary element in EvalPoint object
-	 */
-    struct BoundaryIntegralData {
-    	/// Default constructor
-    	BoundaryIntegralData() {}
-
-        /// Constructor with data mebers initialization
-    	BoundaryIntegralData(unsigned int bdr_idx, DHCellSide dhside, unsigned int side_idx)
-        : bdr_subset_index(bdr_idx), side(dhside), side_subset_index(side_idx) {}
-
-        /// Copy constructor
-    	BoundaryIntegralData(const BoundaryIntegralData &other)
-        : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
-
-    	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
-	    unsigned int bdr_subset_index;     ///< Index (order) of subset on boundary element in EvalPoints object
-	    DHCellSide side;                   ///< Specified cell side (bulk element)
-	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
-	};
-
     GenericAssemblyBase()
     {}
 
@@ -350,22 +261,11 @@ private:
 
     /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
-    	fe_values_.resize_tables(table_sizes_);
+        fe_values_.resize_tables(table_sizes_);
 
-        multidim_assembly_[1_d]->add_patch_bulk_points();
-        multidim_assembly_[2_d]->add_patch_bulk_points();
-        multidim_assembly_[3_d]->add_patch_bulk_points();
-
-        multidim_assembly_[1_d]->add_patch_bdr_side_points();
-        multidim_assembly_[2_d]->add_patch_bdr_side_points();
-        multidim_assembly_[3_d]->add_patch_bdr_side_points();
-
-        multidim_assembly_[1_d]->add_patch_edge_points();
-        multidim_assembly_[2_d]->add_patch_edge_points();
-        multidim_assembly_[3_d]->add_patch_edge_points();
-
-        multidim_assembly_[1_d]->add_patch_coupling_integrals();
-        multidim_assembly_[2_d]->add_patch_coupling_integrals();
+        fe_values_.add_patch_points(multidim_assembly_[1_d]->integrals(), multidim_assembly_[1_d]->integral_data(), &element_cache_map_);
+        fe_values_.add_patch_points(multidim_assembly_[2_d]->integrals(), multidim_assembly_[2_d]->integral_data(), &element_cache_map_);
+        fe_values_.add_patch_points(multidim_assembly_[3_d]->integrals(), multidim_assembly_[3_d]->integral_data(), &element_cache_map_);
 
         this->fe_values_.reinit_patch();
     }

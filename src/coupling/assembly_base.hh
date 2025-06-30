@@ -28,16 +28,6 @@
 
 
 
-/// Set of integral data of given dimension used in assemblation
-struct IntegralData {
-public:
-    RevertableList<GenericAssemblyBase::BulkIntegralData>       bulk_;      ///< Holds data for computing bulk integrals.
-    RevertableList<GenericAssemblyBase::EdgeIntegralData>       edge_;      ///< Holds data for computing edge integrals.
-    RevertableList<GenericAssemblyBase::CouplingIntegralData>   coupling_;  ///< Holds data for computing couplings integrals.
-    RevertableList<GenericAssemblyBase::BoundaryIntegralData>   boundary_;  ///< Holds data for computing boundary integrals.
-};
-
-
 /**
  * Base class define empty methods, these methods can be overwite in descendants.
  */
@@ -45,11 +35,6 @@ template <unsigned int dim>
 class AssemblyBase
 {
 public:
-    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
-    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
-    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
-    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
-
     /**
      * Constructor
      *
@@ -255,19 +240,6 @@ public:
         }
     }
 
-    /// Register cell points of volume integral - TODO move to PatchFEValues
-    virtual inline void add_patch_bulk_points() {}
-
-    /// Register side points of boundary side integral - TODO move to PatchFEValues
-    virtual inline void add_patch_bdr_side_points() {}
-
-    /// Register side points of edge integral - TODO move to PatchFEValues
-    virtual inline void add_patch_edge_points() {
-    }
-
-    /// Register bulk and side points of coupling integral - TODO move to PatchFEValues
-    virtual inline void add_patch_coupling_integrals() {}
-
     /// Setter of min_edge_sides_
     void set_min_edge_sides(unsigned int val) {
         min_edge_sides_ = val;
@@ -286,8 +258,13 @@ public:
     }
 
     /// Getter of integrals_
-    DimIntegrals integrals() const {
+    const DimIntegrals &integrals() const {
     	return integrals_;
+    }
+
+    /// Getter of integral_data_
+    const IntegralData &integral_data() const {
+    	return integral_data_;
     }
 
 protected:
@@ -458,11 +435,6 @@ template <unsigned int dim>
 class AssemblyBasePatch : public AssemblyBase<dim>
 {
 public:
-    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
-    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
-    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
-    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
-
     /**
      * Constructor.
      *
@@ -473,81 +445,6 @@ public:
 	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
 	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
 	}
-
-    /// Register cell points of volume integral - TODO move to PatchFEValues
-    inline void add_patch_bulk_points() override {
-        for (auto integral_it : this->integrals_.bulk_()) {
-            for (unsigned int i=0; i<this->integral_data_.bulk_.permanent_size(); ++i) {
-                if ( this->integral_data_.bulk_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
-                uint element_patch_idx = this->element_cache_map_->position_in_cache(this->integral_data_.bulk_[i].cell.elm_idx());
-                uint elm_pos = fe_values_->register_element(this->integral_data_.bulk_[i].cell, element_patch_idx);
-                uint i_point = 0;
-                for (auto p : integral_it->points(element_patch_idx, this->element_cache_map_) ) {
-                    fe_values_->register_bulk_point(this->integral_data_.bulk_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
-                }
-            }
-        }
-    }
-
-    /// Register side points of boundary side integral - TODO move to PatchFEValues
-    inline void add_patch_bdr_side_points() override {
-        for (auto integral_it : this->integrals_.boundary_()) {
-            for (unsigned int i=0; i<this->integral_data_.boundary_.permanent_size(); ++i) {
-                if ( this->integral_data_.boundary_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
-            	uint side_pos = fe_values_->register_side(this->integral_data_.boundary_[i].side);
-                uint i_point = 0;
-                for (auto p : integral_it->points(this->integral_data_.boundary_[i].side, this->element_cache_map_) ) {
-                    fe_values_->register_side_point(this->integral_data_.boundary_[i].side, side_pos, p.value_cache_idx(), i_point++);
-                }
-            }
-        }
-    }
-
-    /// Register side points of edge integral - TODO move to PatchFEValues
-    inline void add_patch_edge_points() override {
-        for (auto integral_it : this->integrals_.edge_()) {
-            for (unsigned int i=0; i<this->integral_data_.edge_.permanent_size(); ++i) {
-                if ( this->integral_data_.edge_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
-            	auto range = this->integral_data_.edge_[i].edge_side_range;
-                for( DHCellSide edge_side : range )
-                {
-                	uint side_pos = fe_values_->register_side(edge_side);
-                    uint i_point = 0;
-                    for (auto p : integral_it->points(edge_side, this->element_cache_map_) ) {
-                        fe_values_->register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
-                    }
-                }
-            }
-        }
-    }
-
-    /// Register bulk and side points of coupling integral - TODO move to PatchFEValues
-    inline void add_patch_coupling_integrals() override {
-        for (auto integral_it : this->integrals_.coupling_()) {
-            uint side_pos, element_patch_idx, elm_pos=0;
-            uint last_element_idx = -1;
-
-            for (unsigned int i=0; i<this->integral_data_.coupling_.permanent_size(); ++i) {
-                if ( this->integral_data_.coupling_[i].bulk_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
-                side_pos = fe_values_->register_side(this->integral_data_.coupling_[i].side);
-                if (this->integral_data_.coupling_[i].cell.elm_idx() != last_element_idx) {
-                    element_patch_idx = this->element_cache_map_->position_in_cache(this->integral_data_.coupling_[i].cell.elm_idx());
-                    elm_pos = fe_values_->register_element(this->integral_data_.coupling_[i].cell, element_patch_idx);
-                }
-
-                uint i_bulk_point = 0, i_side_point = 0;
-                for (auto p_high : integral_it->points(this->integral_data_.coupling_[i].side, this->element_cache_map_) )
-                {
-                    fe_values_->register_side_point(this->integral_data_.coupling_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
-                    if (this->integral_data_.coupling_[i].cell.elm_idx() != last_element_idx) {
-                        auto p_low = p_high.lower_dim(this->integral_data_.coupling_[i].cell);
-                        fe_values_->register_bulk_point(this->integral_data_.coupling_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
-                    }
-                }
-                last_element_idx = this->integral_data_.coupling_[i].cell.elm_idx();
-            }
-        }
-    }
 
     /// Return number of DOFs
     inline unsigned int n_dofs() {

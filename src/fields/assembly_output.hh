@@ -100,7 +100,6 @@ class AssemblyOutputElemData : public AssemblyOutputBase<dim>
 public:
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
-    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputElemData"; }
 
@@ -145,7 +144,6 @@ class AssemblyOutputNodeData : public AssemblyOutputBase<dim>
 public:
     typedef EquationOutput EqFields;
     typedef EquationOutput EqData;
-    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputNodeData"; }
 
