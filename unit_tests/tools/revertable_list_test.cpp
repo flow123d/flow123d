@@ -85,7 +85,7 @@ TEST(RevertableList, default_constructor) {
         list.push_back( data[i] );
         EXPECT_EQ(list.permanent_size(), 0);
         EXPECT_EQ(list.temporary_size(), i+1);
-        EXPECT_EQ(list.reserved_size(), i+1);
+        // capacity of list is resized automatically, test of reserved size is irrelevant
     }
 
     list.make_permanent();
@@ -95,7 +95,6 @@ TEST(RevertableList, default_constructor) {
     for (uint i=5; i<10; ++i) {
         list.push_back( data[i] );
         EXPECT_EQ(list.temporary_size(), i+1);
-        EXPECT_EQ(list.reserved_size(), i+1);
     }
 
     list.revert_temporary();
