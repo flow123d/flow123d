@@ -277,8 +277,9 @@ public:
     }
 
     /**
-     * Registers point set from quadrature.
-     * Returns an object referencing to the EvalPoints and list of its points.
+     * Registers point set from quadrature as new subset during initialization of EvalPoints object.
+     *
+     * Returns index of subset.
      */
     template <unsigned int dim>
     unsigned int add_bulk(const Quadrature &);
@@ -286,14 +287,6 @@ public:
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
     unsigned int add_edge(const Quadrature &);
-
-//    /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
-//    template <unsigned int dim>
-//    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
-//
-//    /// The same as add_bulk but for edge points on boundary sides.
-//    template <unsigned int dim>
-//    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {

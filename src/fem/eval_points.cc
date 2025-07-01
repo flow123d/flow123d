@@ -62,29 +62,6 @@ unsigned int EvalPoints::add_edge(const Quadrature &quad) {
     return i_subset;
 }
 
-//template <unsigned int dim>
-//std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling(const Quadrature &quad) {
-//    ASSERT_EQ(dim, quad.dim()+1);
-//
-//    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
-//    DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
-//    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
-//    DebugOut() << "coupling edge subset" << edge_integral->get_subset_idx();
-//    return std::make_shared<CouplingIntegral>(edge_integral, bulk_integral);
-//}
-
-//template <unsigned int dim>
-//std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &quad) {
-//    ASSERT_EQ(dim, quad.dim()+1);
-//
-//    std::shared_ptr<BulkIntegral> bulk_integral = this->add_bulk<dim-1>(quad);
-//    DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
-//            << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
-//    std::shared_ptr<EdgeIntegral> edge_integral = this->add_edge<dim>(quad);
-//    DebugOut() << "boundary edge subset" << edge_integral->get_subset_idx();
-//    return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
-//}
-
 void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
     ASSERT_EQ(integrals_vec.size(), 3);
 
