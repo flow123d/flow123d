@@ -67,26 +67,26 @@ void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
 
     // merge BulkIntegrals and EdgeIntegrals of all dimensions to common vectors
     for (auto iv : integrals_vec) {
-        bulk_integrals_.copy_items(iv.bulk_);
-        edge_integrals_.copy_items(iv.edge_);
+        bulk_integrals_.insert(iv.bulk_.begin(), iv.bulk_.end());
+        edge_integrals_.insert(iv.edge_.begin(), iv.edge_.end());
     }
 
     // initialize CuplingIntegrals, BoundaryIntegrals - set bulk and edge sub-integrals
     for (auto iv : integrals_vec) {
-        for (auto integral : iv.coupling_()) {
-            auto bulk_int = bulk_integrals_.create_and_return( integral->quad(), integral->quad()->dim() );
-            auto edge_int = edge_integrals_.create_and_return( integral->quad(), integral->quad()->dim()+1 );
-            integral->init(shared_from_this(), bulk_int, edge_int);
+        for (auto integral : iv.coupling_) {
+            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
+            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
+            integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
         }
-        for (auto integral : iv.boundary_()) {
-            auto bulk_int = bulk_integrals_.create_and_return( integral->quad(), integral->quad()->dim() );
-            auto edge_int = edge_integrals_.create_and_return( integral->quad(), integral->quad()->dim()+1 );
-            integral->init(shared_from_this(), bulk_int, edge_int);
+        for (auto integral : iv.boundary_) {
+            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
+            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
+            integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
         }
     }
 
     // initialize BulkIntegrals, EdgeIntegrals
-    for (auto integral : bulk_integrals_()) {
+    for (auto integral : bulk_integrals_) {
         switch (integral->dim()) {
         case 0:
             integral->init<0>(shared_from_this());
@@ -102,7 +102,7 @@ void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
             break;
         }
     }
-    for (auto integral : edge_integrals_()) {
+    for (auto integral : edge_integrals_) {
         switch (integral->dim()) {
         case 1:
             integral->init<1>(shared_from_this());

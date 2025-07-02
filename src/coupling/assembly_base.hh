@@ -129,7 +129,7 @@ public:
         }
 
         if (integrals_.coupling_.size() > 0) {
-        	for (auto coupling_integral : integrals_.coupling_()) {
+        	for (auto coupling_integral : integrals_.coupling_) {
                 // Adds data of bulk points only if bulk point were not added during processing of bulk integral
                 bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
                 if (add_bulk_points) {
@@ -302,7 +302,7 @@ protected:
     inline void add_volume_integral(const DHCellAccessor &cell, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(cell.dim(), dim);
 
-        for (auto integral_it : integrals_.bulk_()) {
+        for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
 
@@ -327,7 +327,7 @@ protected:
 	    auto range = cell_side.edge_sides();
         ASSERT_EQ(range.begin()->dim(), dim);
 
-        for (auto integral_it : integrals_.edge_()) {
+        for (auto integral_it : integrals_.edge_) {
             integral_data_.edge_.emplace_back(range, integral_it->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
@@ -349,7 +349,7 @@ protected:
     inline void add_boundary_integral(const DHCellSide &bdr_side, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(bdr_side.dim(), dim);
 
-        for (auto integral_it : integrals_.boundary_()) {
+        for (auto integral_it : integrals_.boundary_) {
             integral_data_.boundary_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
                     integral_it->get_subset_high_idx());
 
@@ -373,7 +373,8 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
-        return integrals_.bulk_.create_and_return(quad, quad->dim());
+        auto result = integrals_.bulk_.insert( std::make_shared<BulkIntegral>(quad, quad->dim()) );
+	    return *result.first;
     }
 
     /**
@@ -382,7 +383,8 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
-        return integrals_.edge_.create_and_return(quad, quad->dim()+1);
+        auto result = integrals_.edge_.insert( std::make_shared<EdgeIntegral>(quad, quad->dim()+1) );
+	    return *result.first;
     }
 
     /**
@@ -392,7 +394,9 @@ protected:
      */
     std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
         if (dim==3) return nullptr;
-        else return integrals_.coupling_.create_and_return(quad, quad->dim());
+
+        auto result = integrals_.coupling_.insert( std::make_shared<CouplingIntegral>(quad, quad->dim()) );
+	    return *result.first;
     }
 
     /**
@@ -401,7 +405,8 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<BoundaryIntegral> create_boundary_integral(Quadrature *quad) {
-        return integrals_.boundary_.create_and_return(quad, quad->dim()+1);
+        auto result = integrals_.boundary_.insert( std::make_shared<BoundaryIntegral>(quad, quad->dim()+1) );
+	    return *result.first;
     }
 
     /// Print update flags to string format.

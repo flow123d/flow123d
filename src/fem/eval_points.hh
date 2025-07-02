@@ -23,6 +23,7 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
+#include <unordered_set>
 #include "fem/dh_cell_accessor.hh"
 #include "tools/revertable_list.hh"
 #include "mesh/range_wrapper.hh"
@@ -139,90 +140,33 @@ public:
 
 
 
-template <class Integral>
-class IntegralHashMap {
-private:
-    /// Return unique hash
-    inline uint quad_hash(Quadrature *quad, unsigned int dim) const {
-        return dim + 4*quad->size();
+/// Define Integral hash function
+template<typename Integral>
+struct IntegralPtrHash {
+    std::size_t operator()(const std::shared_ptr<Integral>& key) const {
+        return std::hash<unsigned int>()(key->dim()) ^ (std::hash<unsigned int>()(key->quad()->size()) << 1);
     }
-
-    std::unordered_map< uint, std::shared_ptr<Integral> > integral_map_;
-
-    /// Value-only iterator
-    class ValueIterator {
-        using InnerIterator = typename std::unordered_map< uint, std::shared_ptr<Integral> >::const_iterator;
-        InnerIterator it;
-
-    public:
-        explicit ValueIterator(InnerIterator iter) : it(iter) {}
-
-        const std::shared_ptr<Integral>& operator*() const { return it->second; }
-        ValueIterator& operator++() { ++it; return *this; }
-        bool operator!=(const ValueIterator& other) const { return it != other.it; }
-    };
-public:
-    /// Constructor
-	IntegralHashMap() {}
-
-    /// Value-only iterable wrapper
-    class ValueIterable {
-        const std::unordered_map< uint, std::shared_ptr<Integral> >& integral_map_ref_;
-    public:
-        ValueIterable(const std::unordered_map< uint, std::shared_ptr<Integral> >& ref) : integral_map_ref_(ref) {}
-
-        auto begin() const { return ValueIterator(integral_map_ref_.begin()); }
-        auto end() const { return ValueIterator(integral_map_ref_.end()); }
-    };
-
-    /// Operator returning map values iterable
-    ValueIterable operator()() const {
-        return ValueIterable(integral_map_);
-    }
-
-    /// Checks if object of same quadrature exists, if not creates it and return it.
-    std::shared_ptr<Integral> create_and_return(Quadrature *quad, unsigned int dim) {
-    	uint hash = quad_hash(quad, dim);
-        auto it = integral_map_.find(hash);
-
-        if (it == integral_map_.end()) {
-        	integral_map_[hash] = std::make_shared<Integral>(quad, dim);
-            it = integral_map_.find(hash);
-        }
-        return it->second;
-    }
-
-    //// Define begin() and end() methods to allow iteration
-    auto begin() { return integral_map_.begin(); }
-    auto end() { return integral_map_.end(); }
-
-    //// Constant modification of previous methods
-    auto begin() const { return integral_map_.begin(); }
-    auto end() const { return integral_map_.end(); }
-
-    /// Return size of integral map
-    unsigned int size() const {
-    	return integral_map_.size();
-    }
-
-    /// Copy all items of other IntegralHashMap to this.
-    void copy_items(IntegralHashMap<Integral> &other) {
-        for (auto it=other.begin(); it!=other.end(); ++it) {
-            auto own_it = integral_map_.find(it->first);
-            ASSERT(own_it == integral_map_.end());
-            integral_map_[it->first] = it->second;
-        }
-    }
-
 };
+
+/// Content-based equality for shared_ptr<Integral>
+template<typename Integral>
+struct IntegralPtrEqual {
+    bool operator()(const std::shared_ptr<Integral>& lhs, const std::shared_ptr<Integral>& rhs) const {
+        return *lhs == *rhs;
+    }
+};
+
+/// Alias for unordered_set of shared_ptr<Integral> with custom hash
+template<typename Integral>
+using IntegralPtrSet = std::unordered_set<std::shared_ptr<Integral>, IntegralPtrHash<Integral>, IntegralPtrEqual<Integral>>;
 
 
 /// Set of integral of given dimension necessary in assemblation
 struct DimIntegrals {
-	IntegralHashMap<BulkIntegral> bulk_;            ///< Bulk integrals of elements
-	IntegralHashMap<EdgeIntegral> edge_;            ///< Edge integrals between elements of same dimensions
-	IntegralHashMap<CouplingIntegral> coupling_;    ///< Coupling integrals between elements of dimensions dim and dim-1
-	IntegralHashMap<BoundaryIntegral> boundary_;    ///< Boundary integrals betwwen side and boundary element of dim-1
+	IntegralPtrSet<BulkIntegral> bulk_;            ///< Bulk integrals of elements
+	IntegralPtrSet<EdgeIntegral> edge_;            ///< Edge integrals between elements of same dimensions
+	IntegralPtrSet<CouplingIntegral> coupling_;    ///< Coupling integrals between elements of dimensions dim and dim-1
+	IntegralPtrSet<BoundaryIntegral> boundary_;    ///< Boundary integrals betwwen side and boundary element of dim-1
 };
 
 
@@ -372,10 +316,10 @@ private:
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
     /// Maps of all BulkIntegrals of dimensions 0,1,2,3
-    IntegralHashMap<BulkIntegral> bulk_integrals_;
+    IntegralPtrSet<BulkIntegral> bulk_integrals_;
 
     /// Maps of all EdgeIntegrals of dimensions 1,2,3
-    IntegralHashMap<EdgeIntegral> edge_integrals_;
+    IntegralPtrSet<EdgeIntegral> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;

@@ -233,7 +233,7 @@ public:
     /// Add elements, sides and quadrature points registered on patch
     inline void add_patch_points(const DimIntegrals &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map) {
         // add bulk points
-    	for (auto integral_it : integrals.bulk_()) {
+    	for (auto integral_it : integrals.bulk_) {
             for (unsigned int i=0; i<integral_data.bulk_.permanent_size(); ++i) {
                 if ( integral_data.bulk_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
                 uint element_patch_idx = element_cache_map->position_in_cache(integral_data.bulk_[i].cell.elm_idx());
@@ -246,7 +246,7 @@ public:
         }
 
     	// add boundary points
-        for (auto integral_it : integrals.boundary_()) {
+        for (auto integral_it : integrals.boundary_) {
             for (unsigned int i=0; i<integral_data.boundary_.permanent_size(); ++i) {
                 if ( integral_data.boundary_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
             	uint side_pos = this->register_side(integral_data.boundary_[i].side);
@@ -258,7 +258,7 @@ public:
         }
 
     	// add edge points
-        for (auto integral_it : integrals.edge_()) {
+        for (auto integral_it : integrals.edge_) {
             for (unsigned int i=0; i<integral_data.edge_.permanent_size(); ++i) {
                 if ( integral_data.edge_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
             	auto range = integral_data.edge_[i].edge_side_range;
@@ -274,7 +274,7 @@ public:
         }
 
     	// add coupling points
-        for (auto integral_it : integrals.coupling_()) {
+        for (auto integral_it : integrals.coupling_) {
             uint side_pos, element_patch_idx, elm_pos=0;
             uint last_element_idx = -1;
 

@@ -286,6 +286,11 @@ public:
     Quadrature *quad() const {
     	return quad_;
     }
+
+    /// Comparison operator
+    bool operator==(const BaseIntegral& other) const {
+        return (dim_ == other.dim_) && (quad()->size() == other.quad()->size());
+    }
 protected:
     /// Pointer to EvalPoints
     std::shared_ptr<EvalPoints> eval_points_;
