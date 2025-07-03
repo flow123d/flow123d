@@ -1,4 +1,4 @@
-import flowpy
+from py123d import field as flowpy
 import numpy as np
 
 class PythonAsm(flowpy.PythonFieldBase):

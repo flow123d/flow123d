@@ -14,7 +14,16 @@
 # since CMakeList.txt can be called by generated makefiles.
 execute_process(COMMAND bin/git_post_checkout_hook WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
-cmake_policy(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16)
+
+# cmake_policy(SET CMP0017 NEW)
+# if (${CMAKE_VERSION} VERSION_GREATER 3.0)
+#     cmake_policy(SET CMP0037 OLD)
+# endif()
+#if(POLICY CMP0075)
+cmake_policy(SET CMP0075 NEW)
+#endif()
+
 
 
 # Include settings given by user first
@@ -87,17 +96,11 @@ endif(USE_CCACHE)
 
 
 # Project name and language(s)
-project(Flow123d CXX C Fortran)
+project(Flow123d CXX C Fortran) 
 
-# CMake version required for pre-build this project
-cmake_minimum_required(VERSION 2.8.8)
     
 set(CMAKE_C_DEPENDS_USE_COMPILER ON)
 
-cmake_policy(SET CMP0017 NEW)
-if (${CMAKE_VERSION} VERSION_GREATER 3.0)
-    cmake_policy(SET CMP0037 OLD)
-endif()
 
 
 # allow duplicate custom targets for makefiles
@@ -107,7 +110,7 @@ set(ALLOW_DUPLICATE_CUSTOM_TARGETS 1) #variable that can be tested
 
 ################################################################################# set CMake Modules
 # Set all module paths
-set(CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules" "${CMAKE_ROOT}/Modules")
+set(CMAKE_MODULE_PATH "${Flow123d_SOURCE_DIR}/CMake/Modules")
 
 if (NOT EXTERNAL_PROJECT_DIR)
     # default directory for building external libraries 
@@ -599,67 +602,32 @@ message(STATUS "=======================================================")
 message(STATUS "====== PYTHON =========================================")
 message(STATUS "=======================================================")
 
-# set PYTHON_EXTRA_MODULES_PATH to lib/python/flow123d
-# if we are in installed flow123d, this direcoty exists and 
-# contains all python flow123d files
-# otherwise
-# we create link to src so python_loader is able to use modules
-set(PYTHON_EXTRA_MODULES_PATH lib/python/flow123d)
-# PYTHONPATH is relative to cwd
-# need to make changes in c++ to correctly alter PYTHONPATH relative to binary location
-# for now, we also add absolute location
-# now it contains:
-#       relative path
-#       absolute path
-#       /opt/flow123d - for production
-#       /opt/flow123d/flow123d - for packaging
-flow_define(PYTHON_EXTRA_MODULES_PATH ../${PYTHON_EXTRA_MODULES_PATH}:${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/flow123d/${PYTHON_EXTRA_MODULES_PATH})
-execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
-if (COPY_INSTEAD_OF_SYMLINK)
-	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
-	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	)
-	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
-	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	)
-	
-	set(EXECUTABLE_PATH ${MPIEXEC_PATH})
-configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
-	
-else()
-	execute_process(COMMAND
-	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
-	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	)
-endif()
-
-# create shortcuts for runtest
+# ... whole py123d package is installed to standard location in the release image
+flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python)    # first is py123d path relative to flow123d, second relative to flow123d_core lib.
 
 # use relative path
-set(PYTHON_RUNTEST ../bin/python/runtest.py)
+set(PYTHON_RUNTEST ../src/py123d/bin/runtest.py)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
 #configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
 
 # make shortcut also for exec_parallel.py
-set(PYTHON_RUNTEST ../bin/python/exec_parallel.py)
+set(PYTHON_RUNTEST ../src/py123d/bin/exec_parallel.py)
 configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/exec_parallel @ONLY)
 
 # restore absolute path
-set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/bin/python/runtest.py)
+set(PYTHON_RUNTEST ${CMAKE_SOURCE_DIR}/src/py123d/bin/runtest.py)
 
-message(STATUS "-------------------------------------------------------")
-message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
-message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
-message(STATUS "PYTHON_VERSION_STRING = ${PYTHON_VERSION_STRING}")
-message(STATUS "-------------------------------------------------------")
-message(STATUS "PYTHONLIBS_FOUND = ${PYTHONLIBS_FOUND}")
-message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
-message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
-message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
-message(STATUS "=======================================================\n\n")
+# message(STATUS "-------------------------------------------------------")
+# message(STATUS "PYTHONINTERP_FOUND = ${PYTHONINTERP_FOUND}")
+# message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
+# message(STATUS "PYTHON_VERSION_STRING = ${PYTHON_VERSION_STRING}")
+# message(STATUS "-------------------------------------------------------")
+# message(STATUS "PYTHONLIBS_FOUND = ${PYTHONLIBS_FOUND}")
+# message(STATUS "PYTHON_LIBRARIES = ${PYTHON_LIBRARIES}")
+# message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
+# message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
+# message(STATUS "=======================================================\n\n")
 
 
 #################################################################################
@@ -810,14 +778,6 @@ macro(make_link_in_source FILE)
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
 
-# use wreappers instead of links (or copy) for executables
-#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/flow123d)
-#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/flow123d)
-#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/mpiexec)
-#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/mpiexec)
-
-#make_link_in_source(bin/flow123d)
-#make_link_in_source(bin/mpiexec)
 
 make_link_in_source(bin/tests/Makefile)
 make_link_in_source(unit_tests/Makefile)
@@ -862,8 +822,11 @@ include_directories(
 	${BPARSER_INCLUDES}
 )
 
+message(STATUS "==== Processing 'src' ====") 
 add_subdirectory(src)
+message(STATUS "==== Processing 'doc' ====") 
 add_subdirectory(doc)
+message(STATUS "==== Processing 'unit_tests' ====") 
 add_subdirectory(unit_tests) # this also adds third_party/gtest
 
 # install benchmark miniapp
@@ -915,15 +878,15 @@ if( PETSC_FOUND )
   endif()
   
   ### add target for flow123d binary
-  add_executable(bin/flow123d src/main.cc)
-  target_link_libraries(bin/flow123d 
-        flow123d_lib 
-        system_lib
+  add_executable(flow123d src/main.cc)
+  target_link_libraries(flow123d 
+        flow123d_core 
+        flow123d_system
         ${PETSC_ADDITIONAL_LIBS}
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}
   )     # set libraries linked to main binary (order matter)
-  add_dependencies("bin/flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
+  add_dependencies("flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -931,10 +894,11 @@ if( PETSC_FOUND )
   # INSTALL_RPATH should be used for target relinging during its instalation, however that does not happen
   # for the pacakging directory we use to install to the image therefore we rather set both ../lib and ../src
   # and use just BUILD_RPATH.
-  set_target_properties("bin/flow123d"  PROPERTIES 
-               BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib")
- else()
+  set_target_properties("flow123d"  PROPERTIES 
+         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+         BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+         INSTALL_RPATH "$ORIGIN/../lib")
+else()
   message(STATUS "PETSC not found. Omitting configuration of the target 'flow123d'.")
 endif()
 
@@ -970,26 +934,23 @@ message(STATUS "===========================================")
 ####################################################################################
 # Install and Packaging
 
-# install bin directory
-install(DIRECTORY bin/config                DESTINATION bin/)
-install(DIRECTORY bin/ndiff                 DESTINATION bin/)
-install(DIRECTORY bin/paraview              DESTINATION bin/)
-install(DIRECTORY bin/python                DESTINATION bin/ PATTERN "*.pyc" EXCLUDE)
 
 # binary files
 
-install(PROGRAMS  build_tree/bin/flow123d   DESTINATION bin/)
-install(PROGRAMS  bin/runtest               DESTINATION bin/)
+install(TARGETS flow123d   DESTINATION bin/)
 install(PROGRAMS  bin/exec_parallel         DESTINATION bin/)
 install(PROGRAMS  bin/input_convert.sh      DESTINATION bin/) 
-#install(PROGRAMS  bin/yaml_converter/yaml_converter.py    DESTINATION bin/yaml_converter)
-#install(PROGRAMS  bin/yaml_converter/YAMLConverter.py     DESTINATION bin/yaml_converter)
-#install(PROGRAMS  bin/yaml_converter/change_rules.py      DESTINATION bin/yaml_converter)
 install(PROGRAMS  bin/ndiff/ndiff.pl        DESTINATION bin/ndiff)
+install(PROGRAMS  bin/ndiff/Diff.pm        DESTINATION bin/ndiff)
 install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
-install(FILES build_tree/src/libflow123d_lib.so  DESTINATION lib/)
-install(FILES build_tree/src/libsystem_lib.so  DESTINATION lib/)
+install(TARGETS flow123d_system flow123d_core 
+  LIBRARY DESTINATION lib/
+)
+install(TARGETS flow123d_python_api
+  LIBRARY DESTINATION lib/python
+)
 install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)
+
 
 # plain files
 install(FILES     bin/README                DESTINATION bin/)
@@ -1015,9 +976,7 @@ install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING
 
 
 # python libs, sources and config files
-install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
-install(FILES     config/host_table.yaml    DESTINATION config/)
-install(FILES     config/build/requirements.txt    DESTINATION config)
+install(DIRECTORY src/py123d/               DESTINATION lib/python/py123d)
 
 
 # To install MSVC runtime libraries ... ?

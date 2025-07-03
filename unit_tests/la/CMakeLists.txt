@@ -24,7 +24,7 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-set(libs la_lib system_lib)
+set(libs la_lib flow123d_system)
 add_test_directory("${libs}")
 
 define_mpi_test(linsys 1)

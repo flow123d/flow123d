@@ -189,12 +189,27 @@ public:
             Quadrature *q_bdr1 = new QGauss(0, asm_quad_order);
             Quadrature *q_bdr2 = new QGauss(1, asm_quad_order);
             Quadrature *q_bdr3 = new QGauss(2, asm_quad_order);
-            mass_integral[0] = eval_points_->add_bulk<1>(*q_bulk1, asm_quad_order );
-            mass_integral[1] = eval_points_->add_bulk<2>(*q_bulk2, asm_quad_order );
-            mass_integral[2] = eval_points_->add_bulk<3>(*q_bulk3, asm_quad_order );
-            bdr_integral[0] = eval_points_->add_boundary<1>(*q_bdr1, asm_quad_order );
-            bdr_integral[1] = eval_points_->add_boundary<2>(*q_bdr2, asm_quad_order );
-            bdr_integral[2] = eval_points_->add_boundary<3>(*q_bdr3, asm_quad_order );
+            mass_integral[0] = std::make_shared<BulkIntegral>(q_bulk1, 1, asm_quad_order);
+            mass_integral[1] = std::make_shared<BulkIntegral>(q_bulk2, 2, asm_quad_order);
+            mass_integral[2] = std::make_shared<BulkIntegral>(q_bulk3, 3, asm_quad_order);
+            bdr_integral[0] = std::make_shared<BoundaryIntegral>(q_bdr1, 1, asm_quad_order);
+            bdr_integral[1] = std::make_shared<BoundaryIntegral>(q_bdr2, 2, asm_quad_order);
+            bdr_integral[2] = std::make_shared<BoundaryIntegral>(q_bdr3, 3, asm_quad_order);
+            {
+                // initialization of integrals
+                auto edge_integral0 = std::make_shared<EdgeIntegral>(q_bdr1, 1, asm_quad_order);
+                auto edge_integral1 = std::make_shared<EdgeIntegral>(q_bdr2, 2, asm_quad_order);
+                auto edge_integral2 = std::make_shared<EdgeIntegral>(q_bdr3, 3, asm_quad_order);
+                bdr_integral[0]->init(eval_points_, mass_integral[0], edge_integral0);
+                bdr_integral[1]->init(eval_points_, mass_integral[1], edge_integral1);
+                bdr_integral[2]->init(eval_points_, mass_integral[2], edge_integral2);
+                mass_integral[0]->init<1>(eval_points_);
+                mass_integral[1]->init<2>(eval_points_);
+                mass_integral[2]->init<3>(eval_points_);
+                edge_integral0->init<1>(eval_points_);
+                edge_integral1->init<2>(eval_points_);
+                edge_integral2->init<3>(eval_points_);
+            }
             this->init(eval_points_);
 
             this->add_coords_field();

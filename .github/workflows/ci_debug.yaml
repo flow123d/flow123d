@@ -4,7 +4,6 @@ on:
     push:
         branches: 
         - "**"
-    
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     workflow_dispatch:
         inputs:
@@ -19,7 +18,10 @@ on:
 
 env:
   autopull:  0
-
+permissions:
+  contents: read
+  actions: read
+  checks: write
 jobs:
     build:
         runs-on: ubuntu-latest
@@ -106,6 +108,7 @@ jobs:
           run: |
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
+
     unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
@@ -134,7 +137,44 @@ jobs:
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
-        - run: config/build/run_with_build_dir.sh  dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: Run UNIT tests
+          run: config/build/run_with_build_dir.sh dbg_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
+
+        - name: Artifact unit tests for ${{ matrix.test_dir }}
+          uses: actions/upload-artifact@v4
+          with:         
+            name: unit_tests_${{ matrix.test_dir }}
+            path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
+            if-no-files-found: ignore
+
+    unit-test-report:
+        name: Unit Test Report
+        runs-on: ubuntu-latest
+        needs: 
+            - unit_tests
+        outputs:
+            status: ${{ job.status }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Download all unit tests artifacts
+              uses: actions/download-artifact@v4
+              with:
+                pattern: unit_tests_*
+                path: unit_tests
+            - name: Report tests
+              uses: dorny/test-reporter@v1
+              id: test-reporter
+              with:
+                name: Reports of unit test
+                path:  unit_tests/**/*.xml
+                reporter: java-junit
+                fail-on-error: true                
+                fail-on-empty: true
+                list-suites: failed
+                list-tests: failed
+                only-summary: true
 
     build_doc:
         needs: [build]
@@ -157,7 +197,7 @@ jobs:
         name: Workflow conclusion from all job results 
         
         #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [build_doc, unit_tests, integration_tests]
+        needs: [build_doc, unit-test-report, integration_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:

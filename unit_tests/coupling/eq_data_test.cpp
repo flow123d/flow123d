@@ -171,10 +171,19 @@ public:
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
             Quadrature *q_bdr = new QGauss(2, 0);
-            mass_eval[0] = eval_points_->add_bulk<1>(*q_bulk_1d, 0 );
-            mass_eval[1] = eval_points_->add_bulk<2>(*q_bulk_2d, 0 );
-            mass_eval[2] = eval_points_->add_bulk<3>(*q_bulk_3d, 0 );
-            bdr_eval = eval_points_->add_boundary<3>(*q_bdr, 0 );
+            mass_eval[0] = std::make_shared<BulkIntegral>(q_bulk_1d, 1);
+            mass_eval[1] = std::make_shared<BulkIntegral>(q_bulk_2d, 2);
+            mass_eval[2] = std::make_shared<BulkIntegral>(q_bulk_3d, 3);
+            bdr_eval = std::make_shared<BoundaryIntegral>(q_bdr, 3);
+            {
+                // initialization of integrals
+                auto edge_eval = std::make_shared<EdgeIntegral>(q_bdr, 3);
+                bdr_eval->init(eval_points_, mass_eval[1], edge_eval);
+                mass_eval[0]->init<1>(eval_points_);
+                mass_eval[1]->init<2>(eval_points_);
+                mass_eval[2]->init<3>(eval_points_);
+                edge_eval->init<3>(eval_points_);
+            }
             this->init(eval_points_);
         }
 
