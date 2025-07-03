@@ -108,7 +108,7 @@ public:
 
     /// Constructor.
     AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
+    : AssemblyOutputBase<dim>(eq_data->output_quad_order, eq_fields, eq_data) {}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}

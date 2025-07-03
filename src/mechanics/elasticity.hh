@@ -108,11 +108,11 @@ public:
 
 	};
 
-	class EqData {
+	class EqData : public EqDataBase {
 	public:
 
 		EqData()
-        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+        : EqDataBase(1, 0), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;

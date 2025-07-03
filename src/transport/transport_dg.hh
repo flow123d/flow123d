@@ -174,9 +174,6 @@ public:
     	/// DG variant ((non-)symmetric/incomplete
     	int dg_variant;
 
-    	/// Polynomial order of finite elements.
-    	unsigned int dg_order;
-
     	// @}
 
 

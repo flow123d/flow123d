@@ -74,7 +74,7 @@ public:
     };
 
     /// Reaction data
-    class EqData
+    class EqData : public EqDataBase
     {
     public:
         /// Constructor

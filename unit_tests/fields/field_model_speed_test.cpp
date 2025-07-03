@@ -32,6 +32,7 @@
 #include "system/sys_profiler.hh"
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
+#include "coupling/equation.hh"
 
 class Balance;
 
@@ -83,9 +84,9 @@ struct fn_model_tensor {
 
 class FieldModelSpeedTest : public testing::Test {
 public:
-    class EqData : public FieldSet {
+    class EqData : public FieldSet, public EqDataBase {
     public:
-        EqData() : order(2) {
+        EqData() : EqDataBase(2) {
             *this += vector_const_field
                         .name("vector_const_field")
                         .description("Constant vector.")
@@ -127,9 +128,6 @@ public:
             vector_field.set(Model<3, FieldValue<3>::VectorFixed>::create(fn_model_vector(), scalar_const_field, vector_const_field), 0.0);
             tensor_field.set(Model<3, FieldValue<3>::TensorFixed>::create(fn_model_tensor(), scalar_const_field, tensor_const_field), 0.0);
         }
-
-    	/// Polynomial order of finite elements.
-    	unsigned int order;
 
     	// constant fields, we need these fields to create models
         Field<3, FieldValue<3>::Scalar > scalar_const_field;
@@ -214,7 +212,7 @@ public:
 
     /// Constructor.
     AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(eq_data->quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
         this->used_fields_.set_mesh( *eq_fields_->mesh() );
         this->used_fields_ += *eq_fields_;
