@@ -131,12 +131,13 @@ public:
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
-      normal_( this->side_values().normal_vector() ),
+      normal_( this->side_values_high_dim().normal_vector() ),
       JxW_( this->bulk_values().JxW() ),
       vel_shape_( this->bulk_values().vector_shape() ),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
+      asm_sides_integral_( this->create_bulk_integral(&quad_rt_)) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -802,7 +803,7 @@ protected:
     FEValues<3> fe_values_old_;
     shared_ptr<FiniteElement<dim+1>> fe_;                  ///< Finite element for the solution of the advection-diffusion equation.
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
-    // TODO make revision of used FEValues objects
+    // TODO make revision of used FEValues objects - fe_values_side_ is unused
 
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
@@ -827,6 +828,7 @@ protected:
     std::shared_ptr<BulkIntegral> bulk_integral_;           ///< Bulk integral of assembly class
     std::shared_ptr<BoundaryIntegral> bdr_integral_;        ///< Boundary integral of assembly class
     std::shared_ptr<CouplingIntegral> coupling_integral_;   ///< Coupling integral of assembly class
+    std::shared_ptr<BulkIntegral> asm_sides_integral_;      ///< Bulk integral of quadrature of higher order, used in asm_sides
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
