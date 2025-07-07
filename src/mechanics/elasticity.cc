@@ -285,8 +285,8 @@ Elasticity::EqFields::EqFields()
 
 void Elasticity::EqData::create_dh(Mesh * mesh)
 {
-	ASSERT_EQ(quad_order(), 1).error("Unsupported polynomial order for finite elements in Elasticity");
-    MixedPtr<FE_P> fe_p( quad_order() );
+	ASSERT_EQ(quad_order()[0], 1).error("Unsupported polynomial order for finite elements in Elasticity");
+    MixedPtr<FE_P> fe_p( quad_order()[0] );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
 
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
@@ -297,15 +297,15 @@ void Elasticity::EqData::create_dh(Mesh * mesh)
 
 void Elasticity::OutputEqData::create_dh(Mesh * mesh)
 {
-	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
+	ASSERT_EQ(quad_order()[0], 0).error("Unsupported polynomial order for output in Elasticity");
 
-	MixedPtr<FE_P_disc> fe_p_disc( quad_order() );
+	MixedPtr<FE_P_disc> fe_p_disc( quad_order()[0] );
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
 	dh_scalar_->distribute_dofs(ds_scalar);
 
 
-    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>( quad_order() ), FEType::FETensor, 9);
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>( quad_order()[0] ), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);

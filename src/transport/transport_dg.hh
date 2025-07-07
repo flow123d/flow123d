@@ -167,10 +167,10 @@ public:
 		    this->time_ = time;
 		}
 
-		/// Getter of dg_order
-		inline unsigned int quad_order() const {
-		    return dg_order;
-		}
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {dg_order, dg_order};
+        }
 
     	/// @name Parameters of the numerical method
     	// @{

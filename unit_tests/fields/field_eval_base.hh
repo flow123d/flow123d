@@ -95,7 +95,8 @@ public:
         /**
          * Descendant of FieldSet. Contains different fields for evaluation and referenced.
          */
-        EqData() : tg_(0.0, 1.0) {
+        EqData(unsigned int asm_quad_order, unsigned int fields_quad_order)
+        : tg_(0.0, 1.0) {
             *this += scalar_field
                         .name("scalar_field")
                         .description("Scalar field.")
@@ -180,23 +181,40 @@ public:
                         .flags_add(in_main_matrix);
 
             // Asumme following types:
+            std::cout << "YYYY " << asm_quad_order << " - " << fields_quad_order << std::endl;
             eval_points_ = std::make_shared<EvalPoints>();
-            Quadrature *q_bulk1 = new QGauss(1, 0);
-            Quadrature *q_bulk2 = new QGauss(2, 0);
-            Quadrature *q_bulk3 = new QGauss(3, 0);
-            Quadrature *q_bdr1 = new QGauss(0, 0);
-            Quadrature *q_bdr2 = new QGauss(1, 0);
-            Quadrature *q_bdr3 = new QGauss(2, 0);
-            mass_integral[0] = eval_points_->add_bulk<1>(*q_bulk1 );
-            mass_integral[1] = eval_points_->add_bulk<2>(*q_bulk2 );
-            mass_integral[2] = eval_points_->add_bulk<3>(*q_bulk3 );
-            bdr_integral[0] = eval_points_->add_boundary<1>(*q_bdr1 );
-            bdr_integral[1] = eval_points_->add_boundary<2>(*q_bdr2 );
-            bdr_integral[2] = eval_points_->add_boundary<3>(*q_bdr3 );
+            Quadrature *q_bulk1 = new QGauss(1, asm_quad_order);
+            Quadrature *q_bulk2 = new QGauss(2, asm_quad_order);
+            Quadrature *q_bulk3 = new QGauss(3, asm_quad_order);
+            Quadrature *q_bdr1 = new QGauss(0, asm_quad_order);
+            Quadrature *q_bdr2 = new QGauss(1, asm_quad_order);
+            Quadrature *q_bdr3 = new QGauss(2, asm_quad_order);
+            mass_integral[0] = std::make_shared<BulkIntegral>(q_bulk1, 1, asm_quad_order);
+            mass_integral[1] = std::make_shared<BulkIntegral>(q_bulk2, 2, asm_quad_order);
+            mass_integral[2] = std::make_shared<BulkIntegral>(q_bulk3, 3, asm_quad_order);
+            bdr_integral[0] = std::make_shared<BoundaryIntegral>(q_bdr1, 1, asm_quad_order);
+            bdr_integral[1] = std::make_shared<BoundaryIntegral>(q_bdr2, 2, asm_quad_order);
+            bdr_integral[2] = std::make_shared<BoundaryIntegral>(q_bdr3, 3, asm_quad_order);
+            {
+                // initialization of integrals
+                auto edge_integral0 = std::make_shared<EdgeIntegral>(q_bdr1, 1, asm_quad_order);
+                auto edge_integral1 = std::make_shared<EdgeIntegral>(q_bdr2, 2, asm_quad_order);
+                auto edge_integral2 = std::make_shared<EdgeIntegral>(q_bdr3, 3, asm_quad_order);
+                bdr_integral[0]->init(eval_points_, mass_integral[0], edge_integral0);
+                bdr_integral[1]->init(eval_points_, mass_integral[1], edge_integral1);
+                bdr_integral[2]->init(eval_points_, mass_integral[2], edge_integral2);
+                mass_integral[0]->init<1>(eval_points_);
+                mass_integral[1]->init<2>(eval_points_);
+                mass_integral[2]->init<3>(eval_points_);
+                edge_integral0->init<1>(eval_points_);
+                edge_integral1->init<2>(eval_points_);
+                edge_integral2->init<3>(eval_points_);
+            }
             this->init(eval_points_);
 
             this->add_coords_field();
             this->set_default_fieldset();
+            this->set_field_quad_order(fields_quad_order);
         }
 
         void register_eval_points(bool bdr=false) {
@@ -293,12 +311,12 @@ public:
         RefField &_field;
     };
 
-    FieldEvalBaseTest() {
+    FieldEvalBaseTest(unsigned int asm_quad_order=0, unsigned int fields_quad_order=0) {
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         Profiler::instance();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-        eq_data_ = std::make_shared<EqData>();
+        eq_data_ = std::make_shared<EqData>(asm_quad_order, fields_quad_order);
     }
 
     ~FieldEvalBaseTest() {
@@ -309,7 +327,7 @@ public:
         return IT::Record("SomeEquation","")
                 .declare_key("data", IT::Array(
                         IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
-                        .copy_keys( FieldEvalBaseTest::EqData().make_field_descriptor_type("SomeEquation") )
+                        .copy_keys( FieldEvalBaseTest::EqData(0, 0).make_field_descriptor_type("SomeEquation") )
                         .declare_key("scalar_field", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("vector_field", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )

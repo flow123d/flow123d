@@ -91,6 +91,11 @@ public:
     /// Constructor
     EqData();
 
+    /// Returns pair { quad_order_asm, quad_order_fields}
+    inline std::vector<unsigned int> quad_order() const {
+        return {0, 0};
+    }
+
     /// Dual porosity computational scheme tolerance.
     /** According to this tolerance the analytical solution of dual porosity concentrations or
      * simple forward difference approximation of concentrations is chosen for computation.

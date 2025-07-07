@@ -46,9 +46,12 @@ public:
             Quadrature *q_bulk_1d = new QGauss(1, 0);
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
-            bulk_int[0] = eval_points_->add_bulk<1>(*q_bulk_1d );
-            bulk_int[1] = eval_points_->add_bulk<2>(*q_bulk_2d );
-            bulk_int[2] = eval_points_->add_bulk<3>(*q_bulk_3d );
+            bulk_int[0] = std::make_shared<BulkIntegral>(q_bulk_1d, 1);
+            bulk_int[1] = std::make_shared<BulkIntegral>(q_bulk_2d, 2);
+            bulk_int[2] = std::make_shared<BulkIntegral>(q_bulk_3d, 3);
+            bulk_int[0]->init<1>(eval_points_);
+            bulk_int[1]->init<2>(eval_points_);
+            bulk_int[2]->init<3>(eval_points_);
             this->init(eval_points_);
         }
 

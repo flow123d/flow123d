@@ -41,8 +41,10 @@ public:
         eval_points = std::make_shared<EvalPoints>();
         Quadrature *q_bulk = new QGauss(3, 2);
         Quadrature *q_side = new QGauss(2, 2);
-        bulk_eval = eval_points->add_bulk<3>(*q_bulk );
-        edge_eval = eval_points->add_edge<3>(*q_side );
+        bulk_eval = std::make_shared<BulkIntegral>(q_bulk, 3);
+        edge_eval = std::make_shared<EdgeIntegral>(q_side, 3);
+        bulk_eval->init<3>(eval_points);
+        edge_eval->init<3>(eval_points);
         this->init(eval_points);
     }
 

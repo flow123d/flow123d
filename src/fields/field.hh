@@ -322,6 +322,12 @@ public:
     /// Implements FieldCommon::cache_allocate
     void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
 
+    /// Implements FieldCommon::set_field_quad_order
+    void set_field_quad_order(unsigned int fields_quad_order) override
+    {
+        this->fields_quad_order_ = fields_quad_order;
+    }
+
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;
 
@@ -407,6 +413,9 @@ protected:
 
     /// ElementDataCache used during field output, object is shared with OutputTime
     std::shared_ptr<ElementDataCache<typename Value::element_type>> output_data_cache_;
+
+    /// This value is used in operator()( BulkPoint / SidePoint ) in test if quad_order of assembly and field is same
+    unsigned int fields_quad_order_;
 
 
 

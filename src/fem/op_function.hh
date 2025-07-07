@@ -314,7 +314,7 @@ class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
 	RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
+	: PatchOp<spacedim>(dim, pfev, {fe->n_components()}, OpSizeType::fixedSizeOp, fe->n_dofs())
 	{
         this->domain_ = Domain::domain();
         Quadrature *quad = pfev.get_bulk_quadrature(dim);
@@ -325,7 +325,7 @@ public:
 
         for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
             for (uint i_p=0; i_p<n_points; ++i_p)
-                for (uint c=0; c<spacedim; ++c)
+                for (uint c=0; c<fe->n_components(); ++c)
                     ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
 	}
 
@@ -338,7 +338,7 @@ class RefVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim+1, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, {dim+1, fe->n_components()}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
         Quadrature *quad = pfev.get_side_quadrature(dim);
@@ -351,7 +351,7 @@ public:
             Quadrature side_q = quad->make_from_side<dim>(s);
             for (unsigned int i_p = 0; i_p < n_points; i_p++)
                 for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
-                    for (uint c=0; c<spacedim; ++c)
+                    for (uint c=0; c<fe->n_components(); ++c)
                         ref_vector_value(s,3*i_dof+c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), c);
         }
     }
@@ -416,6 +416,7 @@ public:
 	RefGradVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, OpSizeType::fixedSizeOp, fe->n_dofs())
     {
+        // TODO: check if shape is set correctly (spacedim can be wrong)
         this->domain_ = Domain::domain();
         Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
@@ -426,7 +427,7 @@ public:
             for (uint i_dim=0; i_dim<dim; ++i_dim)
                 for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_vector_value(i_dim,3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p), i_c)[i_dim];
+                        ref_vector_value(i_dim,spacedim*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, quad->point<dim>(i_p), i_c)[i_dim];
         }
     }
 
@@ -454,7 +455,7 @@ public:
                 for (uint i_dim=0; i_dim<dim; ++i_dim)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_vector_value(i_sd*dim+i_dim, 3*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p), i_c)[i_dim];
+                            ref_vector_value(i_sd*dim+i_dim, spacedim*i_dof+i_c)(i_p) = fe->shape_grad(i_dof, side_q.point<dim>(i_p), i_c)[i_dim];
         }
     }
 
@@ -607,8 +608,115 @@ private:
     PatchOp<spacedim> &dispatch_op_;
 };
 
+/// Evaluates vector values (FEType == FEVectorPiola)
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class VectorPiolaShape : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	VectorPiolaShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
+    {
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(fe) );    // input_ops_[0] ... RefVector dim x n_dofs
+        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Domain, Domain, spacedim>, dim >() );    // input_ops_[1] ... Jac       spacedim x dim
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >() ); // input_ops_[2] ... JacDet    1
+	}
+
+    void eval() override {
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto jac_vec = this->input_ops(1)->result_matrix();
+        auto jac_det_vec = this->input_ops(2)->result_matrix();
+        auto result_vec = dispatch_op_.result_matrix();
+
+        uint n_dofs = this->n_dofs();
+
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> jac_div_det_vec = jac_vec / jac_det_vec(0);
+        Eigen::Matrix<ArenaOVec<double>, spacedim, dim> jac_div_det_ovec;
+        for (uint c=0; c<spacedim*this->dim_; ++c) {
+            jac_div_det_ovec(c) = ArenaOVec<double>(jac_div_det_vec(c));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(dim, n_dofs);
+        for (uint c=0; c<dim*n_dofs; ++c) {
+            ref_shape_ovec(c) = ArenaOVec<double>(ref_shape_vec(c));
+        }
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = jac_div_det_ovec * ref_shape_ovec;
+        for (uint c=0; c<spacedim*n_dofs; ++c) {
+            result_vec(c) = result_ovec(c).get_vec(); // segfault on this line
+        }
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
+/// Template specialization of previous: Domain=SideDomain)
+template<unsigned int dim, unsigned int spacedim>
+class VectorPiolaShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	VectorPiolaShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, {spacedim}, OpSizeType::pointOp, fe->n_dofs()), dispatch_op_(dispatch_op)
+    {
+        this->domain_ = Op::SideDomain::domain();
+//        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Op::SideDomain, spacedim>, dim >(fe) );            // input_ops_[0] ... dim x n_dofs
+//        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() );    // input_ops_[1] ... spacedim x dim
+//        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, Op::SideDomain, spacedim>, dim >() ); // input_ops_[2] ... 1
+	}
+
+    void eval() override {
+        // TODO implement the method
+        // jacobian(i_point) * ref_vector[i_point][i_dof] / determinant(i_point)
+        // jacobian(i_point) / determinant(i_point) * ref_vector[i_point][i_dof]
+
+//        PatchPointValues<spacedim> &ppv = this->ppv();
+//        uint n_dofs = this->n_dofs();
+//        uint n_sides = ppv.n_elems_;
+//        uint n_patch_points = ppv.n_points_;
+//        uint n_points_per_side = n_patch_points / n_sides;
+//        dispatch_op_.allocate_result(n_patch_points, ppv.patch_arena());
+//
+//        auto ref_shape_vec = this->input_ops(0)->result_matrix();  // dim+1 x n_dofs
+//        auto jac_vec = this->input_ops(1)->result_matrix();
+//        auto jac_det_vec = this->input_ops(2)->result_matrix();
+//        auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
+//
+//        // Computes jacobian / determinant and converts result to ArenaOVec
+//        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> jac_div_det_vec = jac_vec / jac_det_vec(0);
+//        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> jac_div_det_ovec(spacedim, this->dim_);
+//        for (uint c=0; c<spacedim*this->dim_; ++c) {
+//            jac_div_det_ovec(c) = ArenaOVec(jac_div_det_vec(c));
+//        }
+//
+//        // Computes expand vector of previous result (jacobian / determinant)
+//        ArenaVec<double> elem_vec(n_points_per_side, this->patch_fe_->patch_arena());
+//        for (uint i=0; i<n_points_per_side; ++i) {
+//            elem_vec(i) = 1.0;
+//        }
+//        ArenaOVec<double> elem_ovec(elem_vec);
+//        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> expand_jac_div_det_ovec = jac_div_det_ovec * elem_ovec;
+//        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> expand_jac_div_det_vec(spacedim, this->dim_);
+//        for (uint c=0; c<spacedim*this->dim_; ++c) {
+//            expand_jac_div_det_vec(c) = expand_jac_div_det_ovec(c).get_vec();
+//        }
+//
+//        // Doresit rozkopirovani podle i_side a nasobeni expand_jac_div_det_vec * expand_ref_vec
+//        for (uint c=0; c<spacedim*n_dofs; c++)
+//            result_vec(c) = ArenaVec<double>(n_patch_points, ppv.patch_arena());
+//
+//        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+//            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
+//                for (uint c=0; c<spacedim; c++)
+//                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(4)(i_pt),3*i_dof+c)(i_pt / n_sides);
+//        }
+    }
+
+private:
+    PatchOp<spacedim> &dispatch_op_;
+};
+
 // class OpVectorCovariantShape
-// class OpVectorPiolaShape
 
 /// Dispatch class of vector values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
@@ -633,8 +741,7 @@ public:
             }
             case FEVectorPiola:
             {
-                ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //in_op_ = new OpVectorPiolaShape<dim, Domain, spacedim>(pfev, fe, *this);
+                in_op_ = new VectorPiolaShape<dim, Domain, spacedim>(pfev, fe, *this);
                 break;
             }
             default:

@@ -139,6 +139,11 @@ public:
     class EqData
     {
     public:
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {1, 1};
+        }
+
         /// steady or unsteady water flow simulator based on MH scheme
         std::shared_ptr<DarcyLMH> flow_;
 

@@ -409,6 +409,13 @@ public:
     	for(auto field : field_list) field->set_default_fieldset(*this);
     }
 
+    /**
+     * Set quad_order of all fields in FieldSet
+     */
+    void set_field_quad_order(unsigned int fields_quad_order) {
+        for(FieldCommon *field : field_list) field->set_field_quad_order(fields_quad_order);
+    }
+
 
 protected:
 

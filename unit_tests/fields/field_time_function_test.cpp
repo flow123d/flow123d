@@ -44,7 +44,7 @@ class FieldTimeFunctionTest : public FieldEvalBaseTest {
 public:
 
     class EqData : public FieldEvalBaseTest::EqData {
-        EqData() : FieldEvalBaseTest::EqData() {}
+        EqData() : FieldEvalBaseTest::EqData(0, 0) {}
     };
 
     FieldTimeFunctionTest() : FieldEvalBaseTest() {}
