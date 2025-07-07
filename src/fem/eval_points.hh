@@ -103,7 +103,7 @@ public:
             dim_eval_points_[i].clear();
     }
 
-    void create_integrals(std::vector<DimIntegrals> integrals_vec);
+    void create_integrals(std::vector<DimIntegrals> integrals_vec, unsigned int asm_quad_order);
 
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)

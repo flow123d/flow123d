@@ -13,6 +13,7 @@
 #include "fem/op_factory.hh"
 #include "fem/patch_op_impl.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
 
@@ -109,7 +110,7 @@ public:
     {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
-        this->create_integrals();
+        this->create_integrals(quad_order);
         element_cache_map_.init(eval_points_);
 
         UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
@@ -124,15 +125,15 @@ public:
 
     ~PatchFETestBase() {}
 
-    void create_integrals() {
-        bulk_integrals_[0] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
-        bulk_integrals_[1] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
-        bulk_integrals_[2] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(3), 3);
-        edge_integrals_[0] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(1), 1);
-        edge_integrals_[1] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(2), 2);
-        edge_integrals_[2] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(3), 3);
-        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
-        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
+    void create_integrals(unsigned int quad_order) {
+        bulk_integrals_[0] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1, quad_order);
+        bulk_integrals_[1] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2, quad_order);
+        bulk_integrals_[2] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(3), 3, quad_order);
+        edge_integrals_[0] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(1), 1, quad_order);
+        edge_integrals_[1] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(2), 2, quad_order);
+        edge_integrals_[2] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(3), 3, quad_order);
+        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1, quad_order);
+        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2, quad_order);
 
         coupling_integrals_[0]->init(eval_points_, bulk_integrals_[0], edge_integrals_[1]);
         coupling_integrals_[1]->init(eval_points_, bulk_integrals_[1], edge_integrals_[2]);
@@ -920,6 +921,100 @@ public:
 
 
 /**
+ * Specialization defining FE vector piola and covariant operations
+ */
+class PatchFETestVectorSpecialized : public PatchFETestBase {
+public:
+	PatchFETestVectorSpecialized(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : PatchFETestBase(quad_order, dh),
+      vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().vector_shape() ),
+      vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().vector_shape() ),
+      vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().vector_shape() )
+    {
+	    vec_view_1d_ = &fe_values_[0].vector_view(0);
+	    vec_view_2d_ = &fe_values_[1].vector_view(0);
+	    vec_view_3d_ = &fe_values_[2].vector_view(0);
+    }
+
+    ~PatchFETestVectorSpecialized() {}
+
+    void reinit_patch_fe() override {
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
+            add_integrals(*cell_it);
+        }
+        bulk_integral_data_.make_permanent();
+        edge_integral_data_.make_permanent();
+        coupling_integral_data_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        for(auto dh_cell : dh_->local_range() ) {
+            ElementAccessor<3> elm = dh_cell.elm();
+            auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
+            double jxw = 0.0, jxw_ref = 0.0;
+            arma::vec3 vector_shape_dof0 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof0_ref = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1_ref = {0.0, 0.0, 0.0};
+            switch (dh_cell.dim()) {
+            case 1:
+                fe_values_[0].reinit(elm);
+                jxw = jxw_1d_(p);
+                vector_shape_dof0 = vector_shape_1d_.shape(0)(p);
+                jxw_ref = fe_values_[0].JxW(0);
+                vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
+                break;
+            case 2:
+                fe_values_[1].reinit(elm);
+                jxw = jxw_2d_(p);
+                vector_shape_dof0 = vector_shape_2d_.shape(0)(p);
+                vector_shape_dof1 = vector_shape_2d_.shape(1)(p);
+                jxw_ref = fe_values_[1].JxW(0);
+                vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
+                vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
+                break;
+            case 3:
+                fe_values_[2].reinit(elm);
+                jxw = jxw_3d_(p);
+                vector_shape_dof0 = vector_shape_3d_.shape(0)(p);
+                vector_shape_dof1 = vector_shape_3d_.shape(1)(p);
+                jxw_ref = fe_values_[2].JxW(0);
+                vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
+                vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
+                break;
+            }
+            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_ARMA_EQ( vector_shape_dof0, vector_shape_dof0_ref );
+            EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
+        }
+
+    }
+
+    ///< Vector view in cell calculation.
+    const FEValuesViews::Vector<3> * vec_view_1d_;
+    const FEValuesViews::Vector<3> * vec_view_2d_;
+    const FEValuesViews::Vector<3> * vec_view_3d_;
+
+    FeQArray<Vector> vector_shape_1d_;
+    FeQArray<Vector> vector_shape_2d_;
+    FeQArray<Vector> vector_shape_3d_;
+};
+
+
+/**
  * Used in speed_comparation test
  */
 //class PatchFETestCompare : public PatchFETestBase {
@@ -1000,6 +1095,24 @@ void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool pr
     patch_fe.test_evaluation();
 }
 
+/// Complete test with FE scalar operations
+void compare_evaluation_func_vector_piola(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_P_disc<0>>(0);
+    std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0_disc<1>>();
+    std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0_disc<2>>();
+    std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0_disc<3>>();
+    MixedPtr<FiniteElement> fe_rt( fe0_rt, fe1_rt, fe2_rt, fe3_rt );
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_rt);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFETestVectorSpecialized patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
 
 
 TEST(PatchFeTest, complete_evaluation) {
@@ -1014,6 +1127,7 @@ TEST(PatchFeTest, complete_evaluation) {
     compare_evaluation_func_scalar(mesh, 1, true);
     compare_evaluation_func_scalar(mesh, 2);
     compare_evaluation_func_vector(mesh, 1, true);
+    compare_evaluation_func_vector_piola(mesh, 1, true);
 }
 
 //TEST(PatchFeTest, speed_comparation) {

@@ -527,9 +527,11 @@ public:
 
     EqData() {}
 
-	inline unsigned int quad_order() const {
-	    return dg_order;
-	}
+    /// Returns pair { quad_order_asm, quad_order_fields}
+    inline std::vector<unsigned int> quad_order() const {
+        return {dg_order, dg_order};
+    }
+
 
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete

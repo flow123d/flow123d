@@ -128,6 +128,11 @@ public:
     /// Collect all fields
     EqData();
 
+    /// Returns pair { quad_order_asm, quad_order_fields}
+    inline std::vector<unsigned int> quad_order() const {
+        return {0, 0};
+    }
+
     /// Mapping from local indexing of substances to global.
     std::vector<unsigned int> substance_global_idx_;
 

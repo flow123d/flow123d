@@ -53,6 +53,7 @@ public:
         multidim_assembly_[1_d]->initialize(&element_cache_map_);
         multidim_assembly_[2_d]->initialize(&element_cache_map_);
         multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        eq_fields->set_field_quad_order(eq_fields->quad_order()[1]);
     }
 
     /// Getter to set of assembly objects
@@ -175,7 +176,7 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            bulk_integral_ = std::make_shared<BulkIntegral>(this->quad_, dim);
+            bulk_integral_ = std::make_shared<BulkIntegral>(this->quad_, dim, 0);
             bulk_integral_->init<dim>(eval_points);
             integrals[dim-1] = bulk_integral_;
         }

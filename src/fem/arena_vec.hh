@@ -336,6 +336,11 @@ public:
         return *this;
     }
 
+    /// Comparison of accessors.
+    bool operator==(const ArenaOVec<T> &other) const {
+    	return (this->data_size_ == other.data_size_) && (this->data_ptr_ == other.data_ptr_);
+    }
+
     /// Addition operator
     inline ArenaOVec<T> operator+(const ArenaOVec<T> &other) const {
         // Test of valid data_ptr is in constructor
@@ -345,6 +350,14 @@ public:
         Eigen::Map<typename ArenaVec<T>::VecData> result_map = res.eigen_map();
         result_map = this->eigen_map() + other.eigen_map();
         return res;
+    }
+
+    /// Addition assignment operator
+    inline ArenaOVec<T>& operator+=(const ArenaOVec<T> &other) {
+        // Test of valid data_ptr is in constructor
+        ASSERT_EQ(this->data_size_, other.data_size());
+        this->eigen_map() = this->eigen_map() + other.eigen_map();
+        return *this;
     }
 
     /// Multiplication operator

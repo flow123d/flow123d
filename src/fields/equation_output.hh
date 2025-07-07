@@ -98,6 +98,11 @@ public:
     /// Selects the error control field out of output field set according to input record.
     typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
     
+    /// Returns pair { quad_order_asm, quad_order_fields}
+    inline std::vector<unsigned int> quad_order() const {
+        return {0, 0};
+    }
+
 private:
     /**
      * Creates output selection from the field set.

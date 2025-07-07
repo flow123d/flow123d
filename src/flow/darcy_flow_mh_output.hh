@@ -98,6 +98,11 @@ public:
     public:
         DiffEqData() {}
 
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {2, 2};
+        }
+
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
 
@@ -116,6 +121,11 @@ public:
     class RawOutputEqData {
     public:
     	RawOutputEqData() {}
+
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {0, 0};
+        }
 
         ofstream raw_output_file;                        ///< Raw data output file.
         std::vector< std::string > raw_output_strings_;  ///< Output lines of cells.

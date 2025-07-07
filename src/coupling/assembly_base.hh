@@ -302,12 +302,12 @@ protected:
     inline void add_volume_integral(const DHCellAccessor &cell, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(cell.dim(), dim);
 
+        table_sizes_tmp.elem_sizes_[0][dim-1]++;
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
 
             unsigned int reg_idx = cell.elm().region_idx().idx();
-            table_sizes_tmp.elem_sizes_[0][dim-1]++;
             // Different access than in other integrals: We can't use range method CellIntegral::points
             // because it passes element_patch_idx as argument that is not known during patch construction.
             for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
@@ -373,7 +373,7 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
-        auto result = integrals_.bulk_.insert( std::make_shared<BulkIntegral>(quad, quad->dim()) );
+        auto result = integrals_.bulk_.insert( std::make_shared<BulkIntegral>(quad, quad->dim(), 0) ); // TODO last parameter must be eq_data->quad_order()[0]
 	    return *result.first;
     }
 
@@ -383,7 +383,7 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
-        auto result = integrals_.edge_.insert( std::make_shared<EdgeIntegral>(quad, quad->dim()+1) );
+        auto result = integrals_.edge_.insert( std::make_shared<EdgeIntegral>(quad, quad->dim()+1, 0) ); // TODO last parameter must be eq_data->quad_order()[0]
 	    return *result.first;
     }
 
@@ -395,7 +395,7 @@ protected:
     std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
         if (dim==3) return nullptr;
 
-        auto result = integrals_.coupling_.insert( std::make_shared<CouplingIntegral>(quad, quad->dim()) );
+        auto result = integrals_.coupling_.insert( std::make_shared<CouplingIntegral>(quad, quad->dim(), 0) ); // TODO last parameter must be eq_data->quad_order()[0]
 	    return *result.first;
     }
 
@@ -405,7 +405,7 @@ protected:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<BoundaryIntegral> create_boundary_integral(Quadrature *quad) {
-        auto result = integrals_.boundary_.insert( std::make_shared<BoundaryIntegral>(quad, quad->dim()+1) );
+        auto result = integrals_.boundary_.insert( std::make_shared<BoundaryIntegral>(quad, quad->dim()+1, 0) ); // TODO last parameter must be eq_data->quad_order()[0]
 	    return *result.first;
     }
 

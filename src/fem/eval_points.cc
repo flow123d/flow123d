@@ -62,7 +62,7 @@ unsigned int EvalPoints::add_edge(const Quadrature &quad) {
     return i_subset;
 }
 
-void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
+void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec, unsigned int asm_quad_order) {
     ASSERT_EQ(integrals_vec.size(), 3);
 
     // merge BulkIntegrals and EdgeIntegrals of all dimensions to common vectors
@@ -74,13 +74,13 @@ void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
     // initialize CuplingIntegrals, BoundaryIntegrals - set bulk and edge sub-integrals
     for (auto iv : integrals_vec) {
         for (auto integral : iv.coupling_) {
-            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
-            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
+            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim(), asm_quad_order)  );
+            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1, asm_quad_order) );
             integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
         }
         for (auto integral : iv.boundary_) {
-            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
-            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
+            auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim(), asm_quad_order) );
+            auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1, asm_quad_order) );
             integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
         }
     }

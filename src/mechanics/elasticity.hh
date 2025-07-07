@@ -126,9 +126,9 @@ public:
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh);
 
-        /// Returns quad_order
-        inline unsigned int quad_order() const {
-            return 1;
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {1, 1};
         }
 
         /// Objects for distribution of dofs.
@@ -166,9 +166,9 @@ public:
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh);
 
-        /// Returns quad_order
-        inline unsigned int quad_order() const {
-            return 0;
+        /// Returns pair { quad_order_asm, quad_order_fields}
+        inline std::vector<unsigned int> quad_order() const {
+            return {0, 0};
         }
 
         /// Objects for distribution of dofs.

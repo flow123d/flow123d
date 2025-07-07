@@ -77,7 +77,7 @@ public:
       use_patch_fe_values_(false),
       multidim_assembly_(eq_fields, eq_data)
     {
-    	initialize();
+    	initialize(eq_fields, eq_data);
     }
 
     /**
@@ -90,11 +90,11 @@ public:
      */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(),
-      fe_values_(eq_data->quad_order(), dh->ds()->fe()),
+      fe_values_(eq_data->quad_order()[0], dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->fe_values_)
     {
-    	initialize();
+    	initialize(eq_fields, eq_data);
     }
 
     /// Getter to set of assembly objects
@@ -182,14 +182,13 @@ public:
 
 private:
     /// Common part of GenericAssemblz constructors.
-    void initialize() {
+    void initialize(typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data) {
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        eval_points_->create_integrals( {
-            multidim_assembly_[1_d]->integrals(),
-            multidim_assembly_[2_d]->integrals(),
-		    multidim_assembly_[3_d]->integrals()
-        } );
+        eval_points_->create_integrals(
+            { multidim_assembly_[1_d]->integrals(), multidim_assembly_[2_d]->integrals(), multidim_assembly_[3_d]->integrals()},
+		    eq_data->quad_order()[0]
+		);
         multidim_assembly_[1_d]->set_eval_points(eval_points_);
         multidim_assembly_[2_d]->set_eval_points(eval_points_);
         multidim_assembly_[3_d]->set_eval_points(eval_points_);
@@ -200,6 +199,7 @@ private:
         if (use_patch_fe_values_) {
             fe_values_.init_finalize();
         }
+        eq_fields->set_field_quad_order(eq_data->quad_order()[1]);
     }
 
     /// Call assemblations when patch is filled

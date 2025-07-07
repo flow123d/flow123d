@@ -151,14 +151,24 @@ Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Val
 
 template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (BulkPoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+    if (this->fields_quad_order_ == p.asm_quad_order()) {
+        return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+    } else  {
+        // Temporary hack: Quad_order of assembly and FieldSet are defferent, BulkPoint of index zero is evaluated
+        return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.bulk_begin());
+    }
 }
 
 
 
 template<int spacedim, class Value>
 typename Value::return_type Field<spacedim,Value>::operator() (SidePoint &p) {
-    return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+    if (this->fields_quad_order_ == p.asm_quad_order()) {
+        return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.eval_point_idx());
+    } else  {
+        // Temporary hack: Quad_order of assembly and FieldSet are defferent, SidePoint of index zero is evaluated
+        return p.elm_cache_map()->get_value<Value>(value_cache_, p.elem_patch_idx(), p.side_begin());
+    }
 }
 
 

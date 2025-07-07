@@ -470,6 +470,12 @@ public:
      */
     virtual void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const = 0;
 
+    /**
+     * Set quad_order of descendants
+     *
+     * This value is used in operator()( BulkPoint / SidePoint ) in test if quad_order of assembly and field is same
+     */
+    virtual void set_field_quad_order(unsigned int fields_quad_order) =0;
 
     /**
      *  Returns pointer to this (Field) or the sub-field component (MultiField).
