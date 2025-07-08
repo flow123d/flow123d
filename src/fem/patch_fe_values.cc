@@ -66,10 +66,10 @@ JoinValues<dim> PatchFEValues<spacedim>::join_values() {
 
 
 // explicit instantiation
-template void PatchFEValues<3>::initialize<0>(Quadrature&);
-template void PatchFEValues<3>::initialize<1>(Quadrature&);
-template void PatchFEValues<3>::initialize<2>(Quadrature&);
-template void PatchFEValues<3>::initialize<3>(Quadrature&);
+template void PatchFEValues<3>::initialize<0>(bool);
+template void PatchFEValues<3>::initialize<1>(bool);
+template void PatchFEValues<3>::initialize<2>(bool);
+template void PatchFEValues<3>::initialize<3>(bool);
 template unsigned int PatchFEValues<3>::n_dofs_high<1>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<2>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<3>() const;

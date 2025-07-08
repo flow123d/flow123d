@@ -132,9 +132,9 @@ public:
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
-    void initialize(Quadrature &_quadrature)
+    void initialize(bool bulk_domain = true)
     {
-        if ( _quadrature.dim() == DIM ) {
+        if ( bulk_domain ) {
             used_quads_[0] = true;
             patch_point_vals_[0][DIM-1].initialize(); // bulk
         } else {

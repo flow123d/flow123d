@@ -60,7 +60,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -276,8 +276,8 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+        this->fe_values_->template initialize<dim>();
+        this->fe_values_->template initialize<dim>(false);
         ndofs_ = this->n_dofs();
         unsigned int ndofs_high = this->n_dofs_high();
         qsize_lower_dim_ = this->quad_low_->size();
@@ -720,7 +720,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -844,7 +844,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+        this->fe_values_->template initialize<dim>(false);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1044,7 +1044,7 @@ public:
     void initialize(ElementCacheMap *element_cache_map) {
         this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->fe_values_->template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);

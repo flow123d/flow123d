@@ -107,6 +107,10 @@ public:
       normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
       normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
     {
+        ref_quad_0_ = new QGauss(0, 2*quad_order);
+        ref_quad_1_ = new QGauss(1, 2*quad_order);
+        ref_quad_2_ = new QGauss(2, 2*quad_order);
+        ref_quad_3_ = new QGauss(3, 2*quad_order);
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
         this->create_integrals();
@@ -114,25 +118,25 @@ public:
 
         UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
         UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
-        fe_values_[0].initialize(*patch_fe_values_.get_bulk_quadrature(1), *fe_[Dim<1>{}], u);
-        fe_values_[1].initialize(*patch_fe_values_.get_bulk_quadrature(2), *fe_[Dim<2>{}], u);
-        fe_values_[2].initialize(*patch_fe_values_.get_bulk_quadrature(3), *fe_[Dim<3>{}], u);
-        fe_values_side_[0].initialize(*patch_fe_values_.get_side_quadrature(1), *fe_[Dim<1>{}], u_side);
-        fe_values_side_[1].initialize(*patch_fe_values_.get_side_quadrature(2), *fe_[Dim<2>{}], u_side);
-        fe_values_side_[2].initialize(*patch_fe_values_.get_side_quadrature(3), *fe_[Dim<3>{}], u_side);
+        fe_values_[0].initialize(*ref_quad_1_, *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*ref_quad_2_, *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*ref_quad_3_, *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*ref_quad_0_, *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*ref_quad_1_, *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*ref_quad_2_, *fe_[Dim<3>{}], u_side);
     }
 
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
-        bulk_integrals_[1] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
-        bulk_integrals_[2] = std::make_shared<BulkIntegral>(patch_fe_values_.get_bulk_quadrature(3), 3);
-        edge_integrals_[0] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(1), 1);
-        edge_integrals_[1] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(2), 2);
-        edge_integrals_[2] = std::make_shared<EdgeIntegral>(patch_fe_values_.get_side_quadrature(3), 3);
-        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(1), 1);
-        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(patch_fe_values_.get_bulk_quadrature(2), 2);
+        bulk_integrals_[0] = std::make_shared<BulkIntegral>(ref_quad_1_, 1);
+        bulk_integrals_[1] = std::make_shared<BulkIntegral>(ref_quad_2_, 2);
+        bulk_integrals_[2] = std::make_shared<BulkIntegral>(ref_quad_3_, 3);
+        edge_integrals_[0] = std::make_shared<EdgeIntegral>(ref_quad_0_, 1);
+        edge_integrals_[1] = std::make_shared<EdgeIntegral>(ref_quad_1_, 2);
+        edge_integrals_[2] = std::make_shared<EdgeIntegral>(ref_quad_2_, 3);
+        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(ref_quad_1_, 1);
+        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(ref_quad_2_, 2);
 
         coupling_integrals_[0]->init(eval_points_, bulk_integrals_[0], edge_integrals_[1]);
         coupling_integrals_[1]->init(eval_points_, bulk_integrals_[1], edge_integrals_[2]);
@@ -145,12 +149,12 @@ public:
     }
 
     void initialize() {
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_bulk_quadrature(1));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_bulk_quadrature(2));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_bulk_quadrature(3));
-        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_side_quadrature(1));
-        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_side_quadrature(2));
-        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_side_quadrature(3));
+        this->patch_fe_values_.initialize<1>();
+        this->patch_fe_values_.initialize<2>();
+        this->patch_fe_values_.initialize<3>();
+        this->patch_fe_values_.initialize<1>(false);
+        this->patch_fe_values_.initialize<2>(false);
+        this->patch_fe_values_.initialize<3>(false);
         this->patch_fe_values_.init_finalize();
     }
 
@@ -312,6 +316,10 @@ public:
     RevertableList<BulkIntegralData> bulk_integral_data_;                  ///< Holds data for computing bulk integrals.
     RevertableList<EdgeIntegralData> edge_integral_data_;                  ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData> coupling_integral_data_;          ///< Holds data for computing couplings integrals.
+    Quadrature *ref_quad_0_;                                               ///< Reference quadrature used in FeValues
+    Quadrature *ref_quad_1_;
+    Quadrature *ref_quad_2_;
+    Quadrature *ref_quad_3_;
     ElQ<Scalar> det_1d_;
     ElQ<Scalar> det_2d_;
     ElQ<Scalar> det_3d_;

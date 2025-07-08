@@ -302,12 +302,12 @@ protected:
     inline void add_volume_integral(const DHCellAccessor &cell, PatchFEValues<3>::TableSizes &table_sizes_tmp) {
         ASSERT_EQ(cell.dim(), dim);
 
+        table_sizes_tmp.elem_sizes_[0][dim-1]++;
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
 
             unsigned int reg_idx = cell.elm().region_idx().idx();
-            table_sizes_tmp.elem_sizes_[0][dim-1]++;
             // Different access than in other integrals: We can't use range method CellIntegral::points
             // because it passes element_patch_idx as argument that is not known during patch construction.
             for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
