@@ -31,23 +31,30 @@ class BaseValues
 {
 protected:
 	// Default constructor
-	BaseValues(PatchFEValues<3> &pfev) : patch_fe_values_(pfev)
+	BaseValues(PatchFEValues<3> &pfev, const Quadrature *quad) : patch_fe_values_(pfev), quad_(quad)
 	{}
 
-    /// Factory method. Creates operation of given OpType.
+    /// Factory method. Creates ElQ operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_patch_op() {
     	return patch_fe_values_.get< OpType, dim >();
     }
 
+    /// Factory method. Creates FeQ operation of given OpType.
+    template<class OpType>
+    PatchOp<3> *make_patch_op(const Quadrature *quad) {
+    	return patch_fe_values_.get< OpType, dim >(quad);
+    }
+
     /// Factory method. Same as previous but creates FE operation.
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
-    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
+    FeQArray<ValueType> make_qarray(const Quadrature *quad, uint component_idx = 0) {
     	std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_.fe_comp(fe_, component_idx);
-    	return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(fe_component));
+    	return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(quad, fe_component));
     }
 
     PatchFEValues<3> &patch_fe_values_;
+    const Quadrature *quad_;
     std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
@@ -56,8 +63,8 @@ class BulkValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	BulkValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev) {
+	BulkValues(PatchFEValues<3> &pfev, const Quadrature *quad, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev, quad) {
 	    this->fe_ = fe[Dim<dim>{}];
 	}
 
@@ -69,7 +76,7 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >());
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >(this->quad_));
     }
 
 	/// Create bulk accessor of coords entity
@@ -95,12 +102,12 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(this->quad_, component_idx);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(this->quad_, component_idx);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -114,7 +121,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -125,7 +132,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -136,7 +143,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -147,7 +154,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(this->quad_, component_idx);
     }
 };
 
@@ -157,15 +164,15 @@ class SideValues : public BaseValues<dim>
 {
 public:
 	/// Constructor
-	SideValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: BaseValues<dim>(pfev) {
+	SideValues(PatchFEValues<3> &pfev, const Quadrature *quad, MixedPtr<FiniteElement> fe)
+	: BaseValues<dim>(pfev, quad) {
 	    this->fe_ = fe[Dim<dim>{}];
 	}
 
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::SideDomain, 3> >(this->quad_));
     }
 
     /**
@@ -193,19 +200,19 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(this->quad_, component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(this->quad_, component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -216,7 +223,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -227,7 +234,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(this->quad_, component_idx);
     }
 
     /**
@@ -238,7 +245,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(this->quad_, component_idx);
     }
 };
 
@@ -248,8 +255,8 @@ class SideValues<4> : public BaseValues<4>
 {
 public:
 	/// Constructor
-	SideValues(PatchFEValues<3> &pfev, FMT_UNUSED MixedPtr<FiniteElement> fe)
-	: BaseValues<4>(pfev) {}
+	SideValues(PatchFEValues<3> &pfev, const Quadrature *quad, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	: BaseValues<4>(pfev, quad) {}
 
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
@@ -337,8 +344,8 @@ class JoinValues
 {
 public:
 	/// Constructor
-	JoinValues(PatchFEValues<3> &pfev, MixedPtr<FiniteElement> fe)
-	: patch_fe_values_(pfev) {
+	JoinValues(PatchFEValues<3> &pfev, const Quadrature *quad, const Quadrature *quad_low, MixedPtr<FiniteElement> fe)
+	: patch_fe_values_(pfev), quad_(quad), quad_low_(quad_low) {
 	    fe_high_dim_ = fe[Dim<dim+1>{}];
 	    fe_low_dim_ = fe[Dim<dim>{}];
 	}
@@ -348,13 +355,13 @@ public:
     FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
         // element of lower dim (bulk points)
         auto fe_component_low = patch_fe_values_.fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = patch_fe_values_.template get< OpType<dim, Op::BulkDomain, 3>, dim >(fe_component_low);
-        auto *low_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim, Op::BulkDomain, 3>, dim >(fe_component_low);
+        auto *low_dim_op = patch_fe_values_.template get< OpType<dim, Op::BulkDomain, 3>, dim >(quad_low_, fe_component_low);
+        auto *low_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim, Op::BulkDomain, 3>, dim >(quad_low_, fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = patch_fe_values_.fe_comp(fe_high_dim_, component_idx);
-        auto *high_dim_op = patch_fe_values_.template get< OpType<dim+1, Op::SideDomain, 3>, dim+1 >(fe_component_high);
-        auto *high_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim+1, Op::SideDomain, 3>, dim+1 >(fe_component_high);
+        auto *high_dim_op = patch_fe_values_.template get< OpType<dim+1, Op::SideDomain, 3>, dim+1 >(quad_, fe_component_high);
+        auto *high_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim+1, Op::SideDomain, 3>, dim+1 >(quad_, fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
@@ -377,18 +384,20 @@ public:
 
 private:
     PatchFEValues<3> &patch_fe_values_;
+    const Quadrature *quad_;
+    const Quadrature *quad_low_;
     std::shared_ptr< FiniteElement<dim+1> > fe_high_dim_;
     std::shared_ptr< FiniteElement<dim> > fe_low_dim_;
 };
 
 /// Template specialization of dim = 3
 template <>
-class JoinValues<3> : public BaseValues<3>
+class JoinValues<3>
 {
 public:
 	/// Constructor
-	JoinValues(PatchFEValues<3> &pfev, FMT_UNUSED MixedPtr<FiniteElement> fe)
-	: BaseValues<3>(pfev) {}
+	JoinValues(FMT_UNUSED PatchFEValues<3> &pfev, FMT_UNUSED const Quadrature *quad, FMT_UNUSED const Quadrature *quad_low, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	{}
 
     inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)
     {

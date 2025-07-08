@@ -43,23 +43,23 @@ unsigned int PatchFEValues<3>::n_dofs_high<3>() const {
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-BulkValues<dim> PatchFEValues<spacedim>::bulk_values() {
+BulkValues<dim> PatchFEValues<spacedim>::bulk_values(const Quadrature *quad) {
   	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-    return BulkValues<dim>(*this, fe_);
+    return BulkValues<dim>(*this, quad, fe_);
 }
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-SideValues<dim> PatchFEValues<spacedim>::side_values() {
+SideValues<dim> PatchFEValues<spacedim>::side_values(const Quadrature *quad) {
    	ASSERT((dim>0) && (dim<=4))(dim).error("Dimension must be 1, 2 or 3.");
-    return SideValues<dim>(*this, fe_);
+    return SideValues<dim>(*this, quad, fe_);
 }
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-JoinValues<dim> PatchFEValues<spacedim>::join_values() {
+JoinValues<dim> PatchFEValues<spacedim>::join_values(const Quadrature *quad, const Quadrature *quad_low) {
    	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-    return JoinValues<dim>(*this, fe_);
+    return JoinValues<dim>(*this, quad, quad_low, fe_);
 }
 
 
@@ -73,15 +73,15 @@ template void PatchFEValues<3>::initialize<3>(bool);
 template unsigned int PatchFEValues<3>::n_dofs_high<1>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<2>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<3>() const;
-template BulkValues<1> PatchFEValues<3>::bulk_values<1>();
-template BulkValues<2> PatchFEValues<3>::bulk_values<2>();
-template BulkValues<3> PatchFEValues<3>::bulk_values<3>();
-template SideValues<1> PatchFEValues<3>::side_values<1>();
-template SideValues<2> PatchFEValues<3>::side_values<2>();
-template SideValues<3> PatchFEValues<3>::side_values<3>();
-template SideValues<4> PatchFEValues<3>::side_values<4>();
-template JoinValues<1> PatchFEValues<3>::join_values<1>();
-template JoinValues<2> PatchFEValues<3>::join_values<2>();
-template JoinValues<3> PatchFEValues<3>::join_values<3>();
+template BulkValues<1> PatchFEValues<3>::bulk_values<1>(const Quadrature *);
+template BulkValues<2> PatchFEValues<3>::bulk_values<2>(const Quadrature *);
+template BulkValues<3> PatchFEValues<3>::bulk_values<3>(const Quadrature *);
+template SideValues<1> PatchFEValues<3>::side_values<1>(const Quadrature *);
+template SideValues<2> PatchFEValues<3>::side_values<2>(const Quadrature *);
+template SideValues<3> PatchFEValues<3>::side_values<3>(const Quadrature *);
+template SideValues<4> PatchFEValues<3>::side_values<4>(const Quadrature *);
+template JoinValues<1> PatchFEValues<3>::join_values<1>(const Quadrature *, const Quadrature *);
+template JoinValues<2> PatchFEValues<3>::join_values<2>(const Quadrature *, const Quadrature *);
+template JoinValues<3> PatchFEValues<3>::join_values<3>(const Quadrature *, const Quadrature *);
 
 template class PatchFEValues<3>;

@@ -210,15 +210,15 @@ public:
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
-    BulkValues<dim> bulk_values();
+    BulkValues<dim> bulk_values(const Quadrature *quad);
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
-    SideValues<dim> side_values();
+    SideValues<dim> side_values(const Quadrature *quad);
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
-    JoinValues<dim> join_values();
+    JoinValues<dim> join_values(const Quadrature *quad, const Quadrature *quad_low);
 
     /** Following methods are used during update of patch. **/
 
@@ -369,11 +369,27 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(std::shared_ptr<FiniteElement<dim>> fe) {
+    PatchOp<spacedim>* get(const Quadrature *quad) {
         std::string op_name = typeid(OpType).name();
         auto it = op_dependency_.find(op_name);
         if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, fe);
+            PatchOp<spacedim>* new_op = new OpType(*this, quad);
+            op_dependency_.insert(std::make_pair(op_name, new_op));
+            operations_.push_back(new_op);
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
+            return new_op;
+        } else {
+            return it->second;
+        }
+    }
+
+    /// Returns operation of given dim and OpType, creates it if doesn't exist
+    template<class OpType, unsigned int dim>
+    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
+        std::string op_name = typeid(OpType).name();
+        auto it = op_dependency_.find(op_name);
+        if (it == op_dependency_.end()) {
+            PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
             op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);

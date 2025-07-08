@@ -462,23 +462,46 @@ public:
     }
 
     /// Return BulkValues object
+    inline BulkValues<dim> bulk_values(const Quadrature *quad) {
+        ASSERT_EQ(quad->dim(), dim);
+	    return fe_values_->template bulk_values<dim>(quad);
+    }
+
+    /// Same as previous but pass default Quadrature argument
     inline BulkValues<dim> bulk_values() {
-        return fe_values_->template bulk_values<dim>();
+        return fe_values_->template bulk_values<dim>(this->quad_);
     }
 
     /// Return SideValues object
+    inline SideValues<dim> side_values(const Quadrature *quad) {
+        ASSERT_EQ(quad->dim(), dim-1);
+        return fe_values_->template side_values<dim>(quad);
+    }
+
+    /// Same as previous but pass default Quadrature argument
     inline SideValues<dim> side_values() {
-        return fe_values_->template side_values<dim>();
+        return fe_values_->template side_values<dim>(this->quad_low_);
     }
 
     /// Return SideValues object
+    inline SideValues<dim+1> side_values_high_dim(const Quadrature *quad) {
+        ASSERT_EQ(quad->dim(), dim);
+        return fe_values_->template side_values<dim+1>(quad);
+    }
+
+    /// Same as previous but pass default Quadrature argument
     inline SideValues<dim+1> side_values_high_dim() {
-        return fe_values_->template side_values<dim+1>();
+        return fe_values_->template side_values<dim+1>(this->quad_);
     }
 
     /// Return JoinValues object
+    inline JoinValues<dim> join_values(const Quadrature *quad, const Quadrature *quad_low) {
+        return fe_values_->template join_values<dim>(quad, quad_low);
+    }
+
+    /// Same as previous but pass default Quadrature arguments
     inline JoinValues<dim> join_values() {
-        return fe_values_->template join_values<dim>();
+        return fe_values_->template join_values<dim>(this->quad_, this->quad_low_);
     }
 
 protected:
