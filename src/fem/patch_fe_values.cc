@@ -57,9 +57,9 @@ SideValues<dim> PatchFEValues<spacedim>::side_values(const Quadrature *quad) {
 
 template<unsigned int spacedim>
 template<unsigned int dim>
-JoinValues<dim> PatchFEValues<spacedim>::join_values(const Quadrature *quad, const Quadrature *quad_low) {
+JoinValues<dim> PatchFEValues<spacedim>::join_values(const Quadrature *quad) {
    	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-    return JoinValues<dim>(*this, quad, quad_low, fe_);
+    return JoinValues<dim>(*this, quad, fe_);
 }
 
 
@@ -80,8 +80,8 @@ template SideValues<1> PatchFEValues<3>::side_values<1>(const Quadrature *);
 template SideValues<2> PatchFEValues<3>::side_values<2>(const Quadrature *);
 template SideValues<3> PatchFEValues<3>::side_values<3>(const Quadrature *);
 template SideValues<4> PatchFEValues<3>::side_values<4>(const Quadrature *);
-template JoinValues<1> PatchFEValues<3>::join_values<1>(const Quadrature *, const Quadrature *);
-template JoinValues<2> PatchFEValues<3>::join_values<2>(const Quadrature *, const Quadrature *);
-template JoinValues<3> PatchFEValues<3>::join_values<3>(const Quadrature *, const Quadrature *);
+template JoinValues<1> PatchFEValues<3>::join_values<1>(const Quadrature *);
+template JoinValues<2> PatchFEValues<3>::join_values<2>(const Quadrature *);
+template JoinValues<3> PatchFEValues<3>::join_values<3>(const Quadrature *);
 
 template class PatchFEValues<3>;

@@ -218,7 +218,7 @@ public:
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
-    JoinValues<dim> join_values(const Quadrature *quad, const Quadrature *quad_low);
+    JoinValues<dim> join_values(const Quadrature *quad);
 
     /** Following methods are used during update of patch. **/
 

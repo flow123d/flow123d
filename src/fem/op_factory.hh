@@ -344,8 +344,8 @@ class JoinValues
 {
 public:
 	/// Constructor
-	JoinValues(PatchFEValues<3> &pfev, const Quadrature *quad, const Quadrature *quad_low, MixedPtr<FiniteElement> fe)
-	: patch_fe_values_(pfev), quad_(quad), quad_low_(quad_low) {
+	JoinValues(PatchFEValues<3> &pfev, const Quadrature *quad, MixedPtr<FiniteElement> fe)
+	: patch_fe_values_(pfev), quad_(quad) {
 	    fe_high_dim_ = fe[Dim<dim+1>{}];
 	    fe_low_dim_ = fe[Dim<dim>{}];
 	}
@@ -355,8 +355,8 @@ public:
     FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
         // element of lower dim (bulk points)
         auto fe_component_low = patch_fe_values_.fe_comp(fe_low_dim_, component_idx);
-        auto *low_dim_op = patch_fe_values_.template get< OpType<dim, Op::BulkDomain, 3>, dim >(quad_low_, fe_component_low);
-        auto *low_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim, Op::BulkDomain, 3>, dim >(quad_low_, fe_component_low);
+        auto *low_dim_op = patch_fe_values_.template get< OpType<dim, Op::BulkDomain, 3>, dim >(quad_, fe_component_low);
+        auto *low_dim_zero_op = patch_fe_values_.template get< Op::OpZero<dim, Op::BulkDomain, 3>, dim >(quad_, fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = patch_fe_values_.fe_comp(fe_high_dim_, component_idx);
@@ -385,7 +385,6 @@ public:
 private:
     PatchFEValues<3> &patch_fe_values_;
     const Quadrature *quad_;
-    const Quadrature *quad_low_;
     std::shared_ptr< FiniteElement<dim+1> > fe_high_dim_;
     std::shared_ptr< FiniteElement<dim> > fe_low_dim_;
 };
@@ -396,7 +395,7 @@ class JoinValues<3>
 {
 public:
 	/// Constructor
-	JoinValues(FMT_UNUSED PatchFEValues<3> &pfev, FMT_UNUSED const Quadrature *quad, FMT_UNUSED const Quadrature *quad_low, FMT_UNUSED MixedPtr<FiniteElement> fe)
+	JoinValues(FMT_UNUSED PatchFEValues<3> &pfev, FMT_UNUSED const Quadrature *quad, FMT_UNUSED MixedPtr<FiniteElement> fe)
 	{}
 
     inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)

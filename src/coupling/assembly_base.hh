@@ -495,13 +495,13 @@ public:
     }
 
     /// Return JoinValues object
-    inline JoinValues<dim> join_values(const Quadrature *quad, const Quadrature *quad_low) {
-        return fe_values_->template join_values<dim>(quad, quad_low);
+    inline JoinValues<dim> join_values(const Quadrature *quad) {
+        return fe_values_->template join_values<dim>(quad);
     }
 
     /// Same as previous but pass default Quadrature arguments
     inline JoinValues<dim> join_values() {
-        return fe_values_->template join_values<dim>(this->quad_, this->quad_low_);
+        return fe_values_->template join_values<dim>(this->quad_);
     }
 
 protected:
