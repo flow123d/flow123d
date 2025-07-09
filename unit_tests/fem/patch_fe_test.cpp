@@ -94,23 +94,23 @@ public:
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6),
-      det_1d_( this->patch_fe_values_.bulk_values<1>().determinant() ),
-      det_2d_( this->patch_fe_values_.bulk_values<2>().determinant() ),
-      det_3d_( this->patch_fe_values_.bulk_values<3>().determinant() ),
-      jxw_1d_( this->patch_fe_values_.bulk_values<1>().JxW() ),
-      jxw_2d_( this->patch_fe_values_.bulk_values<2>().JxW() ),
-      jxw_3d_( this->patch_fe_values_.bulk_values<3>().JxW() ),
-      jxw_side_1d_( this->patch_fe_values_.side_values<1>().JxW() ),
-      jxw_side_2d_( this->patch_fe_values_.side_values<2>().JxW() ),
-      jxw_side_3d_( this->patch_fe_values_.side_values<3>().JxW() ),
-      normal_vec_1d_( this->patch_fe_values_.side_values<1>().normal_vector() ),
-      normal_vec_2d_( this->patch_fe_values_.side_values<2>().normal_vector() ),
-      normal_vec_3d_( this->patch_fe_values_.side_values<3>().normal_vector() )
+      ref_quad_0_(new QGauss(0, 2*quad_order)),
+      ref_quad_1_(new QGauss(1, 2*quad_order)),
+      ref_quad_2_(new QGauss(2, 2*quad_order)),
+      ref_quad_3_(new QGauss(3, 2*quad_order)),
+      det_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).determinant() ),
+      det_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).determinant() ),
+      det_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).determinant() ),
+      jxw_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).JxW() ),
+      jxw_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).JxW() ),
+      jxw_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).JxW() ),
+      jxw_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).JxW() ),
+      jxw_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).JxW() ),
+      jxw_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).JxW() ),
+      normal_vec_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).normal_vector() ),
+      normal_vec_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).normal_vector() ),
+      normal_vec_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).normal_vector() )
     {
-        ref_quad_0_ = new QGauss(0, 2*quad_order);
-        ref_quad_1_ = new QGauss(1, 2*quad_order);
-        ref_quad_2_ = new QGauss(2, 2*quad_order);
-        ref_quad_3_ = new QGauss(3, 2*quad_order);
         eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
         this->create_integrals();
@@ -352,20 +352,20 @@ class PatchFETestScalar : public PatchFETestBase {
 public:
 	PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
-      scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().scalar_shape() ),
-      scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().scalar_shape() ),
-      scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().scalar_shape() ),
-      scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().scalar_shape() ),
-      scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().scalar_shape() ),
-      scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().scalar_shape() ),
-      grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape() ),
-      grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape() ),
-      grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape() ),
-      grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_scalar_shape() ),
-      grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_scalar_shape() ),
-      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_scalar_shape() ),
-      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>().scalar_join_shape() ) ),
-      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<3>().scalar_join_shape() ) )
+      scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).scalar_shape() ),
+      scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).scalar_shape() ),
+      scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).scalar_shape() ),
+      scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).scalar_shape() ),
+      scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).scalar_shape() ),
+      scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).scalar_shape() ),
+      grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).grad_scalar_shape() ),
+      grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).grad_scalar_shape() ),
+      grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).grad_scalar_shape() ),
+      grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).grad_scalar_shape() ),
+      grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).grad_scalar_shape() ),
+      grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).grad_scalar_shape() ),
+      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<1>(ref_quad_2_, ref_quad_1_).scalar_join_shape() ) ),
+      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>(ref_quad_3_, ref_quad_2_).scalar_join_shape() ) )
     {}
 
     ~PatchFETestScalar() {}
@@ -591,34 +591,34 @@ class PatchFETestVector : public PatchFETestBase {
 public:
 	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
     : PatchFETestBase(quad_order, dh),
-      vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().vector_shape() ),
-      vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().vector_shape() ),
-      vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().vector_shape() ),
-      vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().vector_shape() ),
-      vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().vector_shape() ),
-      vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().vector_shape() ),
-      grad_vector_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_vector_shape() ),
-      grad_vector_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_vector_shape() ),
-      grad_vector_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_vector_shape() ),
-      grad_vector_shape_side_1d_( this->patch_fe_values_.side_values<1>().grad_vector_shape() ),
-      grad_vector_shape_side_2d_( this->patch_fe_values_.side_values<2>().grad_vector_shape() ),
-      grad_vector_shape_side_3d_( this->patch_fe_values_.side_values<3>().grad_vector_shape() ),
-      sym_grad_1d_( this->patch_fe_values_.bulk_values<1>().vector_sym_grad() ),
-      sym_grad_2d_( this->patch_fe_values_.bulk_values<2>().vector_sym_grad() ),
-      sym_grad_3d_( this->patch_fe_values_.bulk_values<3>().vector_sym_grad() ),
-      sym_grad_side_1d_( this->patch_fe_values_.side_values<1>().vector_sym_grad() ),
-      sym_grad_side_2d_( this->patch_fe_values_.side_values<2>().vector_sym_grad() ),
-      sym_grad_side_3d_( this->patch_fe_values_.side_values<3>().vector_sym_grad() ),
-      divergence_1d_( this->patch_fe_values_.bulk_values<1>().vector_divergence() ),
-      divergence_2d_( this->patch_fe_values_.bulk_values<2>().vector_divergence() ),
-      divergence_3d_( this->patch_fe_values_.bulk_values<3>().vector_divergence() ),
-      divergence_side_1d_( this->patch_fe_values_.side_values<1>().vector_divergence() ),
-      divergence_side_2d_( this->patch_fe_values_.side_values<2>().vector_divergence() ),
-      divergence_side_3d_( this->patch_fe_values_.side_values<3>().vector_divergence() ),
-      vector_join_2d_( this->patch_fe_values_.join_values<2>().vector_join_shape() ),
-      vector_join_3d_( this->patch_fe_values_.join_values<3>().vector_join_shape() ),
-      vector_join_grad_2d_( this->patch_fe_values_.join_values<2>().gradient_vector_join_shape() ),
-      vector_join_grad_3d_( this->patch_fe_values_.join_values<3>().gradient_vector_join_shape() )
+      vector_shape_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).vector_shape() ),
+      vector_shape_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).vector_shape() ),
+      vector_shape_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).vector_shape() ),
+      vector_shape_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).vector_shape() ),
+      vector_shape_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).vector_shape() ),
+      vector_shape_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).vector_shape() ),
+      grad_vector_shape_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).grad_vector_shape() ),
+      grad_vector_shape_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).grad_vector_shape() ),
+      grad_vector_shape_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).grad_vector_shape() ),
+      grad_vector_shape_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).grad_vector_shape() ),
+      grad_vector_shape_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).grad_vector_shape() ),
+      grad_vector_shape_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).grad_vector_shape() ),
+      sym_grad_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).vector_sym_grad() ),
+      sym_grad_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).vector_sym_grad() ),
+      sym_grad_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).vector_sym_grad() ),
+      sym_grad_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).vector_sym_grad() ),
+      sym_grad_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).vector_sym_grad() ),
+      sym_grad_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).vector_sym_grad() ),
+      divergence_1d_( this->patch_fe_values_.bulk_values<1>(ref_quad_1_).vector_divergence() ),
+      divergence_2d_( this->patch_fe_values_.bulk_values<2>(ref_quad_2_).vector_divergence() ),
+      divergence_3d_( this->patch_fe_values_.bulk_values<3>(ref_quad_3_).vector_divergence() ),
+      divergence_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).vector_divergence() ),
+      divergence_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).vector_divergence() ),
+      divergence_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).vector_divergence() ),
+      vector_join_2d_( this->patch_fe_values_.join_values<1>(ref_quad_2_, ref_quad_1_).vector_join_shape() ),
+      vector_join_3d_( this->patch_fe_values_.join_values<2>(ref_quad_3_, ref_quad_2_).vector_join_shape() ),
+      vector_join_grad_2d_( this->patch_fe_values_.join_values<1>(ref_quad_2_, ref_quad_1_).gradient_vector_join_shape() ),
+      vector_join_grad_3d_( this->patch_fe_values_.join_values<2>(ref_quad_3_, ref_quad_2_).gradient_vector_join_shape() )
     {
 	    vec_view_1d_ = &fe_values_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_[1].vector_view(0);
