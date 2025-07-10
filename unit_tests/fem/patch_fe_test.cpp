@@ -364,8 +364,8 @@ public:
       grad_scalar_shape_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).grad_scalar_shape() ),
       grad_scalar_shape_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).grad_scalar_shape() ),
       grad_scalar_shape_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).grad_scalar_shape() ),
-      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<1>(ref_quad_2_, ref_quad_1_).scalar_join_shape() ) ),
-      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>(ref_quad_3_, ref_quad_2_).scalar_join_shape() ) )
+      conc_join_shape_2d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<1>(ref_quad_1_).scalar_join_shape() ) ),
+      conc_join_shape_3d_( FeQJoin<Scalar>( this->patch_fe_values_.template join_values<2>(ref_quad_2_).scalar_join_shape() ) )
     {}
 
     ~PatchFETestScalar() {}
@@ -615,10 +615,10 @@ public:
       divergence_side_1d_( this->patch_fe_values_.side_values<1>(ref_quad_0_).vector_divergence() ),
       divergence_side_2d_( this->patch_fe_values_.side_values<2>(ref_quad_1_).vector_divergence() ),
       divergence_side_3d_( this->patch_fe_values_.side_values<3>(ref_quad_2_).vector_divergence() ),
-      vector_join_2d_( this->patch_fe_values_.join_values<1>(ref_quad_2_, ref_quad_1_).vector_join_shape() ),
-      vector_join_3d_( this->patch_fe_values_.join_values<2>(ref_quad_3_, ref_quad_2_).vector_join_shape() ),
-      vector_join_grad_2d_( this->patch_fe_values_.join_values<1>(ref_quad_2_, ref_quad_1_).gradient_vector_join_shape() ),
-      vector_join_grad_3d_( this->patch_fe_values_.join_values<2>(ref_quad_3_, ref_quad_2_).gradient_vector_join_shape() )
+      vector_join_2d_( this->patch_fe_values_.join_values<1>(ref_quad_1_).vector_join_shape() ),
+      vector_join_3d_( this->patch_fe_values_.join_values<2>(ref_quad_2_).vector_join_shape() ),
+      vector_join_grad_2d_( this->patch_fe_values_.join_values<1>(ref_quad_1_).gradient_vector_join_shape() ),
+      vector_join_grad_3d_( this->patch_fe_values_.join_values<2>(ref_quad_2_).gradient_vector_join_shape() )
     {
 	    vec_view_1d_ = &fe_values_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_[1].vector_view(0);
