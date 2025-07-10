@@ -80,15 +80,13 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(uint dim, uint quad_order, bool is_bulk, PatchFeData &patch_fe_data)
+    PatchPointValues(bool is_bulk, PatchFeData &patch_fe_data)
     : elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data) {
         reset();
 
         if (is_bulk) {
-            this->quad_ = new QGauss(dim, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp};
         } else {
-            this->quad_ = new QGauss(dim-1, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
         }
     }
@@ -123,11 +121,6 @@ public:
     /// Getter for n_points_
     inline uint n_points() const {
         return n_points_;
-    }
-
-    /// Getter for quadrature
-    Quadrature *get_quadrature() const {
-        return quad_;
     }
 
     /// Resize data tables. Method is called before reinit of patch.
@@ -215,7 +208,6 @@ public:
     uint n_points_;                     ///< Number of points in patch
     uint n_elems_;                      ///< Number of elements in patch
     uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
-    Quadrature *quad_;                  ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables

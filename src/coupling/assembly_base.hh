@@ -445,11 +445,8 @@ public:
      *
      * @param fe_values   PatchFeValues object shared between assembly objects of different dimensions.
      */
-	AssemblyBasePatch(PatchFEValues<3> *fe_values)
-	: AssemblyBase<dim>(), fe_values_(fe_values) {
-	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
-	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
-	}
+	AssemblyBasePatch(unsigned int quad_order, PatchFEValues<3> *fe_values)
+	: AssemblyBase<dim>(quad_order), fe_values_(fe_values) {}
 
     /// Return number of DOFs
     inline unsigned int n_dofs() {

@@ -45,7 +45,7 @@ public:
 
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -240,7 +240,7 @@ public:
 
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -704,7 +704,7 @@ public:
 
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -822,7 +822,7 @@ public:
 
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       conc_shape_( this->side_values().scalar_shape() ),
@@ -1030,7 +1030,7 @@ public:
 
     /// Constructor.
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       init_shape_( this->bulk_values().scalar_shape() ),
       init_integral_( this->create_bulk_integral(this->quad_) ) {

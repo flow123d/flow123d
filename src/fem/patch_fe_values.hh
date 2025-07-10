@@ -96,20 +96,20 @@ public:
       patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, 0, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, 0, false, patch_fe_data_) );
+            patch_point_vals_[0].push_back( PatchPointValues(true, patch_fe_data_) );
+            patch_point_vals_[1].push_back( PatchPointValues(false, patch_fe_data_) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
+    PatchFEValues(MixedPtr<FiniteElement> fe)
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2),
       fe_(fe)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, quad_order, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, quad_order, false, patch_fe_data_) );
+            patch_point_vals_[0].push_back( PatchPointValues(true, patch_fe_data_) );
+            patch_point_vals_[1].push_back( PatchPointValues(false, patch_fe_data_) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
 
@@ -180,18 +180,6 @@ public:
      */
     template<unsigned int dim>
     unsigned int n_dofs_high() const;
-
-    /// Getter for bulk quadrature of given dimension
-    Quadrature *get_bulk_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[0][dim-1].get_quadrature();
-    }
-
-    /// Getter for side quadrature of given dimension
-    Quadrature *get_side_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[1][dim-1].get_quadrature();
-    }
 
     /**
      * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
