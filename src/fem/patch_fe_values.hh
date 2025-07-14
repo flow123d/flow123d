@@ -37,6 +37,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
+#include "fem/eval_points_data.hh"
 
 template<unsigned int dim> class BulkValues;
 template<unsigned int dim> class SideValues;
@@ -122,7 +123,9 @@ public:
 
     /// Destructor
     ~PatchFEValues()
-    {}
+    {
+    	// TODO delete all operations from set
+    }
 
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
@@ -341,50 +344,24 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get() {
-        std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
-            return new_op;
-        } else {
-            return it->second;
-        }
-    }
-
-    /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get(const Quadrature *quad) {
-        std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
-            return new_op;
-        } else {
-            return it->second;
+    	auto result = op_dependency_.insert( new OpType(*this, quad) );
+        if (result.second) {
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", typeid(OpType).name(), dim);
+            operations_.push_back(*result.first);
         }
+	    return *result.first;
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
-        std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
-            return new_op;
-        } else {
-            return it->second;
+        auto result = op_dependency_.insert( new OpType(*this, quad, fe) );
+        if (result.second) {
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", typeid(OpType).name(), dim);
+            operations_.push_back(*result.first);
         }
+	    return *result.first;
     }
 
     /// Print table of all used operations - development method
@@ -394,12 +371,12 @@ public:
 
         stream << std::setfill(' ') << " Operation" << std::setw(51) << "" << "Type" << std::setw(5) << "" << "Shape" << std::setw(2) << ""
                 << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
-        for (uint i=0; i<operations_.size(); ++i) {
-            stream << " " << std::left << std::setw(60) << typeid(*operations_[i]).name() << "";
-            stream << operations_[i]->dim_ << "D " << (operations_[i]->domain_ ? "side" : "bulk");
-        	stream << "  " << std::setw(6) << operations_[i]->format_shape() << "" << " "
-                << std::setw(7) << operations_[i]->n_dofs() << "" << " ";
-            for (auto *i_o : operations_[i]->input_ops_) stream << typeid(*i_o).name() << "  ";
+        for (auto *op : operations_) {
+            stream << " " << std::left << std::setw(60) << typeid(*op).name() << "";
+            stream << op->dim_ << "D " << (op->domain_ ? "side" : "bulk");
+        	stream << "  " << std::setw(6) << op->format_shape() << "" << " "
+                << std::setw(7) << op->n_dofs() << "" << " ";
+            for (auto *i_o : op->input_ops_) stream << typeid(*i_o).name() << "  ";
             stream << std::endl;
         }
 
@@ -415,7 +392,7 @@ private:
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
+    OperationSet< PatchOp<spacedim> > op_dependency_;
 
     friend class PatchOp<spacedim>;
 };

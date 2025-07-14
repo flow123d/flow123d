@@ -34,23 +34,17 @@ protected:
 	BaseValues(PatchFEValues<3> &pfev, const Quadrature *quad) : patch_fe_values_(pfev), quad_(quad)
 	{}
 
-    /// Factory method. Creates ElQ operation of given OpType.
-    template<class OpType>
-    PatchOp<3> *make_patch_op() {
-    	return patch_fe_values_.get< OpType, dim >();
-    }
-
     /// Factory method. Creates FeQ operation of given OpType.
     template<class OpType>
-    PatchOp<3> *make_patch_op(const Quadrature *quad) {
-    	return patch_fe_values_.get< OpType, dim >(quad);
+    PatchOp<3> *make_patch_op() {
+    	return patch_fe_values_.get< OpType, dim >(quad_);
     }
 
     /// Factory method. Same as previous but creates FE operation.
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
-    FeQArray<ValueType> make_qarray(const Quadrature *quad, uint component_idx = 0) {
+    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
     	std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_.fe_comp(fe_, component_idx);
-    	return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(quad, fe_component));
+    	return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(quad_, fe_component));
     }
 
     PatchFEValues<3> &patch_fe_values_;
@@ -76,7 +70,7 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >(this->quad_));
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >());
     }
 
 	/// Create bulk accessor of coords entity
@@ -102,12 +96,12 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
     }
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -121,7 +115,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -132,7 +126,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -143,7 +137,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -154,7 +148,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
     }
 };
 
@@ -172,7 +166,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::SideDomain, 3> >(this->quad_));
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::SideDomain, 3> >());
     }
 
     /**
@@ -200,19 +194,19 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -223,7 +217,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -234,7 +228,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -245,7 +239,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(this->quad_, component_idx);
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
     }
 };
 
