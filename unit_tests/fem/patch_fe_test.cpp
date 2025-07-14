@@ -89,7 +89,7 @@ public:
 
 
     PatchFETestBase(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : dh_(dh), patch_fe_values_(quad_order, dh_->ds()->fe()),
+    : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
       fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
@@ -1074,6 +1074,20 @@ TEST(PatchFeTest, arena_alloc) {
     patch_arena->reset();
     std::cout << "Reset: " << vec1.data_size() << ", " << vec2.data_size() << ", " << vec3.data_size() << ", " << c[0] << std::endl;
 }
+
+TEST(PatchFeTest, multi_quad_orders) {
+    MixedPtr<FE_P> fe_p(1);
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    PatchFEValues<3> pfev(fe);
+    Quadrature *quad = new QGauss(2, 0);
+    Quadrature *quad_high_order = new QGauss(2, 2);
+
+    auto fe_component = fe[2_d];
+    pfev.template get< Op::JxW<2, Op::BulkDomain, 3>, 2 >(quad);
+    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad, fe_component);
+    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad_high_order, fe_component);
+}
+
 
 ///*************************************************
 // * New test of operation dependency
