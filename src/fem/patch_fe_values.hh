@@ -124,7 +124,8 @@ public:
     /// Destructor
     ~PatchFEValues()
     {
-    	// TODO delete all operations from set
+        op_dependency_.clear();
+        for (auto *op : operations_) if (op != nullptr) delete op;
     }
 
     /**
