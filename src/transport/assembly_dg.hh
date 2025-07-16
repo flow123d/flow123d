@@ -44,8 +44,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -57,10 +57,8 @@ public:
     ~MassAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -239,8 +237,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -273,11 +271,9 @@ public:
     }
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
         ndofs_ = this->n_dofs();
         unsigned int ndofs_high = this->n_dofs_high();
         qsize_lower_dim_ = this->quad_low_->size();
@@ -703,8 +699,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -717,10 +713,8 @@ public:
     ~SourcesAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -821,8 +815,8 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       conc_shape_( this->side_values().scalar_shape() ),
@@ -841,10 +835,8 @@ public:
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>(false);
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1029,8 +1021,8 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       init_shape_( this->bulk_values().scalar_shape() ),
       init_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -1041,10 +1033,8 @@ public:
     ~InitProjectionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -1121,8 +1111,9 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+        this->asm_internals_ = asm_internals;
         this->used_fields_ += eq_fields_->init_condition;
 
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
@@ -1138,9 +1129,7 @@ public:
     ~InitConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element

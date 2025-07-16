@@ -40,8 +40,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -50,10 +50,7 @@ public:
     ~InitConditionAssemblyDp() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -97,8 +94,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+    ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -109,10 +106,7 @@ public:
     ~ReactionAssemblyDp() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -210,8 +204,8 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblySorp"; }
 
     /// Constructor.
-    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -220,10 +214,7 @@ public:
     ~InitConditionAssemblySorp() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -267,8 +258,8 @@ public:
     static constexpr const char * name() { return "ReactionAssemblySorp"; }
 
     /// Constructor.
-    ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+    ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;
@@ -282,10 +273,7 @@ public:
     ~ReactionAssemblySorp() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element

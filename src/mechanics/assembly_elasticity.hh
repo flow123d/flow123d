@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -71,14 +71,13 @@ public:
     ~StiffnessAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs();
         n_dofs_high_ = this->n_dofs_high();
@@ -284,8 +283,8 @@ public:
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -316,14 +315,13 @@ public:
     ~RhsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs();
         n_dofs_high_ = this->n_dofs_high();
@@ -550,8 +548,8 @@ public:
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       normal_( this->side_values_high_dim().normal_vector() ),       // normal of high dim element of dimjoin integral
       deform_side_( this->side_values_high_dim().vector_shape() ),   // smae as previous
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
@@ -569,12 +567,11 @@ public:
     ~OutpuFieldsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
 
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs();
         n_dofs_high_ = this->n_dofs_high();
@@ -715,8 +712,8 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_side_( this->side_values_high_dim().JxW() ),                       // integral accessors of high dim element of dimjoin
       normal_( this->side_values_high_dim().normal_vector() ),
       deform_side_( this->side_values_high_dim().vector_shape() ),
@@ -729,11 +726,9 @@ public:
     ~ConstraintAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs_high();
         dof_indices_.resize(n_dofs_);

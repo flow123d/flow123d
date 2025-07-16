@@ -92,6 +92,7 @@ public:
         std::vector<std::vector<uint> > point_sizes_;
     };
 
+    /// Default constructor
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2)
@@ -103,23 +104,17 @@ public:
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
+    /// Constructor, initializes fe_ and zero_vec_ data members
     PatchFEValues(MixedPtr<FiniteElement> fe)
-    : patch_fe_data_(1024 * 1024, 256),
-      patch_point_vals_(2),
-      fe_(fe)
+    : PatchFEValues<spacedim>()
     {
-        for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(false, patch_fe_data_) );
-        }
-        used_quads_[0] = false; used_quads_[1] = false;
+        fe_ = fe;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
         uint zero_vec_size = 300;
         patch_fe_data_.zero_vec_ = ArenaVec<double>(zero_vec_size, patch_fe_data_.asm_arena_);
         for (uint i=0; i<zero_vec_size; ++i) patch_fe_data_.zero_vec_(i) = 0.0;
     }
-
 
     /// Destructor
     ~PatchFEValues()
