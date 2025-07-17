@@ -176,7 +176,9 @@ public:
     ~MHMatrixAssemblyRichards() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize() {}
+    void initialize() {
+        MHMatrixAssemblyLMH<dim>::initialize();
+    }
 
 
     /// Integral over element.
