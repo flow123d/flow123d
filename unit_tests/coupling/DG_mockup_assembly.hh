@@ -27,8 +27,8 @@ public:
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -40,10 +40,8 @@ public:
     ~Mass_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -130,8 +128,8 @@ public:
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    Mass_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Mass_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Mass_ComputeLocal(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Mass_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Mass_ComputeLocal() {}
@@ -155,8 +153,8 @@ public:
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    Mass_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Mass_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Mass_EvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Mass_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Mass_EvalFields() {}
@@ -256,8 +254,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -290,11 +288,9 @@ public:
     }
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
         // if (dim==1) { // print to log only one time
             // Perform output of patch operations:
             // stringstream ss;
@@ -739,8 +735,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Stiffness_ComputeLocal() {}
@@ -770,8 +766,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Stiffness_EvalFields() {}
@@ -809,8 +805,8 @@ public:
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ),
       conc_integral_( this->create_bulk_integral(this->quad_) ) {
@@ -823,10 +819,8 @@ public:
     ~Sources_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
-        this->fe_values_->template initialize<dim>();
+    void initialize() {
+        this->asm_internals_->fe_values_.template initialize<dim>();
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -913,8 +907,8 @@ public:
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    Sources_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Sources_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Sources_ComputeLocal(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Sources_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Sources_ComputeLocal() {}
@@ -938,8 +932,8 @@ public:
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    Sources_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Sources_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Sources_EvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Sources_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Sources_EvalFields() {}

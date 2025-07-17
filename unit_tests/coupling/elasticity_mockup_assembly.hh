@@ -26,8 +26,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -54,14 +54,11 @@ public:
     ~Stiffness_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -282,8 +279,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Stiffness_ComputeLocal() {}
@@ -311,8 +308,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Stiffness_EvalFields() {}
@@ -342,8 +339,8 @@ public:
     static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    Rhs_FullAssembly(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    Rhs_FullAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -374,14 +371,11 @@ public:
     ~Rhs_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>();
-        this->fe_values_->template initialize<dim>(false);
+        this->asm_internals_->fe_values_.template initialize<dim>();
+        this->asm_internals_->fe_values_.template initialize<dim>(false);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -607,8 +601,8 @@ public:
     static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    Rhs_ComputeLocal(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Rhs_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Rhs_ComputeLocal(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Rhs_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Rhs_ComputeLocal() {}
@@ -636,8 +630,8 @@ public:
     static constexpr const char * name() { return "RhsAssembly"; }
 
     /// Constructor.
-    Rhs_EvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : Rhs_FullAssembly<dim>(eq_fields, eq_data, fe_values) {}
+    Rhs_EvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : Rhs_FullAssembly<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~Rhs_EvalFields() {}
