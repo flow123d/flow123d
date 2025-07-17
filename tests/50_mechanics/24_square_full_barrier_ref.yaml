@@ -40,7 +40,7 @@ problem: !Coupling_Sequential
             - displacement
             - stress
             - region_id
-        solver: !Petsc
+        solver:
           options: -ksp_type preonly -pc_type lu
         input_fields:
           - region: bulk

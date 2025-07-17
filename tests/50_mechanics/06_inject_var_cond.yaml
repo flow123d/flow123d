@@ -63,7 +63,7 @@ problem: !Coupling_Sequential
           - region: .left
             bc_type: displacement
             bc_displacement: 0
-        solver: !Petsc
+        solver:
           a_tol: 0
           r_tol: 1e-9
         output_stream:

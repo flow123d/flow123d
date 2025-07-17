@@ -23,7 +23,6 @@
 #include "fields/field.hh"
 #include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
-#include "la/linsys.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
@@ -35,7 +34,7 @@ class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
-class Elasticity;
+class LinSys_PERMON;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
@@ -114,11 +113,7 @@ public:
 		EqData()
         : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
-		~EqData() {
-		    if (ls!=nullptr) delete ls;
-            if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
-            if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
-		}
+		~EqData();
 
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh, unsigned int fe_order);
@@ -132,7 +127,7 @@ public:
     	// @{
 
     	/// Linear algebraic system.
-    	LinSys *ls;
+    	LinSys_PERMON *ls;
 
         Mat constraint_matrix;
         Vec constraint_vec;
@@ -196,8 +191,7 @@ public:
 
     void calculate_cumulative_balance();
 
-	const Vec &get_solution()
-	{ return eq_data_->ls->get_solution(); }
+	const Vec &get_solution();
 
 	inline EqFields &eq_fields() { return *eq_fields_; }
 
