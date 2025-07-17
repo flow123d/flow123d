@@ -46,9 +46,9 @@ public:
     /// Constructor.
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
-      conc_shape_( this->bulk_values().scalar_shape() ),
-      conc_integral_( this->create_bulk_integral(this->quad_) ) {
+      conc_shape_( this->bulk_values().scalar_shape() ) {
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
     }
@@ -141,9 +141,9 @@ public:
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
+        std::shared_ptr<BulkIntegral> conc_integral_;             ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> conc_shape_;
-        std::shared_ptr<BulkIntegral> conc_integral_;             ///< Bulk integral of assembly class
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -239,6 +239,10 @@ public:
     /// Constructor.
     StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
+      conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
+      conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      conc_join_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -248,11 +252,7 @@ public:
       conc_shape_side_( this->side_values().scalar_shape() ),
       conc_grad_( this->bulk_values().grad_scalar_shape() ),
       conc_grad_sidw_( this->side_values().grad_scalar_shape() ),
-      conc_join_shape_( FeQJoin<Scalar>( this->join_values().scalar_join_shape() ) ),
-      conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
-      conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
-      conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      conc_join_integral_( this->create_coupling_integral(this->quad_) ) {
+      conc_join_shape_( FeQJoin<Scalar>( this->join_values().scalar_join_shape() ) ) {
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -664,6 +664,11 @@ private:
     vector<double*> waverages;                                ///< Auxiliary storage for weighted averages of shape functions.
     vector<double*> jumps;                                    ///< Auxiliary storage for jumps of shape functions.
 
+    std::shared_ptr<BulkIntegral> conc_bulk_integral_;        ///< Bulk integral of assembly class
+    std::shared_ptr<EdgeIntegral> conc_edge_integral_;        ///< Edge integral of assembly class
+    std::shared_ptr<BoundaryIntegral> conc_bdr_integral_;     ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> conc_join_integral_;    ///< Coupling integral of assembly class
+
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
     FeQ<Scalar> JxW_side_join_;
@@ -674,11 +679,6 @@ private:
     FeQArray<Vector> conc_grad_;
     FeQArray<Vector> conc_grad_sidw_;
     FeQJoin<Scalar> conc_join_shape_;
-
-    std::shared_ptr<BulkIntegral> conc_bulk_integral_;        ///< Bulk integral of assembly class
-    std::shared_ptr<EdgeIntegral> conc_edge_integral_;        ///< Edge integral of assembly class
-    std::shared_ptr<BoundaryIntegral> conc_bdr_integral_;     ///< Boundary integral of assembly class
-    std::shared_ptr<CouplingIntegral> conc_join_integral_;    ///< Coupling integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -701,9 +701,9 @@ public:
     /// Constructor.
     SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
-      conc_shape_( this->bulk_values().scalar_shape() ),
-      conc_integral_( this->create_bulk_integral(this->quad_) ) {
+      conc_shape_( this->bulk_values().scalar_shape() ) {
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
         this->used_fields_ += eq_fields_->sources_sigma_out;
@@ -792,9 +792,9 @@ public:
         vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
 
+        std::shared_ptr<BulkIntegral> conc_integral_;             ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> conc_shape_;
-        std::shared_ptr<BulkIntegral> conc_integral_;             ///< Bulk integral of assembly class
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -817,11 +817,11 @@ public:
     /// Constructor.
     BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_boundary_integral(this->quad_low_) ),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       conc_shape_( this->side_values().scalar_shape() ),
-	  conc_grad_( this->side_values().grad_scalar_shape() ),
-      conc_integral_( this->create_boundary_integral(this->quad_low_) ) {
+	  conc_grad_( this->side_values().grad_scalar_shape() ) {
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -996,11 +996,11 @@ public:
         vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
         PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
 
+        std::shared_ptr<BoundaryIntegral> conc_integral_;         ///< Boundary integral of assembly class
         FeQ<Scalar> JxW_;
         ElQ<Vector> normal_;
         FeQArray<Scalar> conc_shape_;
         FeQArray<Vector> conc_grad_;
-        std::shared_ptr<BoundaryIntegral> conc_integral_;         ///< Boundary integral of assembly class
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -1023,9 +1023,9 @@ public:
     /// Constructor.
     InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      init_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
-      init_shape_( this->bulk_values().scalar_shape() ),
-      init_integral_( this->create_bulk_integral(this->quad_) ) {
+      init_shape_( this->bulk_values().scalar_shape() ) {
         this->used_fields_ += eq_fields_->init_condition;
     }
 
@@ -1088,9 +1088,9 @@ public:
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
 
+        std::shared_ptr<BulkIntegral> init_integral_;             ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> init_shape_;
-        std::shared_ptr<BulkIntegral> init_integral_;             ///< Bulk integral of assembly class
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;

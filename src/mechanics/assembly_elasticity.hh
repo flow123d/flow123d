@@ -45,6 +45,9 @@ public:
     /// Constructor.
     StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -55,10 +58,7 @@ public:
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ),
-      deform_join_grad_( this->join_values().gradient_vector_join_shape() ),
-      bulk_integral_( this->create_bulk_integral(this->quad_)),
-      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
+      deform_join_grad_( this->join_values().gradient_vector_join_shape() ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -250,6 +250,10 @@ private:
     vector<LongIdx> side_dof_indices_;                                  ///< vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
@@ -262,10 +266,6 @@ private:
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
     FeQJoin<Tensor> deform_join_grad_;
-
-    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
-    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
-    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -285,6 +285,9 @@ public:
     /// Constructor.
     RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       JxW_side_join_( this->side_values_high_dim().JxW() ),
@@ -294,10 +297,7 @@ public:
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       div_deform_( this->bulk_values().vector_divergence() ),
-      deform_join_( this->join_values().vector_join_shape() ),
-      bulk_integral_( this->create_bulk_integral(this->quad_)),
-      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
+      deform_join_( this->join_values().vector_join_shape() ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -516,6 +516,10 @@ private:
     vector<LongIdx> side_dof_indices_;                                  ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
@@ -527,10 +531,6 @@ private:
     FeQArray<Tensor> grad_deform_;
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
-
-    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
-    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
-    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
 
     template < template<IntDim...> class DimAssembly>
@@ -550,13 +550,13 @@ public:
     /// Constructor.
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       normal_( this->side_values_high_dim().normal_vector() ),       // normal of high dim element of dimjoin integral
       deform_side_( this->side_values_high_dim().vector_shape() ),   // smae as previous
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
-      div_deform_( this->bulk_values().vector_divergence() ),
-      bulk_integral_( this->create_bulk_integral(this->quad_)),
-      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
+      div_deform_( this->bulk_values().vector_divergence() ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -674,6 +674,9 @@ private:
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_side_;
@@ -688,9 +691,6 @@ private:
     VectorMPI output_mean_stress_vec_;
     VectorMPI output_cross_sec_vec_;
     VectorMPI output_div_vec_;
-
-    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
-    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -714,10 +714,10 @@ public:
     /// Constructor.
     ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_side_( this->side_values_high_dim().JxW() ),                       // integral accessors of high dim element of dimjoin
       normal_( this->side_values_high_dim().normal_vector() ),
-      deform_side_( this->side_values_high_dim().vector_shape() ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
+      deform_side_( this->side_values_high_dim().vector_shape() ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
     }
@@ -788,12 +788,12 @@ private:
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
 
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_side_;
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_side_;
-
-    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
 
     template < template<IntDim...> class DimAssembly>

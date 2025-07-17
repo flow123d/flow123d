@@ -31,9 +31,11 @@
 /// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
 struct AssemblyInternals {
 public:
-    AssemblyInternals() {}
+    AssemblyInternals()
+    : eval_points_(std::make_shared<EvalPoints>()) {}
 
-    AssemblyInternals(MixedPtr<FiniteElement> fe) : fe_values_(fe)  {}
+    AssemblyInternals(MixedPtr<FiniteElement> fe)
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
@@ -68,8 +70,6 @@ public:
     }
 
 protected:
-//    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
-//    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     AssemblyInternals asm_internals_;                             ///< Holds shared internals data
 };
 
@@ -204,7 +204,6 @@ public:
 private:
     /// Common part of GenericAssemblz constructors.
     void initialize() {
-        asm_internals_.eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
         asm_internals_.eval_points_->create_integrals( {
             multidim_assembly_[1_d]->integrals(),
@@ -298,11 +297,6 @@ private:
 //    PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
-
-//    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-//    PatchFEValues<3>::TableSizes table_sizes_;
-//    /// Same as previous but hold temporary values during adding elements, sides and points.
-//    PatchFEValues<3>::TableSizes table_sizes_tmp_;
 };
 
 

@@ -47,7 +47,6 @@ public:
       multidim_assembly_(eq_fields, &this->asm_internals_, observe_fields_list, observe.get()),
 	  observe_(observe), bulk_integral_data_(20, 10)
     {
-        this->asm_internals_.eval_points_ = std::make_shared<EvalPoints>();
         multidim_assembly_[1_d]->create_observe_integrals(bulk_integrals_);
         multidim_assembly_[2_d]->create_observe_integrals(bulk_integrals_);
         multidim_assembly_[3_d]->create_observe_integrals(bulk_integrals_);
