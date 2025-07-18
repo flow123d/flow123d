@@ -76,12 +76,12 @@ void EvalPoints::create_integrals(std::vector<DimIntegrals> integrals_vec) {
         for (auto integral : iv.coupling_) {
             auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
             auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
-            integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
+            integral->init(*bulk_int.first, *edge_int.first);
         }
         for (auto integral : iv.boundary_) {
             auto bulk_int = bulk_integrals_.insert( std::make_shared<BulkIntegral>(integral->quad(), integral->quad()->dim()) );
             auto edge_int = edge_integrals_.insert( std::make_shared<EdgeIntegral>(integral->quad(), integral->quad()->dim()+1) );
-            integral->init(shared_from_this(), *bulk_int.first, *edge_int.first);
+            integral->init(*bulk_int.first, *edge_int.first);
         }
     }
 

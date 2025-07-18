@@ -263,19 +263,14 @@ private:
 class BaseIntegral {
 public:
     /// Default constructor
-	BaseIntegral() : eval_points_(nullptr), dim_(0), quad_(nullptr) {}
+	BaseIntegral() : dim_(0), quad_(nullptr) {}
 
     /// Constructor of bulk or side subset
 	BaseIntegral(Quadrature *quad, unsigned int dim)
-	 : eval_points_(nullptr), dim_(dim), quad_(quad) {}
+	 : dim_(dim), quad_(quad) {}
 
     /// Destructor
     virtual ~BaseIntegral();
-
-    /// Getter of eval_points
-    std::shared_ptr<EvalPoints> eval_points() const {
-        return eval_points_;
-    }
 
     /// Returns dimension.
     unsigned int dim() const {
@@ -292,8 +287,6 @@ public:
         return (dim_ == other.dim_) && (quad()->size() == other.quad()->size());
     }
 protected:
-    /// Pointer to EvalPoints
-    std::shared_ptr<EvalPoints> eval_points_;
     /// Dimension of the cell on which points are placed
     unsigned int dim_;
     /// Pointer to Quadrature that represents quadrature points of integral.
@@ -323,12 +316,10 @@ public:
 	void init(std::shared_ptr<EvalPoints> eval_points)
 	{
         ASSERT_EQ(dim, this->dim_);
-        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of BulkIntegral object!\n");
 
-	    this->eval_points_ = eval_points;
-	    subset_index_ = this->eval_points_->add_bulk<dim>(*this->quad_);
-	    begin_idx_ = eval_points_->subset_begin(dim_, subset_index_);
-	    end_idx_ = eval_points_->subset_end(dim_, subset_index_);
+	    subset_index_ = eval_points->add_bulk<dim>(*this->quad_);
+	    begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
+	    end_idx_ = eval_points->subset_end(dim_, subset_index_);
 	}
 
     /// Return index of data block according to subset in EvalPoints object
@@ -336,11 +327,14 @@ public:
         return subset_index_;
     }
 
+    /// Getter of begin_idx_
+    inline unsigned int get_begin_idx() const {
+        return begin_idx_;
+    }
+
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
-        ASSERT_PTR(this->eval_points_).error("Uninitialized BulkIntegral object. Did you call 'init' method?\n");
-
         auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, begin_idx_));
         auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, end_idx_));
         return Range<BulkPoint>(bgn_it, end_it);
@@ -380,13 +374,11 @@ public:
     void init(std::shared_ptr<EvalPoints> eval_points)
     {
         ASSERT_EQ(dim, this->dim_);
-        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of EdgeIntegral object!\n");
 
-	    this->eval_points_ = eval_points;
-	    subset_index_ = this->eval_points_->add_edge<dim>(*this->quad_);
+	    subset_index_ = eval_points->add_edge<dim>(*this->quad_);
 
-        begin_idx_ = eval_points_->subset_begin(dim, subset_index_);
-        uint end_idx = eval_points_->subset_end(dim, subset_index_);
+        begin_idx_ = eval_points->subset_begin(dim, subset_index_);
+        uint end_idx = eval_points->subset_end(dim, subset_index_);
         n_sides_ = dim + 1;
         //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
         n_points_per_side_ = (end_idx - begin_idx_) / n_sides();
@@ -411,7 +403,6 @@ public:
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
-        ASSERT_PTR(this->eval_points_).error("Uninitialized EdgeIntegral object. Did you call 'init' method?\n");
 
         //DebugOut() << "points per side: " << n_points_per_side_;
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
@@ -462,11 +453,8 @@ public:
     ~CouplingIntegral();
 
     /// Initialize integral object
-    void init(std::shared_ptr<EvalPoints> eval_points, std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
+    void init(std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
     {
-        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of CouplingIntegral object!\n");
-
-	    this->eval_points_ = eval_points;
 	    this->bulk_integral_ = bulk_integral;
 	    this->edge_integral_ = edge_integral;
     }
@@ -482,13 +470,12 @@ public:
     }
 
     inline uint bulk_begin() const {
-        return eval_points_->subset_begin(dim_, bulk_integral_->get_subset_idx());
+        return bulk_integral_->get_begin_idx();
     }
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_+1);
-        ASSERT_PTR(this->eval_points_).error("Uninitialized CouplingIntegral object. Did you call 'init' method?\n");
 
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
@@ -527,11 +514,8 @@ public:
     ~BoundaryIntegral();
 
     /// Initialize integral object
-    void init(std::shared_ptr<EvalPoints> eval_points, std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
+    void init(std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
     {
-        ASSERT(this->eval_points_==nullptr).error("Repeated initialization of BoundaryIntegral object!\n");
-
-	    this->eval_points_ = eval_points;
 	    this->bulk_integral_ = bulk_integral;
 	    this->edge_integral_ = edge_integral;
     }
@@ -548,15 +532,14 @@ public:
 
     inline uint bulk_begin() const {
       //  DebugOut().fmt("edge_begin: {} bdr_begin: {}",
-      //          eval_points_->subset_begin(dim_, edge_integral_->get_subset_idx()),
-      //          eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx()));
-        return eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx());
+      //          edge_integral_->get_begin_idx(),
+      //          bulk_integral_->get_begin_idx());
+        return bulk_integral_->get_begin_idx();
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
-        ASSERT_PTR(this->eval_points_).error("Uninitialized BoundaryIntegral object. Did you call 'init' method?\n");
 
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = edge_integral_->side_begin(cell_side);
