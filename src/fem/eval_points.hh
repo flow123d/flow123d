@@ -29,6 +29,11 @@
 #include "system/armor.hh"
 
 class Side;
+namespace internal_integrals {
+    class Bulk;
+    class Edge;
+
+}
 
 
 /**
@@ -82,16 +87,16 @@ public:
     }
 
     /**
-     * Registers point set from quadrature as new subset during initialization of EvalPoints object.
+     * Registers point set from quadrature.
      *
-     * Returns index of subset.
+     * Returns an object referencing to the EvalPoints and list of its points.
      */
     template <unsigned int dim>
-    unsigned int add_bulk(const Quadrature &);
+    std::shared_ptr<internal_integrals::Bulk> add_bulk(Quadrature *);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
-    unsigned int add_edge(const Quadrature &);
+    std::shared_ptr<internal_integrals::Edge> add_edge(Quadrature *);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
@@ -102,8 +107,6 @@ public:
         for (uint i=0; i<4; ++i)
             dim_eval_points_[i].clear();
     }
-
-    void create_integrals(std::vector<DimIntegrals> integrals_vec);
 
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
@@ -177,10 +180,10 @@ private:
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
     /// Maps of all BulkIntegrals of dimensions 0,1,2,3
-    IntegralPtrSet<BulkIntegral> bulk_integrals_;
+    IntegralPtrSet<internal_integrals::Bulk> bulk_integrals_;
 
     /// Maps of all EdgeIntegrals of dimensions 1,2,3
-    IntegralPtrSet<EdgeIntegral> edge_integrals_;
+    IntegralPtrSet<internal_integrals::Edge> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;

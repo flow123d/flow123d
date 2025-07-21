@@ -141,9 +141,6 @@ public:
         return local_point_idx_;
     }
 
-    /// Intermediate step in implementation of PatcFEValues.
-    virtual unsigned int side_idx() const =0;
-
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return side_begin_ + local_point_idx_;
@@ -186,9 +183,6 @@ public:
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline EdgePoint point_on(const DHCellSide &edg_side) const;
 
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
-
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
@@ -213,9 +207,6 @@ public:
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     inline BulkPoint lower_dim(DHCellAccessor cell_lower) const;
-
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -242,9 +233,6 @@ public:
     /// Return corresponds BulkPoint on boundary element.
     inline BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
 
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
-
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
@@ -254,7 +242,6 @@ private:
     /// Pointer to edge point set
     const BoundaryIntegral *integral_;
 };
-
 
 
 /**
@@ -293,6 +280,101 @@ protected:
     Quadrature *quad_;
 };
 
+
+class BulkIntegral;
+class EdgeIntegral;
+class CouplingIntegral;
+class BoundaryIntegral;
+
+
+namespace internal_integrals {
+
+class Bulk : public BaseIntegral, public std::enable_shared_from_this<Bulk> {
+public:
+    typedef BulkPoint PointType;
+    typedef unsigned int MeshItem;
+
+    /// Default constructor
+	Bulk() : BaseIntegral() {}
+
+    /// Constructor of bulk integral- obsolete constructor
+	Bulk(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
+
+    /// Destructor
+    ~Bulk()
+    {}
+
+    /// Initialize integral object
+	void init(std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
+	{
+	    subset_index_ = subset_idx;
+	    begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
+	    end_idx_ = eval_points->subset_end(dim_, subset_index_);
+	}
+
+private:
+    /// Index of data block according to subset in EvalPoints object.
+    unsigned int subset_index_;
+    uint begin_idx_;
+    uint end_idx_;
+
+    friend class ::BulkIntegral;
+    friend class ::CouplingIntegral;
+    friend class ::BoundaryIntegral;
+};
+
+class Edge : public BaseIntegral, public std::enable_shared_from_this<Edge> {
+public:
+    typedef EdgePoint PointType;
+    typedef DHCellSide MeshItem;
+
+    /// Default constructor
+	Edge() : BaseIntegral() {}
+
+    /// Constructor of edge integral
+	Edge(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {}
+
+    /// Destructor
+    ~Edge()
+    {}
+
+    /// Initialize integral object
+	void init(std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
+	{
+	    subset_index_ = subset_idx;
+
+        begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
+        uint end_idx = eval_points->subset_end(dim_, subset_index_);
+        n_sides_ = dim_ + 1;
+        //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
+        n_points_per_side_ = (end_idx - begin_idx_) / n_sides_;
+        //DebugOut() << "points per side: " << n_points_per_side_;
+	}
+
+private:
+    inline uint side_begin(const DHCellSide &cell_side) const {
+        return begin_idx_ + cell_side.side_idx() * n_points_per_side_;
+    }
+
+    unsigned int subset_index_;
+    uint begin_idx_;
+
+    /// Number of sides (value 0 indicates bulk set)
+    unsigned int n_sides_;
+    /// Number of points. TODO: pass this to the constructor, avoid extraction from the eval_points
+    uint n_points_per_side_;
+
+    friend class ::EdgeIntegral;
+    friend class ::CouplingIntegral;
+    friend class ::BoundaryIntegral;
+};
+
+}
+
+
+
 /**
  * Integral class of bulk points, allows assemblation of volume integrals.
  */
@@ -305,47 +387,42 @@ public:
 	BulkIntegral() : BaseIntegral() {}
 
     /// Constructor of bulk integral- obsolete constructor
-	BulkIntegral(Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {}
+	BulkIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {
+	    switch (dim) {
+	    case 1:
+	        internal_bulk_ = eval_points->add_bulk<1>(quad);
+	        break;
+	    case 2:
+	        internal_bulk_ = eval_points->add_bulk<2>(quad);
+	        break;
+	    case 3:
+	        internal_bulk_ = eval_points->add_bulk<3>(quad);
+	        break;
+	    default:
+	        ASSERT(false).error("Should not happen!\n");
+	    }
+	}
 
     /// Destructor
     ~BulkIntegral();
 
-    /// Initialize integral object
-    template <unsigned int dim>
-	void init(std::shared_ptr<EvalPoints> eval_points)
-	{
-        ASSERT_EQ(dim, this->dim_);
-
-	    subset_index_ = eval_points->add_bulk<dim>(*this->quad_);
-	    begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
-	    end_idx_ = eval_points->subset_end(dim_, subset_index_);
-	}
-
     /// Return index of data block according to subset in EvalPoints object
     inline int get_subset_idx() const {
-        return subset_index_;
-    }
-
-    /// Getter of begin_idx_
-    inline unsigned int get_begin_idx() const {
-        return begin_idx_;
+        return internal_bulk_->subset_index_;
     }
 
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, begin_idx_));
-        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, end_idx_));
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, internal_bulk_->begin_idx_));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, internal_bulk_->end_idx_));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
 protected:
-    /// Index of data block according to subset in EvalPoints object.
-    unsigned int subset_index_;
-    uint begin_idx_;
-    uint end_idx_;
-
+    /// Internal integral object
+    std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
 };
 
 /**
@@ -363,66 +440,58 @@ public:
     }
 
     /// Constructor of edge integral
-	EdgeIntegral(Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {}
+	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {
+	    switch (dim) {
+	    case 1:
+	        internal_edge_ = eval_points->add_edge<1>(quad);
+	        break;
+	    case 2:
+	        internal_edge_ = eval_points->add_edge<2>(quad);
+	        break;
+	    case 3:
+	        internal_edge_ = eval_points->add_edge<3>(quad);
+	        break;
+	    default:
+	        ASSERT(false).error("Should not happen!\n");
+	    }
+	}
 
     /// Destructor
     ~EdgeIntegral();
 
-    /// Initialize integral object
-    template <unsigned int dim>
-    void init(std::shared_ptr<EvalPoints> eval_points)
-    {
-        ASSERT_EQ(dim, this->dim_);
-
-	    subset_index_ = eval_points->add_edge<dim>(*this->quad_);
-
-        begin_idx_ = eval_points->subset_begin(dim, subset_index_);
-        uint end_idx = eval_points->subset_end(dim, subset_index_);
-        n_sides_ = dim + 1;
-        //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
-        n_points_per_side_ = (end_idx - begin_idx_) / n_sides();
-        //DebugOut() << "points per side: " << n_points_per_side_;
-
-    }
-
     /// Getter of n_sides
     inline unsigned int n_sides() const {
-        return n_sides_;
+        return internal_edge_->n_sides_;
     }
 
     /// Return index of data block according to subset in EvalPoints object
     inline int get_subset_idx() const {
-        return subset_index_;
+        return internal_edge_->subset_index_;
     }
 
     inline uint side_begin(const DHCellSide &cell_side) const {
-        return begin_idx_ + cell_side.side_idx() * n_points_per_side_;
+        return internal_edge_->side_begin(cell_side);
     }
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
 
-        //DebugOut() << "points per side: " << n_points_per_side_;
+        //DebugOut() << "points per side: " << internal_edge_->n_points_per_side_;
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = side_begin(cell_side);
+        uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx));
         auto end_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(elm_cache_map, element_patch_idx, n_points_per_side_), this, begin_idx));
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx));
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
 
 private:
-    unsigned int subset_index_;
-    uint begin_idx_;
-
-    /// Number of sides (value 0 indicates bulk set)
-    unsigned int n_sides_;
-    /// Number of points. TODO: pass this to the constructor, avoid extraction from the eval_points
-    uint n_points_per_side_;
+    /// Internal integral object
+    std::shared_ptr<internal_integrals::Edge> internal_edge_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -446,31 +515,37 @@ public:
 	CouplingIntegral() : BaseIntegral() {}
 
     /// Constructor of ngh integral
-	CouplingIntegral(Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {}
+	CouplingIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim) {
+	    switch (dim) {
+	    case 1:
+	        internal_bulk_ = eval_points->add_bulk<1>(quad);
+	        internal_edge_ = eval_points->add_edge<2>(quad);
+	        break;
+	    case 2:
+	        internal_bulk_ = eval_points->add_bulk<2>(quad);
+	        internal_edge_ = eval_points->add_edge<3>(quad);
+	        break;
+	    default:
+	        ASSERT(false).error("Should not happen!\n");
+	    }
+	}
 
     /// Destructor
     ~CouplingIntegral();
 
-    /// Initialize integral object
-    void init(std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
-    {
-	    this->bulk_integral_ = bulk_integral;
-	    this->edge_integral_ = edge_integral;
-    }
-
     /// Return index of data block according to subset of higher dim in EvalPoints object
     inline int get_subset_high_idx() const {
-        return edge_integral_->get_subset_idx();
+        return internal_edge_->subset_index_;
     }
 
     /// Return index of data block according to subset of lower dim in EvalPoints object
     inline int get_subset_low_idx() const {
-        return bulk_integral_->get_subset_idx();
+        return internal_bulk_->subset_index_;
     }
 
     inline uint bulk_begin() const {
-        return bulk_integral_->get_begin_idx();
+        return internal_bulk_->begin_idx_;
     }
 
     /// Returns range of side local points for appropriate cell side accessor
@@ -478,19 +553,19 @@ public:
         ASSERT_EQ(cell_side.dim(), dim_+1);
 
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = edge_integral_->side_begin(cell_side);
+        uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
         auto end_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
 private:
-    /// Integral according to side subset part (element of higher dim) in EvalPoints object.
-    std::shared_ptr<EdgeIntegral> edge_integral_;
     /// Integral according to bulk subset part (element of lower dim) in EvalPoints object.
-    std::shared_ptr<BulkIntegral> bulk_integral_;
+    std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
+    /// Integral according to side subset part (element of higher dim) in EvalPoints object.
+    std::shared_ptr<internal_integrals::Edge> internal_edge_;
 
     friend class CouplingPoint;
 };
@@ -507,34 +582,26 @@ public:
     BoundaryIntegral() : BaseIntegral() {}
 
     /// Constructor of ngh integral
-    BoundaryIntegral(Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {}
+    BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim);
 
     /// Destructor
     ~BoundaryIntegral();
 
-    /// Initialize integral object
-    void init(std::shared_ptr<BulkIntegral> bulk_integral, std::shared_ptr<EdgeIntegral> edge_integral)
-    {
-	    this->bulk_integral_ = bulk_integral;
-	    this->edge_integral_ = edge_integral;
-    }
-
     /// Return index of data block according to subset of higher dim in EvalPoints object
     inline int get_subset_high_idx() const {
-        return edge_integral_->get_subset_idx();
+        return internal_edge_->subset_index_;
     }
 
     /// Return index of data block according to subset of lower dim (boundary) in EvalPoints object
     inline int get_subset_low_idx() const {
-        return bulk_integral_->get_subset_idx();
+        return internal_bulk_->subset_index_;
     }
 
     inline uint bulk_begin() const {
       //  DebugOut().fmt("edge_begin: {} bdr_begin: {}",
       //          edge_integral_->get_begin_idx(),
       //          bulk_integral_->get_begin_idx());
-        return bulk_integral_->get_begin_idx();
+        return internal_bulk_->begin_idx_;
     }
 
     /// Returns range of bulk local points for appropriate cell accessor
@@ -542,19 +609,19 @@ public:
         ASSERT_EQ(cell_side.dim(), dim_);
 
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = edge_integral_->side_begin(cell_side);
+        uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
                 BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
         auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, edge_integral_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
 private:
-    /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
-    std::shared_ptr<EdgeIntegral> edge_integral_;
     /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
-    std::shared_ptr<BulkIntegral> bulk_integral_;
+    std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
+    /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
+    std::shared_ptr<internal_integrals::Edge> internal_edge_;
 
     friend class BoundaryPoint;
 };

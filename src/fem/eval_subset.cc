@@ -33,8 +33,9 @@ BaseIntegral::~BaseIntegral()
  * Implementation of BulkIntegral methods
  */
 
-BulkIntegral::~BulkIntegral()
-{}
+BulkIntegral::~BulkIntegral() {
+    internal_bulk_.reset();
+}
 
 
 /******************************************************************************
@@ -42,6 +43,7 @@ BulkIntegral::~BulkIntegral()
  */
 
 EdgeIntegral::~EdgeIntegral() {
+    internal_edge_.reset();
 }
 
 
@@ -51,8 +53,8 @@ EdgeIntegral::~EdgeIntegral() {
 
 CouplingIntegral::~CouplingIntegral()
 {
-    edge_integral_.reset();
-    bulk_integral_.reset();
+    internal_edge_.reset();
+    internal_bulk_.reset();
 }
 
 
@@ -61,24 +63,29 @@ CouplingIntegral::~CouplingIntegral()
  * Implementation of BoundaryIntegral methods
  */
 
+BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
+ : BaseIntegral(quad, dim) {
+    switch (dim) {
+    case 1:
+        internal_bulk_ = eval_points->add_bulk<0>(quad);
+        internal_edge_ = eval_points->add_edge<1>(quad);
+        break;
+    case 2:
+        internal_bulk_ = eval_points->add_bulk<1>(quad);
+        internal_edge_ = eval_points->add_edge<2>(quad);
+        break;
+    case 3:
+        internal_bulk_ = eval_points->add_bulk<2>(quad);
+        internal_edge_ = eval_points->add_edge<3>(quad);
+        break;
+    default:
+        ASSERT(false).error("Should not happen!\n");
+    }
+}
+
 BoundaryIntegral::~BoundaryIntegral()
 {
-    edge_integral_.reset();
+    internal_edge_.reset();
+    internal_bulk_.reset();
 }
 
-
-/******************************************************************************
- * Temporary implementations. Intermediate step in implementation of PatcFEValues.
- */
-
-unsigned int EdgePoint::side_idx() const {
-    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
-}
-
-unsigned int CouplingPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
-}
-
-unsigned int BoundaryPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
-}

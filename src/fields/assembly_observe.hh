@@ -175,8 +175,7 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            bulk_integral_ = std::make_shared<BulkIntegral>(this->quad_, dim);
-            bulk_integral_->init<dim>(this->asm_internals_->eval_points_);
+            bulk_integral_ = std::make_shared<BulkIntegral>(this->asm_internals_->eval_points_, this->quad_, dim);
             integrals[dim-1] = bulk_integral_;
         }
     }

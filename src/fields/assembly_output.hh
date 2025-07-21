@@ -150,12 +150,12 @@ public:
     : AssemblyOutputBase<dim>(eq_fields, eq_data) {
         this->asm_internals_ = asm_internals;
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
-        bulk_integral_ = this->create_bulk_integral(this->quad_);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
             this->quad_->weight(i) = 1.0;
             this->quad_->set(i) = RefElement<dim>::node_coords(i);
         }
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
     }
 
     /// Destructor.
