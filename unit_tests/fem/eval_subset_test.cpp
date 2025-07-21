@@ -41,8 +41,7 @@ TEST(EvalPointsTest, all) {
     Quadrature *q_side_3 = new QGauss(2, 2);
 
     // Add 2D bulk integral, test values
-    std::shared_ptr<BulkIntegral> bulk_2d = std::make_shared<BulkIntegral>(q_bulk_2, 2);
-    bulk_2d->init<2>(eval_points);
+    std::shared_ptr<BulkIntegral> bulk_2d = std::make_shared<BulkIntegral>(eval_points, q_bulk_2, 2);
     EXPECT_EQ(eval_points->size(2), 3);
     EXPECT_EQ(eval_points->n_subsets(2), 1);
     EXPECT_EQ(eval_points->subset_begin(2, 0), 0);
@@ -50,8 +49,7 @@ TEST(EvalPointsTest, all) {
     EXPECT_EQ(eval_points->subset_size(2, 0), 3);
 
     // Add edge integral of 2D element, test values
-    std::shared_ptr<EdgeIntegral> edge_2d = std::make_shared<EdgeIntegral>(q_side_2, 2);
-    edge_2d->init<2>(eval_points);
+    std::shared_ptr<EdgeIntegral> edge_2d = std::make_shared<EdgeIntegral>(eval_points, q_side_2, 2);
     EXPECT_EQ(eval_points->size(2), 9);
     EXPECT_EQ(eval_points->n_subsets(2), 2);
     EXPECT_EQ(eval_points->subset_begin(2, 1), 3);
@@ -60,8 +58,7 @@ TEST(EvalPointsTest, all) {
     EXPECT_EQ(eval_points->n_subsets(3), 0);       // Check n_subsets of dim 3 before adding of join integral
 
     // Add edge integral of 3D element, test values
-    std::shared_ptr<EdgeIntegral> edge_3d = std::make_shared<EdgeIntegral>(q_side_3, 3);
-    edge_3d->init<3>(eval_points);
+    std::shared_ptr<EdgeIntegral> edge_3d = std::make_shared<EdgeIntegral>(eval_points, q_side_3, 3);
     EXPECT_EQ(eval_points->size(3), 12);
     EXPECT_EQ(eval_points->n_subsets(3), 1);
     EXPECT_EQ(eval_points->subset_begin(3, 0), 0);
@@ -69,19 +66,12 @@ TEST(EvalPointsTest, all) {
     EXPECT_EQ(eval_points->subset_size(3, 0), 12);
 
     // Add join integral, test values
-    std::shared_ptr<CouplingIntegral> join_2d = std::make_shared<CouplingIntegral>(q_bulk_2, 2);
-    join_2d->init(eval_points, bulk_2d, edge_3d);
+    std::shared_ptr<CouplingIntegral> join_2d = std::make_shared<CouplingIntegral>(eval_points, q_bulk_2, 2);
     EXPECT_EQ(join_2d->get_subset_low_idx(), 0);        // Shared subset with bulk integral
     EXPECT_EQ(join_2d->get_subset_high_idx(), 0);       // Shared subset with 3D edge integral
 
     // Add boundary integral, test values
-    std::shared_ptr<BoundaryIntegral> bdr_2d = std::make_shared<BoundaryIntegral>(q_bulk_1, 2);
-    {
-        // initialization
-        std::shared_ptr<BulkIntegral> bulk_1d = std::make_shared<BulkIntegral>(q_bulk_1, 1);
-        bdr_2d->init(eval_points, bulk_1d, edge_2d);
-        bulk_1d->init<1>(eval_points);
-    }
+    std::shared_ptr<BoundaryIntegral> bdr_2d = std::make_shared<BoundaryIntegral>(eval_points, q_bulk_1, 2);
     EXPECT_EQ(bdr_2d->get_subset_low_idx(), 0);
     EXPECT_EQ(bdr_2d->get_subset_high_idx(), 1);
     EXPECT_EQ(eval_points->n_subsets(1), 1);
@@ -98,16 +88,11 @@ TEST(IntegralTest, integrals_3d) {
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_bulk_low = new QGauss(2, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(q_bulk, 3);
-    std::shared_ptr<BulkIntegral> bulk_integral_low = std::make_shared<BulkIntegral>(q_bulk_low, 2);
-    std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(q_side, 3);
-    std::shared_ptr<CouplingIntegral> coupling_integral = std::make_shared<CouplingIntegral>(q_bulk_low, 2);
-    std::shared_ptr<BoundaryIntegral> boundary_integral = std::make_shared<BoundaryIntegral>(q_side, 3);
-    coupling_integral->init(eval_points, bulk_integral_low, edge_integral);
-    boundary_integral->init(eval_points, bulk_integral_low, edge_integral);
-    bulk_integral->init<3>(eval_points);
-    bulk_integral_low->init<2>(eval_points);
-    edge_integral->init<3>(eval_points);
+    std::shared_ptr<BulkIntegral> bulk_integral = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
+    std::shared_ptr<BulkIntegral> bulk_integral_low = std::make_shared<BulkIntegral>(eval_points, q_bulk_low, 2);
+    std::shared_ptr<EdgeIntegral> edge_integral = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
+    std::shared_ptr<CouplingIntegral> coupling_integral = std::make_shared<CouplingIntegral>(eval_points, q_bulk_low, 2);
+    std::shared_ptr<BoundaryIntegral> boundary_integral = std::make_shared<BoundaryIntegral>(eval_points, q_side, 3);
 
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
@@ -238,16 +223,10 @@ public:
         q_bulk_ = new QGauss(3, 2);
         q_bulk_low_ = new QGauss(2, 2);
         q_side_ = new QGauss(2, 2);
-        bulk_integral_ = std::make_shared<BulkIntegral>(q_bulk_, 3);
-        bulk_integral_low_ = std::make_shared<BulkIntegral>(q_bulk_low_, 2);
-        edge_integral_ = std::make_shared<EdgeIntegral>(q_side_, 3);
-        coupling_integral_ = std::make_shared<CouplingIntegral>(q_bulk_low_, 2);
-        boundary_integral_ = std::make_shared<BoundaryIntegral>(q_side_, 3);
-        coupling_integral_->init(eval_points_, bulk_integral_low_, edge_integral_);
-        boundary_integral_->init(eval_points_, bulk_integral_low_, edge_integral_);
-        bulk_integral_->init<3>(eval_points_);
-        bulk_integral_low_->init<2>(eval_points_);
-        edge_integral_->init<3>(eval_points_);
+        bulk_integral_ = std::make_shared<BulkIntegral>(eval_points_, q_bulk_, 3);
+        edge_integral_ = std::make_shared<EdgeIntegral>(eval_points_, q_side_, 3);
+        coupling_integral_ = std::make_shared<CouplingIntegral>(eval_points_, q_bulk_low_, 2);
+        boundary_integral_ = std::make_shared<BoundaryIntegral>(eval_points_, q_side_, 3);
 
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
         //std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
@@ -317,7 +296,6 @@ public:
     Quadrature *q_bulk_low_;
     Quadrature *q_side_;
     std::shared_ptr<BulkIntegral> bulk_integral_;
-    std::shared_ptr<BulkIntegral> bulk_integral_low_;
     std::shared_ptr<EdgeIntegral> edge_integral_;
     std::shared_ptr<CouplingIntegral> coupling_integral_;
     std::shared_ptr<BoundaryIntegral> boundary_integral_;

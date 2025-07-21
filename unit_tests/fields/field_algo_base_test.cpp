@@ -139,17 +139,8 @@ public:
         eval_points_ = std::make_shared<EvalPoints>();
         Quadrature *q_bulk = new QGauss(3, 0);
         Quadrature *q_bdr = new QGauss(2, 0);
-        bulk_eval = std::make_shared<BulkIntegral>(q_bulk, 3);
-        bdr_eval = std::make_shared<BoundaryIntegral>(q_bdr, 3);
-        {
-            // initialization of integrals
-            auto bulk_low_eval = std::make_shared<BulkIntegral>(q_bdr, 2);
-            auto edge_eval = std::make_shared<EdgeIntegral>(q_bdr, 3);
-            bdr_eval->init(eval_points_, bulk_low_eval, edge_eval);
-            bulk_eval->init<3>(eval_points_);
-            bulk_low_eval->init<2>(eval_points_);
-            edge_eval->init<3>(eval_points_);
-        }
+        bulk_eval = std::make_shared<BulkIntegral>(eval_points_, q_bulk, 3);
+        bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
         this->init(eval_points_);
     }
 
@@ -957,13 +948,8 @@ TEST(Field, field_values) {
     std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<BulkIntegral> mass_eval = std::make_shared<BulkIntegral>(q_bulk, 3);
-    std::shared_ptr<EdgeIntegral> side_eval = std::make_shared<EdgeIntegral>(q_side, 3);
-    {
-        // initialization of integrals
-        mass_eval->init<3>(eval_points);
-        side_eval->init<3>(eval_points);
-    }
+    std::shared_ptr<BulkIntegral> mass_eval = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
+    std::shared_ptr<EdgeIntegral> side_eval = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
     ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
 

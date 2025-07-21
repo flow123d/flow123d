@@ -129,23 +129,14 @@ public:
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = std::make_shared<BulkIntegral>(ref_quad_1_, 1);
-        bulk_integrals_[1] = std::make_shared<BulkIntegral>(ref_quad_2_, 2);
-        bulk_integrals_[2] = std::make_shared<BulkIntegral>(ref_quad_3_, 3);
-        edge_integrals_[0] = std::make_shared<EdgeIntegral>(ref_quad_0_, 1);
-        edge_integrals_[1] = std::make_shared<EdgeIntegral>(ref_quad_1_, 2);
-        edge_integrals_[2] = std::make_shared<EdgeIntegral>(ref_quad_2_, 3);
-        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(ref_quad_1_, 1);
-        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(ref_quad_2_, 2);
-
-        coupling_integrals_[0]->init(eval_points_, bulk_integrals_[0], edge_integrals_[1]);
-        coupling_integrals_[1]->init(eval_points_, bulk_integrals_[1], edge_integrals_[2]);
-        bulk_integrals_[0]->init<1>(eval_points_);
-        bulk_integrals_[1]->init<2>(eval_points_);
-        bulk_integrals_[2]->init<3>(eval_points_);
-        edge_integrals_[0]->init<1>(eval_points_);
-        edge_integrals_[1]->init<2>(eval_points_);
-        edge_integrals_[2]->init<3>(eval_points_);
+        bulk_integrals_[0] = std::make_shared<BulkIntegral>(eval_points_, ref_quad_1_, 1);
+        bulk_integrals_[1] = std::make_shared<BulkIntegral>(eval_points_, ref_quad_2_, 2);
+        bulk_integrals_[2] = std::make_shared<BulkIntegral>(eval_points_, ref_quad_3_, 3);
+        edge_integrals_[0] = std::make_shared<EdgeIntegral>(eval_points_, ref_quad_0_, 1);
+        edge_integrals_[1] = std::make_shared<EdgeIntegral>(eval_points_, ref_quad_1_, 2);
+        edge_integrals_[2] = std::make_shared<EdgeIntegral>(eval_points_, ref_quad_2_, 3);
+        coupling_integrals_[0] = std::make_shared<CouplingIntegral>(eval_points_, ref_quad_1_, 1);
+        coupling_integrals_[1] = std::make_shared<CouplingIntegral>(eval_points_, ref_quad_2_, 2);
     }
 
     void initialize() {

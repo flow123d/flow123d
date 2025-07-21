@@ -187,27 +187,12 @@ public:
             Quadrature *q_bdr1 = new QGauss(0, 0);
             Quadrature *q_bdr2 = new QGauss(1, 0);
             Quadrature *q_bdr3 = new QGauss(2, 0);
-            mass_integral[0] = std::make_shared<BulkIntegral>(q_bulk1, 1);
-            mass_integral[1] = std::make_shared<BulkIntegral>(q_bulk2, 2);
-            mass_integral[2] = std::make_shared<BulkIntegral>(q_bulk3, 3);
-            bdr_integral[0] = std::make_shared<BoundaryIntegral>(q_bdr1, 1);
-            bdr_integral[1] = std::make_shared<BoundaryIntegral>(q_bdr2, 2);
-            bdr_integral[2] = std::make_shared<BoundaryIntegral>(q_bdr3, 3);
-            {
-                // initialization of integrals
-                auto edge_integral0 = std::make_shared<EdgeIntegral>(q_bdr1, 1);
-                auto edge_integral1 = std::make_shared<EdgeIntegral>(q_bdr2, 2);
-                auto edge_integral2 = std::make_shared<EdgeIntegral>(q_bdr3, 3);
-                bdr_integral[0]->init(eval_points_, mass_integral[0], edge_integral0);
-                bdr_integral[1]->init(eval_points_, mass_integral[1], edge_integral1);
-                bdr_integral[2]->init(eval_points_, mass_integral[2], edge_integral2);
-                mass_integral[0]->init<1>(eval_points_);
-                mass_integral[1]->init<2>(eval_points_);
-                mass_integral[2]->init<3>(eval_points_);
-                edge_integral0->init<1>(eval_points_);
-                edge_integral1->init<2>(eval_points_);
-                edge_integral2->init<3>(eval_points_);
-            }
+            mass_integral[0] = std::make_shared<BulkIntegral>(eval_points_, q_bulk1, 1);
+            mass_integral[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk2, 2);
+            mass_integral[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk3, 3);
+            bdr_integral[0] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr1, 1);
+            bdr_integral[1] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr2, 2);
+            bdr_integral[2] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr3, 3);
             this->init(eval_points_);
 
             this->add_coords_field();
