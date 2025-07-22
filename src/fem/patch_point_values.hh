@@ -46,6 +46,70 @@ enum OpSizeType
 
 
 
+struct RevertibleValue {
+public:
+    /// Default constructor
+    RevertibleValue() : permanent_(0), temporary_(0) {}
+
+    /// Copy constructor
+    RevertibleValue(const RevertibleValue &other)
+    : permanent_(other.permanent_), temporary_(other.temporary_) {}
+
+
+    /// Declaration of operators
+    inline RevertibleValue &operator= (RevertibleValue &other) {
+    	permanent_ = other.permanent_;
+    	temporary_ = other.temporary_;
+        return *this;
+    }
+
+    inline RevertibleValue& operator++ ()
+    {
+    	temporary_++;
+        return (*this);
+    }
+
+    inline RevertibleValue& operator+= (std::size_t inc_val)
+    {
+    	temporary_ += inc_val;
+        return (*this);
+    }
+
+    inline std::size_t operator() () const
+    {
+        return permanent_;
+    }
+
+
+    /// Reset value to zero
+    void reset() {
+        permanent_ = 0;
+        temporary_ = 0;
+    }
+
+    /// Revert temporary value.
+    inline void revert_temporary() {
+        temporary_ = permanent_;
+    }
+
+    /// Finalize temporary value.
+    inline void make_permanent() {
+        permanent_ = temporary_;
+    }
+
+    /// Return temporary value.
+    inline std::size_t temporary_value() const
+    {
+        return temporary_;
+    }
+
+private:
+    std::size_t permanent_;
+    std::size_t temporary_;
+};
+
+
+
 /**
  * v Class for storing FE data of quadrature points on one patch.
  *
@@ -106,8 +170,8 @@ public:
 
     /// Reset number of columns (points and elements)
     inline void reset() {
-        n_points_ = 0;
-        n_elems_ = 0;
+        n_points_.reset();
+        n_elems_.reset();
         i_elem_ = 0;
         elem_list_.clear();
         side_list_.clear();
@@ -115,19 +179,17 @@ public:
 
     /// Getter for n_elems_
     inline uint n_elems() const {
-        return n_elems_;
+        return n_elems_();
     }
 
     /// Getter for n_points_
     inline uint n_points() const {
-        return n_points_;
+        return n_points_();
     }
 
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables(uint n_elems, uint n_points) {
-        n_elems_ = n_elems;
-        n_points_ = n_points;
-        std::vector<uint> sizes = {n_elems_, n_points_};
+    void resize_tables() {
+        std::vector<std::size_t> sizes = {n_elems_(), n_points_()};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
 	    }
@@ -143,7 +205,7 @@ public:
      * @param i_point_on_elem Index of point on element
      */
     uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint i_point_on_elem) {
-        uint point_pos = i_point_on_elem * n_elems_ + elem_table_row; // index of bulk point on patch
+        uint point_pos = i_point_on_elem * n_elems_() + elem_table_row; // index of bulk point on patch
         int_table_(0)(point_pos) = value_patch_idx;
         int_table_(1)(point_pos) = elem_table_row;
         int_table_(2)(point_pos) = elem_idx;
@@ -162,7 +224,7 @@ public:
      * @param i_point_on_side Index of point on side
      */
     uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
-        uint point_pos = i_point_on_side * n_elems_ + elem_table_row; // index of side point on patch
+        uint point_pos = i_point_on_side * n_elems_() + elem_table_row; // index of side point on patch
         int_table_(0)(point_pos) = value_patch_idx;
         int_table_(1)(point_pos) = elem_table_row;
         int_table_(2)(point_pos) = elem_idx;
@@ -205,8 +267,8 @@ public:
     std::vector<OpSizeType> int_sizes_;
 
 
-    uint n_points_;                     ///< Number of points in patch
-    uint n_elems_;                      ///< Number of elements in patch
+	RevertibleValue n_points_;          ///< Number of points in patch
+	RevertibleValue n_elems_;           ///< Number of elements in patch
     uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables

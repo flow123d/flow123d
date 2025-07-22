@@ -121,6 +121,8 @@ public:
         }
 
         if (integrals_.coupling_.size() > 0) {
+            auto &ppv_low = asm_internals_->fe_values_.ppv(0, cell.dim());
+            auto &ppv_high = asm_internals_->fe_values_.ppv(1, cell.dim()+1);
         	for (auto coupling_integral : integrals_.coupling_) {
                 // Adds data of bulk points only if bulk point were not added during processing of bulk integral
                 bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
@@ -128,11 +130,11 @@ public:
                     // add points of low dim element only one time and only if they have not been added in BulkIntegral
                     for( DHCellSide ngh_side : cell.neighb_sides() ) {
                         unsigned int reg_idx_low = cell.elm().region_idx().idx();
-                        asm_internals_->table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
+                        ++ppv_low.n_elems_;
                         for (auto p : coupling_integral->points(ngh_side, &asm_internals_->element_cache_map_) ) {
                             auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                             asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                            asm_internals_->table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
+                            ++ppv_low.n_points_;
                         }
                         break;
                     }
@@ -141,12 +143,12 @@ public:
             	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
                     integral_data_.coupling_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
                             coupling_integral->get_subset_high_idx());
-                    asm_internals_->table_sizes_tmp_.elem_sizes_[1][cell.dim()]++;
+                    ++ppv_high.n_elems_;
 
                     unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
                     for (auto p : coupling_integral->points(ngh_side, &asm_internals_->element_cache_map_) ) {
                         asm_internals_->element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-                        asm_internals_->table_sizes_tmp_.point_sizes_[1][cell.dim()]++;
+                        ++ppv_high.n_points_;
                     }
                 }
         	}
@@ -294,7 +296,8 @@ protected:
     inline void add_volume_integral(const DHCellAccessor &cell) {
         ASSERT_EQ(cell.dim(), dim);
 
-        asm_internals_->table_sizes_tmp_.elem_sizes_[0][dim-1]++;
+        auto &ppv = asm_internals_->fe_values_.ppv(0, cell.dim());
+        ++ppv.n_elems_;
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
@@ -305,7 +308,7 @@ protected:
             for (uint i=uint( asm_internals_->eval_points_->subset_begin(dim, subset_idx) );
                       i<uint( asm_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
-                asm_internals_->table_sizes_tmp_.point_sizes_[0][dim-1]++;
+                ++ppv.n_points_;
             }
         }
     }
@@ -319,15 +322,16 @@ protected:
 	    auto range = cell_side.edge_sides();
         ASSERT_EQ(range.begin()->dim(), dim);
 
+        auto &ppv = asm_internals_->fe_values_.ppv(1, cell_side.dim());
         for (auto integral_it : integrals_.edge_) {
             integral_data_.edge_.emplace_back(range, integral_it->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
                 unsigned int reg_idx = edge_side.element().region_idx().idx();
-                asm_internals_->table_sizes_tmp_.elem_sizes_[1][dim-1]++;
+                ++ppv.n_elems_;
                 for (auto p : integral_it->points(edge_side, &asm_internals_->element_cache_map_) ) {
                     asm_internals_->element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                    asm_internals_->table_sizes_tmp_.point_sizes_[1][dim-1]++;
+                    ++ppv.n_points_;
                 }
             }
         }
@@ -340,16 +344,17 @@ protected:
      */
     inline void add_boundary_integral(const DHCellSide &bdr_side) {
         ASSERT_EQ(bdr_side.dim(), dim);
+        auto &ppv = asm_internals_->fe_values_.ppv(1, bdr_side.dim());
 
         for (auto integral_it : integrals_.boundary_) {
             integral_data_.boundary_.emplace_back(integral_it->get_subset_low_idx(), bdr_side,
                     integral_it->get_subset_high_idx());
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
-            asm_internals_->table_sizes_tmp_.elem_sizes_[1][dim-1]++;
+            ++ppv.n_elems_;
             for (auto p : integral_it->points(bdr_side, &asm_internals_->element_cache_map_) ) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-                asm_internals_->table_sizes_tmp_.point_sizes_[1][dim-1]++;
+                ++ppv.n_points_;
 
             	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
             	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
@@ -493,8 +498,6 @@ public:
         return this->asm_internals_->fe_values_.template join_values<dim>(this->quad_);
     }
 
-//protected:
-//    PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions
 };
 
 

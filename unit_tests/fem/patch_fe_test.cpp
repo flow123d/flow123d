@@ -170,18 +170,20 @@ public:
         uint subset_idx = bulk_integrals_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
         uint dim = cell.dim();
-        table_sizes_.elem_sizes_[0][dim-1]++;
-        table_sizes_.point_sizes_[0][dim-1] += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
+        auto &ppv_bulk = patch_fe_values_.ppv(0, dim);
+        ++ppv_bulk.n_elems_;
+        ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
-        for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
-                  i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
+        for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
+                  i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
             element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
         }
 
         // Edge integral
+        auto &ppv_edge = patch_fe_values_.ppv(1, dim);
         for( DHCellSide cell_side : cell.side_range() ) {
             if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                 auto range = cell_side.edge_sides();
@@ -190,8 +192,8 @@ public:
 
                 for( DHCellSide edge_side : range ) {
                     uint dim = edge_side.dim();
-                    table_sizes_.elem_sizes_[1][dim-1]++;
-                    table_sizes_.point_sizes_[1][dim-1] += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
+                    ++ppv_edge.n_elems_;
+                    ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integrals_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
                         element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
@@ -223,10 +225,11 @@ public:
 //            }
 //            add_low = false;
 //        }
+        patch_fe_values_.make_permanent_ppv_data();
     }
 
     void update_patch() {
-        patch_fe_values_.resize_tables(table_sizes_);
+        patch_fe_values_.resize_tables();
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -287,7 +290,6 @@ public:
         edge_integral_data_.reset();
         coupling_integral_data_.reset();
         element_cache_map_.clear_element_eval_points_map();
-        table_sizes_.reset();
         patch_fe_values_.reset();
     }
 
@@ -323,16 +325,6 @@ public:
     ElQ<Vector> normal_vec_1d_;
     ElQ<Vector> normal_vec_2d_;
     ElQ<Vector> normal_vec_3d_;
-
-    /**
-     * Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-     * Format:
-     *  { {n_bulk_points_1D, 2D, 3D },
-     *    {n_side_points_1D, 2D, 3D } }
-     *
-     * Passes its to PatchFEValues and sets size of tables in this object
-     */
-    PatchFEValues<3>::TableSizes table_sizes_;
 };
 
 

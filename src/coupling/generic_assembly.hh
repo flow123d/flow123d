@@ -40,11 +40,6 @@ public:
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
-
-    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-    PatchFEValues<3>::TableSizes table_sizes_;
-    /// Same as previous but hold temporary values during adding elements, sides and points.
-    PatchFEValues<3>::TableSizes table_sizes_tmp_;
 };
 
 
@@ -179,7 +174,7 @@ public:
             } else {
                 asm_internals_.element_cache_map_.make_paermanent_eval_points();
                 if (use_patch_fe_values_) {
-                    asm_internals_.table_sizes_.copy(asm_internals_.table_sizes_tmp_);
+                    asm_internals_.fe_values_.make_permanent_ppv_data();
                 }
                 if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
@@ -265,15 +260,13 @@ private:
         multidim_assembly_[3_d]->clean_integral_data();
         asm_internals_.element_cache_map_.clear_element_eval_points_map();
         if (use_patch_fe_values_) {
-            asm_internals_.table_sizes_.reset();
-            asm_internals_.table_sizes_tmp_.reset();
             asm_internals_.fe_values_.reset();
         }
     }
 
     /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
-        asm_internals_.fe_values_.resize_tables(asm_internals_.table_sizes_);
+        asm_internals_.fe_values_.resize_tables();
 
         asm_internals_.fe_values_.add_patch_points(multidim_assembly_[1_d]->integrals(), multidim_assembly_[1_d]->integral_data(), &asm_internals_.element_cache_map_);
         asm_internals_.fe_values_.add_patch_points(multidim_assembly_[2_d]->integrals(), multidim_assembly_[2_d]->integral_data(), &asm_internals_.element_cache_map_);
