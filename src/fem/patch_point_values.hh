@@ -144,8 +144,8 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(bool is_bulk, PatchFeData &patch_fe_data)
-    : elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data) {
+    PatchPointValues(bool is_bulk)
+    : elements_map_(300, 0), points_map_(300, 0) {
         reset();
 
         if (is_bulk) {
@@ -188,10 +188,10 @@ public:
     }
 
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables() {
+    void resize_tables(PatchArena &patch_arena) {
         std::vector<std::size_t> sizes = {n_elems_(), n_points_()};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
-	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
+	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
@@ -234,16 +234,6 @@ public:
         return point_pos;
     }
 
-    /// return reference to assembly arena
-    inline AssemblyArena &asm_arena() const {
-    	return patch_fe_data_.asm_arena_;
-    }
-
-    /// return reference to patch arena
-    inline PatchArena &patch_arena() const {
-    	return *patch_fe_data_.patch_arena_;
-    }
-
     template<class ElementDomain>
     NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
 
@@ -273,8 +263,6 @@ public:
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-
-    PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
 	std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
 	std::vector<Side> side_list_;                       ///< List of sides on patch
