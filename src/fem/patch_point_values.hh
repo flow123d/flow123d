@@ -140,6 +140,13 @@ public:
 	};
 
     /**
+     * Default constructor
+     *
+     * Warning! This constructor creates empty instance, use it only in BaseIntegralPatch class (eval_subset.hh)
+     */
+    PatchPointValues() {}
+
+    /**
      * Constructor
      *
      * @param dim Set dimension
@@ -185,6 +192,29 @@ public:
     /// Getter for n_points_
     inline uint n_points() const {
         return n_points_();
+    }
+
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+    	if (elements_map_[element_patch_idx] != (uint)-1) {
+    	    // Return index of element on patch if it is registered repeatedly
+    	    return elements_map_[element_patch_idx];
+    	}
+
+        elements_map_[element_patch_idx] = i_elem_;
+        elem_list_.push_back( cell.elm() );
+        return i_elem_++;
+    }
+
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side) {
+        uint dim = cell_side.dim();
+
+        int_table_(3)(i_elem_) = cell_side.side_idx();
+        elem_list_.push_back( cell_side.cell().elm() );
+        side_list_.push_back( cell_side.side() );
+
+        return i_elem_++;
     }
 
     /// Resize data tables. Method is called before reinit of patch.
@@ -237,6 +267,11 @@ public:
     template<class ElementDomain>
     NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
 
+    /// Set number of elements and points as permanent
+    inline void make_permanent_mesh_items() {
+        n_elems_.make_permanent();
+        n_points_.make_permanent();
+    }
 //protected:
 
     /**

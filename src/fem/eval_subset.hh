@@ -36,6 +36,7 @@
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/patch_point_values.hh"
 
 
 class Side;
@@ -280,6 +281,40 @@ protected:
     Quadrature *quad_;
 };
 
+class BaseIntegralPatch : public BaseIntegral {
+public:
+    /// Default constructor
+    BaseIntegralPatch() : BaseIntegral(), patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr) {}
+
+    /// Constructor of bulk or side subset
+    BaseIntegralPatch(Quadrature *quad, unsigned int dim)
+	 : BaseIntegral(quad, dim), patch_point_vals_bulk_(nullptr), patch_point_vals_side_(nullptr) {}
+
+    /// Destructor
+    virtual ~BaseIntegralPatch() {
+    	if (patch_point_vals_bulk_ != nullptr) delete patch_point_vals_bulk_;
+    	if (patch_point_vals_side_ != nullptr) delete patch_point_vals_side_;
+    }
+
+    /// Gettre of bulk PatchPointValues object
+    inline PatchPointValues<3> &ppv() {
+        return *patch_point_vals_bulk_;
+    }
+
+    /// Gettre of side PatchPointValues object
+    inline PatchPointValues<3> &ppv_side() {
+        return *patch_point_vals_side_;
+    }
+
+protected:
+    /// Holds data of bulk quadrature points on integral
+    PatchPointValues<3> *patch_point_vals_bulk_;
+
+    /// Holds data of side quadrature points on integral
+    PatchPointValues<3> *patch_point_vals_side_;
+
+};
+
 
 class BulkIntegral;
 class EdgeIntegral;
@@ -378,17 +413,22 @@ private:
 /**
  * Integral class of bulk points, allows assemblation of volume integrals.
  */
-class BulkIntegral : public BaseIntegral, public std::enable_shared_from_this<BulkIntegral> {
+class BulkIntegral : public BaseIntegralPatch, public std::enable_shared_from_this<BulkIntegral> {
 public:
     typedef BulkPoint PointType;
     typedef unsigned int MeshItem;
 
     /// Default constructor
-	BulkIntegral() : BaseIntegral() {}
+	BulkIntegral() : BaseIntegralPatch() {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>(true);
+	    this->patch_point_vals_side_ = new PatchPointValues<3>();
+	}
 
     /// Constructor of bulk integral- obsolete constructor
 	BulkIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {
+	 : BaseIntegralPatch(quad, dim) {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>(true);
+	    this->patch_point_vals_side_ = new PatchPointValues<3>();
 	    switch (dim) {
 	    case 1:
 	        internal_bulk_ = eval_points->add_bulk<1>(quad);
@@ -428,20 +468,22 @@ protected:
 /**
  * Integral class of side points, allows assemblation of element - element fluxes.
  */
-class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
+class EdgeIntegral : public BaseIntegralPatch, public std::enable_shared_from_this<EdgeIntegral> {
 public:
     typedef EdgePoint PointType;
     typedef DHCellSide MeshItem;
 
     /// Default constructor
-	EdgeIntegral() : BaseIntegral()
+	EdgeIntegral() : BaseIntegralPatch()
     {
 	    ASSERT_PERMANENT(false);
     }
 
     /// Constructor of edge integral
 	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {
+	 : BaseIntegralPatch(quad, dim) {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>();
+	    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
 	    switch (dim) {
 	    case 1:
 	        internal_edge_ = eval_points->add_edge<1>(quad);
