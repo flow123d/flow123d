@@ -64,7 +64,9 @@ CouplingIntegral::~CouplingIntegral()
  */
 
 BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
- : BaseIntegral(quad, dim) {
+ : BaseIntegralPatch(quad, dim) {
+    this->patch_point_vals_bulk_ = new PatchPointValues<3>();
+    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
     switch (dim) {
     case 1:
         internal_bulk_ = eval_points->add_bulk<0>(quad);

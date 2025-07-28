@@ -316,12 +316,6 @@ protected:
 };
 
 
-class BulkIntegral;
-class EdgeIntegral;
-class CouplingIntegral;
-class BoundaryIntegral;
-
-
 namespace internal_integrals {
 
 class Bulk : public BaseIntegral, public std::enable_shared_from_this<Bulk> {
@@ -548,17 +542,22 @@ private:
  *
  * Dimension corresponds with element of higher dim.
  */
-class CouplingIntegral : public BaseIntegral, public std::enable_shared_from_this<CouplingIntegral> {
+class CouplingIntegral : public BaseIntegralPatch, public std::enable_shared_from_this<CouplingIntegral> {
 public:
     typedef CouplingPoint PointType;
     typedef DHCellSide MeshItem;
 
     /// Default constructor
-	CouplingIntegral() : BaseIntegral() {}
+	CouplingIntegral() : BaseIntegralPatch() {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>(true);
+	    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
+	}
 
     /// Constructor of ngh integral
 	CouplingIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(quad, dim) {
+	 : BaseIntegralPatch(quad, dim) {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>(true);
+	    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
 	    switch (dim) {
 	    case 1:
 	        internal_bulk_ = eval_points->add_bulk<1>(quad);
@@ -615,13 +614,16 @@ private:
 /**
  * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.
  */
-class BoundaryIntegral : public BaseIntegral, public std::enable_shared_from_this<BoundaryIntegral> {
+class BoundaryIntegral : public BaseIntegralPatch, public std::enable_shared_from_this<BoundaryIntegral> {
 public:
     typedef BoundaryPoint PointType;
     typedef DHCellSide MeshItem;
 
     /// Default constructor
-    BoundaryIntegral() : BaseIntegral() {}
+    BoundaryIntegral() : BaseIntegralPatch() {
+	    this->patch_point_vals_bulk_ = new PatchPointValues<3>();
+	    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
+    }
 
     /// Constructor of ngh integral
     BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim);
