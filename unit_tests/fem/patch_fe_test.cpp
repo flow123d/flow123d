@@ -1058,42 +1058,53 @@ TEST(PatchFeTest, arena_alloc) {
     std::cout << "Reset: " << vec1.data_size() << ", " << vec2.data_size() << ", " << vec3.data_size() << ", " << c[0] << std::endl;
 }
 
-TEST(PatchFeTest, multi_quad_orders) {
-    MixedPtr<FE_P> fe_p(1);
-    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
-    PatchFEValues<3> pfev(fe);
-    Quadrature *quad = new QGauss(2, 0);
-    Quadrature *quad_high_order = new QGauss(2, 2);
-
-    auto fe_component = fe[2_d];
-    pfev.template get< Op::JxW<2, Op::BulkDomain, 3>, 2 >(quad);
-    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad, fe_component);
-    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad_high_order, fe_component);
-}
-
-
-///*************************************************
-// * New test of operation dependency
-// */
+//TEST(PatchFeTest, multi_quad_orders_simple) {
+//    MixedPtr<FE_P> fe_p(1);
+//    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+//    PatchFEValues<3> pfev(fe);
+//    Quadrature *quad = new QGauss(2, 0);
+//    Quadrature *quad_high_order = new QGauss(2, 2);
 //
-//class PatchFETestDependency {
-//public:
-//
-//	PatchFETestDependency(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-//    : dh_(dh), patch_fe_values_(quad_order, dh_->ds()->fe()),
-//	  fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
-//	  det_1d_( this->patch_fe_values_.bulk_values<1>().determinant_new() ),
-//	  det_2d_( this->patch_fe_values_.bulk_values<2>().determinant_new() ),
-//	  det_3d_( this->patch_fe_values_.bulk_values<3>().determinant_new() ),
-//	  grad_scalar_shape_1d_( this->patch_fe_values_.bulk_values<1>().grad_scalar_shape_new() ),
-//	  grad_scalar_shape_2d_( this->patch_fe_values_.bulk_values<2>().grad_scalar_shape_new() ),
-//	  grad_scalar_shape_3d_( this->patch_fe_values_.bulk_values<3>().grad_scalar_shape_new() )
-//    {
-//        eval_points_ = std::make_shared<EvalPoints>();
-//        // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
-//        this->create_integrals();
-//        element_cache_map_.init(eval_points_);
-//
+//    auto fe_component = fe[2_d];
+//    pfev.template get< Op::JxW<2, Op::BulkDomain, 3>, 2 >(quad);
+//    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad, fe_component);
+//    pfev.template get< Op::DispatchGradVectorShape<2, Op::BulkDomain, 3>, 2 >(quad_high_order, fe_component);
+//}
+
+
+/*************************************************
+ * New test of operation dependency
+ */
+
+class PatchFEMultiQuadTest {
+public:
+
+    PatchFEMultiQuadTest(std::shared_ptr<DOFHandlerMultiDim> dh)
+    : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
+	  fe_(dh_->ds()->fe()),
+	  //fe_values_(3), fe_values_side_(3),
+	  eval_points_( std::make_shared<EvalPoints>() ),
+	  quad_0d_low_order_(new QGauss(0, 0)),
+	  quad_1d_low_order_(new QGauss(1, 0)),
+	  quad_1d_high_order_(new QGauss(1, 2)),
+	  quad_2d_low_order_(new QGauss(2, 0)),
+	  bulk_int_1d_low_order_( this->create_bulk_integral(quad_1d_low_order_) ),
+	  bulk_int_1d_high_order_( this->create_bulk_integral(quad_1d_high_order_) ),
+	  bulk_int_2d_low_order_( this->create_bulk_integral(quad_2d_low_order_) ),
+	  edge_int_1d_low_order_( this->create_edge_integral(quad_0d_low_order_) ),
+	  edge_int_2d_low_order_( this->create_edge_integral(quad_1d_low_order_) ),
+	  edge_int_2d_high_order_( this->create_edge_integral(quad_1d_high_order_) ),
+	  coupling_int_1d_2d_low_order_( this->create_coupling_integral(quad_1d_low_order_) ),
+      bulk_integral_data_(20, 10),
+      edge_integral_data_(20, 10),
+	  coupling_integral_data_(20, 10),
+      det_1d_low_order_( this->patch_fe_values_.bulk_values<1>(quad_1d_low_order_).determinant() ),
+      det_1d_high_order_( this->patch_fe_values_.bulk_values<1>(quad_1d_high_order_).determinant() ),
+      det_2d_low_order_( this->patch_fe_values_.bulk_values<1>(quad_2d_low_order_).determinant() )
+    {
+        element_cache_map_.init(eval_points_);
+        initialize();
+
 //        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
 //        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
 //        fe_values_[0].initialize(*patch_fe_values_.get_quadrature(1, true), *fe_[Dim<1>{}], u);
@@ -1102,106 +1113,289 @@ TEST(PatchFeTest, multi_quad_orders) {
 //        fe_values_side_[0].initialize(*patch_fe_values_.get_quadrature(1, false), *fe_[Dim<1>{}], u_side);
 //        fe_values_side_[1].initialize(*patch_fe_values_.get_quadrature(2, false), *fe_[Dim<2>{}], u_side);
 //        fe_values_side_[2].initialize(*patch_fe_values_.get_quadrature(3, false), *fe_[Dim<3>{}], u_side);
-//    }
-//
-//    ~PatchFETestDependency() {}
-//
-//    void create_integrals() {
-//        bulk_integrals_[0] = eval_points_->add_bulk<1>(*patch_fe_values_.get_quadrature(1,true));
-//        bulk_integrals_[1] = eval_points_->add_bulk<2>(*patch_fe_values_.get_quadrature(2,true));
-//        bulk_integrals_[2] = eval_points_->add_bulk<3>(*patch_fe_values_.get_quadrature(3,true));
-//        edge_integrals_[0] = eval_points_->add_edge<1>(*patch_fe_values_.get_quadrature(1,false));
-//        edge_integrals_[1] = eval_points_->add_edge<2>(*patch_fe_values_.get_quadrature(2,false));
-//        edge_integrals_[2] = eval_points_->add_edge<3>(*patch_fe_values_.get_quadrature(3,false));
-//        coupling_integrals_[0] = eval_points_->add_coupling<2>(*patch_fe_values_.get_quadrature(1,true));
-//        coupling_integrals_[1] = eval_points_->add_coupling<3>(*patch_fe_values_.get_quadrature(2,true));
-//    }
-//
-//    void initialize() {
-//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,true));
-//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,true));
-//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,true));
-//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,false));
-//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,false));
-//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,false));
-//        this->patch_fe_values_.init_finalize();
-//    }
-//
-//    /// Return BulkPoint range of appropriate dimension
-//    inline Range< BulkPoint > bulk_points(unsigned int dim, unsigned int element_patch_idx) const {
-//        return bulk_integrals_[dim-1]->points(element_patch_idx, &element_cache_map_);
-//    }
-//
-//    /// Return EdgePoint range of appropriate dimension
-//    inline Range< EdgePoint > edge_points(unsigned int dim, const DHCellSide &cell_side) const {
-//	    return edge_integrals_[dim-1]->points(cell_side, &element_cache_map_);
-//    }
-//
-//    /// Return CouplingPoint range of appropriate dimension
-//    inline Range< CouplingPoint > coupling_points(unsigned int dim, const DHCellSide &cell_side) const {
-//        ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-//	    return coupling_integrals_[dim-2]->points(cell_side, &element_cache_map_);
-//    }
-//
-//    //virtual void reinit_patch_fe() =0;
-//
-//	/// Perform profiler output.
-//    void profiler_output(std::string file_name) {
-//		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
-//		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
-//	}
-//
-//    /// reset patch data
-//    void reset() {
-//        element_cache_map_.clear_element_eval_points_map();
-//        patch_fe_values_.reset();
-//    }
-//
-//
-//    std::shared_ptr<DOFHandlerMultiDim> dh_;
-//    PatchFEValues<3> patch_fe_values_;                                     ///< Common FEValues object over all dimensions
-//
-//    MixedPtr<FiniteElement> fe_;
+    }
+
+    ~PatchFEMultiQuadTest() {}
+
+    void initialize() {
+        this->patch_fe_values_.initialize<1>(true);
+        this->patch_fe_values_.initialize<2>(true);
+//        this->patch_fe_values_.initialize<3>(true);
+        this->patch_fe_values_.initialize<1>(false);
+        this->patch_fe_values_.initialize<2>(false);
+//        this->patch_fe_values_.initialize<3>(false);
+        this->patch_fe_values_.init_finalize();
+    }
+
+    /// Return point range of appropriate integral
+    template <class QIntegral>
+    Range< typename QIntegral::PointType > points(std::shared_ptr<QIntegral> integral, typename QIntegral::MeshItem mesh_item) const {
+    	return integral->points(mesh_item, &element_cache_map_);
+    }
+
+    /// Create bulk integral - used in constructor initializer list
+    std::shared_ptr<BulkIntegral> create_bulk_integral(Quadrature *quad) {
+        auto result = integrals_.bulk_.insert( std::make_shared<BulkIntegral>(eval_points_, quad, quad->dim()) );
+	    return *result.first;
+    }
+
+    /// Create edge integral - used in constructor initializer list
+    std::shared_ptr<EdgeIntegral> create_edge_integral(Quadrature *quad) {
+        auto result = integrals_.edge_.insert( std::make_shared<EdgeIntegral>(eval_points_, quad, quad->dim()+1) );
+	    return *result.first;
+    }
+
+    /// Create coupling integral - used in constructor initializer list
+    std::shared_ptr<CouplingIntegral> create_coupling_integral(Quadrature *quad) {
+        auto result = integrals_.coupling_.insert( std::make_shared<CouplingIntegral>(eval_points_, quad, quad->dim()) );
+	    return *result.first;
+    }
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+
+    /// reset patch data
+    void reset() {
+        element_cache_map_.clear_element_eval_points_map();
+        patch_fe_values_.reset();
+    }
+
+    void test_evaluation() {
+        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
+            if (cell_it->dim() == 1) {
+                add_bulk_integral(*cell_it, bulk_int_1d_low_order_);
+                add_bulk_integral(*cell_it, bulk_int_1d_high_order_);
+                add_edge_integral(*cell_it, edge_int_1d_low_order_);
+                add_coupling_integral(*cell_it, coupling_int_1d_2d_low_order_);
+            } else if (cell_it->dim() == 2) {
+                add_bulk_integral(*cell_it, bulk_int_2d_low_order_);
+                add_edge_integral(*cell_it, edge_int_2d_low_order_);
+                add_edge_integral(*cell_it, edge_int_2d_high_order_);
+            }
+        }
+        bulk_int_1d_low_order_->ppv().make_permanent_mesh_items();
+        bulk_int_1d_high_order_->ppv().make_permanent_mesh_items();
+        bulk_int_2d_low_order_->ppv().make_permanent_mesh_items();
+        edge_int_1d_low_order_->ppv_side().make_permanent_mesh_items();
+        edge_int_2d_low_order_->ppv_side().make_permanent_mesh_items();
+        edge_int_2d_high_order_->ppv_side().make_permanent_mesh_items();
+        coupling_int_1d_2d_low_order_->ppv().make_permanent_mesh_items();
+        coupling_int_1d_2d_low_order_->ppv_side().make_permanent_mesh_items();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        std::cout << "Bulk 1D low   " << bulk_int_1d_low_order_->ppv().n_elems() << " - " << bulk_int_1d_low_order_->ppv().n_points() << std::endl;
+        std::cout << "Bulk 1D high  " << bulk_int_1d_high_order_->ppv().n_elems() << " - " << bulk_int_1d_high_order_->ppv().n_points() << std::endl;
+        std::cout << "Bulk 2D low   " << bulk_int_2d_low_order_->ppv().n_elems() << " - " << bulk_int_2d_low_order_->ppv().n_points() << std::endl;
+        std::cout << "Edge 1D low   " << edge_int_1d_low_order_->ppv_side().n_elems() << " - " << edge_int_1d_low_order_->ppv_side().n_points() << std::endl;
+        std::cout << "Edge 2D low   " << edge_int_2d_low_order_->ppv_side().n_elems() << " - " << edge_int_2d_low_order_->ppv_side().n_points() << std::endl;
+        std::cout << "Edge 2D high  " << edge_int_2d_high_order_->ppv_side().n_elems() << " - " << edge_int_2d_high_order_->ppv_side().n_points() << std::endl;
+        std::cout << "Coupling low  " << coupling_int_1d_2d_low_order_->ppv().n_elems() << " - " << coupling_int_1d_2d_low_order_->ppv().n_points() << std::endl;
+        std::cout << "Coupling high " << coupling_int_1d_2d_low_order_->ppv_side().n_elems() << " - " << coupling_int_1d_2d_low_order_->ppv_side().n_points() << std::endl;
+
+        update_patch();
+    }
+
+    void add_bulk_integral(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
+        uint subset_idx = bulk_int->get_subset_idx();
+        bulk_integral_data_.emplace_back(cell, subset_idx);
+        uint dim = cell.dim();
+        auto &ppv_bulk = bulk_int->ppv();
+        ++ppv_bulk.n_elems_;
+        ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
+
+        unsigned int reg_idx = cell.elm().region_idx().idx();
+        // Different access than in other integrals: We can't use range method CellIntegral::points
+        // because it passes element_patch_idx as argument that is not known during patch construction.
+        for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
+                  i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
+            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+        }
+    }
+
+    void add_edge_integral(DHCellAccessor cell, std::shared_ptr<EdgeIntegral> edge_int) {
+        auto &ppv_edge = edge_int->ppv_side();
+        for( DHCellSide cell_side : cell.side_range() ) {
+            if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                auto range = cell_side.edge_sides();
+                uint subset_idx = edge_int->get_subset_idx();
+                edge_integral_data_.emplace_back(range, subset_idx);
+
+                for( DHCellSide edge_side : range ) {
+                    uint dim = edge_side.dim();
+                    ++ppv_edge.n_elems_;
+                    ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
+                    unsigned int reg_idx = edge_side.element().region_idx().idx();
+                    for (auto p : edge_int->points(edge_side, &element_cache_map_) ) {
+                        element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                    }
+                }
+            }
+        }
+    }
+
+    void add_coupling_integral(DHCellAccessor cell, std::shared_ptr<CouplingIntegral> coupling_int) {
+        auto &ppv_low = coupling_int->ppv();
+        auto &ppv_high = coupling_int->ppv_side();
+
+//        // Adds data of bulk points only if bulk point were not added during processing of bulk integral
+//        bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
+        // add points of low dim element only one time and only if they have not been added in BulkIntegral
+        for( DHCellSide ngh_side : cell.neighb_sides() ) {
+            unsigned int reg_idx_low = cell.elm().region_idx().idx();
+            ++ppv_low.n_elems_;
+            for (auto p : coupling_int->points(ngh_side, &element_cache_map_) ) {
+//                if (add_bulk_points) {
+                    auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+//                }
+                ++ppv_low.n_points_;
+            }
+            break;
+        }
+
+        // Adds data of side points of all neighbour objects
+        for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
+            coupling_integral_data_.emplace_back(cell, coupling_int->get_subset_low_idx(), ngh_side,
+                    coupling_int->get_subset_high_idx());
+            ++ppv_high.n_elems_;
+
+            unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
+            for (auto p : coupling_int->points(ngh_side, &element_cache_map_) ) {
+                element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
+                ++ppv_high.n_points_;
+            }
+        }
+    }
+
+    void update_patch() {
+        // register points of bulk integral
+        for (auto integral_it : integrals_.bulk_) {
+            auto &ppv = integral_it->ppv();
+		    ppv.resize_tables( patch_fe_values_.patch_arena() );
+
+            for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+                if ( bulk_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+                uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
+                uint elm_pos = ppv.register_element(bulk_integral_data_[i].cell, element_patch_idx);
+                uint i_point = 0;
+                for (auto p : integral_it->points(element_patch_idx, &element_cache_map_) ) {
+                    ppv.register_bulk_point(elm_pos, p.value_cache_idx(), bulk_integral_data_[i].cell.elm_idx(), i_point++);
+                }
+            }
+        }
+
+    	// register points of edge integral
+        for (auto integral_it : integrals_.edge_) {
+            auto &ppv = integral_it->ppv_side();
+		    ppv.resize_tables( patch_fe_values_.patch_arena() );
+
+            for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+                if ( edge_integral_data_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+            	auto range = edge_integral_data_[i].edge_side_range;
+                for( DHCellSide edge_side : range )
+                {
+                	uint side_pos = ppv.register_side(edge_side);
+                    uint i_point = 0;
+                    for (auto p : integral_it->points(edge_side, &element_cache_map_) ) {
+                        ppv.register_side_point(side_pos, p.value_cache_idx(), edge_side.elem_idx(), edge_side.side_idx(), i_point++);
+                    }
+                }
+            }
+        }
+
+        // add coupling points
+        for (auto integral_it : integrals_.coupling_) {
+            uint side_pos, element_patch_idx, elm_pos=0;
+            uint last_element_idx = -1;
+            auto &ppv_low = integral_it->ppv();
+            auto &ppv_high = integral_it->ppv_side();
+
+            for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
+                if ( coupling_integral_data_[i].bulk_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
+                side_pos = ppv_high.register_side(coupling_integral_data_[i].side);
+                if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
+                    element_patch_idx = element_cache_map_.position_in_cache(coupling_integral_data_[i].cell.elm_idx());
+                    elm_pos = ppv_low.register_element(coupling_integral_data_[i].cell, element_patch_idx);
+                }
+
+                uint i_bulk_point = 0, i_side_point = 0;
+                for (auto p_high : integral_it->points(coupling_integral_data_[i].side, &element_cache_map_) )
+                {
+                    ppv_high.register_side_point(side_pos, p_high.value_cache_idx(), coupling_integral_data_[i].side.elem_idx(),
+                            coupling_integral_data_[i].side.side_idx(), i_side_point++);
+                    if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
+                        auto p_low = p_high.lower_dim(coupling_integral_data_[i].cell);
+                        ppv_low.register_bulk_point(elm_pos, p_low.value_cache_idx(), coupling_integral_data_[i].cell.elm_idx(), i_bulk_point++);
+                    }
+                }
+                last_element_idx = coupling_integral_data_[i].cell.elm_idx();
+            }
+        }
+    }
+
+
+    /** Data members **/
+
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    PatchFEValues<3> patch_fe_values_;                                     ///< Common FEValues object over all dimensions
+
+    MixedPtr<FiniteElement> fe_;
 //    std::vector<FEValues<3>> fe_values_;                                   ///< FeValues object of elements of dim 1,2,3
 //    std::vector<FEValues<3>> fe_values_side_;                              ///< FeValues object of sides of dim 0,1,2
-//
-//    std::shared_ptr<EvalPoints> eval_points_;                              ///< EvalPoints object shared by all integrals
-//    ElementCacheMap element_cache_map_;                                    ///< ElementCacheMap according to EvalPoints
-//    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;          ///< Bulk integrals of dim 1,2,3
-//    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;          ///< Edge integrals of dim 1,2,3
-//    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;  ///< Coupling integrals of dim 1-2,2-3
-//    ElQ<Scalar> det_1d_;
-//    ElQ<Scalar> det_2d_;
-//    ElQ<Scalar> det_3d_;
+
+    DimIntegrals integrals_;
+    std::shared_ptr<EvalPoints> eval_points_;                                      ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                                            ///< ElementCacheMap according to EvalPoints
+    Quadrature *quad_0d_low_order_;                                                ///< Quadrature - 0D, order = 0
+    Quadrature *quad_1d_low_order_;                                                ///< Quadrature - 1D, order = 0
+    Quadrature *quad_1d_high_order_;                                               ///< Quadrature - 1D, order = 2
+    Quadrature *quad_2d_low_order_;                                                ///< Quadrature - 2D, order = 0
+    std::shared_ptr<BulkIntegral> bulk_int_1d_low_order_;                          ///< Bulk integral - 1D, order = 0
+    std::shared_ptr<BulkIntegral> bulk_int_1d_high_order_;                         ///< Bulk integral - 1D, order = 2
+    std::shared_ptr<BulkIntegral> bulk_int_2d_low_order_;                          ///< Bulk integral - 2D, order = 0
+    std::shared_ptr<EdgeIntegral> edge_int_1d_low_order_;                          ///< Edge integral - 1D element, order = 0
+    std::shared_ptr<EdgeIntegral> edge_int_2d_low_order_;                          ///< Edge integral - 2D element, order = 0
+    std::shared_ptr<EdgeIntegral> edge_int_2d_high_order_;                         ///< Edge integral - 2D element, order = 2
+    std::shared_ptr<CouplingIntegral> coupling_int_1d_2d_low_order_;               ///< Coupling integral - 1D-2D, order = 0
+    RevertableList<PatchFETestBase::BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
+    RevertableList<PatchFETestBase::EdgeIntegralData> edge_integral_data_;         ///< Holds data for computing edge integrals.
+    RevertableList<PatchFETestBase::CouplingIntegralData> coupling_integral_data_; ///< Holds data for computing edge integrals.
+
+    ElQ<Scalar> det_1d_low_order_;
+    ElQ<Scalar> det_1d_high_order_;
+    ElQ<Scalar> det_2d_low_order_;
+
 //    FeQArray<Vector> grad_scalar_shape_1d_;
 //    FeQArray<Vector> grad_scalar_shape_2d_;
 //    FeQArray<Vector> grad_scalar_shape_3d_;
-//};
-//
-///// Complete test with FE scalar operations
-//void eval_func_scalar(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
-//	MixedPtr<FE_P_disc> fe(quad_order);
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
-//    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
-//    dh->distribute_dofs(ds);
-//
-//    PatchFETestDependency patch_fe(quad_order, dh);
-//    patch_fe.initialize();
-////    patch_fe.test_evaluation(print_fa_data);
-////    patch_fe.reset();
-////    patch_fe.test_evaluation();
-//}
-//
-//TEST(PatchFeTest, new_op_dependency) {
-//    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-//    Profiler::instance();
-//    PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
-//
-//    std::string input_str = "{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }";
-//    Mesh* mesh = mesh_full_constructor(input_str);
-//
-//    // two tests with different quad_order and Scalar / Vector FE operations
-//    eval_func_scalar(mesh, 1);
-//    eval_func_scalar(mesh, 2);
-//}
+};
+
+/// Complete test with FE scalar operations
+void eval_func_scalar(Mesh* mesh, unsigned int quad_order) {
+	MixedPtr<FE_P_disc> fe(quad_order);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFEMultiQuadTest patch_fe(dh);
+    patch_fe.test_evaluation();
+//    patch_fe.reset();
+//    patch_fe.test_evaluation();
+}
+
+TEST(PatchFeTest, new_op_dependency) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Profiler::instance();
+    PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+    std::string input_str = "{ mesh_file=\"mesh/simplest_square.msh\", optimize_mesh=false }";
+    Mesh* mesh = mesh_full_constructor(input_str);
+
+    // two tests with different quad_order and Scalar / Vector FE operations
+    eval_func_scalar(mesh, 1);
+    eval_func_scalar(mesh, 2);
+}
 
