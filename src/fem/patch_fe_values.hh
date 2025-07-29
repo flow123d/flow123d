@@ -37,6 +37,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
+#include "fem/eval_points_data.hh"
 
 template<unsigned int dim> class BulkValues;
 template<unsigned int dim> class SideValues;
@@ -49,69 +50,23 @@ class PatchFEValues {
 public:
     typedef typename PatchPointValues<spacedim>::PatchFeData PatchFeData;
 
-    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-    struct TableSizes {
-    public:
-        /// Constructor
-        TableSizes() {
-            elem_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
-            point_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
-        }
-
-        /// Set all values to zero
-        void reset() {
-            std::fill(elem_sizes_[0].begin(), elem_sizes_[0].end(), 0);
-            std::fill(elem_sizes_[1].begin(), elem_sizes_[1].end(), 0);
-            std::fill(point_sizes_[0].begin(), point_sizes_[0].end(), 0);
-            std::fill(point_sizes_[1].begin(), point_sizes_[1].end(), 0);
-        }
-
-        /// Copy values of other TableSizes instance
-        void copy(const TableSizes &other) {
-            elem_sizes_[0] = other.elem_sizes_[0];
-            elem_sizes_[1] = other.elem_sizes_[1];
-            point_sizes_[0] = other.point_sizes_[0];
-            point_sizes_[1] = other.point_sizes_[1];
-        }
-
-        /**
-         * Holds number of elements and sides on each dimension
-         * Format:
-         *  { {n_elements_1D, n_elements_2D, n_elements_3D },
-         *    {n_sides_1D, n_sides_2D, n_sides_3D } }
-         */
-        std::vector<std::vector<uint> > elem_sizes_;
-
-        /**
-         * Holds number of bulk and side points on each dimension
-         * Format:
-         *  { {n_bulk_points_1D, n_bulk_points_2D, n_bulk_points_3D },
-         *    {n_side_points_1D, n_side_points_2D, n_side_points_3D } }
-         */
-        std::vector<std::vector<uint> > point_sizes_;
-    };
-
+    /// Default constructor
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, 0, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, 0, false, patch_fe_data_) );
+            patch_point_vals_[0].push_back( PatchPointValues(true) );
+            patch_point_vals_[1].push_back( PatchPointValues(false) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
-    : patch_fe_data_(1024 * 1024, 256),
-      patch_point_vals_(2),
-      fe_(fe)
+    /// Constructor, initializes fe_ and zero_vec_ data members
+    PatchFEValues(MixedPtr<FiniteElement> fe)
+    : PatchFEValues<spacedim>()
     {
-        for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, quad_order, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, quad_order, false, patch_fe_data_) );
-        }
-        used_quads_[0] = false; used_quads_[1] = false;
+        fe_ = fe;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
         uint zero_vec_size = 300;
@@ -119,10 +74,12 @@ public:
         for (uint i=0; i<zero_vec_size; ++i) patch_fe_data_.zero_vec_(i) = 0.0;
     }
 
-
     /// Destructor
     ~PatchFEValues()
-    {}
+    {
+        op_dependency_.clear();
+        for (auto *op : operations_) if (op != nullptr) delete op;
+    }
 
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
@@ -132,9 +89,9 @@ public:
 	 * @param _flags The update flags.
 	 */
     template<unsigned int DIM>
-    void initialize(Quadrature &_quadrature)
+    void initialize(bool bulk_domain = true)
     {
-        if ( _quadrature.dim() == DIM ) {
+        if ( bulk_domain ) {
             used_quads_[0] = true;
             patch_point_vals_[0][DIM-1].initialize(); // bulk
         } else {
@@ -175,17 +132,11 @@ public:
         return fe_[Dim<dim>{}]->n_dofs();
     }
 
-    /// Getter for bulk quadrature of given dimension
-    Quadrature *get_bulk_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[0][dim-1].get_quadrature();
-    }
-
-    /// Getter for side quadrature of given dimension
-    Quadrature *get_side_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[1][dim-1].get_quadrature();
-    }
+    /**
+     * @brief Returns the number of shape functions og higher dim element.
+     */
+    template<unsigned int dim>
+    unsigned int n_dofs_high() const;
 
     /**
      * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
@@ -204,23 +155,93 @@ public:
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>
-    BulkValues<dim> bulk_values();
+    BulkValues<dim> bulk_values(const Quadrature *quad);
 
     /// Return SideValue object of dimension given by template parameter
     template<unsigned int dim>
-    SideValues<dim> side_values();
+    SideValues<dim> side_values(const Quadrature *quad);
 
     /// Return JoinValue object of dimension given by template parameter
     template<unsigned int dim>
-    JoinValues<dim> join_values();
+    JoinValues<dim> join_values(const Quadrature *quad);
 
     /** Following methods are used during update of patch. **/
 
     /// Resize tables of patch_point_vals_
-    void resize_tables(TableSizes table_sizes) {
+    void resize_tables() {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
-            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
+            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(*patch_fe_data_.patch_arena_);
+        }
+    }
+
+    /// Add elements, sides and quadrature points registered on patch
+    inline void add_patch_points(const DimIntegrals &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map) {
+        // add bulk points
+    	for (auto integral_it : integrals.bulk_) {
+            for (unsigned int i=0; i<integral_data.bulk_.permanent_size(); ++i) {
+                if ( integral_data.bulk_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+                uint element_patch_idx = element_cache_map->position_in_cache(integral_data.bulk_[i].cell.elm_idx());
+                uint elm_pos = this->register_element(integral_data.bulk_[i].cell, element_patch_idx);
+                uint i_point = 0;
+                for (auto p : integral_it->points(element_patch_idx, element_cache_map) ) {
+                    this->register_bulk_point(integral_data.bulk_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
+                }
+            }
+        }
+
+    	// add boundary points
+        for (auto integral_it : integrals.boundary_) {
+            for (unsigned int i=0; i<integral_data.boundary_.permanent_size(); ++i) {
+                if ( integral_data.boundary_[i].bdr_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
+            	uint side_pos = this->register_side(integral_data.boundary_[i].side);
+                uint i_point = 0;
+                for (auto p : integral_it->points(integral_data.boundary_[i].side, element_cache_map) ) {
+                    this->register_side_point(integral_data.boundary_[i].side, side_pos, p.value_cache_idx(), i_point++);
+                }
+            }
+        }
+
+    	// add edge points
+        for (auto integral_it : integrals.edge_) {
+            for (unsigned int i=0; i<integral_data.edge_.permanent_size(); ++i) {
+                if ( integral_data.edge_[i].subset_index != (unsigned int)(integral_it->get_subset_idx()) ) continue;
+            	auto range = integral_data.edge_[i].edge_side_range;
+                for( DHCellSide edge_side : range )
+                {
+                	uint side_pos = this->register_side(edge_side);
+                    uint i_point = 0;
+                    for (auto p : integral_it->points(edge_side, element_cache_map) ) {
+                        this->register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
+                    }
+                }
+            }
+        }
+
+    	// add coupling points
+        for (auto integral_it : integrals.coupling_) {
+            uint side_pos, element_patch_idx, elm_pos=0;
+            uint last_element_idx = -1;
+
+            for (unsigned int i=0; i<integral_data.coupling_.permanent_size(); ++i) {
+                if ( integral_data.coupling_[i].bulk_subset_index != (unsigned int)(integral_it->get_subset_low_idx()) ) continue;
+                side_pos = this->register_side(integral_data.coupling_[i].side);
+                if (integral_data.coupling_[i].cell.elm_idx() != last_element_idx) {
+                    element_patch_idx = element_cache_map->position_in_cache(integral_data.coupling_[i].cell.elm_idx());
+                    elm_pos = this->register_element(integral_data.coupling_[i].cell, element_patch_idx);
+                }
+
+                uint i_bulk_point = 0, i_side_point = 0;
+                for (auto p_high : integral_it->points(integral_data.coupling_[i].side, element_cache_map) )
+                {
+                    this->register_side_point(integral_data.coupling_[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
+                    if (integral_data.coupling_[i].cell.elm_idx() != last_element_idx) {
+                        auto p_low = p_high.lower_dim(integral_data.coupling_[i].cell);
+                        this->register_bulk_point(integral_data.coupling_[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                    }
+                }
+                last_element_idx = integral_data.coupling_[i].cell.elm_idx();
+            }
         }
     }
 
@@ -277,34 +298,24 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get() {
-        std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
-            return new_op;
-        } else {
-            return it->second;
+    PatchOp<spacedim>* get(const Quadrature *quad) {
+    	auto result = op_dependency_.insert( new OpType(*this, quad) );
+        if (result.second) {
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", typeid(OpType).name(), dim);
+            operations_.push_back(*result.first);
         }
+	    return *result.first;
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(std::shared_ptr<FiniteElement<dim>> fe) {
-        std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, fe);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
-            return new_op;
-        } else {
-            return it->second;
+    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
+        auto result = op_dependency_.insert( new OpType(*this, quad, fe) );
+        if (result.second) {
+            DebugOut().fmt("Create new operation '{}', dim: {}.\n", typeid(OpType).name(), dim);
+            operations_.push_back(*result.first);
         }
+	    return *result.first;
     }
 
     /// Print table of all used operations - development method
@@ -314,16 +325,37 @@ public:
 
         stream << std::setfill(' ') << " Operation" << std::setw(51) << "" << "Type" << std::setw(5) << "" << "Shape" << std::setw(2) << ""
                 << "n DOFs" << std::setw(2) << "" << "Input operations" << std::endl;
-        for (uint i=0; i<operations_.size(); ++i) {
-            stream << " " << std::left << std::setw(60) << typeid(*operations_[i]).name() << "";
-            stream << operations_[i]->dim_ << "D " << (operations_[i]->domain_ ? "side" : "bulk");
-        	stream << "  " << std::setw(6) << operations_[i]->format_shape() << "" << " "
-                << std::setw(7) << operations_[i]->n_dofs() << "" << " ";
-            for (auto *i_o : operations_[i]->input_ops_) stream << typeid(*i_o).name() << "  ";
+        for (auto *op : operations_) {
+            stream << " " << std::left << std::setw(60) << typeid(*op).name() << "";
+            stream << op->dim_ << "D " << (op->domain_ ? "side" : "bulk");
+        	stream << "  " << std::setw(6) << op->format_shape() << "" << " "
+                << std::setw(7) << op->n_dofs() << "" << " ";
+            for (auto *i_o : op->input_ops_) stream << typeid(*i_o).name() << "  ";
             stream << std::endl;
         }
 
         stream << std::setfill('=') << setw(160) << "" << endl;
+    }
+
+    /// Getter of patch_fe_data_
+    PatchFeData &patch_fe_data() {
+        return patch_fe_data_;
+    }
+
+    /// Temporary method
+    PatchPointValues<spacedim> &ppv(uint domain, uint dim) {
+        ASSERT( domain<2 );
+        ASSERT( (dim>0) && (dim<=3) );
+    	return patch_point_vals_[domain][dim-1];
+    }
+
+    /// Temporary method
+    void make_permanent_ppv_data() {
+    	for (uint i=0; i<2; ++i)
+    	    for (uint j=0; j<3; ++j) {
+    	        patch_point_vals_[i][j].n_elems_.make_permanent();
+    	        patch_point_vals_[i][j].n_points_.make_permanent();
+    	    }
     }
 
 private:
@@ -335,7 +367,7 @@ private:
     bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
+    OperationSet< PatchOp<spacedim> > op_dependency_;
 
     friend class PatchOp<spacedim>;
 };

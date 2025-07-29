@@ -41,9 +41,9 @@ public:
     static constexpr const char * name() { return "MassAssemblyConvection"; }
 
     /// Constructor.
-    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
     }
@@ -52,9 +52,7 @@ public:
     ~MassAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -67,7 +65,7 @@ public:
         ASSERT(cell.get_loc_dof_indices().size() == 1);
         IntIdx local_p0_dof = cell.get_loc_dof_indices()[0];
 
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
             eq_data_->balance_->add_mass_values(eq_data_->subst_idx[sbi], cell, {local_p0_dof},
                     {eq_fields_->cross_section(p)*eq_fields_->water_content(p)*elm.measure()}, 0);
@@ -104,6 +102,9 @@ public:
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
+        /// Bulk integral of assembly class
+        std::shared_ptr<BulkIntegral> mass_integral_;
+
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
@@ -124,9 +125,9 @@ public:
     static constexpr const char * name() { return "InitCondAssemblyConvection"; }
 
     /// Constructor.
-    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_conc;
     }
 
@@ -134,8 +135,7 @@ public:
     ~InitCondAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) {
             vecs_.push_back(eq_fields_->conc_mobile_fe[sbi]->vec());
         }
@@ -148,7 +148,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
 		LongIdx index = cell.local_idx();
-		auto p = *( this->bulk_points(element_patch_idx).begin() );
+		auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
 
 		for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) {
 			vecs_[sbi].set( index, eq_fields_->init_conc[sbi](p) );
@@ -166,6 +166,9 @@ private:
 
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
+
+    /// Bulk integral of assembly class
+    std::shared_ptr<BulkIntegral> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -189,9 +192,10 @@ public:
     static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
 
     /// Constructor.
-    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::boundary);
+    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->sources_sigma;
         this->used_fields_ += eq_fields_->sources_density;
@@ -204,9 +208,7 @@ public:
     ~ConcSourcesBdrAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);
@@ -227,7 +229,7 @@ public:
 		ASSERT(cell.get_loc_dof_indices().size() == 1);
 		IntIdx local_p0_dof = cell.get_loc_dof_indices()[0];
 
-		auto p = *( this->bulk_points(element_patch_idx).begin() );
+		auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
         for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++)
         {
             source = eq_fields_->cross_section(p) * (eq_fields_->sources_density[sbi](p)
@@ -263,7 +265,7 @@ public:
         fe_values_side_.reinit(cell_side.side());
 
         unsigned int sbi;
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         double flux = eq_fields_->side_flux(p_side, fe_values_side_);
         if (flux < 0.0) {
@@ -333,6 +335,9 @@ public:
 
         FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
 
+        std::shared_ptr<BulkIntegral> bulk_integral_;           ///< Bulk integral of assembly class
+        std::shared_ptr<BoundaryIntegral> bdr_integral_;        ///< Boundary integral of assembly class
+
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
 
@@ -364,9 +369,10 @@ public:
     static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
 
     /// Constructor.
-    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::edge | ActiveIntegrals::coupling;
+    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      edge_integral_( this->create_edge_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->flow_flux;
     }
 
@@ -374,12 +380,13 @@ public:
     ~MatrixMpiAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        if (dim < 3) {
+            fe_high_ = std::make_shared< FE_P_disc<dim+1> >(0);
+            fe_values_side_.initialize(*this->quad_, *fe_high_, u);
+        }
         fe_values_vec_.resize(eq_data_->max_edg_sides);
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
@@ -406,7 +413,7 @@ public:
             edge_side.cell().get_dof_indices(dof_indices_i_);
             side_dofs_[sid] = dof_indices_i_[0];
             elm_meassures_[sid] = edge_side.element().measure();
-            auto p = *( this->edge_points(edge_side).begin() );
+            auto p = *( this->points(edge_integral_, edge_side).begin() );
             side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
             if (side_flux_[sid] > 0.0) {
                 eq_data_->cfl_flow_.add_global(side_dofs_[sid], -(side_flux_[sid] / edge_side.element().measure()) );
@@ -435,10 +442,10 @@ public:
 
     /// Assembles the fluxes between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
         fe_values_side_.reinit(neighb_side.side());
 
         cell_lower_dim.get_dof_indices(dof_indices_i_);
@@ -488,6 +495,7 @@ public:
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim+1>> fe_high_;             ///< Same as previous but represents finite element of higher dim of join integral
 
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;
@@ -507,6 +515,9 @@ private:
     std::vector<double> row_values_;
     double aij;
     double edg_flux, flux;
+
+    std::shared_ptr<EdgeIntegral> edge_integral_;          ///< Edge integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;  ///< Coupling integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

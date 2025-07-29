@@ -46,6 +46,70 @@ enum OpSizeType
 
 
 
+struct RevertibleValue {
+public:
+    /// Default constructor
+    RevertibleValue() : permanent_(0), temporary_(0) {}
+
+    /// Copy constructor
+    RevertibleValue(const RevertibleValue &other)
+    : permanent_(other.permanent_), temporary_(other.temporary_) {}
+
+
+    /// Declaration of operators
+    inline RevertibleValue &operator= (RevertibleValue &other) {
+    	permanent_ = other.permanent_;
+    	temporary_ = other.temporary_;
+        return *this;
+    }
+
+    inline RevertibleValue& operator++ ()
+    {
+    	temporary_++;
+        return (*this);
+    }
+
+    inline RevertibleValue& operator+= (std::size_t inc_val)
+    {
+    	temporary_ += inc_val;
+        return (*this);
+    }
+
+    inline std::size_t operator() () const
+    {
+        return permanent_;
+    }
+
+
+    /// Reset value to zero
+    void reset() {
+        permanent_ = 0;
+        temporary_ = 0;
+    }
+
+    /// Revert temporary value.
+    inline void revert_temporary() {
+        temporary_ = permanent_;
+    }
+
+    /// Finalize temporary value.
+    inline void make_permanent() {
+        permanent_ = temporary_;
+    }
+
+    /// Return temporary value.
+    inline std::size_t temporary_value() const
+    {
+        return temporary_;
+    }
+
+private:
+    std::size_t permanent_;
+    std::size_t temporary_;
+};
+
+
+
 /**
  * v Class for storing FE data of quadrature points on one patch.
  *
@@ -76,19 +140,24 @@ public:
 	};
 
     /**
+     * Default constructor
+     *
+     * Warning! This constructor creates empty instance, use it only in BaseIntegralPatch class (eval_subset.hh)
+     */
+    PatchPointValues() {}
+
+    /**
      * Constructor
      *
      * @param dim Set dimension
      */
-    PatchPointValues(uint dim, uint quad_order, bool is_bulk, PatchFeData &patch_fe_data)
-    : elements_map_(300, 0), points_map_(300, 0), patch_fe_data_(patch_fe_data) {
+    PatchPointValues(bool is_bulk)
+    : elements_map_(300, 0), points_map_(300, 0) {
         reset();
 
         if (is_bulk) {
-            this->quad_ = new QGauss(dim, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp};
         } else {
-            this->quad_ = new QGauss(dim-1, 2*quad_order);
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
         }
     }
@@ -108,8 +177,8 @@ public:
 
     /// Reset number of columns (points and elements)
     inline void reset() {
-        n_points_ = 0;
-        n_elems_ = 0;
+        n_points_.reset();
+        n_elems_.reset();
         i_elem_ = 0;
         elem_list_.clear();
         side_list_.clear();
@@ -117,26 +186,42 @@ public:
 
     /// Getter for n_elems_
     inline uint n_elems() const {
-        return n_elems_;
+        return n_elems_();
     }
 
     /// Getter for n_points_
     inline uint n_points() const {
-        return n_points_;
+        return n_points_();
     }
 
-    /// Getter for quadrature
-    Quadrature *get_quadrature() const {
-        return quad_;
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+    	if (elements_map_[element_patch_idx] != (uint)-1) {
+    	    // Return index of element on patch if it is registered repeatedly
+    	    return elements_map_[element_patch_idx];
+    	}
+
+        elements_map_[element_patch_idx] = i_elem_;
+        elem_list_.push_back( cell.elm() );
+        return i_elem_++;
+    }
+
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side) {
+        uint dim = cell_side.dim();
+
+        int_table_(3)(i_elem_) = cell_side.side_idx();
+        elem_list_.push_back( cell_side.cell().elm() );
+        side_list_.push_back( cell_side.side() );
+
+        return i_elem_++;
     }
 
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables(uint n_elems, uint n_points) {
-        n_elems_ = n_elems;
-        n_points_ = n_points;
-        std::vector<uint> sizes = {n_elems_, n_points_};
+    void resize_tables(PatchArena &patch_arena) {
+        std::vector<std::size_t> sizes = {n_elems_(), n_points_()};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
-	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], *patch_fe_data_.patch_arena_);
+	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
@@ -150,7 +235,7 @@ public:
      * @param i_point_on_elem Index of point on element
      */
     uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint i_point_on_elem) {
-        uint point_pos = i_point_on_elem * n_elems_ + elem_table_row; // index of bulk point on patch
+        uint point_pos = i_point_on_elem * n_elems_() + elem_table_row; // index of bulk point on patch
         int_table_(0)(point_pos) = value_patch_idx;
         int_table_(1)(point_pos) = elem_table_row;
         int_table_(2)(point_pos) = elem_idx;
@@ -169,7 +254,7 @@ public:
      * @param i_point_on_side Index of point on side
      */
     uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
-        uint point_pos = i_point_on_side * n_elems_ + elem_table_row; // index of side point on patch
+        uint point_pos = i_point_on_side * n_elems_() + elem_table_row; // index of side point on patch
         int_table_(0)(point_pos) = value_patch_idx;
         int_table_(1)(point_pos) = elem_table_row;
         int_table_(2)(point_pos) = elem_idx;
@@ -179,19 +264,14 @@ public:
         return point_pos;
     }
 
-    /// return reference to assembly arena
-    inline AssemblyArena &asm_arena() const {
-    	return patch_fe_data_.asm_arena_;
-    }
-
-    /// return reference to patch arena
-    inline PatchArena &patch_arena() const {
-    	return *patch_fe_data_.patch_arena_;
-    }
-
     template<class ElementDomain>
     NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
 
+    /// Set number of elements and points as permanent
+    inline void make_permanent_mesh_items() {
+        n_elems_.make_permanent();
+        n_points_.make_permanent();
+    }
 //protected:
 
     /**
@@ -212,15 +292,12 @@ public:
     std::vector<OpSizeType> int_sizes_;
 
 
-    uint n_points_;                     ///< Number of points in patch
-    uint n_elems_;                      ///< Number of elements in patch
+	RevertibleValue n_points_;          ///< Number of points in patch
+	RevertibleValue n_elems_;           ///< Number of elements in patch
     uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
-    Quadrature *quad_;                  ///< Quadrature of given dimension and order passed in constructor.
 
     std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
     std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-
-    PatchFeData &patch_fe_data_;        ///< Reference to PatchFeData structure shared with PatchFeValues
 
 	std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
 	std::vector<Side> side_list_;                       ///< List of sides on patch

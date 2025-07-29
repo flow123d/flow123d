@@ -187,12 +187,12 @@ public:
             Quadrature *q_bdr1 = new QGauss(0, 0);
             Quadrature *q_bdr2 = new QGauss(1, 0);
             Quadrature *q_bdr3 = new QGauss(2, 0);
-            mass_integral[0] = eval_points_->add_bulk<1>(*q_bulk1 );
-            mass_integral[1] = eval_points_->add_bulk<2>(*q_bulk2 );
-            mass_integral[2] = eval_points_->add_bulk<3>(*q_bulk3 );
-            bdr_integral[0] = eval_points_->add_boundary<1>(*q_bdr1 );
-            bdr_integral[1] = eval_points_->add_boundary<2>(*q_bdr2 );
-            bdr_integral[2] = eval_points_->add_boundary<3>(*q_bdr3 );
+            mass_integral[0] = std::make_shared<BulkIntegral>(eval_points_, q_bulk1, 1);
+            mass_integral[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk2, 2);
+            mass_integral[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk3, 3);
+            bdr_integral[0] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr1, 1);
+            bdr_integral[1] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr2, 2);
+            bdr_integral[2] = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr3, 3);
             this->init(eval_points_);
 
             this->add_coords_field();

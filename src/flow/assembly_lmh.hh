@@ -52,9 +52,9 @@ public:
     static constexpr const char * name() { return "ReadInitCondAssemblyLMH"; }
 
     /// Constructor.
-    ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+	  bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_pressure;
     }
 
@@ -62,9 +62,7 @@ public:
     virtual ~ReadInitCondAssemblyLMH() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -76,7 +74,7 @@ public:
         ASSERT(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
         double init_value = eq_fields_->init_pressure(p);
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
@@ -107,6 +105,8 @@ protected:
     /// Vector of pre-computed local DOF indices
     LocDofVec l_indices_;
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;        ///< Bulk integral of assembly class
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -124,9 +124,11 @@ public:
     static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
 
     /// Constructor.
-    MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+    MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
+      bulk_integral_( this->create_bulk_integral(this->quad_)) ,
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -146,12 +148,13 @@ public:
     virtual ~MHMatrixAssemblyLMH() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
 
-        fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        fe_values_side_.initialize(*this->quad_low_, *fe_, update_normal_vectors);
+        if (dim < 3) {
+            fe_ = std::make_shared< FE_P_disc<dim+1> >(0);
+            fe_values_side_.initialize(*this->quad_, *fe_, update_normal_vectors);
+        }
 
         fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
 
@@ -182,7 +185,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, eq_fields_->conductivity(p));
@@ -201,7 +204,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -221,15 +224,15 @@ public:
      * Common in all descendants.
      */
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int neigh_idx = ngh_idx(cell_lower_dim, neighb_side); // TODO use better evaluation of neighbour_idx
         unsigned int loc_dof_higher = (2*(cell_lower_dim.dim()+1) + 1) + neigh_idx; // loc dof of higher ele edge
         bulk_local_idx_ = cell_lower_dim.local_idx();
 
         // Evaluation points
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         fe_values_side_.reinit(neighb_side.side());
@@ -243,9 +246,9 @@ public:
 						eq_fields_->cross_section(p_low) *      // crossection of lower dim.
                         neighb_side.measure();
 
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], eq_data_->loc_ele_dof[dim-2], -ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-2], loc_dof_higher,                ngh_value_);
-        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-2],  ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], eq_data_->loc_ele_dof[dim-1], -ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_ele_dof[dim-1], loc_dof_higher,                ngh_value_);
+        eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               eq_data_->loc_ele_dof[dim-1],  ngh_value_);
         eq_data_->loc_system_[bulk_local_idx_].add_value(loc_dof_higher,               loc_dof_higher,               -ngh_value_);
 
 //             // update matrix for weights in BDDCML
@@ -704,8 +707,8 @@ protected:
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
-        	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
-        	auto p = *( this->bulk_points(pos_in_cache).begin() );
+        	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
+        	auto p = *( this->points(bulk_integral_, pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
@@ -767,7 +770,7 @@ protected:
     QGauss quad_rt_;
     FEValues<3> fe_values_;
 
-    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim+1>> fe_;                  ///< Finite element for the solution of the advection-diffusion equation.
     FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
 
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
@@ -785,6 +788,10 @@ protected:
 
     LocalSystem loc_schur_;
 
+    std::shared_ptr<BulkIntegral> bulk_integral_;           ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;        ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;   ///< Coupling integral of assembly class
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -800,8 +807,8 @@ public:
     static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
 
     /// Constructor.
-    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
+    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
@@ -809,7 +816,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(this->bulk_integral_, element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity

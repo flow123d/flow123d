@@ -33,29 +33,17 @@ BaseIntegral::~BaseIntegral()
  * Implementation of BulkIntegral methods
  */
 
-BulkIntegral::~BulkIntegral()
-{}
+BulkIntegral::~BulkIntegral() {
+    internal_bulk_.reset();
+}
 
 
 /******************************************************************************
  * Implementation of EdgeIntegral methods
  */
 
-EdgeIntegral::EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, unsigned int dim, uint i_subset)
-: BaseIntegral(eval_points, dim),
-  subset_index_(i_subset)
-{
-
-    begin_idx_ = eval_points_->subset_begin(dim_, subset_index_);
-    uint end_idx = eval_points_->subset_end(dim_, subset_index_);
-    n_sides_ = dim + 1;
-    //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
-    n_points_per_side_ = (end_idx - begin_idx_) / n_sides();
-    //DebugOut() << "points per side: " << n_points_per_side_;
-
-}
-
 EdgeIntegral::~EdgeIntegral() {
+    internal_edge_.reset();
 }
 
 
@@ -63,17 +51,10 @@ EdgeIntegral::~EdgeIntegral() {
  * Implementation of CouplingIntegral methods
  */
 
-CouplingIntegral::CouplingIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
- : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()),
-   edge_integral_(edge_integral), bulk_integral_(bulk_integral)
-{
-    ASSERT_EQ(edge_integral->dim()-1, bulk_integral->dim());
-}
-
 CouplingIntegral::~CouplingIntegral()
 {
-    edge_integral_.reset();
-    bulk_integral_.reset();
+    internal_edge_.reset();
+    internal_bulk_.reset();
 }
 
 
@@ -82,29 +63,31 @@ CouplingIntegral::~CouplingIntegral()
  * Implementation of BoundaryIntegral methods
  */
 
-BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, std::shared_ptr<BulkIntegral> bulk_integral)
- : BaseIntegral(edge_integral->eval_points(), edge_integral->dim()),
-   edge_integral_(edge_integral), bulk_integral_(bulk_integral)
-{}
+BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
+ : BaseIntegralPatch(quad, dim) {
+    this->patch_point_vals_bulk_ = new PatchPointValues<3>();
+    this->patch_point_vals_side_ = new PatchPointValues<3>(false);
+    switch (dim) {
+    case 1:
+        internal_bulk_ = eval_points->add_bulk<0>(quad);
+        internal_edge_ = eval_points->add_edge<1>(quad);
+        break;
+    case 2:
+        internal_bulk_ = eval_points->add_bulk<1>(quad);
+        internal_edge_ = eval_points->add_edge<2>(quad);
+        break;
+    case 3:
+        internal_bulk_ = eval_points->add_bulk<2>(quad);
+        internal_edge_ = eval_points->add_edge<3>(quad);
+        break;
+    default:
+        ASSERT(false).error("Should not happen!\n");
+    }
+}
 
 BoundaryIntegral::~BoundaryIntegral()
 {
-    edge_integral_.reset();
+    internal_edge_.reset();
+    internal_bulk_.reset();
 }
 
-
-/******************************************************************************
- * Temporary implementations. Intermediate step in implementation of PatcFEValues.
- */
-
-unsigned int EdgePoint::side_idx() const {
-    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
-}
-
-unsigned int CouplingPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
-}
-
-unsigned int BoundaryPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
-}

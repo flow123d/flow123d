@@ -43,16 +43,17 @@ public:
     /// Constructor
     GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
             std::shared_ptr<Observe> observe)
-    : multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
+    : GenericAssemblyBase(),
+      multidim_assembly_(eq_fields, &this->asm_internals_, observe_fields_list, observe.get()),
+	  observe_(observe), bulk_integral_data_(20, 10)
     {
-        eval_points_ = std::make_shared<EvalPoints>();
-        multidim_assembly_[1_d]->create_observe_integrals(eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_observe_integrals(eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_observe_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(&element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        multidim_assembly_[1_d]->create_observe_integrals(bulk_integrals_);
+        multidim_assembly_[2_d]->create_observe_integrals(bulk_integrals_);
+        multidim_assembly_[3_d]->create_observe_integrals(bulk_integrals_);
+        this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
+        multidim_assembly_[1_d]->initialize();
+        multidim_assembly_[2_d]->initialize();
+        multidim_assembly_[3_d]->initialize();
     }
 
     /// Getter to set of assembly objects
@@ -72,25 +73,25 @@ public:
         unsigned int i_ep, subset_begin, subset_idx;
         auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
-            subset_idx = integrals_.bulk_[p_data.i_quad]->get_subset_idx();
-        	subset_begin = eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
+            subset_idx = bulk_integrals_[p_data.i_quad]->get_subset_idx();
+        	subset_begin = this->asm_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             bulk_integral_data_.emplace_back(dh_cell, p_data.i_quad_point);
-            element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            this->asm_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
         }
         bulk_integral_data_.make_permanent();
-        element_cache_map_.make_paermanent_eval_points();
+        this->asm_internals_.element_cache_map_.make_paermanent_eval_points();
 
         this->reallocate_cache();
-        element_cache_map_.create_patch();
-        multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_);
+        this->asm_internals_.element_cache_map_.create_patch();
+        multidim_assembly_[1_d]->eq_fields_->cache_update(this->asm_internals_.element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(bulk_integral_data_);
         multidim_assembly_[2_d]->assemble_cell_integrals(bulk_integral_data_);
         multidim_assembly_[3_d]->assemble_cell_integrals(bulk_integral_data_);
         bulk_integral_data_.reset();
-        element_cache_map_.clear_element_eval_points_map();
+        this->asm_internals_.element_cache_map_.clear_element_eval_points_map();
         END_TIMER( DimAssembly<1>::name() );
     }
 
@@ -98,13 +99,14 @@ public:
 private:
     /// Calls cache_reallocate method on set of used fields
     inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->asm_internals_.element_cache_map_, multidim_assembly_[1_d]->used_fields_);
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
-    MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
-    std::shared_ptr<Observe> observe_;                            ///< Shared Observe object.
-    RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;   ///< Bulk integrals of elements of dimensions 1, 2, 3
+    MixedPtr<DimAssembly, 1> multidim_assembly_;                    ///< Assembly object
+    std::shared_ptr<Observe> observe_;                              ///< Shared Observe object.
+    RevertableList<BulkIntegralData> bulk_integral_data_;           ///< Holds data for computing bulk integrals.
 };
 
 
@@ -117,9 +119,9 @@ public:
     static constexpr const char * name() { return "AssemblyObserveOutput"; }
 
     /// Constructor.
-    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe)
+    AssemblyObserveOutput(EqFields *eq_fields, AssemblyInternals *asm_internals, const std::unordered_set<string> &observe_fields_list, Observe *observe)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), observe_(observe) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+        this->asm_internals_ = asm_internals;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 
         for (auto observe_field : observe_fields_list) {
@@ -132,19 +134,17 @@ public:
     ~AssemblyObserveOutput() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
     /// Assembles the cell integrals for the given dimension.
-    inline void assemble_cell_integrals(const RevertableList<GenericAssemblyBase::BulkIntegralData> &bulk_integral_data) {
+    inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
         unsigned int element_patch_idx, field_value_cache_position, val_idx;
         this->reset_offsets();
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
-            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
+            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
+            auto p = *( this->points(bulk_integral_, element_patch_idx).begin()); // evaluation point
+            field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
             val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
         }
@@ -155,7 +155,7 @@ public:
 
 
     /// Create bulk integral according to dim
-    void create_observe_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+    void create_observe_integrals(std::array<std::shared_ptr<BulkIntegral>, 3> &integrals) {
         std::vector<arma::vec> reg_points;
 
         auto &patch_point_data = observe_->patch_point_data();
@@ -175,8 +175,8 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            this->integrals_.bulk_ = eval_points->add_bulk<dim>(*this->quad_);
-            integrals.bulk_[dim-1] = this->integrals_.bulk_;
+            bulk_integral_ = std::make_shared<BulkIntegral>(this->asm_internals_->eval_points_, this->quad_, dim);
+            integrals[dim-1] = bulk_integral_;
         }
     }
 
@@ -191,6 +191,7 @@ private:
 
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
     std::vector<int> offsets_;                                ///< Holds indices (offsets) of cached data to output data vector
+    std::shared_ptr<BulkIntegral> bulk_integral_;             ///< Accessor of integral
 
 
     template < template<IntDim...> class DimAssembly>
