@@ -21,7 +21,7 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
-#include "fem/eval_subset.hh"
+#include "fem/eval_subset_points.hh"
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
 #include "fields/field_set.hh"
