@@ -49,8 +49,8 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, OpSizeType size_type, uint n_dofs = 1)
-    : dim_(dim), shape_(set_shape_vec(shape)), size_type_(size_type), n_dofs_(n_dofs), patch_fe_(&pfev)
+    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, uint n_dofs = 1)
+    : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev)
     {
         ASSERT_GT(n_dofs, 0);
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
@@ -86,11 +86,6 @@ public:
     /// Getter for bulk_side flag
     inline ElemDomain domain() const {
         return domain_;
-    }
-
-    /// Getter for size_type_
-    OpSizeType size_type() const {
-        return size_type_;
     }
 
     /// Getter for n_dofs_
@@ -182,7 +177,6 @@ protected:
     ElemDomain domain_;                           ///< Flag: BulkOp = 0, SideOp = 1
     std::vector<uint> shape_;                     ///< Shape of stored data (size of vector or number of rows and cols of matrix)
     Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> result_;    ///< Result matrix of operation
-    OpSizeType size_type_;                        ///< Type of operation by size of vector (element, point or fixed size)
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
