@@ -264,7 +264,7 @@ void TransportDG<Model>::initialize()
     init_projection = input_rec.val<bool>("init_projection");
 
     // create assemblation object, finite element structures and distribute DOFs
-	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get(), true); // TODO temporary call of constructor
 	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
 	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
 	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());

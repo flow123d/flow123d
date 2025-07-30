@@ -43,16 +43,16 @@ public:
     /// Constructor
     GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
             std::shared_ptr<Observe> observe)
-    : multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
+    : GenericAssemblyBase(),
+      multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
     {
-        eval_points_ = std::make_shared<EvalPoints>();
-        multidim_assembly_[1_d]->create_observe_integrals(eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_observe_integrals(eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_observe_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(&element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        multidim_assembly_[1_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
+        multidim_assembly_[2_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
+        multidim_assembly_[3_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
+        this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
+        multidim_assembly_[1_d]->initialize(&this->asm_internals_.element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&this->asm_internals_.element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&this->asm_internals_.element_cache_map_);
     }
 
     /// Getter to set of assembly objects
@@ -73,24 +73,24 @@ public:
         auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
             subset_idx = integrals_.bulk_[p_data.i_quad]->get_subset_idx();
-        	subset_begin = eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
+        	subset_begin = this->asm_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             bulk_integral_data_.emplace_back(dh_cell, p_data.i_quad_point);
-            element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            this->asm_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
         }
         bulk_integral_data_.make_permanent();
-        element_cache_map_.make_paermanent_eval_points();
+        this->asm_internals_.element_cache_map_.make_paermanent_eval_points();
 
         this->reallocate_cache();
-        element_cache_map_.create_patch();
-        multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_);
+        this->asm_internals_.element_cache_map_.create_patch();
+        multidim_assembly_[1_d]->eq_fields_->cache_update(this->asm_internals_.element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(bulk_integral_data_);
         multidim_assembly_[2_d]->assemble_cell_integrals(bulk_integral_data_);
         multidim_assembly_[3_d]->assemble_cell_integrals(bulk_integral_data_);
         bulk_integral_data_.reset();
-        element_cache_map_.clear_element_eval_points_map();
+        this->asm_internals_.element_cache_map_.clear_element_eval_points_map();
         END_TIMER( DimAssembly<1>::name() );
     }
 
@@ -98,7 +98,7 @@ public:
 private:
     /// Calls cache_reallocate method on set of used fields
     inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->asm_internals_.element_cache_map_, multidim_assembly_[1_d]->used_fields_);
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 

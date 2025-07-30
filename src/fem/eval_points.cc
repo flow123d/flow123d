@@ -94,6 +94,32 @@ std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary(const Quadrature &qua
     return std::make_shared<BoundaryIntegral>(edge_integral, bulk_integral);
 }
 
+template <unsigned int dim>
+std::shared_ptr<BulkIntegralAcc<dim>> EvalPoints::add_bulk_accessor(Quadrature *quad) {
+    ASSERT_EQ(dim, quad->dim());
+
+    if (bulk_integrals_[dim] == nullptr) {
+        dim_eval_points_[dim].add_local_points<dim>( quad->get_points() );
+        uint i_subset = dim_eval_points_[dim].add_subset();
+        bulk_integrals_[dim] = std::make_shared<BulkIntegralAcc<dim>>(shared_from_this(), quad, i_subset);
+        this->set_max_size();
+    }
+    return std::static_pointer_cast<BulkIntegralAcc<dim>>(bulk_integrals_[dim]);
+}
+
+template <>
+std::shared_ptr<BulkIntegralAcc<0>> EvalPoints::add_bulk_accessor<0>(Quadrature *quad)
+{
+    ASSERT_EQ(0, quad->dim());
+
+    if (bulk_integrals_[0] == nullptr) {
+        uint i_subset = dim_eval_points_[0].add_subset();
+        bulk_integrals_[0] = std::make_shared<BulkIntegralAcc<0>>(shared_from_this(), quad, i_subset);
+        this->set_max_size();
+    }
+    return std::static_pointer_cast<BulkIntegralAcc<0>>(bulk_integrals_[0]);
+}
+
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
 {
@@ -135,6 +161,12 @@ template std::shared_ptr<CouplingIntegral> EvalPoints::add_coupling<3>(const Qua
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<1>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<2>(const Quadrature &);
 template std::shared_ptr<BoundaryIntegral> EvalPoints::add_boundary<3>(const Quadrature &);
+
+template std::shared_ptr<BulkIntegralAcc<0>> EvalPoints::add_bulk_accessor<0>(Quadrature *);
+template std::shared_ptr<BulkIntegralAcc<1>> EvalPoints::add_bulk_accessor<1>(Quadrature *);
+template std::shared_ptr<BulkIntegralAcc<2>> EvalPoints::add_bulk_accessor<2>(Quadrature *);
+template std::shared_ptr<BulkIntegralAcc<3>> EvalPoints::add_bulk_accessor<3>(Quadrature *);
+
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<3>(const Armor::Array<double> &);

@@ -44,8 +44,9 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -57,8 +58,8 @@ public:
     ~MassAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
@@ -85,7 +86,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
                     local_matrix_[i*ndofs_+j] = 0;
-                    for (auto p : this->bulk_points(element_patch_idx) )
+                    for (auto p : this->points(conc_integral_, element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
                                 conc_shape_.shape(j)(p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -97,7 +98,7 @@ public:
             {
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
-                for (auto p : this->bulk_points(element_patch_idx) )
+                for (auto p : this->points(conc_integral_, element_patch_idx) )
                 {
                     local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_.shape(i)(p)*JxW_(p);
                     local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -138,6 +139,7 @@ public:
         vector<PetscScalar> local_retardation_balance_vector_;    ///< Auxiliary vector for assemble mass matrix.
         vector<PetscScalar> local_mass_balance_vector_;           ///< Same as previous.
 
+        std::shared_ptr<BulkIntegralAcc<dim>> conc_integral_;     ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> conc_shape_;
 

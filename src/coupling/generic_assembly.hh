@@ -48,6 +48,21 @@ struct AssemblyIntegrals {
 };
 
 
+/// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
+struct AssemblyInternals {
+public:
+    AssemblyInternals()
+    : eval_points_(std::make_shared<EvalPoints>()) {}
+
+    AssemblyInternals(uint quad_order, MixedPtr<FiniteElement> fe)
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(quad_order, fe) {}
+
+    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
+    PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
+};
+
+
 /**
  * Common interface class for all Assembly classes.
  */
@@ -143,20 +158,25 @@ public:
 	    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 	};
 
-    GenericAssemblyBase() {}
+    GenericAssemblyBase()
+    {}
+
+    GenericAssemblyBase(uint quad_order, MixedPtr<FiniteElement> fe)
+    : asm_internals_(quad_order, fe)
+    {}
 
     virtual ~GenericAssemblyBase(){}
+
     virtual void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) = 0;
 
     /// Getter to EvalPoints object
     inline std::shared_ptr<EvalPoints> eval_points() const {
-        return eval_points_;
+        return asm_internals_.eval_points_;
     }
 
 protected:
     AssemblyIntegrals integrals_;                                 ///< Holds integral objects.
-    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
-    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
+    AssemblyInternals asm_internals_;                             ///< Holds shared internals data
 };
 
 
@@ -175,7 +195,8 @@ class GenericAssembly : public GenericAssemblyBase
 public:
     /// Constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
-    : use_patch_fe_values_(false),
+    : GenericAssemblyBase(),
+      use_patch_fe_values_(false),
 	  multidim_assembly_(eq_fields, eq_data),
 	  min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
@@ -186,11 +207,11 @@ public:
     	initialize();
     }
 
-    /// Constructor
+    /// Obsolete constructor
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : fe_values_(eq_data->quad_order(), dh->ds()->fe()),
+    : GenericAssemblyBase(eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
-      multidim_assembly_(eq_fields, eq_data, &this->fe_values_),
+      multidim_assembly_(eq_fields, eq_data, &asm_internals_.fe_values_),
       min_edge_sides_(2),
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
@@ -198,6 +219,35 @@ public:
       boundary_integral_data_(8, 4)
     {
     	initialize();
+    }
+
+    /**
+     * Constructor - will be use instead of previous
+     *
+     * IN DEVELOPMENT!
+     */
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh, FMT_UNUSED bool no_effect)
+    : GenericAssemblyBase(eq_data->quad_order(), dh->ds()->fe()),
+      use_patch_fe_values_(true),
+      multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
+      min_edge_sides_(2),
+      bulk_integral_data_(20, 10),
+      edge_integral_data_(12, 6),
+      coupling_integral_data_(12, 6),
+      boundary_integral_data_(8, 4)
+    {
+        // This block of code will be new code of initialize() method
+        asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
+        multidim_assembly_[1_d]->initialize();
+        multidim_assembly_[2_d]->initialize();
+        multidim_assembly_[3_d]->initialize();
+        asm_internals_.fe_values_.init_finalize();
+        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
+
+        // Temporary calls of following method
+        multidim_assembly_[1_d]->post_integrals_set(integrals_);
+        multidim_assembly_[2_d]->post_integrals_set(integrals_);
+        multidim_assembly_[3_d]->post_integrals_set(integrals_);
     }
 
     /// Getter to set of assembly objects
@@ -228,9 +278,8 @@ public:
         bool add_into_patch = false; // control variable
         for(auto cell_it = dh->local_range().begin(); cell_it != dh->local_range().end(); )
         {
-
             if (!add_into_patch) {
-        	    element_cache_map_.start_elements_update();
+                asm_internals_.element_cache_map_.start_elements_update();
         	    add_into_patch = true;
             }
 
@@ -238,12 +287,12 @@ public:
             this->add_integrals_of_computing_step(*cell_it);
             END_TIMER("add_integrals_to_patch");
 
-            if (element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
+            if (asm_internals_.element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
                 bulk_integral_data_.revert_temporary();
                 edge_integral_data_.revert_temporary();
                 coupling_integral_data_.revert_temporary();
                 boundary_integral_data_.revert_temporary();
-                element_cache_map_.eval_point_data_.revert_temporary();
+                asm_internals_.element_cache_map_.eval_point_data_.revert_temporary();
                 this->assemble_integrals();
                 add_into_patch = false;
             } else {
@@ -251,11 +300,11 @@ public:
                 edge_integral_data_.make_permanent();
                 coupling_integral_data_.make_permanent();
                 boundary_integral_data_.make_permanent();
-                element_cache_map_.make_paermanent_eval_points();
+                asm_internals_.element_cache_map_.make_paermanent_eval_points();
                 if (use_patch_fe_values_) {
                     table_sizes_.copy(table_sizes_tmp_);
                 }
-                if (element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
+                if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     add_into_patch = false;
                 }
@@ -272,23 +321,22 @@ public:
 
     /// Return ElementCacheMap
     inline const ElementCacheMap &cache_map() const {
-        return element_cache_map_;
+        return asm_internals_.element_cache_map_;
     }
 
 private:
     /// Common part of GenericAssemblz constructors.
     void initialize() {
-        eval_points_ = std::make_shared<EvalPoints>();
         // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_integrals(eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_integrals(eval_points_, integrals_);
-        element_cache_map_.init(eval_points_);
-        multidim_assembly_[1_d]->initialize(&element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&element_cache_map_);
+        multidim_assembly_[1_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+        multidim_assembly_[2_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+        multidim_assembly_[3_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+        asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
+        multidim_assembly_[1_d]->initialize(&asm_internals_.element_cache_map_);
+        multidim_assembly_[2_d]->initialize(&asm_internals_.element_cache_map_);
+        multidim_assembly_[3_d]->initialize(&asm_internals_.element_cache_map_);
         if (use_patch_fe_values_) {
-            fe_values_.init_finalize();
+            asm_internals_.fe_values_.init_finalize();
         }
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
     }
@@ -296,7 +344,7 @@ private:
     /// Call assemblations when patch is filled
     void assemble_integrals() {
         START_TIMER("create_patch");
-        element_cache_map_.create_patch();
+        asm_internals_.element_cache_map_.create_patch();
         END_TIMER("create_patch");
         if (use_patch_fe_values_) {
             START_TIMER("patch_reinit");
@@ -304,9 +352,9 @@ private:
             END_TIMER("patch_reinit");
         }
         START_TIMER("cache_update");
-        multidim_assembly_[1_d]->eq_fields_->cache_update(element_cache_map_); // TODO replace with sub FieldSet
+        multidim_assembly_[1_d]->eq_fields_->cache_update(asm_internals_.element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
-        element_cache_map_.finish_elements_update();
+        asm_internals_.element_cache_map_.finish_elements_update();
 
         {
             START_TIMER("assemble_volume_integrals");
@@ -343,16 +391,16 @@ private:
         edge_integral_data_.reset();
         coupling_integral_data_.reset();
         boundary_integral_data_.reset();
-        element_cache_map_.clear_element_eval_points_map();
+        asm_internals_.element_cache_map_.clear_element_eval_points_map();
         if (use_patch_fe_values_) {
             table_sizes_.reset();
             table_sizes_tmp_.reset();
-            fe_values_.reset();
+            asm_internals_.fe_values_.reset();
         }
     }
 
     void patch_reinit() {
-    	fe_values_.resize_tables(table_sizes_);
+    	asm_internals_.fe_values_.resize_tables(table_sizes_);
         if (bulk_integral_data_.permanent_size() > 0) {
             multidim_assembly_[1_d]->add_patch_bulk_points(bulk_integral_data_);
             multidim_assembly_[2_d]->add_patch_bulk_points(bulk_integral_data_);
@@ -372,7 +420,7 @@ private:
             multidim_assembly_[2_d]->add_patch_coupling_integrals(coupling_integral_data_);
             multidim_assembly_[3_d]->add_patch_coupling_integrals(coupling_integral_data_);
         }
-        this->fe_values_.reinit_patch();
+        asm_internals_.fe_values_.reinit_patch();
     }
 
     /**
@@ -408,9 +456,9 @@ private:
                 for( DHCellSide ngh_side : cell.neighb_sides() ) {
                     unsigned int reg_idx_low = cell.elm().region_idx().idx();
                     table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
-                    for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &element_cache_map_) ) {
+                    for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &asm_internals_.element_cache_map_) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                        element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                        asm_internals_.element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
                         table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
                     }
                     break;
@@ -423,8 +471,8 @@ private:
                 table_sizes_tmp_.elem_sizes_[1][cell.dim()]++;
 
                 unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
-                for (auto p : coupling_integral->points(ngh_side, &element_cache_map_) ) {
-                    element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
+                for (auto p : coupling_integral->points(ngh_side, &asm_internals_.element_cache_map_) ) {
+                    asm_internals_.element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
                     table_sizes_tmp_.point_sizes_[1][cell.dim()]++;
                 }
             }
@@ -440,9 +488,9 @@ private:
         table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
-        for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
-                  i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
-            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+        for (uint i=uint( asm_internals_.eval_points_->subset_begin(cell.dim(), subset_idx) );
+                  i<uint( asm_internals_.eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
+            asm_internals_.element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
             table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
         }
     }
@@ -456,8 +504,8 @@ private:
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
             table_sizes_tmp_.elem_sizes_[1][dim-1]++;
-            for (auto p : integrals_.edge_[dim-1]->points(edge_side, &element_cache_map_) ) {
-                element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+            for (auto p : integrals_.edge_[dim-1]->points(edge_side, &asm_internals_.element_cache_map_) ) {
+                asm_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                 table_sizes_tmp_.point_sizes_[1][dim-1]++;
             }
         }
@@ -470,25 +518,24 @@ private:
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
         table_sizes_tmp_.elem_sizes_[1][bdr_side.dim()-1]++;
-        for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &element_cache_map_) ) {
-            element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+        for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &asm_internals_.element_cache_map_) ) {
+            asm_internals_.element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
             table_sizes_tmp_.point_sizes_[1][bdr_side.dim()-1]++;
 
         	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
         	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
-        	element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+        	asm_internals_.element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
         }
     }
 
     /// Calls cache_reallocate method on
     inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(asm_internals_.element_cache_map_, multidim_assembly_[1_d]->used_fields_);
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
 
-    PatchFEValues<3> fe_values_;                                     ///< Common FEValues object over all dimensions
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 

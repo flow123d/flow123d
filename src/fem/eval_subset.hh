@@ -329,6 +329,38 @@ protected:
 };
 
 /**
+ * New Integral accessor class, replace of BulkIntegral
+ *
+ * IN DEVELOPMENT
+ */
+template<unsigned int qdim>
+class BulkIntegralAcc : public BulkIntegral, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
+public:
+    typedef BulkPoint PointType;
+    typedef unsigned int MeshItem;
+
+    /// Default constructor
+    BulkIntegralAcc() : BulkIntegral() {}
+
+    /// Constructor of bulk integral
+    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int i_subset)
+     : BulkIntegral(eval_points, qdim, i_subset), quad_(quad)
+    {}
+
+    /// Destructor
+    ~BulkIntegralAcc()
+    {}
+
+    /// Getter of quadrature
+    const Quadrature *get_quad() const {
+        return quad_;
+    }
+
+protected:
+    Quadrature *quad_;
+};
+
+/**
  * Integral class of side points, allows assemblation of element - element fluxes.
  */
 class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
