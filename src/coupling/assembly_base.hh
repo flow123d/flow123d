@@ -141,7 +141,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of bulk integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad_);
+        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad_, &asm_internals_->fe_values_);
         integrals_.bulk_ = result;
         return result;
     }

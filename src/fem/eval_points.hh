@@ -35,6 +35,7 @@ class CouplingIntegral;
 class BoundaryIntegral;
 template <unsigned int dim> class BulkIntegralAcc;
 template <int spacedim> class ElementAccessor;
+template <unsigned int spacedim> class PatchFEValues;
 
 
 /**
@@ -96,7 +97,7 @@ public:
 
     /// It will replace previous method, will be changed during further development.
     template <unsigned int dim>
-    std::shared_ptr<BulkIntegralAcc<dim>> add_bulk_accessor(Quadrature *);
+    std::shared_ptr<BulkIntegralAcc<dim>> add_bulk_accessor(Quadrature *, PatchFEValues<3> *);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>

@@ -343,8 +343,8 @@ public:
     BulkIntegralAcc() : BulkIntegral() {}
 
     /// Constructor of bulk integral
-    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int i_subset)
-     : BulkIntegral(eval_points, qdim, i_subset), quad_(quad)
+    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
+     : BulkIntegral(eval_points, qdim, i_subset), quad_(quad), pfev_(pfev)
     {}
 
     /// Destructor
@@ -358,6 +358,7 @@ public:
 
 protected:
     Quadrature *quad_;
+    PatchFEValues<3> *pfev_;
 };
 
 /**
@@ -405,7 +406,7 @@ public:
     }
 
 
-private:
+protected:
     unsigned int subset_index_;
     uint begin_idx_;
 
