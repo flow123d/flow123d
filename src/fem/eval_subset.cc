@@ -16,6 +16,7 @@
  * @author  David Flanderka
  */
 
+#include "fem/eval_subset_points.hh"
 #include "fem/eval_subset.hh"
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
@@ -90,21 +91,4 @@ BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EdgeIntegral> edge_integral, 
 BoundaryIntegral::~BoundaryIntegral()
 {
     edge_integral_.reset();
-}
-
-
-/******************************************************************************
- * Temporary implementations. Intermediate step in implementation of PatcFEValues.
- */
-
-unsigned int EdgePoint::side_idx() const {
-    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
-}
-
-unsigned int CouplingPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
-}
-
-unsigned int BoundaryPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
 }

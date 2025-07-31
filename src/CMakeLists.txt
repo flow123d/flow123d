@@ -259,6 +259,7 @@ add_library(fem_lib
     fem/mapping_p1.cc
     fem/patch_fe_values.cc
     fem/eval_subset.cc
+    fem/eval_subset_points.cc
     fem/eval_points.cc
     fem/element_cache_map.cc
 )
