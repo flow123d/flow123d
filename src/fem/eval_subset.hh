@@ -289,6 +289,37 @@ protected:
 };
 
 /**
+ * Temporary class. Parent of all integral accessor.
+ *
+ * Will be merged with BaseIntegral
+ */
+template<unsigned int dim>
+class FactoryBase
+{
+protected:
+    // Default constructor
+    FactoryBase(PatchFEValues<3> *pfev) : patch_fe_values_(pfev)
+    {}
+
+//    /// Factory method. Creates operation of given OpType.
+//    template<class OpType>
+//    PatchOp<3> *make_patch_op() {
+//        return patch_fe_values_->get< OpType, dim >();
+//    }
+//
+//    /// Factory method. Same as previous but creates FE operation.
+//    template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
+//    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
+//        std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_.fe_comp(fe_, component_idx);
+//        return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(fe_component));
+//    }
+
+    PatchFEValues<3> *patch_fe_values_;
+//    std::shared_ptr< FiniteElement<dim> > fe_;
+};
+
+
+/**
  * Integral class of bulk points, allows assemblation of volume integrals.
  */
 class BulkIntegral : public BaseIntegral, public std::enable_shared_from_this<BulkIntegral> {
@@ -334,7 +365,7 @@ protected:
  * IN DEVELOPMENT
  */
 template<unsigned int qdim>
-class BulkIntegralAcc : public BulkIntegral, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
+class BulkIntegralAcc : public BulkIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
 public:
     typedef BulkPoint PointType;
     typedef unsigned int MeshItem;
@@ -344,7 +375,7 @@ public:
 
     /// Constructor of bulk integral
     BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
-     : BulkIntegral(eval_points, qdim, i_subset), quad_(quad), pfev_(pfev)
+     : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev), quad_(quad)
     {}
 
     /// Destructor
@@ -356,9 +387,19 @@ public:
         return quad_;
     }
 
+//    /**
+//     * @brief Register the product of Jacobian determinant and the quadrature
+//     * weight at bulk quadrature points.
+//     *
+//     * @param quad Quadrature.
+//     */
+//    inline FeQ<Scalar> JxW()
+//    {
+//        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >());
+//    }
+
 protected:
     Quadrature *quad_;
-    PatchFEValues<3> *pfev_;
 };
 
 /**
