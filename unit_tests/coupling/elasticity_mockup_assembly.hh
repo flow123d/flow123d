@@ -30,14 +30,18 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
+      JxW_side_join_( this->side_values_high_dim().JxW() ),
       normal_( this->side_values().normal_vector() ),
+      normal_join_( this->side_values_high_dim().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
       grad_deform_( this->bulk_values().grad_vector_shape() ),
       sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ),
-      deform_join_grad_( this->join_values().gradient_vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+      deform_join_grad_( this->join_values().gradient_vector_join_shape() ),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -83,7 +87,7 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : this->points(bulk_integral_, element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
             {
@@ -110,13 +114,13 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
         double side_measure = cell_side.measure();
         if (bc_type == EqFields::bc_type_displacement)
         {
-            for (auto p : this->boundary_points(cell_side) ) {
+            for (auto p : this->points(bdr_integral_, cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -125,7 +129,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
-            for (auto p : this->boundary_points(cell_side) ) {
+            for (auto p : this->points(bdr_integral_, cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -140,36 +144,36 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline virtual void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+    	if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_[i] = dof_indices_[i];
         }
 
-        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         n_indices = cell_higher_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
             side_dof_indices_[i+n_dofs_ngh_[0]] = dof_indices_[i];
         }
 
-        // Element id's for testing if they belong to local partition.
-        bool own_element_id[2];
-        own_element_id[0] = cell_lower_dim.is_own();
-        own_element_id[1] = cell_higher_dim.is_own();
+		// Element id's for testing if they belong to local partition.
+		bool own_element_id[2];
+		own_element_id[0] = cell_lower_dim.is_own();
+		own_element_id[1] = cell_higher_dim.is_own();
 
-        unsigned int n_neighs = cell_lower_dim.elm()->n_neighs_vb();
+		unsigned int n_neighs = cell_lower_dim.elm()->n_neighs_vb();
 
         for (unsigned int i=0; i<n_dofs_ngh_[0]+n_dofs_ngh_[1]; i++)
             for (unsigned int j=0; j<n_dofs_ngh_[0]+n_dofs_ngh_[1]; j++)
                 local_matrix_[i*(n_dofs_ngh_[0]+n_dofs_ngh_[1])+j] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->coupling_points(neighb_side) )
+        for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
+            arma::vec3 nv = normal_join_(p_high);
 
             for (uint i=0; i<deform_join_.n_dofs_both(); ++i) {
                 uint is_high_i = deform_join_.is_high_dim(i);
@@ -195,10 +199,11 @@ public:
                                      // dependence on fracture_sigma.
                                      // TODO: Fracture_sigma should be possibly removed and replaced by anisotropic elasticity.
                                      + (1-eq_fields_->fracture_sigma(p_low))*eq_fields_->cross_section(p_low) / n_neighs
-                                     * arma::dot(0.5*(grad_deform_i+grad_deform_i.t()), eq_fields_->stress_tensor(p_low,0.5*(grad_deform_j+grad_deform_j.t())))
-                            )*JxW_side_(p_high);
+                                       * arma::dot(0.5*(grad_deform_i+grad_deform_i.t()), eq_fields_->stress_tensor(p_low,0.5*(grad_deform_j+grad_deform_j.t())))
+                            )*JxW_side_join_(p_high);
                 }
             }
+
         }
 
         this->dimjoin_intergral_set_values();
@@ -247,13 +252,19 @@ protected:
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_side_join_;
     ElQ<Vector> normal_;
+    ElQ<Vector> normal_join_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
     FeQJoin<Tensor> deform_join_grad_;
+
+    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -335,13 +346,17 @@ public:
     : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
+      JxW_side_join_( this->side_values_high_dim().JxW() ),
       normal_( this->side_values().normal_vector() ),
+      normal_join_( this->side_values_high_dim().normal_vector() ),
       deform_( this->bulk_values().vector_shape() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       div_deform_( this->bulk_values().vector_divergence() ),
-      deform_join_( this->join_values().vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+      deform_join_( this->join_values().vector_join_shape() ),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -391,7 +406,7 @@ public:
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
         // compute sources
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : this->points(bulk_integral_, element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
@@ -412,7 +427,7 @@ public:
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
 
@@ -421,7 +436,7 @@ public:
         // local_flux_balance_rhs = 0;
 
         // addtion from initial stress
-        for (auto p : this->boundary_points(cell_side) )
+        for (auto p : this->points(bdr_integral_, cell_side) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
@@ -433,7 +448,7 @@ public:
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -445,7 +460,7 @@ public:
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -457,7 +472,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_traction)
         {
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -468,7 +483,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_stress)
         {
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -485,8 +500,8 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+    	if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
@@ -508,10 +523,10 @@ public:
             local_rhs_[i] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->coupling_points(neighb_side) )
+        for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
+            arma::vec3 nv = normal_join_(p_high);
 
             for (uint i=0; i<deform_join_.n_dofs_both(); ++i) {
                 uint is_high_i = deform_join_.is_high_dim(i);
@@ -521,7 +536,7 @@ public:
                 arma::vec3 vf = deform_join_.shape(i)(p_low);
 
                 local_rhs_[i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
-                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
+                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_join_(p_high);
             }
         }
 
@@ -562,12 +577,18 @@ protected:
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_side_join_;
     ElQ<Vector> normal_;
+    ElQ<Vector> normal_join_;
     FeQArray<Vector> deform_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
+
+    std::shared_ptr<BulkIntegral> bulk_integral_;                       ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegral> bdr_integral_;                    ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegral> coupling_integral_;               ///< Coupling integral of assembly class
 
 
     template < template<IntDim...> class DimAssembly>

@@ -61,8 +61,8 @@ public:
 
     /// Constructor.
     L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data),
+      output_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->ref_pressure;
@@ -116,7 +116,7 @@ public:
             }
 
         unsigned int i_point=0, oposite_node;
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : this->points(output_integral_, element_patch_idx) )
         {
             q_point_ = fe_values_.point(i_point);
 
@@ -245,6 +245,7 @@ protected:
     arma::vec3 q_point_;                                           ///< Local coords of quadrature point.
     arma::vec3 ref_flux_;                                          ///< Field result.
     double ref_pressure_, ref_divergence_, conductivity_, cross_;  ///< Field results.
+    std::shared_ptr<BulkIntegral> output_integral_;                ///< Integral accessor of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -266,8 +267,8 @@ public:
 
     /// Constructor.
     OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data),
+      output_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }
 
@@ -293,7 +294,7 @@ public:
         ss << fmt::format("{} {} ", cell.elm().input_id(), eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
 
         // velocity at element center
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(output_integral_, element_patch_idx).begin() );
         flux_in_center_ = eq_fields_->field_ele_velocity(p);
         for (unsigned int i = 0; i < 3; i++)
         	ss << flux_in_center_[i] << " ";
@@ -364,6 +365,7 @@ protected:
     EqData *eq_data_;
 
     arma::vec3 flux_in_center_;
+    std::shared_ptr<BulkIntegral> output_integral_;                ///< Integral accessor of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

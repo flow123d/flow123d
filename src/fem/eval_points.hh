@@ -23,17 +23,12 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
-#include "mesh/range_wrapper.hh"
+#include "fem/eval_points_data.hh"
+#include "quadrature/quadrature.hh"
 #include "system/asserts.hh"
 #include "system/armor.hh"
 
 class Side;
-class Quadrature;
-class BulkIntegral;
-class EdgeIntegral;
-class CouplingIntegral;
-class BoundaryIntegral;
-template <int spacedim> class ElementAccessor;
 
 
 /**
@@ -87,23 +82,16 @@ public:
     }
 
     /**
-     * Registers point set from quadrature.
-     * Returns an object referencing to the EvalPoints and list of its points.
+     * Registers point set from quadrature as new subset during initialization of EvalPoints object.
+     *
+     * Returns index of subset.
      */
     template <unsigned int dim>
-    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &);
+    unsigned int add_bulk(const Quadrature &);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
-    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
-
-    /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
-    template <unsigned int dim>
-    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
-
-    /// The same as add_bulk but for edge points on boundary sides.
-    template <unsigned int dim>
-    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
+    unsigned int add_edge(const Quadrature &);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
@@ -114,6 +102,8 @@ public:
         for (uint i=0; i<4; ++i)
             dim_eval_points_[i].clear();
     }
+
+    void create_integrals(std::vector<DimIntegrals> integrals_vec);
 
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
@@ -169,6 +159,8 @@ private:
             local_points_.resize(0);
             n_subsets_ = 0;
         }
+
+
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
@@ -184,11 +176,11 @@ private:
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
-    /// BulkIntegral objects of dimension 0,1,2,3
-    std::array< std::shared_ptr<BulkIntegral>, 4> bulk_integrals_;
+    /// Maps of all BulkIntegrals of dimensions 0,1,2,3
+    IntegralPtrSet<BulkIntegral> bulk_integrals_;
 
-    /// EdgeIntegral objects of dimension 1,2,3
-    std::array< std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;
+    /// Maps of all EdgeIntegrals of dimensions 1,2,3
+    IntegralPtrSet<EdgeIntegral> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;
