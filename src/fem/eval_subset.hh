@@ -27,6 +27,9 @@
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
 #include "fem/dh_cell_accessor.hh"
+#include "fem/patch_fe_values.hh"
+#include "fem/op_function.hh"
+#include "fem/op_accessors_impl.hh"
 
 
 /**
@@ -73,21 +76,21 @@ protected:
     FactoryBase(PatchFEValues<3> *pfev) : patch_fe_values_(pfev)
     {}
 
-//    /// Factory method. Creates operation of given OpType.
-//    template<class OpType>
-//    PatchOp<3> *make_patch_op() {
-//        return patch_fe_values_->get< OpType, dim >();
-//    }
-//
-//    /// Factory method. Same as previous but creates FE operation.
-//    template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
-//    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
-//        std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_.fe_comp(fe_, component_idx);
-//        return FeQArray<ValueType>(patch_fe_values_.template get< OpType<dim, Domain, 3>, dim >(fe_component));
-//    }
+    /// Factory method. Creates operation of given OpType.
+    template<class OpType>
+    PatchOp<3> *make_patch_op() {
+        return patch_fe_values_->get< OpType, dim >();
+    }
+
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
+    FeQArray<ValueType> make_qarray(uint component_idx = 0) {
+        std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_->fe_comp(fe_, component_idx);
+        return FeQArray<ValueType>(patch_fe_values_->template get< OpType<dim, Domain, 3>, dim >(fe_component));
+    }
 
     PatchFEValues<3> *patch_fe_values_;
-//    std::shared_ptr< FiniteElement<dim> > fe_;
+    std::shared_ptr< FiniteElement<dim> > fe_;
 };
 
 
@@ -148,7 +151,9 @@ public:
     /// Constructor of bulk integral
     BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
      : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev), quad_(quad)
-    {}
+    {
+        this->fe_ = pfev->fe_dim<qdim>();
+    }
 
     /// Destructor
     ~BulkIntegralAcc()
@@ -159,16 +164,100 @@ public:
         return quad_;
     }
 
-//    /**
-//     * @brief Register the product of Jacobian determinant and the quadrature
-//     * weight at bulk quadrature points.
-//     *
-//     * @param quad Quadrature.
-//     */
-//    inline FeQ<Scalar> JxW()
-//    {
-//        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<dim, Op::BulkDomain, 3> >());
-//    }
+    /**
+     * @brief Register the product of Jacobian determinant and the quadrature
+     * weight at bulk quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+    inline FeQ<Scalar> JxW()
+    {
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::BulkDomain, 3> >());
+    }
+
+	/// Create bulk accessor of coords entity
+    inline FeQ<Vector> coords()
+    {
+        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<qdim, Op::BulkDomain, 3> >());
+    }
+
+//    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
+//    {}
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant()
+    {
+        return ElQ<Scalar>( this->template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, Op::BulkDomain, 3> >() );
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
+    {
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
+    {
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
+    }
+
+//    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
+//    {}
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
+    {
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient vector shape function
+     * at the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
+    {
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector symmetric gradient
+     * at the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
+    {
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector divergence at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
+    {
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
+    }
 
 protected:
     Quadrature *quad_;
