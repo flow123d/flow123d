@@ -47,8 +47,8 @@ public:
     MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       conc_integral_( this->create_bulk_integral(this->quad_) ),
-      JxW_( this->bulk_values().JxW() ),
-      conc_shape_( this->bulk_values().scalar_shape() ) {
+      JxW_( conc_integral_->JxW() ),
+      conc_shape_( conc_integral_->scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
@@ -686,10 +686,11 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->bulk_values().JxW() ),
-      conc_shape_( this->bulk_values().scalar_shape() ) {
+    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_bulk_integral(this->quad_) ),
+      JxW_( conc_integral_->JxW() ),
+      conc_shape_( conc_integral_->scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
@@ -700,8 +701,8 @@ public:
     ~SourcesAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
@@ -729,7 +730,7 @@ public:
             local_source_balance_vector_.assign(ndofs_, 0);
             local_source_balance_rhs_.assign(ndofs_, 0);
 
-            for (auto p : this->bulk_points(element_patch_idx) )
+            for (auto p : this->points(conc_integral_, element_patch_idx) )
             {
                 source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*JxW_(p);
 
@@ -740,7 +741,7 @@ public:
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
-                for (auto p : this->bulk_points(element_patch_idx) )
+                for (auto p : this->points(conc_integral_, element_patch_idx) )
                 {
                     local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
                 }
@@ -781,6 +782,7 @@ public:
         vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
         vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
 
+        std::shared_ptr<BulkIntegralAcc<dim>> conc_integral_;     ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> conc_shape_;
 
@@ -1010,10 +1012,11 @@ public:
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->bulk_values().JxW() ),
-      init_shape_( this->bulk_values().scalar_shape() ) {
+    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      init_integral_( this->create_bulk_integral(this->quad_) ),
+      JxW_( init_integral_->JxW() ),
+      init_shape_( init_integral_->scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
@@ -1022,8 +1025,8 @@ public:
     ~InitProjectionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
@@ -1049,7 +1052,7 @@ public:
                     local_matrix_[i*ndofs_+j] = 0;
             }
 
-            for (auto p : this->bulk_points(element_patch_idx) )
+            for (auto p : this->points(init_integral_, element_patch_idx) )
             {
                 double rhs_term = eq_fields_->init_condition[sbi](p)*JxW_(p);
 
@@ -1079,6 +1082,7 @@ public:
         vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
         vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
 
+        std::shared_ptr<BulkIntegralAcc<dim>> init_integral_;     ///< Bulk integral of assembly class
         FeQ<Scalar> JxW_;
         FeQArray<Scalar> init_shape_;
 
