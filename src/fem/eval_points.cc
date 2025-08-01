@@ -27,7 +27,8 @@
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)}), max_size_(0)
+: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)}),
+  bulk_integrals_({{ nullptr, nullptr, nullptr, nullptr }}), edge_integrals_({{ nullptr, nullptr, nullptr }}), max_size_(0)
 {}
 
 template <unsigned int dim>
@@ -121,6 +122,34 @@ std::shared_ptr<BulkIntegralAcc<0>> EvalPoints::add_bulk_accessor<0>(Quadrature 
     return std::static_pointer_cast<BulkIntegralAcc<0>>(bulk_integrals_[0]);
 }
 
+template <unsigned int dim>
+std::shared_ptr<EdgeIntegralAcc<dim>> EvalPoints::add_edge_accessor(Quadrature *quad, PatchFEValues<3> *pfev) {
+    ASSERT_EQ(dim, quad->dim()+1);
+
+    if (edge_integrals_[dim-1] == nullptr) {
+        for (unsigned int i=0; i<dim+1; ++i) {  // sides
+            Quadrature high_dim_q = quad->make_from_side<dim>(i);
+            dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
+        }
+        uint i_subset = dim_eval_points_[dim].add_subset();
+        edge_integrals_[dim-1] = std::make_shared<EdgeIntegralAcc<dim>>(shared_from_this(), quad, pfev, i_subset);
+        this->set_max_size();
+    }
+    return std::static_pointer_cast<EdgeIntegralAcc<dim>>(edge_integrals_[dim-1]);
+}
+
+template <unsigned int dim>
+std::shared_ptr<BoundaryIntegralAcc<dim>> EvalPoints::add_boundary_accessor(Quadrature *quad, PatchFEValues<3> *pfev) {
+    ASSERT_EQ(dim, quad->dim()+1);
+
+    std::shared_ptr<BulkIntegralAcc<dim-1>> bulk_integral = this->add_bulk_accessor<dim-1>(quad, pfev);
+    DebugOut() << "boundary bulk subset: " << bulk_integral->get_subset_idx()
+            << "begin: " << subset_begin(dim-1, bulk_integral->get_subset_idx());
+    std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral = this->add_edge_accessor<dim>(quad, pfev);
+    DebugOut() << "boundary edge subset" << edge_integral->get_subset_idx();
+    return std::make_shared<BoundaryIntegralAcc<dim>>(edge_integral, bulk_integral, quad, pfev);
+}
+
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
 {
@@ -167,6 +196,12 @@ template std::shared_ptr<BulkIntegralAcc<0>> EvalPoints::add_bulk_accessor<0>(Qu
 template std::shared_ptr<BulkIntegralAcc<1>> EvalPoints::add_bulk_accessor<1>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<BulkIntegralAcc<2>> EvalPoints::add_bulk_accessor<2>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<BulkIntegralAcc<3>> EvalPoints::add_bulk_accessor<3>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<EdgeIntegralAcc<1>> EvalPoints::add_edge_accessor<1>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<EdgeIntegralAcc<2>> EvalPoints::add_edge_accessor<2>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<EdgeIntegralAcc<3>> EvalPoints::add_edge_accessor<3>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<BoundaryIntegralAcc<1>> EvalPoints::add_boundary_accessor<1>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<BoundaryIntegralAcc<2>> EvalPoints::add_boundary_accessor<2>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<BoundaryIntegralAcc<3>> EvalPoints::add_boundary_accessor<3>(Quadrature *, PatchFEValues<3> *);
 
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);

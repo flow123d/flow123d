@@ -130,8 +130,9 @@ public:
        	    integrals.boundary_[dim-1] = integrals_.boundary_;
        	}
     }
+
     /**
-     * Create and return BulkIntegral of given quadrature.
+     * Create and return BulkIntegral accessor of given quadrature.
      *
      * Method is called from descendants during construction / initialization of assembly object.
      */
@@ -143,6 +144,42 @@ public:
 
         auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad_, &asm_internals_->fe_values_);
         integrals_.bulk_ = result;
+        return result;
+    }
+
+    /**
+     * Create and return EdgeIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<EdgeIntegralAcc<dim>> create_edge_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.edge_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of edge integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad_, &asm_internals_->fe_values_);
+        integrals_.edge_ = result;
+        return result;
+    }
+
+
+    /**
+     * Create and return EdgeIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.boundary_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of boundary integral");
+        }
+
+        std::cout << "create_boundary_integral 1" << std::endl;
+        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad_low_, &asm_internals_->fe_values_);
+        std::cout << "create_boundary_integral 2" << std::endl;
+        integrals_.boundary_ = result;
+        std::cout << "create_boundary_integral 3" << std::endl;
         return result;
     }
 

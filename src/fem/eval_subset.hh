@@ -71,9 +71,15 @@ protected:
 template<unsigned int dim>
 class FactoryBase
 {
+public:
+    /// Getter of quadrature
+    const Quadrature *get_quad() const {
+        return quad_;
+    }
+
 protected:
     // Default constructor
-    FactoryBase(PatchFEValues<3> *pfev) : patch_fe_values_(pfev)
+    FactoryBase(PatchFEValues<3> *pfev, Quadrature *quad) : patch_fe_values_(pfev), quad_(quad)
     {}
 
     /// Factory method. Creates operation of given OpType.
@@ -91,6 +97,7 @@ protected:
 
     PatchFEValues<3> *patch_fe_values_;
     std::shared_ptr< FiniteElement<dim> > fe_;
+    Quadrature *quad_;
 };
 
 
@@ -135,7 +142,7 @@ protected:
 };
 
 /**
- * New Integral accessor class, replace of BulkIntegral
+ * New Integral accessor class, replace of BulkIntegral, will be merged with BulkIntegral
  *
  * IN DEVELOPMENT
  */
@@ -150,7 +157,7 @@ public:
 
     /// Constructor of bulk integral
     BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
-     : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev), quad_(quad)
+     : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, quad)
     {
         this->fe_ = pfev->fe_dim<qdim>();
     }
@@ -158,11 +165,6 @@ public:
     /// Destructor
     ~BulkIntegralAcc()
     {}
-
-    /// Getter of quadrature
-    const Quadrature *get_quad() const {
-        return quad_;
-    }
 
     /**
      * @brief Register the product of Jacobian determinant and the quadrature
@@ -258,9 +260,6 @@ public:
     {
         return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
     }
-
-protected:
-    Quadrature *quad_;
 };
 
 /**
@@ -324,6 +323,112 @@ protected:
     friend class CouplingIntegral;
     friend class BoundaryIntegral;
 };
+
+/**
+ * New Integral accessor class, replace of EdgeIntegral, will be merged with EdgeIntegral
+ *
+ * IN DEVELOPMENT
+ */
+template<unsigned int qdim>
+class EdgeIntegralAcc : public EdgeIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
+public:
+    typedef EdgePoint PointType;
+    typedef DHCellSide MeshItem;
+
+    /// Default constructor
+    EdgeIntegralAcc() : EdgeIntegral() {}
+
+    /// Constructor of bulk integral
+    EdgeIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
+     : EdgeIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, quad)
+    {
+        this->fe_ = pfev->fe_dim<qdim>();
+    }
+
+    /// Destructor
+    ~EdgeIntegralAcc()
+    {}
+
+    /// Same as BulkValues::JxW but register at side quadrature points.
+    inline FeQ<Scalar> JxW()
+    {
+        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
+    }
+
+    /**
+     * @brief Register the normal vector to a side at side quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+	inline ElQ<Vector> normal_vector()
+	{
+        return ElQ<Vector>(this->template make_patch_op< Op::NormalVec<qdim, 3> >());
+	}
+
+	/// Create side accessor of coords entity
+    inline FeQ<Vector> coords()
+    {
+        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
+    }
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant()
+    {
+        return ElQ<Scalar>(this->template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
+    }
+
+    /// Same as BulkValues::scalar_shape but register at side quadrature points.
+    inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
+    {
+        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+    }
+
+    /// Same as BulkValues::vector_shape but register at side quadrature points.
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
+    {
+        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+    }
+
+    /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
+    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
+    {
+        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient vector shape function
+     * at the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
+    {
+        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector symmetric gradient
+     * at the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
+    {
+        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector divergence at
+     * the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
+    {
+        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+    }
+};
+
 
 /**
  * Integral class of neighbour points, allows assemblation of element - side fluxes.
@@ -419,13 +524,126 @@ public:
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
-private:
+protected:
     /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
     std::shared_ptr<EdgeIntegral> edge_integral_;
     /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
     std::shared_ptr<BulkIntegral> bulk_integral_;
 
     friend class BoundaryPoint;
+};
+
+
+template<unsigned int qdim>
+class BoundaryIntegralAcc : public BoundaryIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<qdim>> {
+public:
+    typedef BoundaryPoint PointType;
+    typedef DHCellSide MeshItem;
+
+    /// Default constructor
+    BoundaryIntegralAcc() : BoundaryIntegral() {}
+
+    /// Constructor of bulk integral
+    BoundaryIntegralAcc(std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral, std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral,
+            Quadrature *quad, PatchFEValues<3> *pfev)
+    : BoundaryIntegral(edge_integral, bulk_integral),
+	  FactoryBase<qdim>(pfev, quad),
+	  edge_integral_acc_(edge_integral), bulk_integral_acc_(bulk_integral)
+    {
+        this->fe_ = pfev->fe_dim<qdim>();
+    }
+
+    /// Destructor
+    ~BoundaryIntegralAcc()
+    {
+    	edge_integral_acc_.reset();
+    	bulk_integral_acc_.reset();
+    }
+
+    /// Same as BulkValues::JxW but register at side quadrature points.
+    inline FeQ<Scalar> JxW()
+    {
+        return edge_integral_acc_->JxW();
+    }
+
+    /**
+     * @brief Register the normal vector to a side at side quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+	inline ElQ<Vector> normal_vector()
+	{
+        return edge_integral_acc_->normal_vector();
+	}
+
+	/// Create side accessor of coords entity
+    inline FeQ<Vector> coords()
+    {
+        return edge_integral_acc_->coords();
+    }
+
+    /// Create bulk accessor of jac determinant entity
+    inline ElQ<Scalar> determinant()
+    {
+        return edge_integral_acc_->determinant();
+    }
+
+    /// Same as BulkValues::scalar_shape but register at side quadrature points.
+    inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
+    {
+        return edge_integral_acc_->scalar_shape(component_idx);
+    }
+
+    /// Same as BulkValues::vector_shape but register at side quadrature points.
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
+    {
+        return edge_integral_acc_->vector_shape(component_idx);
+    }
+
+    /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
+    inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
+    {
+        return edge_integral_acc_->grad_scalar_shape(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th gradient vector shape function
+     * at the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
+    {
+        return edge_integral_acc_->grad_vector_shape(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector symmetric gradient
+     * at the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
+    {
+        return edge_integral_acc_->vector_sym_grad(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th vector divergence at
+     * the @p p side quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
+    {
+        return edge_integral_acc_->vector_divergence(component_idx);
+    }
+
+private:
+    /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
+    std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral_acc_;
+    /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
+    std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral_acc_;
 };
 
 

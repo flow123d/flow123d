@@ -805,12 +805,13 @@ public:
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
-      JxW_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      conc_shape_( this->side_values().scalar_shape() ),
-	  conc_grad_( this->side_values().grad_scalar_shape() ) {
+    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_integral_( this->create_boundary_integral(this->quad_low_) ),
+      JxW_( conc_integral_->JxW() ),
+      normal_( conc_integral_->normal_vector() ),
+      conc_shape_( conc_integral_->scalar_shape() ),
+      conc_grad_( conc_integral_->grad_scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -825,8 +826,8 @@ public:
     ~BdrConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
@@ -851,15 +852,15 @@ public:
             local_flux_balance_vector_.assign(ndofs_, 0);
             local_flux_balance_rhs_ = 0;
 
-            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), JxW_, normal_);
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_integral_, cell_side), JxW_, normal_);
             double transport_flux = side_flux/cell_side.measure();
 
-            auto p_side = *( this->boundary_points(cell_side)).begin();
+            auto p_side = *( this->points(conc_integral_, cell_side)).begin();
             auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
             {
-                for (auto p : this->boundary_points(cell_side) )
+                for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
@@ -871,16 +872,16 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
-                double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), JxW_, normal_);
+                double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_integral_, cell_side), JxW_, normal_);
                 double transport_flux = side_flux/cell_side.measure();
 
-                auto p = *( this->boundary_points(cell_side).begin() );
+                auto p = *( this->points(conc_integral_, cell_side).begin() );
                 double gamma_l = DG_penalty_boundary(cell_side.side(), 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), normal_(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_integral_, cell_side), normal_(p)),
                                               transport_flux, 
                                               eq_fields_->dg_penalty[sbi](p_bdr));
 
-                for (auto p : this->boundary_points(cell_side) )
+                for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = gamma_l*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
@@ -889,7 +890,7 @@ public:
                         local_rhs_[i] += bc_term*conc_shape_.shape(i)(p)
                                 + arma::dot(bc_grad,conc_grad_.shape(i)(p));
                 }
-                for (auto p : this->boundary_points(cell_side) )
+                for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
@@ -904,7 +905,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_total_flux)
             {
-            	for (auto p : this->boundary_points(cell_side) )
+            	for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
@@ -915,7 +916,7 @@ public:
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    for (auto p : this->boundary_points(cell_side) ) {
+                    for (auto p : this->points(conc_integral_, cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p) * eq_fields_->bc_robin_sigma[sbi](p_bdr) *
                                 JxW_(p) * conc_shape_.shape(i)(p);
@@ -925,7 +926,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
             {
-            	for (auto p : this->boundary_points(cell_side) )
+            	for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
@@ -936,7 +937,7 @@ public:
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    for (auto p : this->boundary_points(cell_side) ) {
+                    for (auto p : this->points(conc_integral_, cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p)) +
                         		eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p)*conc_shape_.shape(i)(p);
@@ -946,7 +947,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
             {
-                for (auto p : this->boundary_points(cell_side) )
+                for (auto p : this->points(conc_integral_, cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p)*conc_shape_.shape(i)(p);
@@ -988,6 +989,7 @@ public:
         vector<PetscScalar> local_flux_balance_vector_;           ///< Auxiliary vector for set_boundary_conditions method.
         PetscScalar local_flux_balance_rhs_;                      ///< Auxiliary variable for set_boundary_conditions method.
 
+        std::shared_ptr<BoundaryIntegralAcc<dim>> conc_integral_; ///< Boundary integral of assembly class
         FeQ<Scalar> JxW_;
         ElQ<Vector> normal_;
         FeQArray<Scalar> conc_shape_;
