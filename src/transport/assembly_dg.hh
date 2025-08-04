@@ -235,8 +235,12 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
+      conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
+      conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      conc_join_integral_( this->create_coupling_integral(this->quad_low_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -264,8 +268,8 @@ public:
     }
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
@@ -308,7 +312,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                     local_matrix_[i*ndofs_+j] = 0;
 
-            for (auto p : this->bulk_points(element_patch_idx) )
+            for (auto p : this->points(conc_bulk_integral_, element_patch_idx) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -343,20 +347,20 @@ public:
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
-            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->boundary_points(cell_side), JxW_side_, normal_);
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_bdr_integral_, cell_side), JxW_side_, normal_);
             double transport_flux = side_flux/side.measure();
 
             // On Neumann boundaries we have only term from integrating by parts the advective term,
             // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-            auto p_side = *( this->boundary_points(cell_side).begin() );
+            auto p_side = *( this->points(conc_bdr_integral_, cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                auto p = *( this->boundary_points(cell_side).begin() );
+                auto p = *( this->points(conc_bdr_integral_, cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->boundary_points(cell_side), normal_(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_bdr_integral_, cell_side), normal_(p)),
                                               transport_flux,
                                               eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
@@ -364,7 +368,7 @@ public:
 
             // fluxes and penalty
             k=0;
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(conc_bdr_integral_, cell_side) )
             {
                 double flux_times_JxW;
                 if (bc_type == AdvectionDiffusionModel::abc_total_flux)
@@ -421,7 +425,7 @@ public:
             ++sid;
         }
         auto zero_edge_side = *edge_side_range.begin();
-        auto p = *( this->edge_points(zero_edge_side).begin() );
+        auto p = *( this->points(conc_edge_integral_, zero_edge_side).begin() );
         arma::vec3 normal_vector = normal_(p);
 
         // fluxes and penalty
@@ -432,7 +436,7 @@ public:
             sid=0;
             for( DHCellSide edge_side : edge_side_range )
             {
-                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], this->edge_points(edge_side), JxW_side_, normal_) / edge_side.measure();
+                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_edge_integral_, edge_side), JxW_side_, normal_) / edge_side.measure();
                 if (fluxes[sid] > 0)
                     pflux += fluxes[sid];
                 else
@@ -445,7 +449,7 @@ public:
             for (DHCellSide edge_side : edge_side_range)
             {
                 k=0;
-                for (auto p : this->edge_points(edge_side) )
+                for (auto p : this->points(conc_edge_integral_, edge_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                         averages[s1][k*ndofs_+i] = conc_shape_side_.shape(i)(p)*0.5;
@@ -466,7 +470,7 @@ public:
                     if (s2<=s1) continue;
                     ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
-                    auto p = *( this->edge_points(edge_side1).begin() );
+                    auto p = *( this->points(conc_edge_integral_, edge_side1).begin() );
                     arma::vec3 nv = normal_(p);
 
                     // set up the parameters for DG method
@@ -482,7 +486,7 @@ public:
 
                     delta[0] = 0;
                     delta[1] = 0;
-                    for (auto p1 : this->edge_points(edge_side1) )
+                    for (auto p1 : this->points(conc_edge_integral_, edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
                         delta[0] += dot(eq_fields_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
@@ -514,7 +518,7 @@ public:
 
                     // precompute jumps and weighted averages of shape functions over the pair of sides (s1,s2)
                     k=0;
-                    for (auto p1 : this->edge_points(edge_side1) )
+                    for (auto p1 : this->points(conc_edge_integral_, edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<ndofs_; i++)
@@ -539,7 +543,7 @@ public:
                                     local_matrix_[i*ndofs_+j] = 0;
 
                             k=0;
-                            for (auto p1 : this->edge_points(zero_edge_side) )
+                            for (auto p1 : this->points(conc_edge_integral_, zero_edge_side) )
                             //for (k=0; k<this->quad_low_->size(); ++k)
                             {
                                 for (unsigned int i=0; i<ndofs_; i++)
@@ -606,7 +610,7 @@ public:
                     local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
             // set transmission conditions
-            for (auto p_high : this->coupling_points(neighb_side) )
+            for (auto p_high : this->points(conc_join_integral_, neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
                 // The communication flux has two parts:
@@ -657,6 +661,11 @@ private:
     vector<double*> averages;                                 ///< Auxiliary storage for averages of shape functions.
     vector<double*> waverages;                                ///< Auxiliary storage for weighted averages of shape functions.
     vector<double*> jumps;                                    ///< Auxiliary storage for jumps of shape functions.
+
+    std::shared_ptr<BulkIntegralAcc<dim>> conc_bulk_integral_;      ///< Bulk integral of assembly class
+    std::shared_ptr<EdgeIntegralAcc<dim>> conc_edge_integral_;      ///< Edge integral of assembly class
+    std::shared_ptr<BoundaryIntegralAcc<dim>> conc_bdr_integral_;   ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegralAcc<dim>> conc_join_integral_;  ///< Coupling integral of assembly class
 
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;

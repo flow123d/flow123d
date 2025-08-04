@@ -79,6 +79,10 @@ public:
 
 protected:
     // Default constructor
+    FactoryBase() : patch_fe_values_(nullptr), quad_(nullptr)
+    {}
+
+    // Constructor
     FactoryBase(PatchFEValues<3> *pfev, Quadrature *quad) : patch_fe_values_(pfev), quad_(quad)
     {}
 
@@ -480,6 +484,67 @@ private:
 
     friend class CouplingPoint;
 };
+
+template<unsigned int qdim>
+class CouplingIntegralAcc : public CouplingIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<1>> {
+public:
+    typedef CouplingPoint PointType;
+    typedef DHCellSide MeshItem;
+
+    /// Default constructor
+    CouplingIntegralAcc() : CouplingIntegral() {}
+
+    /// Constructor of bulk integral
+    CouplingIntegralAcc(std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral, std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral,
+            Quadrature *quad, PatchFEValues<3> *pfev)
+    : CouplingIntegral(edge_integral, bulk_integral),
+	  FactoryBase<qdim>(pfev, quad),
+	  edge_integral_acc_(edge_integral), bulk_integral_acc_(bulk_integral)
+    {
+        this->fe_ = pfev->fe_dim<qdim>();
+    }
+
+    /// Destructor
+    ~CouplingIntegralAcc()
+    {
+    	edge_integral_acc_.reset();
+    	bulk_integral_acc_.reset();
+    }
+
+    // Declarations of operations
+
+private:
+    /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
+    std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral_acc_;
+    /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
+    std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral_acc_;
+};
+
+/// Template specialization of previous class
+template<>
+class CouplingIntegralAcc<1> : public CouplingIntegral, public FactoryBase<1>, public std::enable_shared_from_this<CouplingIntegralAcc<1>> {
+public:
+    typedef CouplingPoint PointType;
+    typedef DHCellSide MeshItem;
+
+    /// Default constructor
+    CouplingIntegralAcc() : CouplingIntegral() {}
+
+    /// Constructor of bulk integral
+    CouplingIntegralAcc(Quadrature *quad, PatchFEValues<3> *pfev)
+    : CouplingIntegral(),
+	  FactoryBase<1>(pfev, quad)
+    {
+        this->fe_ = pfev->fe_dim<1>();
+    }
+
+    /// Destructor
+    ~CouplingIntegralAcc()
+    {}
+
+    // Declarations of operations (empty implementation)
+};
+
 
 /**
  * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.

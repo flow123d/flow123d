@@ -35,6 +35,7 @@ class CouplingIntegral;
 class BoundaryIntegral;
 template <unsigned int dim> class BulkIntegralAcc;
 template <unsigned int dim> class EdgeIntegralAcc;
+template <unsigned int dim> class CouplingIntegralAcc;
 template <unsigned int dim> class BoundaryIntegralAcc;
 template <int spacedim> class ElementAccessor;
 template <unsigned int spacedim> class PatchFEValues;
@@ -112,6 +113,10 @@ public:
     /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
     template <unsigned int dim>
     std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
+
+    /// It will replace previous method, will be changed during further development.
+    template <unsigned int dim>
+    std::shared_ptr<CouplingIntegralAcc<dim>> add_coupling_accessor(Quadrature *, PatchFEValues<3> *);
 
     /// The same as add_bulk but for edge points on boundary sides.
     template <unsigned int dim>

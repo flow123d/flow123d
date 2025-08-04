@@ -142,7 +142,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of bulk integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad_, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad, &asm_internals_->fe_values_);
         integrals_.bulk_ = result;
         return result;
     }
@@ -158,14 +158,31 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of edge integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad_, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad, &asm_internals_->fe_values_);
         integrals_.edge_ = result;
         return result;
     }
 
 
     /**
-     * Create and return EdgeIntegral accessor of given quadrature.
+     * Create and return CouplingIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<CouplingIntegralAcc<dim>> create_coupling_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.coupling_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of coupling integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_coupling_accessor<dim>(quad, &asm_internals_->fe_values_);
+        integrals_.coupling_ = result;
+        return result;
+    }
+
+
+    /**
+     * Create and return BoundaryIntegral accessor of given quadrature.
      *
      * Method is called from descendants during construction / initialization of assembly object.
      */
@@ -175,11 +192,8 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of boundary integral");
         }
 
-        std::cout << "create_boundary_integral 1" << std::endl;
-        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad_low_, &asm_internals_->fe_values_);
-        std::cout << "create_boundary_integral 2" << std::endl;
+        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad, &asm_internals_->fe_values_);
         integrals_.boundary_ = result;
-        std::cout << "create_boundary_integral 3" << std::endl;
         return result;
     }
 

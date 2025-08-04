@@ -139,6 +139,23 @@ std::shared_ptr<EdgeIntegralAcc<dim>> EvalPoints::add_edge_accessor(Quadrature *
 }
 
 template <unsigned int dim>
+std::shared_ptr<CouplingIntegralAcc<dim>> EvalPoints::add_coupling_accessor(Quadrature *quad, PatchFEValues<3> *pfev) {
+    ASSERT_EQ(dim, quad->dim()+1);
+
+    std::shared_ptr<BulkIntegralAcc<dim-1>> bulk_integral = this->add_bulk_accessor<dim-1>(quad, pfev);
+    DebugOut() << "coupling bulk subset" << bulk_integral->get_subset_idx();
+    std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral = this->add_edge_accessor<dim>(quad, pfev);
+    DebugOut() << "coupling edge subset" << edge_integral->get_subset_idx();
+    return std::make_shared<CouplingIntegralAcc<dim>>(edge_integral, bulk_integral, quad, pfev);
+}
+
+template <>
+std::shared_ptr<CouplingIntegralAcc<1>> EvalPoints::add_coupling_accessor<1>(Quadrature *quad, PatchFEValues<3> *pfev) {
+    ASSERT_EQ(0, quad->dim());
+    return std::make_shared<CouplingIntegralAcc<1>>(quad, pfev);
+}
+
+template <unsigned int dim>
 std::shared_ptr<BoundaryIntegralAcc<dim>> EvalPoints::add_boundary_accessor(Quadrature *quad, PatchFEValues<3> *pfev) {
     ASSERT_EQ(dim, quad->dim()+1);
 
@@ -199,6 +216,9 @@ template std::shared_ptr<BulkIntegralAcc<3>> EvalPoints::add_bulk_accessor<3>(Qu
 template std::shared_ptr<EdgeIntegralAcc<1>> EvalPoints::add_edge_accessor<1>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<EdgeIntegralAcc<2>> EvalPoints::add_edge_accessor<2>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<EdgeIntegralAcc<3>> EvalPoints::add_edge_accessor<3>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<CouplingIntegralAcc<1>> EvalPoints::add_coupling_accessor<1>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<CouplingIntegralAcc<2>> EvalPoints::add_coupling_accessor<2>(Quadrature *, PatchFEValues<3> *);
+template std::shared_ptr<CouplingIntegralAcc<3>> EvalPoints::add_coupling_accessor<3>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<BoundaryIntegralAcc<1>> EvalPoints::add_boundary_accessor<1>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<BoundaryIntegralAcc<2>> EvalPoints::add_boundary_accessor<2>(Quadrature *, PatchFEValues<3> *);
 template std::shared_ptr<BoundaryIntegralAcc<3>> EvalPoints::add_boundary_accessor<3>(Quadrature *, PatchFEValues<3> *);
