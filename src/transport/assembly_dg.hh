@@ -241,14 +241,20 @@ public:
       conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
       conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       conc_join_integral_( this->create_coupling_integral(this->quad_low_) ),
-      JxW_( this->bulk_values().JxW() ),
-      JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      conc_shape_( this->bulk_values().scalar_shape() ),
-      conc_shape_side_( this->side_values().scalar_shape() ),
-      conc_grad_( this->bulk_values().grad_scalar_shape() ),
-      conc_grad_sidw_( this->side_values().grad_scalar_shape() ),
-      conc_join_shape_( FeQJoin<Scalar>( this->join_values().scalar_join_shape() ) ) {
+      JxW_( conc_bulk_integral_->JxW() ),
+      JxW_side_( conc_edge_integral_->JxW() ),
+      JxW_bdr_( conc_bdr_integral_->JxW() ),
+      JxW_join_( conc_join_integral_->JxW() ),
+      normal_( conc_edge_integral_->normal_vector() ),
+      normal_bdr_( conc_bdr_integral_->normal_vector() ),
+      normal_join_( conc_join_integral_->normal_vector() ),
+      conc_shape_( conc_bulk_integral_->scalar_shape() ),
+      conc_shape_side_( conc_edge_integral_->scalar_shape() ),
+      conc_shape_bdr_( conc_bdr_integral_->scalar_shape() ),
+      conc_grad_( conc_bulk_integral_->grad_scalar_shape() ),
+      conc_grad_sidw_( conc_edge_integral_->grad_scalar_shape() ),
+      conc_grad_bdr_( conc_bdr_integral_->grad_scalar_shape() ),
+      conc_join_shape_( FeQJoin<Scalar>( conc_join_integral_->scalar_join_shape() ) ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
@@ -347,7 +353,7 @@ public:
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
-            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_bdr_integral_, cell_side), JxW_side_, normal_);
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_bdr_integral_, cell_side), JxW_bdr_, normal_bdr_);
             double transport_flux = side_flux/side.measure();
 
             // On Neumann boundaries we have only term from integrating by parts the advective term,
@@ -360,7 +366,7 @@ public:
                 // set up the parameters for DG method
                 auto p = *( this->points(conc_bdr_integral_, cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_bdr_integral_, cell_side), normal_(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_bdr_integral_, cell_side), normal_bdr_(p)),
                                               transport_flux,
                                               eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
@@ -375,30 +381,30 @@ public:
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*JxW_side_(p);
+                    flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*JxW_bdr_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
-                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_side_(p);
+                    flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_bdr_(p);
                 }
                 else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
-                    flux_times_JxW = transport_flux*JxW_side_(p);
+                    flux_times_JxW = transport_flux*JxW_bdr_(p);
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
                     for (unsigned int j=0; j<ndofs_; j++)
                     {
                         // flux due to advection and penalty
-                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_side_.shape(i)(p)*conc_shape_side_.shape(j)(p);
+                        local_matrix_[i*ndofs_+j] += flux_times_JxW*conc_shape_bdr_.shape(i)(p)*conc_shape_bdr_.shape(j)(p);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
                         if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_sidw_.shape(j)(p),normal_(p))*conc_shape_side_.shape(i)(p)
-                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_sidw_.shape(i)(p),normal_(p))*conc_shape_side_.shape(j)(p)*eq_data_->dg_variant
-                                    )*JxW_side_(p);
+                            local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_bdr_.shape(j)(p),normal_bdr_(p))*conc_shape_bdr_.shape(i)(p)
+                                    + arma::dot(eq_fields_->diffusion_coef[sbi](p)*conc_grad_bdr_.shape(i)(p),normal_bdr_(p))*conc_shape_bdr_.shape(j)(p)*eq_data_->dg_variant
+                                    )*JxW_bdr_(p);
                     }
                 }
                 k++;
@@ -620,10 +626,10 @@ public:
                 // The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
                 // than b and A in the manual.
                 // In calculation of sigma there appears one more csection_lower in the denominator.
-                double sigma = eq_fields_->fracture_sigma[sbi](p_low)*arma::dot(eq_fields_->diffusion_coef[sbi](p_low)*normal_(p_high),normal_(p_high))*
+                double sigma = eq_fields_->fracture_sigma[sbi](p_low)*arma::dot(eq_fields_->diffusion_coef[sbi](p_low)*normal_join_(p_high),normal_join_(p_high))*
                         2*eq_fields_->cross_section(p_high)*eq_fields_->cross_section(p_high)/(eq_fields_->cross_section(p_low)*eq_fields_->cross_section(p_low));
 
-                double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_(p_high));
+                double transport_flux = arma::dot(eq_fields_->advection_coef[sbi](p_high), normal_join_(p_high));
 
                 for (uint i=0; i<conc_join_shape_.n_dofs_both(); ++i) {
                     uint is_high_i = conc_join_shape_.is_high_dim(i);
@@ -633,7 +639,7 @@ public:
                         local_matrix_[i * (n_dofs[0]+n_dofs[1]) + j] += (
                                 sigma * diff_shape_i * (conc_join_shape_.shape(j)(p_high) - conc_join_shape_.shape(j)(p_low))
                                 + diff_shape_i * ( max(0.,transport_flux) * conc_join_shape_.shape(j)(p_high) + min(0.,transport_flux) * conc_join_shape_.shape(j)(p_low))
-						    )*JxW_side_(p_high) + LocalSystem::almost_zero;
+						    )*JxW_join_(p_high) + LocalSystem::almost_zero;
                     }
                 }
             }
@@ -669,11 +675,17 @@ private:
 
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_bdr_;
+    FeQ<Scalar> JxW_join_;
     ElQ<Vector> normal_;
+    ElQ<Vector> normal_bdr_;
+    ElQ<Vector> normal_join_;
     FeQArray<Scalar> conc_shape_;
     FeQArray<Scalar> conc_shape_side_;
+    FeQArray<Scalar> conc_shape_bdr_;
     FeQArray<Vector> conc_grad_;
     FeQArray<Vector> conc_grad_sidw_;
+    FeQArray<Vector> conc_grad_bdr_;
     FeQJoin<Scalar> conc_join_shape_;
 
     template < template<IntDim...> class DimAssembly>

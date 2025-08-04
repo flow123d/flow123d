@@ -502,6 +502,7 @@ public:
 	  edge_integral_acc_(edge_integral), bulk_integral_acc_(bulk_integral)
     {
         this->fe_ = pfev->fe_dim<qdim>();
+        fe_low_ = pfev->fe_dim<qdim-1>();
     }
 
     /// Destructor
@@ -511,13 +512,62 @@ public:
     	bulk_integral_acc_.reset();
     }
 
-    // Declarations of operations
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, class, unsigned int> class OpType>
+    FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
+        // element of lower dim (bulk points)
+        auto fe_component_low = this->patch_fe_values_->fe_comp(fe_low_, component_idx);
+        auto *low_dim_op = this->patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
+        auto *low_dim_zero_op = this->patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
+
+    	// element of higher dim (side points)
+        auto fe_component_high = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
+        auto *high_dim_op = this->patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
+        auto *high_dim_zero_op = this->patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
+
+        ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
+        return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
+    }
+
+    /// Same as BulkValues::JxW but register at side quadrature points.
+    inline FeQ<Scalar> JxW()
+    {
+        return edge_integral_acc_->JxW();
+    }
+
+    /**
+     * @brief Register the normal vector to a side at side quadrature points.
+     *
+     * @param quad Quadrature.
+     */
+	inline ElQ<Vector> normal_vector()
+	{
+        return edge_integral_acc_->normal_vector();
+	}
+
+    inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
+    {
+        return this->template make_qjoin<Scalar, Op::ScalarShape>(component_idx);
+    }
+
+    inline FeQJoin<Vector> vector_join_shape(uint component_idx = 0)
+    {
+        return this->template make_qjoin<Vector, Op::DispatchVectorShape>(component_idx);
+    }
+
+    inline FeQJoin<Tensor> gradient_vector_join_shape(uint component_idx = 0)
+    {
+        return this->template make_qjoin<Tensor, Op::DispatchGradVectorShape>(component_idx);
+    }
+
 
 private:
     /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
     std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral_acc_;
     /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
     std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral_acc_;
+    /// Holds FiniteEementt object of lower dimension
+    std::shared_ptr< FiniteElement<qdim-1> > fe_low_;
 };
 
 /// Template specialization of previous class
@@ -533,7 +583,7 @@ public:
     /// Constructor of bulk integral
     CouplingIntegralAcc(Quadrature *quad, PatchFEValues<3> *pfev)
     : CouplingIntegral(),
-	  FactoryBase<1>(pfev, quad)
+      FactoryBase<1>(pfev, quad)
     {
         this->fe_ = pfev->fe_dim<1>();
     }
@@ -542,7 +592,31 @@ public:
     ~CouplingIntegralAcc()
     {}
 
-    // Declarations of operations (empty implementation)
+    /// Define empty operations
+    inline FeQ<Scalar> JxW()
+    {
+        return FeQ<Scalar>();
+    }
+
+    inline ElQ<Vector> normal_vector()
+    {
+        return ElQ<Vector>();
+    }
+
+    inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return FeQJoin<Scalar>();
+    }
+
+    inline FeQJoin<Vector> vector_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return FeQJoin<Vector>();
+    }
+
+    inline FeQJoin<Tensor> gradient_vector_join_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return FeQJoin<Tensor>();
+    }
 };
 
 
