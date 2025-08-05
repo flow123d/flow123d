@@ -545,6 +545,11 @@ public:
         return edge_integral_acc_->normal_vector();
 	}
 
+    inline FeQArray<Vector> vector_shape(uint component_idx = 0)
+    {
+        return edge_integral_acc_->vector_shape(component_idx);
+    }
+
     inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
     {
         return this->template make_qjoin<Scalar, Op::ScalarShape>(component_idx);
@@ -601,6 +606,11 @@ public:
     inline ElQ<Vector> normal_vector()
     {
         return ElQ<Vector>();
+    }
+
+    inline FeQArray<Vector> vector_shape(FMT_UNUSED uint component_idx = 0)
+    {
+        return FeQArray<Vector>();
     }
 
     inline FeQJoin<Scalar> scalar_join_shape(FMT_UNUSED uint component_idx = 0)

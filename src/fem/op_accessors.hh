@@ -81,8 +81,9 @@ private:
 template <class ValueType>
 class FeQArray {
 public:
-    /// Forbidden default constructor
-    FeQArray() = delete;
+    /// Default constructor
+    FeQArray()
+    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), n_dofs_(1) {}
 
     // Class similar to current FeView
     FeQArray(PatchOp<3> *patch_op)

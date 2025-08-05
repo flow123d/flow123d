@@ -48,15 +48,16 @@ public:
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
-      JxW_( this->bulk_values().JxW() ),
-      JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ),
-      grad_deform_( this->bulk_values().grad_vector_shape() ),
-      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
-      div_deform_( this->bulk_values().vector_divergence() ),
-      deform_join_( this->join_values().vector_join_shape() ),
-      deform_join_grad_( this->join_values().gradient_vector_join_shape() ) {
+      JxW_( bulk_integral_->JxW() ),
+      JxW_side_( bdr_integral_->JxW() ),
+      JxW_join_( coupling_integral_->JxW() ),
+      normal_( bdr_integral_->normal_vector() ),
+      normal_join_( coupling_integral_->normal_vector() ),
+      deform_side_( bdr_integral_->vector_shape() ),
+      grad_deform_( bulk_integral_->grad_vector_shape() ),
+      sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
+      deform_join_( coupling_integral_->vector_join_shape() ),
+      deform_join_grad_( coupling_integral_->gradient_vector_join_shape() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -189,7 +190,7 @@ public:
         for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
+            arma::vec3 nv = normal_join_(p_high);
 
             for (uint i=0; i<deform_join_.n_dofs_both(); ++i) {
                 uint is_high_i = deform_join_.is_high_dim(i);
@@ -216,7 +217,7 @@ public:
                                      // TODO: Fracture_sigma should be possibly removed and replaced by anisotropic elasticity.
                                      + (1-eq_fields_->fracture_sigma(p_low))*eq_fields_->cross_section(p_low) / n_neighs
                                        * arma::dot(0.5*(grad_deform_i+grad_deform_i.t()), eq_fields_->stress_tensor(p_low,0.5*(grad_deform_j+grad_deform_j.t())))
-                            )*JxW_side_(p_high);
+                            )*JxW_join_(p_high);
                 }
             }
 
@@ -257,11 +258,12 @@ private:
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_join_;
     ElQ<Vector> normal_;
+    ElQ<Vector> normal_join_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
-    FeQArray<Scalar> div_deform_;
     FeQJoin<Vector> deform_join_;
     FeQJoin<Tensor> deform_join_grad_;
 
@@ -286,14 +288,16 @@ public:
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
-      JxW_( this->bulk_values().JxW() ),
-      JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      deform_( this->bulk_values().vector_shape() ),
-      deform_side_( this->side_values().vector_shape() ),
-	  grad_deform_( this->bulk_values().grad_vector_shape() ),
-      div_deform_( this->bulk_values().vector_divergence() ),
-      deform_join_( this->join_values().vector_join_shape() ) {
+      JxW_( bulk_integral_->JxW() ),
+      JxW_side_( bdr_integral_->JxW() ),
+      JxW_join_( coupling_integral_->JxW() ),
+      normal_( bdr_integral_->normal_vector() ),
+      normal_join_( coupling_integral_->normal_vector() ),
+      deform_( bulk_integral_->vector_shape() ),
+      deform_side_( bdr_integral_->vector_shape() ),
+	  grad_deform_( bulk_integral_->grad_vector_shape() ),
+      div_deform_( bulk_integral_->vector_divergence() ),
+      deform_join_( coupling_integral_->vector_join_shape() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
@@ -479,7 +483,7 @@ public:
         for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
+            arma::vec3 nv = normal_join_(p_high);
 
             for (uint i=0; i<deform_join_.n_dofs_both(); ++i) {
                 uint is_high_i = deform_join_.is_high_dim(i);
@@ -489,7 +493,7 @@ public:
                 arma::vec3 vf = deform_join_.shape(i)(p_low);
 
                 local_rhs_[i] -= eq_fields_->fracture_sigma(p_low) * eq_fields_->cross_section(p_high) *
-                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_side_(p_high);
+                        arma::dot(vf-vi, eq_fields_->potential_load(p_high) * nv) * JxW_join_(p_high);
             }
         }
 
@@ -521,7 +525,9 @@ private:
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_join_;
     ElQ<Vector> normal_;
+    ElQ<Vector> normal_join_;
     FeQArray<Vector> deform_;
     FeQArray<Vector> deform_side_;
     FeQArray<Tensor> grad_deform_;
@@ -548,11 +554,11 @@ public:
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
-      normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ),
-	  grad_deform_( this->bulk_values().grad_vector_shape() ),
-      sym_grad_deform_( this->bulk_values().vector_sym_grad() ),
-      div_deform_( this->bulk_values().vector_divergence() ) {
+      normal_join_( coupling_integral_->normal_vector() ),
+      deform_join_( coupling_integral_->vector_shape() ),
+      grad_deform_( bulk_integral_->grad_vector_shape() ),
+      sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
+      div_deform_( bulk_integral_->vector_divergence() ) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
@@ -638,8 +644,8 @@ public:
 
         for (unsigned int i=0; i<n_dofs_; i++)
         {
-            normal_displacement_ -= arma::dot(deform_side_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high));
-            arma::mat33 grad = -arma::kron(deform_side_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_(p_high).t()) / eq_fields_->cross_section(p_low);
+            normal_displacement_ -= arma::dot(deform_join_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_join_(p_high));
+            arma::mat33 grad = -arma::kron(deform_join_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_join_(p_high).t()) / eq_fields_->cross_section(p_low);
             normal_stress_ += eq_fields_->stress_tensor(p_low, 0.5*(grad+grad.t()));
         }
 
@@ -674,8 +680,8 @@ private:
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
 
     /// Following data members represent Element quantities and FE quantities
-    ElQ<Vector> normal_;
-    FeQArray<Vector> deform_side_;
+    ElQ<Vector> normal_join_;
+    FeQArray<Vector> deform_join_;
     FeQArray<Tensor> grad_deform_;
     FeQArray<Tensor> sym_grad_deform_;
     FeQArray<Scalar> div_deform_;
@@ -711,9 +717,9 @@ public:
     ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
-      JxW_side_( this->side_values().JxW() ),
-      normal_( this->side_values().normal_vector() ),
-      deform_side_( this->side_values().vector_shape() ) {
+      JxW_join_( coupling_integral_->JxW() ),
+      normal_join_( coupling_integral_->normal_vector() ),
+      deform_join_( coupling_integral_->vector_shape() ) {
         this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
@@ -755,13 +761,13 @@ public:
         for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
-            arma::vec3 nv = normal_(p_high);
+            arma::vec3 nv = normal_join_(p_high);
 
-            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*JxW_side_(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
+            local_vector += (eq_fields_->cross_section(p_low) - eq_fields_->cross_section_min(p_low))*JxW_join_(p_high) / cell_lower_dim.elm().measure() / cell_lower_dim.elm()->n_neighs_vb();
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
-                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(deform_side_.shape(i)(p_high), nv)*JxW_side_(p_high) / cell_lower_dim.elm().measure();
+                local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(deform_join_.shape(i)(p_high), nv)*JxW_join_(p_high) / cell_lower_dim.elm().measure();
             }
         }
 
@@ -790,9 +796,9 @@ private:
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
 
     /// Following data members represent Element quantities and FE quantities
-    FeQ<Scalar> JxW_side_;
-    ElQ<Vector> normal_;
-    FeQArray<Vector> deform_side_;
+    FeQ<Scalar> JxW_join_;
+    ElQ<Vector> normal_join_;
+    FeQArray<Vector> deform_join_;
 
 
     template < template<IntDim...> class DimAssembly>
