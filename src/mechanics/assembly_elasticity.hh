@@ -43,8 +43,11 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -67,9 +70,9 @@ public:
     ~StiffnessAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
@@ -100,7 +103,7 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : this->points(bulk_integral_, element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
             {
@@ -127,13 +130,13 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
         double side_measure = cell_side.measure();
         if (bc_type == EqFields::bc_type_displacement)
         {
-            for (auto p : this->boundary_points(cell_side) ) {
+            for (auto p : this->points(bdr_integral_, cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -142,7 +145,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
-            for (auto p : this->boundary_points(cell_side) ) {
+            for (auto p : this->points(bdr_integral_, cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -183,7 +186,7 @@ public:
                 local_matrix_[i*(n_dofs_ngh_[0]+n_dofs_ngh_[1])+j] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->coupling_points(neighb_side) )
+        for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
@@ -247,6 +250,10 @@ private:
     vector<LongIdx> side_dof_indices_;                                  ///< vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;               ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;            ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
@@ -274,8 +281,11 @@ public:
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -302,9 +312,9 @@ public:
     ~RhsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
@@ -334,7 +344,7 @@ public:
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
         // compute sources
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : this->points(bulk_integral_, element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
@@ -365,7 +375,7 @@ public:
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
 
@@ -374,7 +384,7 @@ public:
         // local_flux_balance_rhs = 0;
 
         // addtion from initial stress
-        for (auto p : this->boundary_points(cell_side) )
+        for (auto p : this->points(bdr_integral_, cell_side) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
@@ -386,7 +396,7 @@ public:
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -398,7 +408,7 @@ public:
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -410,7 +420,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_traction)
         {
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -421,7 +431,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_stress)
         {
-            for (auto p : this->boundary_points(cell_side) )
+            for (auto p : this->points(bdr_integral_, cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -466,7 +476,7 @@ public:
             local_rhs_[i] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->coupling_points(neighb_side) )
+        for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
@@ -504,6 +514,10 @@ private:
     vector<LongIdx> side_dof_indices_;                                  ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_rhs_;                                     ///< Auxiliary vector for assemble methods
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;               ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;            ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_;
     FeQ<Scalar> JxW_side_;
@@ -530,8 +544,10 @@ public:
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
@@ -548,9 +564,9 @@ public:
     ~OutpuFieldsAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
@@ -578,7 +594,7 @@ public:
         dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
         dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
 
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
 
         arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
@@ -617,7 +633,7 @@ public:
         DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -654,6 +670,9 @@ private:
     double normal_displacement_;                                        ///< Holds constributions of normal displacement.
     arma::mat33 normal_stress_;                                         ///< Holds constributions of normal stress.
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;               ///< Bulk integral of assembly class
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
+
     /// Following data members represent Element quantities and FE quantities
     ElQ<Vector> normal_;
     FeQArray<Vector> deform_side_;
@@ -689,8 +708,9 @@ public:
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ) {
@@ -703,8 +723,8 @@ public:
     ~ConstraintAssemblyElasticity() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
+        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
 
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
@@ -732,7 +752,7 @@ public:
         // where B*x is the average jump of normal displacements and c is the average cross-section on element.
         // Positive value means that the fracture closes.
         double local_vector = 0;
-        for (auto p_high : this->coupling_points(neighb_side) )
+        for (auto p_high : this->points(coupling_integral_, neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_(p_high);
@@ -766,6 +786,8 @@ private:
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;                         ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
+
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;       ///< Coupling integral of assembly class
 
     /// Following data members represent Element quantities and FE quantities
     FeQ<Scalar> JxW_side_;
