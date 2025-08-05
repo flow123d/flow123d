@@ -197,7 +197,7 @@ public:
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
-	  multidim_assembly_(eq_fields, eq_data),
+	  multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
 	  min_edge_sides_(2),
 	  bulk_integral_data_(20, 10),
 	  edge_integral_data_(12, 6),
@@ -318,9 +318,9 @@ private:
         multidim_assembly_[2_d]->create_integrals(asm_internals_.eval_points_, integrals_);
         multidim_assembly_[3_d]->create_integrals(asm_internals_.eval_points_, integrals_);
         asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
-        multidim_assembly_[1_d]->initialize(&asm_internals_.element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&asm_internals_.element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&asm_internals_.element_cache_map_);
+        multidim_assembly_[1_d]->initialize();
+        multidim_assembly_[2_d]->initialize();
+        multidim_assembly_[3_d]->initialize();
         if (use_patch_fe_values_) {
             asm_internals_.fe_values_.init_finalize();
         }

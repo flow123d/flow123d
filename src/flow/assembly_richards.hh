@@ -35,8 +35,8 @@ public:
     static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
 
     /// Constructor.
-    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -52,10 +52,7 @@ public:
     ~InitCondPostprocessAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
@@ -150,8 +147,8 @@ public:
 
     static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
 
-    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -177,9 +174,9 @@ public:
     ~MHMatrixAssemblyRichards() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-    	MHMatrixAssemblyLMH<dim>::initialize(element_cache_map);
+    	MHMatrixAssemblyLMH<dim>::initialize();
     }
 
 
@@ -406,8 +403,8 @@ public:
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
-    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data, asm_internals) {
     }
 
     /// Integral over element.

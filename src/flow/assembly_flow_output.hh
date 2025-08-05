@@ -60,8 +60,8 @@ public:
     static constexpr const char * name() { return "L2DifferenceAssembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data) {
+    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(2, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
@@ -74,9 +74,7 @@ public:
     virtual ~L2DifferenceAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
         fe_p0_ = std::make_shared< FE_P_disc<dim> >(0);
         fe_values_.initialize(*this->quad_, *fe_p0_, flags);
@@ -265,8 +263,8 @@ public:
     static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }
@@ -275,9 +273,7 @@ public:
     virtual ~OutputInternalFlowAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element

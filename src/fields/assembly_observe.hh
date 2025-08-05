@@ -44,15 +44,15 @@ public:
     GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
             std::shared_ptr<Observe> observe)
     : GenericAssemblyBase(),
-      multidim_assembly_(eq_fields, observe_fields_list, observe.get()), observe_(observe), bulk_integral_data_(20, 10)
+      multidim_assembly_(eq_fields, observe_fields_list, observe.get(), &this->asm_internals_), observe_(observe), bulk_integral_data_(20, 10)
     {
         multidim_assembly_[1_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
         multidim_assembly_[2_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
         multidim_assembly_[3_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
         this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
-        multidim_assembly_[1_d]->initialize(&this->asm_internals_.element_cache_map_);
-        multidim_assembly_[2_d]->initialize(&this->asm_internals_.element_cache_map_);
-        multidim_assembly_[3_d]->initialize(&this->asm_internals_.element_cache_map_);
+        multidim_assembly_[1_d]->initialize();
+        multidim_assembly_[2_d]->initialize();
+        multidim_assembly_[3_d]->initialize();
     }
 
     /// Getter to set of assembly objects
@@ -117,9 +117,10 @@ public:
     static constexpr const char * name() { return "AssemblyObserveOutput"; }
 
     /// Constructor.
-    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe)
+    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), observe_(observe) {
         this->active_integrals_ = ActiveIntegrals::bulk;
+        this->asm_internals_ = asm_internals;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 
         for (auto observe_field : observe_fields_list) {
@@ -132,9 +133,7 @@ public:
     ~AssemblyObserveOutput() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
     /// Assembles the cell integrals for the given dimension.
     inline void assemble_cell_integrals(const RevertableList<GenericAssemblyBase::BulkIntegralData> &bulk_integral_data) {
@@ -142,9 +141,9 @@ public:
         this->reset_offsets();
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
+            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
             auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
-            field_value_cache_position = this->element_cache_map_->element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
+            field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
             val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
         }

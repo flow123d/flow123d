@@ -52,8 +52,8 @@ public:
     static constexpr const char * name() { return "ReadInitCondAssemblyLMH"; }
 
     /// Constructor.
-    ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_pressure;
     }
@@ -62,9 +62,7 @@ public:
     virtual ~ReadInitCondAssemblyLMH() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -124,8 +122,8 @@ public:
     static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
 
     /// Constructor.
-    MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
+    MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -146,10 +144,8 @@ public:
     virtual ~MHMatrixAssemblyLMH() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_normal_vectors);
 
@@ -704,7 +700,7 @@ protected:
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
-        	unsigned int pos_in_cache = this->element_cache_map_->position_in_cache(dh_cell.elm_idx());
+        	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
         	auto p = *( this->bulk_points(pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
@@ -800,8 +796,8 @@ public:
     static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
 
     /// Constructor.
-    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
+    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)

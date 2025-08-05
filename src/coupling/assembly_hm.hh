@@ -42,8 +42,8 @@ public:
     static constexpr const char * name() { return "FlowPotentialAssemblyHM"; }
 
     /// Constructor.
-    FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+    FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->alpha;
         this->used_fields_ += eq_fields_->density;
@@ -56,9 +56,7 @@ public:
     ~FlowPotentialAssemblyHM() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FiniteElement<dim>> fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_side_JxW_values);
@@ -130,8 +128,8 @@ public:
     static constexpr const char * name() { return "ResidualAssemblyHM"; }
 
     /// Constructor.
-    ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk);
         this->used_fields_ += eq_data_->flow_->eq_fields().field_ele_pressure;
         this->used_fields_ += eq_fields_->old_iter_pressure;
@@ -141,8 +139,7 @@ public:
     ~ResidualAssemblyHM() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
         shared_ptr<FE_P<dim>> fe_ = std::make_shared< FE_P<dim> >(0);
         fe_values_.initialize(*this->quad_, *fe_, update_JxW_values);
     }

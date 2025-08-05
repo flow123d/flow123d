@@ -40,12 +40,12 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
-    /// Constructor - Obsolete will be replace by constructor below
-    AssemblyBase(unsigned int quad_order)
-    : AssemblyBase() {
-        quad_ = new QGauss(dim, 2*quad_order);
-        quad_low_ = new QGauss(dim-1, 2*quad_order);
-    }
+//    /// Constructor - Obsolete will be replace by constructor below
+//    AssemblyBase(unsigned int quad_order)
+//    : AssemblyBase() {
+//        quad_ = new QGauss(dim, 2*quad_order);
+//        quad_low_ = new QGauss(dim-1, 2*quad_order);
+//    }
 
     /**
      * Constructor
@@ -201,28 +201,28 @@ public:
     /// Return BulkPoint range of appropriate dimension
     /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
-        return integrals_.bulk_->points(element_patch_idx, element_cache_map_);
+        return integrals_.bulk_->points(element_patch_idx, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return EdgePoint range of appropriate dimension
     /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_->points(cell_side, element_cache_map_);
+	    return integrals_.edge_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return CouplingPoint range of appropriate dimension
     /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_->points(cell_side, element_cache_map_);
+	    return integrals_.coupling_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return BoundaryPoint range of appropriate dimension
     /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_->points(cell_side, element_cache_map_);
+	    return integrals_.boundary_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /**
@@ -243,7 +243,7 @@ public:
     virtual inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx()));
+            this->cell_integral(bulk_integral_data[i].cell, asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
@@ -321,8 +321,6 @@ protected:
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
-    ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
-                                                           ///< Data member will be removed and replaced by asm_internals_.element_cache_map_
     AssemblyInternals *asm_internals_;                     ///< Holds shared internals data with GeneriAssembly
 };
 
@@ -356,7 +354,7 @@ public:
     inline void add_patch_bulk_points(const RevertableList<BulkIntegralData> &bulk_integral_data) override {
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            uint element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
+            uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
             uint elm_pos = fe_values_->register_element(bulk_integral_data[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(element_patch_idx) ) {
@@ -402,7 +400,7 @@ public:
             if (coupling_integral_data[i].side.dim() != dim) continue;
             side_pos = fe_values_->register_side(coupling_integral_data[i].side);
             if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
-                element_patch_idx = this->element_cache_map_->position_in_cache(coupling_integral_data[i].cell.elm_idx());
+                element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].cell.elm_idx());
                 elm_pos = fe_values_->register_element(coupling_integral_data[i].cell, element_patch_idx);
             }
 

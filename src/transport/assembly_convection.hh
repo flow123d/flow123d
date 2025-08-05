@@ -41,8 +41,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyConvection"; }
 
     /// Constructor.
-    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -52,9 +52,7 @@ public:
     ~MassAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -124,8 +122,8 @@ public:
     static constexpr const char * name() { return "InitCondAssemblyConvection"; }
 
     /// Constructor.
-    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc;
     }
@@ -134,8 +132,7 @@ public:
     ~InitCondAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++) {
             vecs_.push_back(eq_fields_->conc_mobile_fe[sbi]->vec());
         }
@@ -189,8 +186,8 @@ public:
     static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
 
     /// Constructor.
-    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->sources_sigma;
@@ -204,9 +201,7 @@ public:
     ~ConcSourcesBdrAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);
@@ -364,8 +359,8 @@ public:
     static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
 
     /// Constructor.
-    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::edge | ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->flow_flux;
     }
@@ -374,9 +369,7 @@ public:
     ~MatrixMpiAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
         fe_values_side_.initialize(*this->quad_low_, *fe_, u);

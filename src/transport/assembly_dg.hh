@@ -59,8 +59,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
@@ -275,8 +273,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
@@ -723,8 +719,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
@@ -848,8 +842,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
@@ -1049,8 +1041,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
@@ -1128,10 +1118,11 @@ public:
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
+    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
+        this->asm_internals_ = asm_internals;
 
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
@@ -1145,9 +1136,7 @@ public:
     ~InitConditionAssemblyDG() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element

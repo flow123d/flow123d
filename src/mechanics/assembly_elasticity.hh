@@ -73,8 +73,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
@@ -318,8 +316,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
         this->fe_values_->template initialize<dim>(*this->quad_);
@@ -572,8 +568,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
@@ -730,8 +724,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->element_cache_map_ = &this->asm_internals_->element_cache_map_;
-
         this->fe_values_->template initialize<dim>(*this->quad_);
         this->fe_values_->template initialize<dim>(*this->quad_low_);
 
