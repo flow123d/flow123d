@@ -107,7 +107,8 @@ public:
 
     /// Constructor.
     AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data, asm_internals) {}
+    : AssemblyOutputBase<dim>(0, eq_fields, eq_data, asm_internals),
+      bulk_integral_( this->create_bulk_integral(this->quad_) ) {}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}
@@ -119,7 +120,7 @@ public:
     	this->reset_offsets();
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            auto p = *( this->bulk_points(element_patch_idx).begin() ); // evaluation point (in element center)
+            auto p = *( this->points(bulk_integral_, element_patch_idx).begin() ); // evaluation point (in element center)
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx());
             this->offsets_[field_value_cache_position] = val_idx;
@@ -128,6 +129,9 @@ public:
             f_acc->fill_data_value(this->offsets_);
         }
     }
+
+private:
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -156,6 +160,7 @@ public:
             this->quad_->weight(i) = 1.0;
             this->quad_->set(i) = RefElement<dim>::node_coords(i);
         }
+        bulk_integral_ = this->create_bulk_integral(this->quad_);
     }
 
     /// Destructor.
@@ -176,7 +181,7 @@ public:
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
             val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx()) ];
-            auto p = *( this->bulk_points(element_patch_idx).begin() );
+            auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             for (uint j=0; j<bulk_integral_data[i].cell.dim()+1; ++j) {
                 this->offsets_[field_value_cache_position+j] = val_idx+j;
@@ -189,6 +194,8 @@ public:
 
 private:
     std::shared_ptr< std::vector<unsigned int> > offset_vec_;   ///< Holds offsets of individual local elements
+
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

@@ -46,9 +46,9 @@ public:
     : GenericAssemblyBase(),
       multidim_assembly_(eq_fields, observe_fields_list, observe.get(), &this->asm_internals_), observe_(observe), bulk_integral_data_(20, 10)
     {
-        multidim_assembly_[1_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_observe_integrals(this->asm_internals_.eval_points_, integrals_);
+        multidim_assembly_[1_d]->create_observe_integrals(integrals_);
+        multidim_assembly_[2_d]->create_observe_integrals(integrals_);
+        multidim_assembly_[3_d]->create_observe_integrals(integrals_);
         this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
@@ -142,7 +142,7 @@ public:
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
             element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            auto p = *( this->bulk_points(element_patch_idx).begin()); // evaluation point
+            auto p = *( this->points(bulk_integral_, element_patch_idx).begin()); // evaluation point
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx() + bulk_integral_data[i].subset_index);
             val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
@@ -154,7 +154,7 @@ public:
 
 
     /// Create bulk integral according to dim
-    void create_observe_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+    void create_observe_integrals(AssemblyIntegrals &integrals) {
         std::vector<arma::vec> reg_points;
 
         auto &patch_point_data = observe_->patch_point_data();
@@ -174,8 +174,9 @@ public:
                 this->quad_->weight(j) = 1.0;
                 this->quad_->set(j) = fix_p;
             }
-            this->integrals_.bulk_ = eval_points->add_bulk<dim>(*this->quad_);
-            integrals.bulk_[dim-1] = this->integrals_.bulk_;
+            bulk_integral_ = this->create_bulk_integral(this->quad_);
+            this->integrals_.bulk_ = bulk_integral_;
+            integrals.bulk_[dim-1] = bulk_integral_;
         }
     }
 
@@ -191,6 +192,7 @@ private:
     FieldSet used_fields_;                                    ///< Sub field set contains fields performed to output
     std::vector<int> offsets_;                                ///< Holds indices (offsets) of cached data to output data vector
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;     ///< Accessor of integral
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssemblyObserve;
