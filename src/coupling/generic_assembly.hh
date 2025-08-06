@@ -194,7 +194,7 @@ class GenericAssembly : public GenericAssemblyBase
 {
 public:
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, bool cretae_int = true)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
 	  multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
@@ -204,7 +204,13 @@ public:
 	  coupling_integral_data_(12, 6),
 	  boundary_integral_data_(8, 4)
     {
-    	initialize();
+        if (cretae_int) {
+            multidim_assembly_[1_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+            multidim_assembly_[2_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+            multidim_assembly_[3_d]->create_integrals(asm_internals_.eval_points_, integrals_);
+        }
+
+        initialize();
     }
 
     /**
@@ -222,18 +228,7 @@ public:
       coupling_integral_data_(12, 6),
       boundary_integral_data_(8, 4)
     {
-        // This block of code will be new code of initialize() method
-        asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
-        multidim_assembly_[1_d]->initialize();
-        multidim_assembly_[2_d]->initialize();
-        multidim_assembly_[3_d]->initialize();
-        asm_internals_.fe_values_.init_finalize();
-        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
-
-        // Temporary calls of following method
-        multidim_assembly_[1_d]->post_integrals_set(integrals_);
-        multidim_assembly_[2_d]->post_integrals_set(integrals_);
-        multidim_assembly_[3_d]->post_integrals_set(integrals_);
+        initialize();
     }
 
     /// Getter to set of assembly objects
@@ -313,10 +308,6 @@ public:
 private:
     /// Common part of GenericAssemblz constructors.
     void initialize() {
-        // first step - create integrals, then - initialize cache and initialize subobject of dimensions
-        multidim_assembly_[1_d]->create_integrals(asm_internals_.eval_points_, integrals_);
-        multidim_assembly_[2_d]->create_integrals(asm_internals_.eval_points_, integrals_);
-        multidim_assembly_[3_d]->create_integrals(asm_internals_.eval_points_, integrals_);
         asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
@@ -325,6 +316,11 @@ private:
             asm_internals_.fe_values_.init_finalize();
         }
         active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
+
+        // Temporary calls of following method
+        multidim_assembly_[1_d]->post_integrals_set(integrals_);
+        multidim_assembly_[2_d]->post_integrals_set(integrals_);
+        multidim_assembly_[3_d]->post_integrals_set(integrals_);
     }
 
     /// Call assemblations when patch is filled

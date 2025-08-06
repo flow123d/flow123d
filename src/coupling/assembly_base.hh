@@ -40,13 +40,6 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
-//    /// Constructor - Obsolete will be replace by constructor below
-//    AssemblyBase(unsigned int quad_order)
-//    : AssemblyBase() {
-//        quad_ = new QGauss(dim, 2*quad_order);
-//        quad_low_ = new QGauss(dim-1, 2*quad_order);
-//    }
-
     /**
      * Constructor
      *
