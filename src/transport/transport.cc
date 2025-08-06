@@ -188,10 +188,10 @@ void ConvectionTransport::initialize()
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
 
-    mass_assembly_ = new GenericAssembly< MassAssemblyConvection >(eq_fields_.get(), eq_data_.get(), false);
-    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvection >(eq_fields_.get(), eq_data_.get(), false);
-    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvection >(eq_fields_.get(), eq_data_.get(), false);
-    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvection >(eq_fields_.get(), eq_data_.get(), false);
+    mass_assembly_ = new GenericAssembly< MassAssemblyConvection >(eq_fields_.get(), eq_data_.get());
+    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvection >(eq_fields_.get(), eq_data_.get());
+    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvection >(eq_fields_.get(), eq_data_.get());
+    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvection >(eq_fields_.get(), eq_data_.get());
     matrix_mpi_assembly_->set_min_edge_sides(1);
 }
 

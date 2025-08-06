@@ -165,7 +165,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                         raw_output_file_path.open_stream(raw_eq_data_->raw_output_file);
                     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
 
-                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssembly >(flow_eq_fields_.get(), raw_eq_data_.get(), false);
+                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssembly >(flow_eq_fields_.get(), raw_eq_data_.get());
                 }
             }
         }
@@ -235,7 +235,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     if (compute_errors_) {
         set_specific_output_python_fields();
-        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get(), false);
+        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get());
     }
 }
 

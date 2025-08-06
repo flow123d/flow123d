@@ -268,8 +268,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get(), false);
-    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get(), false);
+    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get());
+    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get());
 
     Input::Array user_fields_arr;
     if (input_record_.opt_val("user_fields", user_fields_arr)) {

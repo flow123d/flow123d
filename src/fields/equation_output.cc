@@ -159,9 +159,9 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	    dh_node_->distribute_dofs(ds);
     }
 
-    output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this, true);
-    output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this, true);
-    output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this, true);
+    output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemData >(this, this);
+    output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
+    output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeData >(this, this);
     observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this->observe_fields_, stream_->observe( mesh_ ));
 }
 

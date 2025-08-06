@@ -230,8 +230,8 @@ void SorptionBase::initialize()
     reaction_solid->initialize();
   }
 
-  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblySorp >(eq_fields_.get(), eq_data_.get(), false);
-  reaction_assembly_ = new GenericAssembly< ReactionAssemblySorp >(eq_fields_.get(), eq_data_.get(), false);
+  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblySorp >(eq_fields_.get(), eq_data_.get());
+  reaction_assembly_ = new GenericAssembly< ReactionAssemblySorp >(eq_fields_.get(), eq_data_.get());
 }
 
 

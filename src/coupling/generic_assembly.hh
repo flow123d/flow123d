@@ -194,7 +194,7 @@ class GenericAssembly : public GenericAssemblyBase
 {
 public:
     /// Constructor
-    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, bool cretae_int = true)
+    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
 	  multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
@@ -204,12 +204,6 @@ public:
 	  coupling_integral_data_(12, 6),
 	  boundary_integral_data_(8, 4)
     {
-        if (cretae_int) {
-            multidim_assembly_[1_d]->create_integrals(asm_internals_.eval_points_, integrals_);
-            multidim_assembly_[2_d]->create_integrals(asm_internals_.eval_points_, integrals_);
-            multidim_assembly_[3_d]->create_integrals(asm_internals_.eval_points_, integrals_);
-        }
-
         initialize();
     }
 

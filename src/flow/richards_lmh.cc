@@ -239,10 +239,10 @@ void RichardsLMH::assembly_linear_system()
 
 
 void RichardsLMH::initialize_asm() {
-    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get(), false);
-    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get(), false);
-    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get(), false);
-    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get(), false);
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
 }
 
 
