@@ -53,7 +53,8 @@ public:
 
     /// Constructor.
     ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_pressure;
     }
@@ -74,7 +75,7 @@ public:
         ASSERT(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
         double init_value = eq_fields_->init_pressure(p);
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
@@ -105,6 +106,8 @@ protected:
     /// Vector of pre-computed local DOF indices
     LocDofVec l_indices_;
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;        ///< Bulk integral of assembly class
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -123,7 +126,10 @@ public:
 
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
+      bulk_integral_( this->create_bulk_integral(this->quad_)) ,
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_low_) )  {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -178,7 +184,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, eq_fields_->conductivity(p));
@@ -197,7 +203,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -225,7 +231,7 @@ public:
         bulk_local_idx_ = cell_lower_dim.local_idx();
 
         // Evaluation points
-        auto p_high = *( this->coupling_points(neighb_side).begin() );
+        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         fe_values_side_.reinit(neighb_side.side());
@@ -701,7 +707,7 @@ protected:
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
         	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
-        	auto p = *( this->bulk_points(pos_in_cache).begin() );
+        	auto p = *( this->points(bulk_integral_, pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
@@ -781,6 +787,10 @@ protected:
 
     LocalSystem loc_schur_;
 
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;           ///< Bulk integral of assembly class
+    std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;        ///< Boundary integral of assembly class
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;   ///< Coupling integral of assembly class
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
@@ -805,7 +815,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(this->bulk_integral_, element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity

@@ -191,8 +191,8 @@ void DualPorosity::initialize()
     reaction_immobile->initialize();
   }
 
-  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get());
-  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDp >(eq_fields_.get(), eq_data_.get());
+  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get(), false);
+  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDp >(eq_fields_.get(), eq_data_.get(), false);
 
 }
 

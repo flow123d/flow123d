@@ -41,7 +41,8 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -59,7 +60,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
 
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
@@ -77,7 +78,9 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    IntIdx dof_p0_;                                     ///< Index of local DOF
+    IntIdx dof_p0_;                                           ///< Index of local DOF
+
+    std::shared_ptr<BulkIntegralAcc<dim>> mass_integral_;     ///< Bulk integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -94,7 +97,8 @@ public:
 
     /// Constructor.
     ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -113,7 +117,7 @@ public:
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
 
         // if porosity_immobile == 0 then mobile concentration stays the same
         // and immobile concentration cannot change
@@ -179,14 +183,15 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    unsigned int sbi_;                                ///< Index of substance
-    IntIdx dof_p0_;                                   ///< Index of local DOF
-    double conc_average_;                             ///< weighted (by porosity) average of concentration
-    double conc_mob_, conc_immob_;                    ///< new mobile and immobile concentration
-    double previous_conc_mob_, previous_conc_immob_;  ///< mobile and immobile concentration in previous time step
-    double conc_max_;                                 ///< difference between concentration and average concentration
-    double por_mob_, por_immob_;                      ///< mobile and immobile porosity
-    double exponent_, temp_exponent_, temp_;          ///< Precomputed values
+    unsigned int sbi_;                                     ///< Index of substance
+    IntIdx dof_p0_;                                        ///< Index of local DOF
+    double conc_average_;                                  ///< weighted (by porosity) average of concentration
+    double conc_mob_, conc_immob_;                         ///< new mobile and immobile concentration
+    double previous_conc_mob_, previous_conc_immob_;       ///< mobile and immobile concentration in previous time step
+    double conc_max_;                                      ///< difference between concentration and average concentration
+    double por_mob_, por_immob_;                           ///< mobile and immobile porosity
+    double exponent_, temp_exponent_, temp_;               ///< Precomputed values
+    std::shared_ptr<BulkIntegralAcc<dim>> mass_integral_;  ///< Bulk integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -203,7 +208,8 @@ public:
 
     /// Constructor.
     InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -221,7 +227,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
 
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < eq_data_->n_substances_; sbi++)
@@ -239,7 +245,8 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    IntIdx dof_p0_;                                     ///< Index of local DOF
+    IntIdx dof_p0_;                                        ///< Index of local DOF
+    std::shared_ptr<BulkIntegralAcc<dim>> mass_integral_;  ///< Bulk integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -256,7 +263,8 @@ public:
 
     /// Constructor.
     ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;
@@ -279,7 +287,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int i_subst, subst_id;
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
 
         reg_idx_ = cell.elm().region().bulk_idx();
         dof_p0_ = cell.get_loc_dof_indices()[0];
@@ -336,9 +344,11 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    IntIdx dof_p0_;                                   ///< Index of local DOF
-    int reg_idx_;                                     ///< Bulk region idx
-    //unsigned int sbi_;                                ///< Index of substance
+    IntIdx dof_p0_;                                        ///< Index of local DOF
+    int reg_idx_;                                          ///< Bulk region idx
+    //unsigned int sbi_;                                     ///< Index of substance
+    std::shared_ptr<BulkIntegralAcc<dim>> mass_integral_;  ///< Bulk integral of assembly class
+
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
