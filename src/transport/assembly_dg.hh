@@ -1130,6 +1130,7 @@ public:
             this->quad_->weight(i) = 1.0;
             this->quad_->set(i) = RefElement<dim>::node_coords(i);
         }
+        init_integral_ = this->create_bulk_integral(this->quad_);
     }
 
     /// Destructor.
@@ -1149,7 +1150,7 @@ public:
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             k=0;
-            for (auto p : this->bulk_points(element_patch_idx) )
+            for (auto p : this->points(init_integral_, element_patch_idx) )
             {
                 double val = eq_fields_->init_condition[sbi](p);
 
@@ -1167,6 +1168,9 @@ public:
 
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
+
+        /// Bulk integral of assembly class
+        std::shared_ptr<BulkIntegralAcc<dim>> init_integral_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
