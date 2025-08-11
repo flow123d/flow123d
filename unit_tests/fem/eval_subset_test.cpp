@@ -16,6 +16,7 @@
 #include "fem/eval_points.hh"
 #include "fem/eval_subset.hh"
 #include "fem/element_cache_map.hh"
+#include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/dofhandler.hh"
@@ -32,36 +33,37 @@ arma::vec::fixed<dim> loc_coords(std::shared_ptr<EvalPoints> eval_points, unsign
 
 TEST(EvalPointsTest, all) {
     std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    PatchFEValues<3> pfev;
     EXPECT_EQ(eval_points->size(3), 0);
     EXPECT_EQ(eval_points->n_subsets(3), 0);
 
-    Quadrature *q_bulk_2 = new QGauss(2, 2);       // dim 2
+    Quadrature *q_bulk_2 = new QGauss(2, 2);             // dim 2
     Quadrature *q_side_2 = new QGauss(1, 2);
-    Quadrature *q_side_3 = new QGauss(2, 2);       // join integral between elemenet of dim 2 and side of element of dim 3
-    eval_points->add_bulk<2>(*q_bulk_2 );          // Add bulk integral, test values
+    Quadrature *q_side_3 = new QGauss(2, 2);             // join integral between elemenet of dim 2 and side of element of dim 3
+    eval_points->add_bulk_accessor<2>(q_bulk_2, &pfev);  // Add bulk integral, test values
     EXPECT_EQ(eval_points->size(2), 3);
     EXPECT_EQ(eval_points->n_subsets(2), 1);
     EXPECT_EQ(eval_points->subset_begin(2, 0), 0);
     EXPECT_EQ(eval_points->subset_end(2, 0), 3);
     EXPECT_EQ(eval_points->subset_size(2, 0), 3);
-    eval_points->add_edge<2>(*q_side_2 );          // Add edge integral, test values
+    eval_points->add_edge_accessor<2>(q_side_2, &pfev);  // Add edge integral, test values
     EXPECT_EQ(eval_points->size(2), 9);
     EXPECT_EQ(eval_points->n_subsets(2), 2);
     EXPECT_EQ(eval_points->subset_begin(2, 1), 3);
     EXPECT_EQ(eval_points->subset_end(2, 1), 9);
     EXPECT_EQ(eval_points->subset_size(2, 1), 6);
     EXPECT_EQ(eval_points->n_subsets(3), 0);       // Check n_subsets of dim 3 before adding of join integral
-    std::shared_ptr<CouplingIntegral> ci = eval_points->add_coupling<3>(*q_side_3 ); // Add join integral, test values
+    std::shared_ptr<CouplingIntegralAcc<3>> ci = eval_points->add_coupling_accessor<3>(q_side_3, &pfev); // Add join integral, test values
     EXPECT_EQ(ci->get_subset_low_idx(), 0);        // Shared subset with bulk integral
     EXPECT_EQ(ci->get_subset_high_idx(), 0);       // New subset with edge integral
     EXPECT_EQ(eval_points->n_subsets(3), 1);       // Join integral adds subset of higher dimension
-    std::shared_ptr<BoundaryIntegral> bi = eval_points->add_boundary<3>(*q_side_3 ); // Add boundary integral, test values
+    std::shared_ptr<BoundaryIntegralAcc<3>> bi = eval_points->add_boundary_accessor<3>(q_side_3, &pfev); // Add boundary integral, test values
     EXPECT_EQ(bi->get_subset_low_idx(), 0);        // Shared subset with bulk integral
     EXPECT_EQ(bi->get_subset_high_idx(), 0);       // Shared subset with join integral
     EXPECT_EQ(eval_points->n_subsets(3), 1);
 
     Quadrature *q_bulk_0 = new QGauss(0, 2);       // dim 0
-    eval_points->add_bulk<0>(*q_bulk_0 );
+    eval_points->add_bulk_accessor<0>(q_bulk_0, &pfev);
     EXPECT_EQ(eval_points->size(0), 1);
     EXPECT_EQ(eval_points->n_subsets(0), 1);
     EXPECT_EQ(eval_points->subset_begin(0, 0), 0);
@@ -76,12 +78,13 @@ TEST(IntegralTest, integrals_3d) {
     PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
 	std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
+    PatchFEValues<3> pfev;
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<BulkIntegral> bulk_integral = eval_points->add_bulk<3>(*q_bulk );
-    std::shared_ptr<EdgeIntegral> edge_integral = eval_points->add_edge<3>(*q_side );
-    std::shared_ptr<CouplingIntegral> coupling_integral = eval_points->add_coupling<3>(*q_side );
-    std::shared_ptr<BoundaryIntegral> boundary_integral = eval_points->add_boundary<3>(*q_side );
+    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral = eval_points->add_bulk_accessor<3>(q_bulk, &pfev);
+    std::shared_ptr<EdgeIntegralAcc<3>> edge_integral = eval_points->add_edge_accessor<3>(q_side, &pfev);
+    std::shared_ptr<CouplingIntegralAcc<3>> coupling_integral = eval_points->add_coupling_accessor<3>(q_side, &pfev);
+    std::shared_ptr<BoundaryIntegralAcc<3>> boundary_integral = eval_points->add_boundary_accessor<3>(q_side, &pfev);
 
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
@@ -209,12 +212,13 @@ public:
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
     	eval_points_ = std::make_shared<EvalPoints>();
+        PatchFEValues<3> pfev;
         q_bulk_ = new QGauss(3, 2);
         q_side_ = new QGauss(2, 2);
-        bulk_integral_ = eval_points_->add_bulk<3>(*q_bulk_ );
-        edge_integral_ = eval_points_->add_edge<3>(*q_side_ );
-        coupling_integral_ = eval_points_->add_coupling<3>(*q_side_ );
-        boundary_integral_ = eval_points_->add_boundary<3>(*q_side_ );
+        bulk_integral_ = eval_points_->add_bulk_accessor<3>(q_bulk_, &pfev);
+        edge_integral_ = eval_points_->add_edge_accessor<3>(q_side_, &pfev);
+        coupling_integral_ = eval_points_->add_coupling_accessor<3>(q_side_, &pfev);
+        boundary_integral_ = eval_points_->add_boundary_accessor<3>(q_side_, &pfev);
         mesh_ = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
         //std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_rt0);
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
@@ -281,10 +285,10 @@ public:
     std::shared_ptr<EvalPoints> eval_points_;
     Quadrature *q_bulk_;
     Quadrature *q_side_;
-    std::shared_ptr<BulkIntegral> bulk_integral_;
-    std::shared_ptr<EdgeIntegral> edge_integral_;
-    std::shared_ptr<CouplingIntegral> coupling_integral_;
-    std::shared_ptr<BoundaryIntegral> boundary_integral_;
+    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_;
+    std::shared_ptr<EdgeIntegralAcc<3>> edge_integral_;
+    std::shared_ptr<CouplingIntegralAcc<3>> coupling_integral_;
+    std::shared_ptr<BoundaryIntegralAcc<3>> boundary_integral_;
 };
 
 TEST_F(RangesSpeedTest, point_ranges) {
