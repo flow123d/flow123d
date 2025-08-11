@@ -100,7 +100,7 @@ jobs:
             
         steps:  
         - uses: actions/checkout@v4
-        - uses: actions/download-artifact@v4
+        - uses: actions/download-artifact@v5
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh dbg_gnu tests/runtest tests/${{matrix.test_dir}}  --keep-going --batch 
@@ -134,7 +134,7 @@ jobs:
             - tools
         steps:  
         - uses: actions/checkout@v4
-        - uses: actions/download-artifact@v4
+        - uses: actions/download-artifact@v5
           with:
             name: build_dir
 
@@ -159,7 +159,7 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
             - name: Download all unit tests artifacts
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v5
               with:
                 pattern: unit_tests_*
                 path: unit_tests
@@ -185,7 +185,7 @@ jobs:
             status: ${{job.status}}
         steps:  
         - uses: actions/checkout@v4
-        - uses: actions/download-artifact@v4
+        - uses: actions/download-artifact@v5
           with:
             name: build_dir
         - run: config/build/run_with_build_dir.sh  dbg_gnu make ref-doc
