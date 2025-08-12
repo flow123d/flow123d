@@ -206,10 +206,10 @@ private:
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
-    /// BulkIntegral objects of dimension 0,1,2,3
+    /// BulkIntegral objects of dimension 0,1,2,3. Temporary data member.
     std::array< std::shared_ptr<BulkIntegral>, 4> bulk_integrals_;
 
-    /// EdgeIntegral objects of dimension 1,2,3
+    /// EdgeIntegral objects of dimension 1,2,3. Temporary data member.
     std::array< std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;
 
     /// Maximal number of used EvalPoints.

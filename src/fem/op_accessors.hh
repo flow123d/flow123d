@@ -31,7 +31,11 @@ using Tensor = arma::mat33;
 template <class ValueType>
 class ElQ {
 public:
-    /// Ddefault constructor
+    /**
+     * Default constructor.
+     *
+     * Used only in template specialization of CoplingIntegral. DO NOT USE in other cases.
+     */
     ElQ()
     : patch_op_(nullptr) {}
 
@@ -51,7 +55,11 @@ private:
 template <class ValueType>
 class FeQ {
 public:
-    /// Default constructor
+    /**
+     * Default constructor.
+     *
+     * Used only in template specialization of CoplingIntegral. DO NOT USE in other cases.
+     */
     FeQ()
     : patch_op_bulk_(nullptr), patch_op_side_(nullptr), i_shape_fn_idx_(0) {}
 
