@@ -11,13 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    eval_subset_points.cc
+ * @file    integral_points.cc
  * @brief
  * @author  David Flanderka
  */
 
-#include "fem/eval_subset_points.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_points.hh"
+#include "fem/integral_acc.hh"
 
 
 

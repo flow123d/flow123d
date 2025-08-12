@@ -40,11 +40,18 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
-	/// Constructor
-	AssemblyBase(unsigned int quad_order) {
+    /**
+     * Constructor
+     *
+     * @param quad_order    Order of Quadrature objects.
+     * @param asm_internals Holds shared data with GenericAssembly
+     */
+    AssemblyBase(unsigned int quad_order, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>() {
+    	asm_internals_ = asm_internals;
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
-	}
+    }
 
 	/// Destructor
     virtual ~AssemblyBase() {
@@ -101,34 +108,121 @@ public:
        	}
     }
 
+    /// Temporary method set pointers of integrals to GenericAssembly - IN DEVELOPMENT
+    void post_integrals_set(AssemblyIntegrals &integrals) {
+    	if (active_integrals_ & ActiveIntegrals::bulk) {
+    		integrals.bulk_[dim-1] = integrals_.bulk_;
+    	}
+    	if (active_integrals_ & ActiveIntegrals::edge) {
+    	    integrals.edge_[dim-1] = integrals_.edge_;
+    	}
+       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
+       	    integrals.coupling_[dim-2] = integrals_.coupling_;
+       	}
+       	if (active_integrals_ & ActiveIntegrals::boundary) {
+       	    integrals.boundary_[dim-1] = integrals_.boundary_;
+       	}
+    }
+
+    /**
+     * Create and return BulkIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<BulkIntegralAcc<dim>> create_bulk_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim(), dim);
+        if (integrals_.bulk_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of bulk integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        integrals_.bulk_ = result;
+        return result;
+    }
+
+    /**
+     * Create and return EdgeIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<EdgeIntegralAcc<dim>> create_edge_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.edge_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of edge integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        integrals_.edge_ = result;
+        return result;
+    }
+
+
+    /**
+     * Create and return CouplingIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<CouplingIntegralAcc<dim>> create_coupling_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.coupling_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of coupling integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_coupling_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        integrals_.coupling_ = result;
+        return result;
+    }
+
+
+    /**
+     * Create and return BoundaryIntegral accessor of given quadrature.
+     *
+     * Method is called from descendants during construction / initialization of assembly object.
+     */
+    std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(Quadrature *quad) {
+        ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+        if (integrals_.boundary_ != nullptr) {
+        	ASSERT_PERMANENT(false).error("Repeated adding of boundary integral");
+        }
+
+        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        integrals_.boundary_ = result;
+        return result;
+    }
+
+
     /// Return BulkPoint range of appropriate dimension
+    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
-        return integrals_.bulk_->points(element_patch_idx, element_cache_map_);
+        return integrals_.bulk_->points(element_patch_idx, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return EdgePoint range of appropriate dimension
+    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.edge_->points(cell_side, element_cache_map_);
+	    return integrals_.edge_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return CouplingPoint range of appropriate dimension
+    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-	    return integrals_.coupling_->points(cell_side, element_cache_map_);
+	    return integrals_.coupling_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /// Return BoundaryPoint range of appropriate dimension
+    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
     inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-	    return integrals_.boundary_->points(cell_side, element_cache_map_);
+	    return integrals_.boundary_->points(cell_side, &this->asm_internals_->element_cache_map_);
     }
 
     /// Assembles the cell integrals for the given dimension.
     virtual inline void assemble_cell_integrals(const RevertableList<BulkIntegralData> &bulk_integral_data) {
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            this->cell_integral(bulk_integral_data[i].cell, element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx()));
+            this->cell_integral(bulk_integral_data[i].cell, asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
@@ -179,6 +273,8 @@ public:
 protected:
     /// Set of integral of given dimension necessary in assemblation
     struct DimIntegrals {
+    	DimIntegrals() : bulk_(nullptr), edge_(nullptr), coupling_(nullptr), boundary_(nullptr) {}
+
         std::shared_ptr<BulkIntegral> bulk_;               ///< Bulk integrals of elements
         std::shared_ptr<EdgeIntegral> edge_;               ///< Edge integrals between elements of same dimensions
         std::shared_ptr<CouplingIntegral> coupling_;       ///< Coupling integrals between elements of dimensions dim and dim-1
@@ -191,7 +287,7 @@ protected:
 	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
 	 */
 	AssemblyBase()
-	: quad_(nullptr), quad_low_(nullptr) {}
+	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr) {}
 
     /// Print update flags to string format.
     std::string print_update_flags(UpdateFlags u) const {
@@ -204,7 +300,7 @@ protected:
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
-    ElementCacheMap *element_cache_map_;                   ///< ElementCacheMap shared with GenericAssembly object.
+    AssemblyInternals *asm_internals_;                     ///< Holds shared internals data with GeneriAssembly
 };
 
 
@@ -217,17 +313,27 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
+    /// Obsolete constructor
 	AssemblyBasePatch(PatchFEValues<3> *fe_values)
 	: AssemblyBase<dim>(), fe_values_(fe_values) {
 	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
 	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
 	}
 
+    /**
+     * Constructor.
+     *
+     * @param quad_order    Specification of Quadrature size.
+     * @param asm_internals Holds shared data with GenericAssembly
+     */
+	AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
+	: AssemblyBase<dim>(quad_order, asm_internals), fe_values_(&asm_internals->fe_values_) {}
+
     /// Register cell points of volume integral
     inline void add_patch_bulk_points(const RevertableList<BulkIntegralData> &bulk_integral_data) override {
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
-            uint element_patch_idx = this->element_cache_map_->position_in_cache(bulk_integral_data[i].cell.elm_idx());
+            uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
             uint elm_pos = fe_values_->register_element(bulk_integral_data[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(element_patch_idx) ) {
@@ -273,7 +379,7 @@ public:
             if (coupling_integral_data[i].side.dim() != dim) continue;
             side_pos = fe_values_->register_side(coupling_integral_data[i].side);
             if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
-                element_patch_idx = this->element_cache_map_->position_in_cache(coupling_integral_data[i].cell.elm_idx());
+                element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].cell.elm_idx());
                 elm_pos = fe_values_->register_element(coupling_integral_data[i].cell, element_patch_idx);
             }
 

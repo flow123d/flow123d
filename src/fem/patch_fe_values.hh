@@ -201,6 +201,11 @@ public:
         }
     }
 
+    /// Returns pointer to FiniteElement of given dimension.
+    template<unsigned int dim>
+    std::shared_ptr<FiniteElement<dim>> fe_dim() {
+        return fe_[Dim<dim>{}];
+    }
 
     /// Return BulkValue object of dimension given by template parameter
     template<unsigned int dim>

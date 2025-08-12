@@ -40,7 +40,7 @@
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "fields/field_constant.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/eval_points.hh"
 #include "coupling/equation.hh"
 #include "quadrature/quadrature.hh"

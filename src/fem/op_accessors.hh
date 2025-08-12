@@ -19,7 +19,7 @@
 #ifndef OP_ACCESSORS_HH_
 #define OP_ACCESSORS_HH_
 
-#include "fem/eval_subset_points.hh"
+#include "fem/integral_points.hh"
 #include "fem/patch_op.hh"
 
 using Scalar = double;
@@ -31,8 +31,13 @@ using Tensor = arma::mat33;
 template <class ValueType>
 class ElQ {
 public:
-    /// Forbidden default constructor
-    ElQ() = delete;
+    /**
+     * Default constructor.
+     *
+     * Used only in template specialization of CoplingIntegral. DO NOT USE in other cases.
+     */
+    ElQ()
+    : patch_op_(nullptr) {}
 
     /// Constructor
     ElQ(PatchOp<3> *op)
@@ -50,8 +55,13 @@ private:
 template <class ValueType>
 class FeQ {
 public:
-    /// Forbidden default constructor
-    FeQ() = delete;
+    /**
+     * Default constructor.
+     *
+     * Used only in template specialization of CoplingIntegral. DO NOT USE in other cases.
+     */
+    FeQ()
+    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), i_shape_fn_idx_(0) {}
 
     // Class similar to current FeView
     FeQ(PatchOp<3> *patch_op)
@@ -79,8 +89,9 @@ private:
 template <class ValueType>
 class FeQArray {
 public:
-    /// Forbidden default constructor
-    FeQArray() = delete;
+    /// Default constructor
+    FeQArray()
+    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), n_dofs_(1) {}
 
     // Class similar to current FeView
     FeQArray(PatchOp<3> *patch_op)

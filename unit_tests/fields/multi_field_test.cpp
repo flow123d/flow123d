@@ -16,7 +16,7 @@
 #include <fields/field_fe.hh>
 #include <fields/field_set.hh>
 #include <fem/eval_points.hh>
-#include <fem/eval_subset.hh>
+#include <fem/integral_acc.hh>
 #include <fem/element_cache_map.hh>
 #include <fields/field_set.hh>
 #include <fields/field_flag.hh>

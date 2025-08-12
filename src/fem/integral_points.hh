@@ -11,7 +11,7 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    eval_subset_points.hh
+ * @file    integral_points.hh
  * @brief
  * @author  David Flanderka
  *
@@ -26,8 +26,8 @@
  *   these points only can be used as indices to fields to get appropriate value in the field cache
  */
 
-#ifndef EVAL_SUBSET_POINTS_HH_
-#define EVAL_SUBSET_POINTS_HH_
+#ifndef INTEGRAL_POINTS_HH_
+#define INTEGRAL_POINTS_HH_
 
 #include <memory>
 #include <armadillo>
@@ -262,4 +262,4 @@ private:
 };
 
 
-#endif /* EVAL_SUBSET_POINTS_HH_ */
+#endif /* INTEGRAL_POINTS_HH_ */
