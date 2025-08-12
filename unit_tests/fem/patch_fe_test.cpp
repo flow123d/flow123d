@@ -125,14 +125,14 @@ public:
     ~PatchFETestBase() {}
 
     void create_integrals() {
-        bulk_integrals_[0] = eval_points_->add_bulk_accessor<1>(patch_fe_values_.get_bulk_quadrature(1), &patch_fe_values_);
-        bulk_integrals_[1] = eval_points_->add_bulk_accessor<2>(patch_fe_values_.get_bulk_quadrature(2), &patch_fe_values_);
-        bulk_integrals_[2] = eval_points_->add_bulk_accessor<3>(patch_fe_values_.get_bulk_quadrature(3), &patch_fe_values_);
-        edge_integrals_[0] = eval_points_->add_edge_accessor<1>(patch_fe_values_.get_side_quadrature(1), &patch_fe_values_);
-        edge_integrals_[1] = eval_points_->add_edge_accessor<2>(patch_fe_values_.get_side_quadrature(2), &patch_fe_values_);
-        edge_integrals_[2] = eval_points_->add_edge_accessor<3>(patch_fe_values_.get_side_quadrature(3), &patch_fe_values_);
-        coupling_integrals_[0] = eval_points_->add_coupling_accessor<2>(patch_fe_values_.get_bulk_quadrature(1), &patch_fe_values_);
-        coupling_integrals_[1] = eval_points_->add_coupling_accessor<3>(patch_fe_values_.get_bulk_quadrature(2), &patch_fe_values_);
+        bulk_integrals_[0] = eval_points_->add_bulk_accessor<1>(patch_fe_values_.get_bulk_quadrature(1), &patch_fe_values_, &element_cache_map_);
+        bulk_integrals_[1] = eval_points_->add_bulk_accessor<2>(patch_fe_values_.get_bulk_quadrature(2), &patch_fe_values_, &element_cache_map_);
+        bulk_integrals_[2] = eval_points_->add_bulk_accessor<3>(patch_fe_values_.get_bulk_quadrature(3), &patch_fe_values_, &element_cache_map_);
+        edge_integrals_[0] = eval_points_->add_edge_accessor<1>(patch_fe_values_.get_side_quadrature(1), &patch_fe_values_, &element_cache_map_);
+        edge_integrals_[1] = eval_points_->add_edge_accessor<2>(patch_fe_values_.get_side_quadrature(2), &patch_fe_values_, &element_cache_map_);
+        edge_integrals_[2] = eval_points_->add_edge_accessor<3>(patch_fe_values_.get_side_quadrature(3), &patch_fe_values_, &element_cache_map_);
+        coupling_integrals_[0] = eval_points_->add_coupling_accessor<2>(patch_fe_values_.get_bulk_quadrature(1), &patch_fe_values_, &element_cache_map_);
+        coupling_integrals_[1] = eval_points_->add_coupling_accessor<3>(patch_fe_values_.get_bulk_quadrature(2), &patch_fe_values_, &element_cache_map_);
     }
 
     void initialize() {
