@@ -19,7 +19,7 @@
 #ifndef OP_ACCESSORS_HH_
 #define OP_ACCESSORS_HH_
 
-#include "fem/eval_subset_points.hh"
+#include "fem/integral_points.hh"
 #include "fem/patch_op.hh"
 
 using Scalar = double;

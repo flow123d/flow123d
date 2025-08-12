@@ -24,7 +24,7 @@
 #include <vector>                  // for vector
 #include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
 #include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
-#include "fem/eval_subset.hh"      // for EvalSubset
+#include "fem/integral_acc.hh"     // for EvalSubset
 #include "fem/eval_points.hh"      // for EvalPoints
 #include "fem/element_cache_map.hh"
 #include "fields/field.hh"

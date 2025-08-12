@@ -14,7 +14,7 @@
 
 #include "field_eval_base.hh"              // for FieldEvalBaseTest
 #include "fem/eval_points.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"

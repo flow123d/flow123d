@@ -1,5 +1,5 @@
 /*
- * eval_subset_test.cpp
+ * integral_acc_test.cpp
  *
  *  Created on: Dec 03, 2019
  *      Author: David Flanderka
@@ -14,7 +14,7 @@
 #include "arma_expect.hh"
 
 #include "fem/eval_points.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/element_cache_map.hh"
 #include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature.hh"

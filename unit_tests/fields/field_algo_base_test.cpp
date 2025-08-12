@@ -26,7 +26,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field_set.hh"
 #include "fem/eval_points.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/element_cache_map.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"

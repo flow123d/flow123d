@@ -17,7 +17,7 @@
  */
 
 #include "fem/eval_points.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/patch_fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/ref_element.hh"

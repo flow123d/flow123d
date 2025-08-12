@@ -5,7 +5,7 @@
 #include "arma_expect.hh"
 
 #include "quadrature/quadrature_lib.hh"
-#include "fem/eval_subset.hh"
+#include "fem/integral_acc.hh"
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
 #include "fem/fe_values.hh"

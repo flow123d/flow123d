@@ -11,18 +11,18 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    eval_subset.hh
+ * @file    integral_acc.hh
  * @brief
  * @author  David Flanderka
  */
 
-#ifndef EVAL_SUBSET_HH_
-#define EVAL_SUBSET_HH_
+#ifndef INTEGRAL_ACC_HH_
+#define INTEGRAL_ACC_HH_
 
 #include <memory>
 #include <armadillo>
 #include "fem/eval_points.hh"
-#include "fem/eval_subset_points.hh"
+#include "fem/integral_points.hh"
 #include "fem/element_cache_map.hh"
 #include "mesh/range_wrapper.hh"
 #include "mesh/accessors.hh"
@@ -838,4 +838,4 @@ private:
 };
 
 
-#endif /* EVAL_SUBSET_HH_ */
+#endif /* INTEGRAL_ACC_HH_ */
