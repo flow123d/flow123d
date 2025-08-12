@@ -102,7 +102,7 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        for (auto p : this->points(bulk_integral_, element_patch_idx) )
+        for (auto p : bulk_integral_->points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
             {
@@ -129,13 +129,13 @@ public:
             for (unsigned int j=0; j<n_dofs_; j++)
                 local_matrix_[i*n_dofs_+j] = 0;
 
-        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
+        auto p_side = *( bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
         double side_measure = cell_side.measure();
         if (bc_type == EqFields::bc_type_displacement)
         {
-            for (auto p : this->points(bdr_integral_, cell_side) ) {
+            for (auto p : bdr_integral_->points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -144,7 +144,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
-            for (auto p : this->points(bdr_integral_, cell_side) ) {
+            for (auto p : bdr_integral_->points(cell_side) ) {
                 for (unsigned int i=0; i<n_dofs_; i++)
                     for (unsigned int j=0; j<n_dofs_; j++)
                         local_matrix_[i*n_dofs_+j] += (eq_fields_->dirichlet_penalty(p) / side_measure) *
@@ -185,7 +185,7 @@ public:
                 local_matrix_[i*(n_dofs_ngh_[0]+n_dofs_ngh_[1])+j] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->points(coupling_integral_, neighb_side) )
+        for (auto p_high : coupling_integral_->points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_join_(p_high);
@@ -344,7 +344,7 @@ public:
         //local_source_balance_rhs.assign(n_dofs_, 0);
 
         // compute sources
-        for (auto p : this->points(bulk_integral_, element_patch_idx) )
+        for (auto p : bulk_integral_->points(element_patch_idx) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += (
@@ -375,7 +375,7 @@ public:
         const DHCellAccessor &dh_cell = cell_side.cell();
         dh_cell.get_dof_indices(dof_indices_);
 
-        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
+        auto p_side = *( bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
         unsigned int bc_type = eq_fields_->bc_type(p_bdr);
 
@@ -384,7 +384,7 @@ public:
         // local_flux_balance_rhs = 0;
 
         // addtion from initial stress
-        for (auto p : this->points(bdr_integral_, cell_side) )
+        for (auto p : bdr_integral_->points(cell_side) )
         {
             for (unsigned int i=0; i<n_dofs_; i++)
                 local_rhs_[i] += eq_fields_->cross_section(p) *
@@ -396,7 +396,7 @@ public:
         if (bc_type == EqFields::bc_type_displacement)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->points(bdr_integral_, cell_side) )
+            for (auto p : bdr_integral_->points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -408,7 +408,7 @@ public:
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
             double side_measure = cell_side.measure();
-            for (auto p : this->points(bdr_integral_, cell_side) )
+            for (auto p : bdr_integral_->points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -420,7 +420,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_traction)
         {
-            for (auto p : this->points(bdr_integral_, cell_side) )
+            for (auto p : bdr_integral_->points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -431,7 +431,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_stress)
         {
-            for (auto p : this->points(bdr_integral_, cell_side) )
+            for (auto p : bdr_integral_->points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( cell_side.cond().element_accessor() );
                 for (unsigned int i=0; i<n_dofs_; i++)
@@ -476,7 +476,7 @@ public:
             local_rhs_[i] = 0;
 
         // set transmission conditions
-        for (auto p_high : this->points(coupling_integral_, neighb_side) )
+        for (auto p_high : coupling_integral_->points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_join_(p_high);
@@ -594,7 +594,7 @@ public:
         dof_indices_scalar_ = cell_scalar.get_loc_dof_indices();
         dof_indices_tensor_ = cell_tensor.get_loc_dof_indices();
 
-        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx).begin() );
 
         arma::mat33 stress = eq_fields_->initial_stress(p);
         double div = 0;
@@ -633,7 +633,7 @@ public:
         DHCellAccessor cell_scalar = cell_lower_dim.cell_with_other_dh(eq_data_->dh_scalar_.get());
 
         dof_indices_ = cell_higher_dim.get_loc_dof_indices();
-        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
+        auto p_high = *( coupling_integral_->points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -750,7 +750,7 @@ public:
         // where B*x is the average jump of normal displacements and c is the average cross-section on element.
         // Positive value means that the fracture closes.
         double local_vector = 0;
-        for (auto p_high : this->points(coupling_integral_, neighb_side) )
+        for (auto p_high : coupling_integral_->points(neighb_side) )
         {
             auto p_low = p_high.lower_dim(cell_lower_dim);
             arma::vec3 nv = normal_join_(p_high);

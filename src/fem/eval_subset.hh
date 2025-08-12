@@ -79,11 +79,12 @@ public:
 
 protected:
     // Default constructor
-    FactoryBase() : patch_fe_values_(nullptr), quad_(nullptr)
+    FactoryBase() : patch_fe_values_(nullptr), element_cache_map_(nullptr), quad_(nullptr)
     {}
 
     // Constructor
-    FactoryBase(PatchFEValues<3> *pfev, Quadrature *quad) : patch_fe_values_(pfev), quad_(quad)
+    FactoryBase(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, Quadrature *quad)
+    : patch_fe_values_(pfev), element_cache_map_(element_cache_map), quad_(quad)
     {}
 
     /// Factory method. Creates operation of given OpType.
@@ -100,6 +101,7 @@ protected:
     }
 
     PatchFEValues<3> *patch_fe_values_;
+    ElementCacheMap *element_cache_map_;
     std::shared_ptr< FiniteElement<dim> > fe_;
     Quadrature *quad_;
 };
@@ -130,7 +132,7 @@ public:
     }
 
 
-    /// Returns range of bulk local points for appropriate cell accessor
+    /// Returns range of bulk local points for appropriate cell accessor - obsolete method
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
         auto bgn_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, begin_idx_));
         auto end_it = make_iter<BulkPoint>( BulkPoint(elm_cache_map, element_patch_idx, end_idx_));
@@ -153,15 +155,12 @@ protected:
 template<unsigned int qdim>
 class BulkIntegralAcc : public BulkIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
 public:
-    typedef BulkPoint PointType;
-    typedef unsigned int MeshItem;
-
     /// Default constructor
     BulkIntegralAcc() : BulkIntegral() {}
 
     /// Constructor of bulk integral
-    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
-     : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, quad)
+    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, unsigned int i_subset)
+     : BulkIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, element_cache_map, quad)
     {
         this->fe_ = pfev->fe_dim<qdim>();
     }
@@ -169,6 +168,13 @@ public:
     /// Destructor
     ~BulkIntegralAcc()
     {}
+
+    /// Returns range of bulk local points for appropriate cell accessor
+    inline Range< BulkPoint > points(unsigned int element_patch_idx) const {
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(this->element_cache_map_, element_patch_idx, begin_idx_));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(this->element_cache_map_, element_patch_idx, end_idx_));
+        return Range<BulkPoint>(bgn_it, end_it);
+    }
 
     /**
      * @brief Register the product of Jacobian determinant and the quadrature
@@ -297,7 +303,7 @@ public:
         return begin_idx_ + cell_side.side_idx() * n_points_per_side_;
     }
 
-    /// Returns range of side local points for appropriate cell side accessor
+    /// Returns range of side local points for appropriate cell side accessor - obsolete method
     inline Range< EdgePoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         //DebugOut() << "points per side: " << n_points_per_side_;
@@ -326,6 +332,10 @@ protected:
     friend class BoundaryPoint;
     friend class CouplingIntegral;
     friend class BoundaryIntegral;
+    template<unsigned int qdim>
+    friend class CouplingIntegralAcc;
+    template<unsigned int qdim>
+    friend class BoundaryIntegralAcc;
 };
 
 /**
@@ -336,15 +346,12 @@ protected:
 template<unsigned int qdim>
 class EdgeIntegralAcc : public EdgeIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
 public:
-    typedef EdgePoint PointType;
-    typedef DHCellSide MeshItem;
-
     /// Default constructor
     EdgeIntegralAcc() : EdgeIntegral() {}
 
     /// Constructor of bulk integral
-    EdgeIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, unsigned int i_subset)
-     : EdgeIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, quad)
+    EdgeIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, unsigned int i_subset)
+     : EdgeIntegral(eval_points, qdim, i_subset), FactoryBase<qdim>(pfev, element_cache_map, quad)
     {
         this->fe_ = pfev->fe_dim<qdim>();
     }
@@ -352,6 +359,19 @@ public:
     /// Destructor
     ~EdgeIntegralAcc()
     {}
+
+    /// Returns range of side local points for appropriate cell side accessor
+    inline Range< EdgePoint > points(const DHCellSide &cell_side) const {
+        ASSERT_EQ(cell_side.dim(), dim_);
+        //DebugOut() << "points per side: " << n_points_per_side_;
+        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint begin_idx = side_begin(cell_side);
+        auto bgn_it = make_iter<EdgePoint>( EdgePoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx));
+        auto end_it = make_iter<EdgePoint>( EdgePoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, n_points_per_side_), this, begin_idx));
+        return Range<EdgePoint>(bgn_it, end_it);
+    }
 
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
@@ -464,7 +484,7 @@ public:
         return eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx());
     }
 
-    /// Returns range of side local points for appropriate cell side accessor
+    /// Returns range of side local points for appropriate cell side accessor - obsolete method
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
@@ -488,17 +508,14 @@ private:
 template<unsigned int qdim>
 class CouplingIntegralAcc : public CouplingIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<1>> {
 public:
-    typedef CouplingPoint PointType;
-    typedef DHCellSide MeshItem;
-
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
 
     /// Constructor of bulk integral
     CouplingIntegralAcc(std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral, std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral,
-            Quadrature *quad, PatchFEValues<3> *pfev)
+            Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
     : CouplingIntegral(edge_integral, bulk_integral),
-	  FactoryBase<qdim>(pfev, quad),
+	  FactoryBase<qdim>(pfev, element_cache_map, quad),
 	  edge_integral_acc_(edge_integral), bulk_integral_acc_(bulk_integral)
     {
         this->fe_ = pfev->fe_dim<qdim>();
@@ -510,6 +527,18 @@ public:
     {
     	edge_integral_acc_.reset();
     	bulk_integral_acc_.reset();
+    }
+
+    /// Returns range of side local points for appropriate cell side accessor
+    inline Range< CouplingPoint > points(const DHCellSide &cell_side) const {
+        ASSERT_EQ(cell_side.dim(), dim_);
+        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint begin_idx = edge_integral_acc_->side_begin(cell_side);
+        auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx) );
+        auto end_it = make_iter<CouplingPoint>( CouplingPoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, edge_integral_acc_->n_points_per_side_), this, begin_idx) );;
+        return Range<CouplingPoint>(bgn_it, end_it);
     }
 
     /// Factory method. Same as previous but creates FE operation.
@@ -579,16 +608,13 @@ private:
 template<>
 class CouplingIntegralAcc<1> : public CouplingIntegral, public FactoryBase<1>, public std::enable_shared_from_this<CouplingIntegralAcc<1>> {
 public:
-    typedef CouplingPoint PointType;
-    typedef DHCellSide MeshItem;
-
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
 
     /// Constructor of bulk integral
-    CouplingIntegralAcc(Quadrature *quad, PatchFEValues<3> *pfev)
+    CouplingIntegralAcc(Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
     : CouplingIntegral(),
-      FactoryBase<1>(pfev, quad)
+      FactoryBase<1>(pfev, element_cache_map, quad)
     {
         this->fe_ = pfev->fe_dim<1>();
     }
@@ -596,6 +622,13 @@ public:
     /// Destructor
     ~CouplingIntegralAcc()
     {}
+
+    /// Returns empty point range
+    inline Range< CouplingPoint > points(const DHCellSide &cell_side) const {
+        ASSERT_EQ(cell_side.dim(), dim_);
+        auto iter = make_iter<CouplingPoint>( CouplingPoint() );
+        return Range<CouplingPoint>(iter, iter);
+    }
 
     /// Define empty operations
     inline FeQ<Scalar> JxW()
@@ -661,7 +694,7 @@ public:
         return eval_points_->subset_begin(dim_-1, bulk_integral_->get_subset_idx());
     }
 
-    /// Returns range of bulk local points for appropriate cell accessor
+    /// Returns range of bulk local points for appropriate cell accessor - obsolete method
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
@@ -686,17 +719,14 @@ protected:
 template<unsigned int qdim>
 class BoundaryIntegralAcc : public BoundaryIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<qdim>> {
 public:
-    typedef BoundaryPoint PointType;
-    typedef DHCellSide MeshItem;
-
     /// Default constructor
     BoundaryIntegralAcc() : BoundaryIntegral() {}
 
     /// Constructor of bulk integral
     BoundaryIntegralAcc(std::shared_ptr<EdgeIntegralAcc<qdim>> edge_integral, std::shared_ptr<BulkIntegralAcc<qdim-1>> bulk_integral,
-            Quadrature *quad, PatchFEValues<3> *pfev)
+            Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
     : BoundaryIntegral(edge_integral, bulk_integral),
-	  FactoryBase<qdim>(pfev, quad),
+	  FactoryBase<qdim>(pfev, element_cache_map, quad),
 	  edge_integral_acc_(edge_integral), bulk_integral_acc_(bulk_integral)
     {
         this->fe_ = pfev->fe_dim<qdim>();
@@ -707,6 +737,18 @@ public:
     {
     	edge_integral_acc_.reset();
     	bulk_integral_acc_.reset();
+    }
+
+    /// Returns range of bulk local points for appropriate cell accessor
+    inline Range< BoundaryPoint > points(const DHCellSide &cell_side) const {
+        ASSERT_EQ(cell_side.dim(), dim_);
+        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint begin_idx = edge_integral_acc_->side_begin(cell_side);
+        auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx) );
+        auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
+                BulkPoint(this->element_cache_map_, element_patch_idx, edge_integral_acc_->n_points_per_side_), this, begin_idx) );;
+        return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
     /// Same as BulkValues::JxW but register at side quadrature points.

@@ -120,7 +120,7 @@ public:
     	this->reset_offsets();
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            auto p = *( this->points(bulk_integral_, element_patch_idx).begin() ); // evaluation point (in element center)
+            auto p = *( bulk_integral_->points(element_patch_idx).begin() ); // evaluation point (in element center)
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx());
             this->offsets_[field_value_cache_position] = val_idx;
@@ -181,7 +181,7 @@ public:
     	for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
             val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(bulk_integral_data[i].cell.elm_idx()) ];
-            auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
+            auto p = *( bulk_integral_->points(element_patch_idx).begin() );
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             for (uint j=0; j<bulk_integral_data[i].cell.dim()+1; ++j) {
                 this->offsets_[field_value_cache_position+j] = val_idx+j;

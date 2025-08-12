@@ -75,7 +75,7 @@ public:
         ASSERT(l_indices_.n_elem == cell.elm().element()->n_sides());
 
         // set initial condition
-        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx).begin() );
         double init_value = eq_fields_->init_pressure(p);
 
         for (unsigned int i=0; i<cell.elm()->n_sides(); i++) {
@@ -184,7 +184,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, eq_fields_->conductivity(p));
@@ -203,7 +203,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->points(bdr_integral_, cell_side).begin() );
+        auto p_side = *( bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -231,7 +231,7 @@ public:
         bulk_local_idx_ = cell_lower_dim.local_idx();
 
         // Evaluation points
-        auto p_high = *( this->points(coupling_integral_, neighb_side).begin() );
+        auto p_high = *( coupling_integral_->points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
         fe_values_side_.reinit(neighb_side.side());
@@ -707,7 +707,7 @@ protected:
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
         	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
-        	auto p = *( this->points(bulk_integral_, pos_in_cache).begin() );
+        	auto p = *( bulk_integral_->points(pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
             eq_data_->bc_fluxes_reconstruted[bulk_local_idx_] = true;
@@ -815,7 +815,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->points(this->bulk_integral_, element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity

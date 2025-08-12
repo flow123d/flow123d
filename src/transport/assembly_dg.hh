@@ -84,7 +84,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                 {
                     local_matrix_[i*ndofs_+j] = 0;
-                    for (auto p : this->points(conc_integral_, element_patch_idx) )
+                    for (auto p : conc_integral_->points(element_patch_idx) )
                     {
                         local_matrix_[i*ndofs_+j] += (eq_fields_->mass_matrix_coef(p)+eq_fields_->retardation_coef[sbi](p)) *
                                 conc_shape_.shape(j)(p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -96,7 +96,7 @@ public:
             {
                 local_mass_balance_vector_[i] = 0;
                 local_retardation_balance_vector_[i] = 0;
-                for (auto p : this->points(conc_integral_, element_patch_idx) )
+                for (auto p : conc_integral_->points(element_patch_idx) )
                 {
                     local_mass_balance_vector_[i] += eq_fields_->mass_matrix_coef(p)*conc_shape_.shape(i)(p)*JxW_(p);
                     local_retardation_balance_vector_[i] -= eq_fields_->retardation_coef[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
@@ -314,7 +314,7 @@ public:
                 for (unsigned int j=0; j<ndofs_; j++)
                     local_matrix_[i*ndofs_+j] = 0;
 
-            for (auto p : this->points(conc_bulk_integral_, element_patch_idx) )
+            for (auto p : conc_bulk_integral_->points(element_patch_idx) )
             {
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
@@ -349,20 +349,20 @@ public:
         {
             std::fill(local_matrix_.begin(), local_matrix_.end(), 0);
 
-            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_bdr_integral_, cell_side), JxW_bdr_, normal_bdr_);
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], conc_bdr_integral_->points(cell_side), JxW_bdr_, normal_bdr_);
             double transport_flux = side_flux/side.measure();
 
             // On Neumann boundaries we have only term from integrating by parts the advective term,
             // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-            auto p_side = *( this->points(conc_bdr_integral_, cell_side).begin() );
+            auto p_side = *( conc_bdr_integral_->points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                auto p = *( this->points(conc_bdr_integral_, cell_side).begin() );
+                auto p = *( conc_bdr_integral_->points(cell_side).begin() );
                 gamma_l = DG_penalty_boundary(side, 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_bdr_integral_, cell_side), normal_bdr_(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], conc_bdr_integral_->points(cell_side), normal_bdr_(p)),
                                               transport_flux,
                                               eq_fields_->dg_penalty[sbi](p_side));
                 transport_flux += gamma_l;
@@ -370,7 +370,7 @@ public:
 
             // fluxes and penalty
             k=0;
-            for (auto p : this->points(conc_bdr_integral_, cell_side) )
+            for (auto p : conc_bdr_integral_->points(cell_side) )
             {
                 double flux_times_JxW;
                 if (bc_type == AdvectionDiffusionModel::abc_total_flux)
@@ -427,7 +427,7 @@ public:
             ++sid;
         }
         auto zero_edge_side = *edge_side_range.begin();
-        auto p = *( this->points(conc_edge_integral_, zero_edge_side).begin() );
+        auto p = *( conc_edge_integral_->points(zero_edge_side).begin() );
         arma::vec3 normal_vector = normal_(p);
 
         // fluxes and penalty
@@ -438,7 +438,7 @@ public:
             sid=0;
             for( DHCellSide edge_side : edge_side_range )
             {
-                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_edge_integral_, edge_side), JxW_side_, normal_) / edge_side.measure();
+                fluxes[sid] = advective_flux(eq_fields_->advection_coef[sbi], conc_edge_integral_->points(edge_side), JxW_side_, normal_) / edge_side.measure();
                 if (fluxes[sid] > 0)
                     pflux += fluxes[sid];
                 else
@@ -451,7 +451,7 @@ public:
             for (DHCellSide edge_side : edge_side_range)
             {
                 k=0;
-                for (auto p : this->points(conc_edge_integral_, edge_side) )
+                for (auto p : conc_edge_integral_->points(edge_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                         averages[s1][k*ndofs_+i] = conc_shape_side_.shape(i)(p)*0.5;
@@ -472,7 +472,7 @@ public:
                     if (s2<=s1) continue;
                     ASSERT(edge_side1.is_valid()).error("Invalid side of edge.");
 
-                    auto p = *( this->points(conc_edge_integral_, edge_side1).begin() );
+                    auto p = *( conc_edge_integral_->points(edge_side1).begin() );
                     arma::vec3 nv = normal_(p);
 
                     // set up the parameters for DG method
@@ -488,7 +488,7 @@ public:
 
                     delta[0] = 0;
                     delta[1] = 0;
-                    for (auto p1 : this->points(conc_edge_integral_, edge_side1) )
+                    for (auto p1 : conc_edge_integral_->points(edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
                         delta[0] += dot(eq_fields_->diffusion_coef[sbi](p1)*normal_vector,normal_vector);
@@ -520,7 +520,7 @@ public:
 
                     // precompute jumps and weighted averages of shape functions over the pair of sides (s1,s2)
                     k=0;
-                    for (auto p1 : this->points(conc_edge_integral_, edge_side1) )
+                    for (auto p1 : conc_edge_integral_->points(edge_side1) )
                     {
                         auto p2 = p1.point_on(edge_side2);
                         for (unsigned int i=0; i<ndofs_; i++)
@@ -545,7 +545,7 @@ public:
                                     local_matrix_[i*ndofs_+j] = 0;
 
                             k=0;
-                            for (auto p1 : this->points(conc_edge_integral_, zero_edge_side) )
+                            for (auto p1 : conc_edge_integral_->points(zero_edge_side) )
                             //for (k=0; k<this->quad_low_->size(); ++k)
                             {
                                 for (unsigned int i=0; i<ndofs_; i++)
@@ -612,7 +612,7 @@ public:
                     local_matrix_[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
             // set transmission conditions
-            for (auto p_high : this->points(conc_join_integral_, neighb_side) )
+            for (auto p_high : conc_join_integral_->points(neighb_side) )
             {
                 auto p_low = p_high.lower_dim(cell_lower_dim);
                 // The communication flux has two parts:
@@ -745,7 +745,7 @@ public:
             local_source_balance_vector_.assign(ndofs_, 0);
             local_source_balance_rhs_.assign(ndofs_, 0);
 
-            for (auto p : this->points(conc_integral_, element_patch_idx) )
+            for (auto p : conc_integral_->points(element_patch_idx) )
             {
                 source = (eq_fields_->sources_density_out[sbi](p) + eq_fields_->sources_conc_out[sbi](p)*eq_fields_->sources_sigma_out[sbi](p))*JxW_(p);
 
@@ -756,7 +756,7 @@ public:
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
-                for (auto p : this->points(conc_integral_, element_patch_idx) )
+                for (auto p : conc_integral_->points(element_patch_idx) )
                 {
                     local_source_balance_vector_[i] -= eq_fields_->sources_sigma_out[sbi](p)*conc_shape_.shape(i)(p)*JxW_(p);
                 }
@@ -865,15 +865,15 @@ public:
             local_flux_balance_vector_.assign(ndofs_, 0);
             local_flux_balance_rhs_ = 0;
 
-            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_integral_, cell_side), JxW_, normal_);
+            double side_flux = advective_flux(eq_fields_->advection_coef[sbi], conc_integral_->points(cell_side), JxW_, normal_);
             double transport_flux = side_flux/cell_side.measure();
 
-            auto p_side = *( this->points(conc_integral_, cell_side)).begin();
+            auto p_side = *( conc_integral_->points(cell_side)).begin();
             auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
             if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
             {
-                for (auto p : this->points(conc_integral_, cell_side) )
+                for (auto p : conc_integral_->points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = -transport_flux*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
@@ -885,16 +885,16 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_dirichlet)
             {
-                double side_flux = advective_flux(eq_fields_->advection_coef[sbi], this->points(conc_integral_, cell_side), JxW_, normal_);
+                double side_flux = advective_flux(eq_fields_->advection_coef[sbi], conc_integral_->points(cell_side), JxW_, normal_);
                 double transport_flux = side_flux/cell_side.measure();
 
-                auto p = *( this->points(conc_integral_, cell_side).begin() );
+                auto p = *( conc_integral_->points(cell_side).begin() );
                 double gamma_l = DG_penalty_boundary(cell_side.side(), 
-                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], this->points(conc_integral_, cell_side), normal_(p)),
+                                              diffusion_delta(eq_fields_->diffusion_coef[sbi], conc_integral_->points(cell_side), normal_(p)),
                                               transport_flux, 
                                               eq_fields_->dg_penalty[sbi](p_bdr));
 
-                for (auto p : this->points(conc_integral_, cell_side) )
+                for (auto p : conc_integral_->points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = gamma_l*eq_fields_->bc_dirichlet_value[sbi](p_bdr)*JxW_(p);
@@ -903,7 +903,7 @@ public:
                         local_rhs_[i] += bc_term*conc_shape_.shape(i)(p)
                                 + arma::dot(bc_grad,conc_grad_.shape(i)(p));
                 }
-                for (auto p : this->points(conc_integral_, cell_side) )
+                for (auto p : conc_integral_->points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                     {
@@ -918,7 +918,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_total_flux)
             {
-            	for (auto p : this->points(conc_integral_, cell_side) )
+            	for (auto p : conc_integral_->points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
@@ -929,7 +929,7 @@ public:
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    for (auto p : this->points(conc_integral_, cell_side) ) {
+                    for (auto p : conc_integral_->points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p) * eq_fields_->bc_robin_sigma[sbi](p_bdr) *
                                 JxW_(p) * conc_shape_.shape(i)(p);
@@ -939,7 +939,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_diffusive_flux)
             {
-            	for (auto p : this->points(conc_integral_, cell_side) )
+            	for (auto p : conc_integral_->points(cell_side) )
                 {
                     auto p_bdr = p.point_bdr(bc_elm);
                     double bc_term = eq_fields_->cross_section(p) * (eq_fields_->bc_robin_sigma[sbi](p_bdr)*eq_fields_->bc_dirichlet_value[sbi](p_bdr) +
@@ -950,7 +950,7 @@ public:
 
                 for (unsigned int i=0; i<ndofs_; i++)
                 {
-                    for (auto p : this->points(conc_integral_, cell_side) ) {
+                    for (auto p : conc_integral_->points(cell_side) ) {
                         auto p_bdr = p.point_bdr(bc_elm);
                         local_flux_balance_vector_[i] += eq_fields_->cross_section(p)*(arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p)) +
                         		eq_fields_->bc_robin_sigma[sbi](p_bdr))*JxW_(p)*conc_shape_.shape(i)(p);
@@ -960,7 +960,7 @@ public:
             }
             else if (bc_type == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
             {
-                for (auto p : this->points(conc_integral_, cell_side) )
+                for (auto p : conc_integral_->points(cell_side) )
                 {
                     for (unsigned int i=0; i<ndofs_; i++)
                         local_flux_balance_vector_[i] += arma::dot(eq_fields_->advection_coef[sbi](p), normal_(p))*JxW_(p)*conc_shape_.shape(i)(p);
@@ -1065,7 +1065,7 @@ public:
                     local_matrix_[i*ndofs_+j] = 0;
             }
 
-            for (auto p : this->points(init_integral_, element_patch_idx) )
+            for (auto p : init_integral_->points(element_patch_idx) )
             {
                 double rhs_term = eq_fields_->init_condition[sbi](p)*JxW_(p);
 
@@ -1150,7 +1150,7 @@ public:
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
             k=0;
-            for (auto p : this->points(init_integral_, element_patch_idx) )
+            for (auto p : init_integral_->points(element_patch_idx) )
             {
                 double val = eq_fields_->init_condition[sbi](p);
 

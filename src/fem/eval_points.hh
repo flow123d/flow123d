@@ -29,6 +29,7 @@
 
 class Side;
 class Quadrature;
+class ElementCacheMap;
 class BulkIntegral;
 class EdgeIntegral;
 class CouplingIntegral;
@@ -100,7 +101,7 @@ public:
 
     /// It will replace previous method, will be changed during further development.
     template <unsigned int dim>
-    std::shared_ptr<BulkIntegralAcc<dim>> add_bulk_accessor(Quadrature *, PatchFEValues<3> *);
+    std::shared_ptr<BulkIntegralAcc<dim>> add_bulk_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
@@ -108,7 +109,7 @@ public:
 
     /// It will replace previous method, will be changed during further development.
     template <unsigned int dim>
-    std::shared_ptr<EdgeIntegralAcc<dim>> add_edge_accessor(Quadrature *, PatchFEValues<3> *);
+    std::shared_ptr<EdgeIntegralAcc<dim>> add_edge_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
 
     /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
     template <unsigned int dim>
@@ -116,7 +117,7 @@ public:
 
     /// It will replace previous method, will be changed during further development.
     template <unsigned int dim>
-    std::shared_ptr<CouplingIntegralAcc<dim>> add_coupling_accessor(Quadrature *, PatchFEValues<3> *);
+    std::shared_ptr<CouplingIntegralAcc<dim>> add_coupling_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
 
     /// The same as add_bulk but for edge points on boundary sides.
     template <unsigned int dim>
@@ -124,7 +125,7 @@ public:
 
     /// It will replace previous method, will be changed during further development.
     template <unsigned int dim>
-    std::shared_ptr<BoundaryIntegralAcc<dim>> add_boundary_accessor(Quadrature *, PatchFEValues<3> *);
+    std::shared_ptr<BoundaryIntegralAcc<dim>> add_boundary_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {

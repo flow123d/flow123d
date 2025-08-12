@@ -76,13 +76,13 @@ public:
         double ref_pot = 0;
         if (dh_side.side().is_boundary())
         {
-            auto p_side = *this->points(bdr_integral_, dh_side).begin();
+            auto p_side = *bdr_integral_->points(dh_side).begin();
             auto p_bdr = p_side.point_bdr( dh_side.cond().element_accessor() );
             unsigned int flow_bc_type = eq_data_->flow_->eq_fields().bc_type(p_bdr);
             if (flow_bc_type == DarcyLMH::EqFields::dirichlet || flow_bc_type == DarcyLMH::EqFields::total_flux)
             {
                 unsigned int k=0;
-                for ( auto p : this->points(bdr_integral_, dh_side) )
+                for ( auto p : bdr_integral_->points(dh_side) )
                 {
                     // The reference potential is applied only on dirichlet and total_flux b.c.,
                     // i.e. where only mechanical traction is prescribed.
@@ -158,7 +158,7 @@ public:
 
         // compute pressure error
         unsigned int k=0;
-        for (auto p : this->points(bulk_integral_, element_patch_idx) )
+        for (auto p : bulk_integral_->points(element_patch_idx) )
         {
             double new_p = eq_data_->flow_->eq_fields().field_ele_pressure(p);
             double old_p = eq_fields_->old_iter_pressure(p);

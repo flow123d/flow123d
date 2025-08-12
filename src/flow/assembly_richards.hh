@@ -62,7 +62,7 @@ public:
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
         const DHCellAccessor dh_cell = cell.cell_with_other_dh(this->eq_data_->dh_.get());
 
-        auto p = *( this->points(bulk_integral_, element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx).begin() );
         bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
@@ -190,7 +190,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->points(this->bulk_integral_, element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         this->asm_sides(cell, p, this->compute_conductivity(cell, p));
@@ -205,7 +205,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->points(this->bdr_integral_, cell_side).begin() );
+        auto p_side = *( this->bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -417,7 +417,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->points(this->bulk_integral_, element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity

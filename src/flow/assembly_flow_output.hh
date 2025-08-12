@@ -115,7 +115,7 @@ public:
             }
 
         unsigned int i_point=0, oposite_node;
-        for (auto p : this->points(output_integral_, element_patch_idx) )
+        for (auto p : output_integral_->points(element_patch_idx) )
         {
             q_point_ = fe_values_.point(i_point);
 
@@ -293,7 +293,7 @@ public:
         ss << fmt::format("{} {} ", cell.elm().input_id(), eq_data_->flow_data_->full_solution.get(indices[ele->n_sides()]));
 
         // velocity at element center
-        auto p = *( this->points(output_integral_, element_patch_idx).begin() );
+        auto p = *( output_integral_->points(element_patch_idx).begin() );
         flux_in_center_ = eq_fields_->field_ele_velocity(p);
         for (unsigned int i = 0; i < 3; i++)
         	ss << flux_in_center_[i] << " ";

@@ -135,7 +135,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of bulk integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.bulk_ = result;
         return result;
     }
@@ -151,7 +151,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of edge integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.edge_ = result;
         return result;
     }
@@ -168,7 +168,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of coupling integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_coupling_accessor<dim>(quad, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_coupling_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.coupling_ = result;
         return result;
     }
@@ -185,7 +185,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of boundary integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad, &asm_internals_->fe_values_);
+        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.boundary_ = result;
         return result;
     }
@@ -216,20 +216,6 @@ public:
     inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
         ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
 	    return integrals_.boundary_->points(cell_side, &this->asm_internals_->element_cache_map_);
-    }
-
-    /**
-     * Create point range of different type of integral accessors.
-     *
-     * @param integral  Integral whose range is created.
-     * @param mesh_item Parameter of range method specialized by type of integral:
-     *                  unsigned int - index of element on patch in case of BulkIntegral
-     *                  DHCellSide - accessor to cell side in case of other integral types
-     * @return          Point range of appropriate integral.
-     */
-    template <class QIntegral>
-    Range< typename QIntegral::PointType > points(std::shared_ptr<QIntegral> integral, typename QIntegral::MeshItem mesh_item) const {
-        return integral->points(mesh_item, &asm_internals_->element_cache_map_);
     }
 
     /// Assembles the cell integrals for the given dimension.

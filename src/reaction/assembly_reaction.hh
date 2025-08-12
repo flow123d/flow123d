@@ -60,7 +60,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
-        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
+        auto p = *( mass_integral_->points(element_patch_idx).begin() );
 
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < eq_data_->substances_.size(); sbi++)
@@ -117,7 +117,7 @@ public:
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
-        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
+        auto p = *( mass_integral_->points(element_patch_idx).begin() );
 
         // if porosity_immobile == 0 then mobile concentration stays the same
         // and immobile concentration cannot change
@@ -227,7 +227,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         dof_p0_ = cell.get_loc_dof_indices()[0];
-        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
+        auto p = *( mass_integral_->points(element_patch_idx).begin() );
 
         //setting initial solid concentration for substances involved in adsorption
         for (unsigned int sbi = 0; sbi < eq_data_->n_substances_; sbi++)
@@ -287,7 +287,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int i_subst, subst_id;
-        auto p = *( this->points(mass_integral_, element_patch_idx).begin() );
+        auto p = *( mass_integral_->points(element_patch_idx).begin() );
 
         reg_idx_ = cell.elm().region().bulk_idx();
         dof_p0_ = cell.get_loc_dof_indices()[0];
