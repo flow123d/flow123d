@@ -65,6 +65,7 @@ problem: !Coupling_Sequential
           - region: BULK
             young_modulus: 1e8
             poisson_ratio: 0.25
+            shear_modulus: 0.4e8
 
           - region: .top_y
             bc_type: traction

@@ -44,9 +44,9 @@ struct fn_hm_coupling_beta {
     fn_hm_coupling_beta(double beta_f) : beta_factor(beta_f) {}
 
 
-    inline double operator() (double alpha, double lame_mu, double lame_lambda, double density, double gravity)
+    inline double operator() (double alpha, arma::vec3 lame_mu, arma::vec3 lame_lambda, double density, double gravity)
     {
-        return beta_factor*0.5*alpha*alpha/(2*lame_mu/3 + lame_lambda)*density*gravity;
+        return beta_factor*0.5*alpha*alpha/(2*min(lame_mu)/3 + min(lame_lambda))*density*gravity;
     }
 
 private:
