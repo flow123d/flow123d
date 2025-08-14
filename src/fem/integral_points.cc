@@ -49,15 +49,15 @@ BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
 /******************************************************************************
  * Temporary implementations. Intermediate step in implementation of PatcFEValues.
  */
-
-unsigned int EdgePoint::side_idx() const {
-    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
-}
-
-unsigned int CouplingPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
-}
-
-unsigned int BoundaryPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
-}
+//
+//unsigned int EdgePoint::side_idx() const {
+//    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
+//}
+//
+//unsigned int CouplingPoint::side_idx() const {
+//    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
+//}
+//
+//unsigned int BoundaryPoint::side_idx() const {
+//    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
+//}
