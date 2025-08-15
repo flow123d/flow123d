@@ -97,41 +97,6 @@ public:
         return dim_eval_points_[dim].n_subsets();
     }
 
-//    /**
-//     * Registers point set from quadrature.
-//     * Returns an object referencing to the EvalPoints and list of its points.
-//     */
-//    template <unsigned int dim>
-//    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &);
-//
-//    /// It will replace previous method, will be changed during further development.
-//    template <unsigned int dim>
-//    std::shared_ptr<BulkIntegralAcc<dim>> add_bulk_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
-//
-//    /// The same as add_bulk but for edge points on sides.
-//    template <unsigned int dim>
-//    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
-//
-//    /// It will replace previous method, will be changed during further development.
-//    template <unsigned int dim>
-//    std::shared_ptr<EdgeIntegralAcc<dim>> add_edge_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
-//
-//    /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
-//    template <unsigned int dim>
-//    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
-//
-//    /// It will replace previous method, will be changed during further development.
-//    template <unsigned int dim>
-//    std::shared_ptr<CouplingIntegralAcc<dim>> add_coupling_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
-//
-//    /// The same as add_bulk but for edge points on boundary sides.
-//    template <unsigned int dim>
-//    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
-//
-//    /// It will replace previous method, will be changed during further development.
-//    template <unsigned int dim>
-//    std::shared_ptr<BoundaryIntegralAcc<dim>> add_boundary_accessor(Quadrature *, PatchFEValues<3> *, ElementCacheMap *);
-
     /**
      * Registers point set from quadrature.
      *
@@ -228,12 +193,6 @@ private:
 
     /// Maps of all EdgeIntegrals of dimensions 1,2,3
     IntegralPtrSet<internal_integrals::Edge> edge_integrals_;
-
-    /// BulkIntegral objects of dimension 0,1,2,3. Temporary data member.
-    std::array< std::shared_ptr<BulkIntegral>, 4> bulk_integrals_tmp_;
-
-    /// EdgeIntegral objects of dimension 1,2,3. Temporary data member.
-    std::array< std::shared_ptr<EdgeIntegral>, 3> edge_integrals_tmp_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;

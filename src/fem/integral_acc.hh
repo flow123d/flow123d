@@ -816,14 +816,6 @@ public:
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
 
-//    /// Constructor of bulk integral
-//    CouplingIntegralAcc(Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-//    : BaseIntegral(),
-//      FactoryBase<1>(pfev, element_cache_map, quad)
-//    {
-//        this->fe_ = pfev->fe_dim<1>();
-//    }
-
     /// Constructor of ngh integral
     CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
      : CouplingIntegral(),
