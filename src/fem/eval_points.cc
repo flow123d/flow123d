@@ -35,7 +35,8 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal(Quadratu
     ASSERT_EQ(dim, quad->dim());
 
     auto result = bulk_integrals_.insert( std::make_shared<internal_integrals::Bulk>(quad, quad->dim()) );
-    if (result.second) {
+    bool item_add = result.second;
+    if (item_add) {
         dim_eval_points_[dim].add_local_points<dim>( quad->get_points() );
         uint i_subset = dim_eval_points_[dim].add_subset();
         std::shared_ptr<internal_integrals::Bulk> int_ptr = *result.first;
@@ -51,7 +52,8 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal<0>(Quadr
     ASSERT_EQ(0, quad->dim());
 
     auto result = bulk_integrals_.insert( std::make_shared<internal_integrals::Bulk>(quad, quad->dim()) );
-    if (result.second) {
+    bool item_add = result.second;
+    if (item_add) {
         uint i_subset = dim_eval_points_[0].add_subset();
         std::shared_ptr<internal_integrals::Bulk> int_ptr = *result.first;
         int_ptr->init(shared_from_this(), i_subset);
@@ -66,7 +68,8 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
     ASSERT_EQ(dim, quad->dim()+1);
 
     auto result = edge_integrals_.insert( std::make_shared<internal_integrals::Edge>(quad, quad->dim()+1) );
-    if (result.second) {
+    bool item_add = result.second;
+    if (item_add) {
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature high_dim_q = quad->make_from_side<dim>(i);
             dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
