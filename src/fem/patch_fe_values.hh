@@ -341,6 +341,7 @@ private:
 
     std::vector< PatchOp<spacedim> *> operations_;
     std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
+    //OperationSet< PatchOp<spacedim> > op_dependency_;
 
     friend class PatchOp<spacedim>;
 };

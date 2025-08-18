@@ -52,4 +52,29 @@ template<typename Integral>
 using IntegralPtrSet = std::unordered_set<std::shared_ptr<Integral>, IntegralPtrHash<Integral>, IntegralPtrEqual<Integral>>;
 
 
+
+/// Define Operation hash function
+template<typename Operation>
+struct OperationPtrHash {
+    std::size_t operator()(const Operation* key) const {
+        std::size_t h1 = std::hash<std::string>()(typeid(*key).name());
+        std::size_t h2 = std::hash<std::size_t>()(key->quad()->size());
+        return h1 ^ (h2 << 1);
+    }
+};
+
+/// Content-based equality for Operation*
+template<typename Operation>
+struct OperationPtrEqual {
+    bool operator()(const Operation* lhs, const Operation* rhs) const {
+        return *lhs == *rhs;
+    }
+};
+
+/// Alias for unordered_set of shared_ptr<Integral> with custom hash
+template<typename Operation>
+using OperationSet = std::unordered_set<Operation *, OperationPtrHash<Operation>, OperationPtrEqual<Operation>>;
+
+
+
 #endif /* INTEGRAL_DATA_HH_ */
