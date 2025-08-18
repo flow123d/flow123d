@@ -198,11 +198,7 @@ public:
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
 	  multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
-	  min_edge_sides_(2),
-	  bulk_integral_data_(20, 10),
-	  edge_integral_data_(12, 6),
-	  coupling_integral_data_(12, 6),
-	  boundary_integral_data_(8, 4)
+	  min_edge_sides_(2)
     {
         initialize();
     }
@@ -216,11 +212,7 @@ public:
     : GenericAssemblyBase(eq_data->quad_order(), dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
-      min_edge_sides_(2),
-      bulk_integral_data_(20, 10),
-      edge_integral_data_(12, 6),
-      coupling_integral_data_(12, 6),
-      boundary_integral_data_(8, 4)
+      min_edge_sides_(2)
     {
         initialize();
     }
