@@ -81,20 +81,14 @@ protected:
 template<unsigned int dim>
 class FactoryBase
 {
-public:
-    /// Getter of quadrature
-    const Quadrature *get_quad() const {
-        return quad_;
-    }
-
 protected:
     // Default constructor
     FactoryBase() : patch_fe_values_(nullptr), element_cache_map_(nullptr), quad_(nullptr)
     {}
 
     // Constructor
-    FactoryBase(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, Quadrature *quad)
-    : patch_fe_values_(pfev), element_cache_map_(element_cache_map), quad_(quad)
+    FactoryBase(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
+    : patch_fe_values_(pfev), element_cache_map_(element_cache_map), fe_(fe), quad_(quad)
     {}
 
     /// Factory method. Creates operation of given OpType.
@@ -114,6 +108,11 @@ protected:
     ElementCacheMap *element_cache_map_;
     std::shared_ptr< FiniteElement<dim> > fe_;
     Quadrature *quad_;
+
+    friend class BulkIntegralAcc<dim>;
+    friend class EdgeIntegralAcc<dim>;
+    friend class CouplingIntegralAcc<dim>;
+    friend class BoundaryIntegralAcc<dim>;
 };
 
 
@@ -153,7 +152,7 @@ protected:
     Quadrature *quad_;
 };
 
-class Bulk : public Base, public std::enable_shared_from_this<Bulk> {
+class Bulk : public Base {
 public:
     typedef BulkPoint PointType;
     typedef unsigned int MeshItem;
@@ -199,7 +198,7 @@ private:
     friend class ::BoundaryIntegralAcc;
 };
 
-class Edge : public Base, public std::enable_shared_from_this<Edge> {
+class Edge : public Base {
 public:
     typedef EdgePoint PointType;
     typedef DHCellSide MeshItem;
@@ -258,7 +257,7 @@ private:
 /**
  * Integral class of bulk points, allows assemblation of volume integrals.
  */
-class BulkIntegral : public BaseIntegral, public std::enable_shared_from_this<BulkIntegral> {
+class BulkIntegral : public BaseIntegral {
 public:
     /// Default constructor
     BulkIntegral() : BaseIntegral() {}
@@ -309,18 +308,16 @@ protected:
  * IN DEVELOPMENT
  */
 template<unsigned int qdim>
-class BulkIntegralAcc : public BulkIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BulkIntegralAcc<qdim>> {
+class BulkIntegralAcc : public BulkIntegral {
 public:
     /// Default constructor
     BulkIntegralAcc() : BulkIntegral() {}
 
     /// Constructor of bulk integral
     BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-     : BulkIntegral(eval_points, quad, qdim), FactoryBase<qdim>(pfev, element_cache_map, quad)
+     : BulkIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim(), qdim);
-
-        this->fe_ = pfev->fe_dim<qdim>();
 	}
 
     /// Destructor
@@ -329,8 +326,8 @@ public:
 
     /// Returns range of bulk local points for appropriate cell accessor
     inline Range< BulkPoint > points(unsigned int element_patch_idx) const {
-        auto bgn_it = make_iter<BulkPoint>( BulkPoint(this->element_cache_map_, element_patch_idx, internal_bulk_->begin_idx_));
-        auto end_it = make_iter<BulkPoint>( BulkPoint(this->element_cache_map_, element_patch_idx, internal_bulk_->end_idx_));
+        auto bgn_it = make_iter<BulkPoint>( BulkPoint(factory_.element_cache_map_, element_patch_idx, internal_bulk_->begin_idx_));
+        auto end_it = make_iter<BulkPoint>( BulkPoint(factory_.element_cache_map_, element_patch_idx, internal_bulk_->end_idx_));
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
@@ -342,13 +339,13 @@ public:
      */
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::BulkDomain, 3> >());
+        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim, Op::BulkDomain, 3> >());
     }
 
 	/// Create bulk accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<qdim, Op::BulkDomain, 3> >());
+        return FeQ<Vector>(factory_.template make_patch_op< Op::PtCoords<qdim, Op::BulkDomain, 3> >());
     }
 
 //    inline ElQ<Tensor> jacobian(std::initializer_list<Quadrature *> quad_list)
@@ -357,7 +354,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>( this->template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, Op::BulkDomain, 3> >() );
+        return ElQ<Scalar>( factory_.template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, Op::BulkDomain, 3> >() );
     }
 
     /**
@@ -368,7 +365,7 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -379,7 +376,7 @@ public:
      */
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
     }
 
 //    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
@@ -393,7 +390,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -404,7 +401,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -415,7 +412,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
     }
 
     /**
@@ -426,14 +423,18 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
     }
+
+private:
+    /// Defines interface of operation accessors declaration
+    FactoryBase<qdim> factory_;
 };
 
 /**
  * Integral class of side points, allows assemblation of element - element fluxes.
  */
-class EdgeIntegral : public BaseIntegral, public std::enable_shared_from_this<EdgeIntegral> {
+class EdgeIntegral : public BaseIntegral {
 public:
     /// Default constructor
 	EdgeIntegral() : BaseIntegral()
@@ -514,19 +515,16 @@ protected:
  * IN DEVELOPMENT
  */
 template<unsigned int qdim>
-class EdgeIntegralAcc : public EdgeIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<EdgeIntegralAcc<qdim>> {
+class EdgeIntegralAcc : public EdgeIntegral {
 public:
     /// Default constructor
     EdgeIntegralAcc() : EdgeIntegral() {}
 
     /// Constructor of edge integral
     EdgeIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-    : EdgeIntegral(eval_points, quad, qdim), FactoryBase<qdim>(pfev, element_cache_map, quad)
+    : EdgeIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
-
-        internal_edge_ = eval_points->add_edge_internal<qdim>(quad);
-        this->fe_ = pfev->fe_dim<qdim>();
     }
 
 
@@ -539,19 +537,19 @@ public:
         ASSERT_EQ(cell_side.dim(), dim_);
 
         //DebugOut() << "points per side: " << internal_edge_->n_points_per_side_;
-        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint element_patch_idx = factory_.element_cache_map_->position_in_cache(cell_side.element().idx());
         uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this->internal_edge_, begin_idx));
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, 0), this->internal_edge_, begin_idx));
         auto end_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this->internal_edge_, begin_idx));
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this->internal_edge_, begin_idx));
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
     }
 
     /**
@@ -561,37 +559,37 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(this->template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
 	}
 
 	/// Create side accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
+        return FeQ<Vector>(factory_.template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>(this->template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
+        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -602,7 +600,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -613,7 +611,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -624,8 +622,12 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
     }
+
+private:
+    /// Defines interface of operation accessors declaration
+    FactoryBase<qdim> factory_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -643,7 +645,7 @@ public:
  *
  * Dimension corresponds with element of higher dim.
  */
-class CouplingIntegral : public BaseIntegral, public std::enable_shared_from_this<CouplingIntegral> {
+class CouplingIntegral : public BaseIntegral {
 public:
     /// Default constructor
 	CouplingIntegral() : BaseIntegral() {}
@@ -705,7 +707,7 @@ protected:
 };
 
 template<unsigned int qdim>
-class CouplingIntegralAcc : public CouplingIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<1>> {
+class CouplingIntegralAcc : public CouplingIntegral {
 public:
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
@@ -713,9 +715,8 @@ public:
     /// Constructor of ngh integral
     CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
      : CouplingIntegral(eval_points, quad, qdim),
-       FactoryBase<qdim>(pfev, element_cache_map, quad)
+	   factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
-        this->fe_ = pfev->fe_dim<qdim>();
         fe_low_ = pfev->fe_dim<qdim-1>();
     }
 
@@ -744,12 +745,12 @@ public:
     inline Range< CouplingPoint > points(const DHCellSide &cell_side) const {
         ASSERT_EQ(cell_side.dim(), dim_);
 
-        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint element_patch_idx = factory_.element_cache_map_->position_in_cache(cell_side.element().idx());
         uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
@@ -757,14 +758,14 @@ public:
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType>
     FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
         // element of lower dim (bulk points)
-        auto fe_component_low = this->patch_fe_values_->fe_comp(fe_low_, component_idx);
-        auto *low_dim_op = this->patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
-        auto *low_dim_zero_op = this->patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
+        auto fe_component_low = factory_.patch_fe_values_->fe_comp(fe_low_, component_idx);
+        auto *low_dim_op = factory_.patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
+        auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
 
     	// element of higher dim (side points)
-        auto fe_component_high = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
-        auto *high_dim_op = this->patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
-        auto *high_dim_zero_op = this->patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
+        auto fe_component_high = factory_.patch_fe_values_->fe_comp(factory_.fe_, component_idx);
+        auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
+        auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
@@ -773,7 +774,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
     }
 
     /**
@@ -783,12 +784,12 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(this->template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
 	}
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
     }
 
     inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
@@ -808,6 +809,9 @@ public:
 
 
 private:
+    /// Defines interface of operation accessors declaration
+    FactoryBase<qdim> factory_;
+
     /// Holds FiniteEementt object of lower dimension
     std::shared_ptr< FiniteElement<qdim-1> > fe_low_;
 
@@ -816,7 +820,7 @@ private:
 
 /// Template specialization of previous class
 template<>
-class CouplingIntegralAcc<1> : public CouplingIntegral, public FactoryBase<1>, public std::enable_shared_from_this<CouplingIntegralAcc<1>> {
+class CouplingIntegralAcc<1> : public CouplingIntegral {
 public:
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
@@ -824,13 +828,11 @@ public:
     /// Constructor of ngh integral
     CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
      : CouplingIntegral(),
-       FactoryBase<1>(pfev, element_cache_map, quad)
+	   factory_(pfev, element_cache_map, pfev->fe_dim<1>(), quad)
     {
         ASSERT_EQ(quad->dim(), 0);
         this->eval_points_ = eval_points;
         this->dim_ = 1;
-
-        this->fe_ = pfev->fe_dim<1>();
     }
 
     /// Destructor
@@ -874,13 +876,17 @@ public:
     {
         return FeQJoin<Tensor>();
     }
+
+private:
+    /// Defines interface of operation accessors declaration
+    FactoryBase<1> factory_;
 };
 
 
 /**
  * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.
  */
-class BoundaryIntegral : public BaseIntegral, public std::enable_shared_from_this<BoundaryIntegral> {
+class BoundaryIntegral : public BaseIntegral {
 public:
     /// Default constructor
     BoundaryIntegral() : BaseIntegral() {}
@@ -931,17 +937,15 @@ protected:
 
 
 template<unsigned int qdim>
-class BoundaryIntegralAcc : public BoundaryIntegral, public FactoryBase<qdim>, public std::enable_shared_from_this<BoundaryIntegralAcc<qdim>> {
+class BoundaryIntegralAcc : public BoundaryIntegral {
 public:
     /// Default constructor
     BoundaryIntegralAcc() : BoundaryIntegral() {}
 
     BoundaryIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-    : BoundaryIntegral(eval_points, quad, qdim), FactoryBase<qdim>(pfev, element_cache_map, quad)
+    : BoundaryIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
-
-        this->fe_ = pfev->fe_dim<qdim>();
     }
 
     /// Destructor
@@ -952,19 +956,19 @@ public:
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side) const {
         ASSERT_EQ(cell_side.dim(), dim_);
 
-        uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
+        uint element_patch_idx = factory_.element_cache_map_->position_in_cache(cell_side.element().idx());
         uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
+                BulkPoint(factory_.element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(this->template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
     }
 
     /**
@@ -974,37 +978,37 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(this->template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
 	}
 
 	/// Create side accessor of coords entity
     inline FeQ<Vector> coords()
     {
-        return FeQ<Vector>(this->template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
+        return FeQ<Vector>(factory_.template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
     }
 
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>(this->template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
+        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return this->template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -1015,7 +1019,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -1026,7 +1030,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return this->template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
     }
 
     /**
@@ -1037,8 +1041,12 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return this->template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
     }
+
+private:
+    /// Defines interface of operation accessors declaration
+    FactoryBase<qdim> factory_;
 
     friend class BoundaryPoint;
 };
