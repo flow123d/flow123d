@@ -177,6 +177,11 @@ public:
 	    end_idx_ = eval_points->subset_end(dim_, subset_index_);
 	}
 
+	/// Getter of bulk_begin
+	uint begin_idx() const {
+	    return begin_idx_;
+	}
+
 private:
     /// Index of data block according to subset in EvalPoints object.
     unsigned int subset_index_;
@@ -223,11 +228,11 @@ public:
         //DebugOut() << "points per side: " << n_points_per_side_;
 	}
 
-private:
     inline uint side_begin(const DHCellSide &cell_side) const {
         return begin_idx_ + cell_side.side_idx() * n_points_per_side_;
     }
 
+private:
     unsigned int subset_index_;
     uint begin_idx_;
 
@@ -480,9 +485,9 @@ public:
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
         uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx));
+                BulkPoint(elm_cache_map, element_patch_idx, 0), internal_edge_, begin_idx));
         auto end_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx));
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), internal_edge_, begin_idx));
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
@@ -537,9 +542,9 @@ public:
         uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
         uint begin_idx = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx));
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this->internal_edge_, begin_idx));
         auto end_it = make_iter<EdgePoint>( EdgePoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx));
+                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this->internal_edge_, begin_idx));
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
@@ -682,11 +687,11 @@ public:
     inline Range< CouplingPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = internal_edge_->side_begin(cell_side);
+        uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
+                BulkPoint(elm_cache_map, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
@@ -740,11 +745,11 @@ public:
         ASSERT_EQ(cell_side.dim(), dim_);
 
         uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
-        uint begin_idx = internal_edge_->side_begin(cell_side);
+        uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx) );
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<CouplingPoint>( CouplingPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
@@ -907,11 +912,11 @@ public:
     inline Range< BoundaryPoint > points(const DHCellSide &cell_side, const ElementCacheMap *elm_cache_map) const {
         ASSERT_EQ(cell_side.dim(), dim_);
         uint element_patch_idx = elm_cache_map->position_in_cache(cell_side.element().idx());
-        uint begin_idx = internal_edge_->side_begin(cell_side);
+        uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, 0), this, begin_idx) );
+                BulkPoint(elm_cache_map, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(elm_cache_map, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
@@ -948,11 +953,11 @@ public:
         ASSERT_EQ(cell_side.dim(), dim_);
 
         uint element_patch_idx = this->element_cache_map_->position_in_cache(cell_side.element().idx());
-        uint begin_idx = internal_edge_->side_begin(cell_side);
+        uint side_begin = internal_edge_->side_begin(cell_side);
         auto bgn_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, 0), this, begin_idx) );
+                BulkPoint(this->element_cache_map_, element_patch_idx, 0), internal_bulk_, side_begin) );
         auto end_it = make_iter<BoundaryPoint>( BoundaryPoint(
-                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), this, begin_idx) );;
+                BulkPoint(this->element_cache_map_, element_patch_idx, internal_edge_->n_points_per_side_), internal_bulk_, side_begin) );;
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 

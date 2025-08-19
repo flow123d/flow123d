@@ -176,7 +176,7 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline EdgePoint(BulkPoint bulk, const EdgeIntegral *edge_integral, uint side_begin)
+    inline EdgePoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Edge> edge_integral, uint side_begin)
     : SidePoint(bulk, side_begin),
       integral_(edge_integral)
     {}
@@ -189,7 +189,7 @@ public:
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
     }
 private:
-    const EdgeIntegral *integral_;
+    std::shared_ptr<internal_integrals::Edge> integral_;
 };
 
 
@@ -203,9 +203,9 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline CouplingPoint(BulkPoint bulk, const CouplingIntegral *coupling_integral, uint side_begin)
+    inline CouplingPoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Bulk> integral, uint side_begin)
     : SidePoint(bulk, side_begin),
-      integral_(coupling_integral)
+      integral_(integral)
     {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
@@ -217,8 +217,8 @@ public:
     }
 
 private:
-    /// Pointer to edge point set
-    const CouplingIntegral *integral_;
+    /// Pointer to internal bulk integral
+    std::shared_ptr<internal_integrals::Bulk> integral_;
 };
 
 /**
@@ -231,9 +231,9 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline BoundaryPoint(BulkPoint bulk, const BoundaryIntegral *bdr_integral, uint side_begin)
+    inline BoundaryPoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Bulk> integral, uint side_begin)
     : SidePoint(bulk, side_begin),
-      integral_(bdr_integral)
+      integral_(integral)
     {}
 
     /// Return corresponds BulkPoint on boundary element.
@@ -245,8 +245,8 @@ public:
     }
 
 private:
-    /// Pointer to edge point set
-    const BoundaryIntegral *integral_;
+    /// Pointer to internal bulk integral
+    std::shared_ptr<internal_integrals::Bulk> integral_;
 };
 
 
