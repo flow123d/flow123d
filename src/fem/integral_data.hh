@@ -23,6 +23,7 @@
 #include <memory>
 #include <armadillo>
 #include <unordered_set>
+#include <boost/functional/hash.hpp>      // for boost::hash_value
 #include "fem/dh_cell_accessor.hh"
 #include "tools/revertable_list.hh"
 #include "mesh/range_wrapper.hh"
@@ -35,7 +36,7 @@ template <int spacedim> class ElementAccessor;
 template<typename Integral>
 struct IntegralPtrHash {
     std::size_t operator()(const std::shared_ptr<Integral>& key) const {
-        return std::hash<unsigned int>()(key->dim()) ^ (std::hash<unsigned int>()(key->quad()->size()) << 1);
+        return boost::hash_value( std::make_tuple(key->dim(), key->quad()->size()) );
     }
 };
 
