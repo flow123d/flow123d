@@ -82,31 +82,31 @@ public:
         return active_integrals_;
     }
 
-    /// Create integrals according to dim of assembly object
-    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
-    	if (active_integrals_ & ActiveIntegrals::bulk) {
-    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
-    	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
-    		integrals.bulk_[dim-1] = integrals_.bulk_;
-    	}
-    	if (active_integrals_ & ActiveIntegrals::edge) {
-    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
-    	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
-    	    integrals.edge_[dim-1] = integrals_.edge_;
-    	}
-       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
-    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
-    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
-    	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
-       	    integrals.coupling_[dim-2] = integrals_.coupling_;
-       	}
-       	if (active_integrals_ & ActiveIntegrals::boundary) {
-    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
-    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
-    	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
-       	    integrals.boundary_[dim-1] = integrals_.boundary_;
-       	}
-    }
+//    /// Create integrals according to dim of assembly object
+//    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
+//    	if (active_integrals_ & ActiveIntegrals::bulk) {
+//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
+//    	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
+//    		integrals.bulk_[dim-1] = integrals_.bulk_;
+//    	}
+//    	if (active_integrals_ & ActiveIntegrals::edge) {
+//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
+//    	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
+//    	    integrals.edge_[dim-1] = integrals_.edge_;
+//    	}
+//       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
+//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
+//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
+//    	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
+//       	    integrals.coupling_[dim-2] = integrals_.coupling_;
+//       	}
+//       	if (active_integrals_ & ActiveIntegrals::boundary) {
+//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
+//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
+//    	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
+//       	    integrals.boundary_[dim-1] = integrals_.boundary_;
+//       	}
+//    }
 
     /// Temporary method set pointers of integrals to GenericAssembly - IN DEVELOPMENT
     void post_integrals_set(AssemblyIntegrals &integrals) {
@@ -135,7 +135,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of bulk integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_bulk_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        auto result = std::make_shared<BulkIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.bulk_ = result;
         return result;
     }
@@ -151,7 +151,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of edge integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_edge_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        auto result = std::make_shared<EdgeIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.edge_ = result;
         return result;
     }
@@ -168,7 +168,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of coupling integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_coupling_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        auto result = std::make_shared<CouplingIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.coupling_ = result;
         return result;
     }
@@ -185,7 +185,7 @@ public:
         	ASSERT_PERMANENT(false).error("Repeated adding of boundary integral");
         }
 
-        auto result = asm_internals_->eval_points_->add_boundary_accessor<dim>(quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
+        auto result = std::make_shared<BoundaryIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_);
         integrals_.boundary_ = result;
         return result;
     }

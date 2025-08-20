@@ -31,7 +31,7 @@ EdgePoint EdgePoint::point_on(const DHCellSide &edg_side) const {
 //******************************************************************************
 BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(cell_lower.elm().idx());
-    unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
+    unsigned int i_ep = integral_->begin_idx() + local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
 }
 
@@ -40,24 +40,7 @@ BulkPoint CouplingPoint::lower_dim(DHCellAccessor cell_lower) const {
 //******************************************************************************
 BulkPoint BoundaryPoint::point_bdr(ElementAccessor<3> bdr_elm) const {
     unsigned int i_elm = elm_cache_map_->position_in_cache(bdr_elm.idx(), true);
-    unsigned int i_ep = integral_->bulk_begin() + local_point_idx_;
+    unsigned int i_ep = integral_->begin_idx() + local_point_idx_;
     //DebugOut() << "begin:" << integral_->bulk_begin() << "iloc " << local_point_idx_;
     return BulkPoint(elm_cache_map_, i_elm, i_ep);
-}
-
-
-/******************************************************************************
- * Temporary implementations. Intermediate step in implementation of PatcFEValues.
- */
-
-unsigned int EdgePoint::side_idx() const {
-    return (this->side_begin_ - integral_->begin_idx_) / integral_->n_points_per_side_;
-}
-
-unsigned int CouplingPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;
-}
-
-unsigned int BoundaryPoint::side_idx() const {
-    return (this->side_begin_ - integral_->edge_integral_->begin_idx_) / integral_->edge_integral_->n_points_per_side_;;
 }

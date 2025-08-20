@@ -139,9 +139,6 @@ public:
         return local_point_idx_;
     }
 
-    /// Intermediate step in implementation of PatcFEValues.
-    virtual unsigned int side_idx() const =0;
-
     /// Return index in EvalPoints object
     inline unsigned int eval_point_idx() const {
         return side_begin_ + local_point_idx_;
@@ -179,7 +176,7 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline EdgePoint(BulkPoint bulk, const EdgeIntegral *edge_integral, uint side_begin)
+    inline EdgePoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Edge> edge_integral, uint side_begin)
     : SidePoint(bulk, side_begin),
       integral_(edge_integral)
     {}
@@ -187,15 +184,12 @@ public:
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     EdgePoint point_on(const DHCellSide &edg_side) const;
 
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
-
     /// Comparison of accessors.
     bool operator==(const EdgePoint& other) {
         return (elem_patch_idx_ == other.elem_patch_idx_) && (local_point_idx_ == other.local_point_idx_);
     }
 private:
-    const EdgeIntegral *integral_;
+    std::shared_ptr<internal_integrals::Edge> integral_;
 };
 
 
@@ -209,16 +203,13 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline CouplingPoint(BulkPoint bulk, const CouplingIntegral *coupling_integral, uint side_begin)
+    inline CouplingPoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Bulk> integral, uint side_begin)
     : SidePoint(bulk, side_begin),
-      integral_(coupling_integral)
+      integral_(integral)
     {}
 
     /// Return corresponds EdgePoint of neighbour side of same dimension (computing of side integrals).
     BulkPoint lower_dim(DHCellAccessor cell_lower) const;
-
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const CouplingPoint& other) {
@@ -226,8 +217,8 @@ public:
     }
 
 private:
-    /// Pointer to edge point set
-    const CouplingIntegral *integral_;
+    /// Pointer to internal bulk integral
+    std::shared_ptr<internal_integrals::Bulk> integral_;
 };
 
 /**
@@ -240,16 +231,13 @@ public:
     : SidePoint() {}
 
     /// Constructor
-    inline BoundaryPoint(BulkPoint bulk, const BoundaryIntegral *bdr_integral, uint side_begin)
+    inline BoundaryPoint(BulkPoint bulk, std::shared_ptr<internal_integrals::Bulk> integral, uint side_begin)
     : SidePoint(bulk, side_begin),
-      integral_(bdr_integral)
+      integral_(integral)
     {}
 
     /// Return corresponds BulkPoint on boundary element.
     BulkPoint point_bdr(ElementAccessor<3> bdr_elm) const;
-
-    /// Intermediate step in implementation of PatcFEValues.
-    unsigned int side_idx() const override;
 
     /// Comparison of accessors.
     bool operator==(const BoundaryPoint& other) {
@@ -257,8 +245,8 @@ public:
     }
 
 private:
-    /// Pointer to edge point set
-    const BoundaryIntegral *integral_;
+    /// Pointer to internal bulk integral
+    std::shared_ptr<internal_integrals::Bulk> integral_;
 };
 
 
