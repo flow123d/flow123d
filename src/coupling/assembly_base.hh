@@ -313,13 +313,6 @@ public:
     typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
     typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
 
-    /// Obsolete constructor
-	AssemblyBasePatch(PatchFEValues<3> *fe_values)
-	: AssemblyBase<dim>(), fe_values_(fe_values) {
-	    this->quad_ = fe_values_->get_bulk_quadrature(dim);
-	    this->quad_low_  = fe_values_->get_side_quadrature(dim);
-	}
-
     /**
      * Constructor.
      *
@@ -327,17 +320,17 @@ public:
      * @param asm_internals Holds shared data with GenericAssembly
      */
 	AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
-	: AssemblyBase<dim>(quad_order, asm_internals), fe_values_(&asm_internals->fe_values_) {}
+	: AssemblyBase<dim>(quad_order, asm_internals) {}
 
     /// Register cell points of volume integral
     inline void add_patch_bulk_points(const RevertableList<BulkIntegralData> &bulk_integral_data) override {
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
             if (bulk_integral_data[i].cell.dim() != dim) continue;
             uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
-            uint elm_pos = fe_values_->register_element(bulk_integral_data[i].cell, element_patch_idx);
+            uint elm_pos = this->asm_internals_->fe_values_.register_element(bulk_integral_data[i].cell, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->bulk_points(element_patch_idx) ) {
-                fe_values_->register_bulk_point(bulk_integral_data[i].cell, elm_pos, p.value_cache_idx(), i_point++);
+                this->asm_internals_->fe_values_.register_bulk_point(bulk_integral_data[i].cell, elm_pos, p.value_cache_idx(), i_point++);
             }
         }
     }
@@ -346,10 +339,10 @@ public:
     inline void add_patch_bdr_side_points(const RevertableList<BoundaryIntegralData> &boundary_integral_data) override {
         for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
             if (boundary_integral_data[i].side.dim() != dim) continue;
-        	uint side_pos = fe_values_->register_side(boundary_integral_data[i].side);
+        	uint side_pos = this->asm_internals_->fe_values_.register_side(boundary_integral_data[i].side);
             uint i_point = 0;
             for (auto p : this->boundary_points(boundary_integral_data[i].side) ) {
-                fe_values_->register_side_point(boundary_integral_data[i].side, side_pos, p.value_cache_idx(), i_point++);
+                this->asm_internals_->fe_values_.register_side_point(boundary_integral_data[i].side, side_pos, p.value_cache_idx(), i_point++);
             }
         }
     }
@@ -361,10 +354,10 @@ public:
             if (range.begin()->dim() != dim) continue;
             for( DHCellSide edge_side : range )
             {
-            	uint side_pos = fe_values_->register_side(edge_side);
+            	uint side_pos = this->asm_internals_->fe_values_.register_side(edge_side);
                 uint i_point = 0;
                 for (auto p : this->edge_points(edge_side) ) {
-                    fe_values_->register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
+                    this->asm_internals_->fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -377,19 +370,19 @@ public:
 
         for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
             if (coupling_integral_data[i].side.dim() != dim) continue;
-            side_pos = fe_values_->register_side(coupling_integral_data[i].side);
+            side_pos = this->asm_internals_->fe_values_.register_side(coupling_integral_data[i].side);
             if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
                 element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].cell.elm_idx());
-                elm_pos = fe_values_->register_element(coupling_integral_data[i].cell, element_patch_idx);
+                elm_pos = this->asm_internals_->fe_values_.register_element(coupling_integral_data[i].cell, element_patch_idx);
             }
 
             uint i_bulk_point = 0, i_side_point = 0;
             for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
             {
-                fe_values_->register_side_point(coupling_integral_data[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
+                this->asm_internals_->fe_values_.register_side_point(coupling_integral_data[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
                 if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
                     auto p_low = p_high.lower_dim(coupling_integral_data[i].cell);
-                    fe_values_->register_bulk_point(coupling_integral_data[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                    this->asm_internals_->fe_values_.register_bulk_point(coupling_integral_data[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                 }
             }
             last_element_idx = coupling_integral_data[i].cell.elm_idx();
@@ -398,26 +391,24 @@ public:
 
     /// Return BulkValues object
     inline unsigned int n_dofs() {
-        return fe_values_->template n_dofs<dim>();
+        return this->asm_internals_->fe_values_.template n_dofs<dim>();
     }
 
     /// Return BulkValues object
     inline BulkValues<dim> bulk_values() {
-        return fe_values_->template bulk_values<dim>();
+        return this->asm_internals_->fe_values_.template bulk_values<dim>();
     }
 
     /// Return SideValues object
     inline SideValues<dim> side_values() {
-        return fe_values_->template side_values<dim>();
+        return this->asm_internals_->fe_values_.template side_values<dim>();
     }
 
     /// Return JoinValues object
     inline JoinValues<dim> join_values() {
-        return fe_values_->template join_values<dim>();
+        return this->asm_internals_->fe_values_.template join_values<dim>();
     }
 
-protected:
-    PatchFEValues<3> *fe_values_;                          ///< Common FEValues object over all dimensions
 };
 
 

@@ -59,7 +59,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -273,8 +273,8 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
@@ -719,7 +719,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -842,7 +842,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1041,7 +1041,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->fe_values_->template initialize<dim>(*this->quad_);
+        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
