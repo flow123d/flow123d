@@ -189,10 +189,10 @@ private:
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
     /// Maps of all BulkIntegrals of dimensions 0,1,2,3
-    IntegralPtrSet<internal_integrals::Bulk> bulk_integrals_;
+    IntegralPtrMap<internal_integrals::Bulk> bulk_integrals_;
 
     /// Maps of all EdgeIntegrals of dimensions 1,2,3
-    IntegralPtrSet<internal_integrals::Edge> edge_integrals_;
+    IntegralPtrMap<internal_integrals::Edge> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;
