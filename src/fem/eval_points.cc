@@ -34,16 +34,17 @@ template <unsigned int dim>
 std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal(Quadrature *quad) {
     ASSERT_EQ(dim, quad->dim());
 
-    auto result = bulk_integrals_.insert( std::make_shared<internal_integrals::Bulk>(quad, quad->dim()) );
-    bool item_add = result.second;
-    if (item_add) {
+    auto tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+    auto map_it = bulk_integrals_.find( tpl );
+    if (map_it == bulk_integrals_.end()) {
         dim_eval_points_[dim].add_local_points<dim>( quad->get_points() );
         uint i_subset = dim_eval_points_[dim].add_subset();
-        std::shared_ptr<internal_integrals::Bulk> int_ptr = *result.first;
-        int_ptr->init(shared_from_this(), i_subset);
+
+        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
+        map_it = bulk_integrals_.find( tpl );
         this->set_max_size();
     }
-    return *result.first;
+    return map_it->second;
 }
 
 template <>
@@ -51,15 +52,16 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal<0>(Quadr
 {
     ASSERT_EQ(0, quad->dim());
 
-    auto result = bulk_integrals_.insert( std::make_shared<internal_integrals::Bulk>(quad, quad->dim()) );
-    bool item_add = result.second;
-    if (item_add) {
+    auto tpl = IntegralTplHash::integral_tuple(0, quad->size());
+    auto map_it = bulk_integrals_.find( tpl );
+    if (map_it == bulk_integrals_.end()) {
         uint i_subset = dim_eval_points_[0].add_subset();
-        std::shared_ptr<internal_integrals::Bulk> int_ptr = *result.first;
-        int_ptr->init(shared_from_this(), i_subset);
+
+        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
+        map_it = bulk_integrals_.find( tpl );
         this->set_max_size();
     }
-    return *result.first;
+    return map_it->second;
 }
 
 template <unsigned int dim>
@@ -67,19 +69,20 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
 {
     ASSERT_EQ(dim, quad->dim()+1);
 
-    auto result = edge_integrals_.insert( std::make_shared<internal_integrals::Edge>(quad, quad->dim()+1) );
-    bool item_add = result.second;
-    if (item_add) {
+    auto tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+    auto map_it = edge_integrals_.find( tpl );
+    if (map_it == edge_integrals_.end()) {
         for (unsigned int i=0; i<dim+1; ++i) {  // sides
             Quadrature high_dim_q = quad->make_from_side<dim>(i);
             dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
         }
         uint i_subset = dim_eval_points_[dim].add_subset();
-        std::shared_ptr<internal_integrals::Edge> int_ptr = *result.first;
-        int_ptr->init(shared_from_this(), i_subset);
+
+        edge_integrals_[tpl] = std::make_shared<internal_integrals::Edge>(quad, quad->dim()+1, shared_from_this(), i_subset);
+        map_it = edge_integrals_.find( tpl );
         this->set_max_size();
     }
-    return *result.first;
+    return map_it->second;
 }
 
 

@@ -22,7 +22,7 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
-#include <unordered_set>
+#include <unordered_map>
 #include <boost/functional/hash.hpp>      // for boost::hash_value
 #include "fem/dh_cell_accessor.hh"
 #include "tools/revertable_list.hh"
@@ -32,25 +32,22 @@ template <int spacedim> class ElementAccessor;
 
 
 
-/// Define Integral hash function - helper struct of IntegralPtrSet
-template<typename Integral>
-struct IntegralPtrHash {
-    std::size_t operator()(const std::shared_ptr<Integral>& key) const {
-        return boost::hash_value( std::make_tuple(key->dim(), key->quad()->size()) );
+/// Define Integral Tuple hash function - helper struct of IntegralPtrMap
+struct IntegralTplHash {
+    std::size_t operator()(std::tuple<uint, uint> tpl) const {
+        return boost::hash_value( tpl );
     }
+
+    /// Create tuple from dimennsion and size of Quadrature
+    static std::tuple<uint, uint> integral_tuple(uint dim, uint quad_size) {
+        return std::make_tuple(dim, quad_size);
+    }
+
 };
 
-/// Content-based equality for shared_ptr<Integral> - helper struct of IntegralPtrSet
+/// Alias for unordered_map of shared_ptr<Integral> with custom hash
 template<typename Integral>
-struct IntegralPtrEqual {
-    bool operator()(const std::shared_ptr<Integral>& lhs, const std::shared_ptr<Integral>& rhs) const {
-        return *lhs == *rhs;
-    }
-};
-
-/// Alias for unordered_set of shared_ptr<Integral> with custom hash
-template<typename Integral>
-using IntegralPtrSet = std::unordered_set<std::shared_ptr<Integral>, IntegralPtrHash<Integral>, IntegralPtrEqual<Integral>>;
+using IntegralPtrMap = std::unordered_map<std::tuple<uint, uint>, std::shared_ptr<Integral>, IntegralTplHash>;
 
 
 

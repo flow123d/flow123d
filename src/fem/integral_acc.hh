@@ -158,28 +158,24 @@ public:
     typedef unsigned int MeshItem;
 
     /// Default constructor
-	Bulk() : Base() {}
+    Bulk() : Base() {}
 
     /// Constructor of bulk integral- obsolete constructor
-	Bulk(Quadrature *quad, unsigned int dim)
-	 : Base(quad, dim) {}
+    Bulk(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
+     : Base(quad, dim) {
+        subset_index_ = subset_idx;
+        begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
+        end_idx_ = eval_points->subset_end(dim_, subset_index_);
+    }
 
     /// Destructor
     ~Bulk()
     {}
 
-    /// Initialize integral object
-	void init(std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
-	{
-	    subset_index_ = subset_idx;
-	    begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
-	    end_idx_ = eval_points->subset_end(dim_, subset_index_);
-	}
-
-	/// Getter of bulk_begin
-	uint begin_idx() const {
-	    return begin_idx_;
-	}
+    /// Getter of bulk_begin
+    uint begin_idx() const {
+        return begin_idx_;
+    }
 
 private:
     /// Index of data block according to subset in EvalPoints object.
@@ -204,20 +200,12 @@ public:
     typedef DHCellSide MeshItem;
 
     /// Default constructor
-	Edge() : Base() {}
+    Edge() : Base() {}
 
     /// Constructor of edge integral
-	Edge(Quadrature *quad, unsigned int dim)
-	 : Base(quad, dim) {}
-
-    /// Destructor
-    ~Edge()
-    {}
-
-    /// Initialize integral object
-	void init(std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
-	{
-	    subset_index_ = subset_idx;
+    Edge(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
+     : Base(quad, dim) {
+        subset_index_ = subset_idx;
 
         begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
         uint end_idx = eval_points->subset_end(dim_, subset_index_);
@@ -225,7 +213,11 @@ public:
         //DebugOut() << "begin: " << begin_idx_ << "end: " << end_idx;
         n_points_per_side_ = (end_idx - begin_idx_) / n_sides_;
         //DebugOut() << "points per side: " << n_points_per_side_;
-	}
+    }
+
+    /// Destructor
+    ~Edge()
+    {}
 
     inline uint side_begin(const DHCellSide &cell_side) const {
         return begin_idx_ + cell_side.side_idx() * n_points_per_side_;
