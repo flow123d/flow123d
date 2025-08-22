@@ -292,7 +292,7 @@ public:
     /// Temporary method
     PatchPointValues<spacedim> &ppv(uint domain, uint dim) {
         ASSERT( domain<2 );
-        ASSERT( (dim>0) && (dim<=3) );
+        ASSERT( (dim>0) && (dim<=3) )(dim);
     	return patch_point_vals_[domain][dim-1];
     }
 

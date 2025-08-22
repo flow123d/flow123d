@@ -163,6 +163,8 @@ public:
      * Method is called from descendants during construction / initialization of assembly object.
      */
     std::shared_ptr<CouplingIntegralAcc<dim>> create_coupling_integral(Quadrature *quad) {
+        if (dim == 1) return nullptr;
+
         ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
         if (integrals_.coupling_ != nullptr) {
         	ASSERT_PERMANENT(false).error("Repeated adding of coupling integral");
