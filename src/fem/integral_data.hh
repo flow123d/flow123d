@@ -22,6 +22,7 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
+#include <unordered_set>
 #include <unordered_map>
 #include <boost/functional/hash.hpp>      // for boost::hash_value
 #include "fem/dh_cell_accessor.hh"
