@@ -49,48 +49,6 @@ class PatchFEValues {
 public:
     typedef typename PatchPointValues<spacedim>::PatchFeData PatchFeData;
 
-    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-    struct TableSizes {
-    public:
-        /// Constructor
-        TableSizes() {
-            elem_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
-            point_sizes_ = std::vector<std::vector<uint> >(2, std::vector<uint>(spacedim,0));
-        }
-
-        /// Set all values to zero
-        void reset() {
-            std::fill(elem_sizes_[0].begin(), elem_sizes_[0].end(), 0);
-            std::fill(elem_sizes_[1].begin(), elem_sizes_[1].end(), 0);
-            std::fill(point_sizes_[0].begin(), point_sizes_[0].end(), 0);
-            std::fill(point_sizes_[1].begin(), point_sizes_[1].end(), 0);
-        }
-
-        /// Copy values of other TableSizes instance
-        void copy(const TableSizes &other) {
-            elem_sizes_[0] = other.elem_sizes_[0];
-            elem_sizes_[1] = other.elem_sizes_[1];
-            point_sizes_[0] = other.point_sizes_[0];
-            point_sizes_[1] = other.point_sizes_[1];
-        }
-
-        /**
-         * Holds number of elements and sides on each dimension
-         * Format:
-         *  { {n_elements_1D, n_elements_2D, n_elements_3D },
-         *    {n_sides_1D, n_sides_2D, n_sides_3D } }
-         */
-        std::vector<std::vector<uint> > elem_sizes_;
-
-        /**
-         * Holds number of bulk and side points on each dimension
-         * Format:
-         *  { {n_bulk_points_1D, n_bulk_points_2D, n_bulk_points_3D },
-         *    {n_side_points_1D, n_side_points_2D, n_side_points_3D } }
-         */
-        std::vector<std::vector<uint> > point_sizes_;
-    };
-
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
       patch_point_vals_(2)
@@ -222,10 +180,10 @@ public:
     /** Following methods are used during update of patch. **/
 
     /// Resize tables of patch_point_vals_
-    void resize_tables(TableSizes table_sizes) {
+    void resize_tables() {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(table_sizes.elem_sizes_[0][i], table_sizes.point_sizes_[0][i]);
-            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(table_sizes.elem_sizes_[1][i], table_sizes.point_sizes_[1][i]);
+            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables();
+            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables();
         }
     }
 
@@ -329,6 +287,22 @@ public:
         }
 
         stream << std::setfill('=') << setw(160) << "" << endl;
+    }
+
+    /// Temporary method
+    PatchPointValues<spacedim> &ppv(uint domain, uint dim) {
+        ASSERT( domain<2 );
+        ASSERT( (dim>0) && (dim<=3) );
+    	return patch_point_vals_[domain][dim-1];
+    }
+
+    /// Temporary method
+    void make_permanent_ppv_data() {
+    	for (uint i=0; i<2; ++i)
+    	    for (uint j=0; j<3; ++j) {
+    	        patch_point_vals_[i][j].n_elems_.make_permanent();
+    	        patch_point_vals_[i][j].n_points_.make_permanent();
+    	    }
     }
 
 private:
