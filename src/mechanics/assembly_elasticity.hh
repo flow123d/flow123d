@@ -23,7 +23,6 @@
 #include "mechanics/elasticity.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include "fem/op_factory.hh"
 #include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"

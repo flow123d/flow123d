@@ -19,6 +19,10 @@
 #ifndef OP_FACTORY_HH_
 #define OP_FACTORY_HH_
 
+/**
+ * OBSOLETE source file. Functionality is moved to integral_acc.hh, Includes should be removed.
+ */
+
 #include "fem/eigen_tools.hh"
 #include "fem/op_function.hh"
 #include "fem/op_accessors_impl.hh"

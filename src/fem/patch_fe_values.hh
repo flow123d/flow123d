@@ -165,17 +165,17 @@ public:
         return fe_[Dim<dim>{}];
     }
 
-    /// Return BulkValue object of dimension given by template parameter
-    template<unsigned int dim>
-    BulkValues<dim> bulk_values();
-
-    /// Return SideValue object of dimension given by template parameter
-    template<unsigned int dim>
-    SideValues<dim> side_values();
-
-    /// Return JoinValue object of dimension given by template parameter
-    template<unsigned int dim>
-    JoinValues<dim> join_values();
+//    /// Return BulkValue object of dimension given by template parameter
+//    template<unsigned int dim>
+//    BulkValues<dim> bulk_values();
+//
+//    /// Return SideValue object of dimension given by template parameter
+//    template<unsigned int dim>
+//    SideValues<dim> side_values();
+//
+//    /// Return JoinValue object of dimension given by template parameter
+//    template<unsigned int dim>
+//    JoinValues<dim> join_values();
 
     /** Following methods are used during update of patch. **/
 

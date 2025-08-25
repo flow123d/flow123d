@@ -24,7 +24,6 @@
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
 #include "fem/update_flags.hh"
-//#include "fem/op_factory.hh"
 
 
 
@@ -390,20 +389,20 @@ public:
         return this->asm_internals_->fe_values_.template n_dofs<dim>();
     }
 
-    /// Return BulkValues object
-    inline BulkValues<dim> bulk_values() {
-        return this->asm_internals_->fe_values_.template bulk_values<dim>();
-    }
-
-    /// Return SideValues object
-    inline SideValues<dim> side_values() {
-        return this->asm_internals_->fe_values_.template side_values<dim>();
-    }
-
-    /// Return JoinValues object
-    inline JoinValues<dim> join_values() {
-        return this->asm_internals_->fe_values_.template join_values<dim>();
-    }
+//    /// Return BulkValues object
+//    inline BulkValues<dim> bulk_values() {
+//        return this->asm_internals_->fe_values_.template bulk_values<dim>();
+//    }
+//
+//    /// Return SideValues object
+//    inline SideValues<dim> side_values() {
+//        return this->asm_internals_->fe_values_.template side_values<dim>();
+//    }
+//
+//    /// Return JoinValues object
+//    inline JoinValues<dim> join_values() {
+//        return this->asm_internals_->fe_values_.template join_values<dim>();
+//    }
 
 };
 
