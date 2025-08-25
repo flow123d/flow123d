@@ -77,11 +77,6 @@ public:
     /// Method finishes object after assemblation (e.g. balance, ...).
     virtual void end() {}
 
-    /// Getter of active_integrals.
-    inline int n_active_integrals() const {
-        return active_integrals_;
-    }
-
 //    /// Create integrals according to dim of assembly object
 //    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
 //    	if (active_integrals_ & ActiveIntegrals::bulk) {
@@ -110,16 +105,16 @@ public:
 
     /// Temporary method set pointers of integrals to GenericAssembly - IN DEVELOPMENT
     void post_integrals_set(AssemblyIntegrals &integrals) {
-    	if (active_integrals_ & ActiveIntegrals::bulk) {
+    	if (integrals_.bulk_ != nullptr) {
     		integrals.bulk_[dim-1] = integrals_.bulk_;
     	}
-    	if (active_integrals_ & ActiveIntegrals::edge) {
+    	if (integrals_.edge_ != nullptr) {
     	    integrals.edge_[dim-1] = integrals_.edge_;
     	}
-       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
+       	if ((dim>1) && (integrals_.coupling_ != nullptr)) {
        	    integrals.coupling_[dim-2] = integrals_.coupling_;
        	}
-       	if (active_integrals_ & ActiveIntegrals::boundary) {
+       	if (integrals_.boundary_ != nullptr) {
        	    integrals.boundary_[dim-1] = integrals_.boundary_;
        	}
     }
@@ -300,7 +295,6 @@ protected:
 
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
-    int active_integrals_;                                 ///< Holds mask of active integrals.
     DimIntegrals integrals_;                               ///< Set of used integrals.
     AssemblyInternals *asm_internals_;                     ///< Holds shared internals data with GeneriAssembly
 };

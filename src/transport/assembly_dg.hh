@@ -49,7 +49,6 @@ public:
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
     }
@@ -253,7 +252,6 @@ public:
       conc_grad_sidw_( conc_edge_integral_->grad_scalar_shape() ),
       conc_grad_bdr_( conc_bdr_integral_->grad_scalar_shape() ),
       conc_join_shape_( FeQJoin<Scalar>( conc_join_integral_->scalar_join_shape() ) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -708,7 +706,6 @@ public:
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
         this->used_fields_ += eq_fields_->sources_sigma_out;
@@ -827,7 +824,6 @@ public:
       normal_( conc_integral_->normal_vector() ),
       conc_shape_( conc_integral_->scalar_shape() ),
       conc_grad_( conc_integral_->grad_scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -1032,7 +1028,6 @@ public:
       init_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( init_integral_->JxW() ),
       init_shape_( init_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
 
@@ -1120,7 +1115,6 @@ public:
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
         this->asm_internals_ = asm_internals;
 

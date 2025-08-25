@@ -301,7 +301,6 @@ private:
         if (use_patch_fe_values_) {
             asm_internals_.fe_values_.init_finalize();
         }
-        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
 
         // Temporary calls of following method
         multidim_assembly_[1_d]->post_integrals_set(integrals_);
@@ -392,22 +391,22 @@ private:
     /**
      * Add data of integrals to appropriate structure and register elements to ElementCacheMap.
      *
-     * Types of used integrals must be set in data member \p active_integrals_.
+     * Types of used integrals must be given by initialized integrals in descendants of AssemblyBase class.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        if (active_integrals_ & ActiveIntegrals::bulk)
+        if (integrals_.bulk_[cell.dim()-1] != nullptr)
             if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
-            if (active_integrals_ & ActiveIntegrals::boundary)
+            if (integrals_.boundary_[cell.dim()-1] != nullptr)
                 if (cell.is_own()) // Not ghost
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
                         continue;
                     }
-            if (active_integrals_ & ActiveIntegrals::edge)
+            if (integrals_.edge_[cell.dim()-1] != nullptr)
                 if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side);
                 }
@@ -419,7 +418,7 @@ private:
                 auto &ppv_low = asm_internals_.fe_values_.ppv(0, cell.dim());
                 auto &ppv_high = asm_internals_.fe_values_.ppv(1, cell.dim()+1);
                 // Adds data of bulk points only if bulk point were not added during processing of bulk integral
-                bool add_bulk_points = !( (active_integrals_ & ActiveIntegrals::bulk) & cell.is_own() );
+                bool add_bulk_points = !( (integrals_.bulk_[cell.dim()-1] != nullptr) & cell.is_own() );
                 if (add_bulk_points) {
                     // add points of low dim element only one time and only if they have not been added in BulkIntegral
                     for( DHCellSide ngh_side : cell.neighb_sides() ) {
@@ -512,9 +511,6 @@ private:
 
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
-
-    /// Holds mask of active integrals.
-    int active_integrals_;
 
     /**
      * Minimal number of sides on edge.

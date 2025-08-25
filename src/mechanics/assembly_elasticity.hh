@@ -58,7 +58,6 @@ public:
       sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
       deform_join_( coupling_integral_->vector_join_shape() ),
       deform_join_grad_( coupling_integral_->gradient_vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -296,7 +295,6 @@ public:
 	  grad_deform_( bulk_integral_->grad_vector_shape() ),
       div_deform_( bulk_integral_->vector_divergence() ),
       deform_join_( coupling_integral_->vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -555,7 +553,6 @@ public:
       grad_deform_( bulk_integral_->grad_vector_shape() ),
       sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
       div_deform_( bulk_integral_->vector_divergence() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -714,7 +711,6 @@ public:
       JxW_join_( coupling_integral_->JxW() ),
       normal_join_( coupling_integral_->normal_vector() ),
       deform_join_( coupling_integral_->vector_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
     }

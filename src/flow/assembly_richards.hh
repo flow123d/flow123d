@@ -38,7 +38,6 @@ public:
     InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_))  {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
         this->used_fields_ += this->eq_fields_->genuchten_n_exponent;
@@ -153,7 +152,6 @@ public:
 
     MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
