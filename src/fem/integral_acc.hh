@@ -94,14 +94,14 @@ protected:
     /// Factory method. Creates operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_patch_op() {
-        return patch_fe_values_->get< OpType, dim >();
+        return patch_fe_values_->get< OpType, dim >(quad_);
     }
 
     /// Factory method. Same as previous but creates FE operation.
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
     FeQArray<ValueType> make_qarray(uint component_idx = 0) {
         std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_->fe_comp(fe_, component_idx);
-        return FeQArray<ValueType>(patch_fe_values_->template get< OpType<dim, Domain, 3>, dim >(fe_component));
+        return FeQArray<ValueType>(patch_fe_values_->template get< OpType<dim, Domain, 3>, dim >(quad_, fe_component));
     }
 
     PatchFEValues<3> *patch_fe_values_;
@@ -751,13 +751,13 @@ public:
     FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
         // element of lower dim (bulk points)
         auto fe_component_low = factory_.patch_fe_values_->fe_comp(fe_low_, component_idx);
-        auto *low_dim_op = factory_.patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
-        auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(fe_component_low);
+        auto *low_dim_op = factory_.patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(factory_.quad_, fe_component_low);
+        auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(factory_.quad_, fe_component_low);
 
     	// element of higher dim (side points)
         auto fe_component_high = factory_.patch_fe_values_->fe_comp(factory_.fe_, component_idx);
-        auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
-        auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(fe_component_high);
+        auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(factory_.quad_, fe_component_high);
+        auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(factory_.quad_, fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);

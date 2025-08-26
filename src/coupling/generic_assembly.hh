@@ -54,8 +54,8 @@ public:
     AssemblyInternals()
     : eval_points_(std::make_shared<EvalPoints>()) {}
 
-    AssemblyInternals(uint quad_order, MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(quad_order, fe) {}
+    AssemblyInternals(MixedPtr<FiniteElement> fe)
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
@@ -161,8 +161,8 @@ public:
     GenericAssemblyBase()
     {}
 
-    GenericAssemblyBase(uint quad_order, MixedPtr<FiniteElement> fe)
-    : asm_internals_(quad_order, fe)
+    GenericAssemblyBase(MixedPtr<FiniteElement> fe)
+    : asm_internals_(fe)
     {}
 
     virtual ~GenericAssemblyBase(){}
@@ -209,7 +209,7 @@ public:
      * IN DEVELOPMENT!
      */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : GenericAssemblyBase(eq_data->quad_order(), dh->ds()->fe()),
+    : GenericAssemblyBase(dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
       min_edge_sides_(2)

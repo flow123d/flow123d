@@ -64,8 +64,8 @@ template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim =
 class Coords : public PatchOp<spacedim> {
 public:
     /// Constructor
-    Coords(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, ElDomain::n_nodes(dim)}) {
+    Coords(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, ElDomain::n_nodes(dim)}) {
         this->domain_ = Domain::domain();
     }
 
@@ -88,11 +88,11 @@ template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim =
 class Jac : public PatchOp<spacedim> {
 public:
     /// Constructor
-    Jac(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, ElDomain::n_nodes(dim)-1})
+    Jac(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, ElDomain::n_nodes(dim)-1})
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, ElDomain, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, ElDomain, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -109,11 +109,11 @@ template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim =
 class JacDet : public PatchOp<spacedim> {
 public:
     /// Constructor
-	JacDet(PatchFEValues<spacedim> &pfev)
-	: PatchOp<spacedim>(dim, pfev, {1})
+	JacDet(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+	: PatchOp<spacedim>(dim, pfev, quad, {1})
 	{
         this->domain_ = Domain::domain();
-	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, ElDomain, Domain, spacedim>, dim >() );
+	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, ElDomain, Domain, spacedim>, dim >(quad) );
 	}
 
     void eval() override {
@@ -128,8 +128,8 @@ template<>
 class JacDet<1, Op::SideDomain, Op::SideDomain, 3> : public PatchOp<3> {
 public:
     /// Constructor
-    JacDet(PatchFEValues<3> &pfev)
-    : PatchOp<3>(1, pfev, {1})
+    JacDet(PatchFEValues<3> &pfev, const Quadrature *quad)
+    : PatchOp<3>(1, pfev, quad, {1})
     {
         this->domain_ = Op::SideDomain::domain();
     }
@@ -152,11 +152,11 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class InvJac : public PatchOp<spacedim> {
 public:
     /// Constructor
-	InvJac(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {dim, spacedim})
+	InvJac(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim, spacedim})
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, BulkDomain, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, BulkDomain, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -171,8 +171,8 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class PtCoords : public PatchOp<spacedim> {
 public:
     /// Constructor
-    PtCoords(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim})
+    PtCoords(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim})
     {
         this->domain_ = Domain::domain();
     }
@@ -188,12 +188,12 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class Weights : public PatchOp<spacedim> {
 public:
     /// Constructor
-    Weights(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {1})
+    Weights(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {1})
     {
         this->domain_ = Domain::domain();
         // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = this->ppv().get_quadrature()->get_weights();
+        const std::vector<double> &point_weights_vec = quad->get_weights();
         this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
         for (uint i=0; i<point_weights_vec.size(); ++i)
             this->result_(0)(i) = point_weights_vec[i];
@@ -210,12 +210,12 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class JxW : public PatchOp<spacedim> {
 public:
     /// Constructor
-    JxW(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {1})
+    JxW(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {1})
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Domain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -233,11 +233,11 @@ template<unsigned int dim, unsigned int spacedim = 3>
 class NormalVec : public PatchOp<spacedim> {
 public:
     /// Constructor
-    NormalVec(PatchFEValues<spacedim> &pfev)
-    : PatchOp<spacedim>(dim, pfev, {spacedim})
+    NormalVec(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim})
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >() );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -266,11 +266,10 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefScalar : public PatchOp<spacedim> {
 public:
     /// Constructor
-    RefScalar(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {1}, fe->n_dofs())
+    RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -288,11 +287,10 @@ template<unsigned int dim, unsigned int spacedim>
 class RefScalar<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-    RefScalar(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim+1}, fe->n_dofs())
+    RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        Quadrature *quad = pfev.get_side_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -313,11 +311,10 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
-	RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-	: PatchOp<spacedim>(dim, pfev, {spacedim}, fe->n_dofs())
+	RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+	: PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs())
 	{
         this->domain_ = Domain::domain();
-        Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -337,11 +334,10 @@ template<unsigned int dim, unsigned int spacedim>
 class RefVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-    RefVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim+1, spacedim}, fe->n_dofs())
+    RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, spacedim}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        Quadrature *quad = pfev.get_side_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -364,11 +360,10 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefGradScalar : public PatchOp<spacedim> {
 public:
     /// Constructor
-    RefGradScalar(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim, 1}, fe->n_dofs())
+    RefGradScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim, 1}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -387,11 +382,10 @@ template<unsigned int dim, unsigned int spacedim>
 class RefGradScalar<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-    RefGradScalar(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim+1, dim}, fe->n_dofs())
+    RefGradScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, dim}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        Quadrature *quad = pfev.get_side_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -413,11 +407,10 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefGradVector : public PatchOp<spacedim> {
 public:
     /// Constructor
-	RefGradVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {dim, spacedim}, fe->n_dofs())
+	RefGradVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        Quadrature *quad = pfev.get_bulk_quadrature(dim);
         uint n_points = quad->size();
 
         this->allocate_result(n_points, pfev.asm_arena());
@@ -438,11 +431,10 @@ template<unsigned int dim, unsigned int spacedim>
 class RefGradVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-	RefGradVector(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {(dim+1)*dim, spacedim}, fe->n_dofs())
+	RefGradVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {(dim+1)*dim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        Quadrature *quad = pfev.get_side_quadrature(dim);
         uint n_points = quad->size();
         uint n_sides = dim+1;
 
@@ -466,12 +458,12 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class ScalarShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-    ScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {1}, fe->n_dofs())
+    ScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -504,12 +496,12 @@ template<unsigned int dim, unsigned int spacedim>
 class ScalarShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-    ScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {1}, fe->n_dofs())
+    ScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Op::SideDomain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -536,11 +528,11 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-	VectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+	VectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
@@ -575,11 +567,11 @@ template<unsigned int dim, unsigned int spacedim>
 class VectorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-	VectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+	VectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Op::SideDomain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
@@ -615,26 +607,26 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class DispatchVectorShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-    DispatchVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim}, fe->n_dofs()), in_op_(nullptr)
+    DispatchVectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), in_op_(nullptr)
     {
         this->domain_ = Domain::domain();
         switch (fe->fe_type()) {
             case FEVector:
             {
-                in_op_ = new VectorShape<dim, Domain, spacedim>(pfev, fe, *this);
+                in_op_ = new VectorShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                //in_op_ = new OpVectorCovariantShape<dim, Domain, spacedim>(pfev, fe, *this);
+                //in_op_ = new OpVectorCovariantShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //in_op_ = new OpVectorPiolaShape<dim, Domain, spacedim>(pfev, fe, *this);
+                //in_op_ = new OpVectorPiolaShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             default:
@@ -656,13 +648,13 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class GradScalarShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-    GradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, 1}, fe->n_dofs())
+    GradScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, 1}, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -694,13 +686,13 @@ template<unsigned int dim, unsigned int spacedim>
 class GradScalarShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-    GradScalarShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, 1}, fe->n_dofs())
+    GradScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, 1}, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Op::SideDomain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -750,12 +742,12 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class GradVectorShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-	GradVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+	GradVectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
@@ -794,12 +786,12 @@ template<unsigned int dim, unsigned int spacedim>
 class GradVectorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
-	GradVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+	GradVectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >() );
-        this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Op::SideDomain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
@@ -856,26 +848,26 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class DispatchGradVectorShape : public PatchOp<spacedim> {
 public:
     /// Constructor
-	DispatchGradVectorShape(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, fe->n_dofs()), in_op_(nullptr)
+	DispatchGradVectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), in_op_(nullptr)
     {
         this->domain_ = Domain::domain();
         switch (fe->fe_type()) {
             case FEVector:
             {
-                in_op_ = new GradVectorShape<dim, Domain, spacedim>(pfev, fe, *this);
+                in_op_ = new GradVectorShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             case FEVectorContravariant:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorContravariant is not implemented yet!\n"); // temporary assert
-                //in_op_ = new OpGradVectorCovariantShape<dim, Domain, spacedim>(pfev, fe, *this);
+                //in_op_ = new OpGradVectorCovariantShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             case FEVectorPiola:
             {
                 ASSERT_PERMANENT(false).error("Shape vector for FEVectorPiola is not implemented yet!\n"); // temporary assert
-                //in_op_ = new OpGradVectorPiolaShape<dim, Domain, spacedim>(pfev, fe, *this);
+                //in_op_ = new OpGradVectorPiolaShape<dim, Domain, spacedim>(pfev, quad, fe, *this);
                 break;
             }
             default:
@@ -897,11 +889,11 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorSymGrad : public PatchOp<spacedim> {
 public:
     /// Constructor
-    VectorSymGrad(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, fe->n_dofs())
+    VectorSymGrad(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -918,11 +910,11 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorDivergence : public PatchOp<spacedim> {
 public:
     /// Constructor
-    VectorDivergence(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {1}, fe->n_dofs())
+    VectorDivergence(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, Domain, spacedim>, dim >(fe) );
+        this->input_ops_.push_back( pfev.template get< DispatchGradVectorShape<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
@@ -940,8 +932,8 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class OpZero : public PatchOp<spacedim> {
 public:
     /// Constructor
-	OpZero(PatchFEValues<spacedim> &pfev, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, {spacedim, spacedim}, fe->n_dofs())
+	OpZero(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
         this->allocate_const_result( this->ppv().patch_fe_data_.zero_vec_ );

@@ -54,22 +54,16 @@ public:
       patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, 0, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, 0, false, patch_fe_data_) );
+            patch_point_vals_[0].push_back( PatchPointValues(true, patch_fe_data_) );
+            patch_point_vals_[1].push_back( PatchPointValues(false, patch_fe_data_) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
     }
 
-    PatchFEValues(unsigned int quad_order, MixedPtr<FiniteElement> fe)
-    : patch_fe_data_(1024 * 1024, 256),
-      patch_point_vals_(2),
-      fe_(fe)
+    PatchFEValues(MixedPtr<FiniteElement> fe)
+    : PatchFEValues<spacedim>()
     {
-        for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(dim, quad_order, true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(dim, quad_order, false, patch_fe_data_) );
-        }
-        used_quads_[0] = false; used_quads_[1] = false;
+        fe_ = fe;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
         uint zero_vec_size = 300;
@@ -131,18 +125,6 @@ public:
     inline unsigned int n_dofs() const {
         ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
         return fe_[Dim<dim>{}]->n_dofs();
-    }
-
-    /// Getter for bulk quadrature of given dimension
-    Quadrature *get_bulk_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[0][dim-1].get_quadrature();
-    }
-
-    /// Getter for side quadrature of given dimension
-    Quadrature *get_side_quadrature(uint dim) const {
-        ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-        return patch_point_vals_[1][dim-1].get_quadrature();
     }
 
     /**
@@ -240,11 +222,11 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get() {
+    PatchOp<spacedim>* get(const Quadrature *quad) {
         std::string op_name = typeid(OpType).name();
         auto it = op_dependency_.find(op_name);
         if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this);
+            PatchOp<spacedim>* new_op = new OpType(*this, quad);
             op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
@@ -256,11 +238,11 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(std::shared_ptr<FiniteElement<dim>> fe) {
+    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
         std::string op_name = typeid(OpType).name();
         auto it = op_dependency_.find(op_name);
         if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, fe);
+            PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
             op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
