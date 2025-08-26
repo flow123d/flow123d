@@ -54,8 +54,8 @@ public:
       patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(true, patch_fe_data_) );
-            patch_point_vals_[1].push_back( PatchPointValues(false, patch_fe_data_) );
+            patch_point_vals_[0].push_back( PatchPointValues(true) );
+            patch_point_vals_[1].push_back( PatchPointValues(false) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -164,8 +164,8 @@ public:
     /// Resize tables of patch_point_vals_
     void resize_tables() {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables();
-            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables();
+            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(*patch_fe_data_.patch_arena_);
         }
     }
 
@@ -269,6 +269,11 @@ public:
         }
 
         stream << std::setfill('=') << setw(160) << "" << endl;
+    }
+
+    /// Getter of patch_fe_data_
+    PatchFeData &patch_fe_data() {
+        return patch_fe_data_;
     }
 
     /// Temporary method

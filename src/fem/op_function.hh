@@ -71,7 +71,7 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems(), *ppv.patch_fe_data_.patch_arena_ );
+        this->allocate_result( ppv.n_elems(), this->patch_fe_->patch_arena() );
         auto result = this->result_matrix();
 
         for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
@@ -136,7 +136,7 @@ public:
 
     void eval() override {
         PatchPointValues<3> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems(), *ppv.patch_fe_data_.patch_arena_ );
+        this->allocate_result( ppv.n_elems(), this->patch_fe_->patch_arena() );
         auto jac_det_value = this->result_matrix();
         for (uint i=0;i<ppv.n_elems(); ++i) {
             jac_det_value(0,0)(i) = 1.0;
@@ -246,7 +246,7 @@ public:
         auto inv_jac_value = this->input_ops(0)->result_matrix();
         normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(3) );
 
-        ArenaVec<double> norm_vec( ppv.n_elems(), *ppv.patch_fe_data_.patch_arena_ );
+        ArenaVec<double> norm_vec( ppv.n_elems(), this->patch_fe_->patch_arena() );
         Eigen::VectorXd A(3);
         for (uint i=0; i<normal_value(0).data_size(); ++i) {
             A(0) = normal_value(0)(i);
@@ -506,7 +506,7 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), ppv.patch_arena());
+        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
 
         auto ref_vec = this->input_ops(0)->result_matrix();
         auto result_vec = this->result_matrix();
@@ -576,7 +576,7 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        dispatch_op_.allocate_result(ppv.n_points(), ppv.patch_arena());
+        dispatch_op_.allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
 
         auto ref_shape_vec = this->input_ops(0)->result_matrix();  // dim+1 x spacedim
         auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
@@ -586,7 +586,7 @@ public:
         uint n_patch_points = ppv.n_points();
 
         for (uint c=0; c<spacedim*n_dofs; c++)
-        	result_vec(c) = ArenaVec<double>(n_patch_points, ppv.patch_arena());
+        	result_vec(c) = ArenaVec<double>(n_patch_points, this->patch_fe_->patch_arena());
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
@@ -697,7 +697,7 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), ppv.patch_arena());
+        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
 
         auto ref_shape_grads = this->input_ops(1)->result_matrix();
         auto grad_scalar_shape_value = this->result_matrix();
@@ -711,7 +711,7 @@ public:
         auto inv_jac_value = this->input_ops(0)->result_matrix();
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
-        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
         	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_sides);
         }
@@ -719,7 +719,7 @@ public:
         // Fill ref shape gradients by q_point. DOF and side_idx
         Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_grads_expd(dim, n_dofs);
         for (uint i=0; i<dim*n_dofs; ++i) {
-            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         }
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_points; ++i_pt) {
@@ -807,7 +807,7 @@ public:
         // Expands inverse jacobian to inv_jac_expd_value
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
-        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+        	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
         	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_patch_sides);
         }
@@ -815,7 +815,7 @@ public:
         // Fill ref shape gradients by q_point. DOF and side_idx
         Eigen::Matrix<ArenaVec<double>, dim, 3> ref_shape_grads_expd;
         for (uint i=0; i<spacedim*dim; ++i) {
-            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, ppv.patch_arena() );
+            ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         }
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
 
@@ -936,7 +936,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        this->allocate_const_result( this->ppv().patch_fe_data_.zero_vec_ );
+        this->allocate_const_result( this->patch_fe_->patch_fe_data().zero_vec_ );
     }
 
     void eval() override {}
