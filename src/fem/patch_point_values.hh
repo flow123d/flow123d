@@ -45,6 +45,14 @@ enum OpSizeType
 };
 
 
+/// Distinguishes operations by type and size of output rows
+enum fem_domain
+{
+	bulk_domain =0,
+	side_domain =1
+};
+
+
 
 struct RevertibleValue {
 public:
@@ -144,13 +152,13 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(bool is_bulk)
+    PatchPointValues(fem_domain domain)
     : elements_map_(300, 0), points_map_(300, 0) {
         reset();
 
-        if (is_bulk) {
+        if (domain == bulk_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp};
-        } else {
+        } else if (domain == side_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
         }
     }

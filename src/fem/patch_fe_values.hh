@@ -54,10 +54,10 @@ public:
       patch_point_vals_(2)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(true) );
-            patch_point_vals_[1].push_back( PatchPointValues(false) );
+            patch_point_vals_[bulk_domain].push_back( PatchPointValues(bulk_domain) );
+            patch_point_vals_[side_domain].push_back( PatchPointValues(side_domain) );
         }
-        used_quads_[0] = false; used_quads_[1] = false;
+        used_quads_[bulk_domain] = false; used_quads_[side_domain] = false;
     }
 
     PatchFEValues(MixedPtr<FiniteElement> fe)
@@ -87,11 +87,11 @@ public:
     void initialize(Quadrature &_quadrature)
     {
         if ( _quadrature.dim() == DIM ) {
-            used_quads_[0] = true;
-            patch_point_vals_[0][DIM-1].initialize(); // bulk
+            used_quads_[bulk_domain] = true;
+            patch_point_vals_[bulk_domain][DIM-1].initialize(); // bulk
         } else {
-            used_quads_[1] = true;
-            patch_point_vals_[1][DIM-1].initialize(); // side
+            used_quads_[side_domain] = true;
+            patch_point_vals_[side_domain][DIM-1].initialize(); // side
         }
     }
 
@@ -104,8 +104,8 @@ public:
     void reset()
     {
         for (unsigned int i=0; i<spacedim; ++i) {
-            if (used_quads_[0]) patch_point_vals_[0][i].reset();
-            if (used_quads_[1]) patch_point_vals_[1][i].reset();
+            if (used_quads_[bulk_domain]) patch_point_vals_[bulk_domain][i].reset();
+            if (used_quads_[side_domain]) patch_point_vals_[side_domain][i].reset();
         }
         patch_fe_data_.patch_arena_->reset();
     }
@@ -164,14 +164,14 @@ public:
     /// Resize tables of patch_point_vals_
     void resize_tables() {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(*patch_fe_data_.patch_arena_);
-            if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_quads_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_quads_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
         }
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[0][cell.dim()-1];
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
     	if (ppv.elements_map_[element_patch_idx] != (uint)-1) {
     	    // Return index of element on patch if it is registered repeatedly
     	    return ppv.elements_map_[element_patch_idx];
@@ -185,7 +185,7 @@ public:
     /// Register side to patch_point_vals_ table by dimension of side
     uint register_side(DHCellSide cell_side) {
         uint dim = cell_side.dim();
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[1][dim-1];
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
         ppv.int_table_(3)(ppv.i_elem_) = cell_side.side_idx();
         ppv.elem_list_.push_back( cell_side.cell().elm() );
@@ -196,12 +196,12 @@ public:
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
     uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx, uint i_point_on_elem) {
-        return patch_point_vals_[0][cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx(), i_point_on_elem);
+        return patch_point_vals_[bulk_domain][cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx(), i_point_on_elem);
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
     uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx, uint i_point_on_side) {
-        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(),
+        return patch_point_vals_[side_domain][cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(),
                 cell_side.side_idx(), i_point_on_side);
     }
 
