@@ -346,7 +346,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>( factory_.template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, Op::BulkDomain, 3> >() );
+        return ElQ<Scalar>( factory_.template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, 3> >() );
     }
 
     /**
@@ -563,7 +563,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
+        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, 3> >());
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
@@ -982,7 +982,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, Op::SideDomain, 3> >());
+        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, 3> >());
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.

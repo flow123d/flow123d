@@ -60,52 +60,52 @@ public:
  *   Domain    Source domain - operation is called from Bulk / Side domain
  *   spacedim  Dimension of the solved task
  */
-template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class Coords : public PatchOp<spacedim> {
 public:
     /// Constructor
     Coords(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, ElDomain::n_nodes(dim)}) {
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, Domain::n_nodes(dim)}) {
         this->domain_ = Domain::domain();
     }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems(), this->patch_fe_->patch_arena() );
+        this->allocate_result( ppv.template n_mesh_entities<Domain>(), this->patch_fe_->patch_arena() );
         auto result = this->result_matrix();
 
-        for (uint i_elm=0; i_elm<ppv.elem_list_.size(); ++i_elm)
-            for (uint i_col=0; i_col<ElDomain::n_nodes(dim); ++i_col)
+        for (uint i_elm=0; i_elm<ppv.template n_mesh_entities<Domain>(); ++i_elm)
+            for (uint i_col=0; i_col<Domain::n_nodes(dim); ++i_col)
                 for (uint i_row=0; i_row<spacedim; ++i_row) {
-                    result(i_row, i_col)(i_elm) = ( *ppv.template node<ElDomain>(i_elm, i_col) )(i_row);
+                    result(i_row, i_col)(i_elm) = ( *ppv.template node<Domain>(i_elm, i_col) )(i_row);
                 }
     }
 
 };
 
 /// Evaluates Jacobians on Bulk (Element) / Side
-template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class Jac : public PatchOp<spacedim> {
 public:
     /// Constructor
     Jac(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, ElDomain::n_nodes(dim)-1})
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, Domain::n_nodes(dim)-1})
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, ElDomain, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
         auto jac_value = this->result_matrix();
         auto coords_value = this->input_ops(0)->result_matrix();
         for (unsigned int i=0; i<spacedim; i++)
-            for (unsigned int j=0; j<ElDomain::n_nodes(dim)-1; j++)
+            for (unsigned int j=0; j<Domain::n_nodes(dim)-1; j++)
                 jac_value(i,j) = coords_value(i,j+1) - coords_value(i,0);
     }
 };
 
 /// Evaluates Jacobian determinants on Bulk (Element) / Side
-template<unsigned int dim, class ElDomain, class Domain, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class JacDet : public PatchOp<spacedim> {
 public:
     /// Constructor
@@ -113,19 +113,19 @@ public:
 	: PatchOp<spacedim>(dim, pfev, quad, {1})
 	{
         this->domain_ = Domain::domain();
-	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, ElDomain, Domain, spacedim>, dim >(quad) );
+	    this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Domain, spacedim>, dim >(quad) );
 	}
 
     void eval() override {
         auto jac_det_value = this->result_matrix();
         auto jac_value = this->input_ops(0)->result_matrix();
-        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, ElDomain::n_nodes(dim)-1>(jac_value).abs();
+        jac_det_value(0) = eigen_arena_tools::determinant<spacedim, Domain::n_nodes(dim)-1>(jac_value).abs();
     }
 };
 
 /// Template specialization of previous: dim=1, domain=Side
 template<>
-class JacDet<1, Op::SideDomain, Op::SideDomain, 3> : public PatchOp<3> {
+class JacDet<1, Op::SideDomain, 3> : public PatchOp<3> {
 public:
     /// Constructor
     JacDet(PatchFEValues<3> &pfev, const Quadrature *quad)
@@ -156,7 +156,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {dim, spacedim})
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, BulkDomain, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::Jac<dim, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -204,7 +204,6 @@ public:
 
 /**
  * Evaluates JxW on quadrature points
- * ElDomain (target) is equivalent with Domain (source)
  */
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class JxW : public PatchOp<spacedim> {
@@ -215,7 +214,7 @@ public:
     {
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Domain, spacedim>, dim >(quad) );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
@@ -228,6 +227,28 @@ public:
     }
 };
 
+//template<unsigned int dim, unsigned int spacedim>
+//class JxW<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+//public:
+//    /// Constructor
+//    JxW(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+//    : PatchOp<spacedim>(dim, pfev, quad, {1})
+//    {
+//        this->domain_ = Op::SideDomain::domain();
+//        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
+//        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
+//    }
+//
+//    void eval() override {
+//        auto weights_value = this->input_ops(0)->result_matrix();
+//        auto jac_det_value = this->input_ops(1)->result_matrix();
+//        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+//        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
+//        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+//        this->result_(0) = jxw_ovec.get_vec();
+//    }
+//};
+
 /// Evaluates normal vector on side quadrature points
 template<unsigned int dim, unsigned int spacedim = 3>
 class NormalVec : public PatchOp<spacedim> {
@@ -237,16 +258,29 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim})
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
     }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
         auto normal_value = this->result_matrix();
-        auto inv_jac_value = this->input_ops(0)->result_matrix();
+        auto inv_jac_value_elem = this->input_ops(0)->result_matrix(); // returns vector of inverse jacobians of all elements registered on patch
+
+        // Copy InvJac vector of sides registered on patch
+        uint n_sides = ppv.n_sides();
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> inv_jac_value(dim, spacedim);
+        for (uint i=0; i<dim*spacedim; ++i) {
+            inv_jac_value(i) = ArenaVec<double>( n_sides, this->patch_fe_->patch_arena() );
+        }
+        for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
+            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+                inv_jac_value( i_c )( i_sd ) = inv_jac_value_elem( i_c )( ppv.int_table_(5)(i_sd) );
+            }
+        }
+
         normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(3) );
 
-        ArenaVec<double> norm_vec( ppv.n_elems(), this->patch_fe_->patch_arena() );
+        ArenaVec<double> norm_vec( n_sides, this->patch_fe_->patch_arena() );
         Eigen::VectorXd A(3);
         for (uint i=0; i<normal_value(0).data_size(); ++i) {
             A(0) = normal_value(0)(i);
@@ -512,7 +546,7 @@ public:
         auto result_vec = this->result_matrix();
 
         uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_elems();         // number of sides on patch
+        uint n_sides = ppv.n_sides();         // number of sides on patch
         uint n_patch_points = ppv.n_points(); // number of points on patch
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
@@ -582,7 +616,7 @@ public:
         auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
 
         uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_elems();
+        uint n_sides = ppv.n_sides();
         uint n_patch_points = ppv.n_points();
 
         for (uint c=0; c<spacedim*n_dofs; c++)
@@ -653,11 +687,12 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
+        // TODO - provadet vyber subvektoru pro elements
         auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
         auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x n_dofs
 
@@ -691,7 +726,7 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
@@ -704,7 +739,7 @@ public:
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_shape_grads(0).data_size();
-        uint n_sides = ppv.n_elems();
+        uint n_sides = ppv.n_sides();
         uint n_patch_points = ppv.n_points();
 
         // Expands inverse jacobian to inv_jac_expd_value
@@ -713,7 +748,7 @@ public:
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_sides);
+        	    inv_jac_expd_value(i)(j) = inv_jac_value( i )( ppv.int_table_(5)(j%n_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
@@ -746,12 +781,13 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
-        auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim
+        // TODO - provadet vyber subvektoru pro elements
+	    auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim
         auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x spacedim
         auto result_vec = dispatch_op_.result_matrix();            // spacedim x spacedim
 
@@ -790,18 +826,19 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
 	}
 
     void eval() override {
+        // TODO - upravit vyber subvektoru pro sides
         PatchPointValues<spacedim> &ppv = this->ppv();
         auto inv_jac_value = this->input_ops(0)->result_matrix();    // dim x spacedim
         auto ref_vector_grad = this->input_ops(1)->result_matrix();  // n_sides*dim x spacedim
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_vector_grad(0).data_size();
-        uint n_patch_sides = ppv.n_elems();
+        uint n_patch_sides = ppv.n_sides();
         uint n_patch_points = ppv.n_points();
 
         // Expands inverse jacobian to inv_jac_expd_value
@@ -809,7 +846,7 @@ public:
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value(i)(j) = inv_jac_value(i)(j%n_patch_sides);
+        	    inv_jac_expd_value( i )( j ) = inv_jac_value( i )( ppv.int_table_(5)(j%n_patch_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx

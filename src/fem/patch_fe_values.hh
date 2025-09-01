@@ -51,11 +51,13 @@ public:
 
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
-      patch_point_vals_(2)
+	  elems_dam_data_vec_(3),
+      patch_point_vals_(2),
+	  elements_map_(300, 0)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues(true) );
-            patch_point_vals_[1].push_back( PatchPointValues(false) );
+            patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elems_dam_data_vec_[dim-1], true) );
+            patch_point_vals_[1].push_back( PatchPointValues<spacedim>(&elems_dam_data_vec_[dim-1], false) );
         }
         used_quads_[0] = false; used_quads_[1] = false;
     }
@@ -167,41 +169,42 @@ public:
             if (used_quads_[0]) patch_point_vals_[0][i].resize_tables(*patch_fe_data_.patch_arena_);
             if (used_quads_[1]) patch_point_vals_[1][i].resize_tables(*patch_fe_data_.patch_arena_);
         }
+        std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[0][cell.dim()-1];
-    	if (ppv.elements_map_[element_patch_idx] != (uint)-1) {
+    	if (elements_map_[element_patch_idx] != (uint)-1) {
     	    // Return index of element on patch if it is registered repeatedly
-    	    return ppv.elements_map_[element_patch_idx];
+    	    return elements_map_[element_patch_idx];
     	}
 
-        ppv.elements_map_[element_patch_idx] = ppv.i_elem_;
-        ppv.elem_list_.push_back( cell.elm() );
-        return ppv.i_elem_++;
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[0][cell.dim()-1];
+        elements_map_[element_patch_idx] = ppv.elems_dim_data_->i_elem_;
+        ppv.elems_dim_data_->elem_list_.push_back( cell.elm() );
+        return ppv.elems_dim_data_->i_elem_++;
     }
 
     /// Register side to patch_point_vals_ table by dimension of side
-    uint register_side(DHCellSide cell_side) {
+    uint register_side(DHCellSide cell_side, uint element_patch_idx) {
         uint dim = cell_side.dim();
+        uint elm_pos = register_element(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[1][dim-1];
 
-        ppv.int_table_(3)(ppv.i_elem_) = cell_side.side_idx();
-        ppv.elem_list_.push_back( cell_side.cell().elm() );
+        ppv.int_table_(3)(ppv.i_side_) = cell_side.side_idx();
+        ppv.int_table_(5)(ppv.i_side_) = elm_pos;
         ppv.side_list_.push_back( cell_side.side() );
-
-        return ppv.i_elem_++;
+        return ppv.i_side_++;
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(DHCellAccessor cell, uint elem_table_row, uint value_patch_idx, uint i_point_on_elem) {
-        return patch_point_vals_[0][cell.dim()-1].register_bulk_point(elem_table_row, value_patch_idx, cell.elm_idx(), i_point_on_elem);
+    uint register_bulk_point(DHCellAccessor cell, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
+        return patch_point_vals_[0][cell.dim()-1].register_bulk_point(patch_elm_idx, elm_cache_map_idx, cell.elm_idx(), i_point_on_elem);
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
-    uint register_side_point(DHCellSide cell_side, uint elem_table_row, uint value_patch_idx, uint i_point_on_side) {
-        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(elem_table_row, value_patch_idx, cell_side.elem_idx(),
+    uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
+        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
                 cell_side.side_idx(), i_point_on_side);
     }
 
@@ -285,15 +288,19 @@ public:
 
     /// Temporary method
     void make_permanent_ppv_data() {
-    	for (uint i=0; i<2; ++i)
-    	    for (uint j=0; j<3; ++j) {
-    	        patch_point_vals_[i][j].n_elems_.make_permanent();
-    	        patch_point_vals_[i][j].n_points_.make_permanent();
-    	    }
+        for (uint i_dim=0; i_dim<3; ++i_dim)
+            for (uint i_domain=0; i_domain<2; ++i_domain) {
+                patch_point_vals_[i_domain][i_dim].n_points_.make_permanent();
+                patch_point_vals_[i_domain][i_dim].n_sides_.make_permanent();
+            }
     }
 
 private:
     PatchFeData patch_fe_data_;
+
+    /// Sub objects of element data of dimensions 1,2,3
+    std::vector< ElemsDimOata<spacedim> > elems_dam_data_vec_;
+
     /// Sub objects of bulk and side data of dimensions 1,2,3
     std::vector< std::vector<PatchPointValues<spacedim>> > patch_point_vals_;
 
@@ -303,6 +310,8 @@ private:
     std::vector< PatchOp<spacedim> *> operations_;
     std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
     //OperationSet< PatchOp<spacedim> > op_dependency_;
+
+    std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
 
     friend class PatchOp<spacedim>;
 };
