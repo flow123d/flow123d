@@ -87,21 +87,21 @@ public:
         temporary_ = 0;
     }
 
-    /// Revert temporary value.
-    inline void revert_temporary() {
-        temporary_ = permanent_;
-    }
+//    /// Revert temporary value.
+//    inline void revert_temporary() {
+//        temporary_ = permanent_;
+//    }
 
     /// Finalize temporary value.
     inline void make_permanent() {
         permanent_ = temporary_;
     }
 
-    /// Return temporary value.
-    inline std::size_t temporary_value() const
-    {
-        return temporary_;
-    }
+//    /// Return temporary value.
+//    inline std::size_t temporary_value() const
+//    {
+//        return temporary_;
+//    }
 
 private:
     std::size_t permanent_;
