@@ -23,7 +23,6 @@
 #include "transport/transport_dg.hh"
 #include "fem/fe_p.hh"
 #include "fem/patch_fe_values.hh"
-#include "fem/op_factory.hh"
 #include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
@@ -49,7 +48,6 @@ public:
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
         this->used_fields_ += eq_fields_->retardation_coef;
     }
@@ -59,7 +57,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -253,7 +250,6 @@ public:
       conc_grad_sidw_( conc_edge_integral_->grad_scalar_shape() ),
       conc_grad_bdr_( conc_bdr_integral_->grad_scalar_shape() ),
       conc_join_shape_( FeQJoin<Scalar>( conc_join_integral_->scalar_join_shape() ) ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -273,8 +269,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_);
@@ -708,7 +702,6 @@ public:
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
         this->used_fields_ += eq_fields_->sources_conc_out;
         this->used_fields_ += eq_fields_->sources_sigma_out;
@@ -719,7 +712,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -827,7 +819,6 @@ public:
       normal_( conc_integral_->normal_vector() ),
       conc_shape_( conc_integral_->scalar_shape() ),
       conc_grad_( conc_integral_->grad_scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::boundary;
         this->used_fields_ += eq_fields_->advection_coef;
         this->used_fields_ += eq_fields_->diffusion_coef;
         this->used_fields_ += eq_fields_->cross_section;
@@ -842,7 +833,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
@@ -1032,7 +1022,6 @@ public:
       init_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( init_integral_->JxW() ),
       init_shape_( init_integral_->scalar_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
     }
 
@@ -1041,7 +1030,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
         ndofs_ = this->n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
@@ -1120,7 +1108,6 @@ public:
     /// Constructor.
     InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
         this->asm_internals_ = asm_internals;
 

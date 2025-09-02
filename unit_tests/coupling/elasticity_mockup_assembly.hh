@@ -37,7 +37,6 @@ public:
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ),
       deform_join_grad_( this->join_values().gradient_vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -56,8 +55,6 @@ public:
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -341,7 +338,6 @@ public:
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
       div_deform_( this->bulk_values().vector_divergence() ),
       deform_join_( this->join_values().vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -365,8 +361,6 @@ public:
 
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->fe_values_->template initialize<dim>(*this->quad_);
-        this->fe_values_->template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();

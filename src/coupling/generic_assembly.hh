@@ -43,7 +43,7 @@ enum ActiveIntegrals {
 struct AssemblyIntegrals {
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
+    std::array<std::shared_ptr<CouplingIntegral>, 3> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
     std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
 };
 
@@ -54,8 +54,8 @@ public:
     AssemblyInternals()
     : eval_points_(std::make_shared<EvalPoints>()) {}
 
-    AssemblyInternals(uint quad_order, MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(quad_order, fe) {}
+    AssemblyInternals(MixedPtr<FiniteElement> fe)
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
@@ -161,8 +161,8 @@ public:
     GenericAssemblyBase()
     {}
 
-    GenericAssemblyBase(uint quad_order, MixedPtr<FiniteElement> fe)
-    : asm_internals_(quad_order, fe)
+    GenericAssemblyBase(MixedPtr<FiniteElement> fe)
+    : asm_internals_(fe)
     {}
 
     virtual ~GenericAssemblyBase(){}
@@ -209,7 +209,7 @@ public:
      * IN DEVELOPMENT!
      */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
-    : GenericAssemblyBase(eq_data->quad_order(), dh->ds()->fe()),
+    : GenericAssemblyBase(dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->asm_internals_),
       min_edge_sides_(2)
@@ -269,7 +269,7 @@ public:
                 boundary_integral_data_.make_permanent();
                 asm_internals_.element_cache_map_.make_paermanent_eval_points();
                 if (use_patch_fe_values_) {
-                    table_sizes_.copy(table_sizes_tmp_);
+                    asm_internals_.fe_values_.make_permanent_ppv_data();
                 }
                 if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
@@ -301,12 +301,12 @@ private:
         if (use_patch_fe_values_) {
             asm_internals_.fe_values_.init_finalize();
         }
-        active_integrals_ = multidim_assembly_[1_d]->n_active_integrals();
 
         // Temporary calls of following method
         multidim_assembly_[1_d]->post_integrals_set(integrals_);
         multidim_assembly_[2_d]->post_integrals_set(integrals_);
         multidim_assembly_[3_d]->post_integrals_set(integrals_);
+        integrals_.coupling_[2] = nullptr;
     }
 
     /// Call assemblations when patch is filled
@@ -361,14 +361,12 @@ private:
         boundary_integral_data_.reset();
         asm_internals_.element_cache_map_.clear_element_eval_points_map();
         if (use_patch_fe_values_) {
-            table_sizes_.reset();
-            table_sizes_tmp_.reset();
             asm_internals_.fe_values_.reset();
         }
     }
 
     void patch_reinit() {
-    	asm_internals_.fe_values_.resize_tables(table_sizes_);
+    	asm_internals_.fe_values_.resize_tables();
         if (bulk_integral_data_.permanent_size() > 0) {
             multidim_assembly_[1_d]->add_patch_bulk_points(bulk_integral_data_);
             multidim_assembly_[2_d]->add_patch_bulk_points(bulk_integral_data_);
@@ -394,54 +392,56 @@ private:
     /**
      * Add data of integrals to appropriate structure and register elements to ElementCacheMap.
      *
-     * Types of used integrals must be set in data member \p active_integrals_.
+     * Types of used integrals must be given by initialized integrals in descendants of AssemblyBase class.
      */
     void add_integrals_of_computing_step(DHCellAccessor cell) {
-        if (active_integrals_ & ActiveIntegrals::bulk)
+        if (integrals_.bulk_[cell.dim()-1] != nullptr)
             if (cell.is_own()) { // Not ghost
                 this->add_volume_integral(cell);
     	    }
 
         for( DHCellSide cell_side : cell.side_range() ) {
-            if (active_integrals_ & ActiveIntegrals::boundary)
+            if (integrals_.boundary_[cell.dim()-1] != nullptr)
                 if (cell.is_own()) // Not ghost
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         this->add_boundary_integral(cell_side);
                         continue;
                     }
-            if (active_integrals_ & ActiveIntegrals::edge)
+            if (integrals_.edge_[cell.dim()-1] != nullptr)
                 if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                     this->add_edge_integral(cell_side);
                 }
         }
 
-        if (active_integrals_ & ActiveIntegrals::coupling) {
-            auto coupling_integral = integrals_.coupling_[cell.dim()-1];
+        auto coupling_integral = integrals_.coupling_[cell.dim()-1];
+        if (coupling_integral != nullptr) {
+            auto &ppv_low = asm_internals_.fe_values_.ppv(0, cell.dim());
+            auto &ppv_high = asm_internals_.fe_values_.ppv(1, cell.dim()+1);
             // Adds data of bulk points only if bulk point were not added during processing of bulk integral
-            bool add_bulk_points = !( (active_integrals_ & ActiveIntegrals::bulk) & cell.is_own() );
+            bool add_bulk_points = !( (integrals_.bulk_[cell.dim()-1] != nullptr) & cell.is_own() );
             if (add_bulk_points) {
                 // add points of low dim element only one time and only if they have not been added in BulkIntegral
                 for( DHCellSide ngh_side : cell.neighb_sides() ) {
                     unsigned int reg_idx_low = cell.elm().region_idx().idx();
-                    table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
+                    ++ppv_low.n_elems_;
                     for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &asm_internals_.element_cache_map_) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                         asm_internals_.element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                        table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
+                        ++ppv_low.n_points_;
                     }
                     break;
                 }
             }
         	// Adds data of side points of all neighbour objects
-        	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
+            for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
                 coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
                         integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
-                table_sizes_tmp_.elem_sizes_[1][cell.dim()]++;
+                ++ppv_high.n_elems_;
 
                 unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
                 for (auto p : coupling_integral->points(ngh_side, &asm_internals_.element_cache_map_) ) {
                     asm_internals_.element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-                    table_sizes_tmp_.point_sizes_[1][cell.dim()]++;
+                    ++ppv_high.n_points_;
                 }
             }
         }
@@ -449,17 +449,19 @@ private:
 
     /// Add data of volume integral to appropriate data structure.
     inline void add_volume_integral(const DHCellAccessor &cell) {
+        auto &ppv = asm_internals_.fe_values_.ppv(0, cell.dim());
+        ++ppv.n_elems_;
+
         uint subset_idx = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
-        table_sizes_tmp_.elem_sizes_[0][cell.dim()-1]++;
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
         for (uint i=uint( asm_internals_.eval_points_->subset_begin(cell.dim(), subset_idx) );
                   i<uint( asm_internals_.eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
             asm_internals_.element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
-            table_sizes_tmp_.point_sizes_[0][cell.dim()-1]++;
+            ++ppv.n_points_;
         }
     }
 
@@ -467,28 +469,30 @@ private:
     inline void add_edge_integral(const DHCellSide &cell_side) {
         auto range = cell_side.edge_sides();
         uint dim = range.begin()->dim();
+        auto &ppv = asm_internals_.fe_values_.ppv(1, cell_side.dim());
         edge_integral_data_.emplace_back(range, integrals_.edge_[dim-1]->get_subset_idx());
 
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
-            table_sizes_tmp_.elem_sizes_[1][dim-1]++;
+            ++ppv.n_elems_;
             for (auto p : integrals_.edge_[dim-1]->points(edge_side, &asm_internals_.element_cache_map_) ) {
                 asm_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                table_sizes_tmp_.point_sizes_[1][dim-1]++;
+                ++ppv.n_points_;
             }
         }
     }
 
     /// Add data of boundary integral to appropriate data structure.
     inline void add_boundary_integral(const DHCellSide &bdr_side) {
+        auto &ppv = asm_internals_.fe_values_.ppv(1, bdr_side.dim());
         boundary_integral_data_.emplace_back(integrals_.boundary_[bdr_side.dim()-1]->get_subset_low_idx(), bdr_side,
                 integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx());
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
-        table_sizes_tmp_.elem_sizes_[1][bdr_side.dim()-1]++;
+        ++ppv.n_elems_;
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &asm_internals_.element_cache_map_) ) {
             asm_internals_.element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-            table_sizes_tmp_.point_sizes_[1][bdr_side.dim()-1]++;
+            ++ppv.n_points_;
 
         	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
         	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
@@ -507,9 +511,6 @@ private:
     bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 
-    /// Holds mask of active integrals.
-    int active_integrals_;
-
     /**
      * Minimal number of sides on edge.
      *
@@ -524,11 +525,6 @@ private:
     RevertableList<EdgeIntegralData>       edge_integral_data_;      ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData>   coupling_integral_data_;  ///< Holds data for computing couplings integrals.
     RevertableList<BoundaryIntegralData>   boundary_integral_data_;  ///< Holds data for computing boundary integrals.
-
-    /// Struct for pre-computing number of elements, sides, bulk points and side points on each dimension.
-    PatchFEValues<3>::TableSizes table_sizes_;
-    /// Same as previous but hold temporary values during adding elements, sides and points.
-    PatchFEValues<3>::TableSizes table_sizes_tmp_;
 };
 
 

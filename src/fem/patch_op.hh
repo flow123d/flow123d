@@ -49,8 +49,8 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, std::initializer_list<uint> shape, uint n_dofs = 1)
-    : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev)
+    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::initializer_list<uint> shape, uint n_dofs = 1)
+    : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev), quad_(quad)
     {
         ASSERT_GT(n_dofs, 0);
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
@@ -91,6 +91,11 @@ public:
     /// Getter for n_dofs_
     inline uint n_dofs() const {
         return n_dofs_;
+    }
+
+    /// Getter for quadrature_
+    inline const Quadrature *quad() const {
+        return quad_;
     }
 
     /// Return pointer to operation of i_op index in input operation vector.
@@ -180,6 +185,7 @@ protected:
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
+    const Quadrature *quad_;                      ///< Pointer to Quadrature
 
     friend class PatchFEValues<spacedim>;
 };

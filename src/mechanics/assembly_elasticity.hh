@@ -23,7 +23,6 @@
 #include "mechanics/elasticity.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include "fem/op_factory.hh"
 #include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
@@ -58,7 +57,6 @@ public:
       sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
       deform_join_( coupling_integral_->vector_join_shape() ),
       deform_join_grad_( coupling_integral_->gradient_vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -75,8 +73,6 @@ public:
         //this->balance_ = eq_data_->balance_;
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -296,7 +292,6 @@ public:
 	  grad_deform_( bulk_integral_->grad_vector_shape() ),
       div_deform_( bulk_integral_->vector_divergence() ),
       deform_join_( coupling_integral_->vector_join_shape() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->load;
         this->used_fields_ += eq_fields_->potential_load;
@@ -318,8 +313,6 @@ public:
         //this->balance_ = eq_data_->balance_;
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -555,7 +548,6 @@ public:
       grad_deform_( bulk_integral_->grad_vector_shape() ),
       sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
       div_deform_( bulk_integral_->vector_divergence() ) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
@@ -568,8 +560,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
 
@@ -714,7 +704,6 @@ public:
       JxW_join_( coupling_integral_->JxW() ),
       normal_join_( coupling_integral_->normal_vector() ),
       deform_join_( coupling_integral_->vector_shape() ) {
-        this->active_integrals_ = ActiveIntegrals::coupling;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->cross_section_min;
     }
@@ -724,9 +713,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
-
         n_dofs_ = this->n_dofs();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
