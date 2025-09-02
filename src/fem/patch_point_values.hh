@@ -161,20 +161,13 @@ public:
         } else if (domain == side_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
         }
+        int_table_.resize(int_sizes_.size());
     }
 
 	/**
 	 * Destructor.
 	 */
     virtual ~PatchPointValues() {}
-
-    /**
-     * Initialize object, set number of columns (quantities) in tables.
-     */
-    void initialize() {
-        this->reset();
-        int_table_.resize(int_sizes_.size());
-    }
 
     /// Reset number of columns (points and elements)
     inline void reset() {

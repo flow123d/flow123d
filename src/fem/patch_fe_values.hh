@@ -57,7 +57,7 @@ public:
             patch_point_vals_[bulk_domain].push_back( PatchPointValues(bulk_domain) );
             patch_point_vals_[side_domain].push_back( PatchPointValues(side_domain) );
         }
-        used_quads_[bulk_domain] = false; used_quads_[side_domain] = false;
+        used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
 
     PatchFEValues(MixedPtr<FiniteElement> fe)
@@ -76,25 +76,6 @@ public:
     ~PatchFEValues()
     {}
 
-    /**
-	 * @brief Initialize structures and calculates cell-independent data.
-	 *
-	 * @param _quadrature The quadrature rule for the cell associated
-     *                    to given finite element or for the cell side.
-	 * @param _flags The update flags.
-	 */
-    template<unsigned int DIM>
-    void initialize(Quadrature &_quadrature)
-    {
-        if ( _quadrature.dim() == DIM ) {
-            used_quads_[bulk_domain] = true;
-            patch_point_vals_[bulk_domain][DIM-1].initialize(); // bulk
-        } else {
-            used_quads_[side_domain] = true;
-            patch_point_vals_[side_domain][DIM-1].initialize(); // side
-        }
-    }
-
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
@@ -104,8 +85,8 @@ public:
     void reset()
     {
         for (unsigned int i=0; i<spacedim; ++i) {
-            if (used_quads_[bulk_domain]) patch_point_vals_[bulk_domain][i].reset();
-            if (used_quads_[side_domain]) patch_point_vals_[side_domain][i].reset();
+            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].reset();
+            if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].reset();
         }
         patch_fe_data_.patch_arena_->reset();
     }
@@ -164,8 +145,8 @@ public:
     /// Resize tables of patch_point_vals_
     void resize_tables() {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_quads_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
-            if (used_quads_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
         }
     }
 
@@ -276,6 +257,11 @@ public:
         return patch_fe_data_;
     }
 
+    /// Mark domain (bulk or side) as used in assembly class
+    inline void set_used_domain(fem_domain domain) {
+        used_domain_[domain] = true;
+    }
+
     /// Temporary method
     PatchPointValues<spacedim> &ppv(uint domain, uint dim) {
         ASSERT( domain<2 );
@@ -298,7 +284,7 @@ private:
     std::vector< std::vector<PatchPointValues<spacedim>> > patch_point_vals_;
 
     MixedPtr<FiniteElement> fe_;   ///< Mixed of shared pointers of FiniteElement object
-    bool used_quads_[2];           ///< Pair of flags signs holds info if bulk and side quadratures are used
+    bool used_domain_[2];          ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
     std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;

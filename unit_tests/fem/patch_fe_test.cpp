@@ -148,12 +148,6 @@ public:
     }
 
     void initialize() {
-        this->patch_fe_values_.initialize<1>(*quad_1_);
-        this->patch_fe_values_.initialize<2>(*quad_2_);
-        this->patch_fe_values_.initialize<3>(*quad_3_);
-        this->patch_fe_values_.initialize<1>(*quad_0_);
-        this->patch_fe_values_.initialize<2>(*quad_1_);
-        this->patch_fe_values_.initialize<3>(*quad_2_);
         this->patch_fe_values_.init_finalize();
     }
 
@@ -1120,12 +1114,6 @@ TEST(PatchFeTest, arena_alloc) {
 //    }
 //
 //    void initialize() {
-//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,true));
-//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,true));
-//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,true));
-//        this->patch_fe_values_.initialize<1>(*patch_fe_values_.get_quadrature(1,false));
-//        this->patch_fe_values_.initialize<2>(*patch_fe_values_.get_quadrature(2,false));
-//        this->patch_fe_values_.initialize<3>(*patch_fe_values_.get_quadrature(3,false));
 //        this->patch_fe_values_.init_finalize();
 //    }
 //

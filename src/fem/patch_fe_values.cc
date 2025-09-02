@@ -52,10 +52,6 @@
 
 
 // explicit instantiation
-template void PatchFEValues<3>::initialize<0>(Quadrature&);
-template void PatchFEValues<3>::initialize<1>(Quadrature&);
-template void PatchFEValues<3>::initialize<2>(Quadrature&);
-template void PatchFEValues<3>::initialize<3>(Quadrature&);
 //template BulkValues<1> PatchFEValues<3>::bulk_values<1>();
 //template BulkValues<2> PatchFEValues<3>::bulk_values<2>();
 //template BulkValues<3> PatchFEValues<3>::bulk_values<3>();
