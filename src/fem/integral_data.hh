@@ -56,6 +56,7 @@ using IntegralPtrMap = std::unordered_map<std::tuple<uint, uint>, std::shared_pt
 template<typename Operation>
 struct OperationPtrHash {
     std::size_t operator()(const Operation* key) const {
+    	// TODO use boost hash of tuple (see IntegralTplHash)
         std::size_t h1 = std::hash<std::string>()(typeid(*key).name());
         std::size_t h2 = std::hash<std::size_t>()(key->quad()->size());
         return h1 ^ (h2 << 1);

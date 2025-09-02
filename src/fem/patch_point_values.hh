@@ -46,6 +46,14 @@ enum OpSizeType
 };
 
 
+/// Distinguishes operations by type and size of output rows
+enum fem_domain
+{
+	bulk_domain =0,
+	side_domain =1
+};
+
+
 
 struct RevertibleValue {
 public:
@@ -88,21 +96,21 @@ public:
         temporary_ = 0;
     }
 
-    /// Revert temporary value.
-    inline void revert_temporary() {
-        temporary_ = permanent_;
-    }
+//    /// Revert temporary value.
+//    inline void revert_temporary() {
+//        temporary_ = permanent_;
+//    }
 
     /// Finalize temporary value.
     inline void make_permanent() {
         permanent_ = temporary_;
     }
 
-    /// Return temporary value.
-    inline std::size_t temporary_value() const
-    {
-        return temporary_;
-    }
+//    /// Return temporary value.
+//    inline std::size_t temporary_value() const
+//    {
+//        return temporary_;
+//    }
 
 private:
     std::size_t permanent_;
@@ -166,29 +174,22 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(ElemsDimOata<spacedim> *elems_dim_data, bool is_bulk)
+    PatchPointValues(ElemsDimOata<spacedim> *elems_dim_data, fem_domain domain)
     : elems_dim_data_(elems_dim_data), points_map_(300, 0) {
         reset();
 
-        if (is_bulk) {
+        if (domain == bulk_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp};
-        } else {
+        } else if (domain == side_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp, elemOp};
         }
+        int_table_.resize(int_sizes_.size());
     }
 
 	/**
 	 * Destructor.
 	 */
     virtual ~PatchPointValues() {}
-
-    /**
-     * Initialize object, set number of columns (quantities) in tables.
-     */
-    void initialize() {
-        this->reset();
-        int_table_.resize(int_sizes_.size());
-    }
 
     /// Reset number of columns (points and elements)
     inline void reset() {

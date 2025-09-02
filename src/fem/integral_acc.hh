@@ -310,6 +310,7 @@ public:
      : BulkIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim(), qdim);
+        pfev->set_used_domain(bulk_domain);
 	}
 
     /// Destructor
@@ -517,6 +518,7 @@ public:
     : EdgeIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
+        pfev->set_used_domain(side_domain);
     }
 
 
@@ -710,6 +712,8 @@ public:
 	   factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         fe_low_ = pfev->fe_dim<qdim-1>();
+        pfev->set_used_domain(bulk_domain);
+        pfev->set_used_domain(side_domain);
     }
 
     /// Destructor
@@ -938,6 +942,7 @@ public:
     : BoundaryIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
+        pfev->set_used_domain(side_domain);
     }
 
     /// Destructor

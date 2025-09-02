@@ -73,8 +73,6 @@ public:
         //this->balance_ = eq_data_->balance_;
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -315,8 +313,6 @@ public:
         //this->balance_ = eq_data_->balance_;
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
         n_dofs_sub_ = fe_low->n_dofs();
@@ -564,8 +560,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
 
         n_dofs_ = this->n_dofs();
 
@@ -719,9 +713,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_);
-        this->asm_internals_->fe_values_.template initialize<dim>(*this->quad_low_);
-
         n_dofs_ = this->n_dofs();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
