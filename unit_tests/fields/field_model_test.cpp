@@ -21,6 +21,7 @@
 #include "fields/field_model.hh"
 #include "fields/multi_field.hh"
 #include "fields/field_constant.hh"
+#include "fem/integral_acc.hh"
 #include "mesh/accessors.hh"
 #include "mesh/mesh.h"
 #include "quadrature/quadrature.hh"
@@ -73,8 +74,8 @@ public:
         eval_points = std::make_shared<EvalPoints>();
         q_bulk = new QGauss(3, 2);
         q_side = new QGauss(2, 2);
-        eval_points->add_bulk<3>(*q_bulk );
-        eval_points->add_edge<3>(*q_side );
+        std::shared_ptr<BulkIntegral> mass_eval = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
+        std::shared_ptr<EdgeIntegral> side_eval = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
         this->init(eval_points);
     }
 

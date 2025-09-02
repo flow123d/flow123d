@@ -11,9 +11,9 @@
 #include <mesh_constructor.hh>
 #include "arma_expect.hh"
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_formula.hh"
@@ -86,8 +86,8 @@ public:
             eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk = new QGauss(3, 2);
             Quadrature *q_side = new QGauss(2, 2);
-            mass_eval = eval_points_->add_bulk<3>(*q_bulk );
-            side_eval = eval_points_->add_edge<3>(*q_side );
+            mass_eval = std::make_shared<BulkIntegral>(eval_points_, q_bulk, 3);
+            side_eval = std::make_shared<EdgeIntegral>(eval_points_, q_side, 3);
             // ngh_side_eval = ...
             this->init(eval_points_);
 

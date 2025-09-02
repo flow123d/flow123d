@@ -6,9 +6,9 @@
 #include "arma_expect.hh"
 #include <rev_num.h>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
@@ -526,6 +526,10 @@ public:
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
     EqData() {}
+
+	inline unsigned int quad_order() const {
+	    return dg_order;
+	}
 
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete

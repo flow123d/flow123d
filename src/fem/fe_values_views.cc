@@ -144,5 +144,3 @@ const FEValues<spacedim> &FEValuesViews::Tensor<spacedim>::base() const
 template class FEValuesViews::Scalar<3>;
 template class FEValuesViews::Vector<3>;
 template class FEValuesViews::Tensor<3>;
-
-

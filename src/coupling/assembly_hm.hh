@@ -25,7 +25,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 
 
 /**
@@ -42,9 +42,9 @@ public:
     static constexpr const char * name() { return "FlowPotentialAssemblyHM"; }
 
     /// Constructor.
-    FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = (ActiveIntegrals::boundary);
+    FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) )  {
         this->used_fields_ += eq_fields_->alpha;
         this->used_fields_ += eq_fields_->density;
         this->used_fields_ += eq_fields_->gravity;
@@ -56,9 +56,7 @@ public:
     ~FlowPotentialAssemblyHM() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
-
+    void initialize() {
         shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
         shared_ptr<FiniteElement<dim>> fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
         fe_values_side_.initialize(*this->quad_low_, *fe_, update_side_JxW_values);
@@ -77,13 +75,13 @@ public:
         double ref_pot = 0;
         if (dh_side.side().is_boundary())
         {
-            auto p_side = *this->boundary_points(dh_side).begin();
+            auto p_side = *bdr_integral_->points(dh_side).begin();
             auto p_bdr = p_side.point_bdr( dh_side.cond().element_accessor() );
             unsigned int flow_bc_type = eq_data_->flow_->eq_fields().bc_type(p_bdr);
             if (flow_bc_type == DarcyLMH::EqFields::dirichlet || flow_bc_type == DarcyLMH::EqFields::total_flux)
             {
                 unsigned int k=0;
-                for ( auto p : this->boundary_points(dh_side) )
+                for ( auto p : bdr_integral_->points(dh_side) )
                 {
                     // The reference potential is applied only on dirichlet and total_flux b.c.,
                     // i.e. where only mechanical traction is prescribed.
@@ -111,8 +109,9 @@ private:
     FieldSet used_fields_;
 
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
-    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    LocDofVec dof_indices_;                                   ///< Vector of global DOF indices
     VectorMPI ref_potential_vec_;                             ///< Vector of dofs of field ref_potential
+    std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;  ///< Boundary integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -130,9 +129,9 @@ public:
     static constexpr const char * name() { return "ResidualAssemblyHM"; }
 
     /// Constructor.
-    ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = (ActiveIntegrals::bulk);
+    ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += eq_data_->flow_->eq_fields().field_ele_pressure;
         this->used_fields_ += eq_fields_->old_iter_pressure;
     }
@@ -141,8 +140,7 @@ public:
     ~ResidualAssemblyHM() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        this->element_cache_map_ = element_cache_map;
+    void initialize() {
         shared_ptr<FE_P<dim>> fe_ = std::make_shared< FE_P<dim> >(0);
         fe_values_.initialize(*this->quad_, *fe_, update_JxW_values);
     }
@@ -158,7 +156,7 @@ public:
 
         // compute pressure error
         unsigned int k=0;
-        for (auto p : this->bulk_points(element_patch_idx) )
+        for (auto p : bulk_integral_->points(element_patch_idx) )
         {
             double new_p = eq_data_->flow_->eq_fields().field_ele_pressure(p);
             double old_p = eq_fields_->old_iter_pressure(p);
@@ -179,6 +177,7 @@ private:
     FieldSet used_fields_;
 
     FEValues<3> fe_values_;                                   ///< FEValues of cell object
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;     ///< Bulk integral of assembly class
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
