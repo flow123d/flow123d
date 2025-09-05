@@ -53,7 +53,7 @@ public:
     : patch_fe_data_(1024 * 1024, 256),
 	  elems_dim_data_vec_(3),
       patch_point_vals_(2),
-	  elements_map_(300, 0)
+	  elements_map_(300, (uint)-1)
     {
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elems_dim_data_vec_[dim-1], bulk_domain) );
@@ -277,7 +277,7 @@ public:
         for (uint i_dim=0; i_dim<3; ++i_dim)
             for (uint i_domain=0; i_domain<2; ++i_domain) {
                 patch_point_vals_[i_domain][i_dim].n_points_.make_permanent();
-                patch_point_vals_[i_domain][i_dim].n_sides_.make_permanent();
+                patch_point_vals_[i_domain][i_dim].n_mesh_items_.make_permanent();
             }
     }
 

@@ -71,10 +71,11 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result( ppv.template n_mesh_entities<Domain>(), this->patch_fe_->patch_arena() );
+        uint n_elems = ppv.template n_mesh_entities<Domain>();
+        this->allocate_result( n_elems, this->patch_fe_->patch_arena() );
         auto result = this->result_matrix();
 
-        for (uint i_elm=0; i_elm<ppv.template n_mesh_entities<Domain>(); ++i_elm)
+        for (uint i_elm=0; i_elm<n_elems; ++i_elm)
             for (uint i_col=0; i_col<Domain::n_nodes(dim); ++i_col)
                 for (uint i_row=0; i_row<spacedim; ++i_row) {
                     result(i_row, i_col)(i_elm) = ( *ppv.template node<Domain>(i_elm, i_col) )(i_row);
@@ -267,7 +268,7 @@ public:
         auto inv_jac_value_elem = this->input_ops(0)->result_matrix(); // returns vector of inverse jacobians of all elements registered on patch
 
         // Copy InvJac vector of sides registered on patch
-        uint n_sides = ppv.n_sides();
+        uint n_sides = ppv.n_mesh_items();
         Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> inv_jac_value(dim, spacedim);
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_value(i) = ArenaVec<double>( n_sides, this->patch_fe_->patch_arena() );
@@ -546,7 +547,7 @@ public:
         auto result_vec = this->result_matrix();
 
         uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_sides();         // number of sides on patch
+        uint n_sides = ppv.n_mesh_items();    // number of sides on patch
         uint n_patch_points = ppv.n_points(); // number of points on patch
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
@@ -616,7 +617,7 @@ public:
         auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
 
         uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_sides();
+        uint n_sides = ppv.n_mesh_items();
         uint n_patch_points = ppv.n_points();
 
         for (uint c=0; c<spacedim*n_dofs; c++)
@@ -739,7 +740,7 @@ public:
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_shape_grads(0).data_size();
-        uint n_sides = ppv.n_sides();
+        uint n_sides = ppv.n_mesh_items();
         uint n_patch_points = ppv.n_points();
 
         // Expands inverse jacobian to inv_jac_expd_value
@@ -838,7 +839,7 @@ public:
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_vector_grad(0).data_size();
-        uint n_patch_sides = ppv.n_sides();
+        uint n_patch_sides = ppv.n_mesh_items();
         uint n_patch_points = ppv.n_points();
 
         // Expands inverse jacobian to inv_jac_expd_value

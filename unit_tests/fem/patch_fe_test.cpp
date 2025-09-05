@@ -173,6 +173,7 @@ public:
         uint dim = cell.dim();
         auto &ppv_bulk = patch_fe_values_.ppv(0, dim);
         ppv_bulk.elems_dim_data_->n_elems_.insert(cell.elm_idx());;
+        ++ppv_bulk.n_mesh_items_;
         ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
@@ -193,7 +194,7 @@ public:
 
                 for( DHCellSide edge_side : range ) {
                     uint dim = edge_side.dim();
-                    ++ppv_edge.n_sides_;
+                    ++ppv_edge.n_mesh_items_;
                     ppv_edge.elems_dim_data_->n_elems_.insert(edge_side.elem_idx());
                     ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
