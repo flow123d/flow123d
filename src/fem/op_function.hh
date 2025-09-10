@@ -137,10 +137,10 @@ public:
 
     void eval() override {
         PatchPointValues<3> &ppv = this->ppv();
-        uint n_elems = ppv.elems_dim_data_->elem_list_.size();
-        this->allocate_result( n_elems, this->patch_fe_->patch_arena() );
+        uint n_sides = ppv.n_mesh_items();
+        this->allocate_result( n_sides, this->patch_fe_->patch_arena() );
         auto jac_det_value = this->result_matrix();
-        for (uint i=0;i<n_elems; ++i) {
+        for (uint i=0;i<n_sides; ++i) {
             jac_det_value(0,0)(i) = 1.0;
         }
     }
