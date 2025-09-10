@@ -137,9 +137,10 @@ public:
 
     void eval() override {
         PatchPointValues<3> &ppv = this->ppv();
-        this->allocate_result( ppv.n_elems(), this->patch_fe_->patch_arena() );
+        uint n_elems = ppv.elems_dim_data_->elem_list_.size();
+        this->allocate_result( n_elems, this->patch_fe_->patch_arena() );
         auto jac_det_value = this->result_matrix();
-        for (uint i=0;i<ppv.n_elems(); ++i) {
+        for (uint i=0;i<n_elems; ++i) {
             jac_det_value(0,0)(i) = 1.0;
         }
     }
@@ -220,6 +221,37 @@ public:
 
     void eval() override {
         auto weights_value = this->input_ops(0)->result_matrix();
+        auto jac_det_value_long = this->input_ops(1)->result_matrix();
+
+        // Copy InvJac vector of sides registered on patch
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        ArenaVec<double> jac_det_value( n_elems, this->patch_fe_->patch_arena() );
+        for (uint i_el=0; i_el<n_elems; ++i_el) {
+        	jac_det_value( i_el ) = jac_det_value_long( 0 )( ppv.int_table_(3)(i_el) );
+        }
+
+        ArenaOVec<double> weights_ovec( weights_value(0,0) );
+        ArenaOVec<double> jac_det_ovec( jac_det_value );
+        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
+        this->result_(0) = jxw_ovec.get_vec();
+    }
+};
+
+template<unsigned int dim, unsigned int spacedim>
+class JxW<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    JxW(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {1})
+    {
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
+    }
+
+    void eval() override {
+        auto weights_value = this->input_ops(0)->result_matrix();
         auto jac_det_value = this->input_ops(1)->result_matrix();
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
@@ -227,28 +259,6 @@ public:
         this->result_(0) = jxw_ovec.get_vec();
     }
 };
-
-//template<unsigned int dim, unsigned int spacedim>
-//class JxW<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
-//public:
-//    /// Constructor
-//    JxW(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
-//    : PatchOp<spacedim>(dim, pfev, quad, {1})
-//    {
-//        this->domain_ = Op::SideDomain::domain();
-//        this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
-//        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
-//    }
-//
-//    void eval() override {
-//        auto weights_value = this->input_ops(0)->result_matrix();
-//        auto jac_det_value = this->input_ops(1)->result_matrix();
-//        ArenaOVec<double> weights_ovec( weights_value(0,0) );
-//        ArenaOVec<double> jac_det_ovec( jac_det_value(0,0) );
-//        ArenaOVec<double> jxw_ovec = jac_det_ovec * weights_ovec;
-//        this->result_(0) = jxw_ovec.get_vec();
-//    }
-//};
 
 /// Evaluates normal vector on side quadrature points
 template<unsigned int dim, unsigned int spacedim = 3>
@@ -506,7 +516,7 @@ public:
         auto result_vec = this->result_matrix();
 
         uint n_dofs = this->n_dofs();
-        uint n_elem = this->ppv().n_elems();
+        uint n_elem = this->ppv().n_mesh_items();
 
         ArenaVec<double> elem_vec(n_elem, this->patch_fe_->patch_arena());
         for (uint i=0; i<n_elem; ++i) {
@@ -575,7 +585,7 @@ public:
         auto result_vec = dispatch_op_.result_matrix();
 
         uint n_dofs = this->n_dofs();
-        uint n_elem = this->ppv().n_elems();
+        uint n_elem = this->ppv().n_mesh_items();
 
         ArenaVec<double> elem_vec(n_elem, this->patch_fe_->patch_arena());
         for (uint i=0; i<n_elem; ++i) {
@@ -694,10 +704,23 @@ public:
 
     void eval() override {
         // TODO - provadet vyber subvektoru pro elements
-        auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim=3
-        auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x n_dofs
+        auto inv_jac_vec_elem = this->input_ops(0)->result_matrix();    // dim x spacedim=3
+        auto ref_grads_vec = this->input_ops(1)->result_matrix();       // dim x n_dofs
 
         uint n_dofs = this->n_dofs();
+
+        // Copy InvJac vector of elements registered on patch
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> inv_jac_vec(dim, spacedim);
+        for (uint i=0; i<dim*spacedim; ++i) {
+            inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
+        }
+        for (uint i_el=0; i_el<n_elems; ++i_el) {
+            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(3)(i_el) );
+            }
+        }
 
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_grads_ovec(this->dim_, n_dofs);
         for (uint i=0; i<this->dim_*n_dofs; ++i) {
@@ -787,12 +810,24 @@ public:
 	}
 
     void eval() override {
-        // TODO - provadet vyber subvektoru pro elements
-	    auto inv_jac_vec = this->input_ops(0)->result_matrix();    // dim x spacedim
-        auto ref_grads_vec = this->input_ops(1)->result_matrix();  // dim x spacedim
-        auto result_vec = dispatch_op_.result_matrix();            // spacedim x spacedim
+	    auto inv_jac_vec_elem = this->input_ops(0)->result_matrix();   // dim x spacedim
+        auto ref_grads_vec = this->input_ops(1)->result_matrix();      // dim x spacedim
+        auto result_vec = dispatch_op_.result_matrix();                // spacedim x spacedim
 
         uint n_dofs = this->n_dofs();
+
+        // Copy InvJac vector of elements registered on patch
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> inv_jac_vec(dim, spacedim);
+        for (uint i=0; i<dim*spacedim; ++i) {
+            inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
+        }
+        for (uint i_el=0; i_el<n_elems; ++i_el) {
+            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(3)(i_el) );
+            }
+        }
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
         for (uint i=0; i<dim*spacedim; ++i) {

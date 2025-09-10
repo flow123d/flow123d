@@ -129,12 +129,10 @@ public:
 
     /// Reset data
     void reset() {
-        n_elems_.clear();
         i_elem_ = 0;
         elem_list_.clear();
     }
 
-    std::unordered_set<uint> n_elems_;                  ///< Holds number of elements of one dim n patch, unordered_set ensures control of duplicity.
     uint i_elem_;                                       ///< Index of registered element in table, helper value used during patch creating
     std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
 };
@@ -179,7 +177,7 @@ public:
         reset();
 
         if (domain == bulk_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp};
         } else if (domain == side_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp, elemOp};
         }
@@ -195,14 +193,10 @@ public:
     inline void reset() {
         n_points_.reset();
         n_mesh_items_.reset();
-        i_side_ = 0;
+        i_mesh_item_ = 0;
         elems_dim_data_->reset();
+        n_elems_.clear();
         side_list_.clear();
-    }
-
-    /// Getter for n_elems_
-    inline uint n_elems() const {
-        return elems_dim_data_->n_elems_.size();
     }
 
     /// Getter for n_mesh_items__
@@ -281,7 +275,9 @@ public:
      *  0: Index of quadrature point in ElementCacheMap
      *  1: Index of element (bulk PPV) / side (side PPV) in PatchOp::result_ table to which quadrature point is relevant
      *  2: Element idx in Mesh
-     *   - last four rows are allocated only for side point table
+     *   - specialized rows of element table
+     *  3. Mapping between short and long element representation
+     *   - specialized rows of side table
      *  3: Index of side in element - short vector, size of column = number of sides
      *  4: Index of side in element - long vector, size of column = number of points
      *  5. Index of element in PatchOp::result_ table to which side is relevant
@@ -295,8 +291,9 @@ public:
     ElemsDimOata<spacedim> *elems_dim_data_;  ///< Number and list of elements on patch
     RevertibleValue n_points_;                ///< Number of points in patch
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
-    uint i_side_;                             ///< Index of registered side in table, helper value used during patch creating
+    uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
     std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
+    std::unordered_set<uint> n_elems_;        ///< Holds set of idx of registered elements of one dim on patch, unordered_set ensures control of duplicity.
 	std::vector<Side> side_list_;             ///< List of sides on patch
 };
 

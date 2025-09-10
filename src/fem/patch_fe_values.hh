@@ -155,27 +155,26 @@ public:
 
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
+        uint elem_pos = register_element_internal(cell, element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
-        if (elements_map_[element_patch_idx] != (uint)-1) {
-    	    // Return index of element on patch if it is registered repeatedly
-    	    return elements_map_[element_patch_idx];
-    	}
-
-        elements_map_[element_patch_idx] = ppv.elems_dim_data_->i_elem_;
-        ppv.elems_dim_data_->elem_list_.push_back( cell.elm() );
-        return ppv.elems_dim_data_->i_elem_++;
+        bool is_elm_added = ppv.n_elems_.insert(cell.elm_idx()).second;
+        if (is_elm_added) {
+            ppv.int_table_(3)(ppv.i_mesh_item_) = elem_pos;
+            ppv.i_mesh_item_++;
+        }
+        return elem_pos;
     }
 
     /// Register side to patch_point_vals_ table by dimension of side
     uint register_side(DHCellSide cell_side, uint element_patch_idx) {
         uint dim = cell_side.dim();
-        uint elm_pos = register_element(cell_side.cell(), element_patch_idx);
+        uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
-        ppv.int_table_(3)(ppv.i_side_) = cell_side.side_idx();
-        ppv.int_table_(5)(ppv.i_side_) = elm_pos;
+        ppv.int_table_(3)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.int_table_(5)(ppv.i_mesh_item_) = elm_pos;
         ppv.side_list_.push_back( cell_side.side() );
-        return ppv.i_side_++;
+        return ppv.i_mesh_item_++;
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
@@ -282,6 +281,19 @@ public:
     }
 
 private:
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element_internal(DHCellAccessor cell, uint element_patch_idx) {
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
+        if (elements_map_[element_patch_idx] != (uint)-1) {
+    	    // Return index of element on patch if it is registered repeatedly
+    	    return elements_map_[element_patch_idx];
+    	}
+
+        elements_map_[element_patch_idx] = ppv.elems_dim_data_->i_elem_;
+        ppv.elems_dim_data_->elem_list_.push_back( cell.elm() );
+        return ppv.elems_dim_data_->i_elem_++;
+    }
+
     PatchFeData patch_fe_data_;
 
     /// Sub objects of element data of dimensions 1,2,3
