@@ -278,8 +278,8 @@ public:
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
     uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
     std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-    std::unordered_set<uint> n_elems_;        ///< Holds set of idx of registered elements of one dim on patch, unordered_set ensures control of duplicity.
-	std::vector<Side> side_list_;             ///< List of sides on patch
+    std::unordered_map<uint, uint> n_elems_;  ///< Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+    std::vector<Side> side_list_;             ///< List of sides on patch
 };
 
 

@@ -157,12 +157,13 @@ public:
     uint register_element(DHCellAccessor cell, uint element_patch_idx) {
         uint elem_pos = register_element_internal(cell, element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
-        bool is_elm_added = ppv.n_elems_.insert(cell.elm_idx()).second;
+        auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
+        bool is_elm_added = map_it.second;
         if (is_elm_added) {
             ppv.int_table_(3)(ppv.i_mesh_item_) = elem_pos;
             ppv.i_mesh_item_++;
         }
-        return elem_pos;
+        return map_it.first->second;
     }
 
     /// Register side to patch_point_vals_ table by dimension of side
