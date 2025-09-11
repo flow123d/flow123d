@@ -51,13 +51,13 @@ public:
 
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
-	  elems_dim_data_vec_(3),
+	  elem_dim_list_vec_(3),
       patch_point_vals_(2),
 	  elements_map_(300, (uint)-1)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elems_dim_data_vec_[dim-1], bulk_domain) );
-            patch_point_vals_[1].push_back( PatchPointValues<spacedim>(&elems_dim_data_vec_[dim-1], side_domain) );
+            patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
+            patch_point_vals_[1].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -289,15 +289,15 @@ private:
     	    return elements_map_[element_patch_idx];
     	}
 
-        elements_map_[element_patch_idx] = ppv.elems_dim_data_->i_elem_;
-        ppv.elems_dim_data_->elem_list_.push_back( cell.elm() );
-        return ppv.elems_dim_data_->i_elem_++;
+        elements_map_[element_patch_idx] = ppv.elem_dim_list_->size();
+        ppv.elem_dim_list_->push_back( cell.elm() );
+        return ppv.elem_dim_list_->size() - 1;
     }
 
     PatchFeData patch_fe_data_;
 
     /// Sub objects of element data of dimensions 1,2,3
-    std::vector< ElemsDimOata<spacedim> > elems_dim_data_vec_;
+    std::vector< ElemDimList<spacedim> > elem_dim_list_vec_;
 
     /// Sub objects of bulk and side data of dimensions 1,2,3
     std::vector< std::vector<PatchPointValues<spacedim>> > patch_point_vals_;

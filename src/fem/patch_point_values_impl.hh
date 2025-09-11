@@ -34,7 +34,7 @@ namespace Op {
 template<>
 template<>
 NodeAccessor<3> PatchPointValues<3>::node<Op::BulkDomain>(unsigned int i_elm, unsigned int i_n) {
-    return elems_dim_data_->elem_list_[i_elm].node(i_n);
+    return (*elem_dim_list_)[i_elm].node(i_n);
 }
 
 template<>
@@ -46,7 +46,7 @@ NodeAccessor<3> PatchPointValues<3>::node<Op::SideDomain>(unsigned int i_elm, un
 template<>
 template<>
 unsigned int PatchPointValues<3>::n_mesh_entities<Op::BulkDomain>() {
-    return elems_dim_data_->elem_list_.size();
+    return elem_dim_list_->size();
 }
 
 template<>

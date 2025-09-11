@@ -118,24 +118,9 @@ private:
 };
 
 
-/**
- * Data class, holds common data of elements of one dimension of bulk and side PatchPointValues.
- */
 template<unsigned int spacedim = 3>
-class ElemsDimOata {
-public:
-    ElemsDimOata()
-    : i_elem_(0) {}
+using ElemDimList = std::vector<ElementAccessor<spacedim>>;
 
-    /// Reset data
-    void reset() {
-        i_elem_ = 0;
-        elem_list_.clear();
-    }
-
-    uint i_elem_;                                       ///< Index of registered element in table, helper value used during patch creating
-    std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
-};
 
 
 /**
@@ -172,8 +157,8 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(ElemsDimOata<spacedim> *elems_dim_data, fem_domain domain)
-    : elems_dim_data_(elems_dim_data), points_map_(300, 0) {
+    PatchPointValues(ElemDimList<spacedim> *elems_dim_list, fem_domain domain)
+    : elem_dim_list_(elems_dim_list), points_map_(300, 0) {
         reset();
 
         if (domain == bulk_domain) {
@@ -194,7 +179,7 @@ public:
         n_points_.reset();
         n_mesh_items_.reset();
         i_mesh_item_ = 0;
-        elems_dim_data_->reset();
+        elem_dim_list_->clear();
         n_elems_.clear();
         side_list_.clear();
     }
@@ -288,7 +273,7 @@ public:
     /// Set size and type of rows of int_table_, value is set implicitly in constructor of descendants
     std::vector<OpSizeType> int_sizes_;
 
-    ElemsDimOata<spacedim> *elems_dim_data_;  ///< Number and list of elements on patch
+    ElemDimList<spacedim> *elem_dim_list_;    ///< Number and list of elements on patch
     RevertibleValue n_points_;                ///< Number of points in patch
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
     uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
