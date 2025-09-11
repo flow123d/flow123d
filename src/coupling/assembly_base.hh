@@ -334,7 +334,8 @@ public:
     inline void add_patch_bdr_side_points(const RevertableList<BoundaryIntegralData> &boundary_integral_data) override {
         for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
             if (boundary_integral_data[i].side.dim() != dim) continue;
-        	uint side_pos = this->asm_internals_->fe_values_.register_side(boundary_integral_data[i].side);
+            uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(boundary_integral_data[i].side.elem_idx());
+            uint side_pos = this->asm_internals_->fe_values_.register_side(boundary_integral_data[i].side, element_patch_idx);
             uint i_point = 0;
             for (auto p : this->boundary_points(boundary_integral_data[i].side) ) {
                 this->asm_internals_->fe_values_.register_side_point(boundary_integral_data[i].side, side_pos, p.value_cache_idx(), i_point++);
@@ -349,7 +350,8 @@ public:
             if (range.begin()->dim() != dim) continue;
             for( DHCellSide edge_side : range )
             {
-            	uint side_pos = this->asm_internals_->fe_values_.register_side(edge_side);
+                uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(edge_side.elem_idx());
+                uint side_pos = this->asm_internals_->fe_values_.register_side(edge_side, element_patch_idx);
                 uint i_point = 0;
                 for (auto p : this->edge_points(edge_side) ) {
                     this->asm_internals_->fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
@@ -360,12 +362,13 @@ public:
 
     /// Register bulk and side points of coupling integral
     inline void add_patch_coupling_integrals(const RevertableList<CouplingIntegralData> &coupling_integral_data) override {
-        uint side_pos, element_patch_idx, elm_pos=0;
+        uint element_patch_idx, elm_pos=0;
         uint last_element_idx = -1;
 
         for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
             if (coupling_integral_data[i].side.dim() != dim) continue;
-            side_pos = this->asm_internals_->fe_values_.register_side(coupling_integral_data[i].side);
+            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].side.elem_idx());
+            uint side_pos = this->asm_internals_->fe_values_.register_side(coupling_integral_data[i].side, element_patch_idx);
             if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
                 element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].cell.elm_idx());
                 elm_pos = this->asm_internals_->fe_values_.register_element(coupling_integral_data[i].cell, element_patch_idx);

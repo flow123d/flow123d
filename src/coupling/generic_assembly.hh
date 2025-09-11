@@ -415,15 +415,15 @@ private:
 
         auto coupling_integral = integrals_.coupling_[cell.dim()-1];
         if (coupling_integral != nullptr) {
-            auto &ppv_low = asm_internals_.fe_values_.ppv(0, cell.dim());
-            auto &ppv_high = asm_internals_.fe_values_.ppv(1, cell.dim()+1);
+            auto &ppv_low = asm_internals_.fe_values_.ppv(bulk_domain, cell.dim());
+            auto &ppv_high = asm_internals_.fe_values_.ppv(side_domain, cell.dim()+1);
             // Adds data of bulk points only if bulk point were not added during processing of bulk integral
             bool add_bulk_points = !( (integrals_.bulk_[cell.dim()-1] != nullptr) & cell.is_own() );
             if (add_bulk_points) {
                 // add points of low dim element only one time and only if they have not been added in BulkIntegral
                 for( DHCellSide ngh_side : cell.neighb_sides() ) {
                     unsigned int reg_idx_low = cell.elm().region_idx().idx();
-                    ++ppv_low.n_elems_;
+                    ++ppv_low.n_mesh_items_;
                     for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &asm_internals_.element_cache_map_) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                         asm_internals_.element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
@@ -436,7 +436,7 @@ private:
             for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
                 coupling_integral_data_.emplace_back(cell, integrals_.coupling_[cell.dim()-1]->get_subset_low_idx(), ngh_side,
                         integrals_.coupling_[cell.dim()-1]->get_subset_high_idx());
-                ++ppv_high.n_elems_;
+                ++ppv_high.n_mesh_items_;
 
                 unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
                 for (auto p : coupling_integral->points(ngh_side, &asm_internals_.element_cache_map_) ) {
@@ -450,10 +450,10 @@ private:
     /// Add data of volume integral to appropriate data structure.
     inline void add_volume_integral(const DHCellAccessor &cell) {
         auto &ppv = asm_internals_.fe_values_.ppv(0, cell.dim());
-        ++ppv.n_elems_;
 
         uint subset_idx = integrals_.bulk_[cell.dim()-1]->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
+        ++ppv.n_mesh_items_;
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -474,7 +474,7 @@ private:
 
         for( DHCellSide edge_side : range ) {
             unsigned int reg_idx = edge_side.element().region_idx().idx();
-            ++ppv.n_elems_;
+            ++ppv.n_mesh_items_;
             for (auto p : integrals_.edge_[dim-1]->points(edge_side, &asm_internals_.element_cache_map_) ) {
                 asm_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                 ++ppv.n_points_;
@@ -489,7 +489,7 @@ private:
                 integrals_.boundary_[bdr_side.dim()-1]->get_subset_high_idx());
 
         unsigned int reg_idx = bdr_side.element().region_idx().idx();
-        ++ppv.n_elems_;
+        ++ppv.n_mesh_items_;
         for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &asm_internals_.element_cache_map_) ) {
             asm_internals_.element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
             ++ppv.n_points_;

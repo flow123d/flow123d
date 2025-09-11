@@ -10,7 +10,6 @@
 #include "fem/element_cache_map.hh"
 #include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
-#include "fem/op_factory.hh"
 #include "fem/patch_op_impl.hh"
 #include "fem/fe_p.hh"
 #include "tools/revertable_list.hh"
@@ -173,7 +172,7 @@ public:
         bulk_integral_data_.emplace_back(cell, subset_idx);
         uint dim = cell.dim();
         auto &ppv_bulk = patch_fe_values_.ppv(0, dim);
-        ++ppv_bulk.n_elems_;
+        ++ppv_bulk.n_mesh_items_;
         ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
@@ -194,7 +193,7 @@ public:
 
                 for( DHCellSide edge_side : range ) {
                     uint dim = edge_side.dim();
-                    ++ppv_edge.n_elems_;
+                    ++ppv_edge.n_mesh_items_;
                     ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integrals_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
@@ -246,18 +245,20 @@ public:
             uint dim = range.begin()->dim();
             for( DHCellSide edge_side : range )
             {
-                uint side_pos = patch_fe_values_.register_side(edge_side);
+                uint element_patch_idx = element_cache_map_.position_in_cache(edge_side.elem_idx());
+                uint side_pos = patch_fe_values_.register_side(edge_side, element_patch_idx);
                 uint i_point = 0;
                 for (auto p : this->edge_points(dim, edge_side) ) {
                     patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
-        uint side_pos, element_patch_idx, elm_pos=0;
+        uint element_patch_idx, elm_pos=0;
         uint last_element_idx = -1;
         for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
             uint dim = coupling_integral_data_[i].side.dim();
-            side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side);
+            element_patch_idx = element_cache_map_.position_in_cache(coupling_integral_data_[i].side.elem_idx());
+            uint side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side, element_patch_idx);
             if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
                 element_patch_idx = this->element_cache_map_.position_in_cache(coupling_integral_data_[i].cell.elm_idx());
                 elm_pos = patch_fe_values_.register_element(coupling_integral_data_[i].cell, element_patch_idx);

@@ -22,6 +22,7 @@
 #define PATCH_POINT_VALUES_HH_
 
 #include <Eigen/Dense>
+#include <unordered_set>
 
 #include "fem/eigen_tools.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -117,6 +118,10 @@ private:
 };
 
 
+template<unsigned int spacedim = 3>
+using ElemDimList = std::vector<ElementAccessor<spacedim>>;
+
+
 
 /**
  * v Class for storing FE data of quadrature points on one patch.
@@ -152,14 +157,14 @@ public:
      *
      * @param dim Set dimension
      */
-    PatchPointValues(fem_domain domain)
-    : elements_map_(300, 0), points_map_(300, 0) {
+    PatchPointValues(ElemDimList<spacedim> *elems_dim_list, fem_domain domain)
+    : elem_dim_list_(elems_dim_list), points_map_(300, 0) {
         reset();
 
         if (domain == bulk_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp};
         } else if (domain == side_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp, elemOp};
         }
         int_table_.resize(int_sizes_.size());
     }
@@ -172,15 +177,16 @@ public:
     /// Reset number of columns (points and elements)
     inline void reset() {
         n_points_.reset();
-        n_elems_.reset();
-        i_elem_ = 0;
-        elem_list_.clear();
+        n_mesh_items_.reset();
+        i_mesh_item_ = 0;
+        elem_dim_list_->clear();
+        n_elems_.clear();
         side_list_.clear();
     }
 
-    /// Getter for n_elems_
-    inline uint n_elems() const {
-        return n_elems_();
+    /// Getter for n_mesh_items__
+    inline uint n_mesh_items() const {
+        return n_mesh_items_();
     }
 
     /// Getter for n_points_
@@ -190,57 +196,59 @@ public:
 
     /// Resize data tables. Method is called before reinit of patch.
     void resize_tables(PatchArena &patch_arena) {
-        std::vector<std::size_t> sizes = {n_elems_(), n_points_()};
+        std::vector<std::size_t> sizes = {n_mesh_items_(), n_points_()};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }
-        std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
     /**
      * Register bulk point, add to int_table_
      *
-     * @param elem_table_row  Index of element in temporary element table.
-     * @param value_patch_idx Index of point in ElementCacheMap.
-     * @param elem_idx        Index of element in Mesh.
-     * @param i_point_on_elem Index of point on element
+     * @param patch_elm_idx     Index of element on patch (in int_table_).
+     * @param elm_cache_map_idx Index of point in ElementCacheMap.
+     * @param elem_idx          Index of element in Mesh.
+     * @param i_point_on_elem   Index of point on element
      */
-    uint register_bulk_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint i_point_on_elem) {
-        uint point_pos = i_point_on_elem * n_elems_() + elem_table_row; // index of bulk point on patch
-        int_table_(0)(point_pos) = value_patch_idx;
-        int_table_(1)(point_pos) = elem_table_row;
+    uint register_bulk_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem) {
+        uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
+        int_table_(0)(point_pos) = elm_cache_map_idx;
+        int_table_(1)(point_pos) = patch_elm_idx;
         int_table_(2)(point_pos) = elem_idx;
 
-        points_map_[value_patch_idx] = point_pos;
+        points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
     }
 
     /**
      * Register side point, add to int_table_
      *
-     * @param elem_table_row  Index of side in temporary element table.
-     * @param value_patch_idx Index of point in ElementCacheMap.
-     * @param elem_idx        Index of element in Mesh.
-     * @param side_idx        Index of side on element.
-     * @param i_point_on_side Index of point on side
+     * @param patch_side_idx     Index of side on patch (in int_table_).
+     * @param elm_cache_map_idx  Index of point in ElementCacheMap.
+     * @param elem_idx           Index of element in Mesh.
+     * @param side_idx           Index of side on element.
+     * @param i_point_on_side    Index of point on side
      */
-    uint register_side_point(uint elem_table_row, uint value_patch_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
-        uint point_pos = i_point_on_side * n_elems_() + elem_table_row; // index of side point on patch
-        int_table_(0)(point_pos) = value_patch_idx;
-        int_table_(1)(point_pos) = elem_table_row;
+    uint register_side_point(uint patch_side_idx, uint elm_cache_map_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
+        uint point_pos = i_point_on_side * n_mesh_items() + patch_side_idx; // index of side point on patch
+        int_table_(0)(point_pos) = elm_cache_map_idx;
+        int_table_(1)(point_pos) = patch_side_idx;
         int_table_(2)(point_pos) = elem_idx;
         int_table_(4)(point_pos) = side_idx;
 
-        points_map_[value_patch_idx] = point_pos;
+        points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
     }
 
     template<class ElementDomain>
     NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
 
+    template<class ElementDomain>
+    unsigned int n_mesh_entities();
+
     /// Set number of elements and points as permanent
     inline void make_permanent_mesh_items() {
-        n_elems_.make_permanent();
+        n_mesh_items_.make_permanent();
         n_points_.make_permanent();
     }
 //protected:
@@ -249,12 +257,15 @@ public:
      * Hold integer values of quadrature points of defined operations.
      *
      * Table contains following rows:
-     *  0: Index of quadrature point on patch
-     *  1: Row of element/side in PatchOp::result_ table in registration step (before expansion)
+     *  0: Index of quadrature point in ElementCacheMap
+     *  1: Index of element (bulk PPV) / side (side PPV) in PatchOp::result_ table to which quadrature point is relevant
      *  2: Element idx in Mesh
-     *   - last two rows are allocated only for side point table
+     *   - specialized rows of element table
+     *  3. Mapping between short and long element representation
+     *   - specialized rows of side table
      *  3: Index of side in element - short vector, size of column = number of sides
      *  4: Index of side in element - long vector, size of column = number of points
+     *  5. Index of element in PatchOp::result_ table to which side is relevant
      * Number of used rows is given by n_points_.
      */
     IntTableArena int_table_;
@@ -262,16 +273,13 @@ public:
     /// Set size and type of rows of int_table_, value is set implicitly in constructor of descendants
     std::vector<OpSizeType> int_sizes_;
 
-
-    RevertibleValue n_points_;          ///< Number of points in patch
-    RevertibleValue n_elems_;           ///< Number of elements in patch
-    uint i_elem_;                       ///< Index of registered element in table, helper value used during patch creating.
-
-    std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
-    std::vector<uint> points_map_;      ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-
-	std::vector<ElementAccessor<spacedim>> elem_list_;  ///< List of elements on patch
-	std::vector<Side> side_list_;                       ///< List of sides on patch
+    ElemDimList<spacedim> *elem_dim_list_;    ///< Number and list of elements on patch
+    RevertibleValue n_points_;                ///< Number of points in patch
+    RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
+    uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
+    std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
+    std::unordered_map<uint, uint> n_elems_;  ///< Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+    std::vector<Side> side_list_;             ///< List of sides on patch
 };
 
 
