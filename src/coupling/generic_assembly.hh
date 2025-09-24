@@ -30,13 +30,13 @@
 
 
 /// Allow set mask of active integrals.
-enum ActiveIntegrals {
-    no_intg  =      0,
-    bulk     = 0x0001,
-    edge     = 0x0002,
-    coupling = 0x0004,
-    boundary = 0x0008
-};
+//enum ActiveIntegrals {
+//    no_intg  =      0,
+//    bulk     = 0x0001,
+//    edge     = 0x0002,
+//    coupling = 0x0004,
+//    boundary = 0x0008
+//};
 
 
 /// Set of all used integral necessary in assemblation

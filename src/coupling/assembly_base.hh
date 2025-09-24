@@ -58,22 +58,46 @@ public:
         delete quad_low_;
     }
 
-    /// Assembles the volume integrals on cell.
+    /**
+     * Assembles the volume integrals on cell.
+     *
+     * Method can be overridden and implemented in descendant
+     */
     virtual inline void cell_integral(FMT_UNUSED DHCellAccessor cell, FMT_UNUSED unsigned int element_patch_idx) {}
 
-    /// Assembles the fluxes on the boundary.
+    /**
+     * Assembles the fluxes on the boundary.
+     *
+     * Method can be overridden and implemented in descendant
+     */
     virtual inline void boundary_side_integral(FMT_UNUSED DHCellSide cell_side) {}
 
-    /// Assembles the fluxes between sides on the edge.
+    /**
+     * Assembles the fluxes between sides on the edge.
+     *
+     * Method can be overwrite and implement in descendant
+     */
     virtual inline void edge_integral(FMT_UNUSED RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {}
 
-    /// Assembles the fluxes between elements of different dimensions.
+    /**
+     * Assembles the fluxes between elements of different dimensions.
+     *
+     * Method can be overridden and implemented in descendant
+     */
     virtual inline void dimjoin_intergral(FMT_UNUSED DHCellAccessor cell_lower_dim, FMT_UNUSED DHCellSide neighb_side) {}
 
-    /// Method prepares object before assemblation (e.g. balance, ...).
+    /**
+     * Method prepares object before assemblation (e.g. balance, ...).
+     *
+     * Method can be overridden and implemented in descendant
+     */
     virtual void begin() {}
 
-    /// Method finishes object after assemblation (e.g. balance, ...).
+    /**
+     * Method finishes object after assemblation (e.g. balance, ...).
+     *
+     * Method can be overridden and implemented in descendant
+     */
     virtual void end() {}
 
 //    /// Create integrals according to dim of assembly object

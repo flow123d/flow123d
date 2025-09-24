@@ -38,9 +38,9 @@
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
 
-template<unsigned int dim> class BulkValues;
-template<unsigned int dim> class SideValues;
-template<unsigned int dim> class JoinValues;
+//template<unsigned int dim> class BulkValues;
+//template<unsigned int dim> class SideValues;
+//template<unsigned int dim> class JoinValues;
 
 
 
