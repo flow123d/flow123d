@@ -164,7 +164,7 @@ public:
         if (domain == bulk_domain) {
             this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp};
         } else if (domain == side_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, pointOp, elemOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, elemOp, pointOp};
         }
         int_table_.resize(int_sizes_.size());
     }
@@ -234,7 +234,7 @@ public:
         int_table_(0)(point_pos) = elm_cache_map_idx;
         int_table_(1)(point_pos) = patch_side_idx;
         int_table_(2)(point_pos) = elem_idx;
-        int_table_(4)(point_pos) = side_idx;
+        int_table_(5)(point_pos) = side_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -260,12 +260,11 @@ public:
      *  0: Index of quadrature point in ElementCacheMap
      *  1: Index of element (bulk PPV) / side (side PPV) in PatchOp::result_ table to which quadrature point is relevant
      *  2: Element idx in Mesh
-     *   - specialized rows of element table
-     *  3. Mapping between short and long element representation
-     *   - specialized rows of side table
-     *  3: Index of side in element - short vector, size of column = number of sides
-     *  4: Index of side in element - long vector, size of column = number of points
-     *  5. Index of element in PatchOp::result_ table to which side is relevant
+     *  3. Mapping between short and long element representation (for element)
+     *     Or index of element in PatchOp::result_ table to which side is relevant (for side)
+     *   - last two rows are allocated only for side point table
+     *  4: Index of side in element - short vector, size of column = number of sides
+     *  5: Index of side in element - long vector, size of column = number of points
      * Number of used rows is given by n_points_.
      */
     IntTableArena int_table_;

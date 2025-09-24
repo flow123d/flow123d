@@ -172,8 +172,8 @@ public:
         uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
-        ppv.int_table_(3)(ppv.i_mesh_item_) = cell_side.side_idx();
-        ppv.int_table_(5)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(3)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(4)(ppv.i_mesh_item_) = cell_side.side_idx();
         ppv.side_list_.push_back( cell_side.side() );
         return ppv.i_mesh_item_++;
     }
