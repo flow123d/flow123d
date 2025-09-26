@@ -649,11 +649,11 @@ public:
 	 : BaseIntegral(eval_points, dim)
 	{
 	    switch (dim) {
-	    case 2:
+	    case 1:
 	        internal_bulk_ = eval_points->add_bulk_internal<1>(quad);
 	        internal_edge_ = eval_points->add_edge_internal<2>(quad);
 	        break;
-	    case 3:
+	    case 2:
 	        internal_bulk_ = eval_points->add_bulk_internal<2>(quad);
 	        internal_edge_ = eval_points->add_edge_internal<3>(quad);
 	        break;
@@ -711,7 +711,7 @@ public:
      : CouplingIntegral(eval_points, quad, qdim),
 	   factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
-        fe_low_ = pfev->fe_dim<qdim-1>();
+        fe_high_ = pfev->fe_dim<qdim+1>();
         pfev->set_used_domain(bulk_domain);
         pfev->set_used_domain(side_domain);
     }
@@ -754,14 +754,14 @@ public:
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType>
     FeQJoin<ValueType> make_qjoin(uint component_idx = 0) {
         // element of lower dim (bulk points)
-        auto fe_component_low = factory_.patch_fe_values_->fe_comp(fe_low_, component_idx);
-        auto *low_dim_op = factory_.patch_fe_values_->template get< OpType<qdim-1, Op::BulkDomain, 3>, qdim-1 >(factory_.quad_, fe_component_low);
-        auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim-1, Op::BulkDomain, 3>, qdim-1 >(factory_.quad_, fe_component_low);
+        auto fe_component_low = factory_.patch_fe_values_->fe_comp(factory_.fe_, component_idx);
+        auto *low_dim_op = factory_.patch_fe_values_->template get< OpType<qdim, Op::BulkDomain, 3>, qdim >(factory_.quad_, fe_component_low);
+        auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::BulkDomain, 3>, qdim >(factory_.quad_, fe_component_low);
 
     	// element of higher dim (side points)
-        auto fe_component_high = factory_.patch_fe_values_->fe_comp(factory_.fe_, component_idx);
-        auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim, Op::SideDomain, 3>, qdim >(factory_.quad_, fe_component_high);
-        auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::SideDomain, 3>, qdim >(factory_.quad_, fe_component_high);
+        auto fe_component_high = factory_.patch_fe_values_->fe_comp(fe_high_, component_idx);
+        auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim+1, Op::SideDomain, 3>, qdim+1 >(factory_.quad_, fe_component_high);
+        auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim+1, Op::SideDomain, 3>, qdim+1 >(factory_.quad_, fe_component_high);
 
         ASSERT_EQ(fe_component_high->fe_type(), fe_component_low->fe_type()).error("Type of FiniteElement of low and high element must be same!\n");
         return FeQJoin<ValueType>(low_dim_op, high_dim_op, low_dim_zero_op, high_dim_zero_op);
@@ -770,7 +770,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim+1, Op::SideDomain, 3> >());
     }
 
     /**
@@ -780,7 +780,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim+1, 3> >());
 	}
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
@@ -808,15 +808,15 @@ private:
     /// Defines interface of operation accessors declaration
     FactoryBase<qdim> factory_;
 
-    /// Holds FiniteEementt object of lower dimension
-    std::shared_ptr< FiniteElement<qdim-1> > fe_low_;
+    /// Holds FiniteEementt object of higher dimension
+    std::shared_ptr< FiniteElement<qdim+1> > fe_high_;
 
     friend class CouplingPoint;
 };
 
 /// Template specialization of previous class
 template<>
-class CouplingIntegralAcc<1> : public CouplingIntegral {
+class CouplingIntegralAcc<3> : public CouplingIntegral {
 public:
     /// Default constructor
     CouplingIntegralAcc() : CouplingIntegral() {}
@@ -824,11 +824,11 @@ public:
     /// Constructor of ngh integral
     CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
      : CouplingIntegral(),
-	   factory_(pfev, element_cache_map, pfev->fe_dim<1>(), quad)
+	   factory_(pfev, element_cache_map, pfev->fe_dim<3>(), quad)
     {
         ASSERT_EQ(quad->dim(), 0);
         this->eval_points_ = eval_points;
-        this->dim_ = 1;
+        this->dim_ = 3;
     }
 
     /// Destructor
@@ -875,7 +875,7 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<1> factory_;
+    FactoryBase<3> factory_;
 };
 
 

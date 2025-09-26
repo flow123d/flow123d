@@ -46,7 +46,7 @@ public:
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( bulk_integral_->JxW() ),
       JxW_side_( bdr_integral_->JxW() ),
       JxW_join_( coupling_integral_->JxW() ),
@@ -75,11 +75,11 @@ public:
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
 
         n_dofs_ = this->n_dofs();
-        n_dofs_sub_ = fe_low->n_dofs();
-        n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
-        dof_indices_.resize(n_dofs_);
-        side_dof_indices_.resize(2*n_dofs_);
-        local_matrix_.resize(4*n_dofs_*n_dofs_);
+        n_dofs_high_ = this->n_dofs_high();
+        n_dofs_ngh_ = { n_dofs_, n_dofs_high_ };
+        dof_indices_.resize(n_dofs_high_);
+        side_dof_indices_.resize(2*n_dofs_high_);
+        local_matrix_.resize(4*n_dofs_high_*n_dofs_high_);
     }
 
 
@@ -155,8 +155,8 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+    	if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
@@ -238,7 +238,7 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
+    unsigned int n_dofs_high_;                                          ///< Number of dofs (on lower dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
@@ -281,7 +281,7 @@ public:
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( bulk_integral_->JxW() ),
       JxW_side_( bdr_integral_->JxW() ),
       JxW_join_( coupling_integral_->JxW() ),
@@ -315,11 +315,11 @@ public:
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
 
         n_dofs_ = this->n_dofs();
-        n_dofs_sub_ = fe_low->n_dofs();
-        n_dofs_ngh_ = { n_dofs_sub_, n_dofs_ };
-        dof_indices_.resize(n_dofs_);
-        side_dof_indices_.resize(n_dofs_sub_ + n_dofs_);
-        local_rhs_.resize(2*n_dofs_);
+        n_dofs_high_ = this->n_dofs_high();
+        n_dofs_ngh_ = { n_dofs_, n_dofs_high_ };
+        dof_indices_.resize(n_dofs_high_);
+        side_dof_indices_.resize(n_dofs_ + n_dofs_high_);
+        local_rhs_.resize(2*n_dofs_high_);
     }
 
 
@@ -446,8 +446,8 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+    	if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int n_indices = cell_lower_dim.get_dof_indices(dof_indices_);
         for(unsigned int i=0; i<n_indices; ++i) {
@@ -500,7 +500,7 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
-    unsigned int n_dofs_sub_;                                           ///< Number of dofs (on lower dim element)
+    unsigned int n_dofs_high_;                                          ///< Number of dofs (on higher dim element)
     std::vector<unsigned int> n_dofs_ngh_;                              ///< Number of dofs on lower and higher dimension element (vector of 2 items)
 
     vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
@@ -542,7 +542,7 @@ public:
     OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       normal_join_( coupling_integral_->normal_vector() ),
       deform_join_( coupling_integral_->vector_shape() ),
       grad_deform_( bulk_integral_->grad_vector_shape() ),
@@ -562,6 +562,7 @@ public:
         //this->balance_ = eq_data_->balance_;
 
         n_dofs_ = this->n_dofs();
+        n_dofs_high_ = this->n_dofs_high();
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
         output_stress_vec_ = eq_fields_->output_stress_ptr->vec();
@@ -612,8 +613,8 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         normal_displacement_ = 0;
         normal_stress_.zeros();
@@ -626,7 +627,7 @@ public:
         auto p_high = *( coupling_integral_->points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
-        for (unsigned int i=0; i<n_dofs_; i++)
+        for (unsigned int i=0; i<n_dofs_high_; i++)
         {
             normal_displacement_ -= arma::dot(deform_join_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_join_(p_high));
             arma::mat33 grad = -arma::kron(deform_join_.shape(i)(p_high)*output_vec_.get(dof_indices_[i]), normal_join_(p_high).t()) / eq_fields_->cross_section(p_low);
@@ -653,6 +654,7 @@ private:
     FieldSet used_fields_;
 
     unsigned int n_dofs_;                                               ///< Number of dofs
+    unsigned int n_dofs_high_;                                          ///< Number of dofs of higher dim element
     LocDofVec dof_indices_;                                             ///< Vector of local DOF indices of vector fields
     LocDofVec dof_indices_scalar_;                                      ///< Vector of local DOF indices of scalar fields
     LocDofVec dof_indices_tensor_;                                      ///< Vector of local DOF indices of tensor fields
@@ -700,7 +702,7 @@ public:
     /// Constructor.
     ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) ),
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_join_( coupling_integral_->JxW() ),
       normal_join_( coupling_integral_->normal_vector() ),
       deform_join_( coupling_integral_->vector_shape() ) {
@@ -713,7 +715,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        n_dofs_ = this->n_dofs();
+        n_dofs_ = this->n_dofs_high();
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
     }
@@ -721,10 +723,10 @@ public:
 
     /// Assembles between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-    	if (dim == 1) return;
+    	if (dim == 3) return;
         if (!cell_lower_dim.is_own()) return;
         
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
         cell_higher_dim.get_dof_indices(dof_indices_);
