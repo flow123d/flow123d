@@ -81,7 +81,7 @@ protected:
 template<unsigned int dim>
 class FactoryBase
 {
-protected:
+public:
     // Default constructor
     FactoryBase() : patch_fe_values_(nullptr), element_cache_map_(nullptr), quad_(nullptr)
     {}
@@ -109,10 +109,6 @@ protected:
     std::shared_ptr< FiniteElement<dim> > fe_;
     Quadrature *quad_;
 
-    friend class BulkIntegralAcc<dim>;
-    friend class EdgeIntegralAcc<dim>;
-    friend class CouplingIntegralAcc<dim>;
-    friend class BoundaryIntegralAcc<dim>;
 };
 
 
@@ -709,10 +705,10 @@ public:
     /// Constructor of ngh integral
     CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
      : CouplingIntegral(eval_points, quad, qdim),
-	   factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
+       factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad),
+       factory_high_(pfev, element_cache_map, pfev->fe_dim<qdim+1>(), quad)
     {
         ASSERT_EQ(quad->dim(), qdim);
-        fe_high_ = pfev->fe_dim<qdim+1>();
         pfev->set_used_domain(bulk_domain);
         pfev->set_used_domain(side_domain);
     }
@@ -760,7 +756,7 @@ public:
         auto *low_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim, Op::BulkDomain, 3>, qdim >(factory_.quad_, fe_component_low);
 
     	// element of higher dim (side points)
-        auto fe_component_high = factory_.patch_fe_values_->fe_comp(fe_high_, component_idx);
+        auto fe_component_high = factory_.patch_fe_values_->fe_comp(factory_high_.fe_, component_idx);
         auto *high_dim_op = factory_.patch_fe_values_->template get< OpType<qdim+1, Op::SideDomain, 3>, qdim+1 >(factory_.quad_, fe_component_high);
         auto *high_dim_zero_op = factory_.patch_fe_values_->template get< Op::OpZero<qdim+1, Op::SideDomain, 3>, qdim+1 >(factory_.quad_, fe_component_high);
 
@@ -771,7 +767,7 @@ public:
     /// Same as BulkValues::JxW but register at side quadrature points.
     inline FeQ<Scalar> JxW()
     {
-        return FeQ<Scalar>(factory_.template make_patch_op< Op::JxW<qdim+1, Op::SideDomain, 3> >());
+        return FeQ<Scalar>(factory_high_.template make_patch_op< Op::JxW<qdim+1, Op::SideDomain, 3> >());
     }
 
     /**
@@ -781,12 +777,12 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim+1, 3> >());
+        return ElQ<Vector>(factory_high_.template make_patch_op< Op::NormalVec<qdim+1, 3> >());
 	}
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_high_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx); // error
     }
 
     inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
@@ -809,8 +805,8 @@ private:
     /// Defines interface of operation accessors declaration
     FactoryBase<qdim> factory_;
 
-    /// Holds FiniteEementt object of higher dimension
-    std::shared_ptr< FiniteElement<qdim+1> > fe_high_;
+    /// Same as prefious but for element of higher dim
+    FactoryBase<qdim+1> factory_high_;
 
     friend class CouplingPoint;
 };
