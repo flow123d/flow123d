@@ -711,6 +711,7 @@ public:
      : CouplingIntegral(eval_points, quad, qdim),
 	   factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
     {
+        ASSERT_EQ(quad->dim(), qdim);
         fe_high_ = pfev->fe_dim<qdim+1>();
         pfev->set_used_domain(bulk_domain);
         pfev->set_used_domain(side_domain);
@@ -739,7 +740,7 @@ public:
 
     /// Returns range of side local points for appropriate cell side accessor
     inline Range< CouplingPoint > points(const DHCellSide &cell_side) const {
-        ASSERT_EQ(cell_side.dim(), dim_);
+        ASSERT_EQ(cell_side.dim(), dim_+1);
 
         uint element_patch_idx = factory_.element_cache_map_->position_in_cache(cell_side.element().idx());
         uint side_begin = internal_edge_->side_begin(cell_side);
@@ -826,7 +827,7 @@ public:
      : CouplingIntegral(),
 	   factory_(pfev, element_cache_map, pfev->fe_dim<3>(), quad)
     {
-        ASSERT_EQ(quad->dim(), 0);
+        ASSERT_EQ(quad->dim(), 3);
         this->eval_points_ = eval_points;
         this->dim_ = 3;
     }
@@ -836,8 +837,7 @@ public:
     {}
 
     /// Returns empty point range
-    inline Range< CouplingPoint > points(const DHCellSide &cell_side) const {
-        ASSERT_EQ(cell_side.dim(), dim_);
+    inline Range< CouplingPoint > points(FMT_UNUSED const DHCellSide &cell_side) const {
         auto iter = make_iter<CouplingPoint>( CouplingPoint() );
         return Range<CouplingPoint>(iter, iter);
     }
