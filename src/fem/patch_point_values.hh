@@ -290,7 +290,13 @@ public:
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
     uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
     std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-    std::unordered_map<uint, uint> n_elems_;  ///< Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+
+    /**
+     * Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+     *
+     * TODO will be deleted after sorting elements in ElementCacheMap by dimension
+     */
+    std::unordered_map<uint, uint> n_elems_;
     std::vector<Side> side_list_;             ///< List of sides on patch
 };
 

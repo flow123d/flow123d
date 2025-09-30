@@ -272,7 +272,7 @@ public:
     	return patch_point_vals_[domain][dim-1];
     }
 
-    /// Temporary method
+    /// Marks data of last successfully added element to patch as permanent
     void make_permanent_ppv_data() {
         for (uint i_dim=0; i_dim<3; ++i_dim)
             for (uint i_domain=0; i_domain<2; ++i_domain) {
@@ -310,7 +310,12 @@ private:
     std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
     //OperationSet< PatchOp<spacedim> > op_dependency_;
 
-    std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
+    /**
+     * Map of element patch indices to PatchOp::result_ and int_table_ tables
+     *
+     * TODO will be deleted after sorting elements in ElementCacheMap by dimension
+     */
+    std::vector<uint> elements_map_;
 
     friend class PatchOp<spacedim>;
 };
