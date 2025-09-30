@@ -56,8 +56,8 @@ public:
 	  elements_map_(300, (uint)-1)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
-            patch_point_vals_[1].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
+            patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
+            patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -160,7 +160,7 @@ public:
         auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
         bool is_elm_added = map_it.second;
         if (is_elm_added) {
-            ppv.int_table_(3)(ppv.i_mesh_item_) = elem_pos;
+            ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elem_pos;
             ppv.i_mesh_item_++;
         }
         return map_it.first->second;
@@ -172,8 +172,8 @@ public:
         uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
-        ppv.int_table_(3)(ppv.i_mesh_item_) = elm_pos;
-        ppv.int_table_(4)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(sideElmIdx)(ppv.i_mesh_item_) = cell_side.side_idx();
         ppv.side_list_.push_back( cell_side.side() );
         return ppv.i_mesh_item_++;
     }
@@ -185,7 +185,7 @@ public:
 
     /// Register side point to patch_point_vals_ table by dimension of side
     uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
-        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
+        return patch_point_vals_[side_domain][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
                 cell_side.side_idx(), i_point_on_side);
     }
 
