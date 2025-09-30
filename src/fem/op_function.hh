@@ -36,6 +36,16 @@ public:
     static inline constexpr uint n_nodes(uint dim) {
         return dim+1;
     }
+
+    /// Return number of mesh entities (in this case elements) on patch
+    static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
+        return ppv.elem_dim_list_->size();
+    }
+
+    /// Return i_n-th node of i_elm-th element stored in PatchPointValues::elem_dim_list_
+    static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
+        return (*ppv.elem_dim_list_)[i_elm].node(i_n);
+    }
 };
 
 /// Class used as template type for type resolution Bulk / Side
@@ -47,6 +57,16 @@ public:
 
     static inline constexpr uint n_nodes(uint dim) {
         return dim;
+    }
+
+    /// Return number of mesh entities (in this case sides) on patch
+    static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
+        return ppv.side_list_.size();
+    }
+
+    /// Return i_n-th node of i_elm-th side stored in PatchPointValues::side_list_
+    static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
+        return ppv.side_list_[i_elm].node(i_n);
     }
 };
 
@@ -71,14 +91,14 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        uint n_elems = ppv.template n_mesh_entities<Domain>();
+        uint n_elems = Domain::n_mesh_entities(ppv); // number of elements or sides on patch
         this->allocate_result( n_elems, this->patch_fe_->patch_arena() );
         auto result = this->result_matrix();
 
         for (uint i_elm=0; i_elm<n_elems; ++i_elm)
             for (uint i_col=0; i_col<Domain::n_nodes(dim); ++i_col)
                 for (uint i_row=0; i_row<spacedim; ++i_row) {
-                    result(i_row, i_col)(i_elm) = ( *ppv.template node<Domain>(i_elm, i_col) )(i_row);
+                    result(i_row, i_col)(i_elm) = ( *Domain::node(ppv, i_elm, i_col) )(i_row);
                 }
     }
 

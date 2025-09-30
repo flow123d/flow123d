@@ -253,12 +253,6 @@ public:
         return point_pos;
     }
 
-    template<class ElementDomain>
-    NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
-
-    template<class ElementDomain>
-    unsigned int n_mesh_entities();
-
     /// Set number of elements and points as permanent
     inline void make_permanent_mesh_items() {
         n_mesh_items_.make_permanent();

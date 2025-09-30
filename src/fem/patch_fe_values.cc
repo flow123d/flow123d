@@ -19,7 +19,7 @@
  */
 
 #include "fem/patch_fe_values.hh"
-#include "fem/patch_point_values_impl.hh"
+#include "fem/patch_point_values.hh"
 #include "fem/op_accessors_impl.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"
