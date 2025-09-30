@@ -224,6 +224,27 @@ public:
     void eval() override {}
 };
 
+
+/**
+ * Holds common functionality of patch operations.
+ */
+template<unsigned int spacedim = 3>
+class FuncHelper {
+public:
+    /**
+     * Copy reduced data from 'source' to 'target' ArenaVec. Mapping of reduced data is giben by 'ppv' data.
+     */
+    static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
+        for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
+            target( i_el ) = source( ppv.int_table_(shortLongElmMap)(i_el) );
+        }
+    }
+private:
+    /// Forbidden constructor
+    FuncHelper() {}
+};
+
+
 /**
  * Evaluates JxW on quadrature points
  */
@@ -247,9 +268,7 @@ public:
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_elems = ppv.n_mesh_items();
         ArenaVec<double> jac_det_value( n_elems, this->patch_fe_->patch_arena() );
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-        	jac_det_value( i_el ) = jac_det_value_long( 0 )( ppv.int_table_(shortLongElmMap)(i_el) );
-        }
+        FuncHelper<spacedim>::fill_reduce_element_data_vec(ppv, jac_det_value_long( 0 ), jac_det_value);
 
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value );
@@ -303,10 +322,8 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_value(i) = ArenaVec<double>( n_sides, this->patch_fe_->patch_arena() );
         }
-        for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_value( i_c )( i_sd ) = inv_jac_value_elem( i_c )( ppv.int_table_(shortLongElmMap)(i_sd) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_value_elem(i_c), inv_jac_value(i_c) );
         }
 
         normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(sideElmIdx) );
@@ -723,7 +740,6 @@ public:
     }
 
     void eval() override {
-        // TODO - provadet vyber subvektoru pro elements
         auto inv_jac_vec_elem = this->input_ops(0)->result_matrix();    // dim x spacedim=3
         auto ref_grads_vec = this->input_ops(1)->result_matrix();       // dim x n_dofs
 
@@ -736,10 +752,8 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
         }
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(shortLongElmMap)(i_el) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_vec_elem(i_c), inv_jac_vec(i_c) );
         }
 
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_grads_ovec(this->dim_, n_dofs);
@@ -843,10 +857,8 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
         }
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(shortLongElmMap)(i_el) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_vec_elem(i_c), inv_jac_vec(i_c) );
         }
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
