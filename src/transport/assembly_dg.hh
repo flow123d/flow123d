@@ -274,7 +274,7 @@ public:
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_high);
         side_dof_indices_vb_.resize(2*ndofs_high);
-        local_matrix_.resize(4*ndofs_*ndofs_high);
+        local_matrix_.resize(4*ndofs_high*ndofs_high);
 
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
