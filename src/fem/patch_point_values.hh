@@ -54,6 +54,19 @@ enum fem_domain
 };
 
 
+/// Describes meaning of IntTableArena (of PatchPointValues) rows
+enum IntTableRows
+{
+	fieldCacheIdx =0,    ///< Index of quadrature point in ElementCacheMap
+	pointResultIdx =1,   ///< Index of element or side in PatchOp::result_ table to which quadrature point is relevant
+	meshElmIdx =2,       ///< Element idx in Mesh
+	shortLongElmMap =3,  ///< Mapping between short and long representation (element > element, side > element)
+	// - last two rows are allocated only for side point table
+	sideElmIdx =4,       ///< Index of side in element - short vector, size of column = number of sides
+	pointSideElmIsx =5   ///< Index of side in element - long vector, size of column = number of points
+};
+
+
 
 struct RevertibleValue {
 public:
@@ -212,9 +225,9 @@ public:
      */
     uint register_bulk_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem) {
         uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
-        int_table_(0)(point_pos) = elm_cache_map_idx;
-        int_table_(1)(point_pos) = patch_elm_idx;
-        int_table_(2)(point_pos) = elem_idx;
+        int_table_(fieldCacheIdx)(point_pos)  = elm_cache_map_idx;
+        int_table_(pointResultIdx)(point_pos) = patch_elm_idx;
+        int_table_(meshElmIdx)(point_pos)     = elem_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -231,20 +244,14 @@ public:
      */
     uint register_side_point(uint patch_side_idx, uint elm_cache_map_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
         uint point_pos = i_point_on_side * n_mesh_items() + patch_side_idx; // index of side point on patch
-        int_table_(0)(point_pos) = elm_cache_map_idx;
-        int_table_(1)(point_pos) = patch_side_idx;
-        int_table_(2)(point_pos) = elem_idx;
-        int_table_(5)(point_pos) = side_idx;
+        int_table_(fieldCacheIdx)(point_pos)   = elm_cache_map_idx;
+        int_table_(pointResultIdx)(point_pos)  = patch_side_idx;
+        int_table_(meshElmIdx)(point_pos)      = elem_idx;
+        int_table_(pointSideElmIsx)(point_pos) = side_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
     }
-
-    template<class ElementDomain>
-    NodeAccessor<spacedim> node(unsigned int i_elm, unsigned int i_n);
-
-    template<class ElementDomain>
-    unsigned int n_mesh_entities();
 
     /// Set number of elements and points as permanent
     inline void make_permanent_mesh_items() {
@@ -277,7 +284,13 @@ public:
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
     uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
     std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables
-    std::unordered_map<uint, uint> n_elems_;  ///< Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+
+    /**
+     * Holds map of idx of registered elements and its idx in bulk PatchPointValues, data member ensures control of duplicity
+     *
+     * TODO will be deleted after sorting elements in ElementCacheMap by dimension
+     */
+    std::unordered_map<uint, uint> n_elems_;
     std::vector<Side> side_list_;             ///< List of sides on patch
 };
 

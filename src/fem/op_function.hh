@@ -36,6 +36,16 @@ public:
     static inline constexpr uint n_nodes(uint dim) {
         return dim+1;
     }
+
+    /// Return number of mesh entities (in this case elements) on patch
+    static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
+        return ppv.elem_dim_list_->size();
+    }
+
+    /// Return i_n-th node of i_elm-th element stored in PatchPointValues::elem_dim_list_
+    static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
+        return (*ppv.elem_dim_list_)[i_elm].node(i_n);
+    }
 };
 
 /// Class used as template type for type resolution Bulk / Side
@@ -47,6 +57,16 @@ public:
 
     static inline constexpr uint n_nodes(uint dim) {
         return dim;
+    }
+
+    /// Return number of mesh entities (in this case sides) on patch
+    static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
+        return ppv.side_list_.size();
+    }
+
+    /// Return i_n-th node of i_elm-th side stored in PatchPointValues::side_list_
+    static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
+        return ppv.side_list_[i_elm].node(i_n);
     }
 };
 
@@ -71,14 +91,14 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        uint n_elems = ppv.template n_mesh_entities<Domain>();
+        uint n_elems = Domain::n_mesh_entities(ppv); // number of elements or sides on patch
         this->allocate_result( n_elems, this->patch_fe_->patch_arena() );
         auto result = this->result_matrix();
 
         for (uint i_elm=0; i_elm<n_elems; ++i_elm)
             for (uint i_col=0; i_col<Domain::n_nodes(dim); ++i_col)
                 for (uint i_row=0; i_row<spacedim; ++i_row) {
-                    result(i_row, i_col)(i_elm) = ( *ppv.template node<Domain>(i_elm, i_col) )(i_row);
+                    result(i_row, i_col)(i_elm) = ( *Domain::node(ppv, i_elm, i_col) )(i_row);
                 }
     }
 
@@ -204,6 +224,27 @@ public:
     void eval() override {}
 };
 
+
+/**
+ * Holds common functionality of patch operations.
+ */
+template<unsigned int spacedim = 3>
+class FuncHelper {
+public:
+    /**
+     * Copy reduced data from 'source' to 'target' ArenaVec. Mapping of reduced data is giben by 'ppv' data.
+     */
+    static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
+        for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
+            target( i_el ) = source( ppv.int_table_(shortLongElmMap)(i_el) );
+        }
+    }
+private:
+    /// Forbidden constructor
+    FuncHelper() {}
+};
+
+
 /**
  * Evaluates JxW on quadrature points
  */
@@ -227,9 +268,7 @@ public:
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_elems = ppv.n_mesh_items();
         ArenaVec<double> jac_det_value( n_elems, this->patch_fe_->patch_arena() );
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-        	jac_det_value( i_el ) = jac_det_value_long( 0 )( ppv.int_table_(3)(i_el) );
-        }
+        FuncHelper<spacedim>::fill_reduce_element_data_vec(ppv, jac_det_value_long( 0 ), jac_det_value);
 
         ArenaOVec<double> weights_ovec( weights_value(0,0) );
         ArenaOVec<double> jac_det_ovec( jac_det_value );
@@ -283,13 +322,11 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_value(i) = ArenaVec<double>( n_sides, this->patch_fe_->patch_arena() );
         }
-        for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_value( i_c )( i_sd ) = inv_jac_value_elem( i_c )( ppv.int_table_(3)(i_sd) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_value_elem(i_c), inv_jac_value(i_c) );
         }
 
-        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(4) );
+        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(sideElmIdx) );
 
         ArenaVec<double> norm_vec( n_sides, this->patch_fe_->patch_arena() );
         Eigen::VectorXd A(3);
@@ -562,7 +599,7 @@ public:
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt) {
-                result_vec(i_dof)(i_pt) = ref_vec(ppv.int_table_(5)(i_pt), i_dof)(i_pt / n_sides);
+                result_vec(i_dof)(i_pt) = ref_vec(ppv.int_table_(pointSideElmIsx)(i_pt), i_dof)(i_pt / n_sides);
             }
         }
     }
@@ -636,7 +673,7 @@ public:
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
                 for (uint c=0; c<spacedim; c++)
-                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(5)(i_pt),3*i_dof+c)(i_pt / n_sides);
+                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(pointSideElmIsx)(i_pt),3*i_dof+c)(i_pt / n_sides);
         }
     }
 
@@ -703,7 +740,6 @@ public:
     }
 
     void eval() override {
-        // TODO - provadet vyber subvektoru pro elements
         auto inv_jac_vec_elem = this->input_ops(0)->result_matrix();    // dim x spacedim=3
         auto ref_grads_vec = this->input_ops(1)->result_matrix();       // dim x n_dofs
 
@@ -716,10 +752,8 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
         }
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(3)(i_el) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_vec_elem(i_c), inv_jac_vec(i_c) );
         }
 
         Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_grads_ovec(this->dim_, n_dofs);
@@ -772,7 +806,7 @@ public:
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value(i)(j) = inv_jac_value( i )( ppv.int_table_(3)(j%n_sides) );
+        	    inv_jac_expd_value(i)(j) = inv_jac_value( i )( ppv.int_table_(shortLongElmMap)(j%n_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
@@ -785,7 +819,7 @@ public:
                 uint i_begin = i_pt * n_sides;
                 for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
                     for (uint i_c=0; i_c<dim; ++i_c) {
-                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(ppv.int_table_(4)(i_sd), i_dof*dim+i_c)(i_pt);
+                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(ppv.int_table_(sideElmIdx)(i_sd), i_dof*dim+i_c)(i_pt);
                     }
                 }
             }
@@ -823,10 +857,8 @@ public:
         for (uint i=0; i<dim*spacedim; ++i) {
             inv_jac_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
         }
-        for (uint i_el=0; i_el<n_elems; ++i_el) {
-            for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
-                inv_jac_vec( i_c )( i_el ) = inv_jac_vec_elem( i_c )( ppv.int_table_(3)(i_el) );
-            }
+        for (uint i_c=0; i_c<dim*spacedim; ++i_c) {
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_vec_elem(i_c), inv_jac_vec(i_c) );
         }
 
         Eigen::Matrix<ArenaOVec<double>, dim, 3> inv_jac_ovec;
@@ -881,7 +913,7 @@ public:
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value( i )( j ) = inv_jac_value( i )( ppv.int_table_(3)(j%n_patch_sides) );
+        	    inv_jac_expd_value( i )( j ) = inv_jac_value( i )( ppv.int_table_(shortLongElmMap)(j%n_patch_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
@@ -896,7 +928,7 @@ public:
                 for (uint i_sd=0; i_sd<n_patch_sides; ++i_sd) {
                     for (uint i_dim=0; i_dim<dim; ++i_dim) {
                         for (uint i_c=0; i_c<spacedim; ++i_c) {
-                            ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(4)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
+                            ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(sideElmIdx)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
                         }
                     }
                 }

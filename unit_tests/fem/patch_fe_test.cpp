@@ -245,8 +245,7 @@ public:
             uint dim = range.begin()->dim();
             for( DHCellSide edge_side : range )
             {
-                uint element_patch_idx = element_cache_map_.position_in_cache(edge_side.elem_idx());
-                uint side_pos = patch_fe_values_.register_side(edge_side, element_patch_idx);
+                uint side_pos = patch_fe_values_.register_side(edge_side, &element_cache_map_);
                 uint i_point = 0;
                 for (auto p : this->edge_points(dim, edge_side) ) {
                     patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
@@ -257,8 +256,7 @@ public:
         uint last_element_idx = -1;
         for (unsigned int i=0; i<coupling_integral_data_.permanent_size(); ++i) {
             uint dim = coupling_integral_data_[i].side.dim();
-            element_patch_idx = element_cache_map_.position_in_cache(coupling_integral_data_[i].side.elem_idx());
-            uint side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side, element_patch_idx);
+            uint side_pos = patch_fe_values_.register_side(coupling_integral_data_[i].side, &element_cache_map_);
             if (coupling_integral_data_[i].cell.elm_idx() != last_element_idx) {
                 element_patch_idx = this->element_cache_map_.position_in_cache(coupling_integral_data_[i].cell.elm_idx());
                 elm_pos = patch_fe_values_.register_element(coupling_integral_data_[i].cell, element_patch_idx);

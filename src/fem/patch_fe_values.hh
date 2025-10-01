@@ -56,8 +56,8 @@ public:
 	  elements_map_(300, (uint)-1)
     {
         for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[0].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
-            patch_point_vals_[1].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
+            patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
+            patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -179,8 +179,7 @@ public:
         for (auto integral_it : integrals.boundary_) {
             for (unsigned int i=0; i<integral_data.boundary_.permanent_size(); ++i) {
                 if ( integral_data.boundary_[i].bdr_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
-                uint element_patch_idx = element_cache_map->position_in_cache(integral_data.boundary_[i].side.elem_idx());
-            	uint side_pos = this->register_side(integral_data.boundary_[i].side, element_patch_idx);
+            	uint side_pos = this->register_side(integral_data.boundary_[i].side, element_cache_map);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(integral_data.boundary_[i].side) ) {
                     this->register_side_point(integral_data.boundary_[i].side, side_pos, p.value_cache_idx(), i_point++);
@@ -195,8 +194,7 @@ public:
             	auto range = integral_data.edge_[i].edge_side_range;
                 for( DHCellSide edge_side : range )
                 {
-                    uint element_patch_idx = element_cache_map->position_in_cache(edge_side.elem_idx());
-                	uint side_pos = this->register_side(edge_side, element_patch_idx);
+                	uint side_pos = this->register_side(edge_side, element_cache_map);
                     uint i_point = 0;
                     for (auto p : integral_it.second->points(edge_side) ) {
                         this->register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
@@ -212,8 +210,7 @@ public:
 
             for (unsigned int i=0; i<integral_data.coupling_.permanent_size(); ++i) {
                 if ( integral_data.coupling_[i].bulk_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
-                element_patch_idx = element_cache_map->position_in_cache(integral_data.coupling_[i].side.elem_idx());
-                side_pos = this->register_side(integral_data.coupling_[i].side, element_patch_idx);
+                side_pos = this->register_side(integral_data.coupling_[i].side, element_cache_map);
                 if (integral_data.coupling_[i].cell.elm_idx() != last_element_idx) {
                     element_patch_idx = element_cache_map->position_in_cache(integral_data.coupling_[i].cell.elm_idx());
                     elm_pos = this->register_element(integral_data.coupling_[i].cell, element_patch_idx);
@@ -240,20 +237,21 @@ public:
         auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
         bool is_elm_added = map_it.second;
         if (is_elm_added) {
-            ppv.int_table_(3)(ppv.i_mesh_item_) = elem_pos;
+            ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elem_pos;
             ppv.i_mesh_item_++;
         }
         return map_it.first->second;
     }
 
     /// Register side to patch_point_vals_ table by dimension of side
-    uint register_side(DHCellSide cell_side, uint element_patch_idx) {
+    uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
         uint dim = cell_side.dim();
+        uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
         uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
-        ppv.int_table_(3)(ppv.i_mesh_item_) = elm_pos;
-        ppv.int_table_(4)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(sideElmIdx)(ppv.i_mesh_item_) = cell_side.side_idx();
         ppv.side_list_.push_back( cell_side.side() );
         return ppv.i_mesh_item_++;
     }
@@ -265,7 +263,7 @@ public:
 
     /// Register side point to patch_point_vals_ table by dimension of side
     uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
-        return patch_point_vals_[1][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
+        return patch_point_vals_[side_domain][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
                 cell_side.side_idx(), i_point_on_side);
     }
 
@@ -352,7 +350,7 @@ public:
     	return patch_point_vals_[domain][dim-1];
     }
 
-    /// Temporary method
+    /// Marks data of last successfully added element to patch as permanent
     void make_permanent_ppv_data() {
         for (uint i_dim=0; i_dim<3; ++i_dim)
             for (uint i_domain=0; i_domain<2; ++i_domain) {
@@ -390,7 +388,12 @@ private:
     std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
     //OperationSet< PatchOp<spacedim> > op_dependency_;
 
-    std::vector<uint> elements_map_;    ///< Map of element patch indices to PatchOp::result_ and int_table_ tables
+    /**
+     * Map of element patch indices to PatchOp::result_ and int_table_ tables
+     *
+     * TODO will be deleted after sorting elements in ElementCacheMap by dimension
+     */
+    std::vector<uint> elements_map_;
 
     friend class PatchOp<spacedim>;
 };
