@@ -214,58 +214,26 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     bool add_integrals_of_computing_step(DHCellAccessor cell) {
-        if (integrals_.bulk_.size() > 0)
-            if (cell.is_own()) { // Not ghost
-                this->add_volume_integral(cell);
-    	    }
+        ASSERT_EQ(cell.dim(), dim);
+
+        if (cell.is_own()) { // Not ghost
+            auto &ppv = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
+            ++ppv.n_mesh_items_;
+            this->add_volume_integrals(cell);
+        }
 
         for( DHCellSide cell_side : cell.side_range() ) {
-            if (integrals_.boundary_.size() > 0)
-                if (cell.is_own()) // Not ghost
-                    if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
-                        this->add_boundary_integral(cell_side);
-                        continue;
-                    }
-            if (integrals_.edge_.size() > 0)
-                if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
-                    this->add_edge_integral(cell_side);
+            if (cell.is_own()) // Not ghost
+                if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
+                    this->add_boundary_integrals(cell_side);
+                    continue;
                 }
+            if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                this->add_edge_integrals(cell_side);
+            }
         }
 
-        if (integrals_.coupling_.size() > 0) {
-            auto &ppv_low = asm_internals_->fe_values_.ppv(0, cell.dim());
-            auto &ppv_high = asm_internals_->fe_values_.ppv(1, cell.dim()+1);
-        	for (auto coupling_integral_it : integrals_.coupling_) {
-        	    auto coupling_integral = coupling_integral_it.second;
-                // Adds data of bulk points only if bulk point were not added during processing of bulk integral
-                bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
-                if (add_bulk_points) {
-                    // add points of low dim element only one time and only if they have not been added in BulkIntegral
-                    for( DHCellSide ngh_side : cell.neighb_sides() ) {
-                        unsigned int reg_idx_low = cell.elm().region_idx().idx();
-                        ++ppv_low.n_mesh_items_;
-                        for (auto p : coupling_integral->points(ngh_side) ) {
-                            auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                            asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                            ++ppv_low.n_points_;
-                        }
-                        break;
-                    }
-                }
-            	// Adds data of side points of all neighbour objects
-            	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
-                    integral_data_.coupling_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
-                            coupling_integral->get_subset_high_idx());
-                    ++ppv_high.n_mesh_items_;
-
-                    unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
-                    for (auto p : coupling_integral->points(ngh_side) ) {
-                        asm_internals_->element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-                        ++ppv_high.n_points_;
-                    }
-                }
-        	}
-        }
+        add_coupling_integrala(cell);
 
         if (asm_internals_->element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
             integral_data_.bulk_.revert_temporary();
@@ -403,15 +371,12 @@ protected:
 	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr), min_edge_sides_(2) {}
 
     /**
-     * Add data of volume integral to appropriate data structure.
+     * Add data of volume integrals to appropriate data structure.
      *
      * Method is used internally in AssemblyBase
      */
-    inline void add_volume_integral(const DHCellAccessor &cell) {
-        ASSERT_EQ(cell.dim(), dim);
-
-        auto &ppv = asm_internals_->fe_values_.ppv(0, cell.dim());
-        ++ppv.n_mesh_items_;
+    inline void add_volume_integrals(const DHCellAccessor &cell) {
+        auto &ppv = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it.second->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
@@ -428,37 +393,30 @@ protected:
     }
 
     /**
-     * Add data of edge integral to appropriate data structure.
+     * Add data of edge integrals to appropriate data structure.
      *
      * Method is used internally in AssemblyBase
      */
-    inline void add_edge_integral(const DHCellSide &cell_side) {
+    inline void add_edge_integrals(const DHCellSide &cell_side) {
 	    auto range = cell_side.edge_sides();
-        ASSERT_EQ(range.begin()->dim(), dim);
 
-        auto &ppv = asm_internals_->fe_values_.ppv(1, cell_side.dim());
+        auto &ppv = asm_internals_->fe_values_.ppv(side_domain, cell_side.dim());
         for (auto integral_it : integrals_.edge_) {
             integral_data_.edge_.emplace_back(range, integral_it.second->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
-                unsigned int reg_idx = edge_side.element().region_idx().idx();
-                ++ppv.n_mesh_items_;
-                for (auto p : integral_it.second->points(edge_side) ) {
-                    asm_internals_->element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-                    ++ppv.n_points_;
-                }
+                add_side_points(integral_it.second, edge_side, ppv);
             }
         }
     }
 
     /**
-     * Add data of boundary integral to appropriate data structure.
+     * Add data of boundary integrals to appropriate data structure.
      *
      * Method is used internally in AssemblyBase
      */
-    inline void add_boundary_integral(const DHCellSide &bdr_side) {
-        ASSERT_EQ(bdr_side.dim(), dim);
-        auto &ppv = asm_internals_->fe_values_.ppv(1, bdr_side.dim());
+    inline void add_boundary_integrals(const DHCellSide &bdr_side) {
+        auto &ppv = asm_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
 
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
@@ -476,6 +434,55 @@ protected:
             	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
             	asm_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
             }
+        }
+    }
+
+    /**
+     * Add data of coupling integrals to appropriate data structure.
+     *
+     * Method is used internally in AssemblyBase
+     */
+    inline void add_coupling_integrala(const DHCellAccessor &cell) {
+        auto &ppv_low = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
+        auto &ppv_high = asm_internals_->fe_values_.ppv(side_domain, cell.dim()+1);
+    	for (auto coupling_integral_it : integrals_.coupling_) {
+    	    auto coupling_integral = coupling_integral_it.second;
+            // Adds data of bulk points only if bulk point were not added during processing of bulk integral
+            bool add_bulk_points = !( (integrals_.bulk_.size() > 0) & cell.is_own() );
+            if (add_bulk_points) {
+                // add points of low dim element only one time and only if they have not been added in BulkIntegral
+                for( DHCellSide ngh_side : cell.neighb_sides() ) {
+                    unsigned int reg_idx_low = cell.elm().region_idx().idx();
+                    ++ppv_low.n_mesh_items_;
+                    for (auto p : coupling_integral->points(ngh_side) ) {
+                        auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
+                        asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                        ++ppv_low.n_points_;
+                    }
+                    break;
+                }
+            }
+        	// Adds data of side points of all neighbour objects
+        	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
+                integral_data_.coupling_.emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
+                        coupling_integral->get_subset_high_idx());
+                add_side_points(coupling_integral, ngh_side, ppv_high);
+            }
+    	}
+    }
+
+    /**
+     * Common part of add_edge integrals and add_coupling_integrals methods
+     *
+     * Method is used internally in AssemblyBase
+     */
+    template <template <unsigned int> class IntegralAcc>
+    inline void add_side_points(std::shared_ptr< IntegralAcc<dim> > &integral, DHCellSide cell_side, PatchPointValues<3> &ppv) {
+        ++ppv.n_mesh_items_;
+        unsigned int reg_idx = cell_side.element().region_idx().idx();
+        for (auto p : integral->points(cell_side) ) {
+            asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+            ++ppv.n_points_;
         }
     }
 
