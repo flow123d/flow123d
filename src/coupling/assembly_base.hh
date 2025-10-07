@@ -217,8 +217,8 @@ public:
         ASSERT_EQ(cell.dim(), dim);
 
         if (cell.is_own()) { // Not ghost
-            auto &ppv = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
-            ++ppv.n_mesh_items_;
+            if (integrals_.bulk_.size() > 0)
+                ++( asm_internals_->fe_values_.ppv(bulk_domain, cell.dim()) ).n_mesh_items_;
             this->add_volume_integrals(cell);
         }
 
@@ -226,7 +226,6 @@ public:
             if (cell.is_own()) // Not ghost
                 if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                     this->add_boundary_integrals(cell_side);
-                    continue;
                 }
             if ( (cell_side.n_edge_sides() >= min_edge_sides_) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                 this->add_edge_integrals(cell_side);
@@ -443,6 +442,7 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_coupling_integrala(const DHCellAccessor &cell) {
+        if (dim==3) return;
         auto &ppv_low = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
         auto &ppv_high = asm_internals_->fe_values_.ppv(side_domain, cell.dim()+1);
     	for (auto coupling_integral_it : integrals_.coupling_) {
