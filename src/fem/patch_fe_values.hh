@@ -80,6 +80,9 @@ public:
 
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
+        for (auto * op : operations_) {
+            op->init_ref_vals();
+        }
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
     }
 
@@ -163,12 +166,12 @@ public:
     template <unsigned int dim>
     inline void add_patch_points(const DimIntegrals<dim> &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map) {
         // add bulk points
-    	for (auto integral_it : integrals.bulk_) {
+    	for (auto integral_it : integrals.bulk_) { // TODO check order of loops, maybe must be swapped
             for (unsigned int i=0; i<integral_data.bulk_.permanent_size(); ++i) {
                 if ( integral_data.bulk_[i].subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
                 uint element_patch_idx = element_cache_map->position_in_cache(integral_data.bulk_[i].cell.elm_idx());
                 uint elm_pos = this->register_element(integral_data.bulk_[i].cell, element_patch_idx);
-                uint i_point = 0;
+                uint i_point = integral_it.second->bulk_begin_idx();
                 for (auto p : integral_it.second->points(element_patch_idx) ) {
                     this->register_bulk_point(integral_data.bulk_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
@@ -291,9 +294,10 @@ public:
             PatchOp<spacedim>* new_op = new OpType(*this, quad);
             op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
+            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
+            it->second->add_quadrature(quad);
             return it->second;
         }
     }
@@ -307,9 +311,10 @@ public:
             PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
             op_dependency_.insert(std::make_pair(op_name, new_op));
             operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}.\n", op_name, dim);
+            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
+            it->second->add_quadrature(quad);
             return it->second;
         }
     }

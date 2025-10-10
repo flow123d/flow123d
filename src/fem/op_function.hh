@@ -214,11 +214,19 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {1})
     {
         this->domain_ = Domain::domain();
-        // create result vector of weights operation in assembly arena
-        const std::vector<double> &point_weights_vec = quad->get_weights();
-        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
-        for (uint i=0; i<point_weights_vec.size(); ++i)
-            this->result_(0)(i) = point_weights_vec[i];
+    }
+
+    void init_ref_vals() override {
+        uint n_points=0, i_point=0;
+        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
+        this->allocate_result(n_points, this->patch_fe_->asm_arena());
+        for (const Quadrature *quad : this->quad_vec_) {
+            const std::vector<double> &point_weights_vec = quad->get_weights();
+            for (uint i=0; i<point_weights_vec.size(); ++i) {
+                this->result_(0)(i_point) = point_weights_vec[i];
+                ++i_point;
+            }
+        }
     }
 
     void eval() override {}
@@ -260,6 +268,11 @@ public:
         this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(quad) );
     }
 
+    void add_quadrature(const Quadrature *quad) override {
+        this->register_quadrature(quad);
+        this->input_ops(0)->register_quadrature(quad);
+    }
+
     void eval() override {
         auto weights_value = this->input_ops(0)->result_matrix();
         auto jac_det_value_long = this->input_ops(1)->result_matrix();
@@ -287,6 +300,11 @@ public:
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
         this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
+    }
+
+    void add_quadrature(const Quadrature *quad) override {
+        this->register_quadrature(quad);
+        this->input_ops(0)->register_quadrature(quad);
     }
 
     void eval() override {
@@ -393,22 +411,32 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
-	RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-	: PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs())
-	{
+    RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()),
+      fe_(fe)
+    {
         this->domain_ = Domain::domain();
-        uint n_points = quad->size();
+    }
 
-        this->allocate_result(n_points, pfev.asm_arena());
+    void init_ref_vals() override {
+        uint n_points=0, i_p_ref;
+        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
+
+        this->allocate_result(n_points, this->patch_fe_->asm_arena());
         auto ref_vector_value = this->result_matrix();
-
-        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
-            for (uint i_p=0; i_p<n_points; ++i_p)
-                for (uint c=0; c<spacedim; ++c)
-                    ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
-	}
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
+            i_p_ref = 0;
+        	for (const Quadrature *quad : this->quad_vec_)
+                for (uint i_p_quad=0; i_p_quad<quad->size(); ++i_p_quad, ++i_p_ref)
+                    for (uint c=0; c<spacedim; ++c)
+                        ref_vector_value(c, i_dof)(i_p_ref) = fe_->shape_value(i_dof, quad->point<dim>(i_p_quad), c);
+        }
+    }
 
     void eval() override {}
+
+private:
+    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Template specialization of previous: Domain=SideDomain
@@ -716,6 +744,11 @@ public:
         }
 
 	}
+
+    void add_quadrature(const Quadrature *quad) override {
+        in_op_->register_quadrature(quad);
+        in_op_->input_ops(0)->register_quadrature(quad);
+    }
 
     void eval() override {
         in_op_->eval();

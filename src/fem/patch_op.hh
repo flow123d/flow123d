@@ -50,9 +50,10 @@ public:
      * Set all data members.
      */
     PatchOp(uint dim, PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::initializer_list<uint> shape, uint n_dofs = 1)
-    : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev), quad_(quad)
+    : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev)
     {
         ASSERT_GT(n_dofs, 0);
+        quad_vec_.push_back(quad);
         result_ = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>(shape_[0] * shape_[1] * n_dofs_);
     }
 
@@ -91,11 +92,6 @@ public:
     /// Getter for n_dofs_
     inline uint n_dofs() const {
         return n_dofs_;
-    }
-
-    /// Getter for quadrature_
-    inline const Quadrature *quad() const {
-        return quad_;
     }
 
     /// Return pointer to operation of i_op index in input operation vector.
@@ -156,6 +152,36 @@ public:
         return patch_fe_->patch_point_vals_[domain_][this->dim_-1];
     }
 
+    /**
+     * Register quadrature to quad_vec_
+     *
+     * Method is called only from PatchOp and its descendants.
+     */
+    void register_quadrature(const Quadrature *quad) {
+        for (const Quadrature *q : quad_vec_)
+            if (q->size() == quad->size()) {
+                return; // skip if Quadrature of same size is registered
+            }
+        DebugOut().fmt("Registration of quadrature of dim {} with size {} to operation '{}'.\n", dim_, quad->size(), typeid(*this).name());
+        quad_vec_.push_back(quad);
+    }
+
+    /**
+     * Allow to register Quadrature of different size.
+     *
+     * Method can be override in descendants
+     */
+    virtual void add_quadrature(const Quadrature *quad) {
+        this->register_quadrature(quad);
+    }
+
+    /***
+     * Allows to initialize reference values.
+     *
+     * Must be implemented in descendant ref operations.
+     */
+    virtual void init_ref_vals() {}
+
     /// Reinit function of operation. Implementation in descendants.
     virtual void eval() =0;
 
@@ -185,7 +211,7 @@ protected:
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
-    const Quadrature *quad_;                      ///< Pointer to Quadrature
+    std::vector<const Quadrature*> quad_vec_;     ///< Pointer to Quadrature
 
     friend class PatchFEValues<spacedim>;
 };
