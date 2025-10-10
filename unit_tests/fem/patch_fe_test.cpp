@@ -87,17 +87,23 @@ public:
     };
 
 
-    PatchFETestBase(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    PatchFETestBase(unsigned int quad_order_1, unsigned int quad_order_2, std::shared_ptr<DOFHandlerMultiDim> dh)
     : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
       fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
 	  eval_points_( std::make_shared<EvalPoints>() ),
-	  quad_0_( new QGauss(0, 2*quad_order) ),
-	  quad_1_( new QGauss(1, 2*quad_order) ),
-	  quad_2_( new QGauss(2, 2*quad_order) ),
-	  quad_3_( new QGauss(3, 2*quad_order) ),
+	  quad_0_( new QGauss(0, 2*quad_order_1) ),
+	  quad_1_( new QGauss(1, 2*quad_order_1) ),
+	  quad_2_( new QGauss(2, 2*quad_order_1) ),
+	  quad_3_( new QGauss(3, 2*quad_order_1) ),
+      quad_diff_order_1_( new QGauss(1, 2*quad_order_2) ),
+      quad_diff_order_2_( new QGauss(2, 2*quad_order_2) ),
+      quad_diff_order_3_( new QGauss(3, 2*quad_order_2) ),
 	  bulk_integral_1d_( std::make_shared<BulkIntegralAcc<1>>(eval_points_, quad_1_, &patch_fe_values_, &element_cache_map_) ),
 	  bulk_integral_2d_( std::make_shared<BulkIntegralAcc<2>>(eval_points_, quad_2_, &patch_fe_values_, &element_cache_map_) ),
 	  bulk_integral_3d_( std::make_shared<BulkIntegralAcc<3>>(eval_points_, quad_3_, &patch_fe_values_, &element_cache_map_) ),
+      bulk_integral_diff_order_1d_( std::make_shared<BulkIntegralAcc<1>>(eval_points_, quad_diff_order_1_, &patch_fe_values_, &element_cache_map_) ),
+      bulk_integral_diff_order_2d_( std::make_shared<BulkIntegralAcc<2>>(eval_points_, quad_diff_order_2_, &patch_fe_values_, &element_cache_map_) ),
+      bulk_integral_diff_order_3d_( std::make_shared<BulkIntegralAcc<3>>(eval_points_, quad_diff_order_3_, &patch_fe_values_, &element_cache_map_) ),
 	  edge_integral_1d_( std::make_shared<EdgeIntegralAcc<1>>(eval_points_, quad_0_, &patch_fe_values_, &element_cache_map_) ),
 	  edge_integral_2d_( std::make_shared<EdgeIntegralAcc<2>>(eval_points_, quad_1_, &patch_fe_values_, &element_cache_map_) ),
 	  edge_integral_3d_( std::make_shared<EdgeIntegralAcc<3>>(eval_points_, quad_2_, &patch_fe_values_, &element_cache_map_) ),
@@ -144,6 +150,9 @@ public:
         edge_integrals_[2] = edge_integral_3d_;
         coupling_integrals_[0] = coupling_integral_1d_;
         coupling_integrals_[1] = coupling_integral_2d_;
+        bulk_integrals_diff_order_[0] = bulk_integral_diff_order_1d_;
+        bulk_integrals_diff_order_[1] = bulk_integral_diff_order_2d_;
+        bulk_integrals_diff_order_[2] = bulk_integral_diff_order_3d_;
     }
 
     void initialize() {
@@ -166,29 +175,29 @@ public:
 	    return coupling_integrals_[dim-2]->points(cell_side, &element_cache_map_);
     }
 
-    void add_integrals(DHCellAccessor cell) {
-        // Bulk integral
-        uint subset_idx = bulk_integrals_[cell.dim()-1]->get_subset_idx();
+    void add_bulk_integral(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_integral) {
+        uint subset_idx = bulk_integral->get_subset_idx();
         bulk_integral_data_.emplace_back(cell, subset_idx);
         uint dim = cell.dim();
-        auto &ppv_bulk = patch_fe_values_.ppv(0, dim);
-        ++ppv_bulk.n_mesh_items_;
+        auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dim);
         ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
-        for (uint i=uint( eval_points_->subset_begin(cell.dim(), subset_idx) );
-                  i<uint( eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
+        for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
+                  i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
             element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
         }
+    }
 
-        // Edge integral
-        auto &ppv_edge = patch_fe_values_.ppv(1, dim);
+    void add_edge_integral(DHCellAccessor cell, std::shared_ptr<EdgeIntegral> edge_integral) {
+        uint dim = cell.dim();
+        auto &ppv_edge = patch_fe_values_.ppv(side_domain, dim);
         for( DHCellSide cell_side : cell.side_range() ) {
             if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
                 auto range = cell_side.edge_sides();
-                uint subset_idx = edge_integrals_[range.begin()->dim()-1]->get_subset_idx();
+                uint subset_idx = edge_integral->get_subset_idx();
                 edge_integral_data_.emplace_back(range, subset_idx);
 
                 for( DHCellSide edge_side : range ) {
@@ -196,25 +205,27 @@ public:
                     ++ppv_edge.n_mesh_items_;
                     ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
-                    for (auto p : edge_integrals_[range.begin()->dim()-1]->points(edge_side, &element_cache_map_) ) {
+                    for (auto p : edge_integral->points(edge_side, &element_cache_map_) ) {
                         element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                     }
                 }
             }
         }
+    }
 
-//        // Coupling integral
+//    void add_coupling_integral(DHCellAccessor cell, std::shared_ptr<CouplingIntegral> coupling_integral) {
 //        bool add_low = true;
-//    	for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
+//        uint dim = cell.dim();
+//        for( DHCellSide neighb_side : cell.neighb_sides() ) { // cell -> elm lower dim, neighb_side -> elm higher dim
 //            if (cell.dim() != neighb_side.dim()-1) continue;
-//            coupling_integral_data_.emplace_back(cell, coupling_integrals_[cell.dim()-1]->get_subset_low_idx(), neighb_side,
-//                    coupling_integrals_[cell.dim()-1]->get_subset_high_idx());
+//            coupling_integral_data_.emplace_back(cell, coupling_integral->get_subset_low_idx(), neighb_side,
+//                    coupling_integral>get_subset_high_idx());
 //            table_sizes_.elem_sizes_[1][cell.dim()]++;
 //            if (add_low) table_sizes_.elem_sizes_[0][cell.dim()-1]++;
 //
 //            unsigned int reg_idx_low = cell.elm().region_idx().idx();
 //            unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
-//            for (auto p : coupling_integrals_[cell.dim()-1]->points(neighb_side, &element_cache_map_) ) {
+//            for (auto p : coupling_integral->points(neighb_side, &element_cache_map_) ) {
 //                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
 //                table_sizes_.point_sizes_[1][cell.dim()]++;
 //
@@ -226,8 +237,7 @@ public:
 //            }
 //            add_low = false;
 //        }
-        patch_fe_values_.make_permanent_ppv_data();
-    }
+//    }
 
     void update_patch() {
         patch_fe_values_.resize_tables();
@@ -296,32 +306,39 @@ public:
 
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    PatchFEValues<3> patch_fe_values_;                                     ///< Common FEValues object over all dimensions
+    PatchFEValues<3> patch_fe_values_;                                        ///< Common FEValues object over all dimensions
 
     MixedPtr<FiniteElement> fe_;
-    std::vector<FEValues<3>> fe_values_;                                   ///< FeValues object of elements of dim 1,2,3
-    std::vector<FEValues<3>> fe_values_side_;                              ///< FeValues object of sides of dim 0,1,2
+    std::vector<FEValues<3>> fe_values_;                                      ///< FeValues object of elements of dim 1,2,3
+    std::vector<FEValues<3>> fe_values_side_;                                 ///< FeValues object of sides of dim 0,1,2
 
-    std::shared_ptr<EvalPoints> eval_points_;                              ///< EvalPoints object shared by all integrals
-    Quadrature *quad_0_;                                                   ///< Quadrature of dim 0
-    Quadrature *quad_1_;                                                   ///< Quadrature of dim 1
-    Quadrature *quad_2_;                                                   ///< Quadrature of dim 2
-    Quadrature *quad_3_;                                                   ///< Quadrature of dim 3
-    ElementCacheMap element_cache_map_;                                    ///< ElementCacheMap according to EvalPoints
-    std::shared_ptr<BulkIntegralAcc<1>> bulk_integral_1d_;                 ///< BulkIntegral of 1D elements
-    std::shared_ptr<BulkIntegralAcc<2>> bulk_integral_2d_;                 ///< BulkIntegral of 1D elements
-    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_3d_;                 ///< BulkIntegral of 1D elements
-    std::shared_ptr<EdgeIntegralAcc<1>> edge_integral_1d_;                 ///< EdgeIntegral of 1D elements
-    std::shared_ptr<EdgeIntegralAcc<2>> edge_integral_2d_;                 ///< EdgeIntegral of 1D elements
-    std::shared_ptr<EdgeIntegralAcc<3>> edge_integral_3d_;                 ///< EdgeIntegral of 1D elements
-    std::shared_ptr<CouplingIntegralAcc<1>> coupling_integral_1d_;         ///< CouplingIntegral between 1D-2D elements
-    std::shared_ptr<CouplingIntegralAcc<2>> coupling_integral_2d_;         ///< CouplingIntegral between 1D-3D elements
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;          ///< Bulk integrals of dim 1,2,3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;          ///< Edge integrals of dim 1,2,3
-    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;  ///< Coupling integrals of dim 1-2,2-3
-    RevertableList<BulkIntegralData> bulk_integral_data_;                  ///< Holds data for computing bulk integrals.
-    RevertableList<EdgeIntegralData> edge_integral_data_;                  ///< Holds data for computing edge integrals.
-    RevertableList<CouplingIntegralData> coupling_integral_data_;          ///< Holds data for computing couplings integrals.
+    std::shared_ptr<EvalPoints> eval_points_;                                 ///< EvalPoints object shared by all integrals
+    Quadrature *quad_0_;                                                      ///< Quadrature of dim 0
+    Quadrature *quad_1_;                                                      ///< Quadrature of dim 1
+    Quadrature *quad_2_;                                                      ///< Quadrature of dim 2
+    Quadrature *quad_3_;                                                      ///< Quadrature of dim 3
+    Quadrature *quad_diff_order_1_;                                           ///< Quadrature of dim 1 of high order
+    Quadrature *quad_diff_order_2_;                                           ///< Quadrature of dim 2 of high order
+    Quadrature *quad_diff_order_3_;                                           ///< Quadrature of dim 3 of high order
+    ElementCacheMap element_cache_map_;                                       ///< ElementCacheMap according to EvalPoints
+    std::shared_ptr<BulkIntegralAcc<1>> bulk_integral_1d_;                    ///< BulkIntegral of 1D elements
+    std::shared_ptr<BulkIntegralAcc<2>> bulk_integral_2d_;                    ///< BulkIntegral of 1D elements
+    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_3d_;                    ///< BulkIntegral of 1D elements
+    std::shared_ptr<BulkIntegralAcc<1>> bulk_integral_diff_order_1d_;         ///< BulkIntegral of 1D elements of high order
+    std::shared_ptr<BulkIntegralAcc<2>> bulk_integral_diff_order_2d_;         ///< BulkIntegral of 1D elements of high order
+    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_diff_order_3d_;         ///< BulkIntegral of 1D elements of high order
+    std::shared_ptr<EdgeIntegralAcc<1>> edge_integral_1d_;                    ///< EdgeIntegral of 1D elements
+    std::shared_ptr<EdgeIntegralAcc<2>> edge_integral_2d_;                    ///< EdgeIntegral of 1D elements
+    std::shared_ptr<EdgeIntegralAcc<3>> edge_integral_3d_;                    ///< EdgeIntegral of 1D elements
+    std::shared_ptr<CouplingIntegralAcc<1>> coupling_integral_1d_;            ///< CouplingIntegral between 1D-2D elements
+    std::shared_ptr<CouplingIntegralAcc<2>> coupling_integral_2d_;            ///< CouplingIntegral between 1D-3D elements
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
+    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;             ///< Edge integrals of dim 1,2,3
+    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;     ///< Coupling integrals of dim 1-2,2-3
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_diff_order_;  ///< Bulk integrals of dim 1,2,3 of high order
+    RevertableList<BulkIntegralData> bulk_integral_data_;                     ///< Holds data for computing bulk integrals.
+    RevertableList<EdgeIntegralData> edge_integral_data_;                     ///< Holds data for computing edge integrals.
+    RevertableList<CouplingIntegralData> coupling_integral_data_;             ///< Holds data for computing couplings integrals.
     ElQ<Scalar> det_1d_;
     ElQ<Scalar> det_2d_;
     ElQ<Scalar> det_3d_;
@@ -343,7 +360,7 @@ public:
 class PatchFETestScalar : public PatchFETestBase {
 public:
 	PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : PatchFETestBase(quad_order, dh),
+    : PatchFETestBase(quad_order, 0, dh),
       scalar_shape_1d_( this->bulk_integral_1d_->scalar_shape() ),
       scalar_shape_2d_( this->bulk_integral_2d_->scalar_shape() ),
       scalar_shape_3d_( this->bulk_integral_3d_->scalar_shape() ),
@@ -370,7 +387,12 @@ public:
 
     void test_evaluation(bool print_tables=false) {
         for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-            add_integrals(*cell_it);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
+        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
+//            this->add_coupling_integral(*cell_it, this->coupling_integrals_[cell_it->dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
         }
         bulk_integral_data_.make_permanent();
         edge_integral_data_.make_permanent();
@@ -582,7 +604,7 @@ public:
 class PatchFETestVector : public PatchFETestBase {
 public:
 	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : PatchFETestBase(quad_order, dh),
+    : PatchFETestBase(quad_order, 0, dh),
       vector_shape_1d_( this->bulk_integral_1d_->vector_shape() ),
       vector_shape_2d_( this->bulk_integral_2d_->vector_shape() ),
       vector_shape_3d_( this->bulk_integral_3d_->vector_shape() ),
@@ -630,7 +652,12 @@ public:
 
     void test_evaluation(bool print_tables=false) {
         for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-            add_integrals(*cell_it);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
+        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
+//            this->add_coupling_integral(*cell_it, this->coupling_integrals_[cell_it->dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
         }
         bulk_integral_data_.make_permanent();
         edge_integral_data_.make_permanent();
@@ -920,6 +947,220 @@ public:
 
 
 /**
+ * Specialization defining FE vector operations
+ */
+class PatchFETestQuadOrders : public PatchFETestBase {
+public:
+    PatchFETestQuadOrders(unsigned int quad_order_1, unsigned int quad_order_2, std::shared_ptr<DOFHandlerMultiDim> dh_1, std::shared_ptr<DOFHandlerMultiDim> dh_2)
+    : PatchFETestBase(quad_order_1, quad_order_2, dh_1), fe_values_diff_order_(3),
+      jxw_diff_order_1d_( this->bulk_integral_diff_order_1d_->JxW() ),
+      jxw_diff_order_2d_( this->bulk_integral_diff_order_2d_->JxW() ),
+      jxw_diff_order_3d_( this->bulk_integral_diff_order_3d_->JxW() ),
+      vector_shape_1d_( this->bulk_integral_1d_->vector_shape() ),
+      vector_shape_2d_( this->bulk_integral_2d_->vector_shape() ),
+      vector_shape_3d_( this->bulk_integral_3d_->vector_shape() ),
+      vector_shape_diff_order_1d_( this->bulk_integral_diff_order_1d_->vector_shape() ),
+      vector_shape_diff_order_2d_( this->bulk_integral_diff_order_2d_->vector_shape() ),
+      vector_shape_diff_order_3d_( this->bulk_integral_diff_order_3d_->vector_shape() )
+	{
+        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
+        fe_values_diff_order_[0].initialize(*quad_diff_order_1_, *fe_[Dim<1>{}], u);
+        fe_values_diff_order_[1].initialize(*quad_diff_order_2_, *fe_[Dim<2>{}], u);
+        fe_values_diff_order_[2].initialize(*quad_diff_order_3_, *fe_[Dim<3>{}], u);
+
+        vec_view_1d_ = &fe_values_diff_order_[0].vector_view(0);
+	    vec_view_2d_ = &fe_values_diff_order_[1].vector_view(0);
+	    vec_view_3d_ = &fe_values_diff_order_[2].vector_view(0);
+	}
+
+    void reinit_patch_fe() override {
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void update_patch() {
+        patch_fe_values_.resize_tables();
+        for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
+            uint dim = bulk_integral_data_[i].cell.dim();
+            uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
+            uint elm_pos = patch_fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
+            if ( bulk_integral_data_[i].subset_index == (unsigned int)(bulk_integrals_[dim-1]->get_subset_idx()) ) {
+                uint i_point = bulk_integrals_[dim-1]->bulk_begin_idx();
+                for (auto p : this->bulk_integrals_[dim-1]->points(element_patch_idx, &element_cache_map_) /*this->bulk_points(dim, element_patch_idx)*/ ) {
+                    patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
+                }
+            } else if ( bulk_integral_data_[i].subset_index == (unsigned int)(bulk_integrals_diff_order_[dim-1]->get_subset_idx()) ) {
+                uint i_point = bulk_integrals_diff_order_[dim-1]->bulk_begin_idx();
+                for (auto p : this->bulk_integrals_diff_order_[dim-1]->points(element_patch_idx, &element_cache_map_) /*this->bulk_points(dim, element_patch_idx)*/ ) {
+                    patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
+                }
+            }
+        }
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+            auto range = edge_integral_data_[i].edge_side_range;
+            uint dim = range.begin()->dim();
+            for( DHCellSide edge_side : range )
+            {
+                uint side_pos = patch_fe_values_.register_side(edge_side, &element_cache_map_);
+                uint i_point = 0;
+                for (auto p : this->edge_points(dim, edge_side) ) {
+                    patch_fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
+                }
+            }
+        }
+        this->reinit_patch_fe();
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
+        	this->add_bulk_integral(*cell_it, this->bulk_integrals_diff_order_[cell_it->dim()-1]);
+        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
+        }
+        bulk_integral_data_.make_permanent();
+        edge_integral_data_.make_permanent();
+        coupling_integral_data_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        for(auto dh_cell : dh_->local_range() ) {
+            ElementAccessor<3> elm = dh_cell.elm();
+            double jxw = 0.0, jxw_ref = 0.0;
+            double det = 0.0, det_ref = 0.0;
+            arma::vec3 vector_shape_dof0 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof0_ref = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1 = {0.0, 0.0, 0.0};
+            arma::vec3 vector_shape_dof1_ref = {0.0, 0.0, 0.0};
+            fe_values_[dh_cell.dim()-1].reinit(elm);
+            fe_values_diff_order_[dh_cell.dim()-1].reinit(elm);
+
+            {
+                auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
+                switch (dh_cell.dim()) {
+                case 1:
+                    jxw = jxw_1d_(p);
+                    det = det_1d_(p);
+                    jxw_ref = fe_values_[0].JxW(0);
+                    det_ref = fe_values_[0].determinant(0);
+                    break;
+                case 2:
+                    jxw = jxw_2d_(p);
+                    det = det_2d_(p);
+                    jxw_ref = fe_values_[1].JxW(0);
+                    det_ref = fe_values_[1].determinant(0);
+                    break;
+                case 3:
+                    jxw = jxw_3d_(p);
+                    det = det_3d_(p);
+                    jxw_ref = fe_values_[2].JxW(0);
+                    det_ref = fe_values_[2].determinant(0);
+                    break;
+                }
+                EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+                EXPECT_DOUBLE_EQ( det, det_ref );
+            }
+
+            uint k=0;
+            for (auto pt : bulk_integrals_diff_order_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_)) {
+                switch (dh_cell.dim()) {
+                case 1:
+                    jxw = jxw_diff_order_1d_(pt);
+                    vector_shape_dof0 = vector_shape_diff_order_1d_.shape(0)(pt);
+                    jxw_ref = fe_values_diff_order_[0].JxW(k);
+                    vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
+                    break;
+                case 2:
+                    jxw = jxw_diff_order_2d_(pt);
+                    vector_shape_dof0 = vector_shape_diff_order_2d_.shape(0)(pt);
+                    vector_shape_dof1 = vector_shape_diff_order_2d_.shape(1)(pt);
+                    jxw_ref = fe_values_diff_order_[1].JxW(k);
+                    vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
+                    vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
+                    break;
+                case 3:
+                    jxw = jxw_diff_order_3d_(pt);
+                    vector_shape_dof0 = vector_shape_diff_order_3d_.shape(0)(pt);
+                    vector_shape_dof1 = vector_shape_diff_order_3d_.shape(1)(pt);
+                    jxw_ref = fe_values_diff_order_[2].JxW(k);
+                    vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
+                    vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
+                    break;
+                }
+                EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+                EXPECT_ARMA_EQ( vector_shape_dof0, vector_shape_dof0_ref );
+                EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
+                ++k;
+            }
+        }
+
+        for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
+            auto range = edge_integral_data_[i].edge_side_range;
+
+            auto zero_edge_side = *range.begin();
+            auto p = *( edge_integrals_[zero_edge_side.dim()-1]->points(zero_edge_side, &element_cache_map_).begin() );
+
+            double jxw = 0.0, jxw_ref = 0.0;
+            arma::vec3 normal_vec = {0.0, 0.0, 0.0};
+            arma::vec3 normal_vec_ref = {0.0, 0.0, 0.0};
+            switch (zero_edge_side.dim()) {
+            case 1:
+                jxw = jxw_side_1d_(p);
+                normal_vec = normal_vec_1d_(p);
+                fe_values_side_[0].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[0].JxW(0);
+                normal_vec_ref = fe_values_side_[0].normal_vector(0);
+                break;
+            case 2:
+                jxw = jxw_side_2d_(p);
+                normal_vec = normal_vec_2d_(p);
+                fe_values_side_[1].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[1].JxW(0);
+                normal_vec_ref = fe_values_side_[1].normal_vector(0);
+                break;
+            case 3:
+                jxw = jxw_side_3d_(p);
+                normal_vec = normal_vec_3d_(p);
+                fe_values_side_[2].reinit(zero_edge_side.side());
+                jxw_ref = fe_values_side_[2].JxW(0);
+                normal_vec_ref = fe_values_side_[2].normal_vector(0);
+                break;
+            }
+            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_ARMA_EQ( normal_vec, normal_vec_ref );
+        }
+    }
+
+    std::vector<FEValues<3>> fe_values_diff_order_;                           ///< FeValues object of elements of dim 1,2,3
+
+    ///< Vector view in cell calculation.
+    const FEValuesViews::Vector<3> * vec_view_1d_;
+    const FEValuesViews::Vector<3> * vec_view_2d_;
+    const FEValuesViews::Vector<3> * vec_view_3d_;
+
+    FeQ<Scalar> jxw_diff_order_1d_;
+    FeQ<Scalar> jxw_diff_order_2d_;
+    FeQ<Scalar> jxw_diff_order_3d_;
+    FeQArray<Vector> vector_shape_1d_;  // Temporary accessors - performs registration of quadrature to ref operation only
+    FeQArray<Vector> vector_shape_2d_;
+    FeQArray<Vector> vector_shape_3d_;
+    FeQArray<Vector> vector_shape_diff_order_1d_;
+    FeQArray<Vector> vector_shape_diff_order_2d_;
+    FeQArray<Vector> vector_shape_diff_order_3d_;
+};
+
+
+/**
  * Used in speed_comparation test
  */
 //class PatchFETestCompare : public PatchFETestBase {
@@ -985,7 +1226,7 @@ void compare_evaluation_func_scalar(Mesh* mesh, unsigned int quad_order, bool pr
     patch_fe.test_evaluation();
 }
 
-/// Complete test with FE scalar operations
+/// Complete test with FE vector operations
 void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
     MixedPtr<FE_P> fe_p( quad_order );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
@@ -994,6 +1235,22 @@ void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool pr
     dh->distribute_dofs(ds);
 
     PatchFETestVector patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
+
+/// Complete test with FE vector operations
+void compare_evaluation_diff_orders(Mesh* mesh, unsigned int quad_order_1, unsigned int quad_order_2, bool print_fa_data = false) {
+    MixedPtr<FE_P> fe_p( quad_order_1 );
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFETestQuadOrders patch_fe(quad_order_1, quad_order_2, dh, dh); // fix passing of dh
     patch_fe.initialize();
     patch_fe.test_evaluation(print_fa_data);
     patch_fe.reset();
@@ -1014,6 +1271,8 @@ TEST(PatchFeTest, complete_evaluation) {
     compare_evaluation_func_scalar(mesh, 1, true);
     compare_evaluation_func_scalar(mesh, 2);
     compare_evaluation_func_vector(mesh, 1, true);
+    std::cout << " -----------------------------" << std::endl;
+    compare_evaluation_diff_orders(mesh, 0, 2, true);
 }
 
 //TEST(PatchFeTest, speed_comparation) {
