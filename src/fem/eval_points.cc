@@ -40,7 +40,8 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal(Quadratu
         dim_eval_points_[dim].add_local_points<dim>( quad->get_points() );
         uint i_subset = dim_eval_points_[dim].add_subset();
 
-        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
+        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset, dim_eval_points_[dim].n_bulk_points_);
+        dim_eval_points_[dim].n_bulk_points_ += quad->size();
         map_it = bulk_integrals_.find( tpl );
         this->set_max_size();
     }
@@ -57,7 +58,8 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal<0>(Quadr
     if (map_it == bulk_integrals_.end()) {
         uint i_subset = dim_eval_points_[0].add_subset();
 
-        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
+        bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset, dim_eval_points_[0].n_bulk_points_);
+        dim_eval_points_[0].n_bulk_points_ += quad->size();
         map_it = bulk_integrals_.find( tpl );
         this->set_max_size();
     }
@@ -87,7 +89,7 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
 
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
-: local_points_(dim), n_subsets_(0), dim_(dim)
+: local_points_(dim), n_subsets_(0), dim_(dim), n_bulk_points_(0)
 {
 	subset_starts_[0] = 0;
 	if (dim>0) local_points_.reinit(EvalPoints::max_subsets*EvalPoints::max_subset_points);

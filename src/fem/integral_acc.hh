@@ -157,11 +157,12 @@ public:
     Bulk() : Base() {}
 
     /// Constructor of bulk integral- obsolete constructor
-    Bulk(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
+    Bulk(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx, unsigned int bulk_begin)
      : Base(quad, dim) {
         subset_index_ = subset_idx;
         begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
         end_idx_ = eval_points->subset_end(dim_, subset_index_);
+        bulk_begin_ = bulk_begin;
     }
 
     /// Destructor
@@ -174,10 +175,10 @@ public:
     }
 
 private:
-    /// Index of data block according to subset in EvalPoints object.
-    unsigned int subset_index_;
-    uint begin_idx_;
-    uint end_idx_;
+    unsigned int subset_index_;  ///< Index of data block according to subset in EvalPoints object.
+    uint begin_idx_;             ///< Begin index of quadrature points in EvalPoinnts
+    uint end_idx_;               ///< Begin index of quadrature points in EvalPoinnts
+    uint bulk_begin_;            ///< Begin index of quadrature points in subset of BulkPoints
 
     friend class ::BulkIntegral;
     friend class ::CouplingIntegral;
@@ -275,6 +276,11 @@ public:
     /// Return index of data block according to subset in EvalPoints object
     inline int get_subset_idx() const {
         return internal_bulk_->subset_index_;
+    }
+
+    /// Return begin index of integral in EvalPoints
+    inline unsigned int bulk_begin_idx() const {
+        return internal_bulk_->bulk_begin_;
     }
 
 
