@@ -367,19 +367,30 @@ class RefScalar : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs()),
+      fe_(fe)
     {
         this->domain_ = Domain::domain();
-        uint n_points = quad->size();
+    }
 
-        this->allocate_result(n_points, pfev.asm_arena());
+    void init_ref_vals() override {
+        uint n_points=0, i_p_ref;
+        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
+
+        this->allocate_result(n_points, this->patch_fe_->asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (unsigned int i_p = 0; i_p < n_points; i_p++)
-            for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
-                ref_scalar_value(i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p));
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
+            i_p_ref = 0;
+            for (const Quadrature *quad : this->quad_vec_)
+                for (unsigned int i_p_quad = 0; i_p_quad < quad->size(); ++i_p_quad, ++i_p_ref)
+                    ref_scalar_value(i_dof)(i_p_ref) = fe_->shape_value(i_dof, quad->point<dim>(i_p_quad));
+        }
     }
 
     void eval() override {}
+
+private:
+    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Template specialization of previous: Domain=SideDomain
@@ -388,22 +399,34 @@ class RefScalar<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs()),
+      fe_(fe)
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = quad->size();
+    }
 
-        this->allocate_result(n_points, pfev.asm_arena());
+    void init_ref_vals() override {
+        uint n_points=0, i_p_ref;
+        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
+
+        this->allocate_result(n_points, this->patch_fe_->asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (unsigned int s=0; s<dim+1; ++s) {
-            Quadrature side_q = quad->make_from_side<dim>(s);
-            for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
-                    ref_scalar_value(s, i_dof)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p));
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
+            for (unsigned int s=0; s<dim+1; ++s) {
+                i_p_ref = 0;
+                for (const Quadrature *quad : this->quad_vec_) {
+                    Quadrature side_q = quad->make_from_side<dim>(s);
+                    for (unsigned int i_p_quad = 0; i_p_quad < quad->size(); ++i_p_quad, ++i_p_ref)
+                        ref_scalar_value(s, i_dof)(i_p_ref) = fe_->shape_value(i_dof, side_q.point<dim>(i_p_quad));
+                }
+            }
         }
     }
 
     void eval() override {}
+
+private:
+    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Fixed operation of vector shape reference values
@@ -426,7 +449,7 @@ public:
         auto ref_vector_value = this->result_matrix();
         for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
             i_p_ref = 0;
-        	for (const Quadrature *quad : this->quad_vec_)
+            for (const Quadrature *quad : this->quad_vec_)
                 for (uint i_p_quad=0; i_p_quad<quad->size(); ++i_p_quad, ++i_p_ref)
                     for (uint c=0; c<spacedim; ++c)
                         ref_vector_value(c, i_dof)(i_p_ref) = fe_->shape_value(i_dof, quad->point<dim>(i_p_quad), c);
@@ -445,24 +468,34 @@ class RefVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, spacedim}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, spacedim}, fe->n_dofs()),
+      fe_(fe)
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = quad->size();
+    }
 
-        this->allocate_result(n_points, pfev.asm_arena());
+    void init_ref_vals() override {
+        uint n_points=0, i_p_ref;
+        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
+
+        this->allocate_result(n_points, this->patch_fe_->asm_arena());
         auto ref_vector_value = this->result_matrix();
-
-        for (unsigned int s=0; s<dim+1; ++s) {
-            Quadrature side_q = quad->make_from_side<dim>(s);
-            for (unsigned int i_p = 0; i_p < n_points; i_p++)
-                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
-                    for (uint c=0; c<spacedim; ++c)
-                        ref_vector_value(s,3*i_dof+c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), c);
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
+            for (unsigned int s=0; s<dim+1; ++s) {
+                i_p_ref = 0;
+                for (const Quadrature *quad : this->quad_vec_) {
+                    Quadrature side_q = quad->make_from_side<dim>(s);
+                    for (unsigned int i_p_quad = 0; i_p_quad < side_q.size(); ++i_p_quad, ++i_p_ref)
+                        for (uint c=0; c<spacedim; ++c)
+                            ref_vector_value(s,3*i_dof+c)(i_p_ref) = fe_->shape_value(i_dof, side_q.point<dim>(i_p_quad), c);
+                }
+            }
         }
     }
 
     void eval() override {}
+private:
+    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Fixed operation of gradient scalar reference values
@@ -576,6 +609,11 @@ public:
         this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
+    void add_quadrature(const Quadrature *quad) override {
+        this->register_quadrature(quad);
+        this->input_ops(0)->register_quadrature(quad);
+    }
+
     void eval() override {
         auto ref_vec = this->input_ops(0)->result_matrix();
         auto result_vec = this->result_matrix();
@@ -612,6 +650,11 @@ public:
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
+    }
+
+    void add_quadrature(const Quadrature *quad) override {
+        this->register_quadrature(quad);
+        this->input_ops(0)->register_quadrature(quad);
     }
 
     void eval() override {
