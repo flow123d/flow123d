@@ -289,15 +289,16 @@ public:
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get(const Quadrature *quad) {
         std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
+        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
+        auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
+            op_dependency_[tpl] = new_op;
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
-            it->second->add_quadrature(quad);
+//            it->second->add_quadrature(quad);
             return it->second;
         }
     }
@@ -306,15 +307,16 @@ public:
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
         std::string op_name = typeid(OpType).name();
-        auto it = op_dependency_.find(op_name);
+        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
+        auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
-            op_dependency_.insert(std::make_pair(op_name, new_op));
+            op_dependency_[tpl] = new_op;
             operations_.push_back(new_op);
             DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
-            it->second->add_quadrature(quad);
+//            it->second->add_quadrature(quad);
             return it->second;
         }
     }
@@ -390,8 +392,8 @@ private:
     bool used_domain_[2];          ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
-    //OperationSet< PatchOp<spacedim> > op_dependency_;
+    //std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
+    OperationMap< PatchOp<spacedim> > op_dependency_;
 
     /**
      * Map of element patch indices to PatchOp::result_ and int_table_ tables

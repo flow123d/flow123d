@@ -170,28 +170,22 @@ struct DimIntegrals {
 
 
 
-/// Define Operation hash function
-template<typename Operation>
-struct OperationPtrHash {
-    std::size_t operator()(const Operation* key) const {
-    	// TODO use boost hash of tuple (see IntegralTplHash)
-        std::size_t h1 = std::hash<std::string>()(typeid(*key).name());
-        std::size_t h2 = std::hash<std::size_t>()(key->quad()->size());
-        return h1 ^ (h2 << 1);
+/// Define Integral Tuple hash function - helper struct of OperationMap
+struct OperationTplHash {
+    std::size_t operator()(std::tuple<std::string, uint> tpl) const {
+        return boost::hash_value( tpl );
     }
+
+    /// Create tuple from typeid(Operation).name and size of Quadrature
+    static std::tuple<std::string, uint> op_tuple(std::string op_type, uint quad_size) {
+        return std::make_tuple(op_type, quad_size);
+    }
+
 };
 
-/// Content-based equality for Operation*
+/// Alias for unordered_set of Operation pointer with custom hash
 template<typename Operation>
-struct OperationPtrEqual {
-    bool operator()(const Operation* lhs, const Operation* rhs) const {
-        return *lhs == *rhs;
-    }
-};
-
-/// Alias for unordered_set of shared_ptr<Integral> with custom hash
-template<typename Operation>
-using OperationSet = std::unordered_set<Operation *, OperationPtrHash<Operation>, OperationPtrEqual<Operation>>;
+using OperationMap = std::unordered_map<std::tuple<std::string, uint>, Operation *, OperationTplHash>;
 
 
 
