@@ -58,6 +58,7 @@ public:
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
             patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
+            implicit_quads_.push_back( QGauss(dim, 0) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -80,9 +81,6 @@ public:
 
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
-        for (auto * op : operations_) {
-            op->init_ref_vals();
-        }
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
     }
 
@@ -171,7 +169,7 @@ public:
                 if ( integral_data.bulk_[i].subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
                 uint element_patch_idx = element_cache_map->position_in_cache(integral_data.bulk_[i].cell.elm_idx());
                 uint elm_pos = this->register_element(integral_data.bulk_[i].cell, element_patch_idx);
-                uint i_point = integral_it.second->bulk_begin_idx();
+                uint i_point = 0;
                 for (auto p : integral_it.second->points(element_patch_idx) ) {
                     this->register_bulk_point(integral_data.bulk_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
@@ -298,9 +296,14 @@ public:
             DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
-//            it->second->add_quadrature(quad);
             return it->second;
         }
+    }
+
+    /// Returns operation of given dim and OpType, creates it if doesn't exist
+    template<class OpType, unsigned int dim>
+    PatchOp<spacedim>* get() {
+        return this->template get<OpType, dim>( this->implicit_quad(dim) );
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
@@ -316,7 +319,6 @@ public:
             DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
             return new_op;
         } else {
-//            it->second->add_quadrature(quad);
             return it->second;
         }
     }
@@ -366,6 +368,12 @@ public:
             }
     }
 
+    /// Return implicit quadrature (passed to element / side operations)
+    const Quadrature* implicit_quad(unsigned int dim) const {
+        ASSERT( (dim>0) && (dim<4) );
+        return &implicit_quads_[dim-1];
+    }
+
 private:
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element_internal(DHCellAccessor cell, uint element_patch_idx) {
@@ -392,7 +400,6 @@ private:
     bool used_domain_[2];          ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    //std::unordered_map<std::string, PatchOp<spacedim> *> op_dependency_;
     OperationMap< PatchOp<spacedim> > op_dependency_;
 
     /**
@@ -401,6 +408,15 @@ private:
      * TODO will be deleted after sorting elements in ElementCacheMap by dimension
      */
     std::vector<uint> elements_map_;
+
+    /**
+     * Array of implicit Quadratures of dim 1,2,3
+     *
+     * Items are used during construction of element/side operations. This solution solves duplicities
+     * of these operations (with different quadrature sizes). Quadrature size has no effect on result
+     * of these operations.
+     */
+    std::vector<Quadrature> implicit_quads_;
 
     friend class PatchOp<spacedim>;
 };

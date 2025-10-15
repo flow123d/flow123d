@@ -178,7 +178,6 @@ private:
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
-        unsigned int n_bulk_points_;                                  ///< Number of registered bulk points.
 
         friend class EvalPoints;
     };

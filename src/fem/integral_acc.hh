@@ -97,6 +97,12 @@ public:
         return patch_fe_values_->get< OpType, dim >(quad_);
     }
 
+    /// Factory method. Creates element / side operation of given OpType.
+    template<class OpType>
+    PatchOp<3> *make_elem_patch_op() {
+        return patch_fe_values_->get< OpType, dim >();
+    }
+
     /// Factory method. Same as previous but creates FE operation.
     template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
     FeQArray<ValueType> make_qarray(uint component_idx = 0) {
@@ -157,12 +163,11 @@ public:
     Bulk() : Base() {}
 
     /// Constructor of bulk integral- obsolete constructor
-    Bulk(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx, unsigned int bulk_begin)
+    Bulk(Quadrature *quad, unsigned int dim, std::shared_ptr<EvalPoints> eval_points, unsigned int subset_idx)
      : Base(quad, dim) {
         subset_index_ = subset_idx;
         begin_idx_ = eval_points->subset_begin(dim_, subset_index_);
         end_idx_ = eval_points->subset_end(dim_, subset_index_);
-        bulk_begin_ = bulk_begin;
     }
 
     /// Destructor
@@ -178,7 +183,6 @@ private:
     unsigned int subset_index_;  ///< Index of data block according to subset in EvalPoints object.
     uint begin_idx_;             ///< Begin index of quadrature points in EvalPoinnts
     uint end_idx_;               ///< Begin index of quadrature points in EvalPoinnts
-    uint bulk_begin_;            ///< Begin index of quadrature points in subset of BulkPoints
 
     friend class ::BulkIntegral;
     friend class ::CouplingIntegral;
@@ -278,11 +282,6 @@ public:
         return internal_bulk_->subset_index_;
     }
 
-    /// Return begin index of integral in EvalPoints
-    inline unsigned int bulk_begin_idx() const {
-        return internal_bulk_->bulk_begin_;
-    }
-
 
     /// Returns range of bulk local points for appropriate cell accessor - obsolete method
     inline Range< BulkPoint > points(unsigned int element_patch_idx, const ElementCacheMap *elm_cache_map) const {
@@ -349,7 +348,7 @@ public:
     /// Create bulk accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
-        return ElQ<Scalar>( factory_.template make_patch_op< Op::JacDet<qdim, Op::BulkDomain, 3> >() );
+        return ElQ<Scalar>( factory_.template make_elem_patch_op< Op::JacDet<qdim, Op::BulkDomain, 3> >() );
     }
 
     /**

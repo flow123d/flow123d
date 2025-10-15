@@ -183,7 +183,7 @@ struct OperationTplHash {
 
 };
 
-/// Alias for unordered_set of Operation pointer with custom hash
+/// Alias for unordered_map of Operation pointer with custom hash
 template<typename Operation>
 using OperationMap = std::unordered_map<std::tuple<std::string, uint>, Operation *, OperationTplHash>;
 

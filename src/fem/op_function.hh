@@ -214,19 +214,11 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {1})
     {
         this->domain_ = Domain::domain();
-    }
-
-    void init_ref_vals() override {
-        uint n_points=0, i_point=0;
-        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
-        this->allocate_result(n_points, this->patch_fe_->asm_arena());
-        for (const Quadrature *quad : this->quad_vec_) {
-            const std::vector<double> &point_weights_vec = quad->get_weights();
-            for (uint i=0; i<point_weights_vec.size(); ++i) {
-                this->result_(0)(i_point) = point_weights_vec[i];
-                ++i_point;
-            }
-        }
+        // create result vector of weights operation in assembly arena
+        const std::vector<double> &point_weights_vec = quad->get_weights();
+        this->allocate_result(point_weights_vec.size(), pfev.asm_arena());
+        for (uint i=0; i<point_weights_vec.size(); ++i)
+            this->result_(0)(i) = point_weights_vec[i];
     }
 
     void eval() override {}
@@ -265,12 +257,7 @@ public:
     {
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Domain, spacedim>, dim >(quad) );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(quad) );
-    }
-
-    void add_quadrature(const Quadrature *quad) override {
-        this->register_quadrature(quad);
-        this->input_ops(0)->register_quadrature(quad);
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(pfev.implicit_quad(dim)) );
     }
 
     void eval() override {
@@ -299,12 +286,7 @@ public:
     {
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
-    }
-
-    void add_quadrature(const Quadrature *quad) override {
-        this->register_quadrature(quad);
-        this->input_ops(0)->register_quadrature(quad);
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(pfev.implicit_quad(dim)) );
     }
 
     void eval() override {
@@ -371,20 +353,13 @@ public:
       fe_(fe)
     {
         this->domain_ = Domain::domain();
-    }
+        uint n_points = quad->size();
 
-    void init_ref_vals() override {
-        uint n_points=0, i_p_ref;
-        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
-
-        this->allocate_result(n_points, this->patch_fe_->asm_arena());
+        this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
-            i_p_ref = 0;
-            for (const Quadrature *quad : this->quad_vec_)
-                for (unsigned int i_p_quad = 0; i_p_quad < quad->size(); ++i_p_quad, ++i_p_ref)
-                    ref_scalar_value(i_dof)(i_p_ref) = fe_->shape_value(i_dof, quad->point<dim>(i_p_quad));
-        }
+        for (unsigned int i_p = 0; i_p < n_points; i_p++)
+            for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
+                ref_scalar_value(i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p));
     }
 
     void eval() override {}
@@ -403,23 +378,15 @@ public:
       fe_(fe)
     {
         this->domain_ = Op::SideDomain::domain();
-    }
+        uint n_points = quad->size();
 
-    void init_ref_vals() override {
-        uint n_points=0, i_p_ref;
-        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
-
-        this->allocate_result(n_points, this->patch_fe_->asm_arena());
+        this->allocate_result(n_points, pfev.asm_arena());
         auto ref_scalar_value = this->result_matrix();
-        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
-            for (unsigned int s=0; s<dim+1; ++s) {
-                i_p_ref = 0;
-                for (const Quadrature *quad : this->quad_vec_) {
-                    Quadrature side_q = quad->make_from_side<dim>(s);
-                    for (unsigned int i_p_quad = 0; i_p_quad < quad->size(); ++i_p_quad, ++i_p_ref)
-                        ref_scalar_value(s, i_dof)(i_p_ref) = fe_->shape_value(i_dof, side_q.point<dim>(i_p_quad));
-                }
-            }
+        for (unsigned int s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
+                    ref_scalar_value(s, i_dof)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p));
         }
     }
 
@@ -439,21 +406,15 @@ public:
       fe_(fe)
     {
         this->domain_ = Domain::domain();
-    }
+        uint n_points = quad->size();
 
-    void init_ref_vals() override {
-        uint n_points=0, i_p_ref;
-        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
-
-        this->allocate_result(n_points, this->patch_fe_->asm_arena());
+        this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
-        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
-            i_p_ref = 0;
-            for (const Quadrature *quad : this->quad_vec_)
-                for (uint i_p_quad=0; i_p_quad<quad->size(); ++i_p_quad, ++i_p_ref)
-                    for (uint c=0; c<spacedim; ++c)
-                        ref_vector_value(c, i_dof)(i_p_ref) = fe_->shape_value(i_dof, quad->point<dim>(i_p_quad), c);
-        }
+
+        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+            for (uint i_p=0; i_p<n_points; ++i_p)
+                for (uint c=0; c<spacedim; ++c)
+                    ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
     }
 
     void eval() override {}
@@ -472,24 +433,17 @@ public:
       fe_(fe)
     {
         this->domain_ = Op::SideDomain::domain();
-    }
+        uint n_points = quad->size();
 
-    void init_ref_vals() override {
-        uint n_points=0, i_p_ref;
-        for (const Quadrature *quad : this->quad_vec_) n_points += quad->size();
-
-        this->allocate_result(n_points, this->patch_fe_->asm_arena());
+        this->allocate_result(n_points, pfev.asm_arena());
         auto ref_vector_value = this->result_matrix();
-        for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof) {
-            for (unsigned int s=0; s<dim+1; ++s) {
-                i_p_ref = 0;
-                for (const Quadrature *quad : this->quad_vec_) {
-                    Quadrature side_q = quad->make_from_side<dim>(s);
-                    for (unsigned int i_p_quad = 0; i_p_quad < side_q.size(); ++i_p_quad, ++i_p_ref)
-                        for (uint c=0; c<spacedim; ++c)
-                            ref_vector_value(s,3*i_dof+c)(i_p_ref) = fe_->shape_value(i_dof, side_q.point<dim>(i_p_quad), c);
-                }
-            }
+
+        for (unsigned int s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
+            for (unsigned int i_p = 0; i_p < n_points; i_p++)
+                for (unsigned int i_dof = 0; i_dof < this->n_dofs_; i_dof++)
+                    for (uint c=0; c<spacedim; ++c)
+                        ref_vector_value(s,3*i_dof+c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), c);
         }
     }
 
@@ -609,11 +563,6 @@ public:
         this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
-    void add_quadrature(const Quadrature *quad) override {
-        this->register_quadrature(quad);
-        this->input_ops(0)->register_quadrature(quad);
-    }
-
     void eval() override {
         auto ref_vec = this->input_ops(0)->result_matrix();
         auto result_vec = this->result_matrix();
@@ -652,21 +601,16 @@ public:
         this->input_ops_.push_back( pfev.template get< Op::RefScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
-    void add_quadrature(const Quadrature *quad) override {
-        this->register_quadrature(quad);
-        this->input_ops(0)->register_quadrature(quad);
-    }
-
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.n_mesh_items();                   // number of sides on patch
+        uint n_patch_points = n_sides * this->quad_->size(); // number of points on patch
+
+        this->allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         auto ref_vec = this->input_ops(0)->result_matrix();
         auto result_vec = this->result_matrix();
-
-        uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_mesh_items();    // number of sides on patch
-        uint n_patch_points = ppv.n_points(); // number of points on patch
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt) {
@@ -729,14 +673,14 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        dispatch_op_.allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.n_mesh_items();
+        uint n_patch_points = n_sides * this->quad_->size();
+
+        dispatch_op_.allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         auto ref_shape_vec = this->input_ops(0)->result_matrix();  // dim+1 x spacedim
         auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
-
-        uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
 
         for (uint c=0; c<spacedim*n_dofs; c++)
         	result_vec(c) = ArenaVec<double>(n_patch_points, this->patch_fe_->patch_arena());
@@ -788,11 +732,6 @@ public:
 
 	}
 
-    void add_quadrature(const Quadrature *quad) override {
-        in_op_->register_quadrature(quad);
-        in_op_->input_ops(0)->register_quadrature(quad);
-    }
-
     void eval() override {
         in_op_->eval();
     }
@@ -811,7 +750,7 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.implicit_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
@@ -860,21 +799,21 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.implicit_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
-
         auto ref_shape_grads = this->input_ops(1)->result_matrix();
         auto grad_scalar_shape_value = this->result_matrix();
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_shape_grads(0).data_size();
         uint n_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
+        uint n_patch_points = n_sides * this->quad_->size();
+
+        this->allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         // Expands inverse jacobian to inv_jac_expd_value
         auto inv_jac_value = this->input_ops(0)->result_matrix();
@@ -915,7 +854,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.implicit_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
 
@@ -970,7 +909,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.implicit_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
 	}
 
@@ -982,7 +921,7 @@ public:
         uint n_dofs = this->n_dofs();
         uint n_points = ref_vector_grad(0).data_size();
         uint n_patch_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
+        uint n_patch_points = n_patch_sides * this->quad_->size();
 
         // Expands inverse jacobian to inv_jac_expd_value
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
