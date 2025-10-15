@@ -956,9 +956,6 @@ public:
       jxw_diff_order_1d_( this->bulk_integral_diff_order_1d_->JxW() ),
       jxw_diff_order_2d_( this->bulk_integral_diff_order_2d_->JxW() ),
       jxw_diff_order_3d_( this->bulk_integral_diff_order_3d_->JxW() ),
-      vector_shape_1d_( this->bulk_integral_1d_->vector_shape() ),
-      vector_shape_2d_( this->bulk_integral_2d_->vector_shape() ),
-      vector_shape_3d_( this->bulk_integral_3d_->vector_shape() ),
       vector_shape_diff_order_1d_( this->bulk_integral_diff_order_1d_->vector_shape() ),
       vector_shape_diff_order_2d_( this->bulk_integral_diff_order_2d_->vector_shape() ),
       vector_shape_diff_order_3d_( this->bulk_integral_diff_order_3d_->vector_shape() )
@@ -986,13 +983,13 @@ public:
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
             uint elm_pos = patch_fe_values_.register_element(bulk_integral_data_[i].cell, element_patch_idx);
             if ( bulk_integral_data_[i].subset_index == (unsigned int)(bulk_integrals_[dim-1]->get_subset_idx()) ) {
-                uint i_point = bulk_integrals_[dim-1]->bulk_begin_idx();
-                for (auto p : this->bulk_integrals_[dim-1]->points(element_patch_idx, &element_cache_map_) /*this->bulk_points(dim, element_patch_idx)*/ ) {
+                uint i_point = 0;
+                for (auto p : this->bulk_integrals_[dim-1]->points(element_patch_idx, &element_cache_map_)) {
                     patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
             } else if ( bulk_integral_data_[i].subset_index == (unsigned int)(bulk_integrals_diff_order_[dim-1]->get_subset_idx()) ) {
-                uint i_point = bulk_integrals_diff_order_[dim-1]->bulk_begin_idx();
-                for (auto p : this->bulk_integrals_diff_order_[dim-1]->points(element_patch_idx, &element_cache_map_) /*this->bulk_points(dim, element_patch_idx)*/ ) {
+                uint i_point = 0;
+                for (auto p : this->bulk_integrals_diff_order_[dim-1]->points(element_patch_idx, &element_cache_map_)) {
                     patch_fe_values_.register_bulk_point(bulk_integral_data_[i].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
             }
@@ -1151,9 +1148,6 @@ public:
     FeQ<Scalar> jxw_diff_order_1d_;
     FeQ<Scalar> jxw_diff_order_2d_;
     FeQ<Scalar> jxw_diff_order_3d_;
-    FeQArray<Vector> vector_shape_1d_;  // Temporary accessors - performs registration of quadrature to ref operation only
-    FeQArray<Vector> vector_shape_2d_;
-    FeQArray<Vector> vector_shape_3d_;
     FeQArray<Vector> vector_shape_diff_order_1d_;
     FeQArray<Vector> vector_shape_diff_order_2d_;
     FeQArray<Vector> vector_shape_diff_order_3d_;
@@ -1271,7 +1265,7 @@ TEST(PatchFeTest, complete_evaluation) {
     compare_evaluation_func_scalar(mesh, 1, true);
     compare_evaluation_func_scalar(mesh, 2);
     compare_evaluation_func_vector(mesh, 1, true);
-    std::cout << " -----------------------------" << std::endl;
+    std::cout << " - Different quad orders test -----------------------------" << std::endl;
     compare_evaluation_diff_orders(mesh, 0, 2, true);
 }
 
