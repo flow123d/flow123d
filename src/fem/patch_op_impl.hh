@@ -29,7 +29,7 @@ template<>
 template<>
 inline Scalar PatchOp<3>::elem_value<Scalar>(uint point_idx) const {
     PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
-    return result_(0)( ppv.int_table_(pointResultIdx)(ppv.points_map_[point_idx]) );
+    return result_(0)( ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]) );
 }
 
 template<>
@@ -37,7 +37,7 @@ template<>
 inline Vector PatchOp<3>::elem_value<Vector>(uint point_idx) const {
     Vector val;
     PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
-    uint op_matrix_idx = ppv.int_table_(pointResultIdx)(ppv.points_map_[point_idx]);
+    uint op_matrix_idx = ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         val(i) = result_(i)(op_matrix_idx);
     return val;
@@ -48,7 +48,7 @@ template<>
 inline Tensor PatchOp<3>::elem_value<Tensor>(uint point_idx) const {
     Tensor val;
     PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_-1];
-    uint op_matrix_idx = ppv.int_table_(pointResultIdx)(ppv.points_map_[point_idx]);
+    uint op_matrix_idx = ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]);
     for (uint i=0; i<3; ++i)
         for (uint j=0; j<3; ++j)
             val(i,j) = result_(i+j*3)(op_matrix_idx);

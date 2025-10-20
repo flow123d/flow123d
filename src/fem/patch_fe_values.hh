@@ -55,10 +55,11 @@ public:
       patch_point_vals_(2),
 	  elements_map_(300, (uint)-1)
     {
+        element_quads_.push_back( QGauss(0, 0) );
         for (uint dim=1; dim<4; ++dim) {
             patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
             patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
-            implicit_quads_.push_back( QGauss(dim, 0) );
+            element_quads_.push_back( QGauss(dim, 0) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -238,7 +239,7 @@ public:
         auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
         bool is_elm_added = map_it.second;
         if (is_elm_added) {
-            ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elem_pos;
+            ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
             ppv.i_mesh_item_++;
         }
         return map_it.first->second;
@@ -251,8 +252,8 @@ public:
         uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
 
-        ppv.int_table_(shortLongElmMap)(ppv.i_mesh_item_) = elm_pos;
-        ppv.int_table_(sideElmIdx)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(ref_side_on_sides)(ppv.i_mesh_item_) = cell_side.side_idx();
         ppv.side_list_.push_back( cell_side.side() );
         return ppv.i_mesh_item_++;
     }
@@ -303,7 +304,7 @@ public:
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get() {
-        return this->template get<OpType, dim>( this->implicit_quad(dim) );
+        return this->template get<OpType, dim>( this->element_quad(dim) );
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
@@ -368,10 +369,10 @@ public:
             }
     }
 
-    /// Return implicit quadrature (passed to element / side operations)
-    const Quadrature* implicit_quad(unsigned int dim) const {
-        ASSERT( (dim>0) && (dim<4) );
-        return &implicit_quads_[dim-1];
+    /// Return element quadrature (passed to element / side operations)
+    const Quadrature* element_quad(unsigned int dim) const {
+        ASSERT( dim <= 3 );
+        return &element_quads_[dim];
     }
 
 private:
@@ -410,13 +411,13 @@ private:
     std::vector<uint> elements_map_;
 
     /**
-     * Array of implicit Quadratures of dim 1,2,3
+     * Array of element Quadratures of dim 0,1,2,3
      *
      * Items are used during construction of element/side operations. This solution solves duplicities
      * of these operations (with different quadrature sizes). Quadrature size has no effect on result
      * of these operations.
      */
-    std::vector<Quadrature> implicit_quads_;
+    std::vector<Quadrature> element_quads_;
 
     friend class PatchOp<spacedim>;
 };
