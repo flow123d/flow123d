@@ -86,78 +86,69 @@ public:
 	    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
     };
 
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmBase {
+    public:
+        /**
+         * Constructor
+         *
+         * @param quad_order      Order of Quadrature (quad_, quad_low_) objects.
+         * @param quad_diff_order Order of Quadrature (quad_diff_order_, quad_low_diff_order_) objects.
+         */
+        AsmBase(PatchFETestBase *generic, uint quad_order, uint quad_diff_order)
+        : generic_(generic),
+          quad_( new QGauss(dim, 2*quad_order) ),
+          quad_low_( new QGauss(dim-1, 2*quad_order) ),
+          quad_diff_order_( new QGauss(dim, 2*quad_diff_order) ),
+          quad_low_diff_order_( new QGauss(dim-1, 2*quad_diff_order) ),
+          bulk_integral_( std::make_shared<BulkIntegralAcc<dim>>(generic_->eval_points_, quad_, &generic_->patch_fe_values_, &generic_->element_cache_map_) ),
+          bulk_integral_diff_order_( std::make_shared<BulkIntegralAcc<dim>>(generic_->eval_points_, quad_diff_order_, &generic_->patch_fe_values_, &generic_->element_cache_map_) ),
+  	      edge_integral_( std::make_shared<EdgeIntegralAcc<dim>>(generic_->eval_points_, quad_low_, &generic_->patch_fe_values_, &generic_->element_cache_map_) ),
+  	      coupling_integral_( std::make_shared<CouplingIntegralAcc<dim>>(generic_->eval_points_, quad_, &generic_->patch_fe_values_, &generic_->element_cache_map_) ),
+	      det_( bulk_integral_->determinant() ),
+	      jxw_( bulk_integral_->JxW() ),
+	      jxw_side_( edge_integral_->JxW() ),
+	      normal_vec_( edge_integral_->normal_vector() )
+        {}
 
-    PatchFETestBase(unsigned int quad_order_1, unsigned int quad_order_2, std::shared_ptr<DOFHandlerMultiDim> dh)
+    	/// Destructor
+        virtual ~AsmBase() {
+            delete quad_;
+            delete quad_low_;
+            delete quad_diff_order_;
+            delete quad_low_diff_order_;
+        }
+
+
+    	/** Declaration of data members **/
+        PatchFETestBase *generic_;                                        ///< pointer to generic object
+        Quadrature *quad_;                                                ///< Quadrature (of dim)
+        Quadrature *quad_low_;                                            ///< Quadrature (of dim-1).
+        Quadrature *quad_diff_order_;                                     ///< Quadrature of different size than previous (of dim)
+        Quadrature *quad_low_diff_order_;                                 ///< Quadrature of different size than previous (of dim-1).
+        std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;             ///< BulkIntegral
+        std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_diff_order_;  ///< BulkIntegralof high order
+        std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral_;             ///< EdgeIntegral
+        std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;     ///< CouplingIntegral between dim and dim+1 elements
+        ElQ<Scalar> det_;
+        FeQ<Scalar> jxw_;
+        FeQ<Scalar> jxw_side_;
+        ElQ<Vector> normal_vec_;
+
+    };
+
+
+    PatchFETestBase(std::shared_ptr<DOFHandlerMultiDim> dh)
     : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
       fe_(dh_->ds()->fe()), fe_values_(3), fe_values_side_(3),
 	  eval_points_( std::make_shared<EvalPoints>() ),
-	  quad_0_( new QGauss(0, 2*quad_order_1) ),
-	  quad_1_( new QGauss(1, 2*quad_order_1) ),
-	  quad_2_( new QGauss(2, 2*quad_order_1) ),
-	  quad_3_( new QGauss(3, 2*quad_order_1) ),
-      quad_diff_order_1_( new QGauss(1, 2*quad_order_2) ),
-      quad_diff_order_2_( new QGauss(2, 2*quad_order_2) ),
-      quad_diff_order_3_( new QGauss(3, 2*quad_order_2) ),
-	  bulk_integral_1d_( std::make_shared<BulkIntegralAcc<1>>(eval_points_, quad_1_, &patch_fe_values_, &element_cache_map_) ),
-	  bulk_integral_2d_( std::make_shared<BulkIntegralAcc<2>>(eval_points_, quad_2_, &patch_fe_values_, &element_cache_map_) ),
-	  bulk_integral_3d_( std::make_shared<BulkIntegralAcc<3>>(eval_points_, quad_3_, &patch_fe_values_, &element_cache_map_) ),
-      bulk_integral_diff_order_1d_( std::make_shared<BulkIntegralAcc<1>>(eval_points_, quad_diff_order_1_, &patch_fe_values_, &element_cache_map_) ),
-      bulk_integral_diff_order_2d_( std::make_shared<BulkIntegralAcc<2>>(eval_points_, quad_diff_order_2_, &patch_fe_values_, &element_cache_map_) ),
-      bulk_integral_diff_order_3d_( std::make_shared<BulkIntegralAcc<3>>(eval_points_, quad_diff_order_3_, &patch_fe_values_, &element_cache_map_) ),
-	  edge_integral_1d_( std::make_shared<EdgeIntegralAcc<1>>(eval_points_, quad_0_, &patch_fe_values_, &element_cache_map_) ),
-	  edge_integral_2d_( std::make_shared<EdgeIntegralAcc<2>>(eval_points_, quad_1_, &patch_fe_values_, &element_cache_map_) ),
-	  edge_integral_3d_( std::make_shared<EdgeIntegralAcc<3>>(eval_points_, quad_2_, &patch_fe_values_, &element_cache_map_) ),
-	  coupling_integral_1d_( std::make_shared<CouplingIntegralAcc<1>>(eval_points_, quad_1_, &patch_fe_values_, &element_cache_map_) ),
-	  coupling_integral_2d_( std::make_shared<CouplingIntegralAcc<2>>(eval_points_, quad_2_, &patch_fe_values_, &element_cache_map_) ),
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
-      coupling_integral_data_(12, 6),
-      det_1d_( bulk_integral_1d_->determinant() ),
-      det_2d_( bulk_integral_2d_->determinant() ),
-      det_3d_( bulk_integral_3d_->determinant() ),
-      jxw_1d_( bulk_integral_1d_->JxW() ),
-      jxw_2d_( bulk_integral_2d_->JxW() ),
-      jxw_3d_( bulk_integral_3d_->JxW() ),
-      jxw_side_1d_( edge_integral_1d_->JxW() ),
-      jxw_side_2d_( edge_integral_2d_->JxW() ),
-      jxw_side_3d_( edge_integral_3d_->JxW() ),
-      normal_vec_1d_( edge_integral_1d_->normal_vector() ),
-      normal_vec_2d_( edge_integral_2d_->normal_vector() ),
-      normal_vec_3d_( edge_integral_3d_->normal_vector() )
-    {
-        // first step - create integrals, then - initialize cache and initialize PatchFEValues on all dimensions
-        this->set_integrals_arrays();
-        element_cache_map_.init(eval_points_);
-
-        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
-        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
-        fe_values_[0].initialize(*quad_1_, *fe_[Dim<1>{}], u);
-        fe_values_[1].initialize(*quad_2_, *fe_[Dim<2>{}], u);
-        fe_values_[2].initialize(*quad_3_, *fe_[Dim<3>{}], u);
-        fe_values_side_[0].initialize(*quad_0_, *fe_[Dim<1>{}], u_side);
-        fe_values_side_[1].initialize(*quad_1_, *fe_[Dim<2>{}], u_side);
-        fe_values_side_[2].initialize(*quad_2_, *fe_[Dim<3>{}], u_side);
-    }
+      coupling_integral_data_(12, 6)
+    {}
 
     ~PatchFETestBase() {}
-
-    void set_integrals_arrays() {
-        bulk_integrals_[0] = bulk_integral_1d_;
-        bulk_integrals_[1] = bulk_integral_2d_;
-        bulk_integrals_[2] = bulk_integral_3d_;
-        edge_integrals_[0] = edge_integral_1d_;
-        edge_integrals_[1] = edge_integral_2d_;
-        edge_integrals_[2] = edge_integral_3d_;
-        coupling_integrals_[0] = coupling_integral_1d_;
-        coupling_integrals_[1] = coupling_integral_2d_;
-        bulk_integrals_diff_order_[0] = bulk_integral_diff_order_1d_;
-        bulk_integrals_diff_order_[1] = bulk_integral_diff_order_2d_;
-        bulk_integrals_diff_order_[2] = bulk_integral_diff_order_3d_;
-    }
-
-    void initialize() {
-        this->patch_fe_values_.init_finalize();
-    }
 
     /// Return BulkPoint range of appropriate dimension
     inline Range< BulkPoint > bulk_points(unsigned int dim, unsigned int element_patch_idx) const {
@@ -313,25 +304,7 @@ public:
     std::vector<FEValues<3>> fe_values_side_;                                 ///< FeValues object of sides of dim 0,1,2
 
     std::shared_ptr<EvalPoints> eval_points_;                                 ///< EvalPoints object shared by all integrals
-    Quadrature *quad_0_;                                                      ///< Quadrature of dim 0
-    Quadrature *quad_1_;                                                      ///< Quadrature of dim 1
-    Quadrature *quad_2_;                                                      ///< Quadrature of dim 2
-    Quadrature *quad_3_;                                                      ///< Quadrature of dim 3
-    Quadrature *quad_diff_order_1_;                                           ///< Quadrature of dim 1 of high order
-    Quadrature *quad_diff_order_2_;                                           ///< Quadrature of dim 2 of high order
-    Quadrature *quad_diff_order_3_;                                           ///< Quadrature of dim 3 of high order
     ElementCacheMap element_cache_map_;                                       ///< ElementCacheMap according to EvalPoints
-    std::shared_ptr<BulkIntegralAcc<1>> bulk_integral_1d_;                    ///< BulkIntegral of 1D elements
-    std::shared_ptr<BulkIntegralAcc<2>> bulk_integral_2d_;                    ///< BulkIntegral of 1D elements
-    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_3d_;                    ///< BulkIntegral of 1D elements
-    std::shared_ptr<BulkIntegralAcc<1>> bulk_integral_diff_order_1d_;         ///< BulkIntegral of 1D elements of high order
-    std::shared_ptr<BulkIntegralAcc<2>> bulk_integral_diff_order_2d_;         ///< BulkIntegral of 1D elements of high order
-    std::shared_ptr<BulkIntegralAcc<3>> bulk_integral_diff_order_3d_;         ///< BulkIntegral of 1D elements of high order
-    std::shared_ptr<EdgeIntegralAcc<1>> edge_integral_1d_;                    ///< EdgeIntegral of 1D elements
-    std::shared_ptr<EdgeIntegralAcc<2>> edge_integral_2d_;                    ///< EdgeIntegral of 1D elements
-    std::shared_ptr<EdgeIntegralAcc<3>> edge_integral_3d_;                    ///< EdgeIntegral of 1D elements
-    std::shared_ptr<CouplingIntegralAcc<1>> coupling_integral_1d_;            ///< CouplingIntegral between 1D-2D elements
-    std::shared_ptr<CouplingIntegralAcc<2>> coupling_integral_2d_;            ///< CouplingIntegral between 1D-3D elements
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;             ///< Edge integrals of dim 1,2,3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;     ///< Coupling integrals of dim 1-2,2-3
@@ -339,18 +312,6 @@ public:
     RevertableList<BulkIntegralData> bulk_integral_data_;                     ///< Holds data for computing bulk integrals.
     RevertableList<EdgeIntegralData> edge_integral_data_;                     ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData> coupling_integral_data_;             ///< Holds data for computing couplings integrals.
-    ElQ<Scalar> det_1d_;
-    ElQ<Scalar> det_2d_;
-    ElQ<Scalar> det_3d_;
-    FeQ<Scalar> jxw_1d_;
-    FeQ<Scalar> jxw_2d_;
-    FeQ<Scalar> jxw_3d_;
-    FeQ<Scalar> jxw_side_1d_;
-    FeQ<Scalar> jxw_side_2d_;
-    FeQ<Scalar> jxw_side_3d_;
-    ElQ<Vector> normal_vec_1d_;
-    ElQ<Vector> normal_vec_2d_;
-    ElQ<Vector> normal_vec_3d_;
 };
 
 
@@ -359,25 +320,72 @@ public:
  */
 class PatchFETestScalar : public PatchFETestBase {
 public:
-	PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : PatchFETestBase(quad_order, 0, dh),
-      scalar_shape_1d_( this->bulk_integral_1d_->scalar_shape() ),
-      scalar_shape_2d_( this->bulk_integral_2d_->scalar_shape() ),
-      scalar_shape_3d_( this->bulk_integral_3d_->scalar_shape() ),
-      scalar_shape_side_1d_( this->edge_integral_1d_->scalar_shape() ),
-      scalar_shape_side_2d_( this->edge_integral_2d_->scalar_shape() ),
-      scalar_shape_side_3d_( this->edge_integral_3d_->scalar_shape() ),
-      grad_scalar_shape_1d_( this->bulk_integral_1d_->grad_scalar_shape() ),
-      grad_scalar_shape_2d_( this->bulk_integral_2d_->grad_scalar_shape() ),
-      grad_scalar_shape_3d_( this->bulk_integral_3d_->grad_scalar_shape() ),
-      grad_scalar_shape_side_1d_( this->edge_integral_1d_->grad_scalar_shape() ),
-      grad_scalar_shape_side_2d_( this->edge_integral_2d_->grad_scalar_shape() ),
-      grad_scalar_shape_side_3d_( this->edge_integral_3d_->grad_scalar_shape() ),
-      conc_join_shape_2d_( FeQJoin<Scalar>( this->coupling_integral_1d_->scalar_join_shape() ) ),
-      conc_join_shape_3d_( FeQJoin<Scalar>( this->coupling_integral_2d_->scalar_join_shape() ) )
-    {}
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmScalar : public PatchFETestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+        AsmScalar(PatchFETestBase *generic, uint quad_order, uint quad_diff_order)
+        : PatchFETestBase::AsmBase<dim>(generic, quad_order, quad_diff_order),
+          //generic_inst_(generic),
+	      scalar_shape_( this->bulk_integral_->scalar_shape() ),
+	      scalar_shape_side_( this->edge_integral_->scalar_shape() ),
+	      grad_scalar_shape_( this->bulk_integral_->grad_scalar_shape() ),
+	      grad_scalar_shape_side_( this->edge_integral_->grad_scalar_shape() ),
+	      conc_join_shape_( FeQJoin<Scalar>( this->coupling_integral_->scalar_join_shape() ) )
+        {}
+
+        /// Destructor
+        virtual ~AsmScalar() {}
+
+
+    	/** Declaration of data members **/
+//        PatchFETestScalar *generic_inst_;                                    ///< pointer to generic object
+        FeQArray<Scalar> scalar_shape_;
+        FeQArray<Scalar> scalar_shape_side_;
+        FeQArray<Vector> grad_scalar_shape_;
+        FeQArray<Vector> grad_scalar_shape_side_;
+        FeQJoin<Scalar> conc_join_shape_;
+    };
+
+
+    PatchFETestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : PatchFETestBase(dh),
+      multidim_asm_(this, quad_order, 0)
+    {
+        element_cache_map_.init(eval_points_);
+    }
 
     ~PatchFETestScalar() {}
+
+    void set_integrals_arrays() {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
+        this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
+        this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
+    }
+
+    void initialize() {
+        set_integrals_arrays();
+
+        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
+        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
+        fe_values_[0].initialize(*multidim_asm_[1_d]->quad_, *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*multidim_asm_[2_d]->quad_, *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*multidim_asm_[3_d]->quad_, *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*multidim_asm_[1_d]->quad_low_, *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*multidim_asm_[2_d]->quad_low_, *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*multidim_asm_[3_d]->quad_low_, *fe_[Dim<3>{}], u_side);
+
+        this->patch_fe_values_.init_finalize();
+    }
 
     void reinit_patch_fe() override {
         START_TIMER("reinit_patch");
@@ -421,10 +429,10 @@ public:
             switch (dh_cell.dim()) {
             case 1:
                 fe_values_[0].reinit(elm);
-                jxw = jxw_1d_(p);
-                det = det_1d_(p);
-                scalar_shape_dof0 = scalar_shape_1d_.shape(0)(p);
-                grad_scalar_dof0 = grad_scalar_shape_1d_.shape(0)(p);
+                jxw = multidim_asm_[1_d]->jxw_(p);
+                det = multidim_asm_[1_d]->det_(p);
+                scalar_shape_dof0 = multidim_asm_[1_d]->scalar_shape_.shape(0)(p);
+                grad_scalar_dof0 = multidim_asm_[1_d]->grad_scalar_shape_.shape(0)(p);
                 jxw_ref = fe_values_[0].JxW(0);
                 det_ref = fe_values_[0].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
@@ -432,12 +440,12 @@ public:
                 break;
             case 2:
                 fe_values_[1].reinit(elm);
-                jxw = jxw_2d_(p);
-                det = det_2d_(p);
-                scalar_shape_dof0 = scalar_shape_2d_.shape(0)(p);
-                scalar_shape_dof1 = scalar_shape_2d_.shape(1)(p);
-                grad_scalar_dof0 = grad_scalar_shape_2d_.shape(0)(p);
-                grad_scalar_dof1 = grad_scalar_shape_2d_.shape(1)(p);
+                jxw = multidim_asm_[2_d]->jxw_(p);
+                det = multidim_asm_[2_d]->det_(p);
+                scalar_shape_dof0 = multidim_asm_[2_d]->scalar_shape_.shape(0)(p);
+                scalar_shape_dof1 = multidim_asm_[2_d]->scalar_shape_.shape(1)(p);
+                grad_scalar_dof0 = multidim_asm_[2_d]->grad_scalar_shape_.shape(0)(p);
+                grad_scalar_dof1 = multidim_asm_[2_d]->grad_scalar_shape_.shape(1)(p);
                 jxw_ref = fe_values_[1].JxW(0);
                 det_ref = fe_values_[1].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
@@ -447,12 +455,12 @@ public:
                 break;
             case 3:
                 fe_values_[2].reinit(elm);
-                jxw = jxw_3d_(p);
-                det = det_3d_(p);
-                scalar_shape_dof0 = scalar_shape_3d_.shape(0)(p);
-                scalar_shape_dof1 = scalar_shape_3d_.shape(1)(p);
-                grad_scalar_dof0 = grad_scalar_shape_3d_.shape(0)(p);
-                grad_scalar_dof1 = grad_scalar_shape_3d_.shape(1)(p);
+                jxw = multidim_asm_[3_d]->jxw_(p);
+                det = multidim_asm_[3_d]->det_(p);
+                scalar_shape_dof0 = multidim_asm_[3_d]->scalar_shape_.shape(0)(p);
+                scalar_shape_dof1 = multidim_asm_[3_d]->scalar_shape_.shape(1)(p);
+                grad_scalar_dof0 = multidim_asm_[3_d]->grad_scalar_shape_.shape(0)(p);
+                grad_scalar_dof1 = multidim_asm_[3_d]->grad_scalar_shape_.shape(1)(p);
                 jxw_ref = fe_values_[2].JxW(0);
                 det_ref = fe_values_[2].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
@@ -483,10 +491,10 @@ public:
             arma::vec3 grad_scalar_ref("0 0 0");
             switch (zero_edge_side.dim()) {
             case 1:
-                jxw = jxw_side_1d_(p);
-                normal_vec = normal_vec_1d_(p);
-                scalar_shape = scalar_shape_side_1d_.shape(0)(p);
-                grad_scalar = grad_scalar_shape_side_1d_.shape(0)(p);
+                jxw = multidim_asm_[1_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[1_d]->normal_vec_(p);
+                scalar_shape = multidim_asm_[1_d]->scalar_shape_side_.shape(0)(p);
+                grad_scalar = multidim_asm_[1_d]->grad_scalar_shape_side_.shape(0)(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
@@ -494,10 +502,10 @@ public:
                 grad_scalar_ref = fe_values_side_[0].shape_grad(0, 0);
                 break;
             case 2:
-                jxw = jxw_side_2d_(p);
-                normal_vec = normal_vec_2d_(p);
-                scalar_shape = scalar_shape_side_2d_.shape(0)(p);
-                grad_scalar = grad_scalar_shape_side_2d_.shape(0)(p);
+                jxw = multidim_asm_[2_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[2_d]->normal_vec_(p);
+                scalar_shape = multidim_asm_[2_d]->scalar_shape_side_.shape(0)(p);
+                grad_scalar = multidim_asm_[2_d]->grad_scalar_shape_side_.shape(0)(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
@@ -505,10 +513,10 @@ public:
                 grad_scalar_ref = fe_values_side_[1].shape_grad(0, 0);
                 break;
             case 3:
-                jxw = jxw_side_3d_(p);
-                normal_vec = normal_vec_3d_(p);
-                scalar_shape = scalar_shape_side_3d_.shape(0)(p);
-                grad_scalar = grad_scalar_shape_side_3d_.shape(0)(p);
+                jxw = multidim_asm_[3_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[3_d]->normal_vec_(p);
+                scalar_shape = multidim_asm_[3_d]->scalar_shape_side_.shape(0)(p);
+                grad_scalar = multidim_asm_[3_d]->grad_scalar_shape_side_.shape(0)(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
@@ -535,20 +543,20 @@ public:
             case 2:
                 fe_values_[0].reinit(cell_lower_dim.elm());
                 fe_values_side_[1].reinit(neighb_side.side());
-                for (uint i_dof=0; i_dof<conc_join_shape_2d_.n_dofs_both(); ++i_dof) {
-                    if (conc_join_shape_2d_.is_high_dim(i_dof)) {
-                        auto result = conc_join_shape_2d_.shape(i_dof)(p_high);
+                for (uint i_dof=0; i_dof<multidim_asm_[1_d]->conc_join_shape_.n_dofs_both(); ++i_dof) {
+                    if (multidim_asm_[1_d]->conc_join_shape_.is_high_dim(i_dof)) {
+                        auto result = multidim_asm_[1_d]->conc_join_shape_.shape(i_dof)(p_high);
                         auto ref = fe_values_side_[1].shape_value(i_dof_high, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
-                        auto result_low = conc_join_shape_2d_.shape(i_dof)(p_low);
+                        auto result_low = multidim_asm_[1_d]->conc_join_shape_.shape(i_dof)(p_low);
                         EXPECT_DOUBLE_EQ( result_low, 0.0 );
                     	i_dof_high++;
                     }
                     else {
-                        auto result = conc_join_shape_2d_.shape(i_dof)(p_low);
+                        auto result = multidim_asm_[1_d]->conc_join_shape_.shape(i_dof)(p_low);
                         auto ref = fe_values_[0].shape_value(i_dof_low, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
-                        auto result_high = conc_join_shape_2d_.shape(i_dof)(p_high);
+                        auto result_high = multidim_asm_[1_d]->conc_join_shape_.shape(i_dof)(p_high);
                         EXPECT_DOUBLE_EQ( result_high, 0.0 );
                         i_dof_low++;
                     }
@@ -557,20 +565,20 @@ public:
             case 3:
                 fe_values_[1].reinit(cell_lower_dim.elm());
                 fe_values_side_[2].reinit(neighb_side.side());
-                for (uint i_dof=0; i_dof<conc_join_shape_3d_.n_dofs_both(); ++i_dof) {
-                    if (conc_join_shape_3d_.is_high_dim(i_dof)) {
-                        auto result = conc_join_shape_3d_.shape(i_dof)(p_high);
+                for (uint i_dof=0; i_dof<multidim_asm_[2_d]->conc_join_shape_.n_dofs_both(); ++i_dof) {
+                    if (multidim_asm_[2_d]->conc_join_shape_.is_high_dim(i_dof)) {
+                        auto result = multidim_asm_[2_d]->conc_join_shape_.shape(i_dof)(p_high);
                         auto ref = fe_values_side_[2].shape_value(i_dof_high, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
-                        auto result_low = conc_join_shape_3d_.shape(i_dof)(p_low);
+                        auto result_low = multidim_asm_[2_d]->conc_join_shape_.shape(i_dof)(p_low);
                         EXPECT_DOUBLE_EQ( result_low, 0.0 );
                         i_dof_high++;
                     }
                     else {
-                   	    auto result = conc_join_shape_3d_.shape(i_dof)(p_low);
+                   	    auto result = multidim_asm_[2_d]->conc_join_shape_.shape(i_dof)(p_low);
                         auto ref = fe_values_[1].shape_value(i_dof_low, 0);
                         EXPECT_DOUBLE_EQ( result, ref );
-                        auto result_high = conc_join_shape_3d_.shape(i_dof)(p_high);
+                        auto result_high = multidim_asm_[2_d]->conc_join_shape_.shape(i_dof)(p_high);
                         EXPECT_DOUBLE_EQ( result_high, 0.0 );
                         i_dof_low++;
                     }
@@ -581,20 +589,7 @@ public:
 
     }
 
-    FeQArray<Scalar> scalar_shape_1d_;
-    FeQArray<Scalar> scalar_shape_2d_;
-    FeQArray<Scalar> scalar_shape_3d_;
-    FeQArray<Scalar> scalar_shape_side_1d_;
-    FeQArray<Scalar> scalar_shape_side_2d_;
-    FeQArray<Scalar> scalar_shape_side_3d_;
-    FeQArray<Vector> grad_scalar_shape_1d_;
-    FeQArray<Vector> grad_scalar_shape_2d_;
-    FeQArray<Vector> grad_scalar_shape_3d_;
-    FeQArray<Vector> grad_scalar_shape_side_1d_;
-    FeQArray<Vector> grad_scalar_shape_side_2d_;
-    FeQArray<Vector> grad_scalar_shape_side_3d_;
-    FeQJoin<Scalar> conc_join_shape_2d_;
-    FeQJoin<Scalar> conc_join_shape_3d_;
+    MixedPtr<AsmScalar, 1> multidim_asm_;  ///< Assembly object
 };
 
 
@@ -603,46 +598,87 @@ public:
  */
 class PatchFETestVector : public PatchFETestBase {
 public:
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmVector : public PatchFETestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+        AsmVector(PatchFETestBase *generic, uint quad_order, uint quad_diff_order)
+        : PatchFETestBase::AsmBase<dim>(generic, quad_order, quad_diff_order),
+//          generic_inst_(generic),
+          vector_shape_( this->bulk_integral_->vector_shape() ),
+          vector_shape_side_( this->edge_integral_->vector_shape() ),
+          grad_vector_shape_( this->bulk_integral_->grad_vector_shape() ),
+          grad_vector_shape_side_( this->edge_integral_->grad_vector_shape() ),
+          sym_grad_( this->bulk_integral_->vector_sym_grad() ),
+          sym_grad_side_( this->edge_integral_->vector_sym_grad() ),
+          divergence_( this->bulk_integral_->vector_divergence() ),
+          divergence_side_( this->edge_integral_->vector_divergence() ),
+          vector_join_( this->coupling_integral_->vector_join_shape() ),
+          vector_join_grad_( this->coupling_integral_->gradient_vector_join_shape() )
+        {}
+
+        /// Destructor
+        virtual ~AsmVector() {}
+
+
+    	/** Declaration of data members **/
+//        PatchFETestVector *generic_inst_;                                    ///< pointer to generic object
+        FeQArray<Vector> vector_shape_;
+        FeQArray<Vector> vector_shape_side_;
+        FeQArray<Tensor> grad_vector_shape_;
+        FeQArray<Tensor> grad_vector_shape_side_;
+        FeQArray<Tensor> sym_grad_;
+        FeQArray<Tensor> sym_grad_side_;
+        FeQArray<Scalar> divergence_;
+        FeQArray<Scalar> divergence_side_;
+        FeQJoin<Vector> vector_join_;
+        FeQJoin<Tensor> vector_join_grad_;
+    };
+
+
 	PatchFETestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : PatchFETestBase(quad_order, 0, dh),
-      vector_shape_1d_( this->bulk_integral_1d_->vector_shape() ),
-      vector_shape_2d_( this->bulk_integral_2d_->vector_shape() ),
-      vector_shape_3d_( this->bulk_integral_3d_->vector_shape() ),
-      vector_shape_side_1d_( this->edge_integral_1d_->vector_shape() ),
-      vector_shape_side_2d_( this->edge_integral_2d_->vector_shape() ),
-      vector_shape_side_3d_( this->edge_integral_3d_->vector_shape() ),
-      grad_vector_shape_1d_( this->bulk_integral_1d_->grad_vector_shape() ),
-      grad_vector_shape_2d_( this->bulk_integral_2d_->grad_vector_shape() ),
-      grad_vector_shape_3d_( this->bulk_integral_3d_->grad_vector_shape() ),
-      grad_vector_shape_side_1d_( this->edge_integral_1d_->grad_vector_shape() ),
-      grad_vector_shape_side_2d_( this->edge_integral_2d_->grad_vector_shape() ),
-      grad_vector_shape_side_3d_( this->edge_integral_3d_->grad_vector_shape() ),
-      sym_grad_1d_( this->bulk_integral_1d_->vector_sym_grad() ),
-      sym_grad_2d_( this->bulk_integral_2d_->vector_sym_grad() ),
-      sym_grad_3d_( this->bulk_integral_3d_->vector_sym_grad() ),
-      sym_grad_side_1d_( this->edge_integral_1d_->vector_sym_grad() ),
-      sym_grad_side_2d_( this->edge_integral_2d_->vector_sym_grad() ),
-      sym_grad_side_3d_( this->edge_integral_3d_->vector_sym_grad() ),
-      divergence_1d_( this->bulk_integral_1d_->vector_divergence() ),
-      divergence_2d_( this->bulk_integral_2d_->vector_divergence() ),
-      divergence_3d_( this->bulk_integral_3d_->vector_divergence() ),
-      divergence_side_1d_( this->edge_integral_1d_->vector_divergence() ),
-      divergence_side_2d_( this->edge_integral_2d_->vector_divergence() ),
-      divergence_side_3d_( this->edge_integral_3d_->vector_divergence() ),
-      vector_join_2d_( this->coupling_integral_1d_->vector_join_shape() ),
-      vector_join_3d_( this->coupling_integral_2d_->vector_join_shape() ),
-      vector_join_grad_2d_( this->coupling_integral_1d_->gradient_vector_join_shape() ),
-      vector_join_grad_3d_( this->coupling_integral_2d_->gradient_vector_join_shape() )
+    : PatchFETestBase(dh),
+      multidim_asm_(this, quad_order, 0)
     {
+		element_cache_map_.init(eval_points_);
+    }
+
+    ~PatchFETestVector() {}
+
+    void set_integrals_arrays() {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
+        this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
+        this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
+    }
+
+    void initialize() {
+        set_integrals_arrays();
+
+        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
+        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
+        fe_values_[0].initialize(*multidim_asm_[1_d]->quad_, *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*multidim_asm_[2_d]->quad_, *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*multidim_asm_[3_d]->quad_, *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*multidim_asm_[1_d]->quad_low_, *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*multidim_asm_[2_d]->quad_low_, *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*multidim_asm_[3_d]->quad_low_, *fe_[Dim<3>{}], u_side);
 	    vec_view_1d_ = &fe_values_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_[1].vector_view(0);
 	    vec_view_3d_ = &fe_values_[2].vector_view(0);
 	    vec_view_side_1d_ = &fe_values_side_[0].vector_view(0);
 	    vec_view_side_2d_ = &fe_values_side_[1].vector_view(0);
 	    vec_view_side_3d_ = &fe_values_side_[2].vector_view(0);
+        this->patch_fe_values_.init_finalize();
     }
-
-    ~PatchFETestVector() {}
 
     void reinit_patch_fe() override {
         START_TIMER("reinit_patch");
@@ -693,11 +729,11 @@ public:
             switch (dh_cell.dim()) {
             case 1:
                 fe_values_[0].reinit(elm);
-                jxw = jxw_1d_(p);
-                vector_shape_dof0 = vector_shape_1d_.shape(0)(p);
-                grad_vector_dof0 = grad_vector_shape_1d_.shape(0)(p);
-                sym_grad_dof0 = sym_grad_1d_.shape(0)(p);
-                div_dof0 = divergence_1d_.shape(0)(p);
+                jxw = multidim_asm_[1_d]->jxw_(p);
+                vector_shape_dof0 = multidim_asm_[1_d]->vector_shape_.shape(0)(p);
+                grad_vector_dof0 = multidim_asm_[1_d]->grad_vector_shape_.shape(0)(p);
+                sym_grad_dof0 = multidim_asm_[1_d]->sym_grad_.shape(0)(p);
+                div_dof0 = multidim_asm_[1_d]->divergence_.shape(0)(p);
                 jxw_ref = fe_values_[0].JxW(0);
                 vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
                 grad_vector_dof0_ref = vec_view_1d_->grad(0, 0);
@@ -706,15 +742,15 @@ public:
                 break;
             case 2:
                 fe_values_[1].reinit(elm);
-                jxw = jxw_2d_(p);
-                vector_shape_dof0 = vector_shape_2d_.shape(0)(p);
-                vector_shape_dof1 = vector_shape_2d_.shape(1)(p);
-                grad_vector_dof0 = grad_vector_shape_2d_.shape(0)(p);
-                grad_vector_dof1 = grad_vector_shape_2d_.shape(1)(p);
-                sym_grad_dof0 = sym_grad_2d_.shape(0)(p);
-                sym_grad_dof1 = sym_grad_2d_.shape(1)(p);
-                div_dof0 = divergence_2d_.shape(0)(p);
-                div_dof1 = divergence_2d_.shape(1)(p);
+                jxw = multidim_asm_[2_d]->jxw_(p);
+                vector_shape_dof0 = multidim_asm_[2_d]->vector_shape_.shape(0)(p);
+                vector_shape_dof1 = multidim_asm_[2_d]->vector_shape_.shape(1)(p);
+                grad_vector_dof0 = multidim_asm_[2_d]->grad_vector_shape_.shape(0)(p);
+                grad_vector_dof1 = multidim_asm_[2_d]->grad_vector_shape_.shape(1)(p);
+                sym_grad_dof0 = multidim_asm_[2_d]->sym_grad_.shape(0)(p);
+                sym_grad_dof1 = multidim_asm_[2_d]->sym_grad_.shape(1)(p);
+                div_dof0 = multidim_asm_[2_d]->divergence_.shape(0)(p);
+                div_dof1 = multidim_asm_[2_d]->divergence_.shape(1)(p);
                 jxw_ref = fe_values_[1].JxW(0);
                 vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
                 vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
@@ -727,15 +763,15 @@ public:
                 break;
             case 3:
                 fe_values_[2].reinit(elm);
-                jxw = jxw_3d_(p);
-                vector_shape_dof0 = vector_shape_3d_.shape(0)(p);
-                vector_shape_dof1 = vector_shape_3d_.shape(1)(p);
-                grad_vector_dof0 = grad_vector_shape_3d_.shape(0)(p);
-                grad_vector_dof1 = grad_vector_shape_3d_.shape(1)(p);
-                sym_grad_dof0 = sym_grad_3d_.shape(0)(p);
-                sym_grad_dof1 = sym_grad_3d_.shape(1)(p);
-                div_dof0 = divergence_3d_.shape(0)(p);
-                div_dof1 = divergence_3d_.shape(1)(p);
+                jxw = multidim_asm_[3_d]->jxw_(p);
+                vector_shape_dof0 = multidim_asm_[3_d]->vector_shape_.shape(0)(p);
+                vector_shape_dof1 = multidim_asm_[3_d]->vector_shape_.shape(1)(p);
+                grad_vector_dof0 = multidim_asm_[3_d]->grad_vector_shape_.shape(0)(p);
+                grad_vector_dof1 = multidim_asm_[3_d]->grad_vector_shape_.shape(1)(p);
+                sym_grad_dof0 = multidim_asm_[3_d]->sym_grad_.shape(0)(p);
+                sym_grad_dof1 = multidim_asm_[3_d]->sym_grad_.shape(1)(p);
+                div_dof0 = multidim_asm_[3_d]->divergence_.shape(0)(p);
+                div_dof1 = multidim_asm_[3_d]->divergence_.shape(1)(p);
                 jxw_ref = fe_values_[2].JxW(0);
                 vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
                 vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
@@ -774,11 +810,11 @@ public:
             double div = 0.0, div_ref = 0.0;
             switch (zero_edge_side.dim()) {
             case 1:
-                jxw = jxw_side_1d_(p);
-                vector_shape = vector_shape_side_1d_.shape(0)(p);
-                grad_vector = grad_vector_shape_side_1d_.shape(0)(p);
-                sym_grad = sym_grad_side_1d_.shape(0)(p);
-                div = divergence_side_1d_.shape(0)(p);
+                jxw = multidim_asm_[1_d]->jxw_side_(p);
+                vector_shape = multidim_asm_[1_d]->vector_shape_side_.shape(0)(p);
+                grad_vector = multidim_asm_[1_d]->grad_vector_shape_side_.shape(0)(p);
+                sym_grad = multidim_asm_[1_d]->sym_grad_side_.shape(0)(p);
+                div = multidim_asm_[1_d]->divergence_side_.shape(0)(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 vector_shape_ref = vec_view_side_1d_->value(0, 0);
@@ -787,11 +823,11 @@ public:
                 div_ref = vec_view_side_1d_->divergence(0, 0);
                 break;
             case 2:
-                jxw = jxw_side_2d_(p);
-                vector_shape = vector_shape_side_2d_.shape(0)(p);
-                grad_vector = grad_vector_shape_side_2d_.shape(0)(p);
-                sym_grad = sym_grad_side_2d_.shape(0)(p);
-                div = divergence_side_2d_.shape(0)(p);
+                jxw = multidim_asm_[2_d]->jxw_side_(p);
+                vector_shape = multidim_asm_[2_d]->vector_shape_side_.shape(0)(p);
+                grad_vector = multidim_asm_[2_d]->grad_vector_shape_side_.shape(0)(p);
+                sym_grad = multidim_asm_[2_d]->sym_grad_side_.shape(0)(p);
+                div = multidim_asm_[2_d]->divergence_side_.shape(0)(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 vector_shape_ref = vec_view_side_2d_->value(0, 0);
@@ -800,11 +836,11 @@ public:
                 div_ref = vec_view_side_2d_->divergence(0, 0);
                 break;
             case 3:
-                jxw = jxw_side_3d_(p);
-                vector_shape = vector_shape_side_3d_.shape(0)(p);
-                grad_vector = grad_vector_shape_side_3d_.shape(0)(p);
-                sym_grad = sym_grad_side_3d_.shape(0)(p);
-                div = divergence_side_3d_.shape(0)(p);
+                jxw = multidim_asm_[3_d]->jxw_side_(p);
+                vector_shape = multidim_asm_[3_d]->vector_shape_side_.shape(0)(p);
+                grad_vector = multidim_asm_[3_d]->grad_vector_shape_side_.shape(0)(p);
+                sym_grad = multidim_asm_[3_d]->sym_grad_side_.shape(0)(p);
+                div = multidim_asm_[3_d]->divergence_side_.shape(0)(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 vector_shape_ref = vec_view_side_3d_->value(0, 0);
@@ -836,32 +872,32 @@ public:
             case 2:
                 fe_values_[0].reinit(cell_lower_dim.elm());
                 fe_values_side_[1].reinit(neighb_side.side());
-                for (uint i_dof=0; i_dof<vector_join_2d_.n_dofs_both(); ++i_dof) {
-                    if (vector_join_2d_.is_high_dim(i_dof)) {
-                        auto result = vector_join_2d_.shape(i_dof)(p_high);
+                for (uint i_dof=0; i_dof<multidim_asm_[1_d]->vector_join_.n_dofs_both(); ++i_dof) {
+                    if (multidim_asm_[1_d]->vector_join_.is_high_dim(i_dof)) {
+                        auto result = multidim_asm_[1_d]->vector_join_.shape(i_dof)(p_high);
                         auto ref = vec_view_side_2d_->value(i_dof_high, 1);
                         EXPECT_ARMA_EQ( result, ref );
-                        auto result_low = vector_join_2d_.shape(i_dof)(p_low);
+                        auto result_low = multidim_asm_[1_d]->vector_join_.shape(i_dof)(p_low);
                         EXPECT_ARMA_EQ( result_low, arma_zero_vec );
 
-                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_high);
+                        auto grad_result = multidim_asm_[1_d]->vector_join_grad_.shape(i_dof)(p_high);
                         auto grad_ref = vec_view_side_2d_->grad(i_dof_high, 1);
                         EXPECT_ARMA_EQ( grad_result, grad_ref );
-                        auto grad_result_low = vector_join_grad_2d_.shape(i_dof)(p_low);
+                        auto grad_result_low = multidim_asm_[1_d]->vector_join_grad_.shape(i_dof)(p_low);
                         EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
                         i_dof_high++;
                     }
                     else {
-                        auto result = vector_join_2d_.shape(i_dof)(p_low);
+                        auto result = multidim_asm_[1_d]->vector_join_.shape(i_dof)(p_low);
                         auto ref = vec_view_1d_->value(i_dof_low, 1);
                         EXPECT_ARMA_EQ( result, ref );
-                        auto result_high = vector_join_2d_.shape(i_dof)(p_high);
+                        auto result_high = multidim_asm_[1_d]->vector_join_.shape(i_dof)(p_high);
                         EXPECT_ARMA_EQ( result_high, arma_zero_vec );
 
-                        auto grad_result = vector_join_grad_2d_.shape(i_dof)(p_low);
+                        auto grad_result = multidim_asm_[1_d]->vector_join_grad_.shape(i_dof)(p_low);
                         auto grad_ref = vec_view_1d_->grad(i_dof_low, 1);
                         EXPECT_ARMA_EQ( grad_result, grad_ref );
-                        auto grad_result_high = vector_join_grad_2d_.shape(i_dof)(p_high);
+                        auto grad_result_high = multidim_asm_[1_d]->vector_join_grad_.shape(i_dof)(p_high);
                         EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
                         i_dof_low++;
                     }
@@ -870,32 +906,32 @@ public:
             case 3:
                 fe_values_[1].reinit(cell_lower_dim.elm());
                 fe_values_side_[2].reinit(neighb_side.side());
-                for (uint i_dof=0; i_dof<vector_join_3d_.n_dofs_both(); ++i_dof) {
-                    if (vector_join_3d_.is_high_dim(i_dof)) {
-                        auto result = vector_join_3d_.shape(i_dof)(p_high);
+                for (uint i_dof=0; i_dof<multidim_asm_[2_d]->vector_join_.n_dofs_both(); ++i_dof) {
+                    if (multidim_asm_[2_d]->vector_join_.is_high_dim(i_dof)) {
+                        auto result = multidim_asm_[2_d]->vector_join_.shape(i_dof)(p_high);
                         auto ref = vec_view_side_3d_->value(i_dof_high, 1);
                         EXPECT_ARMA_EQ( result, ref );
-                        auto result_low = vector_join_3d_.shape(i_dof)(p_low);
+                        auto result_low = multidim_asm_[2_d]->vector_join_.shape(i_dof)(p_low);
                         EXPECT_ARMA_EQ( result_low, arma_zero_vec );
 
-                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_high);
+                        auto grad_result = multidim_asm_[2_d]->vector_join_grad_.shape(i_dof)(p_high);
                         auto grad_ref = vec_view_side_3d_->grad(i_dof_high, 1);
                         EXPECT_ARMA_EQ( grad_result, grad_ref );
-                        auto grad_result_low = vector_join_grad_3d_.shape(i_dof)(p_low);
+                        auto grad_result_low = multidim_asm_[2_d]->vector_join_grad_.shape(i_dof)(p_low);
                         EXPECT_ARMA_EQ( grad_result_low, arma_zero_mat );
                         i_dof_high++;
                     }
                     else {
-                        auto result = vector_join_3d_.shape(i_dof)(p_low);
+                        auto result = multidim_asm_[2_d]->vector_join_.shape(i_dof)(p_low);
                         auto ref = vec_view_2d_->value(i_dof_low, 1);
                         EXPECT_ARMA_EQ( result, ref );
-                        auto result_high = vector_join_3d_.shape(i_dof)(p_high);
+                        auto result_high = multidim_asm_[2_d]->vector_join_.shape(i_dof)(p_high);
                         EXPECT_ARMA_EQ( result_high, arma_zero_vec );
 
-                        auto grad_result = vector_join_grad_3d_.shape(i_dof)(p_low);
+                        auto grad_result = multidim_asm_[2_d]->vector_join_grad_.shape(i_dof)(p_low);
                         auto grad_ref = vec_view_2d_->grad(i_dof_low, 1);
                         EXPECT_ARMA_EQ( grad_result, grad_ref );
-                        auto grad_result_high = vector_join_grad_3d_.shape(i_dof)(p_high);
+                        auto grad_result_high = multidim_asm_[2_d]->vector_join_grad_.shape(i_dof)(p_high);
                         EXPECT_ARMA_EQ( grad_result_high, arma_zero_mat );
                         i_dof_low++;
                     }
@@ -906,6 +942,8 @@ public:
 
     }
 
+    MixedPtr<AsmVector, 1> multidim_asm_;  ///< Assembly object
+
     ///< Vector view in cell calculation.
     const FEValuesViews::Vector<3> * vec_view_1d_;
     const FEValuesViews::Vector<3> * vec_view_2d_;
@@ -914,35 +952,6 @@ public:
     const FEValuesViews::Vector<3> * vec_view_side_1d_;
     const FEValuesViews::Vector<3> * vec_view_side_2d_;
     const FEValuesViews::Vector<3> * vec_view_side_3d_;
-
-    FeQArray<Vector> vector_shape_1d_;
-    FeQArray<Vector> vector_shape_2d_;
-    FeQArray<Vector> vector_shape_3d_;
-    FeQArray<Vector> vector_shape_side_1d_;
-    FeQArray<Vector> vector_shape_side_2d_;
-    FeQArray<Vector> vector_shape_side_3d_;
-    FeQArray<Tensor> grad_vector_shape_1d_;
-    FeQArray<Tensor> grad_vector_shape_2d_;
-    FeQArray<Tensor> grad_vector_shape_3d_;
-    FeQArray<Tensor> grad_vector_shape_side_1d_;
-    FeQArray<Tensor> grad_vector_shape_side_2d_;
-    FeQArray<Tensor> grad_vector_shape_side_3d_;
-    FeQArray<Tensor> sym_grad_1d_;
-    FeQArray<Tensor> sym_grad_2d_;
-    FeQArray<Tensor> sym_grad_3d_;
-    FeQArray<Tensor> sym_grad_side_1d_;
-    FeQArray<Tensor> sym_grad_side_2d_;
-    FeQArray<Tensor> sym_grad_side_3d_;
-    FeQArray<Scalar> divergence_1d_;
-    FeQArray<Scalar> divergence_2d_;
-    FeQArray<Scalar> divergence_3d_;
-    FeQArray<Scalar> divergence_side_1d_;
-    FeQArray<Scalar> divergence_side_2d_;
-    FeQArray<Scalar> divergence_side_3d_;
-    FeQJoin<Vector> vector_join_2d_;
-    FeQJoin<Vector> vector_join_3d_;
-    FeQJoin<Tensor> vector_join_grad_2d_;
-    FeQJoin<Tensor> vector_join_grad_3d_;
 };
 
 
@@ -951,24 +960,71 @@ public:
  */
 class PatchFETestQuadOrders : public PatchFETestBase {
 public:
-    PatchFETestQuadOrders(unsigned int quad_order_1, unsigned int quad_order_2, std::shared_ptr<DOFHandlerMultiDim> dh_1, std::shared_ptr<DOFHandlerMultiDim> dh_2)
-    : PatchFETestBase(quad_order_1, quad_order_2, dh_1), fe_values_diff_order_(3),
-      jxw_diff_order_1d_( this->bulk_integral_diff_order_1d_->JxW() ),
-      jxw_diff_order_2d_( this->bulk_integral_diff_order_2d_->JxW() ),
-      jxw_diff_order_3d_( this->bulk_integral_diff_order_3d_->JxW() ),
-      vector_shape_diff_order_1d_( this->bulk_integral_diff_order_1d_->vector_shape() ),
-      vector_shape_diff_order_2d_( this->bulk_integral_diff_order_2d_->vector_shape() ),
-      vector_shape_diff_order_3d_( this->bulk_integral_diff_order_3d_->vector_shape() )
-	{
-        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
-        fe_values_diff_order_[0].initialize(*quad_diff_order_1_, *fe_[Dim<1>{}], u);
-        fe_values_diff_order_[1].initialize(*quad_diff_order_2_, *fe_[Dim<2>{}], u);
-        fe_values_diff_order_[2].initialize(*quad_diff_order_3_, *fe_[Dim<3>{}], u);
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmQuadOrders : public PatchFETestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+        AsmQuadOrders(PatchFETestBase *generic, uint quad_order, uint quad_diff_order)
+        : PatchFETestBase::AsmBase<dim>(generic, quad_order, quad_diff_order),
+          //generic_inst_(generic),
+	      jxw_diff_order_( this->bulk_integral_diff_order_->JxW() ),
+	      vector_shape_diff_order_( this->bulk_integral_diff_order_->vector_shape() )
+        {}
 
+        /// Destructor
+        virtual ~AsmQuadOrders() {}
+
+
+    	/** Declaration of data members **/
+//        PatchFETestQuadOrders *generic_inst_;                                    ///< pointer to generic object
+        FeQ<Scalar> jxw_diff_order_;
+        FeQArray<Vector> vector_shape_diff_order_;
+    };
+
+
+    PatchFETestQuadOrders(unsigned int quad_order_1, unsigned int quad_order_2, std::shared_ptr<DOFHandlerMultiDim> dh_1, std::shared_ptr<DOFHandlerMultiDim> dh_2)
+    : PatchFETestBase(dh_1), fe_values_diff_order_(3),
+      multidim_asm_(this, quad_order_1, quad_order_2)
+    {
+        element_cache_map_.init(eval_points_);
+    }
+
+    void set_integrals_arrays() {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
+        this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
+        this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
+    }
+
+    void initialize() {
+        set_integrals_arrays();
+
+        UpdateFlags u = update_values | update_inverse_jacobians | update_JxW_values | update_quadrature_points | update_volume_elements | update_gradients;
+        UpdateFlags u_side = update_values | update_inverse_jacobians | update_side_JxW_values | update_normal_vectors | update_quadrature_points | update_gradients;
+        fe_values_[0].initialize(*multidim_asm_[1_d]->quad_, *fe_[Dim<1>{}], u);
+        fe_values_[1].initialize(*multidim_asm_[2_d]->quad_, *fe_[Dim<2>{}], u);
+        fe_values_[2].initialize(*multidim_asm_[3_d]->quad_, *fe_[Dim<3>{}], u);
+        fe_values_side_[0].initialize(*multidim_asm_[1_d]->quad_low_, *fe_[Dim<1>{}], u_side);
+        fe_values_side_[1].initialize(*multidim_asm_[2_d]->quad_low_, *fe_[Dim<2>{}], u_side);
+        fe_values_side_[2].initialize(*multidim_asm_[3_d]->quad_low_, *fe_[Dim<3>{}], u_side);
+
+        fe_values_diff_order_[0].initialize(*multidim_asm_[1_d]->quad_diff_order_, *fe_[Dim<1>{}], u);
+        fe_values_diff_order_[1].initialize(*multidim_asm_[2_d]->quad_diff_order_, *fe_[Dim<2>{}], u);
+        fe_values_diff_order_[2].initialize(*multidim_asm_[3_d]->quad_diff_order_, *fe_[Dim<3>{}], u);
         vec_view_1d_ = &fe_values_diff_order_[0].vector_view(0);
 	    vec_view_2d_ = &fe_values_diff_order_[1].vector_view(0);
 	    vec_view_3d_ = &fe_values_diff_order_[2].vector_view(0);
-	}
+
+	    this->patch_fe_values_.init_finalize();
+    }
 
     void reinit_patch_fe() override {
         START_TIMER("reinit_patch");
@@ -1046,20 +1102,20 @@ public:
                 auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
                 switch (dh_cell.dim()) {
                 case 1:
-                    jxw = jxw_1d_(p);
-                    det = det_1d_(p);
+                    jxw = multidim_asm_[1_d]->jxw_(p);
+                    det = multidim_asm_[1_d]->det_(p);
                     jxw_ref = fe_values_[0].JxW(0);
                     det_ref = fe_values_[0].determinant(0);
                     break;
                 case 2:
-                    jxw = jxw_2d_(p);
-                    det = det_2d_(p);
+                    jxw = multidim_asm_[2_d]->jxw_(p);
+                    det = multidim_asm_[2_d]->det_(p);
                     jxw_ref = fe_values_[1].JxW(0);
                     det_ref = fe_values_[1].determinant(0);
                     break;
                 case 3:
-                    jxw = jxw_3d_(p);
-                    det = det_3d_(p);
+                    jxw = multidim_asm_[3_d]->jxw_(p);
+                    det = multidim_asm_[3_d]->det_(p);
                     jxw_ref = fe_values_[2].JxW(0);
                     det_ref = fe_values_[2].determinant(0);
                     break;
@@ -1072,23 +1128,23 @@ public:
             for (auto pt : bulk_integrals_diff_order_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_)) {
                 switch (dh_cell.dim()) {
                 case 1:
-                    jxw = jxw_diff_order_1d_(pt);
-                    vector_shape_dof0 = vector_shape_diff_order_1d_.shape(0)(pt);
+                    jxw = multidim_asm_[1_d]->jxw_diff_order_(pt);
+                    vector_shape_dof0 = multidim_asm_[1_d]->vector_shape_diff_order_.shape(0)(pt);
                     jxw_ref = fe_values_diff_order_[0].JxW(k);
                     vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
                     break;
                 case 2:
-                    jxw = jxw_diff_order_2d_(pt);
-                    vector_shape_dof0 = vector_shape_diff_order_2d_.shape(0)(pt);
-                    vector_shape_dof1 = vector_shape_diff_order_2d_.shape(1)(pt);
+                    jxw = multidim_asm_[2_d]->jxw_diff_order_(pt);
+                    vector_shape_dof0 = multidim_asm_[2_d]->vector_shape_diff_order_.shape(0)(pt);
+                    vector_shape_dof1 = multidim_asm_[2_d]->vector_shape_diff_order_.shape(1)(pt);
                     jxw_ref = fe_values_diff_order_[1].JxW(k);
                     vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
                     vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
                     break;
                 case 3:
-                    jxw = jxw_diff_order_3d_(pt);
-                    vector_shape_dof0 = vector_shape_diff_order_3d_.shape(0)(pt);
-                    vector_shape_dof1 = vector_shape_diff_order_3d_.shape(1)(pt);
+                    jxw = multidim_asm_[3_d]->jxw_diff_order_(pt);
+                    vector_shape_dof0 = multidim_asm_[3_d]->vector_shape_diff_order_.shape(0)(pt);
+                    vector_shape_dof1 = multidim_asm_[3_d]->vector_shape_diff_order_.shape(1)(pt);
                     jxw_ref = fe_values_diff_order_[2].JxW(k);
                     vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
                     vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
@@ -1112,22 +1168,22 @@ public:
             arma::vec3 normal_vec_ref = {0.0, 0.0, 0.0};
             switch (zero_edge_side.dim()) {
             case 1:
-                jxw = jxw_side_1d_(p);
-                normal_vec = normal_vec_1d_(p);
+                jxw = multidim_asm_[1_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[1_d]->normal_vec_(p);
                 fe_values_side_[0].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[0].JxW(0);
                 normal_vec_ref = fe_values_side_[0].normal_vector(0);
                 break;
             case 2:
-                jxw = jxw_side_2d_(p);
-                normal_vec = normal_vec_2d_(p);
+                jxw = multidim_asm_[2_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[2_d]->normal_vec_(p);
                 fe_values_side_[1].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[1].JxW(0);
                 normal_vec_ref = fe_values_side_[1].normal_vector(0);
                 break;
             case 3:
-                jxw = jxw_side_3d_(p);
-                normal_vec = normal_vec_3d_(p);
+                jxw = multidim_asm_[3_d]->jxw_side_(p);
+                normal_vec = multidim_asm_[3_d]->normal_vec_(p);
                 fe_values_side_[2].reinit(zero_edge_side.side());
                 jxw_ref = fe_values_side_[2].JxW(0);
                 normal_vec_ref = fe_values_side_[2].normal_vector(0);
@@ -1138,19 +1194,14 @@ public:
         }
     }
 
+    MixedPtr<AsmQuadOrders, 1> multidim_asm_;  ///< Assembly object
+
     std::vector<FEValues<3>> fe_values_diff_order_;                           ///< FeValues object of elements of dim 1,2,3
 
     ///< Vector view in cell calculation.
     const FEValuesViews::Vector<3> * vec_view_1d_;
     const FEValuesViews::Vector<3> * vec_view_2d_;
     const FEValuesViews::Vector<3> * vec_view_3d_;
-
-    FeQ<Scalar> jxw_diff_order_1d_;
-    FeQ<Scalar> jxw_diff_order_2d_;
-    FeQ<Scalar> jxw_diff_order_3d_;
-    FeQArray<Vector> vector_shape_diff_order_1d_;
-    FeQArray<Vector> vector_shape_diff_order_2d_;
-    FeQArray<Vector> vector_shape_diff_order_3d_;
 };
 
 
@@ -1208,7 +1259,7 @@ public:
 
 /// Complete test with FE scalar operations
 void compare_evaluation_func_scalar(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
-	MixedPtr<FE_P_disc> fe(quad_order);
+    MixedPtr<FE_P_disc> fe(quad_order);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
