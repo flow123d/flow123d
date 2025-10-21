@@ -152,19 +152,23 @@ public:
 
     /** Following methods are used during update of patch. **/
 
-    /// Resize tables of patch_point_vals_
-    void resize_tables() {
+    /// Resize tables of patch_point_vals_ - TODO replace in unit test remove
+    void resize_tables(std::shared_ptr<EvalPoints> eval_points) {
         for (uint i=0; i<spacedim; ++i) {
-            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
-            if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(*patch_fe_data_.patch_arena_);
+            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(eval_points->get_max_bulk_quad_size(i+1), *patch_fe_data_.patch_arena_);
+            if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(eval_points->get_max_bulk_quad_size(i+1), *patch_fe_data_.patch_arena_);
         }
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
     /// Add elements, sides and quadrature points registered on patch
     template <unsigned int dim>
-    inline void add_patch_points(const DimIntegrals<dim> &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map) {
-        // add bulk points
+    inline void add_patch_points(const DimIntegrals<dim> &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
+        if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim-1].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
+        if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim-1].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
+        if (dim==3) std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
+
+    	// add bulk points
     	for (auto integral_it : integrals.bulk_) { // TODO check order of loops, maybe must be swapped
             for (unsigned int i=0; i<integral_data.bulk_.permanent_size(); ++i) {
                 if ( integral_data.bulk_[i].subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
@@ -364,7 +368,6 @@ public:
     void make_permanent_ppv_data() {
         for (uint i_dim=0; i_dim<3; ++i_dim)
             for (uint i_domain=0; i_domain<2; ++i_domain) {
-                patch_point_vals_[i_domain][i_dim].n_points_.make_permanent();
                 patch_point_vals_[i_domain][i_dim].n_mesh_items_.make_permanent();
             }
     }

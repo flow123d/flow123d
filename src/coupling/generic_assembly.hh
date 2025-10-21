@@ -371,7 +371,7 @@ private:
     }
 
     void patch_reinit() {
-    	asm_internals_.fe_values_.resize_tables();
+//        asm_internals_.fe_values_.resize_tables();
 //        if (bulk_integral_data_.permanent_size() > 0) {
 //            multidim_assembly_[1_d]->add_patch_bulk_points(bulk_integral_data_);
 //            multidim_assembly_[2_d]->add_patch_bulk_points(bulk_integral_data_);
@@ -391,9 +391,9 @@ private:
 //            multidim_assembly_[2_d]->add_patch_coupling_integrals(coupling_integral_data_);
 //            multidim_assembly_[3_d]->add_patch_coupling_integrals(coupling_integral_data_);
 //        }
-        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), multidim_assembly_[1_d]->integral_data(), &asm_internals_.element_cache_map_);
-        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), multidim_assembly_[2_d]->integral_data(), &asm_internals_.element_cache_map_);
-        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), multidim_assembly_[3_d]->integral_data(), &asm_internals_.element_cache_map_);
+        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), multidim_assembly_[3_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), multidim_assembly_[2_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), multidim_assembly_[1_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
 
         asm_internals_.fe_values_.reinit_patch();
     }
@@ -436,7 +436,6 @@ private:
 //                    for (auto p : integrals_.coupling_[cell.dim()-1]->points(ngh_side, &asm_internals_.element_cache_map_) ) {
 //                        auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
 //                        asm_internals_.element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-//                        ++ppv_low.n_points_;
 //                    }
 //                    break;
 //                }
@@ -450,7 +449,6 @@ private:
 //                unsigned int reg_idx_high = ngh_side.element().region_idx().idx();
 //                for (auto p : coupling_integral->points(ngh_side, &asm_internals_.element_cache_map_) ) {
 //                    asm_internals_.element_cache_map_.add_eval_point(reg_idx_high, ngh_side.elem_idx(), p.eval_point_idx(), ngh_side.cell().local_idx());
-//                    ++ppv_high.n_points_;
 //                }
 //            }
 //        }
@@ -470,7 +468,6 @@ private:
 //        for (uint i=uint( asm_internals_.eval_points_->subset_begin(cell.dim(), subset_idx) );
 //                  i<uint( asm_internals_.eval_points_->subset_end(cell.dim(), subset_idx) ); ++i) {
 //            asm_internals_.element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
-//            ++ppv.n_points_;
 //        }
 //    }
 //
@@ -486,7 +483,6 @@ private:
 //            ++ppv.n_mesh_items_;
 //            for (auto p : integrals_.edge_[dim-1]->points(edge_side, &asm_internals_.element_cache_map_) ) {
 //                asm_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
-//                ++ppv.n_points_;
 //            }
 //        }
 //    }
@@ -501,7 +497,6 @@ private:
 //        ++ppv.n_mesh_items_;
 //        for (auto p : integrals_.boundary_[bdr_side.dim()-1]->points(bdr_side, &asm_internals_.element_cache_map_) ) {
 //            asm_internals_.element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-//            ++ppv.n_points_;
 //
 //        	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
 //        	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();

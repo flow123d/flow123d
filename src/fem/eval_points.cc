@@ -85,6 +85,24 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
     return map_it->second;
 }
 
+uint EvalPoints::get_max_bulk_quad_size(unsigned int dim) const {
+    uint max_qsize=0;
+    for (auto integral_it : bulk_integrals_)
+        if (integral_it.second->dim() == dim)
+            if (integral_it.second->quad()->size() > max_qsize)
+                max_qsize = integral_it.second->quad()->size();
+    return max_qsize;
+}
+
+/// Return maximal size of quadrature of giben dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
+uint EvalPoints::get_max_side_quad_size(unsigned int dim) const {
+    uint max_qsize=0;
+    for (auto integral_it : edge_integrals_)
+        if (integral_it.second->dim() == dim)
+            if (integral_it.second->quad()->size() > max_qsize)
+                max_qsize = integral_it.second->quad()->size();
+    return max_qsize;
+}
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)

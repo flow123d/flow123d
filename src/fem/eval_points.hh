@@ -119,6 +119,12 @@ public:
             dim_eval_points_[i].clear();
     }
 
+    /// Return maximal size of quadrature of giben dimension of bulk integral (Bulk, Coupling /lower-dim/)
+    uint get_max_bulk_quad_size(unsigned int dim) const;
+
+    /// Return maximal size of quadrature of giben dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
+    uint get_max_side_quad_size(unsigned int dim) const;
+
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {

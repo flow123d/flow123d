@@ -375,7 +375,6 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_volume_integrals(const DHCellAccessor &cell) {
-        auto &ppv = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it.second->get_subset_idx();
             integral_data_.bulk_.emplace_back(cell, subset_idx);
@@ -386,7 +385,6 @@ protected:
             for (uint i=uint( asm_internals_->eval_points_->subset_begin(dim, subset_idx) );
                       i<uint( asm_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
-                ++ppv.n_points_;
             }
         }
     }
@@ -426,7 +424,6 @@ protected:
             ++ppv.n_mesh_items_;
             for (auto p : integral->points(bdr_side) ) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
-                ++ppv.n_points_;
 
             	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
             	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
@@ -457,7 +454,6 @@ protected:
                     for (auto p : coupling_integral->points(ngh_side) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
                         asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
-                        ++ppv_low.n_points_;
                     }
                     break;
                 }
@@ -482,7 +478,6 @@ protected:
         unsigned int reg_idx = cell_side.element().region_idx().idx();
         for (auto p : integral->points(cell_side) ) {
             asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
-            ++ppv.n_points_;
         }
     }
 

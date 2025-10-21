@@ -171,7 +171,6 @@ public:
         bulk_integral_data_.emplace_back(cell, subset_idx);
         uint dim = cell.dim();
         auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dim);
-        ppv_bulk.n_points_ += eval_points_->subset_size(dim, subset_idx); // add rows for bulk points to table
 
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -194,7 +193,6 @@ public:
                 for( DHCellSide edge_side : range ) {
                     uint dim = edge_side.dim();
                     ++ppv_edge.n_mesh_items_;
-                    ppv_edge.n_points_ += eval_points_->subset_size(dim, subset_idx) / (dim+1); // add rows for side points to table
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integral->points(edge_side, &element_cache_map_) ) {
                         element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
@@ -231,7 +229,7 @@ public:
 //    }
 
     void update_patch() {
-        patch_fe_values_.resize_tables();
+        patch_fe_values_.resize_tables(eval_points_);
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -393,7 +391,12 @@ public:
         END_TIMER("reinit_patch");
     }
 
-    void test_evaluation(bool print_tables=false) {
+    void test_evaluation(unsigned int i_run, bool print_tables=false) {
+        std::vector< std::vector<double> > ref_jxw = {
+            { 1.73205080756887720, 0.94280904158206336, 0.94280904158206336, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331 },
+	        { 0.96225044864937626, 0.63181854741421128, 0.63181854741421128, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927 }
+        };
+
         for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
             auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
             ++ppv_bulk.n_mesh_items_;
@@ -418,8 +421,7 @@ public:
         for(auto dh_cell : dh_->local_range() ) {
             ElementAccessor<3> elm = dh_cell.elm();
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
-            double jxw = 0.0, jxw_ref = 0.0;
-            double det = 0.0, det_ref = 0.0;
+            double jxw = 0.0, det = 0.0, det_ref = 0.0;
             double scalar_shape_dof0 = 0.0, scalar_shape_dof0_ref = 0.0;
             double scalar_shape_dof1 = 0.0, scalar_shape_dof1_ref = 0.0;
             arma::vec3 grad_scalar_dof0("0 0 0");
@@ -433,7 +435,6 @@ public:
                 det = multidim_asm_[1_d]->det_(p);
                 scalar_shape_dof0 = multidim_asm_[1_d]->scalar_shape_.shape(0)(p);
                 grad_scalar_dof0 = multidim_asm_[1_d]->grad_scalar_shape_.shape(0)(p);
-                jxw_ref = fe_values_[0].JxW(0);
                 det_ref = fe_values_[0].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
                 grad_scalar_dof0_ref = fe_values_[0].shape_grad(0, 0);
@@ -446,7 +447,6 @@ public:
                 scalar_shape_dof1 = multidim_asm_[2_d]->scalar_shape_.shape(1)(p);
                 grad_scalar_dof0 = multidim_asm_[2_d]->grad_scalar_shape_.shape(0)(p);
                 grad_scalar_dof1 = multidim_asm_[2_d]->grad_scalar_shape_.shape(1)(p);
-                jxw_ref = fe_values_[1].JxW(0);
                 det_ref = fe_values_[1].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
                 scalar_shape_dof1_ref = fe_values_[1].shape_value(1, 0);
@@ -461,7 +461,6 @@ public:
                 scalar_shape_dof1 = multidim_asm_[3_d]->scalar_shape_.shape(1)(p);
                 grad_scalar_dof0 = multidim_asm_[3_d]->grad_scalar_shape_.shape(0)(p);
                 grad_scalar_dof1 = multidim_asm_[3_d]->grad_scalar_shape_.shape(1)(p);
-                jxw_ref = fe_values_[2].JxW(0);
                 det_ref = fe_values_[2].determinant(0);
                 scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
                 scalar_shape_dof1_ref = fe_values_[2].shape_value(1, 0);
@@ -469,7 +468,8 @@ public:
                 grad_scalar_dof1_ref = fe_values_[2].shape_grad(1, 0);
                 break;
             }
-            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
+            EXPECT_DOUBLE_EQ( jxw, ref_jxw[i_run][dh_cell.elm_idx()] );
+//            std::cout << "Elem: " << dh_cell.elm_idx() << ", dim " << dh_cell.dim() << ", det " << det << ", ref " << det_ref << std::endl;
             EXPECT_DOUBLE_EQ( det, det_ref );
             EXPECT_DOUBLE_EQ( scalar_shape_dof0, scalar_shape_dof0_ref );
             EXPECT_DOUBLE_EQ( scalar_shape_dof1, scalar_shape_dof1_ref );
@@ -1033,7 +1033,7 @@ public:
     }
 
     void update_patch() {
-        patch_fe_values_.resize_tables();
+        patch_fe_values_.resize_tables(this->eval_points_);
         for (unsigned int i=0; i<bulk_integral_data_.permanent_size(); ++i) {
             uint dim = bulk_integral_data_[i].cell.dim();
             uint element_patch_idx = element_cache_map_.position_in_cache(bulk_integral_data_[i].cell.elm_idx());
@@ -1258,17 +1258,18 @@ public:
 
 
 /// Complete test with FE scalar operations
-void compare_evaluation_func_scalar(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
-    MixedPtr<FE_P_disc> fe(quad_order);
+void compare_evaluation_func_scalar(Mesh* mesh, unsigned int i_run, bool print_fa_data = false) {
+    std::vector<uint> quad_orders = {1, 2};
+    MixedPtr<FE_P_disc> fe(quad_orders[i_run]);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
 
-    PatchFETestScalar patch_fe(quad_order, dh);
+    PatchFETestScalar patch_fe(quad_orders[i_run], dh);
     patch_fe.initialize();
-    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.test_evaluation(i_run, print_fa_data);
     patch_fe.reset();
-    patch_fe.test_evaluation();
+    patch_fe.test_evaluation(i_run);
 }
 
 /// Complete test with FE vector operations
@@ -1313,8 +1314,8 @@ TEST(PatchFeTest, complete_evaluation) {
     Mesh* mesh = mesh_full_constructor(input_str);
 
     // two tests with different quad_order and Scalar / Vector FE operations
-    compare_evaluation_func_scalar(mesh, 1, true);
-    compare_evaluation_func_scalar(mesh, 2);
+    compare_evaluation_func_scalar(mesh, 0, true);
+    compare_evaluation_func_scalar(mesh, 1);
     compare_evaluation_func_vector(mesh, 1, true);
     std::cout << " - Different quad orders test -----------------------------" << std::endl;
     compare_evaluation_diff_orders(mesh, 0, 2, true);
