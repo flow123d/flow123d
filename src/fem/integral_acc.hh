@@ -554,7 +554,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_elem_patch_op< Op::NormalVec<qdim, 3> >());
 	}
 
 	/// Create side accessor of coords entity
@@ -782,7 +782,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(factory_high_.template make_patch_op< Op::NormalVec<qdim+1, 3> >());
+        return ElQ<Vector>(factory_high_.template make_elem_patch_op< Op::NormalVec<qdim+1, 3> >());
 	}
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
@@ -976,7 +976,7 @@ public:
      */
 	inline ElQ<Vector> normal_vector()
 	{
-        return ElQ<Vector>(factory_.template make_patch_op< Op::NormalVec<qdim, 3> >());
+        return ElQ<Vector>(factory_.template make_elem_patch_op< Op::NormalVec<qdim, 3> >());
 	}
 
 	/// Create side accessor of coords entity

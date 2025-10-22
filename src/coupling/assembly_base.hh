@@ -232,7 +232,7 @@ public:
             }
         }
 
-        add_coupling_integrala(cell);
+        add_coupling_integrals(cell);
 
         if (asm_internals_->element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
             integral_data_.bulk_.revert_temporary();
@@ -438,7 +438,7 @@ protected:
      *
      * Method is used internally in AssemblyBase
      */
-    inline void add_coupling_integrala(const DHCellAccessor &cell) {
+    inline void add_coupling_integrals(const DHCellAccessor &cell) {
         if (dim==3) return;
         auto &ppv_low = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
         auto &ppv_high = asm_internals_->fe_values_.ppv(side_domain, cell.dim()+1);
