@@ -307,7 +307,7 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get() {
+    PatchOp<spacedim>* get_for_elem_quad() {
         return this->template get<OpType, dim>( this->element_quad(dim) );
     }
 

@@ -42,6 +42,8 @@ template <unsigned int qdim> class CouplingIntegralAcc;
 template <unsigned int qdim> class BoundaryIntegralAcc;
 
 
+namespace internal {
+
 /**
  * Base integral class holds common data members and methods.
  */
@@ -74,20 +76,18 @@ protected:
 };
 
 /**
- * Temporary class. Parent of all integral accessor.
- *
- * Will be merged with BaseIntegral
+ * Provides methods that allows construction of operations..
  */
 template<unsigned int dim>
-class FactoryBase
+class IntegralFactory
 {
 public:
     // Default constructor
-    FactoryBase() : patch_fe_values_(nullptr), element_cache_map_(nullptr), quad_(nullptr)
+	IntegralFactory() : patch_fe_values_(nullptr), element_cache_map_(nullptr), quad_(nullptr)
     {}
 
     // Constructor
-    FactoryBase(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
+	IntegralFactory(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
     : patch_fe_values_(pfev), element_cache_map_(element_cache_map), fe_(fe), quad_(quad)
     {}
 
@@ -100,7 +100,7 @@ public:
     /// Factory method. Creates element / side operation of given OpType.
     template<class OpType>
     PatchOp<3> *make_elem_patch_op() {
-        return patch_fe_values_->get< OpType, dim >();
+        return patch_fe_values_->get_for_elem_quad< OpType, dim >();
     }
 
     /// Factory method. Same as previous but creates FE operation.
@@ -116,6 +116,8 @@ public:
     Quadrature *quad_;
 
 };
+
+} // end of namespace internal
 
 
 namespace internal_integrals {
@@ -250,14 +252,14 @@ private:
 /**
  * Integral class of bulk points, allows assemblation of volume integrals.
  */
-class BulkIntegral : public BaseIntegral {
+class BulkIntegral : public internal::BaseIntegral {
 public:
     /// Default constructor
-    BulkIntegral() : BaseIntegral() {}
+    BulkIntegral() : internal::BaseIntegral() {}
 
     /// Constructor of bulk integral
     BulkIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-     : BaseIntegral(eval_points, dim)
+     : internal::BaseIntegral(eval_points, dim)
     {
         switch (dim) {
         case 1:
@@ -422,23 +424,23 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<qdim> factory_;
+    internal::IntegralFactory<qdim> factory_;
 };
 
 /**
  * Integral class of side points, allows assemblation of element - element fluxes.
  */
-class EdgeIntegral : public BaseIntegral {
+class EdgeIntegral : public internal::BaseIntegral {
 public:
     /// Default constructor
-	EdgeIntegral() : BaseIntegral()
+	EdgeIntegral() : internal::BaseIntegral()
     {
 	    ASSERT_PERMANENT(false);
     }
 
     /// Constructor of edge integral
 	EdgeIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-	: BaseIntegral(eval_points, dim)
+	: internal::BaseIntegral(eval_points, dim)
 	{
 	    switch (dim) {
 	    case 1:
@@ -622,7 +624,7 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<qdim> factory_;
+    internal::IntegralFactory<qdim> factory_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -640,14 +642,14 @@ private:
  *
  * Dimension corresponds with element of higher dim.
  */
-class CouplingIntegral : public BaseIntegral {
+class CouplingIntegral : public internal::BaseIntegral {
 public:
     /// Default constructor
-	CouplingIntegral() : BaseIntegral() {}
+	CouplingIntegral() : internal::BaseIntegral() {}
 
     /// Constructor of ngh integral
 	CouplingIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
-	 : BaseIntegral(eval_points, dim)
+	 : internal::BaseIntegral(eval_points, dim)
 	{
 	    switch (dim) {
 	    case 1:
@@ -808,10 +810,10 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<qdim> factory_;
+    internal::IntegralFactory<qdim> factory_;
 
     /// Same as prefious but for element of higher dim
-    FactoryBase<qdim+1> factory_high_;
+    internal::IntegralFactory<qdim+1> factory_high_;
 
     friend class CouplingPoint;
 };
@@ -876,17 +878,17 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<3> factory_;
+    internal::IntegralFactory<3> factory_;
 };
 
 
 /**
  * Integral class of boundary points, allows assemblation of fluxes between sides and neighbouring boundary elements.
  */
-class BoundaryIntegral : public BaseIntegral {
+class BoundaryIntegral : public internal::BaseIntegral {
 public:
     /// Default constructor
-    BoundaryIntegral() : BaseIntegral() {}
+    BoundaryIntegral() : internal::BaseIntegral() {}
 
     /// Constructor of bulk subset
     BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim);
@@ -1044,7 +1046,7 @@ public:
 
 private:
     /// Defines interface of operation accessors declaration
-    FactoryBase<qdim> factory_;
+    internal::IntegralFactory<qdim> factory_;
 
     friend class BoundaryPoint;
 };

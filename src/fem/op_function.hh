@@ -349,8 +349,7 @@ class RefScalar : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs()),
-      fe_(fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
         uint n_points = quad->size();
@@ -363,9 +362,6 @@ public:
     }
 
     void eval() override {}
-
-private:
-    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Template specialization of previous: Domain=SideDomain
@@ -374,8 +370,7 @@ class RefScalar<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs()),
-      fe_(fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
         uint n_points = quad->size();
@@ -391,9 +386,6 @@ public:
     }
 
     void eval() override {}
-
-private:
-    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Fixed operation of vector shape reference values
@@ -402,8 +394,7 @@ class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()),
-      fe_(fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
         uint n_points = quad->size();
@@ -418,9 +409,6 @@ public:
     }
 
     void eval() override {}
-
-private:
-    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Template specialization of previous: Domain=SideDomain
@@ -429,8 +417,7 @@ class RefVector<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
     /// Constructor
     RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, spacedim}, fe->n_dofs()),
-      fe_(fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1, spacedim}, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
         uint n_points = quad->size();
@@ -448,8 +435,6 @@ public:
     }
 
     void eval() override {}
-private:
-    std::shared_ptr<FiniteElement<dim>> fe_;
 };
 
 /// Fixed operation of gradient scalar reference values
