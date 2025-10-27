@@ -16,6 +16,14 @@
 #include "system/sys_profiler.hh"
 
 
+// Define EXPECT_<...>_NEAR with fixed abs_error 1e-5
+#define EXPECT_TEST_NEAR( A, B )\
+  EXPECT_NEAR(A, B, 1e-4)
+
+#define EXPECT_TEST_ARMA_NEAR( A, B ) \
+    EXPECT_ARMA_NEAR(A, B, 1e-4);
+
+
 
 class PatchFETestBase {
 public:
@@ -146,7 +154,67 @@ public:
       bulk_integral_data_(20, 10),
       edge_integral_data_(12, 6),
       coupling_integral_data_(12, 6)
-    {}
+    {
+        used_element_idx_ = {0, 1, 2, 3, 8}; // dimension of used elements: 1D, 2D, 2D, 3D, 3D
+
+        ref_bulk_jxw_ = {
+            { 1.73205, 0.94281, 0.94281, 0.33333, 0.33333 },
+            { 0.96225, 0.63182, 0.63182, 0.09799, 0.09799 }
+        };
+        ref_bulk_det_ = { 3.46410, 5.65685, 5.65685, 8.00000, 8.00000 };
+        ref_bulk_scalar_shape_dof0_ = {
+            { 0.78868, 0.66667, 0.66667, 0.58541, 0.58541 },
+            { 0.68730, -0.08473, -0.08473, 0.32018, 0.32018 }
+        };
+        ref_bulk_scalar_shape_dof1_ = {
+            { 0.21132, 0.16667, 0.16667, 0.13820, 0.13820 },
+            { 0.40000, 0.19283, 0.19283, 0.26774, 0.26774 }
+        };
+        ref_bulk_grad_scalar_dof0_ = {
+            { {-0.16667, -0.16667, 0.16667}, {0.00000, 0.00000, 0.50000}, {0.25000, 0.25000, 0.50000}, {0.50000, 0.00000, 0.50000}, {0.00000, 0.50000, 0.50000} },
+            { {-0.42487, -0.42487, 0.42487}, {0.00000, 0.00000, -0.28379}, {-0.14190, -0.14190, -0.28379}, {0.94359, 0.00000, 0.94359}, {0.00000, 0.94359, 0.94359} }
+        };
+        ref_bulk_grad_scalar_dof1_ = {
+            { {0.16667, 0.16667, -0.16667}, {-0.25000, -0.25000, -0.50000}, {-0.25000, -0.25000, 0.00000}, {-0.50000, 0.50000, -0.00000}, {-0.50000, -0.00000, -0.00000} },
+            { {0.51640, 0.51640, -0.51640}, {-0.10810, -0.10810, 0.67569}, {0.33785, 0.33785, 0.89190}, {-1.25812, 1.44359, 0.18547}, {-1.44359, 0.18547, 0.18547} }
+        };
+        ref_bulk_vector_shape_dof0_ = {
+            {0.78868, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}
+        };
+        ref_bulk_vector_shape_dof1_ = {
+            {0.21132, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}
+        };
+        ref_bulk_grad_vector_dof0_ = {
+            { -0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000 },
+            { 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
+            { 0.25000, 0.00000, 0.00000, 0.25000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
+            { 0.50000, -0.00000, -0.00000, 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000 },
+            { 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000, 0.50000, -0.00000, -0.00000 }
+        };
+        ref_bulk_grad_vector_dof1_ = {
+            { 0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000 },
+            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, -0.50000, 0.00000, 0.00000 },
+            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000 },
+            { -0.50000, -0.00000, -0.00000, 0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000 },
+            { -0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000 }
+        };
+        ref_bulk_sym_grad_dof0_ = {
+            { -0.16667, -0.08333, 0.08333, -0.08333, 0.00000, 0.00000, 0.08333, 0.00000, 0.00000 },
+            { 0.00000, 0.00000, 0.25000, 0.00000, 0.00000, 0.00000, 0.25000, 0.00000, 0.00000 },
+            { 0.25000, 0.12500, 0.25000, 0.12500, 0.00000, 0.00000, 0.25000, 0.00000, 0.00000 },
+            { 0.50000, 0.00000, 0.25000, 0.00000, 0.00000, 0.00000, 0.25000, 0.00000, -0.00000 },
+            { 0.00000, 0.25000, 0.25000, 0.25000, -0.00000, -0.00000, 0.25000, -0.00000, -0.00000 }
+        };
+        ref_bulk_sym_grad_dof1_ = {
+            { 0.16667, 0.08333, -0.08333, 0.08333, 0.00000, 0.00000, -0.08333, 0.00000, 0.00000 },
+            { -0.25000, -0.12500, -0.25000, -0.12500, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000 },
+            { -0.25000, -0.12500, 0.00000, -0.12500, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000 },
+            { -0.50000, 0.25000, -0.00000, 0.25000, 0.00000, 0.00000, -0.00000, 0.00000, -0.00000 },
+            { -0.50000, 0.00000, 0.00000, 0.00000, -0.00000, -0.00000, 0.00000, -0.00000, -0.00000 }
+        };
+        ref_bulk_div_dof0_ = { -0.16667, 0.00000, 0.25000, 0.50000, 0.00000 };
+        ref_bulk_div_dof1_ = { 0.16667, -0.25000, -0.25000, -0.50000, -0.50000 };
+    }
 
     ~PatchFETestBase() {}
 
@@ -310,6 +378,24 @@ public:
     RevertableList<BulkIntegralData> bulk_integral_data_;                     ///< Holds data for computing bulk integrals.
     RevertableList<EdgeIntegralData> edge_integral_data_;                     ///< Holds data for computing edge integrals.
     RevertableList<CouplingIntegralData> coupling_integral_data_;             ///< Holds data for computing couplings integrals.
+
+    std::vector<unsigned int> used_element_idx_;                              ///< List of mesh idx of elements used in tests
+
+    /* Reference values */
+    std::vector< std::vector<double> > ref_bulk_jxw_;
+    std::vector<double> ref_bulk_det_;
+    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof0_;
+    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof1_;
+    std::vector< std::vector<arma::vec3> > ref_bulk_grad_scalar_dof0_;
+    std::vector< std::vector<arma::vec3> > ref_bulk_grad_scalar_dof1_;
+    std::vector<arma::vec3> ref_bulk_vector_shape_dof0_;
+    std::vector<arma::vec3> ref_bulk_vector_shape_dof1_;
+    std::vector<arma::mat33> ref_bulk_grad_vector_dof0_;
+    std::vector<arma::mat33> ref_bulk_grad_vector_dof1_;
+    std::vector<arma::mat33> ref_bulk_sym_grad_dof0_;
+    std::vector<arma::mat33> ref_bulk_sym_grad_dof1_;
+    std::vector<double> ref_bulk_div_dof0_;
+    std::vector<double> ref_bulk_div_dof1_;
 };
 
 
@@ -392,17 +478,13 @@ public:
     }
 
     void test_evaluation(unsigned int i_run, bool print_tables=false) {
-        std::vector< std::vector<double> > ref_jxw = {
-            { 1.73205080756887720, 0.94280904158206336, 0.94280904158206336, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331, 0.33333333333333331 },
-	        { 0.96225044864937626, 0.63181854741421128, 0.63181854741421128, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927, 0.09799072415514927 }
-        };
-
-        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
-        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
-        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
-//            this->add_coupling_integral(*cell_it, this->coupling_integrals_[cell_it->dim()-1]);
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
+//            this->add_coupling_integral(dh_cell, this->coupling_integrals_[dh_cell.dim()-1]);
         	this->patch_fe_values_.make_permanent_ppv_data();
         }
         bulk_integral_data_.make_permanent();
@@ -418,63 +500,47 @@ public:
             WarningOut() << ss.str();
         }
 
-        for(auto dh_cell : dh_->local_range() ) {
-            ElementAccessor<3> elm = dh_cell.elm();
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
-            double jxw = 0.0, det = 0.0, det_ref = 0.0;
-            double scalar_shape_dof0 = 0.0, scalar_shape_dof0_ref = 0.0;
-            double scalar_shape_dof1 = 0.0, scalar_shape_dof1_ref = 0.0;
+            double jxw = 0.0, det = 0.0;
+            double scalar_shape_dof0 = 0.0, scalar_shape_dof1 = 0.0;
             arma::vec3 grad_scalar_dof0("0 0 0");
-            arma::vec3 grad_scalar_dof0_ref("0 0 0");
             arma::vec3 grad_scalar_dof1("0 0 0");
-            arma::vec3 grad_scalar_dof1_ref("0 0 0");
             switch (dh_cell.dim()) {
             case 1:
-                fe_values_[0].reinit(elm);
                 jxw = multidim_asm_[1_d]->jxw_(p);
                 det = multidim_asm_[1_d]->det_(p);
                 scalar_shape_dof0 = multidim_asm_[1_d]->scalar_shape_.shape(0)(p);
+                scalar_shape_dof1 = multidim_asm_[1_d]->scalar_shape_.shape(1)(p);
                 grad_scalar_dof0 = multidim_asm_[1_d]->grad_scalar_shape_.shape(0)(p);
-                det_ref = fe_values_[0].determinant(0);
-                scalar_shape_dof0_ref = fe_values_[0].shape_value(0, 0);
-                grad_scalar_dof0_ref = fe_values_[0].shape_grad(0, 0);
+                grad_scalar_dof1 = multidim_asm_[1_d]->grad_scalar_shape_.shape(1)(p);
                 break;
             case 2:
-                fe_values_[1].reinit(elm);
                 jxw = multidim_asm_[2_d]->jxw_(p);
                 det = multidim_asm_[2_d]->det_(p);
                 scalar_shape_dof0 = multidim_asm_[2_d]->scalar_shape_.shape(0)(p);
                 scalar_shape_dof1 = multidim_asm_[2_d]->scalar_shape_.shape(1)(p);
                 grad_scalar_dof0 = multidim_asm_[2_d]->grad_scalar_shape_.shape(0)(p);
                 grad_scalar_dof1 = multidim_asm_[2_d]->grad_scalar_shape_.shape(1)(p);
-                det_ref = fe_values_[1].determinant(0);
-                scalar_shape_dof0_ref = fe_values_[1].shape_value(0, 0);
-                scalar_shape_dof1_ref = fe_values_[1].shape_value(1, 0);
-                grad_scalar_dof0_ref = fe_values_[1].shape_grad(0, 0);
-                grad_scalar_dof1_ref = fe_values_[1].shape_grad(1, 0);
                 break;
             case 3:
-                fe_values_[2].reinit(elm);
                 jxw = multidim_asm_[3_d]->jxw_(p);
                 det = multidim_asm_[3_d]->det_(p);
                 scalar_shape_dof0 = multidim_asm_[3_d]->scalar_shape_.shape(0)(p);
                 scalar_shape_dof1 = multidim_asm_[3_d]->scalar_shape_.shape(1)(p);
                 grad_scalar_dof0 = multidim_asm_[3_d]->grad_scalar_shape_.shape(0)(p);
                 grad_scalar_dof1 = multidim_asm_[3_d]->grad_scalar_shape_.shape(1)(p);
-                det_ref = fe_values_[2].determinant(0);
-                scalar_shape_dof0_ref = fe_values_[2].shape_value(0, 0);
-                scalar_shape_dof1_ref = fe_values_[2].shape_value(1, 0);
-                grad_scalar_dof0_ref = fe_values_[2].shape_grad(0, 0);
-                grad_scalar_dof1_ref = fe_values_[2].shape_grad(1, 0);
                 break;
             }
-            EXPECT_DOUBLE_EQ( jxw, ref_jxw[i_run][dh_cell.elm_idx()] );
-//            std::cout << "Elem: " << dh_cell.elm_idx() << ", dim " << dh_cell.dim() << ", det " << det << ", ref " << det_ref << std::endl;
-            EXPECT_DOUBLE_EQ( det, det_ref );
-            EXPECT_DOUBLE_EQ( scalar_shape_dof0, scalar_shape_dof0_ref );
-            EXPECT_DOUBLE_EQ( scalar_shape_dof1, scalar_shape_dof1_ref );
-            EXPECT_ARMA_EQ( grad_scalar_dof0, grad_scalar_dof0_ref );
-            EXPECT_ARMA_EQ( grad_scalar_dof1, grad_scalar_dof1_ref );
+            EXPECT_TEST_NEAR( jxw, ref_bulk_jxw_[i_run][i_test_elem] );
+            EXPECT_TEST_NEAR( det, ref_bulk_det_[i_test_elem] );
+            EXPECT_TEST_NEAR( scalar_shape_dof0, ref_bulk_scalar_shape_dof0_[i_run][i_test_elem] );
+            EXPECT_TEST_NEAR( scalar_shape_dof1, ref_bulk_scalar_shape_dof1_[i_run][i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( grad_scalar_dof0, ref_bulk_grad_scalar_dof0_[i_run][i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( grad_scalar_dof1, ref_bulk_grad_scalar_dof1_[i_run][i_test_elem] );
+            ++i_test_elem;
         }
 
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
@@ -687,12 +753,13 @@ public:
     }
 
     void test_evaluation(bool print_tables=false) {
-        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
-        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
-        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
-//            this->add_coupling_integral(*cell_it, this->coupling_integrals_[cell_it->dim()-1]);
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
+//            this->add_coupling_integral(dh_cell, this->coupling_integrals_[dh_cell.dim()-1]);
         	this->patch_fe_values_.make_permanent_ppv_data();
         }
         bulk_integral_data_.make_permanent();
@@ -708,40 +775,33 @@ public:
             WarningOut() << ss.str();
         }
 
-        for(auto dh_cell : dh_->local_range() ) {
+//        std::cout << "  { " << std::fixed << std::setprecision(5);
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
             ElementAccessor<3> elm = dh_cell.elm();
             auto p = *( bulk_integrals_[dh_cell.dim()-1]->points(element_cache_map_.position_in_cache(dh_cell.elm_idx()), &element_cache_map_).begin() );
-            double jxw = 0.0, jxw_ref = 0.0;
+            double jxw = 0.0;
             arma::vec3 vector_shape_dof0 = {0.0, 0.0, 0.0};
-            arma::vec3 vector_shape_dof0_ref = {0.0, 0.0, 0.0};
             arma::vec3 vector_shape_dof1 = {0.0, 0.0, 0.0};
-            arma::vec3 vector_shape_dof1_ref = {0.0, 0.0, 0.0};
             arma::mat33 grad_vector_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            arma::mat33 grad_vector_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             arma::mat33 grad_vector_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            arma::mat33 grad_vector_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             arma::mat33 sym_grad_dof0 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            arma::mat33 sym_grad_dof0_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             arma::mat33 sym_grad_dof1 = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            arma::mat33 sym_grad_dof1_ref = {0, 0, 0, 0, 0, 0, 0, 0, 0};
-            double div_dof0 = 0.0, div_dof0_ref = 0.0;
-            double div_dof1 = 0.0, div_dof1_ref = 0.0;
+            double div_dof0 = 0.0, div_dof1 = 0.0;
             switch (dh_cell.dim()) {
             case 1:
-                fe_values_[0].reinit(elm);
                 jxw = multidim_asm_[1_d]->jxw_(p);
                 vector_shape_dof0 = multidim_asm_[1_d]->vector_shape_.shape(0)(p);
+                vector_shape_dof1 = multidim_asm_[1_d]->vector_shape_.shape(1)(p);
                 grad_vector_dof0 = multidim_asm_[1_d]->grad_vector_shape_.shape(0)(p);
+                grad_vector_dof1 = multidim_asm_[1_d]->grad_vector_shape_.shape(1)(p);
                 sym_grad_dof0 = multidim_asm_[1_d]->sym_grad_.shape(0)(p);
+                sym_grad_dof1 = multidim_asm_[1_d]->sym_grad_.shape(1)(p);
                 div_dof0 = multidim_asm_[1_d]->divergence_.shape(0)(p);
-                jxw_ref = fe_values_[0].JxW(0);
-                vector_shape_dof0_ref = vec_view_1d_->value(0, 0);
-                grad_vector_dof0_ref = vec_view_1d_->grad(0, 0);
-                sym_grad_dof0_ref = vec_view_1d_->sym_grad(0, 0);
-                div_dof0_ref = vec_view_1d_->divergence(0, 0);
+                div_dof1 = multidim_asm_[1_d]->divergence_.shape(1)(p);
                 break;
             case 2:
-                fe_values_[1].reinit(elm);
                 jxw = multidim_asm_[2_d]->jxw_(p);
                 vector_shape_dof0 = multidim_asm_[2_d]->vector_shape_.shape(0)(p);
                 vector_shape_dof1 = multidim_asm_[2_d]->vector_shape_.shape(1)(p);
@@ -751,18 +811,8 @@ public:
                 sym_grad_dof1 = multidim_asm_[2_d]->sym_grad_.shape(1)(p);
                 div_dof0 = multidim_asm_[2_d]->divergence_.shape(0)(p);
                 div_dof1 = multidim_asm_[2_d]->divergence_.shape(1)(p);
-                jxw_ref = fe_values_[1].JxW(0);
-                vector_shape_dof0_ref = vec_view_2d_->value(0, 0);
-                vector_shape_dof1_ref = vec_view_2d_->value(1, 0);
-                grad_vector_dof0_ref = vec_view_2d_->grad(0, 0);
-                grad_vector_dof1_ref = vec_view_2d_->grad(1, 0);
-                sym_grad_dof0_ref = vec_view_2d_->sym_grad(0, 0);
-                sym_grad_dof1_ref = vec_view_2d_->sym_grad(1, 0);
-                div_dof0_ref = vec_view_2d_->divergence(0, 0);
-                div_dof1_ref = vec_view_2d_->divergence(1, 0);
                 break;
             case 3:
-                fe_values_[2].reinit(elm);
                 jxw = multidim_asm_[3_d]->jxw_(p);
                 vector_shape_dof0 = multidim_asm_[3_d]->vector_shape_.shape(0)(p);
                 vector_shape_dof1 = multidim_asm_[3_d]->vector_shape_.shape(1)(p);
@@ -772,27 +822,29 @@ public:
                 sym_grad_dof1 = multidim_asm_[3_d]->sym_grad_.shape(1)(p);
                 div_dof0 = multidim_asm_[3_d]->divergence_.shape(0)(p);
                 div_dof1 = multidim_asm_[3_d]->divergence_.shape(1)(p);
-                jxw_ref = fe_values_[2].JxW(0);
-                vector_shape_dof0_ref = vec_view_3d_->value(0, 0);
-                vector_shape_dof1_ref = vec_view_3d_->value(1, 0);
-                grad_vector_dof0_ref = vec_view_3d_->grad(0, 0);
-                grad_vector_dof1_ref = vec_view_3d_->grad(1, 0);
-                sym_grad_dof0_ref = vec_view_3d_->sym_grad(0, 0);
-                sym_grad_dof1_ref = vec_view_3d_->sym_grad(1, 0);
-                div_dof0_ref = vec_view_3d_->divergence(0, 0);
-                div_dof1_ref = vec_view_3d_->divergence(1, 0);
                 break;
             }
-            EXPECT_DOUBLE_EQ( jxw, jxw_ref );
-            EXPECT_ARMA_EQ( vector_shape_dof0, vector_shape_dof0_ref );
-            EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
-            EXPECT_ARMA_EQ( grad_vector_dof0, grad_vector_dof0_ref );
-            EXPECT_ARMA_EQ( grad_vector_dof1, grad_vector_dof1_ref );
-            EXPECT_ARMA_EQ( sym_grad_dof0, sym_grad_dof0_ref );
-            EXPECT_ARMA_EQ( sym_grad_dof1, sym_grad_dof1_ref );
-            EXPECT_DOUBLE_EQ( div_dof0, div_dof0_ref );
-            EXPECT_DOUBLE_EQ( div_dof1, div_dof1_ref );
+            EXPECT_TEST_NEAR( jxw, ref_bulk_jxw_[0][i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( vector_shape_dof0, ref_bulk_vector_shape_dof0_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( vector_shape_dof1, ref_bulk_vector_shape_dof1_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( grad_vector_dof0, ref_bulk_grad_vector_dof0_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( grad_vector_dof1, ref_bulk_grad_vector_dof1_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( sym_grad_dof0, ref_bulk_sym_grad_dof0_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( sym_grad_dof1, ref_bulk_sym_grad_dof1_[i_test_elem] );
+            EXPECT_TEST_NEAR( div_dof0, ref_bulk_div_dof0_[i_test_elem] );
+            EXPECT_TEST_NEAR( div_dof1, ref_bulk_div_dof1_[i_test_elem] );
+            ++i_test_elem;
+//            std::cout << div_dof1_ref << ", ";
+//            //std::cout << "{" << vector_shape_dof1_ref(0) << ", " << vector_shape_dof1_ref(1) << ", " << vector_shape_dof1_ref(2) << "}, ";
+//            /*
+//            std::cout << "{ ";
+//            for (uint ii=0; ii<9; ++ii) {
+//            	if (ii>0) std::cout << ", ";
+//            	std::cout << sym_grad_dof1_ref(ii);
+//            }
+//            std::cout << " }," << std::endl;; // */
         }
+//        std::cout << "}" << std::endl;;
 
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
             auto range = edge_integral_data_[i].edge_side_range;
@@ -1066,12 +1118,13 @@ public:
     }
 
     void test_evaluation(bool print_tables=false) {
-        for(auto cell_it = dh_->local_range().begin(); cell_it != dh_->local_range().end(); ++cell_it) {
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, cell_it->dim());
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
-        	this->add_bulk_integral(*cell_it, this->bulk_integrals_[cell_it->dim()-1]);
-        	this->add_bulk_integral(*cell_it, this->bulk_integrals_diff_order_[cell_it->dim()-1]);
-        	this->add_edge_integral(*cell_it, this->edge_integrals_[cell_it->dim()-1]);
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_diff_order_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
         	this->patch_fe_values_.make_permanent_ppv_data();
         }
         bulk_integral_data_.make_permanent();
@@ -1087,7 +1140,9 @@ public:
             WarningOut() << ss.str();
         }
 
-        for(auto dh_cell : dh_->local_range() ) {
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
             ElementAccessor<3> elm = dh_cell.elm();
             double jxw = 0.0, jxw_ref = 0.0;
             double det = 0.0, det_ref = 0.0;
@@ -1155,6 +1210,7 @@ public:
                 EXPECT_ARMA_EQ( vector_shape_dof1, vector_shape_dof1_ref );
                 ++k;
             }
+            ++i_test_elem;
         }
 
         for (unsigned int i=0; i<edge_integral_data_.permanent_size(); ++i) {
@@ -1203,58 +1259,6 @@ public:
     const FEValuesViews::Vector<3> * vec_view_2d_;
     const FEValuesViews::Vector<3> * vec_view_3d_;
 };
-
-
-/**
- * Used in speed_comparation test
- */
-//class PatchFETestCompare : public PatchFETestBase {
-//public:
-//	/// Number of repeats
-//	static const unsigned int n_loops = 1e05;
-//
-//	PatchFETestCompare(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-//    : PatchFETestBase(quad_order, dh)
-//    {}
-//
-//    ~PatchFETestCompare() {}
-//
-//    void reinit_patch_fe() override {
-//        START_TIMER("reinit_patch_fe");
-//        for (uint i=0; i<PatchFETestCompare::n_loops; ++i)
-//            patch_fe_values_.reinit_patch();
-//        END_TIMER("reinit_patch_fe");
-//    }
-//
-//    void reinit_fe_values() {
-//        START_TIMER("reinit_fe_values");
-//        for (uint i=0; i<PatchFETestCompare::n_loops; ++i) {
-//
-//            for(auto cell_it = this->dh_->local_range().begin(); cell_it != this->dh_->local_range().end(); ++cell_it) {
-//                ElementAccessor<3> elm = cell_it->elm();
-//                switch (elm.dim()) {
-//                case 1:
-//                    fe_values_[0].reinit(elm);
-//                    for (uint si=0; si<2; ++si)
-//                        fe_values_side_[0].reinit(*elm.side(si));
-//                    break;
-//                case 2:
-//                    fe_values_[1].reinit(elm);
-//                    for (uint si=0; si<3; ++si)
-//                        fe_values_side_[1].reinit(*elm.side(si));
-//                    break;
-//                case 3:
-//                    fe_values_[2].reinit(elm);
-//                    for (uint si=0; si<4; ++si)
-//                        fe_values_side_[2].reinit(*elm.side(si));
-//                    break;
-//                }
-//            }
-//
-//        }
-//        END_TIMER("reinit_fe_values");
-//    }
-//};
 
 
 /// Complete test with FE scalar operations
