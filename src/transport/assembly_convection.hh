@@ -383,7 +383,7 @@ public:
     void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        if (dim < 3) {
+        if (dim < 3) { // temporary solution until fe_values removal
             fe_high_ = std::make_shared< FE_P_disc<dim+1> >(0);
             fe_values_side_.initialize(*this->quad_, *fe_high_, u);
         }

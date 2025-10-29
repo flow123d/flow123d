@@ -34,11 +34,6 @@ template <unsigned int dim>
 class AssemblyBase
 {
 public:
-//    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
-//    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
-//    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
-//    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
-
     /**
      * Constructor
      *
@@ -99,48 +94,6 @@ public:
      * Method can be overridden and implemented in descendant
      */
     virtual void end() {}
-
-//    /// Create integrals according to dim of assembly object
-//    void create_integrals(std::shared_ptr<EvalPoints> eval_points, AssemblyIntegrals &integrals) {
-//    	if (active_integrals_ & ActiveIntegrals::bulk) {
-//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use bulk integral!\n");
-//    	    integrals_.bulk_ = eval_points->add_bulk<dim>(*quad_);
-//    		integrals.bulk_[dim-1] = integrals_.bulk_;
-//    	}
-//    	if (active_integrals_ & ActiveIntegrals::edge) {
-//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use edge integral!\n");
-//    	    integrals_.edge_ = eval_points->add_edge<dim>(*quad_low_);
-//    	    integrals.edge_[dim-1] = integrals_.edge_;
-//    	}
-//       	if ((dim>1) && (active_integrals_ & ActiveIntegrals::coupling)) {
-//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use coupling integral!\n");
-//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use coupling integral!\n");
-//    	    integrals_.coupling_ = eval_points->add_coupling<dim>(*quad_low_);
-//       	    integrals.coupling_[dim-2] = integrals_.coupling_;
-//       	}
-//       	if (active_integrals_ & ActiveIntegrals::boundary) {
-//    	    ASSERT_PERMANENT_PTR(quad_).error("Data member 'quad_' must be initialized if you use boundary integral!\n");
-//    	    ASSERT_PERMANENT_PTR(quad_low_).error("Data member 'quad_low_' must be initialized if you use boundary integral!\n");
-//    	    integrals_.boundary_ = eval_points->add_boundary<dim>(*quad_low_);
-//       	    integrals.boundary_[dim-1] = integrals_.boundary_;
-//       	}
-//    }
-
-    /// Temporary method set pointers of integrals to GenericAssembly - IN DEVELOPMENT, OBSOLETE METHOD
-//    void post_integrals_set(AssemblyIntegrals &integrals) {
-//        if (integrals_.bulk_ != nullptr) {
-//            integrals.bulk_[dim-1] = integrals_.bulk_;
-//        }
-//        if (integrals_.edge_ != nullptr) {
-//            integrals.edge_[dim-1] = integrals_.edge_;
-//     	  }
-//        if ((dim>1) && (integrals_.coupling_ != nullptr)) {
-//            integrals.coupling_[dim-2] = integrals_.coupling_;
-//        }
-//        if (integrals_.boundary_ != nullptr) {
-//            integrals.boundary_[dim-1] = integrals_.boundary_;
-//        }
-//    }
 
     /**
      * Create and return BulkIntegral accessor of given quadrature.
@@ -249,33 +202,6 @@ public:
         }
     }
 
-//    /// Return BulkPoint range of appropriate dimension
-//    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
-//    inline Range< BulkPoint > bulk_points(unsigned int element_patch_idx) const {
-//        return integrals_.bulk_->points(element_patch_idx, &this->asm_internals_->element_cache_map_);
-//    }
-//
-//    /// Return EdgePoint range of appropriate dimension
-//    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
-//    inline Range< EdgePoint > edge_points(const DHCellSide &cell_side) const {
-//        ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-//	    return integrals_.edge_->points(cell_side, &this->asm_internals_->element_cache_map_);
-//    }
-//
-//    /// Return CouplingPoint range of appropriate dimension
-//    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
-//    inline Range< CouplingPoint > coupling_points(const DHCellSide &cell_side) const {
-//        ASSERT( cell_side.dim() > 1 ).error("Invalid cell dimension, must be 2 or 3!\n");
-//	    return integrals_.coupling_->points(cell_side, &this->asm_internals_->element_cache_map_);
-//    }
-//
-//    /// Return BoundaryPoint range of appropriate dimension
-//    /// Obsolete method - will be replaced by 'points(integral, mesh_item)'
-//    inline Range< BoundaryPoint > boundary_points(const DHCellSide &cell_side) const {
-//        ASSERT( cell_side.dim() > 0 ).error("Invalid cell dimension, must be 1, 2 or 3!\n");
-//	    return integrals_.boundary_->points(cell_side, &this->asm_internals_->element_cache_map_);
-//    }
-
     /// Assembles the cell integrals for the given dimension.
     virtual inline void assemble_cell_integrals() {
     	for (unsigned int i=0; i<integral_data_.bulk_.permanent_size(); ++i) {
@@ -315,19 +241,6 @@ public:
         min_edge_sides_ = val;
     }
 
-//    /// Register cell points of volume integral
-//    virtual inline void add_patch_bulk_points(FMT_UNUSED const RevertableList<BulkIntegralData> &bulk_integral_data) {}
-//
-//    /// Register side points of boundary side integral
-//    virtual inline void add_patch_bdr_side_points(FMT_UNUSED const RevertableList<BoundaryIntegralData> &boundary_integral_data) {}
-//
-//    /// Register side points of edge integral
-//    virtual inline void add_patch_edge_points(FMT_UNUSED const RevertableList<EdgeIntegralData> &edge_integral_data) {
-//    }
-//
-//    /// Register bulk and side points of coupling integral
-//    virtual inline void add_patch_coupling_integrals(FMT_UNUSED const RevertableList<CouplingIntegralData> &coupling_integral_data) {}
-
     /**
      * Clean all integral data structures
      *
@@ -351,16 +264,6 @@ public:
     }
 
 protected:
-//    /// Set of integral of given dimension necessary in assemblation
-//    struct DimIntegrals {
-//    	DimIntegrals() : bulk_(nullptr), edge_(nullptr), coupling_(nullptr), boundary_(nullptr) {}
-//
-//        std::shared_ptr<BulkIntegral> bulk_;               ///< Bulk integrals of elements
-//        std::shared_ptr<EdgeIntegral> edge_;               ///< Edge integrals between elements of same dimensions
-//        std::shared_ptr<CouplingIntegral> coupling_;       ///< Coupling integrals between elements of dimensions dim and dim-1
-//        std::shared_ptr<BoundaryIntegral> boundary_;       ///< Boundary integrals betwwen side and boundary element of dim-1
-//    };
-
 	/**
 	 * Default constructor.
 	 *
@@ -509,11 +412,6 @@ template <unsigned int dim>
 class AssemblyBasePatch : public AssemblyBase<dim>
 {
 public:
-//    typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
-//    typedef typename GenericAssemblyBase::EdgeIntegralData EdgeIntegralData;
-//    typedef typename GenericAssemblyBase::CouplingIntegralData CouplingIntegralData;
-//    typedef typename GenericAssemblyBase::BoundaryIntegralData BoundaryIntegralData;
-
     /**
      * Constructor.
      *
@@ -522,76 +420,6 @@ public:
      */
 	AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
 	: AssemblyBase<dim>(quad_order, asm_internals) {}
-
-//    /// Register cell points of volume integral
-//    inline void add_patch_bulk_points(const RevertableList<BulkIntegralData> &bulk_integral_data) override {
-//        for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
-//            if (bulk_integral_data[i].cell.dim() != dim) continue;
-//            uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(bulk_integral_data[i].cell.elm_idx());
-//            uint elm_pos = this->asm_internals_->fe_values_.register_element(bulk_integral_data[i].cell, element_patch_idx);
-//            uint i_point = 0;
-//            for (auto p : this->bulk_points(element_patch_idx) ) {
-//                this->asm_internals_->fe_values_.register_bulk_point(bulk_integral_data[i].cell, elm_pos, p.value_cache_idx(), i_point++);
-//            }
-//        }
-//    }
-//
-//    /// Register side points of boundary side integral
-//    inline void add_patch_bdr_side_points(const RevertableList<BoundaryIntegralData> &boundary_integral_data) override {
-//        for (unsigned int i=0; i<boundary_integral_data.permanent_size(); ++i) {
-//            if (boundary_integral_data[i].side.dim() != dim) continue;
-//            uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(boundary_integral_data[i].side.elem_idx());
-//            uint side_pos = this->asm_internals_->fe_values_.register_side(boundary_integral_data[i].side, element_patch_idx);
-//            uint i_point = 0;
-//            for (auto p : this->boundary_points(boundary_integral_data[i].side) ) {
-//                this->asm_internals_->fe_values_.register_side_point(boundary_integral_data[i].side, side_pos, p.value_cache_idx(), i_point++);
-//            }
-//        }
-//    }
-//
-//    /// Register side points of edge integral
-//    inline void add_patch_edge_points(const RevertableList<EdgeIntegralData> &edge_integral_data) override {
-//        for (unsigned int i=0; i<edge_integral_data.permanent_size(); ++i) {
-//        	auto range = edge_integral_data[i].edge_side_range;
-//            if (range.begin()->dim() != dim) continue;
-//            for( DHCellSide edge_side : range )
-//            {
-//                uint element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(edge_side.elem_idx());
-//                uint side_pos = this->asm_internals_->fe_values_.register_side(edge_side, element_patch_idx);
-//                uint i_point = 0;
-//                for (auto p : this->edge_points(edge_side) ) {
-//                    this->asm_internals_->fe_values_.register_side_point(edge_side, side_pos, p.value_cache_idx(), i_point++);
-//                }
-//            }
-//        }
-//    }
-//
-//    /// Register bulk and side points of coupling integral
-//    inline void add_patch_coupling_integrals(const RevertableList<CouplingIntegralData> &coupling_integral_data) override {
-//        uint element_patch_idx, elm_pos=0;
-//        uint last_element_idx = -1;
-//
-//        for (unsigned int i=0; i<coupling_integral_data.permanent_size(); ++i) {
-//            if (coupling_integral_data[i].side.dim() != dim) continue;
-//            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].side.elem_idx());
-//            uint side_pos = this->asm_internals_->fe_values_.register_side(coupling_integral_data[i].side, element_patch_idx);
-//            if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
-//                element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(coupling_integral_data[i].cell.elm_idx());
-//                elm_pos = this->asm_internals_->fe_values_.register_element(coupling_integral_data[i].cell, element_patch_idx);
-//            }
-//
-//            uint i_bulk_point = 0, i_side_point = 0;
-//            for (auto p_high : this->coupling_points(coupling_integral_data[i].side) )
-//            {
-//                this->asm_internals_->fe_values_.register_side_point(coupling_integral_data[i].side, side_pos, p_high.value_cache_idx(), i_side_point++);
-//                if (coupling_integral_data[i].cell.elm_idx() != last_element_idx) {
-//                    auto p_low = p_high.lower_dim(coupling_integral_data[i].cell);
-//                    this->asm_internals_->fe_values_.register_bulk_point(coupling_integral_data[i].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
-//                }
-//            }
-//            last_element_idx = coupling_integral_data[i].cell.elm_idx();
-//        }
-//    }
 
     /// Return BulkValues object
     inline unsigned int n_dofs() {
@@ -602,21 +430,6 @@ public:
     inline unsigned int n_dofs_high() {
         return this->asm_internals_->fe_values_.template n_dofs_high<dim>();
     }
-
-//    /// Return BulkValues object
-//    inline BulkValues<dim> bulk_values() {
-//        return this->asm_internals_->fe_values_.template bulk_values<dim>();
-//    }
-//
-//    /// Return SideValues object
-//    inline SideValues<dim> side_values() {
-//        return this->asm_internals_->fe_values_.template side_values<dim>();
-//    }
-//
-//    /// Return JoinValues object
-//    inline JoinValues<dim> join_values() {
-//        return this->asm_internals_->fe_values_.template join_values<dim>();
-//    }
 
 };
 

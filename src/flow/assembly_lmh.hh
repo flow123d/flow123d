@@ -150,7 +150,7 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        if (dim < 3) {
+        if (dim < 3) { // temporary solution until fe_values removal
             fe_ = std::make_shared< FE_P_disc<dim+1> >(0);
             fe_values_side_.initialize(*this->quad_, *fe_, update_normal_vectors);
         }
