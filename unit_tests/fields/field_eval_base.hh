@@ -413,7 +413,7 @@ public:
 template<class Val>
 bool FieldEvalBaseTest::compare_vals(const Val &field_val, const Val &ref_val)
 {
-    return _expect_arma_eqal(field_val, ref_val, std::cout);
+    return _expect_arma_eqal(field_val, ref_val, 8*std::numeric_limits<double>::epsilon(), std::cout);
 }
 
 
