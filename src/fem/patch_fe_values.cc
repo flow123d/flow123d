@@ -40,40 +40,10 @@ unsigned int PatchFEValues<3>::n_dofs_high<3>() const {
     return fe_[Dim<3>{}]->n_dofs();
 }
 
-//template<unsigned int spacedim>
-//template<unsigned int dim>
-//BulkValues<dim> PatchFEValues<spacedim>::bulk_values() {
-//  	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-//    return BulkValues<dim>(*this, fe_);
-//}
-//
-//template<unsigned int spacedim>
-//template<unsigned int dim>
-//SideValues<dim> PatchFEValues<spacedim>::side_values() {
-//   	ASSERT((dim>0) && (dim<=3))(dim).error("Dimension must be 1, 2 or 3.");
-//    return SideValues<dim>(*this, fe_);
-//}
-//
-//template<unsigned int spacedim>
-//template<unsigned int dim>
-//JoinValues<dim> PatchFEValues<spacedim>::join_values() {
-//   	//ASSERT((dim>1) && (dim<=3))(dim).error("Dimension must be 2 or 3.");
-//    return JoinValues<dim>(*this, fe_);
-//}
-
 
 
 
 // explicit instantiation
-//template BulkValues<1> PatchFEValues<3>::bulk_values<1>();
-//template BulkValues<2> PatchFEValues<3>::bulk_values<2>();
-//template BulkValues<3> PatchFEValues<3>::bulk_values<3>();
-//template SideValues<1> PatchFEValues<3>::side_values<1>();
-//template SideValues<2> PatchFEValues<3>::side_values<2>();
-//template SideValues<3> PatchFEValues<3>::side_values<3>();
-//template JoinValues<1> PatchFEValues<3>::join_values<1>();
-//template JoinValues<2> PatchFEValues<3>::join_values<2>();
-//template JoinValues<3> PatchFEValues<3>::join_values<3>();
 template unsigned int PatchFEValues<3>::n_dofs_high<1>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<2>() const;
 template unsigned int PatchFEValues<3>::n_dofs_high<3>() const;
