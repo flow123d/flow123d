@@ -202,7 +202,11 @@ public:
         }
     }
 
-    /// Assembles the cell integrals for the given dimension.
+    /**
+     * Assembles the cell integrals for the given dimension.
+     *
+     * Method is called from GenericAssembly::assembly method.
+     */
     virtual inline void assemble_cell_integrals() {
     	for (unsigned int i=0; i<integral_data_.bulk_.permanent_size(); ++i) {
             this->cell_integral(integral_data_.bulk_[i].cell, asm_internals_->element_cache_map_.position_in_cache(integral_data_.bulk_[i].cell.elm_idx()));
@@ -215,21 +219,33 @@ public:
         }*/
     }
 
-    /// Assembles the boundary side integrals for the given dimension.
+    /**
+     * Assembles the boundary side integrals for the given dimension.
+     *
+     * Method is called from GenericAssembly::assembly method.
+     */
     inline void assemble_boundary_side_integrals() {
         for (unsigned int i=0; i<integral_data_.boundary_.permanent_size(); ++i) {
             this->boundary_side_integral(integral_data_.boundary_[i].side);
         }
     }
 
-    /// Assembles the edge integrals for the given dimension.
+    /**
+     * Assembles the edge integrals for the given dimension.
+     *
+     * Method is called from GenericAssembly::assembly method.
+     */
     inline void assemble_edge_integrals() {
         for (unsigned int i=0; i<integral_data_.edge_.permanent_size(); ++i) {
             this->edge_integral(integral_data_.edge_[i].edge_side_range);
         }
     }
 
-    /// Assembles the neighbours integrals for the given dimension.
+    /**
+     * Assembles the neighbours integrals for the given dimension.
+     *
+     * Method is called from GenericAssembly::assembly method.
+     */
     inline void assemble_neighbour_integrals() {
         for (unsigned int i=0; i<integral_data_.coupling_.permanent_size(); ++i) {
             this->dimjoin_intergral(integral_data_.coupling_[i].cell, integral_data_.coupling_[i].side);
@@ -421,7 +437,7 @@ public:
 	AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
 	: AssemblyBase<dim>(quad_order, asm_internals) {}
 
-    /// Return BulkValues object
+    /// Return number of DOFs
     inline unsigned int n_dofs() {
         return this->asm_internals_->fe_values_.template n_dofs<dim>();
     }

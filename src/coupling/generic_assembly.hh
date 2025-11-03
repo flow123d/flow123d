@@ -103,7 +103,13 @@ template < template<IntDim...> class DimAssembly>
 class GenericAssembly : public GenericAssemblyBase
 {
 public:
-    /// Constructor
+    /**
+     * Constructor.
+     *
+     * Used in equations working with 'old' FeValues objects in evaluation.
+     * @param eq_fields   Descendant of FieldSet declared in equation
+     * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
+     */
     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
@@ -113,11 +119,14 @@ public:
     }
 
     /**
-     * Constructor - will be use instead of previous
+     * Constructor.
      *
-     * IN DEVELOPMENT!
+     * Used in equations working with 'new' PatchFeValues objects in evaluation.
+     * @param eq_fields   Descendant of FieldSet declared in equation
+     * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
+     * @param dh          DOF handler object
      */
-    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
+     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(dh->ds()->fe()),
       use_patch_fe_values_(true),
       multidim_assembly_(eq_fields, eq_data, &this->asm_internals_)
@@ -130,6 +139,7 @@ public:
         return multidim_assembly_;
     }
 
+    /// Allows rewrite number of minimal edge sides.
     void set_min_edge_sides(unsigned int val) {
         multidim_assembly_[1_d]->set_min_edge_sides(val);
         multidim_assembly_[2_d]->set_min_edge_sides(val);
@@ -274,6 +284,7 @@ private:
         }
     }
 
+    /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
         asm_internals_.fe_values_.clean_elements_map();
         asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), multidim_assembly_[3_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
