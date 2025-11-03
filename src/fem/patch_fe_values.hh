@@ -140,12 +140,8 @@ public:
 
     /** Following methods are used during update of patch. **/
 
-    /// Resize tables of patch_point_vals_ - TODO replace in unit test remove
-    void resize_tables(std::shared_ptr<EvalPoints> eval_points) {
-        for (uint i=0; i<spacedim; ++i) {
-            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].resize_tables(eval_points->get_max_bulk_quad_size(i+1), *patch_fe_data_.patch_arena_);
-            if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].resize_tables(eval_points->get_max_bulk_quad_size(i+1), *patch_fe_data_.patch_arena_);
-        }
+    /// Clear elements_map, set values to (-1)
+    inline void clean_elements_map() {
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
     }
 
@@ -154,7 +150,6 @@ public:
     inline void add_patch_points(const DimIntegrals<dim> &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
         if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim-1].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
         if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim-1].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
-        if (dim==3) std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
 
     	// add bulk points
     	for (auto integral_it : integrals.bulk_) { // TODO check order of loops, maybe must be swapped

@@ -275,6 +275,7 @@ private:
     }
 
     void patch_reinit() {
+        asm_internals_.fe_values_.clean_elements_map();
         asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), multidim_assembly_[3_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
         asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), multidim_assembly_[2_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
         asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), multidim_assembly_[1_d]->integral_data(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
