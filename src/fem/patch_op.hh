@@ -93,11 +93,6 @@ public:
         return n_dofs_;
     }
 
-    /// Getter for quadrature_
-    inline const Quadrature *quad() const {
-        return quad_;
-    }
-
     /// Return pointer to operation of i_op index in input operation vector.
     inline PatchOp<spacedim> *input_ops(uint i_op) const {
         return input_ops_[i_op];
@@ -185,7 +180,7 @@ protected:
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
-    const Quadrature *quad_;                      ///< Pointer to Quadrature
+    const Quadrature* quad_;                      ///< Pointer to Quadrature
 
     friend class PatchFEValues<spacedim>;
 };

@@ -236,7 +236,7 @@ public:
      */
     static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
         for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
-            target( i_el ) = source( ppv.int_table_(shortLongElmMap)(i_el) );
+            target( i_el ) = source( ppv.int_table_(patch_elem_on_domain)(i_el) );
         }
     }
 private:
@@ -257,7 +257,7 @@ public:
     {
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Domain, spacedim>, dim >(quad) );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Domain, spacedim>, dim >(pfev.element_quad(dim)) );
     }
 
     void eval() override {
@@ -286,7 +286,7 @@ public:
     {
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::Weights<dim, Op::SideDomain, spacedim>, dim >(quad) );
-        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::JacDet<dim, Op::SideDomain, spacedim>, dim >(pfev.element_quad(dim)) );
     }
 
     void eval() override {
@@ -326,7 +326,7 @@ public:
             FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, inv_jac_value_elem(i_c), inv_jac_value(i_c) );
         }
 
-        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(sideElmIdx) );
+        normal_value = inv_jac_value.transpose() * RefElement<dim>::normal_vector_array( ppv.int_table_(ref_side_on_sides) );
 
         ArenaVec<double> norm_vec( n_sides, this->patch_fe_->patch_arena() );
         Eigen::VectorXd A(3);
@@ -393,9 +393,9 @@ template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefVector : public PatchOp<spacedim> {
 public:
     /// Constructor
-	RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-	: PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs())
-	{
+    RefVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs())
+    {
         this->domain_ = Domain::domain();
         uint n_points = quad->size();
 
@@ -406,7 +406,7 @@ public:
             for (uint i_p=0; i_p<n_points; ++i_p)
                 for (uint c=0; c<spacedim; ++c)
                     ref_vector_value(c, i_dof)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), c);
-	}
+    }
 
     void eval() override {}
 };
@@ -588,18 +588,18 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.n_mesh_items();                   // number of sides on patch
+        uint n_patch_points = n_sides * this->quad_->size(); // number of points on patch
+
+        this->allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         auto ref_vec = this->input_ops(0)->result_matrix();
         auto result_vec = this->result_matrix();
 
-        uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_mesh_items();    // number of sides on patch
-        uint n_patch_points = ppv.n_points(); // number of points on patch
-
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt) {
-                result_vec(i_dof)(i_pt) = ref_vec(ppv.int_table_(pointSideElmIsx)(i_pt), i_dof)(i_pt / n_sides);
+                result_vec(i_dof)(i_pt) = ref_vec(ppv.int_table_(ref_side_on_quads)(i_pt), i_dof)(i_pt / n_sides);
             }
         }
     }
@@ -658,14 +658,14 @@ public:
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        dispatch_op_.allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
+        uint n_dofs = this->n_dofs();
+        uint n_sides = ppv.n_mesh_items();
+        uint n_patch_points = n_sides * this->quad_->size();
+
+        dispatch_op_.allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         auto ref_shape_vec = this->input_ops(0)->result_matrix();  // dim+1 x spacedim
         auto result_vec = dispatch_op_.result_matrix();            // spacdim x 1
-
-        uint n_dofs = this->n_dofs();
-        uint n_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
 
         for (uint c=0; c<spacedim*n_dofs; c++)
         	result_vec(c) = ArenaVec<double>(n_patch_points, this->patch_fe_->patch_arena());
@@ -673,7 +673,7 @@ public:
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
                 for (uint c=0; c<spacedim; c++)
-                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(pointSideElmIsx)(i_pt),3*i_dof+c)(i_pt / n_sides);
+                    result_vec(c,i_dof)(i_pt) = ref_shape_vec(ppv.int_table_(ref_side_on_quads)(i_pt),3*i_dof+c)(i_pt / n_sides);
         }
     }
 
@@ -735,7 +735,7 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.element_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Domain, spacedim>, dim >(quad, fe) );
     }
 
@@ -784,21 +784,21 @@ public:
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of grad_scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.element_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradScalar<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
 
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
-        this->allocate_result(ppv.n_points(), this->patch_fe_->patch_arena());
-
         auto ref_shape_grads = this->input_ops(1)->result_matrix();
         auto grad_scalar_shape_value = this->result_matrix();
 
         uint n_dofs = this->n_dofs();
         uint n_points = ref_shape_grads(0).data_size();
         uint n_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
+        uint n_patch_points = n_sides * this->quad_->size();
+
+        this->allocate_result(n_patch_points, this->patch_fe_->patch_arena());
 
         // Expands inverse jacobian to inv_jac_expd_value
         auto inv_jac_value = this->input_ops(0)->result_matrix();
@@ -806,7 +806,7 @@ public:
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value(i)(j) = inv_jac_value( i )( ppv.int_table_(shortLongElmMap)(j%n_sides) );
+        	    inv_jac_expd_value(i)(j) = inv_jac_value( i )( ppv.int_table_(patch_elem_on_domain)(j%n_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
@@ -819,7 +819,7 @@ public:
                 uint i_begin = i_pt * n_sides;
                 for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
                     for (uint i_c=0; i_c<dim; ++i_c) {
-                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(ppv.int_table_(sideElmIdx)(i_sd), i_dof*dim+i_c)(i_pt);
+                        ref_shape_grads_expd(i_c, i_dof)(i_begin + i_sd) = ref_shape_grads(ppv.int_table_(ref_side_on_sides)(i_sd), i_dof*dim+i_c)(i_pt);
                     }
                 }
             }
@@ -839,7 +839,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.element_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
 
@@ -894,7 +894,7 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(quad) );
+        this->input_ops_.push_back( pfev.template get< Op::InvJac<dim, Op::BulkDomain, spacedim>, dim >(pfev.element_quad(dim)) );
         this->input_ops_.push_back( pfev.template get< Op::RefGradVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
 	}
 
@@ -906,14 +906,14 @@ public:
         uint n_dofs = this->n_dofs();
         uint n_points = ref_vector_grad(0).data_size();
         uint n_patch_sides = ppv.n_mesh_items();
-        uint n_patch_points = ppv.n_points();
+        uint n_patch_points = n_patch_sides * this->quad_->size();
 
         // Expands inverse jacobian to inv_jac_expd_value
         Eigen::Matrix<ArenaVec<double>, dim, 3> inv_jac_expd_value;
         for (uint i=0; i<dim*3; ++i) {
         	inv_jac_expd_value(i) = ArenaVec<double>( n_patch_points, this->patch_fe_->patch_arena() );
         	for (uint j=0; j<n_patch_points; ++j)
-        	    inv_jac_expd_value( i )( j ) = inv_jac_value( i )( ppv.int_table_(shortLongElmMap)(j%n_patch_sides) );
+        	    inv_jac_expd_value( i )( j ) = inv_jac_value( i )( ppv.int_table_(patch_elem_on_domain)(j%n_patch_sides) );
         }
 
         // Fill ref shape gradients by q_point. DOF and side_idx
@@ -928,7 +928,7 @@ public:
                 for (uint i_sd=0; i_sd<n_patch_sides; ++i_sd) {
                     for (uint i_dim=0; i_dim<dim; ++i_dim) {
                         for (uint i_c=0; i_c<spacedim; ++i_c) {
-                            ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(sideElmIdx)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
+                            ref_shape_grads_expd(i_dim, i_c)(i_begin + i_sd) = ref_vector_grad(ppv.int_table_(ref_side_on_sides)(i_sd)*dim+i_dim, 3*i_dof+i_c)(i_pt);
                         }
                     }
                 }

@@ -235,7 +235,7 @@ public:
       conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
       conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
       conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      conc_join_integral_( this->create_coupling_integral(this->quad_low_) ),
+      conc_join_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_( conc_bulk_integral_->JxW() ),
       JxW_side_( conc_edge_integral_->JxW() ),
       JxW_bdr_( conc_bdr_integral_->JxW() ),
@@ -270,10 +270,11 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         ndofs_ = this->n_dofs();
+        unsigned int ndofs_high = this->n_dofs_high();
         qsize_lower_dim_ = this->quad_low_->size();
-        dof_indices_.resize(ndofs_);
-        side_dof_indices_vb_.resize(2*ndofs_);
-        local_matrix_.resize(4*ndofs_*ndofs_);
+        dof_indices_.resize(ndofs_high);
+        side_dof_indices_vb_.resize(2*ndofs_high);
+        local_matrix_.resize(4*ndofs_high*ndofs_high);
 
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
@@ -575,8 +576,8 @@ public:
 
     /// Assembles the fluxes between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         // Note: use data members csection_ and velocity_ for appropriate quantities of lower dim element
 

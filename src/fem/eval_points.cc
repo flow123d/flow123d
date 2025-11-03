@@ -27,7 +27,8 @@
 const unsigned int EvalPoints::undefined_dim = 10;
 
 EvalPoints::EvalPoints()
-: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)})
+: dim_eval_points_({DimEvalPoints(0), DimEvalPoints(1), DimEvalPoints(2), DimEvalPoints(3)}),
+  max_size_(0)
 {}
 
 template <unsigned int dim>
@@ -85,6 +86,23 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
     return map_it->second;
 }
 
+uint EvalPoints::get_max_bulk_quad_size(unsigned int dim) const {
+    return get_max_integral_quad_size<internal_integrals::Bulk>(bulk_integrals_, dim);
+}
+
+uint EvalPoints::get_max_side_quad_size(unsigned int dim) const {
+    return get_max_integral_quad_size<internal_integrals::Edge>(edge_integrals_, dim);
+}
+
+template<class Integral>
+uint EvalPoints::get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const {
+    uint max_qsize=0;
+    for (auto integral_it : integrals)
+        if (integral_it.second->dim() == dim)
+            if (integral_it.second->quad()->size() > max_qsize)
+                max_qsize = integral_it.second->quad()->size();
+    return max_qsize;
+}
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
@@ -122,6 +140,8 @@ template std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal
 template std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal<1>(Quadrature *);
 template std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal<2>(Quadrature *);
 template std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal<3>(Quadrature *);
+template unsigned int EvalPoints::get_max_integral_quad_size<internal_integrals::Bulk>(IntegralPtrMap<internal_integrals::Bulk>, unsigned int) const;
+template unsigned int EvalPoints::get_max_integral_quad_size<internal_integrals::Edge>(IntegralPtrMap<internal_integrals::Edge>, unsigned int) const;
 
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);

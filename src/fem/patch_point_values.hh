@@ -54,16 +54,20 @@ enum fem_domain
 };
 
 
-/// Describes meaning of IntTableArena (of PatchPointValues) rows
+/**
+ * Describes meaning of IntTableArena (of PatchPointValues) rows
+ *
+ * Meaning of domain is element or side
+ */
 enum IntTableRows
 {
-	fieldCacheIdx =0,    ///< Index of quadrature point in ElementCacheMap
-	pointResultIdx =1,   ///< Index of element or side in PatchOp::result_ table to which quadrature point is relevant
-	meshElmIdx =2,       ///< Element idx in Mesh
-	shortLongElmMap =3,  ///< Mapping between short and long representation (element > element, side > element)
-	// - last two rows are allocated only for side point table
-	sideElmIdx =4,       ///< Index of side in element - short vector, size of column = number of sides
-	pointSideElmIsx =5   ///< Index of side in element - long vector, size of column = number of points
+    // field_quad_on_quads =0,    ///< Index of quadrature point in ElementCacheMap (field ordering)
+    domain_on_quads =1,        ///< Index of bulk element or side for each quadrature point in patch
+    mesh_elem_on_quads =2,     ///< Element idx in Mesh for each quadrature point in patch
+    patch_elem_on_domain =3,   ///< Index of patch element for each bulk element or side
+    // - last two rows are allocated only for side point table
+    ref_side_on_sides =4,      ///< Ref index of side in element for each side in patch
+	ref_side_on_quads =5       ///< Ref index of side in element for each quadrature point in patch
 };
 
 
@@ -189,7 +193,6 @@ public:
 
     /// Reset number of columns (points and elements)
     inline void reset() {
-        n_points_.reset();
         n_mesh_items_.reset();
         i_mesh_item_ = 0;
         elem_dim_list_->clear();
@@ -202,14 +205,9 @@ public:
         return n_mesh_items_();
     }
 
-    /// Getter for n_points_
-    inline uint n_points() const {
-        return n_points_();
-    }
-
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables(PatchArena &patch_arena) {
-        std::vector<std::size_t> sizes = {n_mesh_items_(), n_points_()};
+    void resize_tables(uint max_quad_size, PatchArena &patch_arena) {
+        std::vector<std::size_t> sizes = {n_mesh_items_(), n_mesh_items_()*max_quad_size};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }
@@ -225,9 +223,9 @@ public:
      */
     uint register_bulk_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem) {
         uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
-        int_table_(fieldCacheIdx)(point_pos)  = elm_cache_map_idx;
-        int_table_(pointResultIdx)(point_pos) = patch_elm_idx;
-        int_table_(meshElmIdx)(point_pos)     = elem_idx;
+        //int_table_(field_quad_on_quads)(point_pos)  = elm_cache_map_idx;
+        int_table_(domain_on_quads)(point_pos) = patch_elm_idx;
+        int_table_(mesh_elem_on_quads)(point_pos)     = elem_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -244,10 +242,10 @@ public:
      */
     uint register_side_point(uint patch_side_idx, uint elm_cache_map_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
         uint point_pos = i_point_on_side * n_mesh_items() + patch_side_idx; // index of side point on patch
-        int_table_(fieldCacheIdx)(point_pos)   = elm_cache_map_idx;
-        int_table_(pointResultIdx)(point_pos)  = patch_side_idx;
-        int_table_(meshElmIdx)(point_pos)      = elem_idx;
-        int_table_(pointSideElmIsx)(point_pos) = side_idx;
+        //int_table_(field_quad_on_quads)(point_pos)   = elm_cache_map_idx;
+        int_table_(domain_on_quads)(point_pos)  = patch_side_idx;
+        int_table_(mesh_elem_on_quads)(point_pos)      = elem_idx;
+        int_table_(ref_side_on_quads)(point_pos) = side_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -256,7 +254,6 @@ public:
     /// Set number of elements and points as permanent
     inline void make_permanent_mesh_items() {
         n_mesh_items_.make_permanent();
-        n_points_.make_permanent();
     }
 //protected:
 
@@ -272,7 +269,7 @@ public:
      *   - last two rows are allocated only for side point table
      *  4: Index of side in element - short vector, size of column = number of sides
      *  5: Index of side in element - long vector, size of column = number of points
-     * Number of used rows is given by n_points_.
+     * Number of used rows is given by int_sizes_.
      */
     IntTableArena int_table_;
 
@@ -280,7 +277,6 @@ public:
     std::vector<OpSizeType> int_sizes_;
 
     ElemDimList<spacedim> *elem_dim_list_;    ///< Number and list of elements on patch
-    RevertibleValue n_points_;                ///< Number of points in patch
     RevertibleValue n_mesh_items_;            ///< Number of elements or sides in patch
     uint i_mesh_item_;                        ///< Index of registered element or side in table, helper value used during patch creating
     std::vector<uint> points_map_;            ///< Map of point patch indices to PatchOp::result_ and int_table_ tables

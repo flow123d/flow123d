@@ -29,7 +29,114 @@
 #include "tools/revertable_list.hh"
 #include "mesh/range_wrapper.hh"
 
+template <unsigned int dim> class BulkIntegralAcc;
+template <unsigned int dim> class EdgeIntegralAcc;
+template <unsigned int dim> class CouplingIntegralAcc;
+template <unsigned int dim> class BoundaryIntegralAcc;
 template <int spacedim> class ElementAccessor;
+
+
+
+/**
+ * Helper structure holds data of cell (bulk) integral
+ *
+ * Data is specified by cell and subset index in EvalPoint object
+ */
+struct BulkIntegralData {
+	/// Default constructor
+    BulkIntegralData() {}
+
+    /// Constructor with data mebers initialization
+    BulkIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
+    : cell(dhcell), subset_index(subset_idx) {}
+
+    /// Copy constructor
+    BulkIntegralData(const BulkIntegralData &other)
+    : cell(other.cell), subset_index(other.subset_index) {}
+
+    DHCellAccessor cell;          ///< Specified cell (element)
+    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
+};
+
+/**
+ * Helper structure holds data of edge integral
+ *
+ * Data is specified by side and subset index in EvalPoint object
+ */
+struct EdgeIntegralData {
+	/// Default constructor
+	EdgeIntegralData()
+	: edge_side_range(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() ), make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide() )) {}
+
+    /// Copy constructor
+	EdgeIntegralData(const EdgeIntegralData &other)
+    : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
+
+    /// Constructor with data mebers initialization
+	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
+    : edge_side_range(range), subset_index(subset_idx) {}
+
+	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;   ///< Specified cell side (element)
+    unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
+};
+
+/**
+ * Helper structure holds data of neighbour (coupling) integral
+ *
+ * Data is specified by cell, side and their subset indices in EvalPoint object
+ */
+struct CouplingIntegralData {
+	/// Default constructor
+   	CouplingIntegralData() {}
+
+    /// Constructor with data mebers initialization
+   	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
+    : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
+
+    /// Copy constructor
+   	CouplingIntegralData(const CouplingIntegralData &other)
+    : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+
+    DHCellAccessor cell;
+    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
+    DHCellSide side;                   ///< Specified cell side (higher dim element)
+    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
+};
+
+/**
+ * Helper structure holds data of boundary integral
+ *
+ * Data is specified by side and subset indices of side and appropriate boundary element in EvalPoint object
+ */
+struct BoundaryIntegralData {
+	/// Default constructor
+	BoundaryIntegralData() {}
+
+    /// Constructor with data mebers initialization
+	BoundaryIntegralData(unsigned int bdr_idx, DHCellSide dhside, unsigned int side_idx)
+    : bdr_subset_index(bdr_idx), side(dhside), side_subset_index(side_idx) {}
+
+    /// Copy constructor
+	BoundaryIntegralData(const BoundaryIntegralData &other)
+    : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+
+	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
+    unsigned int bdr_subset_index;     ///< Index (order) of subset on boundary element in EvalPoints object
+    DHCellSide side;                   ///< Specified cell side (bulk element)
+    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
+};
+
+
+/// Set of integral data of given dimension used in assemblation
+struct IntegralData {
+public:
+    RevertableList<BulkIntegralData>       bulk_;      ///< Holds data for computing bulk integrals.
+    RevertableList<EdgeIntegralData>       edge_;      ///< Holds data for computing edge integrals.
+    RevertableList<CouplingIntegralData>   coupling_;  ///< Holds data for computing couplings integrals.
+    RevertableList<BoundaryIntegralData>   boundary_;  ///< Holds data for computing boundary integrals.
+};
+
+
 
 
 
@@ -51,29 +158,34 @@ template<typename Integral>
 using IntegralPtrMap = std::unordered_map<std::tuple<uint, uint>, std::shared_ptr<Integral>, IntegralTplHash>;
 
 
-
-/// Define Operation hash function
-template<typename Operation>
-struct OperationPtrHash {
-    std::size_t operator()(const Operation* key) const {
-    	// TODO use boost hash of tuple (see IntegralTplHash)
-        std::size_t h1 = std::hash<std::string>()(typeid(*key).name());
-        std::size_t h2 = std::hash<std::size_t>()(key->quad()->size());
-        return h1 ^ (h2 << 1);
-    }
+/// Set of integral of given dimension necessary in assemblation
+template<unsigned int dim>
+struct DimIntegrals {
+	IntegralPtrMap<BulkIntegralAcc<dim>> bulk_;            ///< Bulk integrals of elements
+	IntegralPtrMap<EdgeIntegralAcc<dim>> edge_;            ///< Edge integrals between elements of same dimensions
+	IntegralPtrMap<CouplingIntegralAcc<dim>> coupling_;    ///< Coupling integrals between elements of dimensions dim and dim-1
+	IntegralPtrMap<BoundaryIntegralAcc<dim>> boundary_;    ///< Boundary integrals betwwen side and boundary element of dim-1
 };
 
-/// Content-based equality for Operation*
-template<typename Operation>
-struct OperationPtrEqual {
-    bool operator()(const Operation* lhs, const Operation* rhs) const {
-        return *lhs == *rhs;
+
+
+
+/// Define Integral Tuple hash function - helper struct of OperationMap
+struct OperationTplHash {
+    std::size_t operator()(std::tuple<std::string, uint> tpl) const {
+        return boost::hash_value( tpl );
     }
+
+    /// Create tuple from typeid(Operation).name and size of Quadrature
+    static std::tuple<std::string, uint> op_tuple(std::string op_type, uint quad_size) {
+        return std::make_tuple(op_type, quad_size);
+    }
+
 };
 
-/// Alias for unordered_set of shared_ptr<Integral> with custom hash
+/// Alias for unordered_map of Operation pointer with custom hash
 template<typename Operation>
-using OperationSet = std::unordered_set<Operation *, OperationPtrHash<Operation>, OperationPtrEqual<Operation>>;
+using OperationMap = std::unordered_map<std::tuple<std::string, uint>, Operation *, OperationTplHash>;
 
 
 

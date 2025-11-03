@@ -25,9 +25,10 @@
 /******************************************************************************
  * Implementation of BaseIntegral methods
  */
-
-BaseIntegral::~BaseIntegral()
-{}
+namespace internal {
+    BaseIntegral::~BaseIntegral()
+    {}
+}
 
 
 /******************************************************************************
@@ -64,7 +65,7 @@ CouplingIntegral::~CouplingIntegral()
  */
 
 BoundaryIntegral::BoundaryIntegral(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, unsigned int dim)
- : BaseIntegral(eval_points, dim)
+ : internal::BaseIntegral(eval_points, dim)
 {
     switch (dim) {
     case 1:

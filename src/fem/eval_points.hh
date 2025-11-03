@@ -119,6 +119,12 @@ public:
             dim_eval_points_[i].clear();
     }
 
+    /// Return maximal size of quadrature of given dimension of bulk integral (Bulk, Coupling /lower-dim/)
+    uint get_max_bulk_quad_size(unsigned int dim) const;
+
+    /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
+    uint get_max_side_quad_size(unsigned int dim) const;
+
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
@@ -178,11 +184,17 @@ private:
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
+
+        friend class EvalPoints;
     };
 
     inline void set_max_size() {
         max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
     }
+
+    /// Common implementation of get_max_bulk_quad_size and get_max_side_quad_size
+    template<class Integral>
+    uint get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
 
 
     /// Sub objects of dimensions 0,1,2,3

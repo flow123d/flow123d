@@ -372,7 +372,7 @@ public:
     MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
       edge_integral_( this->create_edge_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_low_) )  {
+      coupling_integral_( this->create_coupling_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->flow_flux;
     }
 
@@ -383,7 +383,10 @@ public:
     void initialize() {
         fe_ = std::make_shared< FE_P_disc<dim> >(0);
         UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
+        if (dim < 3) { // temporary solution until fe_values removal
+            fe_high_ = std::make_shared< FE_P_disc<dim+1> >(0);
+            fe_values_side_.initialize(*this->quad_, *fe_high_, u);
+        }
         fe_values_vec_.resize(eq_data_->max_edg_sides);
         for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
         {
@@ -439,8 +442,8 @@ public:
 
     /// Assembles the fluxes between elements of different dimensions.
     inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
-        if (dim == 1) return;
-        ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
+        if (dim == 3) return;
+        ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         auto p_high = *( coupling_integral_->points(neighb_side).begin() );
         fe_values_side_.reinit(neighb_side.side());
@@ -492,6 +495,7 @@ public:
 
 private:
     shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+    shared_ptr<FiniteElement<dim+1>> fe_high_;             ///< Same as previous but represents finite element of higher dim of join integral
 
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;

@@ -46,9 +46,9 @@ public:
     : GenericAssemblyBase(),
       multidim_assembly_(eq_fields, observe_fields_list, observe.get(), &this->asm_internals_), observe_(observe), bulk_integral_data_(20, 10)
     {
-        multidim_assembly_[1_d]->create_observe_integrals(integrals_);
-        multidim_assembly_[2_d]->create_observe_integrals(integrals_);
-        multidim_assembly_[3_d]->create_observe_integrals(integrals_);
+        multidim_assembly_[1_d]->create_observe_integrals(bulk_integrals_);
+        multidim_assembly_[2_d]->create_observe_integrals(bulk_integrals_);
+        multidim_assembly_[3_d]->create_observe_integrals(bulk_integrals_);
         this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
@@ -72,7 +72,7 @@ public:
         unsigned int i_ep, subset_begin, subset_idx;
         auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
-            subset_idx = integrals_.bulk_[p_data.i_quad]->get_subset_idx();
+            subset_idx = bulk_integrals_[p_data.i_quad]->get_subset_idx();
         	subset_begin = this->asm_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
@@ -102,9 +102,10 @@ private:
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
-    MixedPtr<DimAssembly, 1> multidim_assembly_;                  ///< Assembly object
-    std::shared_ptr<Observe> observe_;                            ///< Shared Observe object.
-    RevertableList<BulkIntegralData> bulk_integral_data_;         ///< Holds data for computing bulk integrals.
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;   ///< Bulk integrals of elements of dimensions 1, 2, 3
+    MixedPtr<DimAssembly, 1> multidim_assembly_;                    ///< Assembly object
+    std::shared_ptr<Observe> observe_;                              ///< Shared Observe object.
+    RevertableList<BulkIntegralData> bulk_integral_data_;           ///< Holds data for computing bulk integrals.
 };
 
 
@@ -135,7 +136,7 @@ public:
     void initialize() {}
 
     /// Assembles the cell integrals for the given dimension.
-    inline void assemble_cell_integrals(const RevertableList<GenericAssemblyBase::BulkIntegralData> &bulk_integral_data) {
+    inline void assemble_cell_integrals(RevertableList<BulkIntegralData> &bulk_integral_data) {
         unsigned int element_patch_idx, field_value_cache_position, val_idx;
         this->reset_offsets();
         for (unsigned int i=0; i<bulk_integral_data.permanent_size(); ++i) {
@@ -153,7 +154,7 @@ public:
 
 
     /// Create bulk integral according to dim
-    void create_observe_integrals(AssemblyIntegrals &integrals) {
+    void create_observe_integrals(std::array<std::shared_ptr<BulkIntegral>, 3> &integrals) {
         std::vector<arma::vec> reg_points;
 
         auto &patch_point_data = observe_->patch_point_data();
@@ -174,8 +175,8 @@ public:
                 this->quad_->set(j) = fix_p;
             }
             bulk_integral_ = this->create_bulk_integral(this->quad_);
-            this->integrals_.bulk_ = bulk_integral_;
-            integrals.bulk_[dim-1] = bulk_integral_;
+            //this->integrals_.bulk_ = bulk_integral_;
+            integrals[dim-1] = bulk_integral_;
         }
     }
 
