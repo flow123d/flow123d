@@ -32,6 +32,7 @@
 #include "fem/fe_rt.hh"
 #include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
+#include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 
 #include "la/linsys_PETSC.hh"
@@ -113,7 +114,7 @@ protected:
 };
 
 template <unsigned int dim>
-class MHMatrixAssemblyLMH : public AssemblyBase<dim>
+class MHMatrixAssemblyLMH : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename DarcyLMH::EqFields EqFields;
@@ -125,10 +126,11 @@ public:
 
     /// Constructor.
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) )  {
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
+      normal_join_( coupling_integral_->normal_vector() )  {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -150,10 +152,6 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-        if (dim < 3) { // temporary solution until fe_values removal
-            fe_ = std::make_shared< FE_P_disc<dim+1> >(0);
-            fe_values_side_.initialize(*this->quad_, *fe_, update_normal_vectors);
-        }
 
         fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
 
@@ -234,8 +232,7 @@ public:
         auto p_high = *( coupling_integral_->points(neighb_side).begin() );
         auto p_low = p_high.lower_dim(cell_lower_dim);
 
-        fe_values_side_.reinit(neighb_side.side());
-        nv_ = fe_values_side_.normal_vector(0);
+        nv_ = normal_join_(p_high);
 
         ngh_value_ = eq_fields_->sigma(p_low) *
                         2*eq_fields_->conductivity(p_low) *
@@ -769,9 +766,6 @@ protected:
     QGauss quad_rt_;
     FEValues<3> fe_values_;
 
-    shared_ptr<FiniteElement<dim+1>> fe_;                  ///< Finite element for the solution of the advection-diffusion equation.
-    FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
-
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
 
@@ -790,6 +784,9 @@ protected:
     std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;           ///< Bulk integral of assembly class
     std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;        ///< Boundary integral of assembly class
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;   ///< Coupling integral of assembly class
+
+    /// Following data members represent Element quantities and FE quantities
+    ElQ<Vector> normal_join_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
