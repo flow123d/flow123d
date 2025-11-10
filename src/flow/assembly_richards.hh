@@ -191,7 +191,7 @@ public:
         auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_sides(p, this->compute_conductivity(cell, p), element_patch_idx);
         this->asm_element();
         this->asm_source_term_richards(cell, p);
     }

@@ -208,8 +208,11 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     virtual inline void assemble_cell_integrals() {
+        uint last_element_idx = -1;
     	for (unsigned int i=0; i<integral_data_.bulk_.permanent_size(); ++i) {
+    	    if (integral_data_.bulk_[i].cell.elm_idx() == last_element_idx) continue;
             this->cell_integral(integral_data_.bulk_[i].cell, asm_internals_->element_cache_map_.position_in_cache(integral_data_.bulk_[i].cell.elm_idx()));
+            last_element_idx = integral_data_.bulk_[i].cell.elm_idx();
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {

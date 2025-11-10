@@ -128,8 +128,11 @@ public:
     MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
     : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
+      asm_sides_integral_( this->create_bulk_integral(&quad_rt_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
+      JxW_( asm_sides_integral_->JxW() ),
+      velocity_( asm_sides_integral_->vector_shape(0) ),
       normal_join_( coupling_integral_->normal_vector() )  {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -153,8 +156,6 @@ public:
     void initialize() {
         //this->balance_ = eq_data_->balance_;
 
-        fe_values_.initialize(quad_rt_, fe_rt_, update_values | update_JxW_values | update_quadrature_points);
-
         // local numbering of dofs for MH system
         // note: this shortcut supposes that the fe_system is the same on all elements
         // TODO the function should be DiscreteSpace.fe(ElementAccessor)
@@ -169,6 +170,8 @@ public:
         // length = local Schur complement offset in LocalSystem
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
         reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
+
+        n_dofs_ = this->asm_internals_->fe_values_.template fe_comp<dim>(this->asm_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
     }
 
 
@@ -185,7 +188,7 @@ public:
         auto p = *( bulk_integral_->points(element_patch_idx).begin() );
         bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, eq_fields_->conductivity(p));
+        this->asm_sides(p, eq_fields_->conductivity(p), element_patch_idx);
         this->asm_element();
         this->asm_source_term_darcy(cell, p);
     }
@@ -357,30 +360,27 @@ protected:
     }
 
     /// Part of cell_integral method, common in all descendants
-    inline void asm_sides(const DHCellAccessor& cell, BulkPoint &p, double conductivity)
+    inline void asm_sides(BulkPoint &p, double conductivity, unsigned int element_patch_idx)
     {
-        auto ele = cell.elm();
         double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
 
-        fe_values_.reinit(ele);
-        auto velocity = fe_values_.vector_view(0);
-
-        for (unsigned int k=0; k<fe_values_.n_points(); k++)
-            for (unsigned int i=0; i<fe_values_.n_dofs(); i++){
-                double rhs_val = arma::dot(eq_data_->gravity_vec_, velocity.value(i,k))
-                           * fe_values_.JxW(k);
+        for (auto p_rt : asm_sides_integral_->points(element_patch_idx) ) {
+            for (unsigned int i=0; i<n_dofs_; i++){ //Fix n_dofs
+                double rhs_val = arma::dot( eq_data_->gravity_vec_, velocity_.shape(i)(p_rt) )
+                           * JxW_(p_rt);
                 eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val);
 
-                for (unsigned int j=0; j<fe_values_.n_dofs(); j++){
+                for (unsigned int j=0; j<n_dofs_; j++){
                     double mat_val =
-                        arma::dot( velocity.value(i,k), //TODO: compute anisotropy before
-                                   (eq_fields_->anisotropy(p)).i() * velocity.value(j,k)
+                        arma::dot( velocity_.shape(i)(p_rt), //TODO: compute anisotropy before
+                                   (eq_fields_->anisotropy(p)).i() * velocity_.shape(j)(p_rt)
                                  )
-                        * scale_sides * fe_values_.JxW(k);
+                        * scale_sides * JxW_(p_rt);
 
                     eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
                 }
             }
+        }
 
     // assemble matrix for weights in BDDCML
     // approximation to diagonal of
@@ -762,9 +762,7 @@ protected:
     EqData *eq_data_;
 
     /// Assembly volume integrals
-    FE_RT0<dim> fe_rt_;
     QGauss quad_rt_;
-    FEValues<3> fe_values_;
 
     /// Vector for reconstructed solution (velocity and pressure on element) from Schur complement.
     arma::vec reconstructed_solution_;
@@ -780,12 +778,16 @@ protected:
     double edge_scale_, edge_source_term_;                 ///< Precomputed values in postprocess_velocity
 
     LocalSystem loc_schur_;
+    unsigned int n_dofs_;                                  ///< Number of DOFs of fe_rt component
 
     std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;           ///< Bulk integral of assembly class
+    std::shared_ptr<BulkIntegralAcc<dim>> asm_sides_integral_;      ///< Bulk integral defined on quadrature of higher order
     std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;        ///< Boundary integral of assembly class
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;   ///< Coupling integral of assembly class
 
     /// Following data members represent Element quantities and FE quantities
+    FeQ<Scalar> JxW_;
+    FeQArray<Vector> velocity_;
     ElQ<Vector> normal_join_;
 
     template < template<IntDim...> class DimAssembly>
