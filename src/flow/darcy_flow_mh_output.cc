@@ -235,7 +235,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     if (compute_errors_) {
         set_specific_output_python_fields();
-        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get());
+        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get(), diff_eq_data_->flow_data_->dh_.get());
     }
 }
 
