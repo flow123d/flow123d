@@ -188,6 +188,49 @@ public:
     }
 };
 
+
+/**
+ * Holds common functionality of patch operations.
+ */
+template<unsigned int spacedim = 3>
+class FuncHelper {
+public:
+    /**
+     * Copy reduced data from 'source' to 'target' ArenaVec. Mapping of reduced data is giben by 'ppv' data.
+     */
+    static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
+        for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
+            target( i_el ) = source( ppv.int_table_(patch_elem_on_domain)(i_el) );
+        }
+    }
+private:
+    /// Forbidden constructor
+    FuncHelper() {}
+};
+
+
+/// Reference data of PtCoords operation
+/// TODO need specializations for SideDomain<dim> and SideDomain<1>
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class RefBaryCoords : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	RefBaryCoords(PatchFEValues<spacedim> &pfev, const Quadrature *quad)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1})
+    {
+        this->domain_ = Domain::domain();
+        double n_points = quad->size();
+        this->allocate_result(n_points, pfev.asm_arena());
+        for (uint i_p=0; i_p<n_points; ++i_p) {
+            auto ref_bar_coords = RefElement<dim>::local_to_bary(quad->point<dim>(i_p));
+            for (uint i_c=0; i_c<dim+1; ++i_c)
+                this->result_(i_c)(i_p) = ref_bar_coords[i_c];
+        }
+    }
+
+    void eval() override {}
+};
+
 /// Evaluates coordinates of quadrature points - not implemented yet
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class PtCoords : public PatchOp<spacedim> {
@@ -197,9 +240,37 @@ public:
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim})
     {
         this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::Coords<dim, Domain, spacedim>, dim >( pfev.element_quad(dim) ) );
+        this->input_ops_.push_back( pfev.template get< Op::RefBaryCoords<dim, Domain, spacedim>, dim >(quad) );
     }
 
-    void eval() override {}
+    void eval() override {
+        auto coords_vec_elem = this->input_ops(0)->result_matrix();  // bulk: spacedim x (dim+1), side: spacedim x dim
+        auto ref_bary_vec = this->input_ops(1)->result_matrix();     // bulk: dim+1, side: dim
+
+        // Copy coords vector of elements registered on patch, convert to ovec
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> coords_vec(spacedim, Domain::n_nodes(dim));
+        Eigen::Matrix<ArenaOVec<double>, spacedim, Domain::n_nodes(dim)> coords_ovec;
+        for (uint i=0; i<spacedim*Domain::n_nodes(dim); ++i) {
+            coords_vec(i) = ArenaVec<double>( n_elems, this->patch_fe_->patch_arena() );
+            FuncHelper<spacedim>::fill_reduce_element_data_vec( ppv, coords_vec_elem(i), coords_vec(i) );
+            coords_ovec(i) = ArenaOVec<double>( coords_vec(i) );
+        }
+
+        // Convert ref_bary_vec to ovec
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> ref_bary_ovec(Domain::n_nodes(dim));
+        for (uint i=0; i<Domain::n_nodes(dim); ++i) {
+            ref_bary_ovec(i) = ArenaOVec<double>( ref_bary_vec(i) );
+        }
+
+        auto result_vec = this->result_matrix();
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> result_ovec = coords_ovec * ref_bary_ovec;
+        for (uint i=0; i<spacedim; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
+    }
 };
 
 /**
@@ -226,26 +297,6 @@ public:
 
 
 /**
- * Holds common functionality of patch operations.
- */
-template<unsigned int spacedim = 3>
-class FuncHelper {
-public:
-    /**
-     * Copy reduced data from 'source' to 'target' ArenaVec. Mapping of reduced data is giben by 'ppv' data.
-     */
-    static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
-        for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
-            target( i_el ) = source( ppv.int_table_(patch_elem_on_domain)(i_el) );
-        }
-    }
-private:
-    /// Forbidden constructor
-    FuncHelper() {}
-};
-
-
-/**
  * Evaluates JxW on quadrature points
  */
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
@@ -264,7 +315,7 @@ public:
         auto weights_value = this->input_ops(0)->result_matrix();
         auto jac_det_value_long = this->input_ops(1)->result_matrix();
 
-        // Copy InvJac vector of sides registered on patch
+        // Copy InvJac vector of elements registered on patch
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_elems = ppv.n_mesh_items();
         ArenaVec<double> jac_det_value( n_elems, this->patch_fe_->patch_arena() );
