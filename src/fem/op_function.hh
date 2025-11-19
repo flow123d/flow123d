@@ -1230,12 +1230,10 @@ public:
         auto ref_grads_vec = this->input_ops(1)->result_matrix();      // dim x dim
         auto jac_vec_elem = this->input_ops(2)->result_matrix();       // spacedim x dim
         auto jac_det_vec_elem = this->input_ops(3)->result_matrix();   // 1
-        auto result_vec = dispatch_op_.result_matrix();                // spacedim x spacedim
 
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_sides = ppv.n_mesh_items();
         uint n_dofs = this->n_dofs();
-        uint n_ref_points = this->quad_->size();
         uint n_points = ref_grads_vec(0).data_size();
         uint n_patch_points = n_sides * this->quad_->size();
         uint n_points_per_side = this->quad_->size();
