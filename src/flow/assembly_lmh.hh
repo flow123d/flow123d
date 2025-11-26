@@ -112,12 +112,12 @@ protected:
 
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqFields, class TEqData>
 class MHMatrixAssemblyLMH : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyLMH::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
 
@@ -790,18 +790,18 @@ protected:
 
 };
 
-template <unsigned int dim>
-class ReconstructSchurAssemblyLMH : public MHMatrixAssemblyLMH<dim>
+template <unsigned int dim, class TEqFields, class TEqData>
+class ReconstructSchurAssemblyLMH : public MHMatrixAssemblyLMH<dim, TEqFields, TEqData>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyLMH::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
 
     /// Constructor.
     ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data) {}
+    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)

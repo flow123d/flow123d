@@ -74,6 +74,8 @@ namespace Input {
 	}
 }
 template<unsigned int dim> class ReadInitCondAssemblyLMH;
+template<unsigned int dim, class TEqFields, class TEqData> class MHMatrixAssemblyLMH;
+template<unsigned int dim, class TEqFields, class TEqData> class ReconstructSchurAssemblyLMH;
 class GenericAssemblyBase;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -280,6 +282,9 @@ public:
         std::vector<bool> bc_fluxes_reconstruted;   ///< Flag indicating whether the fluxes for seepage BC has been reconstructed already.
         std::array<unsigned int, 3> schur_offset_;  ///< Index offset in the local system for the Schur complement (of dim = 1,2,3).
     };
+
+    template<unsigned int dim> using MHMatrixAssemblyLMHDim = MHMatrixAssemblyLMH<dim, EqFields, EqData>;
+    template<unsigned int dim> using ReconstructSchurAssemblyLMHDim = ReconstructSchurAssemblyLMH<dim, EqFields, EqData>;
 
     /// Selection for enum MortarMethod.
     static const Input::Type::Selection & get_mh_mortar_selection();
