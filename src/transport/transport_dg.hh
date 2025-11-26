@@ -55,10 +55,9 @@ class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 class GenericAssemblyBase;
-template<unsigned int dim, class Model> class AssemblyDG;
-template<unsigned int dim, class Model> class MassAssemblyDG;
-template<unsigned int dim, class Model> class StiffnessAssemblyDG;
-template<unsigned int dim, class Model> class SourcesAssemblyDG;
+template<unsigned int dim, class TEqFields, class TEqData> class MassAssemblyDG;
+template<unsigned int dim, class TEqFields, class TEqData> class StiffnessAssemblyDG;
+template<unsigned int dim, class TEqFields, class TEqData> class SourcesAssemblyDG;
 template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitConditionAssemblyDG;
 template<unsigned int dim, class Model> class InitProjectionAssemblyDG;
@@ -134,13 +133,6 @@ class TransportDG : public Model
 {
 public:
 
-    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, Model>;
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, Model>;
-    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, Model>;
-    template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
-	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
-    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, Model>;
-
 	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
 	class EqFields : public Model::ModelEqFields {
@@ -212,6 +204,13 @@ public:
 		TimeGovernor *time_;
 		std::shared_ptr<Balance> balance_;
 	};
+
+    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, EqFields, EqData>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, EqFields, EqData>;
+    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, EqFields, EqData>;
+    template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
+	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
+    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, Model>;
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG
