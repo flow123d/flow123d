@@ -35,7 +35,7 @@
 #include "system/sys_profiler.hh"
 #include "transport/assembly_dg.hh"
 #include "DG_mockup_assembly_new.hh"
-#include "balance_empty.hh"
+#include "balance_null.hh"
 
 class GenericAssemblyBase;
 template<unsigned int dim> class Mass_FullAssembly;
@@ -519,7 +519,7 @@ public:
     std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 
 	vector<unsigned int> subst_idx_;   ///< List of indices used to call balance methods for a set of quantities.
-	std::shared_ptr<BalanceEmpty> balance_;
+	std::shared_ptr<BalanceNull> balance_;
 
     inline unsigned int n_substances() const {
         return substances_.size();

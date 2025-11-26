@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    balance.hh
+ * @file    balance_null.hh
  * @brief   
  */
 
-#ifndef BALANCE_EMPTY_HH_
-#define BALANCE_EMPTY_HH_
+#ifndef BALANCE_NULL_HH_
+#define BALANCE_NULL_HH_
 
 
 #include "coupling/balance.hh" // for LongIdx
@@ -26,7 +26,7 @@
 
 
 
-class BalanceEmpty : public Balance {
+class BalanceNull : public Balance {
 public:
 
     /**
@@ -34,13 +34,13 @@ public:
      * @param file_prefix  Prefix of output file name.
      * @param mesh         Mesh.
      */
-    BalanceEmpty(const std::string &file_prefix, const Mesh *mesh)
+    BalanceNull(const std::string &file_prefix, const Mesh *mesh)
     : Balance(file_prefix, mesh) {}
 
     /**
      * Destructor.
      */
-    ~BalanceEmpty()
+    ~BalanceNull()
     {}
 
 
@@ -106,4 +106,4 @@ public:
 
 
 
-#endif // BALANCE_EMPTY_HH_
+#endif // BALANCE_NULL_HH_

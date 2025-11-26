@@ -1,6 +1,6 @@
 
-#ifndef LINSYS_EMPTY_HH_
-#define LA_LINSYS_PETSC_HH_
+#ifndef LINSYS_NULL_HH_
+#define LINSYS_NULL_HH_
 
 #include <functional>    // for unary_function
 #include <string>        // for string
@@ -14,11 +14,11 @@
 
 class Distribution;
 
-class LinSysEmpty : public LinSys
+class LinSysNull : public LinSys
 {
 
 public:
-    LinSysEmpty(const  Distribution * rows_ds)
+    LinSysNull(const  Distribution * rows_ds)
     : LinSys( rows_ds ),
       matrix_(0),
 	  rhs_(0) {}
@@ -26,7 +26,7 @@ public:
     /**
      * Copy constructor.
      */
-    LinSysEmpty( LinSys_PETSC &other )
+    LinSysNull( LinSys_PETSC &other )
     : LinSys(other),
       matrix_(0),
 	  rhs_(0) {}
@@ -91,7 +91,7 @@ public:
         return 0.0;
     }
 
-    virtual ~LinSysEmpty()
+    virtual ~LinSysNull()
     {}
 
 
@@ -100,4 +100,4 @@ protected:
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
 };
 
-#endif /* LINSYS_EMPTY_HH_ */
+#endif /* LINSYS_NULL_HH_ */

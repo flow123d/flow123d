@@ -2,7 +2,7 @@
 #define DG_MOCKUP_IMPL_HH_
 
 #include "DG_mockup_new.hh"
-#include "linsys_empty.hh"
+#include "linsys_null.hh"
 #include "transport/assembly_dg.hh"
 
 
@@ -126,7 +126,7 @@ void DGMockup<Mass, Stiffness, Sources>::initialize(const string &input, std::ve
     eq_data_->ls_dt = new LinSys*[eq_data_->n_substances()];
     eq_data_->conc_fe.resize(eq_data_->n_substances());
     eq_data_->subst_idx_.resize(eq_data_->n_substances(), 0);
-    eq_data_->balance_ = std::make_shared<BalanceEmpty>("mass", this->mesh_);
+    eq_data_->balance_ = std::make_shared<BalanceNull>("mass", this->mesh_);
 
     MixedPtr<FE_P_disc> fe(0);
     shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(this->mesh_, fe);
@@ -154,8 +154,8 @@ void DGMockup<Mass, Stiffness, Sources>::initialize(const string &input, std::ve
         }
     } else {
         for (unsigned int sbi = 0; sbi < eq_data_->n_substances(); sbi++) {
-            eq_data_->ls[sbi] = new LinSysEmpty(eq_data_->dh_->distr().get());
-            eq_data_->ls_dt[sbi] = new LinSysEmpty(eq_data_->dh_->distr().get());
+            eq_data_->ls[sbi] = new LinSysNull(eq_data_->dh_->distr().get());
+            eq_data_->ls_dt[sbi] = new LinSysNull(eq_data_->dh_->distr().get());
             VecDuplicate(eq_data_->output_vec[sbi].petsc_vec(), &eq_data_->ret_vec[sbi]);
         }
     }

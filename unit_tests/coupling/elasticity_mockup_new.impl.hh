@@ -2,7 +2,7 @@
 #define ELASTICITY_MOCKUP_IMPL_HH_
 
 #include "elasticity_mockup_new.hh"
-#include "linsys_empty.hh"
+#include "linsys_null.hh"
 #include "mechanics/assembly_elasticity.hh"
 
 
@@ -115,7 +115,7 @@ void ElasticityMockup<Stiffness, Rhs>::initialize(const string &input) {
         ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
         eq_data_->ls = ls;
     } else { // use linSysEmpty
-        eq_data_->ls = new LinSysEmpty(eq_data_->dh_->distr().get());
+        eq_data_->ls = new LinSysNull(eq_data_->dh_->distr().get());
     }
 
     stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
