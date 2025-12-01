@@ -268,8 +268,20 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
             double depth = data_->scalar_with_depth(q_point);
             EXPECT_DOUBLE_EQ(1-data_->scalar_z(q_point), depth);
 
-            double ref_val = pow(data_->computed_dh_cell_.elm().measure(), 1.0 / data_->computed_dh_cell_.dim());
-            EXPECT_DOUBLE_EQ(data_->scalar_with_mesh_step(q_point), ref_val);
+            double measure_ref_val = 1.0;
+            uint dim = data_->computed_dh_cell_.dim();
+            switch (dim) {
+                case 1:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S1();
+                    break;
+                case 2:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S2();
+                    break;
+                case 3:
+                    measure_ref_val = fabs( data_->computed_dh_cell_.elm().jacobian_S3() );
+                    break;
+            }
+            EXPECT_DOUBLE_EQ(data_->scalar_with_mesh_step(q_point), pow( measure_ref_val, (1.0 / dim) ));
 
             // Evaluation of the scalar field tested elseewhere. we can
             // Can activqte again only after we support taking values from FieldCommon.

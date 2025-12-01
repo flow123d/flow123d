@@ -96,6 +96,7 @@ public:
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override {
+    	const std::vector<double> meassure_dim_coef = {1, 1, 2, 6};
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
         unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
@@ -112,7 +113,7 @@ public:
             if (elm_idx != last_element_idx) {
                 elm = mesh->element_accessor( elm_idx );
                 double exp = 1.0 / elm.dim();
-                h_val = pow(elm.measure(), exp);
+                h_val = pow( (elm.measure() * meassure_dim_coef[elm.dim()]), exp );
                 last_element_idx = elm_idx;
             }
             value_cache_.set(i_data) = h_val;
