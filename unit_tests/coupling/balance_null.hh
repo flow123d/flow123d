@@ -55,6 +55,17 @@ public:
     inline void start_mass_assembly(FMT_UNUSED std::vector<unsigned int> q_idx_vec)
     {}
 
+	/**
+	 * This method must be called before assembling the matrix and vector for fluxes.
+	 * It actually erases the matrix and vector.
+	 */
+	void start_flux_assembly(FMT_UNUSED unsigned int quantity_idx)
+    {}
+
+	/// Variant of the start_flux_assembly() method for a set of quantities.
+	inline void start_flux_assembly(FMT_UNUSED std::vector<unsigned int> q_idx_vec)
+    {}
+
     /**
      * This method must be called before assembling the matrix and vectors for sources.
      * It actually erases the matrix and vectors.
@@ -75,6 +86,14 @@ public:
 	    FMT_UNUSED double vec_value)
     {}
 
+    /// Adds elements into matrix for computing (outgoing) flux
+    void add_flux_values(FMT_UNUSED unsigned int quantity_idx,
+        FMT_UNUSED const DHCellSide &side,
+        FMT_UNUSED const LocDofVec &loc_dof_indices,
+        FMT_UNUSED const std::vector<double> &mat_values,
+        FMT_UNUSED double vec_value)
+    {}
+
     /// Adds elements into matrix and vector for computing source.
     void add_source_values(FMT_UNUSED unsigned int quantity_idx,
         FMT_UNUSED unsigned int region_idx,
@@ -90,6 +109,14 @@ public:
 
     /// Variant of the finish_mass_assembly() method for a set of quantities.
     inline void finish_mass_assembly(FMT_UNUSED std::vector<unsigned int> q_idx_vec)
+    {}
+
+    /// This method must be called after assembling the matrix for computing flux.
+    void finish_flux_assembly(FMT_UNUSED unsigned int quantity_idx)
+    {}
+
+    /// Variant of the finish_flux_assembly() method for a set of quantities.
+    inline void finish_flux_assembly(FMT_UNUSED std::vector<unsigned int> q_idx_vec)
     {}
 
     /// This method must be called after assembling the matrix and vectors for computing source.
