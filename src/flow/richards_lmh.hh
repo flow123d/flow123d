@@ -28,7 +28,8 @@ namespace Input {
 	}
 }
 template<unsigned int dim> class InitCondPostprocessAssembly;
-template<unsigned int dim> class MHMatrixAssemblyRichards;
+template<unsigned int dim, class TEqFields, class TEqData> class MHMatrixAssemblyRichards;
+template<unsigned int dim, class TEqFields, class TEqData> class ReconstructSchurAssemblyRichards;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
@@ -97,6 +98,9 @@ public:
 
         std::shared_ptr<SoilModelBase> soil_model_;
     };
+
+    template<unsigned int dim> using MHMatrixAssemblyRichardsDim = MHMatrixAssemblyRichards<dim, EqFields, EqData>;
+    template<unsigned int dim> using ReconstructSchurAssemblyRichardsDim = ReconstructSchurAssemblyRichards<dim, EqFields, EqData>;
 
     RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 

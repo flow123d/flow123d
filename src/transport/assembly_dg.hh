@@ -33,12 +33,12 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqFields, class TEqData>
 class MassAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
@@ -220,12 +220,12 @@ double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Rang
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqFields, class TEqData>
 class StiffnessAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
@@ -688,12 +688,12 @@ private:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqFields, class TEqData>
 class SourcesAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 

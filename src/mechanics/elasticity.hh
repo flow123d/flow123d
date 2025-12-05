@@ -36,8 +36,8 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
-template<unsigned int dim> class StiffnessAssemblyElasticity;
-template<unsigned int dim> class RhsAssemblyElasticity;
+template<unsigned int dim, class EqFields, class EqData> class StiffnessAssemblyElasticity;
+template<unsigned int dim, class EqFields, class EqData> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
@@ -49,7 +49,7 @@ class Elasticity : public EquationBase
 {
 public:
 
-	class EqFields : public FieldSet {
+    class EqFields : public FieldSet {
 	public:
       
         enum Bc_types {
@@ -177,6 +177,9 @@ public:
 
 	};
 
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, EqFields, EqData>;
+    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, EqFields, EqData>;
+
 
     /**
      * @brief Constructor.
@@ -286,8 +289,8 @@ private:
 
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
-    GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
+    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
+    GenericAssembly< RhsAssemblyDim > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 

@@ -32,12 +32,12 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqFields, class TEqData>
 class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
@@ -267,12 +267,12 @@ private:
 };
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqFields, class TEqData>
 class RhsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 

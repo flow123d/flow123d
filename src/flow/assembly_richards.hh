@@ -141,17 +141,17 @@ private:
 };
 
 
-template <unsigned int dim>
-class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
+template <unsigned int dim, class TEqFields, class TEqData>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim, TEqFields, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
 
     MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -178,7 +178,7 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-    	MHMatrixAssemblyLMH<dim>::initialize();
+    	MHMatrixAssemblyLMH<dim, TEqFields, TEqData>::initialize();
     }
 
 
@@ -396,17 +396,17 @@ protected:
 };
 
 
-template <unsigned int dim>
-class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim>
+template <unsigned int dim, class TEqFields, class TEqData>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim, TEqFields, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef TEqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
     ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data, asm_internals) {
+    : MHMatrixAssemblyRichards<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals) {
     }
 
     /// Integral over element.
