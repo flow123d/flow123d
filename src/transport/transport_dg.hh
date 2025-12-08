@@ -55,12 +55,12 @@ class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 class GenericAssemblyBase;
-template<unsigned int dim, class TEqFields, class TEqData> class MassAssemblyDG;
-template<unsigned int dim, class TEqFields, class TEqData> class StiffnessAssemblyDG;
-template<unsigned int dim, class TEqFields, class TEqData> class SourcesAssemblyDG;
-template<unsigned int dim, class Model> class BdrConditionAssemblyDG;
-template<unsigned int dim, class Model> class InitConditionAssemblyDG;
-template<unsigned int dim, class Model> class InitProjectionAssemblyDG;
+template<unsigned int dim, class TEqData> class MassAssemblyDG;
+template<unsigned int dim, class TEqData> class StiffnessAssemblyDG;
+template<unsigned int dim, class TEqData> class SourcesAssemblyDG;
+template<unsigned int dim, class TEqData> class BdrConditionAssemblyDG;
+template<unsigned int dim, class TEqData> class InitConditionAssemblyDG;
+template<unsigned int dim, class TEqData> class InitProjectionAssemblyDG;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -151,8 +151,9 @@ public:
 
    	class EqData : public Model::ModelEqData {
    	public:
+   	    typedef TransportDG<Model>::EqFields EqFields;
 
-        EqData() : ls(nullptr) {}
+        EqData(std::shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields), ls(nullptr) {}
 
 		inline void set_time_governor(TimeGovernor *time) {
 		    ASSERT_PTR(time);
@@ -163,6 +164,9 @@ public:
 		inline unsigned int quad_order() const {
 		    return dg_order;
 		}
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
     	/// @name Parameters of the numerical method
     	// @{
@@ -205,12 +209,12 @@ public:
 		std::shared_ptr<Balance> balance_;
 	};
 
-    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, EqFields, EqData>;
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, EqFields, EqData>;
-    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, EqFields, EqData>;
-    template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, Model>;
-	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, Model>;
-    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, Model>;
+    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, EqData>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, EqData>;
+    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, EqData>;
+    template<unsigned int dim> using BdrConditionAssemblyDim = BdrConditionAssemblyDG<dim, EqData>;
+	template<unsigned int dim> using InitConditionAssemblyDim = InitConditionAssemblyDG<dim, EqData>;
+    template<unsigned int dim> using InitProjectionAssemblyDim = InitProjectionAssemblyDG<dim, EqData>;
 
 	enum DGVariant {
 		// Non-symmetric weighted interior penalty DG

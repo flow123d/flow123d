@@ -33,18 +33,18 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class MassAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -222,18 +222,18 @@ double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Rang
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class StiffnessAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -673,18 +673,18 @@ private:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class SourcesAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       conc_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -790,18 +790,18 @@ public:
 /**
  * Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions..
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class BdrConditionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       conc_shape_( this->side_values().scalar_shape() ),
@@ -997,18 +997,18 @@ public:
 /**
  * Auxiliary container class sets the initial condition.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class InitProjectionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       init_shape_( this->bulk_values().scalar_shape() ) {
         this->active_integrals_ = ActiveIntegrals::bulk;
@@ -1088,18 +1088,18 @@ public:
 /**
  * Auxiliary container class sets the initial condition.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class InitConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitConditionAssemblyDG"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblyDG(EqData *eq_data)
+    : AssemblyBase<dim>(), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_condition;
 
