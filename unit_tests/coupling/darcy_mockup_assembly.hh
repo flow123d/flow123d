@@ -6,7 +6,6 @@
 #include "darcy_mockup.hh"
 #include "fem/fe_p.hh"
 #include "fem/patch_fe_values.hh"
-#include "fem/op_factory.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
@@ -24,8 +23,8 @@ public:
     static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
 
     /// Constructor.
-    MHMatrixEvalFields(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data) {}
+    MHMatrixEvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~MHMatrixEvalFields() {}

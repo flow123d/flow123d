@@ -6,7 +6,6 @@
 #include "DG_mockup.hh"
 #include "fem/fe_p.hh"
 #include "fem/patch_fe_values.hh"
-#include "fem/op_factory.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
@@ -24,8 +23,8 @@ public:
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : MassAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    MassEvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : MassAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~MassEvalFields() {}
@@ -48,8 +47,8 @@ public:
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : StiffnessAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    StiffnessEvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : StiffnessAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~StiffnessEvalFields() {}
@@ -84,8 +83,8 @@ public:
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : SourcesAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    SourcesEvalFields(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
+    : SourcesAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, asm_internals) {}
 
     /// Destructor.
     ~SourcesEvalFields() {}
