@@ -33,7 +33,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
-#include "elasticity_mockup_assembly_new.hh"
+#include "elasticity_mockup_assembly.hh"
 
 class GenericAssemblyBase;
 template<unsigned int dim> class Stiffness_FullAssembly;

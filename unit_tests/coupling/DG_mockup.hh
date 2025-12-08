@@ -34,7 +34,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "transport/assembly_dg.hh"
-#include "DG_mockup_assembly_new.hh"
+#include "DG_mockup_assembly.hh"
 #include "balance_null.hh"
 
 class GenericAssemblyBase;
@@ -493,13 +493,16 @@ public:
 
 class EqData {
 public:
-    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+    typedef equation_data::EqFields EqFields;
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-    EqData() {}
+    EqData(std::shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
 
 	inline unsigned int quad_order() const {
 	    return dg_order;
 	}
+
+	std::shared_ptr<EqFields> eq_fields_;
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
     unsigned int dg_order;                    ///< Polynomial order of finite elements.
@@ -586,12 +589,12 @@ public:
 /// Test class
 class DGMockupTest : public testing::Test {
 public:
-    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
+    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqData>;
 
 	DGMockupTest()
     {
@@ -665,8 +668,8 @@ public:
     DGMockup(bool use_linsys)
     : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
 
         // DG data parameters

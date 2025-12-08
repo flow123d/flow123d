@@ -1,7 +1,7 @@
 #ifndef DG_MOCKUP_IMPL_HH_
 #define DG_MOCKUP_IMPL_HH_
 
-#include "DG_mockup_new.hh"
+#include "DG_mockup.hh"
 #include "linsys_null.hh"
 #include "transport/assembly_dg.hh"
 
@@ -161,9 +161,9 @@ void DGMockup<Mass, Stiffness, Sources>::initialize(const string &input, std::ve
     }
 
     // create assemblation object, finite element structures and distribute DOFs
-    mass_assembly_ = new GenericAssembly< Mass >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    sources_assembly_ = new GenericAssembly< Sources >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+    mass_assembly_ = new GenericAssembly< Mass >(eq_data_.get(), eq_data_->dh_.get());
+    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_data_.get(), eq_data_->dh_.get());
+    sources_assembly_ = new GenericAssembly< Sources >(eq_data_.get(), eq_data_->dh_.get());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());

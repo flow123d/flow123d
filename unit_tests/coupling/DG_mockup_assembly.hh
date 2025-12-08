@@ -14,18 +14,18 @@
 
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class MassEvalFields : public MassAssemblyDG<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class MassEvalFields : public MassAssemblyDG<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "MassAssemblyDG"; }
 
     /// Constructor.
-    MassEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : MassAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    MassEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : MassAssemblyDG<dim, TEqData>(eq_data, fe_values) {}
 
     /// Destructor.
     ~MassEvalFields() {}
@@ -38,18 +38,18 @@ public:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class StiffnessEvalFields : public StiffnessAssemblyDG<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class StiffnessEvalFields : public StiffnessAssemblyDG<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyDG"; }
 
     /// Constructor.
-    StiffnessEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : StiffnessAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    StiffnessEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : StiffnessAssemblyDG<dim, TEqData>(eq_data, fe_values) {}
 
     /// Destructor.
     ~StiffnessEvalFields() {}
@@ -74,18 +74,18 @@ public:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class SourcesEvalFields : public SourcesAssemblyDG<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class SourcesEvalFields : public SourcesAssemblyDG<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "SourcesAssemblyDG"; }
 
     /// Constructor.
-    SourcesEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : SourcesAssemblyDG<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    SourcesEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : SourcesAssemblyDG<dim, TEqData>(eq_data, fe_values) {}
 
     /// Destructor.
     ~SourcesEvalFields() {}

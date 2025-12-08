@@ -1,7 +1,7 @@
 #ifndef ELASTICITY_MOCKUP_IMPL_HH_
 #define ELASTICITY_MOCKUP_IMPL_HH_
 
-#include "elasticity_mockup_new.hh"
+#include "elasticity_mockup.hh"
 #include "linsys_null.hh"
 #include "mechanics/assembly_elasticity.hh"
 
