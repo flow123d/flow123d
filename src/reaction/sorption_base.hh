@@ -52,8 +52,8 @@ namespace Input {
 	}
 }
 template <int spacedim> class ElementAccessor;
-template<unsigned int dim> class InitConditionAssemblySorp;
-template<unsigned int dim> class ReactionAssemblySorp;
+template<unsigned int dim, class EqData> class InitConditionAssemblySorp;
+template<unsigned int dim, class EqData> class ReactionAssemblySorp;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -124,9 +124,18 @@ public:
   class EqData : public ReactionTerm::EqData
   {
   public:
+    typedef SorptionBase::EqFields EqFields;
 
     /// Collect all fields
     EqData();
+
+    /// Collect all fields
+    void set_eq_fields(std::shared_ptr<EqFields> eq_fields) {
+        eq_fields_ = eq_fields;
+    }
+
+    /// Shared pointer of EqFields
+    std::shared_ptr<EqFields> eq_fields_;
 
     /// Mapping from local indexing of substances to global.
     std::vector<unsigned int> substance_global_idx_;
@@ -158,6 +167,9 @@ public:
      */
     std::vector<std::vector<Isotherm> > isotherms;
   };
+
+  template<unsigned int dim> using InitConditionAssemblySorpDim = InitConditionAssemblySorp<dim, EqData>;
+  template<unsigned int dim> using ReactionAssemblySorpDim = ReactionAssemblySorp<dim, EqData>;
 
 
   /**
@@ -253,8 +265,8 @@ protected:
   std::shared_ptr<ReactionTerm> reaction_solid;
   
   /// general assembly objects, hold assembly objects of appropriate dimension
-  GenericAssembly< InitConditionAssemblySorp > * init_condition_assembly_;
-  GenericAssembly< ReactionAssemblySorp > * reaction_assembly_;
+  GenericAssembly< InitConditionAssemblySorpDim > * init_condition_assembly_;
+  GenericAssembly< ReactionAssemblySorpDim > * reaction_assembly_;
 
 
 };

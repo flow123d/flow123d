@@ -36,23 +36,23 @@
 /**
  * Common ancestor of AssemblyOutputElemData and AssemblyOutputNodeData class.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class AssemblyOutputBase : public AssemblyBase<dim>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
 
     /// Constructor.
-    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(quad_order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqData *eq_data)
+    : AssemblyBase<dim>(quad_order), eq_fields_(eq_data), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
-    AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(EqData *eq_data)
+    : AssemblyBase<dim>(), eq_fields_(eq_data), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         offsets_.resize(CacheMapElementNumber::get());
     }
@@ -96,19 +96,19 @@ protected:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
-class AssemblyOutputElemData : public AssemblyOutputBase<dim>
+template <unsigned int dim, class TEqData>
+class AssemblyOutputElemData : public AssemblyOutputBase<dim, TEqData>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
     typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputElemData"; }
 
     /// Constructor.
-    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data) {}
+    AssemblyOutputElemData(EqData *eq_data)
+    : AssemblyOutputBase<dim, TEqData>(0, eq_data) {}
 
     /// Destructor.
     ~AssemblyOutputElemData() {}
@@ -138,19 +138,19 @@ public:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
-class AssemblyOutputNodeData : public AssemblyOutputBase<dim>
+template <unsigned int dim, class TEqData>
+class AssemblyOutputNodeData : public AssemblyOutputBase<dim, TEqData>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
     typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
     static constexpr const char * name() { return "AssemblyOutputNodeData"; }
 
     /// Constructor.
-    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyOutputBase<dim>(eq_fields, eq_data) {
+    AssemblyOutputNodeData(EqData *eq_data)
+    : AssemblyOutputBase<dim, TEqData>(eq_data) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
@@ -164,7 +164,7 @@ public:
 
     /// Sets output data members.
     void set_output_data(const FieldSet &used, std::shared_ptr<OutputTime> stream) {
-    	AssemblyOutputBase<dim>::set_output_data(used, stream);
+    	AssemblyOutputBase<dim, TEqData>::set_output_data(used, stream);
     	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_data();
     }
 

@@ -30,18 +30,18 @@
 
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class InitConditionAssemblyDp : public AssemblyBase<dim>
 {
 public:
-    typedef typename DualPorosity::EqFields EqFields;
-    typedef typename DualPorosity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    InitConditionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblyDp(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -86,18 +86,18 @@ private:
     friend class GenericAssembly;
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ReactionAssemblyDp : public AssemblyBase<dim>
 {
 public:
-    typedef typename DualPorosity::EqFields EqFields;
-    typedef typename DualPorosity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitConditionAssemblyDp"; }
 
     /// Constructor.
-    ReactionAssemblyDp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReactionAssemblyDp(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -198,18 +198,18 @@ private:
     friend class GenericAssembly;
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class InitConditionAssemblySorp : public AssemblyBase<dim>
 {
 public:
-    typedef typename SorptionBase::EqFields EqFields;
-    typedef typename SorptionBase::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitConditionAssemblySorp"; }
 
     /// Constructor.
-    InitConditionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblySorp(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -254,18 +254,18 @@ private:
     friend class GenericAssembly;
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ReactionAssemblySorp : public AssemblyBase<dim>
 {
 public:
-    typedef typename SorptionBase::EqFields EqFields;
-    typedef typename SorptionBase::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReactionAssemblySorp"; }
 
     /// Constructor.
-    ReactionAssemblySorp(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReactionAssemblySorp(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;
