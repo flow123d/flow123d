@@ -36,12 +36,6 @@
 #include "elasticity_mockup_assembly.hh"
 
 class GenericAssemblyBase;
-template<unsigned int dim> class Stiffness_FullAssembly;
-template<unsigned int dim> class Stiffness_ComputeLocal;
-template<unsigned int dim> class Stiffness_EvalFields;
-template<unsigned int dim> class Rhs_FullAssembly;
-template<unsigned int dim> class Rhs_ComputeLocal;
-template<unsigned int dim> class Rhs_EvalFields;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -348,8 +342,10 @@ public:
 
 class EqData {
 public:
-    EqData()
-    : ls(nullptr) {}
+    typedef equation_data::EqFields EqFields;
+
+    EqData(std::shared_ptr<EqFields> eq_fields)
+    : eq_fields_(eq_fields), ls(nullptr) {}
 
     ~EqData() {
         if (ls!=nullptr) delete ls;
@@ -371,6 +367,8 @@ public:
         dh_->distribute_dofs(ds);
     }
 
+    std::shared_ptr<EqFields> eq_fields_;
+
     /// Object for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
@@ -385,10 +383,10 @@ public:
 /// Test class
 class ElasticityMockupTest : public testing::Test {
 public:
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqData>;
+    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqData>;
 
 	ElasticityMockupTest()
     {
@@ -450,8 +448,8 @@ public:
     ElasticityMockup(bool use_linsys)
     : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 

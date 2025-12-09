@@ -118,8 +118,8 @@ void ElasticityMockup<Stiffness, Rhs>::initialize(const string &input) {
         eq_data_->ls = new LinSysNull(eq_data_->dh_->distr().get());
     }
 
-    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    rhs_assembly_ = new GenericAssembly< Rhs >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly_ = new GenericAssembly< Rhs >(eq_data_.get(), eq_data_->dh_.get());
 }
 
 template<template<IntDim...> class Stiffness, template<IntDim...> class Rhs>

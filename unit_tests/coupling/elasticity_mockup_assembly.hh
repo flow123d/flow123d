@@ -8,18 +8,18 @@
 #include "fem/patch_fe_values.hh"
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class StiffnessEvalFields : public StiffnessAssemblyElasticity<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class StiffnessEvalFields : public StiffnessAssemblyElasticity<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : StiffnessAssemblyElasticity<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    StiffnessEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : StiffnessAssemblyElasticity<dim, TEqData>(eq_data, fe_values) {}
 
     /// Destructor.
     ~StiffnessEvalFields() {}
@@ -39,18 +39,18 @@ public:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class RhsEvalFields : public RhsAssemblyElasticity<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class RhsEvalFields : public RhsAssemblyElasticity<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsEvalFields(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : RhsAssemblyElasticity<dim, TEqFields, TEqData>(eq_fields, eq_data, fe_values) {}
+    RhsEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : RhsAssemblyElasticity<dim, TEqData>(eq_data, fe_values) {}
 
     /// Destructor.
     ~RhsEvalFields() {}

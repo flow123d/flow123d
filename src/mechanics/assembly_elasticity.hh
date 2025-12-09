@@ -32,18 +32,18 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -263,18 +263,18 @@ private:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class RhsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "RhsAssemblyElasticity"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_( this->bulk_values().JxW() ),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
@@ -519,18 +519,18 @@ private:
 
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class OutpuFieldsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::OutputEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ),
 	  grad_deform_( this->bulk_values().grad_vector_shape() ),
@@ -678,18 +678,18 @@ private:
 /**
  * Container class for assembly of constraint matrix for contact condition.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ConstraintAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, PatchFEValues<3> *fe_values)
-    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
+    : AssemblyBasePatch<dim>(fe_values), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       JxW_side_( this->side_values().JxW() ),
       normal_( this->side_values().normal_vector() ),
       deform_side_( this->side_values().vector_shape() ) {
