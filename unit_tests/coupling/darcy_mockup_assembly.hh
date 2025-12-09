@@ -14,18 +14,18 @@
 
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class MHMatrixEvalFields : public MHMatrixAssemblyLMH<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class MHMatrixEvalFields : public MHMatrixAssemblyLMH<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
 
     /// Constructor.
-    MHMatrixEvalFields(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data) {}
+    MHMatrixEvalFields(EqData *eq_data)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data) {}
 
     /// Destructor.
     ~MHMatrixEvalFields() {}

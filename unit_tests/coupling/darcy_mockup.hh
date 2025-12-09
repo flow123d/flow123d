@@ -327,7 +327,9 @@ public:
 
 class EqData {
 public:
-    EqData() {}
+    typedef equation_data::EqFields EqFields;
+
+    EqData(std::shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
 
     void init() {
         auto size = dh_p_->get_local_to_global_map().size();
@@ -341,6 +343,8 @@ public:
         std::fill(save_local_system_.begin(), save_local_system_.end(), false);
         std::fill(bc_fluxes_reconstruted.begin(), bc_fluxes_reconstruted.end(), false);
     }
+
+    std::shared_ptr<EqFields> eq_fields_;
 
     /**
      * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -404,8 +408,8 @@ public:
 /// Test class
 class DarcyMockupTest : public testing::Test {
 public:
-    template<unsigned int dim> using MHMatrixAssemblyLMHDim = MHMatrixAssemblyLMH<dim, equation_data::EqFields, equation_data::EqData>;
-    template<unsigned int dim> using MHMatrixEvalFieldsDim = MHMatrixEvalFields<dim, equation_data::EqFields, equation_data::EqData>;
+    template<unsigned int dim> using MHMatrixAssemblyLMHDim = MHMatrixAssemblyLMH<dim, equation_data::EqData>;
+    template<unsigned int dim> using MHMatrixEvalFieldsDim = MHMatrixEvalFields<dim, equation_data::EqData>;
 
     DarcyMockupTest()
     {
@@ -510,8 +514,8 @@ public:
     DarcyMockup(bool use_linsys)
     : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 

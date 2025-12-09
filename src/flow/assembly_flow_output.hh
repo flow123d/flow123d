@@ -50,18 +50,18 @@
  * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
  *
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class L2DifferenceAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::DiffEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "L2DifferenceAssembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(2), eq_fields_(eq_fields), eq_data_(eq_data) {
+    L2DifferenceAssembly(EqData *eq_data)
+    : AssemblyBase<dim>(2), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
@@ -255,18 +255,18 @@ protected:
 /**
  * Compute output of internal flow data.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class OutputInternalFlowAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::RawOutputEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    OutputInternalFlowAssembly(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }

@@ -25,18 +25,18 @@
 #include "fem/element_cache_map.hh"
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class InitCondPostprocessAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
 
     /// Constructor.
-    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitCondPostprocessAssembly(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -141,17 +141,17 @@ private:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
 
-    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MHMatrixAssemblyRichards(EqData *eq_data)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -179,7 +179,7 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
         //this->balance_ = eq_data_->balance_;
-    	MHMatrixAssemblyLMH<dim, TEqFields, TEqData>::initialize(element_cache_map);
+    	MHMatrixAssemblyLMH<dim, TEqData>::initialize(element_cache_map);
     }
 
 
@@ -397,17 +397,17 @@ protected:
 };
 
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
 
-    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyRichards<dim, TEqFields, TEqData>(eq_fields, eq_data) {
+    ReconstructSchurAssemblyRichards(EqData *eq_data)
+    : MHMatrixAssemblyRichards<dim, TEqData>(eq_data) {
     }
 
     /// Integral over element.

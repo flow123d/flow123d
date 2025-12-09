@@ -42,18 +42,18 @@
 #include "coupling/balance.hh"
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ReadInitCondAssemblyLMH : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReadInitCondAssemblyLMH"; }
 
     /// Constructor.
-    ReadInitCondAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
+    ReadInitCondAssemblyLMH(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->init_pressure;
     }
@@ -112,11 +112,11 @@ protected:
 
 };
 
-template <unsigned int dim, class TEqFields, class TEqData>
+template <unsigned int dim, class TEqData>
 class MHMatrixAssemblyLMH : public AssemblyBase<dim>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
@@ -124,8 +124,8 @@ public:
     static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
 
     /// Constructor.
-    MHMatrixAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data), quad_rt_(dim, 2) {
+    MHMatrixAssemblyLMH(EqData *eq_data)
+    : AssemblyBase<dim>(0), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), quad_rt_(dim, 2) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
@@ -790,18 +790,18 @@ protected:
 
 };
 
-template <unsigned int dim, class TEqFields, class TEqData>
-class ReconstructSchurAssemblyLMH : public MHMatrixAssemblyLMH<dim, TEqFields, TEqData>
+template <unsigned int dim, class TEqData>
+class ReconstructSchurAssemblyLMH : public MHMatrixAssemblyLMH<dim, TEqData>
 {
 public:
-    typedef TEqFields EqFields;
+    typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
     static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
 
     /// Constructor.
-    ReconstructSchurAssemblyLMH(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim, TEqFields, TEqData>(eq_fields, eq_data) {}
+    ReconstructSchurAssemblyLMH(EqData *eq_data)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
