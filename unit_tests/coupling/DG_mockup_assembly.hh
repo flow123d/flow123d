@@ -21,7 +21,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Mass_Assembly"; }
 
     /// Constructor.
     MassEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -45,7 +45,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Stiffness_Assembly"; }
 
     /// Constructor.
     StiffnessEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -81,7 +81,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "SourcesAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Sources_Assembly"; }
 
     /// Constructor.
     SourcesEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
