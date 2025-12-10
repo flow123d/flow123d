@@ -37,7 +37,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblyDp"; }
+    static constexpr const char * name() { return "Dp_InitCondition_Assembly"; }
 
     /// Constructor.
     InitConditionAssemblyDp(EqData *eq_data)
@@ -93,7 +93,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblyDp"; }
+    static constexpr const char * name() { return "Dp_InitCondition_Assembly"; }
 
     /// Constructor.
     ReactionAssemblyDp(EqData *eq_data)
@@ -205,7 +205,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblySorp"; }
+    static constexpr const char * name() { return "Sorp_InitCondition_Assembly"; }
 
     /// Constructor.
     InitConditionAssemblySorp(EqData *eq_data)
@@ -261,7 +261,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReactionAssemblySorp"; }
+    static constexpr const char * name() { return "Sorp_Reaction_Assembly"; }
 
     /// Constructor.
     ReactionAssemblySorp(EqData *eq_data)

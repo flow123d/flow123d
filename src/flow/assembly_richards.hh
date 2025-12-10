@@ -32,7 +32,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
+    static constexpr const char * name() { return "Richards_InitCondPostprocess_Assembly"; }
 
     /// Constructor.
     InitCondPostprocessAssembly(EqData *eq_data)
@@ -148,7 +148,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_MHMatrix_Assembly"; }
 
     MHMatrixAssemblyRichards(EqData *eq_data)
     : MHMatrixAssemblyLMH<dim, TEqData>(eq_data), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
@@ -404,7 +404,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_ReconstructSchur_Assembly"; }
 
     ReconstructSchurAssemblyRichards(EqData *eq_data)
     : MHMatrixAssemblyRichards<dim, TEqData>(eq_data) {

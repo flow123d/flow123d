@@ -40,7 +40,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Mass_Assembly"; }
 
     /// Constructor.
     MassAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -229,7 +229,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Stiffness_Assembly"; }
 
     /// Constructor.
     StiffnessAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -680,7 +680,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "SourcesAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Sources_Assembly"; }
 
     /// Constructor.
     SourcesAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -797,7 +797,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_BdrCondition_Assembly"; }
 
     /// Constructor.
     BdrConditionAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -1004,7 +1004,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_InitProjection_Assembly"; }
 
     /// Constructor.
     InitProjectionAssemblyDG(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -1095,7 +1095,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_InitCondition_Assembly"; }
 
     /// Constructor.
     InitConditionAssemblyDG(EqData *eq_data)

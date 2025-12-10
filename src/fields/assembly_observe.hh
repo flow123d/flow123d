@@ -114,7 +114,7 @@ class AssemblyObserveOutput : public AssemblyBase<dim>
 public:
     typedef EquationOutput EqFields;
 
-    static constexpr const char * name() { return "AssemblyObserveOutput"; }
+    static constexpr const char * name() { return "Output_Observe_Assembly"; }
 
     /// Constructor.
     AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe)

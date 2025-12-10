@@ -38,7 +38,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_Mass_Assembly"; }
 
     /// Constructor.
     MassAssemblyConvection(EqData *eq_data)
@@ -121,7 +121,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitCondAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_InitCond_Assembly"; }
 
     /// Constructor.
     InitCondAssemblyConvection(EqData *eq_data)
@@ -186,7 +186,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_ConcSourcesBdr_Assembly"; }
 
     /// Constructor.
     ConcSourcesBdrAssemblyConvection(EqData *eq_data)
@@ -361,7 +361,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_MatrixMpi_Assembly"; }
 
     /// Constructor.
     MatrixMpiAssemblyConvection(EqData *eq_data)

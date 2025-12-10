@@ -39,7 +39,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
     StiffnessAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -270,7 +270,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "RhsAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Rhs_Assembly"; }
 
     /// Constructor.
     RhsAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -526,7 +526,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_OutpuFields_Assembly"; }
 
     /// Constructor.
     OutpuFieldsAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -685,7 +685,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Constraint_Assembly"; }
 
     /// Constructor.
     ConstraintAssemblyElasticity(EqData *eq_data, PatchFEValues<3> *fe_values)

@@ -39,7 +39,7 @@ public:
     typedef TEqData EqData;
     typedef typename DarcyLMH::EqFields FlowEqFields;
 
-    static constexpr const char * name() { return "FlowPotentialAssemblyHM"; }
+    static constexpr const char * name() { return "HM_FlowPotential_Assembly"; }
 
     /// Constructor.
     FlowPotentialAssemblyHM(EqData *eq_data)
@@ -127,7 +127,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ResidualAssemblyHM"; }
+    static constexpr const char * name() { return "HM_Residual_Assembly"; }
 
     /// Constructor.
     ResidualAssemblyHM(EqData *eq_data)

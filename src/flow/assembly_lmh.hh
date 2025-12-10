@@ -49,7 +49,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReadInitCondAssemblyLMH"; }
+    static constexpr const char * name() { return "Darcy_ReadInitCond_Assembly"; }
 
     /// Constructor.
     ReadInitCondAssemblyLMH(EqData *eq_data)
@@ -121,7 +121,7 @@ public:
 
     DECLARE_EXCEPTION( ExcBCNotSupported, << "BC type not supported.\n" );
 
-    static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
+    static constexpr const char * name() { return "Darcy_MHMatrix_Assembly"; }
 
     /// Constructor.
     MHMatrixAssemblyLMH(EqData *eq_data)
@@ -797,7 +797,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReconstructSchurAssemblyLMH"; }
+    static constexpr const char * name() { return "Darcy_ReconstructSchur_Assembly"; }
 
     /// Constructor.
     ReconstructSchurAssemblyLMH(EqData *eq_data)

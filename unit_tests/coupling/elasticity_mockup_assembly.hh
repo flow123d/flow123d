@@ -15,7 +15,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
     StiffnessEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
@@ -46,7 +46,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "RhsAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Rhs_Assembly"; }
 
     /// Constructor.
     RhsEvalFields(EqData *eq_data, PatchFEValues<3> *fe_values)
