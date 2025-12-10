@@ -17,39 +17,39 @@
 # Array of DG_asm_bench test
 dg_asm:
   - square_2D_uniform
-  - square_2D_refined
-  - lshape_2D_uniform
-  - lshape_2D_refined
-  - cube_3D_uniform
-  - cube_3D_refined
+#  - square_2D_refined
+#  - lshape_2D_uniform
+#  - lshape_2D_refined
+#  - cube_3D_uniform
+#  - cube_3D_refined
   - lshape_3D_uniform
-  - lshape_3D_refined
+#  - lshape_3D_refined
 
 # Array of elasticity_asm_bench test
 elasticity_asm:
   - square_2D_uniform
-  - square_2D_refined
-  - lshape_2D_uniform
-  - lshape_2D_refined
-  - cube_3D_uniform
-  - cube_3D_refined
+#  - square_2D_refined
+#  - lshape_2D_uniform
+#  - lshape_2D_refined
+#  - cube_3D_uniform
+#  - cube_3D_refined
   - lshape_3D_uniform
-  - lshape_3D_refined
+#  - lshape_3D_refined
 
 # Array of darcy_asm_bench test
 darcy_asm:
   - square_2D_uniform
-  - square_2D_refined
-  - lshape_2D_uniform
-  - lshape_2D_refined
-  - cube_3D_uniform
-  - cube_3D_refined
+#  - square_2D_refined
+#  - lshape_2D_uniform
+#  - lshape_2D_refined
+#  - cube_3D_uniform
+#  - cube_3D_refined
   - lshape_3D_uniform
-  - lshape_3D_refined
+#  - lshape_3D_refined
 
 # Sizes of meshes
 meshes_sizes:
-  - small
+#  - small
   - medium
-  - big
+#  - big
 

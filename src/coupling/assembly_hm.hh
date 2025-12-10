@@ -31,19 +31,19 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class FlowPotentialAssemblyHM : public AssemblyBase<dim>
 {
 public:
-    typedef typename HM_Iterative::EqFields EqFields;
-    typedef typename HM_Iterative::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
     typedef typename DarcyLMH::EqFields FlowEqFields;
 
-    static constexpr const char * name() { return "FlowPotentialAssemblyHM"; }
+    static constexpr const char * name() { return "HM_FlowPotential_Assembly"; }
 
     /// Constructor.
-    FlowPotentialAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    FlowPotentialAssemblyHM(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) )  {
         this->used_fields_ += eq_fields_->alpha;
         this->used_fields_ += eq_fields_->density;
@@ -119,18 +119,18 @@ private:
 };
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ResidualAssemblyHM : public AssemblyBase<dim>
 {
 public:
-    typedef typename HM_Iterative::EqFields EqFields;
-    typedef typename HM_Iterative::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ResidualAssemblyHM"; }
+    static constexpr const char * name() { return "HM_Residual_Assembly"; }
 
     /// Constructor.
-    ResidualAssemblyHM(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    ResidualAssemblyHM(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(1, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += eq_data_->flow_->eq_fields().field_ele_pressure;
         this->used_fields_ += eq_fields_->old_iter_pressure;

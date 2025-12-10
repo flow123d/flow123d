@@ -160,8 +160,8 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Check that Model is derived from AdvectionDiffusionModel.
     static_assert(std::is_base_of<AdvectionDiffusionModel, Model>::value, "");
 
-    eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
+    eq_data_ = make_shared<EqData>(eq_fields_);
     this->eq_fieldset_ = eq_fields_;
     Model::init_balance(in_rec);
 
@@ -264,15 +264,15 @@ void TransportDG<Model>::initialize()
     init_projection = input_rec.val<bool>("init_projection");
 
     // create assemblation object, finite element structures and distribute DOFs
-	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     
     if(init_projection)
-	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     else
-        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_fields_.get(), eq_data_.get());
+        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_data_.get());
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());

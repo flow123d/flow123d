@@ -205,7 +205,7 @@ void DarcyMockup<MhMatrix>::initialize(const string &input) {
     // initialization of balance object
     eq_data_->balance_ = std::make_shared<BalanceNull>("water", mesh_);
 
-    this->mh_matrix_assembly_ = new GenericAssembly< MhMatrix >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MhMatrix >(eq_data_.get(), eq_data_->dh_.get());
 }
 
 template<template<IntDim...> class MhMatrix>

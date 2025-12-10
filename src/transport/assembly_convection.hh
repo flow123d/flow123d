@@ -31,18 +31,18 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class MassAssemblyConvection : public AssemblyBase<dim>
 {
 public:
-    typedef typename ConvectionTransport::EqFields EqFields;
-    typedef typename ConvectionTransport::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_Mass_Assembly"; }
 
     /// Constructor.
-    MassAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -115,18 +115,18 @@ public:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class InitCondAssemblyConvection : public AssemblyBase<dim>
 {
 public:
-    typedef typename ConvectionTransport::EqFields EqFields;
-    typedef typename ConvectionTransport::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitCondAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_InitCond_Assembly"; }
 
     /// Constructor.
-    InitCondAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitCondAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc;
     }
@@ -182,18 +182,18 @@ private:
  * Assembles concentration sources for each substance and set boundary conditions.
  * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ConcSourcesBdrAssemblyConvection : public AssemblyBase<dim>
 {
 public:
-    typedef typename ConvectionTransport::EqFields EqFields;
-    typedef typename ConvectionTransport::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ConcSourcesBdrAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_ConcSourcesBdr_Assembly"; }
 
     /// Constructor.
-    ConcSourcesBdrAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConcSourcesBdrAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) )  {
         this->used_fields_ += eq_fields_->cross_section;
@@ -359,18 +359,18 @@ public:
  *
  * Updates CFL time step constrain.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class MatrixMpiAssemblyConvection : public AssemblyBase<dim>
 {
 public:
-    typedef typename ConvectionTransport::EqFields EqFields;
-    typedef typename ConvectionTransport::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MatrixMpiAssemblyConvection"; }
+    static constexpr const char * name() { return "Convection_MatrixMpi_Assembly"; }
 
     /// Constructor.
-    MatrixMpiAssemblyConvection(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    MatrixMpiAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       edge_integral_( this->create_edge_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->flow_flux;

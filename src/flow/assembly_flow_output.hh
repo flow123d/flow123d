@@ -48,18 +48,18 @@
  * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
  *
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class L2DifferenceAssembly : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::DiffEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "L2DifferenceAssembly"; }
+    static constexpr const char * name() { return "Output_L2Difference_Assembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(2, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    L2DifferenceAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(2, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( output_integral_->JxW() ),
 	  pt_coords_( output_integral_->coords() ),
@@ -245,18 +245,18 @@ protected:
 /**
  * Compute output of internal flow data.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class OutputInternalFlowAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::RawOutputEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
+    static constexpr const char * name() { return "Output_InternalFlow_Assembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutputInternalFlowAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }
