@@ -57,7 +57,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "L2DifferenceAssembly"; }
+    static constexpr const char * name() { return "Output_L2Difference_Assembly"; }
 
     /// Constructor.
     L2DifferenceAssembly(EqData *eq_data)
@@ -262,7 +262,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
+    static constexpr const char * name() { return "Output_InternalFlow_Assembly"; }
 
     /// Constructor.
     OutputInternalFlowAssembly(EqData *eq_data)

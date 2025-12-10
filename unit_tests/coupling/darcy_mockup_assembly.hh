@@ -21,7 +21,7 @@ public:
     typedef typename TEqData::EqFields EqFields;
     typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MHMatrixAssemblyLMH"; }
+    static constexpr const char * name() { return "Darcy_MHMatrix_Assembly"; }
 
     /// Constructor.
     MHMatrixEvalFields(EqData *eq_data)

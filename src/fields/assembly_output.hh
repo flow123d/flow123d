@@ -104,7 +104,7 @@ public:
     typedef TEqData EqData;
     typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
-    static constexpr const char * name() { return "AssemblyOutputElemData"; }
+    static constexpr const char * name() { return "Output_ElemData_Assembly"; }
 
     /// Constructor.
     AssemblyOutputElemData(EqData *eq_data)
@@ -146,7 +146,7 @@ public:
     typedef TEqData EqData;
     typedef typename GenericAssemblyBase::BulkIntegralData BulkIntegralData;
 
-    static constexpr const char * name() { return "AssemblyOutputNodeData"; }
+    static constexpr const char * name() { return "Output_NodeData_Assembly"; }
 
     /// Constructor.
     AssemblyOutputNodeData(EqData *eq_data)
