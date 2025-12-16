@@ -1,5 +1,5 @@
-#ifndef DG_MOCKUP_HH_
-#define DG_MOCKUP_HH_
+#ifndef DARCY_MOCKUP_HH_
+#define DARCY_MOCKUP_HH_
 
 
 #include <mesh_constructor.hh>
@@ -604,7 +604,7 @@ public:
         }
     }
 
-    void accept_time_step() {
+    virtual void accept_time_step() {
     	eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
     	eq_data_->p_edge_solution_previous_time.local_to_ghost_begin();
     	eq_data_->p_edge_solution_previous_time.local_to_ghost_end();
@@ -614,7 +614,7 @@ public:
     void initialize(const string &input);
 
     /// Execute zero time step. Do not call method directly, use run_simulation
-    void zero_time_step();
+    void zero_time_step()
 
     /// Update equation solution. Do not call method directly, use run_simulation
     void update_solution();
@@ -623,7 +623,7 @@ public:
     void solve_nonlinear();
 
     /// Assembly or update whole linear system.
-    void assembly_linear_system();
+    virtual void assembly_linear_system();
 
     /// Call zero_time_step and update_solution for 4 time steps.
     void run_simulation() {
@@ -689,6 +689,9 @@ public:
         }
     }
 
+    /// Create and initialize assembly objects
+    virtual void initialize_asm();
+
 
 	int size;				    // global size of MH matrix
 
@@ -710,4 +713,4 @@ public:
 };
 
 
-#endif /* DG_MOCKUP_HH_ */
+#endif /* DARCY_MOCKUP_HH_ */
