@@ -11,7 +11,7 @@ void DarcyMockupTest::run_fullassembly_const(const string &eq_data_input, const 
     // FullAssembly + field_const
     START_TIMER("FullAssembly_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixAssemblyLMHDim> test_full_asm_const(true);
+    DarcyMockup<MHMatrixAssemblyLMHDim, equation_data::EqData> test_full_asm_const(true);
     test_full_asm_const.create_and_set_mesh(mesh_file);
     test_full_asm_const.initialize( eq_data_input );
     test_full_asm_const.eq_fields_->init_field_constants(0.5, arma::vec3("0.8 0.6 0"));
@@ -24,7 +24,7 @@ void DarcyMockupTest::run_fullassembly_model(const string &eq_data_input, const 
     // FullAssembly + field_model
     START_TIMER("FullAssembly_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixAssemblyLMHDim> test_full_asm_model(true);
+    DarcyMockup<MHMatrixAssemblyLMHDim, equation_data::EqData> test_full_asm_model(true);
     test_full_asm_model.create_and_set_mesh(mesh_file);
     test_full_asm_model.initialize( eq_data_input );
     test_full_asm_model.eq_fields_->init_field_models();
@@ -37,7 +37,7 @@ void DarcyMockupTest::run_computelocal_const(const string &eq_data_input, const 
     // ComputeLocal + field_const
     START_TIMER("ComputeLocal_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixAssemblyLMHDim> test_comp_local_const(false);
+    DarcyMockup<MHMatrixAssemblyLMHDim, equation_data::EqData> test_comp_local_const(false);
     test_comp_local_const.create_and_set_mesh(mesh_file);
     test_comp_local_const.initialize( eq_data_input );
     test_comp_local_const.eq_fields_->init_field_constants(0.5, arma::vec3("0.8 0.6 0"));
@@ -50,7 +50,7 @@ void DarcyMockupTest::run_computelocal_model(const string &eq_data_input, const 
     // ComputeLocal + field_model
     START_TIMER("ComputeLocal_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixAssemblyLMHDim> test_comp_local_model(false);
+    DarcyMockup<MHMatrixAssemblyLMHDim, equation_data::EqData> test_comp_local_model(false);
     test_comp_local_model.create_and_set_mesh(mesh_file);
     test_comp_local_model.initialize( eq_data_input );
     test_comp_local_model.eq_fields_->init_field_models();
@@ -63,7 +63,7 @@ void DarcyMockupTest::run_evalfields_const(const string &eq_data_input, const st
     // EvalFields + field_const
     START_TIMER("EvalFields_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixEvalFieldsDim> test_eval_fields_const(false);
+    DarcyMockup<MHMatrixEvalFieldsDim, equation_data::EqData> test_eval_fields_const(false);
     test_eval_fields_const.create_and_set_mesh(mesh_file);
     test_eval_fields_const.initialize( eq_data_input );
     test_eval_fields_const.eq_fields_->init_field_constants(0.5, arma::vec3("0.8 0.6 0"));
@@ -76,7 +76,7 @@ void DarcyMockupTest::run_evalfields_model(const string &eq_data_input, const st
     // EvalFields + field_model
     START_TIMER("EvalFields_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    DarcyMockup<MHMatrixEvalFieldsDim> test_eval_fields_model(false);
+    DarcyMockup<MHMatrixEvalFieldsDim, equation_data::EqData> test_eval_fields_model(false);
     test_eval_fields_model.create_and_set_mesh(mesh_file);
     test_eval_fields_model.initialize( eq_data_input );
     test_eval_fields_model.eq_fields_->init_field_models();
@@ -86,8 +86,8 @@ void DarcyMockupTest::run_evalfields_model(const string &eq_data_input, const st
 }
 
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::initialize(const string &input) {
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::initialize(const string &input) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
     in_rec_ = reader.get_root_interface<Input::Record>();
 
@@ -205,16 +205,21 @@ void DarcyMockup<MhMatrix>::initialize(const string &input) {
     // initialization of balance object
     eq_data_->balance_ = std::make_shared<BalanceNull>("water", mesh_);
 
+    this->initialize_specific();
+
     this->initialize_asm();
 }
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::initialize_asm() {
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::initialize_asm() {
     this->mh_matrix_assembly_ = new GenericAssembly< MhMatrix >(eq_data_.get());
 }
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::zero_time_step() {
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::initialize_specific() {}
+
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::zero_time_step() {
     START_TIMER("ZERO-TIME STEP");
     data_changed_ = eq_fields_->set_time(time_->step(), LimitSide::right) || data_changed_;
 
@@ -231,8 +236,8 @@ void DarcyMockup<MhMatrix>::zero_time_step() {
 }
 
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::update_solution()
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::update_solution()
 {
     START_TIMER("SIMULATION-ONE STEP");
 
@@ -271,8 +276,8 @@ void DarcyMockup<MhMatrix>::update_solution()
     END_TIMER("SIMULATION-ONE STEP");
 }
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::assembly_linear_system()
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::assembly_linear_system()
 {
     eq_data_->p_edge_solution.local_to_ghost_begin();
     eq_data_->p_edge_solution.local_to_ghost_end();
@@ -291,8 +296,8 @@ void DarcyMockup<MhMatrix>::assembly_linear_system()
     eq_data_->lin_sys_schur->set_matrix_changed();
 }
 
-template<template<IntDim...> class MhMatrix>
-void DarcyMockup<MhMatrix>::solve_nonlinear()
+template<template<IntDim...> class MhMatrix, class TEqData>
+void DarcyMockup<MhMatrix, TEqData>::solve_nonlinear()
 {
     assembly_linear_system();
     double residual_norm = eq_data_->lin_sys_schur->compute_residual();

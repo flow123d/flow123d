@@ -445,9 +445,11 @@ public:
 /*******************************************************************************
  * Equivalent to TransportDG class
  */
-template<template<IntDim...> class MhMatrix>
+template<template<IntDim...> class MhMatrix, class TEqData>
 class DarcyMockup : public EquationBase {
 public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     const it::Record & type_field_descriptor() {
         std::string equation_name = "TestEquation";
@@ -514,8 +516,8 @@ public:
     DarcyMockup(bool use_linsys)
     : use_linsys_(use_linsys)
     {
-        eq_fields_ = make_shared<equation_data::EqFields>();
-        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
+        eq_fields_ = make_shared<EqFields>();
+        eq_data_ = make_shared<EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 
@@ -692,6 +694,8 @@ public:
     /// Create and initialize assembly objects
     virtual void initialize_asm();
 
+    virtual void initialize_specific();
+
 
 	int size;				    // global size of MH matrix
 
@@ -702,8 +706,8 @@ public:
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 
-	std::shared_ptr<equation_data::EqFields> eq_fields_;
-	std::shared_ptr<equation_data::EqData> eq_data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
     Input::Record in_rec_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension

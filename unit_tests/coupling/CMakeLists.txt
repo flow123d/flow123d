@@ -35,6 +35,7 @@ define_mpi_test(application 2)
 define_mpi_benchmark(dg_asm 1 3600)
 define_mpi_benchmark(elasticity_asm 1 3600)
 define_mpi_benchmark(darcy_asm 1 3600)
+define_mpi_benchmark(richards_asm 1 3600)
 
 
 

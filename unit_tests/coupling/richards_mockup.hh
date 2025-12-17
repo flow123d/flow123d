@@ -208,16 +208,19 @@ public:
 /*******************************************************************************
  * Equivalent to TransportDG class
  */
-template<template<IntDim...> class MhMatrix>
-class RichardsMockup : public DarcyMockup<MhMatrix> {
+template<template<IntDim...> class MhMatrix, class TEqData>
+class RichardsMockup : public DarcyMockup<MhMatrix, TEqData> {
 public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
+
     it::Record & get_input_type() override {
         namespace it=Input::Type;
         std::string equation_name = "TestEquation";
 
         it::Record field_descriptor = it::Record(equation_name + "_Data",
             FieldCommon::field_descriptor_record_description(equation_name + "_Data"))
-        .copy_keys( DarcyMockup<MhMatrix>::type_field_descriptor() )
+        .copy_keys( DarcyMockup<MhMatrix, TEqData>::type_field_descriptor() )
         .copy_keys( equation_data_richards::EqFields().make_field_descriptor_type(equation_name + "_Data_aux") )
         .close();
 
@@ -239,7 +242,7 @@ public:
 
         return it::Record(equation_name, "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
             .derive_from(DarcyFlowInterface::get_input_type())
-            .copy_keys(DarcyMockup<MhMatrix>::get_input_type())
+            .copy_keys(DarcyMockup<MhMatrix, TEqData>::get_input_type())
             .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                     "Input data for Darcy flow model.")
 //            .declare_key("output", DarcyFlowMHOutput::get_input_type(eq_fields, equation_name()),
@@ -251,37 +254,31 @@ public:
     }
 
     RichardsMockup(bool use_linsys)
-    : DarcyMockup<MhMatrix>(use_linsys)
-    {
-        eq_fields_ = make_shared<equation_data_richards::EqFields>();
-        eq_data_ = make_shared<equation_data_richards::EqData>(eq_fields_);
-        DarcyMockup<MhMatrix>::eq_data_ = eq_data_;
-        DarcyMockup<MhMatrix>::eq_fields_ = eq_fields_;
-        this->eq_fieldset_ = eq_fields_;
-    }
+    : DarcyMockup<MhMatrix, TEqData>(use_linsys)
+    {}
 
     ~RichardsMockup() {}
 
     bool zero_time_term(bool time_global=false) {
         if (time_global) {
-            return (eq_fields_->storativity.input_list_size() == 0)
-                    && (eq_fields_->water_content_saturated.input_list_size() == 0);
+            return (this->eq_fields_->storativity.input_list_size() == 0)
+                    && (this->eq_fields_->water_content_saturated.input_list_size() == 0);
 
         } else {
-            return (eq_fields_->storativity.field_result(this->mesh_->region_db().get_region_set("BULK"))
+            return (this->eq_fields_->storativity.field_result(this->mesh_->region_db().get_region_set("BULK"))
                     == result_zeros)
-                    && (eq_fields_->water_content_saturated.field_result(this->mesh_->region_db().get_region_set("BULK"))
+                    && (this->eq_fields_->water_content_saturated.field_result(this->mesh_->region_db().get_region_set("BULK"))
                     == result_zeros);
         }
     }
 
     void accept_time_step() override {
-    	eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
-        VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
-        eq_data_->water_content_previous_time.copy_from(water_content_vec);
+        this->eq_data_->p_edge_solution_previous_time.copy_from(this->eq_data_->p_edge_solution);
+        VectorMPI water_content_vec = this->eq_fields_->water_content_ptr->vec();
+        this->eq_data_->water_content_previous_time.copy_from(water_content_vec);
 
-        eq_data_->p_edge_solution_previous_time.local_to_ghost_begin();
-        eq_data_->p_edge_solution_previous_time.local_to_ghost_end();
+        this->eq_data_->p_edge_solution_previous_time.local_to_ghost_begin();
+        this->eq_data_->p_edge_solution_previous_time.local_to_ghost_end();
     }
 
     /// Assembly or update whole linear system.
@@ -290,10 +287,7 @@ public:
     /// Create and initialize assembly objects
     void initialize_asm() override;
 
-
-
-	std::shared_ptr<equation_data_richards::EqFields> eq_fields_;
-	std::shared_ptr<equation_data_richards::EqData> eq_data_;
+    void initialize_specific() override;
 };
 
 
