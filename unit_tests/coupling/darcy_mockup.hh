@@ -464,7 +464,7 @@ public:
         return field_descriptor;
     }
 
-    it::Record & get_input_type() {
+    virtual it::Record & get_input_type() {
         std::string equation_name = "TestEquation";
         it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
             .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
@@ -614,7 +614,7 @@ public:
     void initialize(const string &input);
 
     /// Execute zero time step. Do not call method directly, use run_simulation
-    void zero_time_step()
+    void zero_time_step();
 
     /// Update equation solution. Do not call method directly, use run_simulation
     void update_solution();

@@ -29,10 +29,10 @@ void RichardsMockupTest::run_fullassembly_model(const string &eq_data_input, con
     std::cout << "test 1" << std::endl;
     test_full_asm_model.initialize( eq_data_input );
     std::cout << "test 2" << std::endl;
-//    test_full_asm_model.eq_fields_->init_field_models();
-//    std::cout << "test 3" << std::endl;
-//    test_full_asm_model.run_simulation();
-//    std::cout << "test 4" << std::endl;
+    test_full_asm_model.eq_fields_->init_field_models();
+    std::cout << "test 3" << std::endl;
+    test_full_asm_model.run_simulation();
+    std::cout << "test 4" << std::endl;
     END_TIMER("full_mesh");
     END_TIMER("FullAssembly_model");
 }

@@ -96,11 +96,13 @@ public:
     EqFields() {
         *this += water_content.name("water_content")
                 .units(UnitSI::dimensionless())
+                .input_default("0.0")
                 .flags(FieldFlag::equation_result)
                 .description(R"(Water content.
                     It is a fraction of water volume to the whole volume.)");
         *this += conductivity_richards.name("conductivity_richards")
                 .units( UnitSI().m().s(-1) )
+                .input_default("0.0")
                 .flags(FieldFlag::equation_result)
                 .description("Computed isotropic scalar conductivity by the soil model.");
 
@@ -209,7 +211,7 @@ public:
 template<template<IntDim...> class MhMatrix>
 class RichardsMockup : public DarcyMockup<MhMatrix> {
 public:
-    it::Record & get_input_type() {
+    it::Record & get_input_type() override {
         namespace it=Input::Type;
         std::string equation_name = "TestEquation";
 
