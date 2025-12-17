@@ -1,5 +1,5 @@
-#ifndef DG_MOCKUP_HH_
-#define DG_MOCKUP_HH_
+#ifndef DARCY_MOCKUP_HH_
+#define DARCY_MOCKUP_HH_
 
 
 #include <mesh_constructor.hh>
@@ -445,9 +445,11 @@ public:
 /*******************************************************************************
  * Equivalent to TransportDG class
  */
-template<template<IntDim...> class MhMatrix>
+template<template<IntDim...> class MhMatrix, class TEqData>
 class DarcyMockup : public EquationBase {
 public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
     const it::Record & type_field_descriptor() {
         std::string equation_name = "TestEquation";
@@ -464,7 +466,7 @@ public:
         return field_descriptor;
     }
 
-    it::Record & get_input_type() {
+    virtual it::Record & get_input_type() {
         std::string equation_name = "TestEquation";
         it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
             .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
@@ -514,8 +516,8 @@ public:
     DarcyMockup(bool use_linsys)
     : use_linsys_(use_linsys)
     {
-        eq_fields_ = make_shared<equation_data::EqFields>();
-        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
+        eq_fields_ = make_shared<EqFields>();
+        eq_data_ = make_shared<EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 
@@ -604,7 +606,7 @@ public:
         }
     }
 
-    void accept_time_step() {
+    virtual void accept_time_step() {
     	eq_data_->p_edge_solution_previous_time.copy_from(eq_data_->p_edge_solution);
     	eq_data_->p_edge_solution_previous_time.local_to_ghost_begin();
     	eq_data_->p_edge_solution_previous_time.local_to_ghost_end();
@@ -623,7 +625,7 @@ public:
     void solve_nonlinear();
 
     /// Assembly or update whole linear system.
-    void assembly_linear_system();
+    virtual void assembly_linear_system();
 
     /// Call zero_time_step and update_solution for 4 time steps.
     void run_simulation() {
@@ -689,6 +691,11 @@ public:
         }
     }
 
+    /// Create and initialize assembly objects
+    virtual void initialize_asm();
+
+    virtual void initialize_specific();
+
 
 	int size;				    // global size of MH matrix
 
@@ -699,8 +706,8 @@ public:
 	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 
-	std::shared_ptr<equation_data::EqFields> eq_fields_;
-	std::shared_ptr<equation_data::EqData> eq_data_;
+	std::shared_ptr<EqFields> eq_fields_;
+	std::shared_ptr<EqData> eq_data_;
     Input::Record in_rec_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
@@ -710,4 +717,4 @@ public:
 };
 
 
-#endif /* DG_MOCKUP_HH_ */
+#endif /* DARCY_MOCKUP_HH_ */
