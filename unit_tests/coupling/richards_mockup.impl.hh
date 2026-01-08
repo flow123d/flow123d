@@ -88,7 +88,7 @@ void RichardsMockupTest::run_evalfields_model(const string &eq_data_input, const
 
 template<template<IntDim...> class MhMatrix, class TEqData>
 void RichardsMockup<MhMatrix, TEqData>::initialize_asm() {
-    this->mh_matrix_assembly_ = new GenericAssembly< MhMatrix >(this->eq_data_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MhMatrix >(this->eq_data_.get(), this->eq_data_->dh_.get());
 }
 
 template<template<IntDim...> class MhMatrix, class TEqData>
