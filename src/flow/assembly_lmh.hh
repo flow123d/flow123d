@@ -365,6 +365,7 @@ protected:
 
         fe_values_.reinit(ele);
         auto velocity = fe_values_.vector_view(0);
+        auto aniso_inv = (eq_fields_->anisotropy(p)).i();
 
         for (unsigned int k=0; k<fe_values_.n_points(); k++)
             for (unsigned int i=0; i<fe_values_.n_dofs(); i++){
@@ -374,9 +375,7 @@ protected:
 
                 for (unsigned int j=0; j<fe_values_.n_dofs(); j++){
                     double mat_val =
-                        arma::dot( velocity.value(i,k), //TODO: compute anisotropy before
-                                   (eq_fields_->anisotropy(p)).i() * velocity.value(j,k)
-                                 )
+                        arma::dot( velocity.value(i,k), aniso_inv * velocity.value(j,k) )
                         * scale_sides * fe_values_.JxW(k);
 
                     eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
