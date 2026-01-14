@@ -363,7 +363,7 @@ protected:
     inline void asm_sides(BulkPoint &p, double conductivity, unsigned int element_patch_idx)
     {
         double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
-        auto aniso_inv = (eq_fields_->anisotropy(p)).i();
+        arma::mat33 aniso_inv = (eq_fields_->anisotropy(p)).i();
 
         for (auto p_rt : asm_sides_integral_->points(element_patch_idx) ) {
             for (unsigned int i=0; i<n_dofs_; i++){
