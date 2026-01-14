@@ -363,18 +363,17 @@ protected:
     inline void asm_sides(BulkPoint &p, double conductivity, unsigned int element_patch_idx)
     {
         double scale_sides = 1 / eq_fields_->cross_section(p) / conductivity;
+        auto aniso_inv = (eq_fields_->anisotropy(p)).i();
 
         for (auto p_rt : asm_sides_integral_->points(element_patch_idx) ) {
-            for (unsigned int i=0; i<n_dofs_; i++){ //Fix n_dofs
+            for (unsigned int i=0; i<n_dofs_; i++){
                 double rhs_val = arma::dot( eq_data_->gravity_vec_, velocity_.shape(i)(p_rt) )
                            * JxW_(p_rt);
                 eq_data_->loc_system_[bulk_local_idx_].add_value(i, rhs_val);
 
                 for (unsigned int j=0; j<n_dofs_; j++){
                     double mat_val =
-                        arma::dot( velocity_.shape(i)(p_rt), //TODO: compute anisotropy before
-                                   (eq_fields_->anisotropy(p)).i() * velocity_.shape(j)(p_rt)
-                                 )
+                        arma::dot( velocity_.shape(i)(p_rt), aniso_inv * velocity_.shape(j)(p_rt) )
                         * scale_sides * JxW_(p_rt);
 
                     eq_data_->loc_system_[bulk_local_idx_].add_value(i, j, mat_val);
