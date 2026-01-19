@@ -110,10 +110,10 @@ public:
      * @param eq_fields   Descendant of FieldSet declared in equation
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      */
-    GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data)
+    GenericAssembly( typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
       use_patch_fe_values_(false),
-	  multidim_assembly_(eq_fields, eq_data, &this->asm_internals_)
+	  multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
     }
@@ -126,10 +126,10 @@ public:
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      * @param dh          DOF handler object
      */
-     GenericAssembly( typename DimAssembly<1>::EqFields *eq_fields, typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
+     GenericAssembly( typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(dh->ds()->fe()),
       use_patch_fe_values_(true),
-      multidim_assembly_(eq_fields, eq_data, &this->asm_internals_)
+      multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
     }

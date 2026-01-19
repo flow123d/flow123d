@@ -36,22 +36,22 @@
 /**
  * Common ancestor of AssemblyOutputElemData and AssemblyOutputNodeData class.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class AssemblyOutputBase : public AssemblyBase<dim>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
 
     /// Constructor.
-    AssemblyOutputBase(unsigned int quad_order, EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(quad_order, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(quad_order, asm_internals), eq_fields_(eq_data), eq_data_(eq_data) {
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
-    AssemblyOutputBase(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    AssemblyOutputBase(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(), eq_fields_(eq_data), eq_data_(eq_data) {
         this->asm_internals_ = asm_internals;
         offsets_.resize(CacheMapElementNumber::get());
     }
@@ -93,18 +93,18 @@ protected:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
-class AssemblyOutputElemData : public AssemblyOutputBase<dim>
+template <unsigned int dim, class TEqData>
+class AssemblyOutputElemData : public AssemblyOutputBase<dim, TEqData>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "AssemblyOutputElemData"; }
+    static constexpr const char * name() { return "Output_ElemData_Assembly"; }
 
     /// Constructor.
-    AssemblyOutputElemData(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyOutputBase<dim>(0, eq_fields, eq_data, asm_internals),
+    AssemblyOutputElemData(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyOutputBase<dim, TEqData>(0, eq_data, asm_internals),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {}
 
     /// Destructor.
@@ -114,11 +114,11 @@ public:
     inline void assemble_cell_integrals() {
     	unsigned int element_patch_idx, field_value_cache_position, val_idx;
     	this->reset_offsets();
-    	for (unsigned int i=0; i<this->integral_data_.bulk_.permanent_size(); ++i) {
-            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(this->integral_data_.bulk_[i].cell.elm_idx());
+    	for (unsigned int i=0; i<this->integral_data_.bulk_[0].permanent_size(); ++i) { // holds only one BulkIntegral and uses zero index fixedly
+            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(this->integral_data_.bulk_[0][i].cell.elm_idx());
             auto p = *( bulk_integral_->points(element_patch_idx).begin() ); // evaluation point (in element center)
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
-            val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->integral_data_.bulk_[i].cell.elm_idx());
+            val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->integral_data_.bulk_[0][i].cell.elm_idx());
             this->offsets_[field_value_cache_position] = val_idx;
     	}
         for (FieldListAccessor f_acc : this->used_fields_.fields_range()) {
@@ -137,18 +137,18 @@ private:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
-class AssemblyOutputNodeData : public AssemblyOutputBase<dim>
+template <unsigned int dim, class TEqData>
+class AssemblyOutputNodeData : public AssemblyOutputBase<dim, TEqData>
 {
 public:
-    typedef EquationOutput EqFields;
-    typedef EquationOutput EqData;
+    typedef TEqData EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "AssemblyOutputNodeData"; }
+    static constexpr const char * name() { return "Output_NodeData_Assembly"; }
 
     /// Constructor.
-    AssemblyOutputNodeData(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyOutputBase<dim>(eq_fields, eq_data, asm_internals) {
+    AssemblyOutputNodeData(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyOutputBase<dim, TEqData>(eq_data, asm_internals) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
@@ -163,7 +163,7 @@ public:
 
     /// Sets output data members.
     void set_output_data(const FieldSet &used, std::shared_ptr<OutputTime> stream) {
-    	AssemblyOutputBase<dim>::set_output_data(used, stream);
+    	AssemblyOutputBase<dim, TEqData>::set_output_data(used, stream);
     	offset_vec_ = this->stream_->get_output_mesh_ptr()->offsets()->get_data();
     }
 
@@ -172,12 +172,12 @@ public:
     inline void assemble_cell_integrals() {
     	unsigned int element_patch_idx, field_value_cache_position, val_idx;
     	this->reset_offsets();
-    	for (unsigned int i=0; i<this->integral_data_.bulk_.permanent_size(); ++i) {
-            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(this->integral_data_.bulk_[i].cell.elm_idx());
-            val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->integral_data_.bulk_[i].cell.elm_idx()) ];
+    	for (unsigned int i=0; i<this->integral_data_.bulk_[0].permanent_size(); ++i) { // holds only one BulkIntegral and uses zero index fixedly
+            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(this->integral_data_.bulk_[0][i].cell.elm_idx());
+            val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(this->integral_data_.bulk_[0][i].cell.elm_idx()) ];
             auto p = *( bulk_integral_->points(element_patch_idx).begin() );
             field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
-            for (uint j=0; j<this->integral_data_.bulk_[i].cell.dim()+1; ++j) {
+            for (uint j=0; j<this->integral_data_.bulk_[0][i].cell.dim()+1; ++j) {
                 this->offsets_[field_value_cache_position+j] = val_idx+j;
             }
     	}

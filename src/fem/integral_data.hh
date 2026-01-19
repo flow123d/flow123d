@@ -127,13 +127,67 @@ struct BoundaryIntegralData {
 };
 
 
+/**
+ * Define vector of RevertableLists.
+ *
+ * Used in IntegralData structure and in AssemblyBase for sorting integral data of integrals
+ * with different quadrature order of same type to separate RevertableLists
+ */
+template<class Type>
+struct RevertableListVector {
+public:
+    /// Default constructor
+    RevertableListVector()
+    {}
+
+    /// Constructor, initialize vec_list_
+    RevertableListVector(uint list_size)
+    : vec_list_(size) {}
+
+    /// Set size of vec_list_
+    void set_size(uint new_size) {
+        ASSERT_GE(new_size, vec_list_.size());
+        vec_list_.resize(new_size);
+    }
+
+    /// Finalize temporary part of data.
+    inline void make_permanent()
+    {
+        for (auto &rl : vec_list_) rl.make_permanent();
+    }
+
+    /// Erase temporary part of data.
+    inline void revert_temporary()
+    {
+        for (auto &rl : vec_list_) rl.revert_temporary();
+    }
+
+    /// Clear the list.
+    inline void reset()
+    {
+        for (auto &rl : vec_list_) rl.reset();
+    }
+
+    inline RevertableList<Type> & operator[](std::size_t item) {
+        return vec_list_[item];
+    }
+
+    inline const RevertableList<Type> & operator[](std::size_t item) const {
+        return vec_list_[item];
+    }
+
+private:
+    std::vector< RevertableList<Type> > vec_list_;
+};
+
+
 /// Set of integral data of given dimension used in assemblation
 struct IntegralData {
 public:
-    RevertableList<BulkIntegralData>       bulk_;      ///< Holds data for computing bulk integrals.
-    RevertableList<EdgeIntegralData>       edge_;      ///< Holds data for computing edge integrals.
-    RevertableList<CouplingIntegralData>   coupling_;  ///< Holds data for computing couplings integrals.
-    RevertableList<BoundaryIntegralData>   boundary_;  ///< Holds data for computing boundary integrals.
+    RevertableListVector<BulkIntegralData>     bulk_;      ///< Holds data for computing bulk integrals.
+    RevertableListVector<EdgeIntegralData>     edge_;      ///< Holds data for computing edge integrals.
+    RevertableListVector<CouplingIntegralData> coupling_;  ///< Holds data for computing couplings integrals.
+    RevertableListVector<BoundaryIntegralData> boundary_;  ///< Holds data for computing boundary integrals.
 };
 
 

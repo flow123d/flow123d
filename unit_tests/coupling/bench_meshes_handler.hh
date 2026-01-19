@@ -26,6 +26,14 @@ public:
                          Input::Type::Array( Input::Type::String(), 1, 12 ),
                          Input::Type::Default::obligatory(),
                          "Meshes of elasticity_asm test.")
+            .declare_key("darcy_asm",
+                         Input::Type::Array( Input::Type::String(), 1, 12 ),
+                         Input::Type::Default::obligatory(),
+                         "Meshes of darcy_asm test.")
+            .declare_key("richards_asm",
+                         Input::Type::Array( Input::Type::String(), 1, 12 ),
+                         Input::Type::Default::obligatory(),
+                         "Meshes of richards_asm test.")
             .declare_key("meshes_sizes",
                          Input::Type::Array(Input::Type::String(), 1, 3),
                          Input::Type::Default::obligatory(),

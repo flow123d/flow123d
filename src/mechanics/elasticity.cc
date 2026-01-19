@@ -324,9 +324,9 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 	// due to constexpr optimization.
 	START_TIMER("Mechanics constructor");
 
-    eq_data_ = std::make_shared<EqData>();
-    output_eq_data_ = std::make_shared<OutputEqData>();
     eq_fields_ = std::make_shared<EqFields>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
+    output_eq_data_ = std::make_shared<OutputEqData>(eq_fields_);
     this->eq_fieldset_ = eq_fields_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
@@ -443,7 +443,7 @@ void Elasticity::initialize()
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
         ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
-        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
+        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
@@ -452,9 +452,9 @@ void Elasticity::initialize()
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
     eq_data_->ls = ls;
 
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get(), eq_data_->dh_.get());
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), output_eq_data_.get(), eq_data_->dh_.get());
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly_ = new GenericAssembly< RhsAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyDim >(output_eq_data_.get(), eq_data_->dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),

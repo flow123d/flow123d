@@ -32,18 +32,18 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class StiffnessAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
@@ -267,18 +267,18 @@ private:
 };
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class RhsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "RhsAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Rhs_Assembly"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
@@ -529,18 +529,18 @@ private:
 
 };
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class OutpuFieldsAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::OutputEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "OutpuFieldsAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_OutpuFields_Assembly"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
       normal_join_( coupling_integral_->normal_vector() ),
@@ -690,18 +690,18 @@ private:
 /**
  * Container class for assembly of constraint matrix for contact condition.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class ConstraintAssemblyElasticity : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename Elasticity::EqFields EqFields;
-    typedef typename Elasticity::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ConstraintAssemblyElasticity"; }
+    static constexpr const char * name() { return "Elasticity_Constraint_Assembly"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_join_( coupling_integral_->JxW() ),
       normal_join_( coupling_integral_->normal_vector() ),

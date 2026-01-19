@@ -25,18 +25,18 @@
 #include "fem/element_cache_map.hh"
 
 
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class InitCondPostprocessAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
+    static constexpr const char * name() { return "Richards_InitCondPostprocess_Assembly"; }
 
     /// Constructor.
-    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitCondPostprocessAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -141,17 +141,17 @@ private:
 };
 
 
-template <unsigned int dim>
-class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
+template <unsigned int dim, class TEqData>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_MHMatrix_Assembly"; }
 
-    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data) {
+    MHMatrixAssemblyRichards(EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -178,7 +178,7 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         //this->balance_ = eq_data_->balance_;
-    	MHMatrixAssemblyLMH<dim>::initialize();
+    	MHMatrixAssemblyLMH<dim, TEqData>::initialize();
     }
 
 
@@ -191,7 +191,7 @@ public:
         auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_sides(p, this->compute_conductivity(cell, p), element_patch_idx);
         this->asm_element();
         this->asm_source_term_richards(cell, p);
     }
@@ -396,17 +396,17 @@ protected:
 };
 
 
-template <unsigned int dim>
-class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim>
+template <unsigned int dim, class TEqData>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_ReconstructSchur_Assembly"; }
 
-    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data, asm_internals) {
+    ReconstructSchurAssemblyRichards(EqData *eq_data, AssemblyInternals *asm_internals)
+    : MHMatrixAssemblyRichards<dim, TEqData>(eq_data, asm_internals) {
     }
 
     /// Integral over element.

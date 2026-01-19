@@ -30,9 +30,7 @@
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
-#include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
 #include "quadrature/quadrature_lib.hh"
 
@@ -50,19 +48,22 @@
  * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
  *
  */
-template <unsigned int dim>
-class L2DifferenceAssembly : public AssemblyBase<dim>
+template <unsigned int dim, class TEqData>
+class L2DifferenceAssembly : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::DiffEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "L2DifferenceAssembly"; }
+    static constexpr const char * name() { return "Output_L2Difference_Assembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(2, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
-      output_integral_( this->create_bulk_integral(this->quad_) )  {
+    L2DifferenceAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(2, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+      output_integral_( this->create_bulk_integral(this->quad_) ),
+      JxW_( output_integral_->JxW() ),
+	  pt_coords_( output_integral_->coords() ),
+      vec_shape_rt_( output_integral_->vector_shape(0) )  {
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->ref_pressure;
@@ -75,11 +76,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        UpdateFlags flags = update_values | update_JxW_values | update_quadrature_points;
-        fe_p0_ = std::make_shared< FE_P_disc<dim> >(0);
-        fe_values_.initialize(*this->quad_, *fe_p0_, flags);
-        fv_rt_.initialize(*this->quad_, fe_rt_, flags);
-
         fluxes_.resize(dim+1);
     }
 
@@ -90,8 +86,6 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         ElementAccessor<3> ele = cell.elm();
-        fv_rt_.reinit(ele);
-        fe_values_.reinit(ele);
 
         // get coefficients on the current element
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
@@ -113,10 +107,10 @@ public:
                         * arma::dot( *ele.node(i_node), *ele.node(j_node));
             }
 
-        unsigned int i_point=0, oposite_node;
+        unsigned int oposite_node;
         for (auto p : output_integral_->points(element_patch_idx) )
         {
-            q_point_ = fe_values_.point(i_point);
+            q_point_ = pt_coords_(p);
 
             conductivity_ = eq_fields_->conductivity(p);
             cross_ = eq_fields_->cross_section(p);
@@ -139,26 +133,24 @@ public:
 
             diff = - (1.0 / conductivity_) * diff / dim / ele.measure() / cross_ + pressure_mean ;
             diff = ( diff - ref_pressure_);
-            pressure_diff += diff * diff * fe_values_.JxW(i_point);
+            pressure_diff += diff * diff * JxW_(p);
 
             // velocity difference
             flux_in_q_point_.zeros();
             for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
                 flux_in_q_point_ += fluxes_[ i_shape ]
-                                  * fv_rt_.vector_view(0).value(i_shape, i_point)
+                                  * vec_shape_rt_.shape(i_shape)(p)
                                   / cross_;
             }
 
             flux_in_q_point_ -= ref_flux_;
-            velocity_diff += dot(flux_in_q_point_, flux_in_q_point_) * fe_values_.JxW(i_point);
+            velocity_diff += dot(flux_in_q_point_, flux_in_q_point_) * JxW_(p);
 
             // divergence diff
             diff = 0;
             for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes_[ i_shape ];
             diff = ( diff / ele.measure() / cross_ - ref_divergence_);
-            divergence_diff += diff * diff * fe_values_.JxW(i_point);
-
-            i_point++;
+            divergence_diff += diff * diff * JxW_(p);
         }
 
         // DHCell constructed with diff fields DH, get DOF indices of actual element
@@ -231,13 +223,6 @@ protected:
 
     /// following is used for calculation of postprocessed pressure difference
     /// and comparison to analytical solution
-    std::shared_ptr<FE_P_disc<dim>> fe_p0_;
-    FEValues<3> fe_values_;
-
-    /// FEValues for velocity.
-    FE_RT0<dim> fe_rt_;
-    FEValues<3> fv_rt_;
-
     std::vector<double> fluxes_;                                   ///< Precomputed fluxes on element sides.
     arma::vec3 flux_in_q_point_;                                   ///< Precomputed flux in quadrature point.
     arma::vec3 q_point_;                                           ///< Local coords of quadrature point.
@@ -245,6 +230,11 @@ protected:
     double ref_pressure_, ref_divergence_, conductivity_, cross_;  ///< Field results.
 
     std::shared_ptr<BulkIntegralAcc<dim>> output_integral_;        ///< Integral accessor of assembly class
+
+    /// Following data members represent Element quantities and FE quantities
+    FeQ<Scalar> JxW_;
+    FeQ<Vector> pt_coords_;
+    FeQArray<Vector> vec_shape_rt_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
@@ -255,18 +245,18 @@ protected:
 /**
  * Compute output of internal flow data.
  */
-template <unsigned int dim>
+template <unsigned int dim, class TEqData>
 class OutputInternalFlowAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename DarcyLMH::EqFields EqFields;
-    typedef typename DarcyFlowMHOutput::RawOutputEqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "OutputInternalFlowAssembly"; }
+    static constexpr const char * name() { return "Output_InternalFlow_Assembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    OutputInternalFlowAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }

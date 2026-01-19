@@ -33,18 +33,18 @@
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class MassAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MassAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Mass_Assembly"; }
 
     /// Constructor.
-    MassAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    MassAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
@@ -220,18 +220,18 @@ double advective_flux(Field<3, FieldValue<3>::VectorFixed> &advection_coef, Rang
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class StiffnessAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "StiffnessAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
       conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
       conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
@@ -688,18 +688,18 @@ private:
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class SourcesAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "SourcesAssemblyDG"; }
+    static constexpr const char * name() { return "DG_Sources_Assembly"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    SourcesAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
@@ -803,18 +803,18 @@ public:
 /**
  * Assembles the r.h.s. components corresponding to the Dirichlet boundary conditions..
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class BdrConditionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "BdrConditionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_BdrCondition_Assembly"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_boundary_integral(this->quad_low_) ),
       JxW_( conc_integral_->JxW() ),
       normal_( conc_integral_->normal_vector() ),
@@ -1008,18 +1008,18 @@ public:
 /**
  * Auxiliary container class sets the initial condition.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class InitProjectionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitProjectionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_InitProjection_Assembly"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_fields), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       init_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( init_integral_->JxW() ),
       init_shape_( init_integral_->scalar_shape() ) {
@@ -1097,18 +1097,18 @@ public:
 /**
  * Auxiliary container class sets the initial condition.
  */
-template <unsigned int dim, class Model>
+template <unsigned int dim, class TEqData>
 class InitConditionAssemblyDG : public AssemblyBase<dim>
 {
 public:
-    typedef typename TransportDG<Model>::EqFields EqFields;
-    typedef typename TransportDG<Model>::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitConditionAssemblyDG"; }
+    static constexpr const char * name() { return "DG_InitCondition_Assembly"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqFields *eq_fields, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), eq_data_(eq_data) {
+    InitConditionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBase<dim>(), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->init_condition;
         this->asm_internals_ = asm_internals;
 

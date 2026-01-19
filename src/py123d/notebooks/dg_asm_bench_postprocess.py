@@ -179,14 +179,14 @@ class ProfilerHandler:
         Detect nodes for which we generate row  in df.
         """
         tag = self.current_node['tag']
-        if tag.endswith('Assembly'):
+        if tag.endswith('_Assembly'):
             #print(tag, self.current_node)
             return ProcessTag.assembly(self.current_node, self, df) 
 
         try:
             process_method = self.tag_method[tag] 
         except KeyError:
-            if self.parent_node is not None and self.parent_node['tag'].endswith('Assembly'):
+            if self.parent_node is not None and self.parent_node['tag'].endswith('_Assembly'):
                 process_method = ProcessTag.asm_child
             else:
                 return df
@@ -235,7 +235,9 @@ def unify_df_values(df):
     #asm_map = {'MassAssembly': 'Mass', 'StiffnessAssembly': 'Stiffness', 'SourcesAssembly': 'Sources', '': ''}
     
     
-    df['assembly_class'] = [s[:-len('Assembly')] for s in df['assembly_class']]
+    print("test 1")
+    df['assembly_class'] = [s[:-len('_Assembly')] for s in df['assembly_class']]
+    print("test 2")
     
     return df
 
