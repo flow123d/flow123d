@@ -212,8 +212,10 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     virtual inline void assemble_cell_integrals() {
-    	for (unsigned int i=0; i<integral_data_.bulk_[0].permanent_size(); ++i) {
-            this->cell_integral(integral_data_.bulk_[0][i].cell, asm_internals_->element_cache_map_.position_in_cache(integral_data_.bulk_[0][i].cell.elm_idx()));
+        RevertableList<BulkIntegralData> &patch_cell_list = integral_data_.bulk_[0]; // list of cells is same for all items of integral_data_.bulk_
+        uint n_patch_cells = patch_cell_list.permanent_size();
+    	for (unsigned int i=0; i<n_patch_cells; ++i) {
+            this->cell_integral(patch_cell_list[i].cell, asm_internals_->element_cache_map_.position_in_cache(patch_cell_list[i].cell.elm_idx()));
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
@@ -229,8 +231,10 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_boundary_side_integrals() {
-        for (unsigned int i=0; i<integral_data_.boundary_[0].permanent_size(); ++i) {
-            this->boundary_side_integral(integral_data_.boundary_[0][i].side);
+        RevertableList<BoundaryIntegralData> &patch_boundary_list = integral_data_.boundary_[0]; // list of boundaries is same for all items of integral_data_.boundary_
+        uint n_patch_boundaries = patch_boundary_list.permanent_size();
+        for (unsigned int i=0; i<n_patch_boundaries; ++i) {
+            this->boundary_side_integral(patch_boundary_list[i].side);
         }
     }
 
@@ -240,8 +244,10 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_edge_integrals() {
-        for (unsigned int i=0; i<integral_data_.edge_[0].permanent_size(); ++i) {
-            this->edge_integral(integral_data_.edge_[0][i].edge_side_range);
+        RevertableList<EdgeIntegralData> &patch_edge_list = integral_data_.edge_[0]; // list of edges is same for all items of integral_data_.edge_
+        uint n_patch_edges = patch_edge_list.permanent_size();
+        for (unsigned int i=0; i<n_patch_edges; ++i) {
+            this->edge_integral(patch_edge_list[i].edge_side_range);
         }
     }
 
@@ -251,8 +257,10 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_neighbour_integrals() {
-        for (unsigned int i=0; i<integral_data_.coupling_[0].permanent_size(); ++i) {
-            this->dimjoin_intergral(integral_data_.coupling_[0][i].cell, integral_data_.coupling_[0][i].side);
+        RevertableList<CouplingIntegralData> &patch_ngh_list = integral_data_.coupling_[0]; // list of neighbours is same for all items of integral_data_.coupling_
+        uint n_patch_neighbours = patch_ngh_list.permanent_size();
+        for (unsigned int i=0; i<n_patch_neighbours; ++i) {
+            this->dimjoin_intergral(patch_ngh_list[i].cell, patch_ngh_list[i].side);
         }
     }
 
