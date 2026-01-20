@@ -209,8 +209,12 @@ private:
 };
 
 
-/// Reference data of PtCoords operation
-/// TODO need specializations for SideDomain<dim> and SideDomain<1>
+/**
+ * Reference data of PtCoords operation
+ *
+ * See note for PtCoords operation bellow.
+ * TODO need specializations for SideDomain<dim> and SideDomain<1>
+ */
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefBaryCoords : public PatchOp<spacedim> {
 public:
@@ -231,7 +235,13 @@ public:
     void eval() override {}
 };
 
-/// Evaluates coordinates of quadrature points - not implemented yet
+/**
+ * Evaluates coordinates of quadrature points
+ *
+ * Important note !!!
+ * Usage of this operation is currently in L2 error calculation in DarcyFlow output.
+ * It should not be used by any other operation. It should be unified with Field Coords in future.
+ */
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class PtCoords : public PatchOp<spacedim> {
 public:
