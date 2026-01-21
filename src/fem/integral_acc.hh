@@ -292,9 +292,16 @@ public:
         return Range<BulkPoint>(bgn_it, end_it);
     }
 
+    /// Getter for patch_data_
+    inline RevertableList<BulkIntegralData> &patch_data() {
+        return patch_data_;
+    }
+
 protected:
     /// Internal integral object
     std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
+    /// Set of integral data of given dimension recomputed for each patch
+    RevertableList<BulkIntegralData> patch_data_;
 };
 
 /**
@@ -488,10 +495,17 @@ public:
         return Range<EdgePoint>(bgn_it, end_it);
     }
 
+    /// Getter for patch_data_
+    inline RevertableList<EdgeIntegralData> &patch_data() {
+        return patch_data_;
+    }
+
 
 protected:
     /// Internal integral object
     std::shared_ptr<internal_integrals::Edge> internal_edge_;
+    /// Set of integral data of given dimension recomputed for each patch
+    RevertableList<EdgeIntegralData> patch_data_;
 
     friend class EvalPoints;
     friend class EdgePoint;
@@ -694,11 +708,18 @@ public:
         return Range<CouplingPoint>(bgn_it, end_it);
     }
 
+    /// Getter for patch_data_
+    inline RevertableList<CouplingIntegralData> &patch_data() {
+        return patch_data_;
+    }
+
 protected:
     /// Integral according to bulk subset part (element of lower dim) in EvalPoints object.
     std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
     /// Integral according to side subset part (element of higher dim) in EvalPoints object.
     std::shared_ptr<internal_integrals::Edge> internal_edge_;
+    /// Set of integral data of given dimension recomputed for each patch
+    RevertableList<CouplingIntegralData> patch_data_;
 
     friend class CouplingPoint;
 };
@@ -925,11 +946,18 @@ public:
         return Range<BoundaryPoint>(bgn_it, end_it);
     }
 
+    /// Getter for patch_data_
+    inline RevertableList<BoundaryIntegralData> &patch_data() {
+        return patch_data_;
+    }
+
 protected:
     /// Integral according to kower dim (boundary) element subset part in EvalPoints object.
     std::shared_ptr<internal_integrals::Bulk> internal_bulk_;
     /// Integral according to higher dim (bulk) element subset part in EvalPoints object.
     std::shared_ptr<internal_integrals::Edge> internal_edge_;
+    /// Set of integral data of given dimension recomputed for each patch
+    RevertableList<BoundaryIntegralData> patch_data_;
 
     friend class BoundaryPoint;
 };

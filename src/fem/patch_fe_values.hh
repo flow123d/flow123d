@@ -147,44 +147,42 @@ public:
 
     /// Add elements, sides and quadrature points registered on patch
     template <unsigned int dim>
-    inline void add_patch_points(const DimIntegrals<dim> &integrals, const IntegralData &integral_data, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
+    inline void add_patch_points(const DimIntegrals<dim> &integrals, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
         if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim-1].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
         if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim-1].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
 
         // add bulk points
-        uint i_int=0;
         for (auto integral_it : integrals.bulk_) {
-            for (uint i_data=0; i_data<integral_data.bulk_[i_int].permanent_size(); ++i_data) {
-                uint element_patch_idx = element_cache_map->position_in_cache(integral_data.bulk_[i_int][i_data].cell.elm_idx());
-                uint elm_pos = this->register_element(integral_data.bulk_[i_int][i_data].cell, element_patch_idx);
+            auto &patch_data = integral_it.second->patch_data();
+            for (uint i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+                uint element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
+                uint elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(element_patch_idx) ) {
-                    this->register_bulk_point(integral_data.bulk_[i_int][i_data].cell, elm_pos, p.value_cache_idx(), i_point++);
+                    this->register_bulk_point(patch_data[i_data].cell, elm_pos, p.value_cache_idx(), i_point++);
                 }
             }
-            ++i_int;
         }
 
     	// add boundary points
-        i_int=0;
         for (auto integral_it : integrals.boundary_) {
-            for (unsigned int i_data=0; i_data<integral_data.boundary_[i_int].permanent_size(); ++i_data) {
-                //if ( integral_data.boundary_[i].bdr_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
-            	uint side_pos = this->register_side(integral_data.boundary_[i_int][i_data].side, element_cache_map);
+            auto &patch_data = integral_it.second->patch_data();
+            for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+                //if ( patch_data.bdr_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
+            	uint side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 uint i_point = 0;
-                for (auto p : integral_it.second->points(integral_data.boundary_[i_int][i_data].side) ) {
-                    this->register_side_point(integral_data.boundary_[i_int][i_data].side, side_pos, p.value_cache_idx(), i_point++);
+                for (auto p : integral_it.second->points(patch_data[i_data].side) ) {
+                    this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point++);
                 }
             }
-            ++i_int;
         }
 
     	// add edge points
-        i_int=0;
         for (auto integral_it : integrals.edge_) {
-            for (unsigned int i_data=0; i_data<integral_data.edge_[i_int].permanent_size(); ++i_data) {
-                //if ( integral_data.edge_[i].subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
-            	auto range = integral_data.edge_[i_int][i_data].edge_side_range;
+            auto &patch_data = integral_it.second->patch_data();
+            for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+                //if ( patch_data.subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
+            	auto range = patch_data[i_data].edge_side_range;
                 for( DHCellSide edge_side : range )
                 {
                 	uint side_pos = this->register_side(edge_side, element_cache_map);
@@ -194,35 +192,33 @@ public:
                     }
                 }
             }
-            ++i_int;
         }
 
     	// add coupling points
-        i_int=0;
         for (auto integral_it : integrals.coupling_) {
+            auto &patch_data = integral_it.second->patch_data();
             uint side_pos, element_patch_idx, elm_pos=0;
             uint last_element_idx = -1;
 
-            for (unsigned int i_data=0; i_data<integral_data.coupling_[i_int].permanent_size(); ++i_data) {
-                //if ( integral_data.coupling_[i].bulk_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
-                side_pos = this->register_side(integral_data.coupling_[i_int][i_data].side, element_cache_map);
-                if (integral_data.coupling_[i_int][i_data].cell.elm_idx() != last_element_idx) {
-                    element_patch_idx = element_cache_map->position_in_cache(integral_data.coupling_[i_int][i_data].cell.elm_idx());
-                    elm_pos = this->register_element(integral_data.coupling_[i_int][i_data].cell, element_patch_idx);
+            for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+                //if ( patch_data.bulk_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
+                side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
+                if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
+                    element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
+                    elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
                 }
 
                 uint i_bulk_point = 0, i_side_point = 0;
-                for (auto p_high : integral_it.second->points(integral_data.coupling_[i_int][i_data].side) )
+                for (auto p_high : integral_it.second->points(patch_data[i_data].side) )
                 {
-                    this->register_side_point(integral_data.coupling_[i_int][i_data].side, side_pos, p_high.value_cache_idx(), i_side_point++);
-                    if (integral_data.coupling_[i_int][i_data].cell.elm_idx() != last_element_idx) {
-                        auto p_low = p_high.lower_dim(integral_data.coupling_[i_int][i_data].cell);
-                        this->register_bulk_point(integral_data.coupling_[i_int][i_data].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                    this->register_side_point(patch_data[i_data].side, side_pos, p_high.value_cache_idx(), i_side_point++);
+                    if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
+                        auto p_low = p_high.lower_dim(patch_data[i_data].cell);
+                        this->register_bulk_point(patch_data[i_data].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                     }
                 }
-                last_element_idx = integral_data.coupling_[i_int][i_data].cell.elm_idx();
+                last_element_idx = patch_data[i_data].cell.elm_idx();
             }
-            ++i_int;
         }
     }
 

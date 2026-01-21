@@ -107,7 +107,6 @@ public:
                 tpl,
                 std::make_shared<BulkIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
             });
-        integral_data_.bulk_.set_size(integrals_.bulk_.size());
         return result.first->second;
     }
 
@@ -123,7 +122,6 @@ public:
                 tpl,
                 std::make_shared<EdgeIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
             });
-        integral_data_.edge_.set_size(integrals_.edge_.size());
         return result.first->second;
     }
 
@@ -142,7 +140,6 @@ public:
                 tpl,
                 std::make_shared<CouplingIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
             });
-        integral_data_.coupling_.set_size(integrals_.coupling_.size());
         return result.first->second;
     }
 
@@ -159,7 +156,6 @@ public:
                 tpl,
                 std::make_shared<BoundaryIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
             });
-        integral_data_.boundary_.set_size(integrals_.boundary_.size());
         return result.first->second;
     }
 
@@ -192,16 +188,10 @@ public:
         add_coupling_integrals(cell);
 
         if (asm_internals_->element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
-            integral_data_.bulk_.revert_temporary();
-            integral_data_.edge_.revert_temporary();
-            integral_data_.coupling_.revert_temporary();
-            integral_data_.boundary_.revert_temporary();
+            integrals_.revert_temporary();
             return true;
         } else {
-            integral_data_.bulk_.make_permanent();
-            integral_data_.edge_.make_permanent();
-            integral_data_.coupling_.make_permanent();
-            integral_data_.boundary_.make_permanent();
+            integrals_.make_permanent();
             return false;
         }
     }
@@ -212,8 +202,9 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     virtual inline void assemble_cell_integrals() {
-        RevertableList<BulkIntegralData> &patch_cell_list = integral_data_.bulk_[0]; // list of cells is same for all items of integral_data_.bulk_
-        uint n_patch_cells = patch_cell_list.permanent_size();
+        uint n_patch_cells = integrals_.n_patch_cells();
+        if (n_patch_cells == 0) return;
+        RevertableList<BulkIntegralData> &patch_cell_list = integrals_.bulk_.begin()->second->patch_data(); // list of cells is same for all items of integrals_.bulk_
     	for (unsigned int i=0; i<n_patch_cells; ++i) {
             this->cell_integral(patch_cell_list[i].cell, asm_internals_->element_cache_map_.position_in_cache(patch_cell_list[i].cell.elm_idx()));
     	}
@@ -231,8 +222,9 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_boundary_side_integrals() {
-        RevertableList<BoundaryIntegralData> &patch_boundary_list = integral_data_.boundary_[0]; // list of boundaries is same for all items of integral_data_.boundary_
-        uint n_patch_boundaries = patch_boundary_list.permanent_size();
+        uint n_patch_boundaries = integrals_.n_patch_boundaries();
+        if (n_patch_boundaries == 0) return;
+        RevertableList<BoundaryIntegralData> &patch_boundary_list = integrals_.boundary_.begin()->second->patch_data(); // list of boundaries is same for all items of integrals_.boundary_
         for (unsigned int i=0; i<n_patch_boundaries; ++i) {
             this->boundary_side_integral(patch_boundary_list[i].side);
         }
@@ -244,8 +236,9 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_edge_integrals() {
-        RevertableList<EdgeIntegralData> &patch_edge_list = integral_data_.edge_[0]; // list of edges is same for all items of integral_data_.edge_
-        uint n_patch_edges = patch_edge_list.permanent_size();
+        uint n_patch_edges = integrals_.n_patch_edges();
+        if (n_patch_edges == 0) return;
+        RevertableList<EdgeIntegralData> &patch_edge_list = integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
         for (unsigned int i=0; i<n_patch_edges; ++i) {
             this->edge_integral(patch_edge_list[i].edge_side_range);
         }
@@ -257,8 +250,9 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_neighbour_integrals() {
-        RevertableList<CouplingIntegralData> &patch_ngh_list = integral_data_.coupling_[0]; // list of neighbours is same for all items of integral_data_.coupling_
-        uint n_patch_neighbours = patch_ngh_list.permanent_size();
+        uint n_patch_neighbours = integrals_.n_patch_neighbours();
+        if (n_patch_neighbours == 0) return;
+        RevertableList<CouplingIntegralData> &patch_ngh_list = integrals_.coupling_.begin()->second->patch_data(); // list of neighbours is same for all items of integrals_.coupling_
         for (unsigned int i=0; i<n_patch_neighbours; ++i) {
             this->dimjoin_intergral(patch_ngh_list[i].cell, patch_ngh_list[i].side);
         }
@@ -275,20 +269,12 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     void clean_integral_data() {
-        integral_data_.bulk_.reset();
-        integral_data_.edge_.reset();
-        integral_data_.coupling_.reset();
-        integral_data_.boundary_.reset();
+        integrals_.reset();
     }
 
     /// Getter of integrals_
     const DimIntegrals<dim> &integrals() const {
     	return integrals_;
-    }
-
-    /// Getter of integral_data_
-    const IntegralData &integral_data() const {
-        return integral_data_;
     }
 
 protected:
@@ -298,12 +284,7 @@ protected:
 	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
 	 */
 	AssemblyBase()
-	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr), min_edge_sides_(2) {
-	    integral_data_.bulk_.set_size(1); // integral data vectors must not be empty
-	    integral_data_.edge_.set_size(1);
-	    integral_data_.coupling_.set_size(1);
-	    integral_data_.boundary_.set_size(1);
-	}
+	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr), min_edge_sides_(2) {}
 
     /**
      * Add data of volume integrals to appropriate data structure.
@@ -311,10 +292,9 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_volume_integrals(const DHCellAccessor &cell) {
-        uint i_int=0;
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it.second->get_subset_idx();
-            integral_data_.bulk_[i_int].emplace_back(cell, subset_idx);
+            integral_it.second->patch_data().emplace_back(cell, subset_idx);
 
             unsigned int reg_idx = cell.elm().region_idx().idx();
             // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -323,7 +303,6 @@ protected:
                       i<uint( asm_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
             }
-            ++i_int;
         }
     }
 
@@ -336,14 +315,12 @@ protected:
 	    auto range = cell_side.edge_sides();
 
         auto &ppv = asm_internals_->fe_values_.ppv(side_domain, cell_side.dim());
-        uint i_int=0;
         for (auto integral_it : integrals_.edge_) {
-            integral_data_.edge_[i_int].emplace_back(range, integral_it.second->get_subset_idx());
+            integral_it.second->patch_data().emplace_back(range, integral_it.second->get_subset_idx());
 
             for( DHCellSide edge_side : range ) {
                 add_side_points(integral_it.second, edge_side, ppv);
             }
-            ++i_int;
         }
     }
 
@@ -355,10 +332,9 @@ protected:
     inline void add_boundary_integrals(const DHCellSide &bdr_side) {
         auto &ppv = asm_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
 
-        uint i_int=0;
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
-            integral_data_.boundary_[i_int].emplace_back(integral->get_subset_low_idx(), bdr_side,
+            integral->patch_data().emplace_back(integral->get_subset_low_idx(), bdr_side,
                     integral->get_subset_high_idx());
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
@@ -371,7 +347,6 @@ protected:
             	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
             	asm_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
             }
-            ++i_int;
         }
     }
 
@@ -403,7 +378,7 @@ protected:
             }
         	// Adds data of side points of all neighbour objects
         	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
-                integral_data_.coupling_[i_int].emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
+                coupling_integral->patch_data().emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
                         coupling_integral->get_subset_high_idx());
                 add_side_points(coupling_integral, ngh_side, ppv_high);
             }
@@ -444,8 +419,6 @@ protected:
      * is 2 and can be changed
      */
     unsigned int min_edge_sides_;
-
-    IntegralData integral_data_;                           ///< Holds patch data for computing different types of integrals.
 };
 
 
