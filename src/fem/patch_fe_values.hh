@@ -168,7 +168,6 @@ public:
         for (auto integral_it : integrals.boundary_) {
             auto &patch_data = integral_it.second->patch_data();
             for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
-                //if ( patch_data.bdr_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
             	uint side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(patch_data[i_data].side) ) {
@@ -181,7 +180,6 @@ public:
         for (auto integral_it : integrals.edge_) {
             auto &patch_data = integral_it.second->patch_data();
             for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
-                //if ( patch_data.subset_index != (unsigned int)(integral_it.second->get_subset_idx()) ) continue;
             	auto range = patch_data[i_data].edge_side_range;
                 for( DHCellSide edge_side : range )
                 {
@@ -201,7 +199,6 @@ public:
             uint last_element_idx = -1;
 
             for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
-                //if ( patch_data.bulk_subset_index != (unsigned int)(integral_it.second->get_subset_low_idx()) ) continue;
                 side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
                     element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());

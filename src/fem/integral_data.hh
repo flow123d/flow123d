@@ -47,15 +47,14 @@ struct BulkIntegralData {
     BulkIntegralData() {}
 
     /// Constructor with data mebers initialization
-    BulkIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
-    : cell(dhcell), subset_index(subset_idx) {}
+    BulkIntegralData(DHCellAccessor dhcell)
+    : cell(dhcell) {}
 
     /// Copy constructor
     BulkIntegralData(const BulkIntegralData &other)
-    : cell(other.cell), subset_index(other.subset_index) {}
+    : cell(other.cell) {}
 
     DHCellAccessor cell;          ///< Specified cell (element)
-    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
 };
 
 /**
@@ -70,14 +69,13 @@ struct EdgeIntegralData {
 
     /// Copy constructor
 	EdgeIntegralData(const EdgeIntegralData &other)
-    : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
+    : edge_side_range(other.edge_side_range) {}
 
     /// Constructor with data mebers initialization
-	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
-    : edge_side_range(range), subset_index(subset_idx) {}
+	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range)
+    : edge_side_range(range) {}
 
 	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;   ///< Specified cell side (element)
-    unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
 };
 
 /**
@@ -90,17 +88,15 @@ struct CouplingIntegralData {
    	CouplingIntegralData() {}
 
     /// Constructor with data mebers initialization
-   	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
-    : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
+   	CouplingIntegralData(DHCellAccessor dhcell, DHCellSide dhside)
+    : cell(dhcell), side(dhside) {}
 
     /// Copy constructor
    	CouplingIntegralData(const CouplingIntegralData &other)
-    : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+    : cell(other.cell), side(other.side) {}
 
     DHCellAccessor cell;
-    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
     DHCellSide side;                   ///< Specified cell side (higher dim element)
-    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
 };
 
 /**
@@ -113,17 +109,15 @@ struct BoundaryIntegralData {
 	BoundaryIntegralData() {}
 
     /// Constructor with data mebers initialization
-	BoundaryIntegralData(unsigned int bdr_idx, DHCellSide dhside, unsigned int side_idx)
-    : bdr_subset_index(bdr_idx), side(dhside), side_subset_index(side_idx) {}
+	BoundaryIntegralData(DHCellSide dhside)
+    : side(dhside) {}
 
     /// Copy constructor
 	BoundaryIntegralData(const BoundaryIntegralData &other)
-    : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+    : side(other.side) {}
 
 	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
-    unsigned int bdr_subset_index;     ///< Index (order) of subset on boundary element in EvalPoints object
     DHCellSide side;                   ///< Specified cell side (bulk element)
-    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 };
 
 

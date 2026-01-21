@@ -294,7 +294,7 @@ protected:
     inline void add_volume_integrals(const DHCellAccessor &cell) {
         for (auto integral_it : integrals_.bulk_) {
             uint subset_idx = integral_it.second->get_subset_idx();
-            integral_it.second->patch_data().emplace_back(cell, subset_idx);
+            integral_it.second->patch_data().emplace_back(cell);
 
             unsigned int reg_idx = cell.elm().region_idx().idx();
             // Different access than in other integrals: We can't use range method CellIntegral::points
@@ -316,7 +316,7 @@ protected:
 
         auto &ppv = asm_internals_->fe_values_.ppv(side_domain, cell_side.dim());
         for (auto integral_it : integrals_.edge_) {
-            integral_it.second->patch_data().emplace_back(range, integral_it.second->get_subset_idx());
+            integral_it.second->patch_data().emplace_back(range);
 
             for( DHCellSide edge_side : range ) {
                 add_side_points(integral_it.second, edge_side, ppv);
@@ -334,8 +334,7 @@ protected:
 
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
-            integral->patch_data().emplace_back(integral->get_subset_low_idx(), bdr_side,
-                    integral->get_subset_high_idx());
+            integral->patch_data().emplace_back(bdr_side);
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
             ++ppv.n_mesh_items_;
@@ -378,8 +377,7 @@ protected:
             }
         	// Adds data of side points of all neighbour objects
         	for( DHCellSide ngh_side : cell.neighb_sides() ) { // cell -> elm lower dim, ngh_side -> elm higher dim
-                coupling_integral->patch_data().emplace_back(cell, coupling_integral->get_subset_low_idx(), ngh_side,
-                        coupling_integral->get_subset_high_idx());
+                coupling_integral->patch_data().emplace_back(cell, ngh_side);
                 add_side_points(coupling_integral, ngh_side, ppv_high);
             }
             ++i_int;
