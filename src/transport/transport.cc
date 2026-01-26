@@ -190,8 +190,8 @@ void ConvectionTransport::initialize()
 
     mass_assembly_ = new GenericAssembly< MassAssemblyConvectionDim >(eq_data_.get());
     init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvectionDim >(eq_data_.get());
-    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvectionDim >(eq_data_.get());
-    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvectionDim >(eq_data_.get());
+    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
+    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
     matrix_mpi_assembly_->set_min_edge_sides(1);
 }
 
