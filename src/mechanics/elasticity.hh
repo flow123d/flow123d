@@ -27,7 +27,6 @@
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
-#include "fem/fe_values_views.hh"
 #include "tools/mixed.hh"
 #include "quadrature/quadrature_lib.hh"
 

@@ -52,7 +52,6 @@
 #include "reaction/isotherm.hh" // SorptionType enum
 
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 
 

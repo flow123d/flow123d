@@ -23,7 +23,6 @@
 #include "reaction/dual_porosity.hh"
 #include "reaction/isotherm.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 //#include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
