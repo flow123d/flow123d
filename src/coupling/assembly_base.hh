@@ -202,11 +202,10 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     virtual inline void assemble_cell_integrals() {
-        uint n_patch_cells = integrals_.n_patch_cells();
-        if (n_patch_cells == 0) return;
-        RevertableList<BulkIntegralData> &patch_cell_list = integrals_.bulk_.begin()->second->patch_data(); // list of cells is same for all items of integrals_.bulk_
-    	for (unsigned int i=0; i<n_patch_cells; ++i) {
-            this->cell_integral(patch_cell_list[i].cell, asm_internals_->element_cache_map_.position_in_cache(patch_cell_list[i].cell.elm_idx()));
+    	for (unsigned int i=0; i<integrals_.n_patch_cells(); ++i) {
+            this->cell_integral(integrals_.bulk_.begin()->second->patch_data()[i].cell,
+                                asm_internals_->element_cache_map_.position_in_cache(integrals_.bulk_.begin()->second->patch_data()[i].cell.elm_idx())
+			                   );
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
         /*for (unsigned int i=0; i<element_cache_map_->n_elements(); ++i) {
@@ -222,11 +221,8 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_boundary_side_integrals() {
-        uint n_patch_boundaries = integrals_.n_patch_boundaries();
-        if (n_patch_boundaries == 0) return;
-        RevertableList<BoundaryIntegralData> &patch_boundary_list = integrals_.boundary_.begin()->second->patch_data(); // list of boundaries is same for all items of integrals_.boundary_
-        for (unsigned int i=0; i<n_patch_boundaries; ++i) {
-            this->boundary_side_integral(patch_boundary_list[i].side);
+        for (unsigned int i=0; i<integrals_.n_patch_boundaries(); ++i) {
+            this->boundary_side_integral( integrals_.boundary_.begin()->second->patch_data()[i].side );
         }
     }
 
@@ -236,11 +232,8 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_edge_integrals() {
-        uint n_patch_edges = integrals_.n_patch_edges();
-        if (n_patch_edges == 0) return;
-        RevertableList<EdgeIntegralData> &patch_edge_list = integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
-        for (unsigned int i=0; i<n_patch_edges; ++i) {
-            this->edge_integral(patch_edge_list[i].edge_side_range);
+        for (unsigned int i=0; i<integrals_.n_patch_edges(); ++i) {
+            this->edge_integral(integrals_.edge_.begin()->second->patch_data()[i].edge_side_range);
         }
     }
 
@@ -250,11 +243,8 @@ public:
      * Method is called from GenericAssembly::assembly method.
      */
     inline void assemble_neighbour_integrals() {
-        uint n_patch_neighbours = integrals_.n_patch_neighbours();
-        if (n_patch_neighbours == 0) return;
-        RevertableList<CouplingIntegralData> &patch_ngh_list = integrals_.coupling_.begin()->second->patch_data(); // list of neighbours is same for all items of integrals_.coupling_
-        for (unsigned int i=0; i<n_patch_neighbours; ++i) {
-            this->dimjoin_intergral(patch_ngh_list[i].cell, patch_ngh_list[i].side);
+        for (unsigned int i=0; i<integrals_.n_patch_neighbours(); ++i) {
+            this->dimjoin_intergral(integrals_.coupling_.begin()->second->patch_data()[i].cell, integrals_.coupling_.begin()->second->patch_data()[i].side);
         }
     }
 
