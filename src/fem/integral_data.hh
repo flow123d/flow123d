@@ -47,15 +47,14 @@ struct BulkIntegralData {
     BulkIntegralData() {}
 
     /// Constructor with data mebers initialization
-    BulkIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
-    : cell(dhcell), subset_index(subset_idx) {}
+    BulkIntegralData(DHCellAccessor dhcell)
+    : cell(dhcell) {}
 
     /// Copy constructor
     BulkIntegralData(const BulkIntegralData &other)
-    : cell(other.cell), subset_index(other.subset_index) {}
+    : cell(other.cell) {}
 
     DHCellAccessor cell;          ///< Specified cell (element)
-    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
 };
 
 /**
@@ -70,14 +69,13 @@ struct EdgeIntegralData {
 
     /// Copy constructor
 	EdgeIntegralData(const EdgeIntegralData &other)
-    : edge_side_range(other.edge_side_range), subset_index(other.subset_index) {}
+    : edge_side_range(other.edge_side_range) {}
 
     /// Constructor with data mebers initialization
-	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range, unsigned int subset_idx)
-    : edge_side_range(range), subset_index(subset_idx) {}
+	EdgeIntegralData(RangeConvert<DHEdgeSide, DHCellSide> range)
+    : edge_side_range(range) {}
 
 	RangeConvert<DHEdgeSide, DHCellSide> edge_side_range;   ///< Specified cell side (element)
-    unsigned int subset_index;                              ///< Index (order) of subset in EvalPoints object
 };
 
 /**
@@ -90,17 +88,15 @@ struct CouplingIntegralData {
    	CouplingIntegralData() {}
 
     /// Constructor with data mebers initialization
-   	CouplingIntegralData(DHCellAccessor dhcell, unsigned int bulk_idx, DHCellSide dhside, unsigned int side_idx)
-    : cell(dhcell), bulk_subset_index(bulk_idx), side(dhside), side_subset_index(side_idx) {}
+   	CouplingIntegralData(DHCellAccessor dhcell, DHCellSide dhside)
+    : cell(dhcell), side(dhside) {}
 
     /// Copy constructor
    	CouplingIntegralData(const CouplingIntegralData &other)
-    : cell(other.cell), bulk_subset_index(other.bulk_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+    : cell(other.cell), side(other.side) {}
 
     DHCellAccessor cell;
-    unsigned int bulk_subset_index;    ///< Index (order) of lower dim subset in EvalPoints object
     DHCellSide side;                   ///< Specified cell side (higher dim element)
-    unsigned int side_subset_index;    ///< Index (order) of higher dim subset in EvalPoints object
 };
 
 /**
@@ -113,83 +109,16 @@ struct BoundaryIntegralData {
 	BoundaryIntegralData() {}
 
     /// Constructor with data mebers initialization
-	BoundaryIntegralData(unsigned int bdr_idx, DHCellSide dhside, unsigned int side_idx)
-    : bdr_subset_index(bdr_idx), side(dhside), side_subset_index(side_idx) {}
+	BoundaryIntegralData(DHCellSide dhside)
+    : side(dhside) {}
 
     /// Copy constructor
 	BoundaryIntegralData(const BoundaryIntegralData &other)
-    : bdr_subset_index(other.bdr_subset_index), side(other.side), side_subset_index(other.side_subset_index) {}
+    : side(other.side) {}
 
 	// We don't need hold ElementAccessor of boundary element, side.cond().element_accessor() provides it.
-    unsigned int bdr_subset_index;     ///< Index (order) of subset on boundary element in EvalPoints object
     DHCellSide side;                   ///< Specified cell side (bulk element)
-    unsigned int side_subset_index;    ///< Index (order) of subset on side of bulk element in EvalPoints object
 };
-
-
-/**
- * Define vector of RevertableLists.
- *
- * Used in IntegralData structure and in AssemblyBase for sorting integral data of integrals
- * with different quadrature order of same type to separate RevertableLists
- */
-template<class Type>
-struct RevertableListVector {
-public:
-    /// Default constructor
-    RevertableListVector()
-    {}
-
-    /// Constructor, initialize vec_list_
-    RevertableListVector(uint list_size)
-    : vec_list_(size) {}
-
-    /// Set size of vec_list_
-    void set_size(uint new_size) {
-        ASSERT_GE(new_size, vec_list_.size());
-        vec_list_.resize(new_size);
-    }
-
-    /// Finalize temporary part of data.
-    inline void make_permanent()
-    {
-        for (auto &rl : vec_list_) rl.make_permanent();
-    }
-
-    /// Erase temporary part of data.
-    inline void revert_temporary()
-    {
-        for (auto &rl : vec_list_) rl.revert_temporary();
-    }
-
-    /// Clear the list.
-    inline void reset()
-    {
-        for (auto &rl : vec_list_) rl.reset();
-    }
-
-    inline RevertableList<Type> & operator[](std::size_t item) {
-        return vec_list_[item];
-    }
-
-    inline const RevertableList<Type> & operator[](std::size_t item) const {
-        return vec_list_[item];
-    }
-
-private:
-    std::vector< RevertableList<Type> > vec_list_;
-};
-
-
-/// Set of integral data of given dimension used in assemblation
-struct IntegralData {
-public:
-    RevertableListVector<BulkIntegralData>     bulk_;      ///< Holds data for computing bulk integrals.
-    RevertableListVector<EdgeIntegralData>     edge_;      ///< Holds data for computing edge integrals.
-    RevertableListVector<CouplingIntegralData> coupling_;  ///< Holds data for computing couplings integrals.
-    RevertableListVector<BoundaryIntegralData> boundary_;  ///< Holds data for computing boundary integrals.
-};
-
 
 
 
@@ -215,10 +144,64 @@ using IntegralPtrMap = std::unordered_map<std::tuple<uint, uint>, std::shared_pt
 /// Set of integral of given dimension necessary in assemblation
 template<unsigned int dim>
 struct DimIntegrals {
+public:
 	IntegralPtrMap<BulkIntegralAcc<dim>> bulk_;            ///< Bulk integrals of elements
 	IntegralPtrMap<EdgeIntegralAcc<dim>> edge_;            ///< Edge integrals between elements of same dimensions
 	IntegralPtrMap<CouplingIntegralAcc<dim>> coupling_;    ///< Coupling integrals between elements of dimensions dim and dim-1
 	IntegralPtrMap<BoundaryIntegralAcc<dim>> boundary_;    ///< Boundary integrals betwwen side and boundary element of dim-1
+
+
+    /// Finalize temporary part of integral data.
+    inline void make_permanent()
+    {
+        for (auto &it : bulk_) it.second->patch_data().make_permanent();
+        for (auto &it : edge_) it.second->patch_data().make_permanent();
+        for (auto &it : coupling_) it.second->patch_data().make_permanent();
+        for (auto &it : boundary_) it.second->patch_data().make_permanent();
+    }
+
+    /// Erase temporary part of integral data.
+    inline void revert_temporary()
+    {
+        for (auto &it : bulk_) it.second->patch_data().revert_temporary();
+        for (auto &it : edge_) it.second->patch_data().revert_temporary();
+        for (auto &it : coupling_) it.second->patch_data().revert_temporary();
+        for (auto &it : boundary_) it.second->patch_data().revert_temporary();
+    }
+
+    /// Clear list of integral data.
+    inline void reset()
+    {
+        for (auto &it : bulk_) it.second->patch_data().reset();
+        for (auto &it : edge_) it.second->patch_data().reset();
+        for (auto &it : coupling_) it.second->patch_data().reset();
+        for (auto &it : boundary_) it.second->patch_data().reset();
+    }
+
+    /// Return number of cells on patch
+    inline unsigned int n_patch_cells() const {
+        if (bulk_.size() > 0) return bulk_.begin()->second->patch_data().permanent_size();
+        else return 0;
+    }
+
+    /// Return number of edges on patch
+    inline unsigned int n_patch_edges() const {
+        if (edge_.size() > 0) return edge_.begin()->second->patch_data().permanent_size();
+        else return 0;
+    }
+
+    /// Return number of neighbours on patch
+    inline unsigned int n_patch_neighbours() const {
+        if (coupling_.size() > 0) return coupling_.begin()->second->patch_data().permanent_size();
+        else return 0;
+    }
+
+    /// Return number of boundaries on patch
+    inline unsigned int n_patch_boundaries() const {
+        if (boundary_.size() > 0) return boundary_.begin()->second->patch_data().permanent_size();
+        else return 0;
+    }
+
 };
 
 
