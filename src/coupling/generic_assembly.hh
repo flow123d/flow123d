@@ -28,15 +28,6 @@
 
 
 
-/// Set of all used integral necessary in assemblation
-struct AssemblyIntegrals {
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<CouplingIntegral>, 3> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
-    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
-};
-
-
 /// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
 struct AssemblyInternals {
 public:
@@ -96,7 +87,7 @@ public:
     /**
      * Constructor.
      *
-     * Used in equations working with 'old' FeValues objects in evaluation.
+     * Used in equations that don't need PatchFeValues objects in evaluation.
      * @param eq_fields   Descendant of FieldSet declared in equation
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      */
@@ -110,7 +101,7 @@ public:
     /**
      * Constructor.
      *
-     * Used in equations working with 'new' PatchFeValues objects in evaluation.
+     * Used in equations working with PatchFeValues objects in evaluation.
      * @param eq_fields   Descendant of FieldSet declared in equation
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      * @param dh          DOF handler object
@@ -127,7 +118,7 @@ public:
         return multidim_assembly_;
     }
 
-    /// Allows rewrite number of minimal edge sides.
+    /// Allows to rewrite number of minimal edge sides.
     void set_min_edge_sides(unsigned int val) {
         multidim_assembly_[1_d]->set_min_edge_sides(val);
         multidim_assembly_[2_d]->set_min_edge_sides(val);
@@ -135,7 +126,7 @@ public:
     }
 
 	/**
-	 * @brief General assemble methods.
+	 * @brief General assemble method.
 	 *
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
@@ -222,14 +213,15 @@ private:
         START_TIMER("create_patch");
         asm_internals_.element_cache_map_.create_patch();
         END_TIMER("create_patch");
-        if (asm_internals_.use_patch_fe_values_) {
-            START_TIMER("patch_reinit");
-            patch_reinit();
-            END_TIMER("patch_reinit");
-        }
+
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(asm_internals_.element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
+
+        START_TIMER("patch_reinit");
+        patch_reinit(); // reinit PatchFeValues
+        END_TIMER("patch_reinit");
+
         asm_internals_.element_cache_map_.finish_elements_update();
 
         {
@@ -274,12 +266,14 @@ private:
 
     /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
-        asm_internals_.fe_values_.clean_elements_map();
-        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        if (asm_internals_.use_patch_fe_values_) {
+            asm_internals_.fe_values_.clean_elements_map();
+            asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+            asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+            asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
 
-        asm_internals_.fe_values_.reinit_patch();
+            asm_internals_.fe_values_.reinit_patch();
+        }
     }
 
     /// Calls cache_reallocate method on

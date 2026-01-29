@@ -400,13 +400,6 @@ protected:
         }
     }
 
-    /// Print update flags to string format.
-    std::string print_update_flags(UpdateFlags u) const {
-        std::stringstream s;
-        s << u;
-        return s.str();
-    }
-
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     DimIntegrals<dim> integrals_;                          ///< Set of used integrals.
