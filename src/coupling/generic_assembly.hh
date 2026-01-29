@@ -28,16 +28,6 @@
 
 
 
-/// Allow set mask of active integrals.
-//enum ActiveIntegrals {
-//    no_intg  =      0,
-//    bulk     = 0x0001,
-//    edge     = 0x0002,
-//    coupling = 0x0004,
-//    boundary = 0x0008
-//};
-
-
 /// Set of all used integral necessary in assemblation
 struct AssemblyIntegrals {
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
@@ -51,14 +41,15 @@ struct AssemblyIntegrals {
 struct AssemblyInternals {
 public:
     AssemblyInternals()
-    : eval_points_(std::make_shared<EvalPoints>()) {}
+    : eval_points_(std::make_shared<EvalPoints>()), use_patch_fe_values_(false) {}
 
     AssemblyInternals(MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe), use_patch_fe_values_(true) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
+    bool use_patch_fe_values_;                                    ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
 };
 
 
@@ -111,7 +102,6 @@ public:
      */
     GenericAssembly( typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
-      use_patch_fe_values_(false),
 	  multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
@@ -127,7 +117,6 @@ public:
      */
      GenericAssembly( typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(dh->ds()->fe()),
-      use_patch_fe_values_(true),
       multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
@@ -193,7 +182,7 @@ public:
                 add_into_patch = false;
             } else {
                 asm_internals_.element_cache_map_.make_paermanent_eval_points();
-                if (use_patch_fe_values_) {
+                if (asm_internals_.use_patch_fe_values_) {
                     asm_internals_.fe_values_.make_permanent_ppv_data();
                 }
                 if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
@@ -223,7 +212,7 @@ private:
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();
-        if (use_patch_fe_values_) {
+        if (asm_internals_.use_patch_fe_values_) {
             asm_internals_.fe_values_.init_finalize();
         }
     }
@@ -233,7 +222,7 @@ private:
         START_TIMER("create_patch");
         asm_internals_.element_cache_map_.create_patch();
         END_TIMER("create_patch");
-        if (use_patch_fe_values_) {
+        if (asm_internals_.use_patch_fe_values_) {
             START_TIMER("patch_reinit");
             patch_reinit();
             END_TIMER("patch_reinit");
@@ -278,7 +267,7 @@ private:
         multidim_assembly_[2_d]->clean_integral_data();
         multidim_assembly_[3_d]->clean_integral_data();
         asm_internals_.element_cache_map_.clear_element_eval_points_map();
-        if (use_patch_fe_values_) {
+        if (asm_internals_.use_patch_fe_values_) {
             asm_internals_.fe_values_.reset();
         }
     }
@@ -300,7 +289,6 @@ private:
     }
 
 
-    bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 };
 

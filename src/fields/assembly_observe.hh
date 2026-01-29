@@ -132,7 +132,7 @@ private:
 
 
 template <unsigned int dim>
-class AssemblyObserveOutput : public AssemblyBase<dim>
+class AssemblyObserveOutput : public AssemblyBasePatch<dim>
 {
 public:
     typedef EquationOutput EqFields;
@@ -141,7 +141,7 @@ public:
 
     /// Constructor.
     AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(), eq_fields_(eq_fields), observe_(observe) {
+    : AssemblyBasePatch<dim>(), eq_fields_(eq_fields), observe_(observe) {
         this->asm_internals_ = asm_internals;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 

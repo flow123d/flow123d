@@ -30,7 +30,7 @@
 
 
 template <unsigned int dim, class TEqData>
-class InitConditionAssemblyDp : public AssemblyBase<dim>
+class InitConditionAssemblyDp : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -40,7 +40,7 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -85,7 +85,7 @@ private:
 };
 
 template <unsigned int dim, class TEqData>
-class ReactionAssemblyDp : public AssemblyBase<dim>
+class ReactionAssemblyDp : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -95,7 +95,7 @@ public:
 
     /// Constructor.
     ReactionAssemblyDp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -195,7 +195,7 @@ private:
 };
 
 template <unsigned int dim, class TEqData>
-class InitConditionAssemblySorp : public AssemblyBase<dim>
+class InitConditionAssemblySorp : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -205,7 +205,7 @@ public:
 
     /// Constructor.
     InitConditionAssemblySorp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -249,7 +249,7 @@ private:
 };
 
 template <unsigned int dim, class TEqData>
-class ReactionAssemblySorp : public AssemblyBase<dim>
+class ReactionAssemblySorp : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -259,7 +259,7 @@ public:
 
     /// Constructor.
     ReactionAssemblySorp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;

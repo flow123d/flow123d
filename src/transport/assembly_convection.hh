@@ -32,7 +32,7 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class TEqData>
-class MassAssemblyConvection : public AssemblyBase<dim>
+class MassAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -42,7 +42,7 @@ public:
 
     /// Constructor.
     MassAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -116,7 +116,7 @@ public:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class TEqData>
-class InitCondAssemblyConvection : public AssemblyBase<dim>
+class InitCondAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -126,7 +126,7 @@ public:
 
     /// Constructor.
     InitCondAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc;
     }

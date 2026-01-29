@@ -36,7 +36,7 @@
  * Common ancestor of AssemblyOutputElemData and AssemblyOutputNodeData class.
  */
 template <unsigned int dim, class TEqData>
-class AssemblyOutputBase : public AssemblyBase<dim>
+class AssemblyOutputBase : public AssemblyBasePatch<dim>
 {
 public:
     typedef TEqData EqFields;
@@ -44,13 +44,13 @@ public:
 
     /// Constructor.
     AssemblyOutputBase(unsigned int quad_order, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(quad_order, asm_internals), eq_fields_(eq_data), eq_data_(eq_data) {
+    : AssemblyBasePatch<dim>(quad_order, asm_internals), eq_fields_(eq_data), eq_data_(eq_data) {
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
     AssemblyOutputBase(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(), eq_fields_(eq_data), eq_data_(eq_data) {
+    : AssemblyBasePatch<dim>(), eq_fields_(eq_data), eq_data_(eq_data) {
         this->asm_internals_ = asm_internals;
         offsets_.resize(CacheMapElementNumber::get());
     }
