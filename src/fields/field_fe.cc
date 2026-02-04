@@ -231,7 +231,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
     unsigned int range_bgn=0, range_end=0;
 
     // Throws exception if any element value of processed region is NaN
-    unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+    unsigned int r_idx = cache_map.region_idx_from_eval_point(reg_chunk_begin);
     if (region_value_err_[r_idx].is_invalid_)
         THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
 

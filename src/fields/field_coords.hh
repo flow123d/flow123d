@@ -104,7 +104,7 @@ public:
     	std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
         unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
         unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-        unsigned int region_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+        unsigned int region_idx = cache_map.region_idx_from_eval_point(reg_chunk_begin);
         unsigned int last_element_idx = -1;
         ElementAccessor<3> elm;
     	arma::vec3 coords;

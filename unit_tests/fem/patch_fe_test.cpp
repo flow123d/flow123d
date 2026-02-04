@@ -441,7 +441,7 @@ public:
     : PatchFETestBase(dh),
       multidim_asm_(this, quad_order, 0)
     {
-        element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
     }
 
     ~PatchFETestScalar() {}
@@ -678,7 +678,7 @@ public:
     : PatchFETestBase(dh),
       multidim_asm_(this, quad_order, 0)
     {
-		element_cache_map_.init(eval_points_);
+		element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
     }
 
     ~PatchFETestVector() {}
@@ -850,7 +850,7 @@ public:
     : PatchFETestBase(dh_1),
       multidim_asm_(this, quad_order_1, quad_order_2)
     {
-        element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
 
         ref_bulk_jxw_low_order_ = { 3.46410, 2.82843, 2.82843, 1.33333, 1.33333 };
         ref_bulk_jxw_high_order_ = {
