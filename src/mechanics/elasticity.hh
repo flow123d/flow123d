@@ -131,6 +131,11 @@ public:
             return 1;
         }
 
+        /// Returns pointer to mesh.
+        inline const Mesh *mesh() const {
+            return eq_fields_->mesh();
+        }
+
 		/// Shared pointer of EqFields
 		std::shared_ptr<EqFields> eq_fields_;
 
@@ -173,6 +178,11 @@ public:
         /// Returns quad_order
         inline unsigned int quad_order() const {
             return 0;
+        }
+
+        /// Returns pointer to mesh.
+        inline const Mesh *mesh() const {
+            return eq_fields_->mesh();
         }
 
 		/// Shared pointer of EqFields

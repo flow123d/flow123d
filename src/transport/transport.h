@@ -137,6 +137,11 @@ public:
 		    this->cfl_source_.resize(lsize);
 		}
 
+	    /// Returns pointer to mesh.
+	    inline const Mesh *mesh() const {
+	        return eq_fields_->mesh();
+	    }
+
         /// Shared pointer of EqFields
         std::shared_ptr<EqFields> eq_fields_;
 

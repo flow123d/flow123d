@@ -465,7 +465,7 @@ void DarcyLMH::init_eq_data()
 {
 
     START_TIMER("Darcy data init");
-    eq_data_->mesh = mesh_;
+    eq_data_->mesh_ = mesh_;
 
     auto gravity_array = input_record_.val<Input::Array>("gravity");
     std::vector<double> gvec;

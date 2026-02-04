@@ -157,7 +157,7 @@ void RichardsLMH::initialize_specific() {
     eq_data_->capacity = eq_data_->dh_cr_disc_->create_vector();
 
     ASSERT_PTR(mesh_);
-    eq_data_->mesh = mesh_;
+    eq_data_->mesh_ = mesh_;
 
     eq_fields_->water_content_ptr = create_field_fe< 3, FieldValue<3>::Scalar >(eq_data_->dh_cr_disc_);
     eq_fields_->water_content.set(eq_fields_->water_content_ptr, 0.0);
