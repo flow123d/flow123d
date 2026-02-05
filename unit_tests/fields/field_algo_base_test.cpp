@@ -141,15 +141,15 @@ public:
         Quadrature *q_bdr = new QGauss(2, 0);
         bulk_eval = std::make_shared<BulkIntegral>(eval_points_, q_bulk, 3);
         bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
-        this->init(eval_points_);
+        this->init(eval_points_, my_mesh->region_db());
     }
 
     /// Prepare patch for region history test
 	void rh_prepare_patch(unsigned int i_reg_blk, unsigned int i_ele_blk, unsigned int i_reg_bdr, unsigned int i_ele_bdr) {
 	    this->start_elements_update();
-	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 0, i_ele_blk);
-	    this->eval_point_data_.emplace_back(i_reg_blk, i_ele_blk, 1, i_ele_blk);
-        this->eval_point_data_.emplace_back(i_reg_bdr, i_ele_bdr, 0, -1);
+	    this->add_eval_point(i_reg_blk, i_ele_blk, 0, i_ele_blk);
+	    this->add_eval_point(i_reg_blk, i_ele_blk, 1, i_ele_blk);
+        this->add_eval_point(i_reg_bdr, i_ele_bdr, 0, -1);
         this->eval_point_data_.make_permanent();
         this->create_patch();
         this->rh_update_cache(i_reg_blk, i_reg_bdr);
@@ -951,7 +951,7 @@ TEST(Field, field_values) {
     std::shared_ptr<BulkIntegral> mass_eval = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
     std::shared_ptr<EdgeIntegral> side_eval = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
     ElementCacheMapTest elm_cache_map;
-    elm_cache_map.init(eval_points);
+    elm_cache_map.init(eval_points, mesh->region_db());
 
     // fill FieldValueCaches
     DHCellAccessor dh_cell(dh.get(), 4);

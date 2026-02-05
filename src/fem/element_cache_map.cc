@@ -61,17 +61,17 @@ void ElementCacheMap::init(std::shared_ptr<EvalPoints> eval_points, const Region
     i_reg_to_region_idx_.resize( region_db.bulk_size() + region_db.boundary_size() );
     bdr_start_i_reg_ = region_db.bulk_size();
 
-    std::vector< std::vector<uint> > dim_domain_regions(4);
+    std::vector< std::vector<uint> > dim_domain_regions(5);
     for (uint i=0; i<region_db.bulk_size(); ++i ) {
         uint region_idx = 2*i+1;
-        dim_domain_regions[ region_db.get_dim(region_idx)-1 ].push_back(region_idx);
+        dim_domain_regions[ region_db.get_dim(region_idx) ].push_back(region_idx);
     }
     for (uint i=0; i<region_db.boundary_size(); ++i ) {
         uint region_idx = 2*i;
-        dim_domain_regions[ 3 ].push_back(region_idx);
+        dim_domain_regions[ 4 ].push_back(region_idx);
     }
     uint i_reg=0;
-    for (uint i=0; i<4; ++i ) {
+    for (uint i=0; i<dim_domain_regions.size(); ++i ) {
         for (uint j=0; j<dim_domain_regions[i].size(); ++j) {
             region_idx_to_i_reg_[ dim_domain_regions[i][j] ] = i_reg;
             i_reg_to_region_idx_[ i_reg ] = dim_domain_regions[i][j];
