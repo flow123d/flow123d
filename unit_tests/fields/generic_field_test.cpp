@@ -58,7 +58,7 @@ public:
                 unsigned int reg_idx = dh_cell.elm().region_idx().idx();
                 for (uint i=uint( eval_points_->subset_begin(dh_cell.dim(), subset_idx) );
                           i<uint( eval_points_->subset_end(dh_cell.dim(), subset_idx) ); ++i) {
-                    this->add_eval_point(reg_idx, dh_cell.elm_idx(), i, dh_cell.local_idx());
+                    this->add_eval_point(reg_idx, dh_cell.elm_idx(), i, dh_cell.local_idx(), bulk_domain);
                 }
             }
             this->eval_point_data_.make_permanent();

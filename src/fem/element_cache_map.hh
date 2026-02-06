@@ -29,6 +29,7 @@
 #include "tools/mixed.hh"
 #include "tools/revertable_list.hh"
 #include "fem/dofhandler.hh"
+#include "fem/patch_point_values.hh"
 
 class EvalPoints;
 class ElementCacheMap;
@@ -54,11 +55,11 @@ template<class elm_type> using FieldValueCache = Armor::Array<elm_type>;
 struct EvalPointData {
     EvalPointData() {}              ///< Default constructor
     /// Constructor sets all data members
-    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx)
-    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx) {}
+    EvalPointData(unsigned int i_reg, unsigned int i_ele, unsigned int i_ep, unsigned int dh_loc_idx, fem_domain domain)
+    : i_reg_(i_reg), i_element_(i_ele), i_eval_point_(i_ep), dh_loc_idx_(dh_loc_idx), domain_(domain) {}
     /// Copy constructor
     EvalPointData(const EvalPointData &other)
-    : i_reg_(other.i_reg_), i_element_(other.i_element_), i_eval_point_(other.i_eval_point_), dh_loc_idx_(other.dh_loc_idx_) {}
+    : i_reg_(other.i_reg_), i_element_(other.i_element_), i_eval_point_(other.i_eval_point_), dh_loc_idx_(other.dh_loc_idx_), domain_(other.domain_) {}
 
 
     bool operator < (const EvalPointData &other) {
@@ -75,6 +76,7 @@ struct EvalPointData {
     unsigned int i_element_;        ///< mesh_idx of ElementAccessor appropriate to element
     unsigned int i_eval_point_;     ///< index of point in EvalPoint object
     unsigned int dh_loc_idx_;       ///< local index of cell in DOF handler
+    fem_domain domain_;             ///< marks that point is Bulk or side
 };
 
 
@@ -194,9 +196,9 @@ public:
     /** Adds EvalPointData using emplace_back.
      *  Arguments correspond to constructor of EvalPointData.
      */
-    inline void add_eval_point(unsigned int reg_idx, unsigned int i_ele, unsigned int i_eval_point, unsigned int dh_loc_idx)
+    inline void add_eval_point(unsigned int reg_idx, unsigned int i_ele, unsigned int i_eval_point, unsigned int dh_loc_idx, fem_domain domain)
     {
-        eval_point_data_.emplace_back(region_idx_to_i_reg_[reg_idx], i_ele, i_eval_point, dh_loc_idx);
+        eval_point_data_.emplace_back(region_idx_to_i_reg_[reg_idx], i_ele, i_eval_point, dh_loc_idx, domain);
         set_of_regions_.insert(reg_idx);
     }
 

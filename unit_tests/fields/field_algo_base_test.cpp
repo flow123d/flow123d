@@ -147,9 +147,9 @@ public:
     /// Prepare patch for region history test
 	void rh_prepare_patch(unsigned int i_reg_blk, unsigned int i_ele_blk, unsigned int i_reg_bdr, unsigned int i_ele_bdr) {
 	    this->start_elements_update();
-	    this->add_eval_point(i_reg_blk, i_ele_blk, 0, i_ele_blk);
-	    this->add_eval_point(i_reg_blk, i_ele_blk, 1, i_ele_blk);
-        this->add_eval_point(i_reg_bdr, i_ele_bdr, 0, -1);
+	    this->add_eval_point(i_reg_blk, i_ele_blk, 0, i_ele_blk, bulk_domain);
+	    this->add_eval_point(i_reg_blk, i_ele_blk, 1, i_ele_blk, bulk_domain);
+        this->add_eval_point(i_reg_bdr, i_ele_bdr, 0, -1, bulk_domain);
         this->eval_point_data_.make_permanent();
         this->create_patch();
         this->rh_update_cache(i_reg_blk, i_reg_bdr);
@@ -857,7 +857,7 @@ public:
     void add_cell_eval_points(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_int) {
         unsigned int reg_idx = cell.elm().region_idx().idx();
         for (auto p : bulk_int->points(this->position_in_cache(cell.elm_idx()), this) ) {
-            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx());
+            EvalPointData epd(reg_idx, cell.elm_idx(), p.eval_point_idx(), cell.local_idx(), bulk_domain);
             this->eval_point_data_.push_back(epd);
         }
         this->eval_point_data_.make_permanent();

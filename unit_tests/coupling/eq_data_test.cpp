@@ -185,7 +185,7 @@ public:
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
             unsigned int dim = computed_dh_cell_.dim();
             for (auto p : mass_eval[dim-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                this->add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+                this->add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx(), bulk_domain);
             }
 
             if (bdr)

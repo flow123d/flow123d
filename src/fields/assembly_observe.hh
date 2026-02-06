@@ -99,7 +99,7 @@ public:
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             patch_data_.emplace_back(dh_cell, p_data.i_quad_point);
-            this->asm_internals_.element_cache_map_.add_eval_point(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            this->asm_internals_.element_cache_map_.add_eval_point(p_data.i_reg, p_data.elem_idx, i_ep, 0, bulk_domain);
         }
         patch_data_.make_permanent();
         this->asm_internals_.element_cache_map_.make_paermanent_eval_points();
