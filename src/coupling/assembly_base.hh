@@ -269,13 +269,11 @@ public:
 
     /// Return number of DOFs
     inline unsigned int n_dofs() {
-        ASSERT(this->asm_internals_->use_patch_fe_values_);
         return asm_internals_->fe_values_.template n_dofs<dim>();
     }
 
     /// Return number of DOFs of higher dim element
     inline unsigned int n_dofs_high() {
-        ASSERT(this->asm_internals_->use_patch_fe_values_);
         return asm_internals_->fe_values_.template n_dofs_high<dim>();
     }
 

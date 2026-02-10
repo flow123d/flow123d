@@ -32,15 +32,14 @@
 struct AssemblyInternals {
 public:
     AssemblyInternals()
-    : eval_points_(std::make_shared<EvalPoints>()), use_patch_fe_values_(false) {}
+    : eval_points_(std::make_shared<EvalPoints>()) {}
 
     AssemblyInternals(MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe), use_patch_fe_values_(true) {}
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
-    bool use_patch_fe_values_;                                    ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
 };
 
 
@@ -173,9 +172,7 @@ public:
                 add_into_patch = false;
             } else {
                 asm_internals_.element_cache_map_.make_paermanent_eval_points();
-                if (asm_internals_.use_patch_fe_values_) {
-                    asm_internals_.fe_values_.make_permanent_ppv_data();
-                }
+                asm_internals_.fe_values_.make_permanent_ppv_data();
                 if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     add_into_patch = false;
@@ -203,9 +200,7 @@ private:
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();
-        if (asm_internals_.use_patch_fe_values_) {
-            asm_internals_.fe_values_.init_finalize();
-        }
+        asm_internals_.fe_values_.init_finalize();
     }
 
     /// Call assemblations when patch is filled
@@ -259,21 +254,17 @@ private:
         multidim_assembly_[2_d]->clean_integral_data();
         multidim_assembly_[3_d]->clean_integral_data();
         asm_internals_.element_cache_map_.clear_element_eval_points_map();
-        if (asm_internals_.use_patch_fe_values_) {
-            asm_internals_.fe_values_.reset();
-        }
+        asm_internals_.fe_values_.reset();
     }
 
     /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
-        if (asm_internals_.use_patch_fe_values_) {
-            asm_internals_.fe_values_.clean_elements_map();
-            asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-            asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-            asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.clean_elements_map();
+        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
 
-            asm_internals_.fe_values_.reinit_patch();
-        }
+        asm_internals_.fe_values_.reinit_patch();
     }
 
     /// Calls cache_reallocate method on
