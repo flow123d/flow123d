@@ -22,30 +22,10 @@
 #include "fem/integral_acc.hh"
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
-#include "fem/fe_values.hh"
 #include "fem/patch_fe_values.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
 
-
-
-/// Allow set mask of active integrals.
-//enum ActiveIntegrals {
-//    no_intg  =      0,
-//    bulk     = 0x0001,
-//    edge     = 0x0002,
-//    coupling = 0x0004,
-//    boundary = 0x0008
-//};
-
-
-/// Set of all used integral necessary in assemblation
-struct AssemblyIntegrals {
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_;          ///< Bulk integrals of elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_;          ///< Edge integrals between elements of dimensions 1, 2, 3
-    std::array<std::shared_ptr<CouplingIntegral>, 3> coupling_;  ///< Coupling integrals between elements of dimensions 1-2, 2-3
-    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_;  ///< Boundary integrals betwwen elements of dimensions 1, 2, 3 and boundaries
-};
 
 
 /// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
@@ -106,13 +86,12 @@ public:
     /**
      * Constructor.
      *
-     * Used in equations working with 'old' FeValues objects in evaluation.
+     * Used in equations that don't need PatchFeValues objects in evaluation.
      * @param eq_fields   Descendant of FieldSet declared in equation
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      */
     GenericAssembly( typename DimAssembly<1>::EqData *eq_data)
     : GenericAssemblyBase(),
-      use_patch_fe_values_(false),
 	  multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
@@ -121,14 +100,13 @@ public:
     /**
      * Constructor.
      *
-     * Used in equations working with 'new' PatchFeValues objects in evaluation.
+     * Used in equations working with PatchFeValues objects in evaluation.
      * @param eq_fields   Descendant of FieldSet declared in equation
      * @param eq_data     Object defined in equation containing shared data of eqation and assembly class.
      * @param dh          DOF handler object
      */
      GenericAssembly( typename DimAssembly<1>::EqData *eq_data, DOFHandlerMultiDim* dh)
     : GenericAssemblyBase(dh->ds()->fe()),
-      use_patch_fe_values_(true),
       multidim_assembly_(eq_data, &this->asm_internals_)
     {
         initialize();
@@ -139,7 +117,7 @@ public:
         return multidim_assembly_;
     }
 
-    /// Allows rewrite number of minimal edge sides.
+    /// Allows to rewrite number of minimal edge sides.
     void set_min_edge_sides(unsigned int val) {
         multidim_assembly_[1_d]->set_min_edge_sides(val);
         multidim_assembly_[2_d]->set_min_edge_sides(val);
@@ -147,7 +125,7 @@ public:
     }
 
 	/**
-	 * @brief General assemble methods.
+	 * @brief General assemble method.
 	 *
 	 * Loops through local cells and calls assemble methods of assembly
 	 * object of each cells over space dimension.
@@ -194,9 +172,7 @@ public:
                 add_into_patch = false;
             } else {
                 asm_internals_.element_cache_map_.make_paermanent_eval_points();
-                if (use_patch_fe_values_) {
-                    asm_internals_.fe_values_.make_permanent_ppv_data();
-                }
+                asm_internals_.fe_values_.make_permanent_ppv_data();
                 if (asm_internals_.element_cache_map_.get_simd_rounded_size() == CacheMapElementNumber::get()) {
                     this->assemble_integrals();
                     add_into_patch = false;
@@ -224,9 +200,7 @@ private:
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();
-        if (use_patch_fe_values_) {
-            asm_internals_.fe_values_.init_finalize();
-        }
+        asm_internals_.fe_values_.init_finalize();
     }
 
     /// Call assemblations when patch is filled
@@ -234,14 +208,15 @@ private:
         START_TIMER("create_patch");
         asm_internals_.element_cache_map_.create_patch();
         END_TIMER("create_patch");
-        if (use_patch_fe_values_) {
-            START_TIMER("patch_reinit");
-            patch_reinit();
-            END_TIMER("patch_reinit");
-        }
+
         START_TIMER("cache_update");
         multidim_assembly_[1_d]->eq_fields_->cache_update(asm_internals_.element_cache_map_); // TODO replace with sub FieldSet
         END_TIMER("cache_update");
+
+        START_TIMER("patch_reinit");
+        patch_reinit(); // reinit PatchFeValues
+        END_TIMER("patch_reinit");
+
         asm_internals_.element_cache_map_.finish_elements_update();
 
         {
@@ -279,9 +254,7 @@ private:
         multidim_assembly_[2_d]->clean_integral_data();
         multidim_assembly_[3_d]->clean_integral_data();
         asm_internals_.element_cache_map_.clear_element_eval_points_map();
-        if (use_patch_fe_values_) {
-            asm_internals_.fe_values_.reset();
-        }
+        asm_internals_.fe_values_.reset();
     }
 
     /// Reinit PatchFeValues object during construction of patch
@@ -301,7 +274,6 @@ private:
     }
 
 
-    bool use_patch_fe_values_;                                       ///< Flag holds if common @p fe_values_ object is used in @p multidim_assembly_
     MixedPtr<DimAssembly, 1> multidim_assembly_;                     ///< Assembly object
 };
 

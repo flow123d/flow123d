@@ -31,7 +31,7 @@
  * Base class define empty methods, these methods can be overwite in descendants.
  */
 template <unsigned int dim>
-class AssemblyBase
+class AssemblyBasePatch
 {
 public:
     /**
@@ -40,15 +40,15 @@ public:
      * @param quad_order    Order of Quadrature objects.
      * @param asm_internals Holds shared data with GenericAssembly
      */
-    AssemblyBase(unsigned int quad_order, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>() {
+    AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>() {
     	asm_internals_ = asm_internals;
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
     }
 
 	/// Destructor
-    virtual ~AssemblyBase() {
+    virtual ~AssemblyBasePatch() {
         delete quad_;
         delete quad_low_;
     }
@@ -267,13 +267,23 @@ public:
     	return integrals_;
     }
 
+    /// Return number of DOFs
+    inline unsigned int n_dofs() {
+        return asm_internals_->fe_values_.template n_dofs<dim>();
+    }
+
+    /// Return number of DOFs of higher dim element
+    inline unsigned int n_dofs_high() {
+        return asm_internals_->fe_values_.template n_dofs_high<dim>();
+    }
+
 protected:
 	/**
 	 * Default constructor.
 	 *
 	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
 	 */
-	AssemblyBase()
+	AssemblyBasePatch()
 	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr), min_edge_sides_(2) {}
 
     /**
@@ -388,13 +398,6 @@ protected:
         }
     }
 
-    /// Print update flags to string format.
-    std::string print_update_flags(UpdateFlags u) const {
-        std::stringstream s;
-        s << u;
-        return s.str();
-    }
-
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     DimIntegrals<dim> integrals_;                          ///< Set of used integrals.
@@ -408,32 +411,5 @@ protected:
      */
     unsigned int min_edge_sides_;
 };
-
-
-template <unsigned int dim>
-class AssemblyBasePatch : public AssemblyBase<dim>
-{
-public:
-    /**
-     * Constructor.
-     *
-     * @param quad_order    Specification of Quadrature size.
-     * @param asm_internals Holds shared data with GenericAssembly
-     */
-	AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
-	: AssemblyBase<dim>(quad_order, asm_internals) {}
-
-    /// Return number of DOFs
-    inline unsigned int n_dofs() {
-        return this->asm_internals_->fe_values_.template n_dofs<dim>();
-    }
-
-    /// Return number of DOFs of higher dim element
-    inline unsigned int n_dofs_high() {
-        return this->asm_internals_->fe_values_.template n_dofs_high<dim>();
-    }
-
-};
-
 
 #endif /* ASSEMBLY_BASE_HH_ */

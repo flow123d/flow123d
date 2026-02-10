@@ -21,8 +21,8 @@
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "transport/transport.h"
-#include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
+#include "fem/patch_fe_values.hh"
+#include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
@@ -32,7 +32,7 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class TEqData>
-class MassAssemblyConvection : public AssemblyBase<dim>
+class MassAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -42,7 +42,7 @@ public:
 
     /// Constructor.
     MassAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -116,7 +116,7 @@ public:
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim, class TEqData>
-class InitCondAssemblyConvection : public AssemblyBase<dim>
+class InitCondAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -126,7 +126,7 @@ public:
 
     /// Constructor.
     InitCondAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc;
     }
@@ -156,7 +156,7 @@ public:
     }
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
+    //shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
     /// Data objects shared with TransportDG
     EqFields *eq_fields_;
@@ -183,7 +183,7 @@ private:
  * note: the source of concentration is multiplied by time interval (gives the mass, not the flow like before)
  */
 template <unsigned int dim, class TEqData>
-class ConcSourcesBdrAssemblyConvection : public AssemblyBase<dim>
+class ConcSourcesBdrAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -193,9 +193,11 @@ public:
 
     /// Constructor.
     ConcSourcesBdrAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
-      bdr_integral_( this->create_boundary_integral(this->quad_low_) )  {
+      bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
+      JxW_bdr_( bdr_integral_->JxW() ),
+      normal_bdr_( bdr_integral_->normal_vector() ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->sources_sigma;
         this->used_fields_ += eq_fields_->sources_density;
@@ -208,11 +210,7 @@ public:
     ~ConcSourcesBdrAssemblyConvection() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize() {
-        fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        fe_values_side_.initialize(*this->quad_low_, *fe_, u);
-    }
+    void initialize() {}
 
 
     /// Assemble integral over element
@@ -262,12 +260,10 @@ public:
 		IntIdx local_p0_dof = cell_side.cell().get_loc_dof_indices()[0];
         LongIdx glob_p0_dof = eq_data_->dh_->get_local_to_global_map()[local_p0_dof];
 
-        fe_values_side_.reinit(cell_side.side());
-
         unsigned int sbi;
         auto p_side = *( bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
-        double flux = eq_fields_->side_flux(p_side, fe_values_side_);
+        double flux = eq_fields_->side_flux(p_side, normal_bdr_(p_side), JxW_bdr_(p_side));
         if (flux < 0.0) {
             double aij = -(flux / cell_side.element().measure() );
 
@@ -324,8 +320,6 @@ public:
     }
 
     private:
-        shared_ptr<FiniteElement<dim>> fe_;                       ///< Finite element for the solution of the advection-diffusion equation.
-
         /// Data objects shared with ConvectionTransport
         EqFields *eq_fields_;
         EqData *eq_data_;
@@ -333,10 +327,11 @@ public:
         /// Sub field set contains fields used in calculation.
         FieldSet used_fields_;
 
-        FEValues<3> fe_values_side_;                              ///< FEValues of object (of P disc finite element type)
-
         std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;     ///< Bulk integral of assembly class
         std::shared_ptr<BoundaryIntegralAcc<dim>> bdr_integral_;  ///< Boundary integral of assembly class
+
+        FeQ<Scalar> JxW_bdr_;
+        ElQ<Vector> normal_bdr_;
 
         template < template<IntDim...> class DimAssembly>
         friend class GenericAssembly;
@@ -360,7 +355,7 @@ public:
  * Updates CFL time step constrain.
  */
 template <unsigned int dim, class TEqData>
-class MatrixMpiAssemblyConvection : public AssemblyBase<dim>
+class MatrixMpiAssemblyConvection : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -370,9 +365,13 @@ public:
 
     /// Constructor.
     MatrixMpiAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       edge_integral_( this->create_edge_integral(this->quad_low_) ),
-      coupling_integral_( this->create_coupling_integral(this->quad_) )  {
+      coupling_integral_( this->create_coupling_integral(this->quad_) ),
+      JxW_side_( edge_integral_->JxW() ),
+      JxW_join_( coupling_integral_->JxW() ),
+      normal_side_( edge_integral_->normal_vector() ),
+      normal_join_( coupling_integral_->normal_vector() )  {
         this->used_fields_ += eq_fields_->flow_flux;
     }
 
@@ -381,17 +380,6 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        fe_ = std::make_shared< FE_P_disc<dim> >(0);
-        UpdateFlags u = update_values | update_side_JxW_values | update_normal_vectors | update_quadrature_points;
-        if (dim < 3) { // temporary solution until fe_values removal
-            fe_high_ = std::make_shared< FE_P_disc<dim+1> >(0);
-            fe_values_side_.initialize(*this->quad_, *fe_high_, u);
-        }
-        fe_values_vec_.resize(eq_data_->max_edg_sides);
-        for (unsigned int sid=0; sid<eq_data_->max_edg_sides; sid++)
-        {
-            fe_values_vec_[sid].initialize(*this->quad_low_, *fe_, u);
-        }
         side_dofs_.resize(eq_data_->max_edg_sides);
         side_flux_.resize(eq_data_->max_edg_sides);
         elm_meassures_.resize(eq_data_->max_edg_sides);
@@ -409,12 +397,11 @@ public:
         edg_flux = 0.0;
         for( DHCellSide edge_side : edge_side_range )
         {
-            fe_values_vec_[sid].reinit(edge_side.side());
             edge_side.cell().get_dof_indices(dof_indices_i_);
             side_dofs_[sid] = dof_indices_i_[0];
             elm_meassures_[sid] = edge_side.element().measure();
             auto p = *( edge_integral_->points(edge_side).begin() );
-            side_flux_[sid] = eq_fields_->side_flux(p, fe_values_vec_[sid]);
+            side_flux_[sid] = eq_fields_->side_flux(p, normal_side_(p), JxW_side_(p));
             if (side_flux_[sid] > 0.0) {
                 eq_data_->cfl_flow_.add_global(side_dofs_[sid], -(side_flux_[sid] / edge_side.element().measure()) );
                 edg_flux += side_flux_[sid];
@@ -446,11 +433,10 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim).error("Dimension of element mismatch!");
 
         auto p_high = *( coupling_integral_->points(neighb_side).begin() );
-        fe_values_side_.reinit(neighb_side.side());
 
         cell_lower_dim.get_dof_indices(dof_indices_i_);
         neighb_side.cell().get_dof_indices(dof_indices_j_);
-        flux = eq_fields_->side_flux(p_high, fe_values_side_);
+        flux = eq_fields_->side_flux(p_high, normal_join_(p_high), JxW_join_(p_high));
 
         // volume source - out-flow from higher dimension
         if (flux > 0.0)  aij = flux / cell_lower_dim.elm().measure();
@@ -494,9 +480,6 @@ public:
     }
 
 private:
-    shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
-    shared_ptr<FiniteElement<dim+1>> fe_high_;             ///< Same as previous but represents finite element of higher dim of join integral
-
     /// Data objects shared with ConvectionTransport
     EqFields *eq_fields_;
     EqData *eq_data_;
@@ -504,8 +487,6 @@ private:
     /// Sub field set contains fields used in calculation.
     FieldSet used_fields_;
 
-    FEValues<3> fe_values_side_;                           ///< FEValues of object (of P disc finite element type)
-    vector<FEValues<3>> fe_values_vec_;                    ///< Vector of FEValues of object (of P disc finite element types)
     vector<LongIdx> dof_indices_i_, dof_indices_j_;        ///< Global DOF indices.
 
     std::vector<LongIdx> side_dofs_;
@@ -518,6 +499,11 @@ private:
 
     std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral_;          ///< Edge integral of assembly class
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;  ///< Coupling integral of assembly class
+
+    FeQ<Scalar> JxW_side_;
+    FeQ<Scalar> JxW_join_;
+    ElQ<Vector> normal_side_;
+    ElQ<Vector> normal_join_;
 
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

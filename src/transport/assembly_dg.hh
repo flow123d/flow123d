@@ -1098,7 +1098,7 @@ public:
  * Auxiliary container class sets the initial condition.
  */
 template <unsigned int dim, class TEqData>
-class InitConditionAssemblyDG : public AssemblyBase<dim>
+class InitConditionAssemblyDG : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -1108,7 +1108,7 @@ public:
 
     /// Constructor.
     InitConditionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
+    : AssemblyBasePatch<dim>(), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->init_condition;
         this->asm_internals_ = asm_internals;
 

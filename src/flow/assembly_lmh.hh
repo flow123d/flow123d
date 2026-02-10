@@ -28,9 +28,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/neighbours.h"
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
-#include "fem/fe_values_views.hh"
 #include "fem/fe_system.hh"
 #include "fem/patch_op_impl.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -44,7 +42,7 @@
 
 
 template <unsigned int dim, class TEqData>
-class ReadInitCondAssemblyLMH : public AssemblyBase<dim>
+class ReadInitCondAssemblyLMH : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -54,7 +52,7 @@ public:
 
     /// Constructor.
     ReadInitCondAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_pressure;
     }

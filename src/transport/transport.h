@@ -27,7 +27,6 @@
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>
-#include "fem/fe_values.hh"                           // for FEValues
 #include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
@@ -92,8 +91,8 @@ public:
         virtual ~EqFields() {};
 
         /// Calculate flux on given side point.
-        inline double side_flux(SidePoint &side_p, FEValues<3> &fe_side_values) {
-            return arma::dot(this->flow_flux(side_p), fe_side_values.normal_vector(0)) * fe_side_values.JxW(0);
+        inline double side_flux(SidePoint &side_p, arma::vec3 normal_vec, double JxW) {
+            return arma::dot(this->flow_flux(side_p), normal_vec) * JxW;
         }
 
 		/**

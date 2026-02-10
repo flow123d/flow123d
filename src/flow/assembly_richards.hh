@@ -26,7 +26,7 @@
 
 
 template <unsigned int dim, class TEqData>
-class InitCondPostprocessAssembly : public AssemblyBase<dim>
+class InitCondPostprocessAssembly : public AssemblyBasePatch<dim>
 {
 public:
     typedef typename TEqData::EqFields EqFields;
@@ -36,7 +36,7 @@ public:
 
     /// Constructor.
     InitCondPostprocessAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBase<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
