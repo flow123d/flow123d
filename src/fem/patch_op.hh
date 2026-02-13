@@ -171,6 +171,16 @@ public:
     template <class ValueType>
     inline ValueType point_value(uint point_idx, uint i_dof=0) const;
 
+    /// Return size of quadrature
+    inline unsigned int quad_size() const {
+        return quad_->size();
+    }
+
+    /// return reference to patch arena
+    inline PatchArena &patch_arena() const {
+    	return patch_fe_->patch_arena();
+    }
+
 
 protected:
     uint dim_;                                    ///< Dimension
