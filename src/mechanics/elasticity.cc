@@ -68,6 +68,7 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
 		   .close();
 }
 
@@ -447,6 +448,8 @@ void Elasticity::initialize()
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+
+    eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),

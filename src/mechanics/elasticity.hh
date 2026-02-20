@@ -135,6 +135,7 @@ public:
         // map local element -> constraint index
         std::map<LongIdx,LongIdx> constraint_idx;
 
+		bool fix_nullspace;
     	// @}
 
     	/// Shared Balance object

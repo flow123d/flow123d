@@ -187,10 +187,6 @@ public:
         for (unsigned int i=0; i<dim; i++)
             lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
         vector<double> ignore_dofs(n_dofs_, false);
-        for (unsigned int idof=0; idof<n_dofs_; idof++)
-            if ( side_dof_indices_[1][idof] >= 0 && cell_higher_dim.cell_dof(idof).dim == 0 && 
-                 find(lower_nodes.begin(), lower_nodes.end(), cell_higher_dim.elm().node(cell_higher_dim.cell_dof(idof).n_face_idx).idx()) == lower_nodes.end() )
-                ignore_dofs[idof] = true;
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
@@ -212,6 +208,10 @@ public:
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
+                    if (eq_data_->fix_nullspace) {
+                        arma::mat33 gvi = (n==0) ? arma::zeros(3,3) : vec_view_side_->grad(i,k);
+                        vi = vi - eq_fields_->cross_section(p_low)/2 * (gvi*nv);
+                    }
                     double divvft = (n==0) ? arma::trace(gvft) : 0;
 
                     for (int m=0; m<2; m++)
@@ -222,6 +222,10 @@ public:
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
                             double divuft = (m==0) ? arma::trace(guft) : 0;
+                            if (eq_data_->fix_nullspace) {
+                                arma::mat33 gui = (m==0) ? arma::zeros(3,3) : vec_view_side_->grad(j,k);
+                                ui = ui - eq_fields_->cross_section(p_low)/2 * (gui*nv);
+                            }
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
