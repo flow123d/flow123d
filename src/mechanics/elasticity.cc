@@ -68,6 +68,7 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("feti", Bool(), IT::Default("false"), "Use FETI domain decomposition.")
            .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
 		   .close();
 }
@@ -443,6 +444,8 @@ void Elasticity::initialize()
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
+    bool use_feti = input_rec.val<bool>("feti");
+    ls->use_feti(use_feti);
     eq_data_->ls = ls;
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
