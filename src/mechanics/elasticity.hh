@@ -39,6 +39,7 @@ template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
+template<unsigned int dim> class DirichletAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -111,7 +112,9 @@ public:
 	public:
 
 		EqData()
-        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
+		  dirichlet_matrix(nullptr), dirichlet_vec(nullptr)
+		{}
 
 		~EqData();
 
@@ -135,7 +138,16 @@ public:
         // map local element -> constraint index
         std::map<LongIdx,LongIdx> constraint_idx;
 
+		Mat dirichlet_matrix;
+		Vec dirichlet_vec;
+		std::vector<unsigned int> dirichlet_dofs;
+		std::vector<double> dirichlet_coefs;
+		std::vector<double> dirichlet_values;
+		std::vector<unsigned int> dirichlet_row_starts;
+
 		bool fix_nullspace;
+		bool dirichlet_by_eq; // enforce Dirichlet b.c. by equality constraints
+
     	// @}
 
     	/// Shared Balance object
@@ -257,6 +269,7 @@ private:
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
+	GenericAssembly< DirichletAssemblyElasticity > * dirichlet_assembly_;
 
 };
 

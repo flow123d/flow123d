@@ -127,6 +127,7 @@ public:
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
+        if (eq_data_->dirichlet_by_eq) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
@@ -426,7 +427,7 @@ public:
         }
 
         k = 0;
-        if (bc_type == EqFields::bc_type_displacement)
+        if (bc_type == EqFields::bc_type_displacement && !eq_data_->dirichlet_by_eq)
         {
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
@@ -439,7 +440,7 @@ public:
                 ++k;
             }
         }
-        else if (bc_type == EqFields::bc_type_displacement_normal)
+        else if (bc_type == EqFields::bc_type_displacement_normal && !eq_data_->dirichlet_by_eq)
         {
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
@@ -853,6 +854,183 @@ private:
     friend class GenericAssembly;
 
 };
+
+
+void rref(arma::mat& M, double tol) {
+    int lead = 0;
+    int rowCount = M.n_rows;
+    int columnCount = M.n_cols;
+
+    for (int r = 0; r < rowCount; ++r) {
+        if (columnCount <= lead) return;
+        int i = r;
+        while (fabs(M(i, lead)) < tol) {
+            i++;
+            if (rowCount == i) {
+                i = r;
+                lead++;
+                if (columnCount == lead) return;
+            }
+        }
+        M.swap_rows(i, r);
+        if (fabs(M(r, lead)) > tol) M.row(r) /= M(r, lead);
+        for (int i = 0; i < rowCount; ++i) {
+            if (i != r) M.row(i) -= M(i, lead) * M.row(r);
+        }
+        lead++;
+    }
+}
+
+
+template <unsigned int dim>
+class DirichletAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqFields EqFields;
+    typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "DirichletAssemblyElasticity"; }
+
+    /// Constructor.
+    DirichletAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data), drop_tol(1e-12) {
+        this->active_integrals_ = ActiveIntegrals::boundary;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_displacement;
+    }
+
+    /// Destructor.
+    ~DirichletAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
+        n_dofs_ = fe_->n_dofs();
+        dof_indices_.resize(n_dofs_);
+        vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
+    }
+
+
+    /// Assembles boundary integral.
+    void boundary_side_integral(DHCellSide cell_side)
+    {
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
+
+        Side side = cell_side.side();
+        const DHCellAccessor &dh_cell = cell_side.cell();
+        dof_indices_ = dh_cell.get_loc_dof_indices();
+        fe_values_bdr_side_.reinit(side);
+
+        unsigned int bc_type;
+        {
+            auto p_side = *( this->boundary_points(cell_side).begin() );
+    	    auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+    	    bc_type = eq_fields_->bc_type(p_bdr);
+        }
+
+        unsigned int k = 0;
+        if (bc_type == EqFields::bc_type_displacement)
+        {
+            arma::mat A(n_dofs_,n_dofs_+1);
+            for (auto p : this->boundary_points(cell_side) )
+            {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto bc_displacement = eq_fields_->bc_displacement(p_bdr);
+                for (unsigned int i=0; i<n_dofs_; i++) {
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        A(i,j) += arma::dot(vec_view_bdr_->value(j,k), vec_view_bdr_->value(i,k)) *
+                            fe_values_bdr_side_.JxW(k);
+                    A(i,n_dofs_) += arma::dot(bc_displacement, vec_view_bdr_->value(i,k)) *
+                            fe_values_bdr_side_.JxW(k);
+                }
+                ++k;
+            }
+            rref(A, drop_tol);
+            for (unsigned int row_idx=0; row_idx<A.n_rows; row_idx++) {
+                arma::uvec indices = arma::find(arma::abs(A(row_idx, arma::span(0,A.n_cols-2))) > drop_tol);
+                ASSERT_LE(indices.size(), 1).error("Dirichlet constraint applies to more than one dof!");
+                if (indices.size() == 1) {
+                    if (std::find(eq_data_->dirichlet_dofs.begin(), eq_data_->dirichlet_dofs.end(), dof_indices_[indices(0)]) == eq_data_->dirichlet_dofs.end()) {
+                        eq_data_->dirichlet_dofs.push_back(dof_indices_[indices(0)]);
+                        eq_data_->dirichlet_coefs.push_back(A(row_idx,indices(0)));
+                        eq_data_->dirichlet_values.push_back(A(row_idx,A.n_cols-1));
+                        eq_data_->dirichlet_row_starts.push_back( eq_data_->dirichlet_row_starts.back() + indices.size() );
+                    }
+                }
+            }
+
+        }
+        else if (bc_type == EqFields::bc_type_displacement_normal)
+        {
+            arma::mat A(n_dofs_,n_dofs_+1);
+            for (auto p : this->boundary_points(cell_side) )
+            {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                normal_vector_ = fe_values_bdr_side_.normal_vector(k);
+                auto bc_displacement = eq_fields_->bc_displacement(p_bdr);
+                for (unsigned int i=0; i<n_dofs_; i++) {
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        A(i,j) += arma::dot(vec_view_bdr_->value(j,k), normal_vector_) *
+                            arma::dot(vec_view_bdr_->value(i,k), normal_vector_) *
+                            fe_values_bdr_side_.JxW(k);
+                    A(i,n_dofs_) += arma::dot(bc_displacement, normal_vector_) *
+                            arma::dot(vec_view_bdr_->value(i,k),normal_vector_) *
+                            fe_values_bdr_side_.JxW(k);
+                }
+                ++k;
+            }
+            rref(A, drop_tol);
+            for (unsigned int row_idx=0; row_idx<A.n_rows; row_idx++) {
+                arma::uvec indices = arma::find(arma::abs(A(row_idx, arma::span(0,A.n_cols-2))) > drop_tol);
+                // ASSERT_LE(indices.size(), 1).error("Dirichlet constraint applies to more than one dof!");
+                if (indices.size() > 0) {
+                    for (unsigned int i=0; i<indices.size(); i++) {
+                        eq_data_->dirichlet_dofs.push_back(dof_indices_[indices(i)]);
+                        eq_data_->dirichlet_coefs.push_back(A(row_idx,indices(i)));
+                    }
+                    eq_data_->dirichlet_values.push_back(A(row_idx,A.n_cols-1));
+                    eq_data_->dirichlet_row_starts.push_back( eq_data_->dirichlet_row_starts.back() + indices.size() );
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    FEValues<3> fe_values_bdr_side_;                          ///< FEValues of side (boundary integral) object
+
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    const FEValuesViews::Vector<3> * vec_view_bdr_;           ///< Vector view in boundary calculation.
+
+    arma::vec3 normal_vector_;
+
+    const double drop_tol;                              // Tolerance to drop small values.
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
 
 
 #endif /* ASSEMBLY_ELASTICITY_HH_ */

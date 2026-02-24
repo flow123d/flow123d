@@ -67,6 +67,8 @@ LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &pa
           params_(params),
           init_guess_nonzero(false),
           matrix_(NULL),
+          matrix_eq_(NULL),
+          eq_(NULL),
           use_feti_(false)
 {
     PetscErrorCode ierr;
@@ -99,6 +101,8 @@ LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
 
 	MatCopy(other.matrix_ineq_, matrix_ineq_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.ineq_, ineq_);
+    MatCopy(other.matrix_eq_, matrix_eq_, DIFFERENT_NONZERO_PATTERN);
+    VecCopy(other.eq_, eq_);
 	VecCopy(other.warm_solution_, warm_solution_);
     warm_start_ = other.warm_start_;
     maxeig_ = other.maxeig_;
@@ -111,6 +115,13 @@ void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
   // TODO ref count?
   matrix_ineq_ = matrix_ineq;
   ineq_ = ineq;
+}
+
+
+void LinSys_PERMON::set_equality(Mat matrix_eq, Vec eq)
+{
+    matrix_eq_ = matrix_eq;
+    eq_ = eq;
 }
 
 
@@ -362,6 +373,9 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     if (ineq_) {
       chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
     }
+    if (eq_) {
+        chkerr(QPSetEq(system, matrix_eq_, eq_));
+    }
 
     if (use_feti_) {
 
@@ -438,12 +452,13 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // convert to MATAIJ
         Mat matrix_aij;
         chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
-        chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
+        if (!eq_)
+            chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
         // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
         chkerr(QPSetOperator(system, matrix_aij));
         chkerr(MatDestroy(&matrix_aij));
 
-        if (ineq_) // dualization without FETI
+        if (ineq_ || eq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
     }
     
@@ -522,6 +537,8 @@ void LinSys_PERMON::view(string text )
     FilePath solFileName(text + "_flow123d_sol.m",FilePath::FileType::output_file);
     FilePath mat_ineqFileName(text + "_flow123d_matrix_ineq.m",FilePath::FileType::output_file);
     FilePath ineqFileName(text + "_flow123d_ineq.m",FilePath::FileType::output_file);
+    FilePath mat_eqFileName(text + "_flow123d_matrix_eq.m",FilePath::FileType::output_file);
+    FilePath eqFileName(text + "_flow123d_eq.m",FilePath::FileType::output_file);
 
     PetscViewer myViewer;
 
@@ -551,6 +568,7 @@ void LinSys_PERMON::view(string text )
     }
     else
         WarningOut() << "PetscViewer: the solution of LinSys is not set.\n";
+
     if ( matrix_ineq_ != NULL ) {
         PetscViewerASCIIOpen(comm_,((string)mat_ineqFileName).c_str(),&myViewer);
         PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
@@ -567,6 +585,23 @@ void LinSys_PERMON::view(string text )
     }
     else
         WarningOut() << "PetscViewer: the inequality vector of LinSys is not set.\n";
+
+    if ( matrix_eq_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)mat_eqFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        MatView( matrix_eq_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the equality matrix of LinSys is not set.\n";
+    if ( eq_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)eqFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        VecView( eq_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the equality vector of LinSys is not set.\n";
 }
 
 LinSys_PERMON::~LinSys_PERMON( )
