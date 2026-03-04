@@ -56,7 +56,7 @@ const Record & Elasticity::get_input_type() {
                     "Settings for computing balance.")
            .declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
                     "Parameters of output stream.")
-           .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+           .declare_key("solver", LinSys_PERMON::get_input_type(), Default::obligatory(),
 				"Linear solver for elasticity.")
 		   .declare_key("input_fields", Array(
 		        Elasticity::EqFields()
@@ -68,6 +68,10 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("feti", Bool(), IT::Default("false"), "Use FETI domain decomposition.")
+           .declare_key("view_matrices", Bool(), IT::Default("false"), "Print system matrices and vectors.")
+           .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
+           .declare_key("dirichlet_by_eq", Bool(), IT::Default("false"), "Enforce Dirichlet b.c. by equality constraints instead of penalization.")
 		   .close();
 }
 
@@ -279,6 +283,15 @@ Elasticity::EqFields::EqFields()
 
 }
 
+Elasticity::EqData::~EqData()
+{
+    if (ls!=nullptr) delete ls;
+    if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
+    if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
+    if (dirichlet_matrix!=nullptr) MatDestroy(&dirichlet_matrix);
+    if (dirichlet_vec!=nullptr) VecDestroy(&dirichlet_vec);
+}
+
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
 {
 	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
@@ -310,7 +323,8 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
-		  output_fields_assembly_(nullptr)
+		  output_fields_assembly_(nullptr),
+          dirichlet_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
@@ -406,17 +420,15 @@ void Elasticity::initialize()
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
+    petsc_default_opts = "-permon_pc_type hypre";
     
     // allocate matrix and vector structures
-    LinSys *ls;
+#ifndef FLOW123D_HAVE_PERMON
+    ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
+#endif //FLOW123D_HAVE_PERMON
+    LinSys_PERMON *ls = new LinSys_PERMON(*eq_data_->dh_, petsc_default_opts);
     has_contact_ = input_rec.val<bool>("contact");
     if (has_contact_) {
-#ifndef FLOW123D_HAVE_PERMON
-        ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
-#endif //FLOW123D_HAVE_PERMON
-        ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
-
         // allocate constraint matrix and vector
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
         for (auto cell : eq_data_->dh_->own_range())
@@ -431,20 +443,28 @@ void Elasticity::initialize()
                         eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
         MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
-        ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+        ls->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    } else {
-        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
-        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
+    bool use_feti = input_rec.val<bool>("feti");
+    ls->use_feti(use_feti);
     eq_data_->ls = ls;
 
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+
+    eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
+    if (eq_data_->dirichlet_by_eq) {
+        // allocate matrix and vector for dirichlet constraints
+        dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
+    }
+
+    eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
+    view_matrices = input_rec.val<bool>("view_matrices");
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),
@@ -461,6 +481,7 @@ Elasticity::~Elasticity()
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
+    if (dirichlet_assembly_!=nullptr) delete dirichlet_assembly_;
 
     eq_data_.reset();
     eq_fields_.reset();
@@ -523,6 +544,10 @@ void Elasticity::zero_time_step()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
     eq_data_->ls->finish_assembly();
+    if (view_matrices) {
+        eq_data_->dh_->view_dof_to_node_map("mechanics");
+        eq_data_->ls->view("permon");
+    }
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
@@ -538,6 +563,52 @@ void Elasticity::preallocate()
 	eq_data_->ls->start_allocation();
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
+
+    if (eq_data_->dirichlet_by_eq) {
+        eq_data_->dirichlet_row_starts.clear();
+        eq_data_->dirichlet_row_starts.push_back(0);
+        dirichlet_assembly_->assemble(eq_data_->dh_);
+
+        // preallocate dirichlet constraint matrix and vector
+        unsigned int n_rows = eq_data_->dirichlet_values.size();
+        PetscErrorCode ierr;
+        ISLocalToGlobalMapping l2g_rows, l2g_cols;
+        Distribution dir_row_ds(n_rows, PETSC_COMM_WORLD);
+        vector<LongIdx> rows_l2g_indices;
+        for (unsigned int i=dir_row_ds.begin(); i<dir_row_ds.end(); i++)
+            rows_l2g_indices.push_back(i);
+        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, n_rows,
+            rows_l2g_indices.data(), PETSC_USE_POINTER, &l2g_rows); CHKERRV(ierr);
+        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->get_local_to_global_map().size(),
+            eq_data_->dh_->get_local_to_global_map().data(), PETSC_USE_POINTER, &l2g_cols); CHKERRV(ierr);
+        ierr = MatCreateIS(PETSC_COMM_WORLD, 1, n_rows, eq_data_->dh_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                                  l2g_rows, l2g_cols, &eq_data_->dirichlet_matrix); CHKERRV( ierr );
+        PetscInt *on_nz, *off_nz;
+        on_nz  = new PetscInt[ n_rows ];
+        off_nz = new PetscInt[ n_rows ];
+        for (unsigned int i=0; i<n_rows; i++) {
+            on_nz[i] = eq_data_->dirichlet_row_starts[i+1] - eq_data_->dirichlet_row_starts[i];
+            off_nz[i] = 0;
+        }
+        ierr = MatISSetPreallocation(eq_data_->dirichlet_matrix, 0, on_nz, 0, off_nz);
+        delete[] on_nz;
+        delete[] off_nz;
+        VecCreateMPI(PETSC_COMM_WORLD, n_rows, PETSC_DECIDE, &eq_data_->dirichlet_vec);
+
+        // assemble dirichlet matrix and vector
+        MatZeroEntries(eq_data_->dirichlet_matrix);
+        VecZeroEntries(eq_data_->dirichlet_vec);
+        for (unsigned int i=0; i<n_rows; i++) {
+            for (unsigned int j=eq_data_->dirichlet_row_starts[i]; j<eq_data_->dirichlet_row_starts[i+1]; j++)
+                MatSetValueLocal(eq_data_->dirichlet_matrix, i, eq_data_->dirichlet_dofs[j], eq_data_->dirichlet_coefs[j], INSERT_VALUES);
+            VecSetValueLocal(eq_data_->dirichlet_vec, i, eq_data_->dirichlet_values[i], INSERT_VALUES);
+        }
+        MatAssemblyBegin(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
+        VecAssemblyBegin(eq_data_->dirichlet_vec);
+        VecAssemblyEnd(eq_data_->dirichlet_vec);
+        eq_data_->ls->set_equality(eq_data_->dirichlet_matrix, eq_data_->dirichlet_vec);
+    }
 
     if (has_contact_)
         assemble_constraint_matrix();
@@ -637,4 +708,7 @@ void Elasticity::assemble_constraint_matrix()
     VecAssemblyEnd(eq_data_->constraint_vec);
 }
 
-
+const Vec &Elasticity::get_solution()
+{
+    return eq_data_->ls->get_solution();
+}
