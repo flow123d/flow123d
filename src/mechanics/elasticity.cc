@@ -69,6 +69,7 @@ const Record & Elasticity::get_input_type() {
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
            .declare_key("feti", Bool(), IT::Default("false"), "Use FETI domain decomposition.")
+           .declare_key("view_matrices", Bool(), IT::Default("false"), "Print system matrices and vectors.")
            .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
            .declare_key("dirichlet_by_eq", Bool(), IT::Default("false"), "Enforce Dirichlet b.c. by equality constraints instead of penalization.")
 		   .close();
@@ -463,6 +464,7 @@ void Elasticity::initialize()
     }
 
     eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
+    view_matrices = input_rec.val<bool>("view_matrices");
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),
@@ -542,6 +544,10 @@ void Elasticity::zero_time_step()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
     eq_data_->ls->finish_assembly();
+    if (view_matrices) {
+        eq_data_->dh_->view_dof_to_node_map("mechanics");
+        eq_data_->ls->view("permon");
+    }
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());

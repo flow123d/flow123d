@@ -244,6 +244,8 @@ private:
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
 
+	bool view_matrices;
+
     
 	// @}
 
