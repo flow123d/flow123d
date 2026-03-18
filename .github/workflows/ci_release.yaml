@@ -12,6 +12,7 @@ on:
         - 3.9.1
         - DF_patch_fe_values
         #- SM_CI_GNU_Integration_tests
+        - JS_constraints
 
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
