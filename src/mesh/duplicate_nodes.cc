@@ -103,36 +103,71 @@ void DuplicateNodes::duplicate_nodes()
     std::list<unsigned int> node_elements;
     std::copy( mesh_->node_elements()[n.idx()].begin(), mesh_->node_elements()[n.idx()].end(), std::back_inserter( node_elements ) );
     
-    // divide node_elements into components connected by node_edges
+    bool elem_dims[4]; // indicate whether elements of given dimension share the node
+    for (unsigned int i=0; i<4; i++) elem_dims[i] = false;
+    for (auto e : node_elements ) {
+      auto dim = mesh_->element_accessor(e).dim();
+      elem_dims[dim] = true;
+    }
+    unsigned int n_dims = 0;
+    for (unsigned int i=0; i<4; i++)
+      if (elem_dims[i]) n_dims++;
+
     std::list<std::set<unsigned int> > components;
-    while (node_elements.size() > 0)
-    {
-      // create component containing the first element in node_elements
-      std::queue<unsigned int> q;
-      q.push(*node_elements.begin());
-      node_elements.erase(node_elements.begin());
-      std::set<unsigned int> component;
-      while (q.size() > 0) {
-        auto elem = mesh_->element_accessor(q.front());
-        component.insert(elem.idx());
+    if (n_dims == 1) {
+      // if all node_elements have the same dimension then
+      // divide node_elements into components by dimension
+      while (!node_elements.empty())
+      {
+        // create component containing the first element in node_elements
+        std::set<unsigned int> component;
+        auto first_elem = mesh_->element_accessor(*node_elements.begin());
+        component.insert(first_elem.idx());
+        node_elements.erase(node_elements.begin());
         // add to queue adjacent elements sharing one of node_edges
-        for (unsigned int sid=0; sid<elem->n_sides(); ++sid) {
-          auto side = elem.side(sid);
-          for (unsigned int esid=0; esid < side->edge().n_sides(); ++esid) {
-            auto adj_el_idx = side->edge().side(esid)->elem_idx();
-            if (adj_el_idx != elem.idx())
-            {
-              auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);
-              if (it != node_elements.end()) {
-                node_elements.erase(it);
-                q.push(adj_el_idx);
+        auto elem_idx = node_elements.begin();
+        while (elem_idx != node_elements.end()) {
+          if (mesh_->element_accessor(*elem_idx).dim() == first_elem.dim()) {
+            component.insert(*elem_idx);
+            elem_idx = node_elements.erase(elem_idx);
+          } else {
+            ++elem_idx;
+          }
+        }
+        components.push_back(component);
+      }
+    } else {
+      // if node_elements have different dimensions then
+      // divide node_elements into components connected by node_edges
+      while (node_elements.size() > 0)
+      {
+        // create component containing the first element in node_elements
+        std::queue<unsigned int> q;
+        q.push(*node_elements.begin());
+        node_elements.erase(node_elements.begin());
+        std::set<unsigned int> component;
+        while (q.size() > 0) {
+          auto elem = mesh_->element_accessor(q.front());
+          component.insert(elem.idx());
+          // add to queue adjacent elements sharing one of node_edges
+          for (unsigned int sid=0; sid<elem->n_sides(); ++sid) {
+            auto side = elem.side(sid);
+            for (unsigned int esid=0; esid < side->edge().n_sides(); ++esid) {
+              auto adj_el_idx = side->edge().side(esid)->elem_idx();
+              if (adj_el_idx != elem.idx())
+              {
+                auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);
+                if (it != node_elements.end()) {
+                  node_elements.erase(it);
+                  q.push(adj_el_idx);
+                }
               }
             }
           }
+          q.pop();
         }
-        q.pop();
+        components.push_back(component);
       }
-      components.push_back(component);
     }
     
     // For the first component leave the current node and set its node_dim_.
