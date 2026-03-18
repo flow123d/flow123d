@@ -65,6 +65,11 @@ public:
                         .description("FieldFormula with depth")
                         .input_default("0.0")
                         .units( UnitSI().m() );
+            *this += scalar_with_mesh_step
+                        .name("scalar_with_mesh_step")
+                        .description("FieldFormula with mesh step")
+                        .input_default("0.0")
+                        .units( UnitSI().m() );
             *this += tensor_field
                         .name("tensor_field")
                         .description("")
@@ -128,6 +133,7 @@ public:
         Field<3, FieldValue<3>::Scalar > scalar_field;                 ///< Coordinate 'x' or 'y', reference value of other fields
         Field<3, FieldValue<3>::Scalar > scalar_z;                     ///< Coordinate 'z', reference of depth computing
         Field<3, FieldValue<3>::Scalar > scalar_with_depth;            ///< Tests depth 'd' value
+        Field<3, FieldValue<3>::Scalar > scalar_with_mesh_step;        ///< Tests 'h' value
         Field<3, FieldValue<3>::VectorFixed > vector_field;            ///< Tests formula vector
         Field<3, FieldValue<3>::VectorFixed > density_unit_conversion; ///< Tests unit conversion
         Field<3, FieldValue<3>::TensorFixed > tensor_field;            ///< Tests formula tensor
@@ -162,6 +168,7 @@ public:
                         .declare_key("density_unit_conversion", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("scalar_z", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("scalar_with_depth", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("scalar_with_mesh_step", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
@@ -207,6 +214,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
+        scalar_with_mesh_step: !FieldFormula
+          value: h
         vector_field: !FieldFormula
           value: "[X[0], 2*X[0], 0.5]"
         density_unit_conversion: !FieldFormula
@@ -224,6 +233,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
+        scalar_with_mesh_step: !FieldFormula
+          value: h
         vector_field:  !FieldFormula
           value: "[X[1], 2*X[1], 0.5]"
         density_unit_conversion: !FieldFormula
@@ -256,6 +267,21 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
 
             double depth = data_->scalar_with_depth(q_point);
             EXPECT_DOUBLE_EQ(1-data_->scalar_z(q_point), depth);
+
+            double measure_ref_val = 1.0;
+            uint dim = data_->computed_dh_cell_.dim();
+            switch (dim) {
+                case 1:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S1();
+                    break;
+                case 2:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S2();
+                    break;
+                case 3:
+                    measure_ref_val = fabs( data_->computed_dh_cell_.elm().jacobian_S3() );
+                    break;
+            }
+            EXPECT_DOUBLE_EQ(data_->scalar_with_mesh_step(q_point), pow( measure_ref_val, (1.0 / dim) ));
 
             // Evaluation of the scalar field tested elseewhere. we can
             // Can activqte again only after we support taking values from FieldCommon.

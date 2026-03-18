@@ -539,15 +539,14 @@ public:
                                 for (unsigned int j=0; j<ndofs_; j++)
                                     local_matrix_[i*ndofs_+j] = 0;
 
-                            k=0;
-                            for (auto p1 : conc_edge_integral_->points(zero_edge_side) )
-                            //for (k=0; k<this->quad_low_->size(); ++k)
+                            for (unsigned int i=0; i<ndofs_; i++)
                             {
-                                for (unsigned int i=0; i<ndofs_; i++)
+                                for (unsigned int j=0; j<ndofs_; j++)
                                 {
-                                    for (unsigned int j=0; j<ndofs_; j++)
+                                    int index = i*ndofs_+j;
+                                    k=0;
+                                    for (auto p1 : conc_edge_integral_->points(zero_edge_side) )
                                     {
-                                        int index = i*ndofs_+j;
 
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
@@ -559,10 +558,12 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*ndofs_+i]*waverages[m][k*ndofs_+j]
                                             - eq_data_->dg_variant*waverages[n][k*ndofs_+i]*jumps[m][k*ndofs_+j]
-                                            )*JxW_side_(p1) + LocalSystem::almost_zero;
+                                            )*JxW_side_(p1);
+                                        k++;
                                     }
+                                    local_matrix_[index] += LocalSystem::almost_zero;
+
                                 }
-                                k++;
                             }
                             eq_data_->ls[sbi]->mat_set_values(ndofs_, &(side_dof_indices_[sd[n]][0]), ndofs_, &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
                         }
