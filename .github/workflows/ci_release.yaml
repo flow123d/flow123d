@@ -6,12 +6,12 @@ on:
     push:
         branches:
         - master
-        - JB_shared_system
-        - JB_release_tests   
-        - JB_py123d    
+        #- JB_shared_system
+        #- JB_release_tests   
+        #- JB_py123d    
         - 3.9.1
-        - DF_profiler_memory_monitor
-        - SM_CI_GNU_Integration_tests
+        - DF_patch_fe_values
+        #- SM_CI_GNU_Integration_tests
 
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
