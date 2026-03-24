@@ -786,5 +786,95 @@ private:
 };
 
 
+/**
+ * Auxiliary container class for equality constraints for rigid body motions.
+ */
+template <unsigned int dim, class TEqData>
+class RBMAssemblyElasticity : public AssemblyBasePatch<dim>
+{
+public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
+
+    static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
+
+    /// Constructor.
+    RBMAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
+      rows_{0,1,2,3,4,5},
+      bulk_integral_( this->create_bulk_integral(this->quad_)),
+      coords_( bulk_integral_->coords() ),
+      JxW_( bulk_integral_->JxW() ),
+      deform_( bulk_integral_->vector_shape() ) {
+        this->used_fields_ += eq_fields_->cross_section;
+    }
+
+    /// Destructor.
+    ~RBMAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize() {
+        n_dofs_ = this->n_dofs();
+        dof_indices_.resize(n_dofs_);
+        local_matrix_.resize(n_dofs_*6);
+    }
+
+
+    /// Assemble integral over element
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    {
+        if (cell.dim() != dim) return;
+
+        cell.get_dof_indices(dof_indices_);
+
+        // assemble the local stiffness matrix
+        for (unsigned int i=0; i<6; i++)
+            for (unsigned int j=0; j<n_dofs_; j++)
+                local_matrix_[i*n_dofs_+j] = 0;
+
+        for (auto p : bulk_integral_->points(element_patch_idx) )
+        {
+            for (unsigned int j=0; j<n_dofs_; j++)
+            {
+                arma::vec3 product = arma::cross(coords_(p),deform_.shape(j)(p));
+                for (unsigned int i=0; i<3; i++)
+                {
+                    local_matrix_[i*n_dofs_+j] += eq_fields_->cross_section(p)*(deform_.shape(j)(p)[i])*JxW_(p);
+                    local_matrix_[(i+3)*n_dofs_+j] += eq_fields_->cross_section(p)*product(i)*JxW_(p);
+                }
+            }
+        }
+        MatSetValues(eq_data_->eq_constraint_matrix_local, 6, rows_, n_dofs_, dof_indices_.data(), &(local_matrix_[0]), ADD_VALUES);
+    }
+
+
+
+private:
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                               ///< Number of dofs
+    PetscInt rows_[6];
+    vector<LongIdx> dof_indices_;                                       ///< Vector of global DOF indices
+    vector<PetscScalar> local_matrix_;                                  ///< Auxiliary vector for assemble methods
+
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;               ///< Bulk integral of assembly class
+
+    /// Following data members represent Element quantities and FE quantities
+    FeQ<Vector> coords_;
+    FeQ<Scalar> JxW_;
+    FeQArray<Vector> deform_;
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 #endif /* ASSEMBLY_ELASTICITY_HH_ */
 

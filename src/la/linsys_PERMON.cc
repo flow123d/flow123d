@@ -79,6 +79,13 @@ void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
   ineq_ = ineq;
 }
 
+void LinSys_PERMON::set_equality(Mat matrix_eq, Vec eq)
+{
+    // TODO ref count?
+    matrix_eq_ = matrix_eq;
+    eq_ = eq;
+}
+
 LinSys::SolveInfo LinSys_PERMON::solve()
 {
 
@@ -125,13 +132,17 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSetOperator(system, matrix_));
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
-    if (ineq_) {
-      //chkerr(MatScale(matrix_ineq_,-1.));
-      //chkerr(VecScale(ineq_,-1.));
-      // Bx<=c
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    if (ineq_ || eq_) {
+        if (ineq_) {
+            //chkerr(MatScale(matrix_ineq_,-1.));
+            //chkerr(VecScale(ineq_,-1.));
+            // Bx<=c
+            chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
+        }
+        if (eq_) {
+            chkerr(QPSetEq(system, matrix_eq_, eq_));
+        }
+        chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
     }
     // Set runtime options, e.g -qp_chain_view_kkt
     chkerr(QPSetFromOptions(system));

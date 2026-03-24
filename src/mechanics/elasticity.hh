@@ -38,6 +38,7 @@ class Elasticity;
 template<unsigned int dim, class EqData> class StiffnessAssemblyElasticity;
 template<unsigned int dim, class EqData> class RhsAssemblyElasticity;
 template<unsigned int dim, class EqData> class ConstraintAssemblyElasticity;
+template<unsigned int dim, class EqData> class RBMAssemblyElasticity;
 template<unsigned int dim, class EqData> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -149,6 +150,10 @@ public:
         // map local element -> constraint index
         std::map<LongIdx,LongIdx> constraint_idx;
 
+		Mat eq_constraint_matrix;
+		Mat eq_constraint_matrix_local;
+		Vec eq_constraint_vec;
+
     	// @}
 
     	/// Shared Balance object
@@ -187,6 +192,7 @@ public:
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using ConstraintAssemblyDim = ConstraintAssemblyElasticity<dim, EqData>;
+	template<unsigned int dim> using RBMAssemblyDim = RBMAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using OutpuFieldsAssemblyDim = OutpuFieldsAssemblyElasticity<dim, OutputEqData>;
 
 
@@ -277,6 +283,9 @@ private:
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
 
+	/// Option to use constraints for rigid body modes.
+	bool fix_rbm_;
+
     
 	// @}
 
@@ -301,6 +310,7 @@ private:
     GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyDim > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyDim > * constraint_assembly_;
+	GenericAssembly< RBMAssemblyDim > * rbm_assembly_;
     GenericAssembly< OutpuFieldsAssemblyDim > * output_fields_assembly_;
 
 };

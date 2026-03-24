@@ -67,6 +67,7 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("fix_rbm", Bool(), IT::Default("false"), "Option to set constraints for rigid body modes.")
 		   .close();
 }
 
@@ -317,6 +318,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
+          rbm_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -449,6 +451,32 @@ void Elasticity::initialize()
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
     eq_data_->ls = ls;
 
+    fix_rbm_ = input_rec.val<bool>("fix_rbm");
+    if (fix_rbm_) {
+        ISLocalToGlobalMapping rmap, cmap;
+        PetscInt               rows[6] = {0,1,2,3,4,5};
+
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->lsize(), eq_data_->dh_->get_local_to_global_map().data(),
+                                     PETSC_COPY_VALUES, &cmap);
+
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, 6, rows,
+                                     PETSC_COPY_VALUES, &rmap);
+
+        MatCreateIS(PETSC_COMM_WORLD, 1,
+            PETSC_DECIDE, eq_data_->dh_->lsize(),
+            6, eq_data_->dh_->n_global_dofs(),
+            rmap, cmap, &eq_data_->eq_constraint_matrix);
+
+        // MatISSetAllowRepeated(eq_data_->eq_constraint_matrix, PETSC_TRUE);
+
+        MatCreateSeqDense(PETSC_COMM_WORLD, 6, eq_data_->dh_->lsize(), NULL, &eq_data_->eq_constraint_matrix_local);
+
+        VecCreateSeq(PETSC_COMM_WORLD, 6, &eq_data_->eq_constraint_vec);
+
+        rbm_assembly_ = new GenericAssembly<RBMAssemblyDim>(eq_data_.get(), eq_data_->dh_.get());
+        ls->set_equality(eq_data_->eq_constraint_matrix, eq_data_->eq_constraint_vec);
+    }
+
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyDim >(output_eq_data_.get(), eq_data_->dh_.get());
@@ -467,6 +495,7 @@ Elasticity::~Elasticity()
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
+    if (rbm_assembly_!=nullptr) delete rbm_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -548,6 +577,19 @@ void Elasticity::preallocate()
 
     if (has_contact_)
         assemble_constraint_matrix();
+
+    if (fix_rbm_) {
+        MatZeroEntries(eq_data_->eq_constraint_matrix_local);
+        VecZeroEntries(eq_data_->eq_constraint_vec);
+        rbm_assembly_->assemble(eq_data_->dh_);
+        MatAssemblyBegin(eq_data_->eq_constraint_matrix_local, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(eq_data_->eq_constraint_matrix_local, MAT_FINAL_ASSEMBLY);
+        MatISSetLocalMat(eq_data_->eq_constraint_matrix, eq_data_->eq_constraint_matrix_local);
+        MatAssemblyBegin(eq_data_->eq_constraint_matrix, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(eq_data_->eq_constraint_matrix, MAT_FINAL_ASSEMBLY);
+        VecAssemblyBegin(eq_data_->eq_constraint_vec);
+        VecAssemblyEnd(eq_data_->eq_constraint_vec);
+    }
 }
 
 

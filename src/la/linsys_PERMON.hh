@@ -53,6 +53,8 @@ public:
 
     void set_inequality(Mat matrix_ineq, Vec ineq);
 
+    void set_equality(Mat matrix_eq, Vec eq);
+
     LinSys_PETSC::SolveInfo solve() override;
 
     /**
@@ -95,6 +97,9 @@ protected:
 
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
+
+    Mat     matrix_eq_;        //!< PETSc matrix of equality constraint.
+    Vec     eq_;               //!< PETSc vector of equality constraint.
 
     QP                 system;
     QPS                solver;
