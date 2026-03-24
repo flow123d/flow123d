@@ -418,13 +418,12 @@ void Elasticity::initialize()
     petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
-    LinSys *ls;
+    LinSys_PERMON *ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
     has_contact_ = input_rec.val<bool>("contact");
     if (has_contact_) {
 #ifndef FLOW123D_HAVE_PERMON
         ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
 #endif //FLOW123D_HAVE_PERMON
-        ls = new LinSys_PERMON(eq_data_->dh_->distr().get(), petsc_default_opts);
 
         // allocate constraint matrix and vector
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
@@ -440,12 +439,11 @@ void Elasticity::initialize()
                         eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
         MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
-        ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
+        ls->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     } else {
-        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
-        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
+        ls->set_initial_guess_nonzero();
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());

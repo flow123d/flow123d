@@ -23,7 +23,7 @@
 #include "fields/field.hh"
 #include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
-#include "la/linsys.hh"
+#include "la/linsys_PERMON.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
@@ -141,7 +141,7 @@ public:
     	// @{
 
     	/// Linear algebraic system.
-    	LinSys *ls;
+    	LinSys_PERMON *ls;
 
         Mat constraint_matrix;
         Vec constraint_vec;
