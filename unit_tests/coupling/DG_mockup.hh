@@ -521,15 +521,14 @@ public:
     EquationOutput output_fields;
 };
 
-class EqData {
+class EqData : public EqDataBase {
 public:
     typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-    EqData() {}
+    EqData() : EqDataBase(1) {}
 
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
-    unsigned int dg_order;                    ///< Polynomial order of finite elements.
     std::shared_ptr<DOFHandlerMultiDim> dh_;  ///< Object for distribution of dofs.
     std::vector<std::string> substances_;     ///< Names of substances
 
@@ -648,7 +647,6 @@ public:
 
         // DG data parameters
         eq_data_->dg_variant = DGVariant::non_symmetric;
-        eq_data_->dg_order = 1;
     }
 
     ~DGMockup() {
@@ -704,7 +702,7 @@ public:
         eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
         eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
 
-        MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
+        MixedPtr<FE_P_disc> fe(eq_data_->quad_order);
         shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(this->mesh_, fe);
         eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*this->mesh_);
         eq_data_->dh_->distribute_dofs(ds);

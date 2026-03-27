@@ -192,10 +192,11 @@ public:
 	};
 
 
-	class ModelEqData {
+	class ModelEqData : public EqDataBase {
 	public:
 
-		ModelEqData() {
+		ModelEqData()
+		: EqDataBase() {
             substances_.initialize({""});
 		}
 

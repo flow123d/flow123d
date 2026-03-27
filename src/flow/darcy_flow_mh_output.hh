@@ -94,9 +94,9 @@ public:
     };
 
     /// Output specific field stuff
-    class DiffEqData {
+    class DiffEqData : public EqDataBase {
     public:
-        DiffEqData() {}
+        DiffEqData() : EqDataBase(2) {}
 
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
@@ -113,9 +113,9 @@ public:
         std::shared_ptr<DarcyLMH::EqData> flow_data_;
     };
 
-    class RawOutputEqData {
+    class RawOutputEqData : public EqDataBase {
     public:
-    	RawOutputEqData() {}
+    	RawOutputEqData() :EqDataBase(0, 0) {}
 
         ofstream raw_output_file;                        ///< Raw data output file.
         std::vector< std::string > raw_output_strings_;  ///< Output lines of cells.

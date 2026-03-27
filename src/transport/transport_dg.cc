@@ -174,11 +174,11 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
 
     // DG data parameters
     eq_data_->dg_variant = in_rec.val<DGVariant>("dg_variant");
-    eq_data_->dg_order = in_rec.val<unsigned int>("dg_order");
+    eq_data_->quad_order = in_rec.val<unsigned int>("dg_order");
     
     Model::init_from_input(in_rec);
 
-	MixedPtr<FE_P_disc> fe(eq_data_->dg_order);
+	MixedPtr<FE_P_disc> fe(eq_data_->quad_order);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>(Model::mesh_, fe);
 	eq_data_->dh_ = make_shared<DOFHandlerMultiDim>(*Model::mesh_);
 	eq_data_->dh_->distribute_dofs(ds);

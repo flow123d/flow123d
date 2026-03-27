@@ -19,6 +19,7 @@
 #include "io/output_mesh.hh"
 #include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
 #include "tools/time_marks.hh"     // for TimeMark, TimeMark::Type
+#include "coupling/equation.hh"
 
 class OutputTime;
 class TimeGovernor;
@@ -43,7 +44,7 @@ template< template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
  * A class  responsible for check for output times of individual fields
  * and store their values into the connected output stream.
  */
-class EquationOutput : public FieldSet {
+class EquationOutput : public FieldSet, public EqDataBase {
 public:
 
     DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
