@@ -23,7 +23,6 @@
 #include "fields/field.hh"
 #include "fields/field_fe.hh"
 #include "fields/multi_field.hh"
-#include "la/linsys.hh"
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
@@ -35,11 +34,12 @@ class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
-class Elasticity;
+class LinSys_PERMON;
 template<unsigned int dim> class StiffnessAssemblyElasticity;
 template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
+template<unsigned int dim> class DirichletAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -112,13 +112,11 @@ public:
 	public:
 
 		EqData()
-        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
+		  dirichlet_matrix(nullptr), dirichlet_vec(nullptr)
+		{}
 
-		~EqData() {
-		    if (ls!=nullptr) delete ls;
-            if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
-            if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
-		}
+		~EqData();
 
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh, unsigned int fe_order);
@@ -132,13 +130,23 @@ public:
     	// @{
 
     	/// Linear algebraic system.
-    	LinSys *ls;
+    	LinSys_PERMON *ls;
 
         Mat constraint_matrix;
         Vec constraint_vec;
 
         // map local element -> constraint index
         std::map<LongIdx,LongIdx> constraint_idx;
+
+		Mat dirichlet_matrix;
+		Vec dirichlet_vec;
+		std::vector<unsigned int> dirichlet_dofs;
+		std::vector<double> dirichlet_coefs;
+		std::vector<double> dirichlet_values;
+		std::vector<unsigned int> dirichlet_row_starts;
+
+		bool fix_nullspace;
+		bool dirichlet_by_eq; // enforce Dirichlet b.c. by equality constraints
 
     	// @}
 
@@ -196,8 +204,7 @@ public:
 
     void calculate_cumulative_balance();
 
-	const Vec &get_solution()
-	{ return eq_data_->ls->get_solution(); }
+	const Vec &get_solution();
 
 	inline EqFields &eq_fields() { return *eq_fields_; }
 
@@ -232,6 +239,8 @@ private:
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
 
+	bool view_matrices;
+
     
 	// @}
 
@@ -257,6 +266,7 @@ private:
     GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
+	GenericAssembly< DirichletAssemblyElasticity > * dirichlet_assembly_;
 
 };
 

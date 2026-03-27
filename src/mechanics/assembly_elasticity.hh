@@ -26,6 +26,7 @@
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fields/field_value_cache.hh"
+#include "la/linsys_PERMON.hh"
 
 
 /**
@@ -99,7 +100,7 @@ public:
         ElementAccessor<3> elm_acc = cell.elm();
 
         fe_values_.reinit(elm_acc);
-        cell.get_dof_indices(dof_indices_);
+        dof_indices_ = cell.get_loc_dof_indices();
 
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -119,18 +120,18 @@ public:
             }
             k++;
         }
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
     /// Assembles boundary integral.
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
+        if (eq_data_->dirichlet_by_eq) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
-        dh_cell.get_dof_indices(dof_indices_);
+        dof_indices_ = dh_cell.get_loc_dof_indices();
         fe_values_side_.reinit(side);
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -165,7 +166,7 @@ public:
             }
         }
 
-        eq_data_->ls->mat_set_values(n_dofs_, dof_indices_.data(), n_dofs_, dof_indices_.data(), &(local_matrix_[0]));
+        eq_data_->ls->mat_set_values_local(n_dofs_, dof_indices_.memptr(), n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]));
     }
 
 
@@ -174,24 +175,24 @@ public:
     	if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
-		cell_lower_dim.get_dof_indices(side_dof_indices_[0]);
-		ElementAccessor<3> cell_sub = cell_lower_dim.elm();
-		fe_values_sub_.reinit(cell_sub);
+        DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
+        if (!cell_lower_dim.is_own()) return;
 
-		DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(side_dof_indices_[1]);
+		side_dof_indices_[0] = cell_lower_dim.get_loc_dof_indices();
+		fe_values_sub_.reinit(cell_lower_dim.elm());
+        side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
-		// Element id's for testing if they belong to local partition.
-		bool own_element_id[2];
-		own_element_id[0] = cell_lower_dim.is_own();
-		own_element_id[1] = cell_higher_dim.is_own();
+        // mark dofs that do not contribute to dimjoin coupling
+        vector<LongIdx> lower_nodes;
+        for (unsigned int i=0; i<dim; i++)
+            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
+        vector<double> ignore_dofs(n_dofs_, false);
 
         for (unsigned int n=0; n<2; ++n)
-            for (unsigned int i=0; i<n_dofs_; i++)
-                for (unsigned int m=0; m<2; ++m)
-                    for (unsigned int j=0; j<n_dofs_; j++)
-                        local_matrix_ngh_[n][m][i*(n_dofs_)+j] = 0;
+            for (unsigned int m=0; m<2; ++m)
+                for (unsigned int i=0; i<n_dofs_*n_dofs_; i++)
+                    local_matrix_ngh_[n][m][i] = 0;
 
         // set transmission conditions
         unsigned int k=0;
@@ -202,31 +203,42 @@ public:
 
             for (int n=0; n<2; n++)
             {
-                if (!own_element_id[n]) continue;
-
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
+                    if (n == 1 && ignore_dofs[i]) continue;
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
-                    arma::mat33 gvft = (n==0) ? vec_view_sub_->grad(i,k) : arma::zeros(3,3);
+                    arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
+                    if (eq_data_->fix_nullspace) {
+                        arma::mat33 gvi = (n==0) ? arma::zeros(3,3) : vec_view_side_->grad(i,k);
+                        vi = vi - eq_fields_->cross_section(p_low)/2 * (gvi*nv);
+                    }
+                    double divvft = (n==0) ? arma::trace(gvft) : 0;
 
                     for (int m=0; m<2; m++)
+                    {
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
+                            if (m == 1 && ignore_dofs[j]) continue;
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
                             double divuft = (m==0) ? arma::trace(guft) : 0;
+                            if (eq_data_->fix_nullspace) {
+                                arma::mat33 gui = (m==0) ? arma::zeros(3,3) : vec_view_side_->grad(j,k);
+                                ui = ui - eq_fields_->cross_section(p_low)/2 * (gui*nv);
+                            }
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
-                                     arma::dot(vf-vi,
-                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
-                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
-                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
-                                     )
-                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
-                                    )*fe_values_sub_.JxW(k);
+                                        2/eq_fields_->cross_section(p_low)*(
+                                            eq_fields_->lame_mu(p_low)*arma::dot(vf-vi,uf-ui)
+                                          +(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*arma::dot(uf-ui,nv)*arma::dot(vf-vi,nv)
+                                        )
+                                        + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
+                                        + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
+                                    )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                         }
+                    }
 
                 }
             }
@@ -235,7 +247,7 @@ public:
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
-                eq_data_->ls->mat_set_values(n_dofs_ngh_[n], side_dof_indices_[n].data(), n_dofs_ngh_[m], side_dof_indices_[m].data(), &(local_matrix_ngh_[n][m][0]));
+                eq_data_->ls->mat_set_values_local(n_dofs_ngh_[n], side_dof_indices_[n].memptr(), n_dofs_ngh_[m], side_dof_indices_[m].memptr(), &(local_matrix_ngh_[n][m][0]));
     }
 
 
@@ -266,8 +278,8 @@ private:
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
     FEValues<3> fe_values_sub_;                               ///< FEValues of lower dimension cell object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-    vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    vector<LocDofVec > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     vector<vector<vector<PetscScalar>>> local_matrix_ngh_;    ///< Auxiliary vectors for assemble ngh integral
     const FEValuesViews::Vector<3> * vec_view_;               ///< Vector view in cell integral calculation.
@@ -347,7 +359,6 @@ public:
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         if (cell.dim() != dim) return;
-        if (!cell.is_own()) return;
 
         ElementAccessor<3> elm_acc = cell.elm();
 
@@ -388,7 +399,6 @@ public:
     inline void boundary_side_integral(DHCellSide cell_side)
     {
     	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
-        if (!cell_side.cell().is_own()) return;
 
         Side side = cell_side.side();
         const DHCellAccessor &dh_cell = cell_side.cell();
@@ -417,7 +427,7 @@ public:
         }
 
         k = 0;
-        if (bc_type == EqFields::bc_type_displacement)
+        if (bc_type == EqFields::bc_type_displacement && !eq_data_->dirichlet_by_eq)
         {
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
@@ -430,7 +440,7 @@ public:
                 ++k;
             }
         }
-        else if (bc_type == EqFields::bc_type_displacement_normal)
+        else if (bc_type == EqFields::bc_type_displacement_normal && !eq_data_->dirichlet_by_eq)
         {
             double side_measure = cell_side.measure();
             for (auto p : this->boundary_points(cell_side) )
@@ -774,6 +784,19 @@ public:
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
 		cell_higher_dim.get_dof_indices(dof_indices_);
 
+        vector<LongIdx> lower_nodes;
+        for (unsigned int i=0; i<dim; i++)
+            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
+
+        vector<double> ignore_dofs(n_dofs_, false);
+        for (unsigned int idof=0; idof<n_dofs_; idof++) {
+            if ( dof_indices_[idof] >= 0 && cell_higher_dim.cell_dof(idof).dim == 0 && 
+                 find(lower_nodes.begin(), lower_nodes.end(), cell_higher_dim.elm().node(cell_higher_dim.cell_dof(idof).n_face_idx).idx()) == lower_nodes.end() )
+            {
+                ignore_dofs[idof] = true;
+            }
+        }
+
 		fe_values_side_.reinit(neighb_side.side());
 
         for (unsigned int i=0; i<n_dofs_; i++)
@@ -793,6 +816,7 @@ public:
 
             for (unsigned int i=0; i<n_dofs_; i++)
             {
+                if (ignore_dofs[i]) continue;
                 local_matrix_[i] += eq_fields_->cross_section(p_high)*arma::dot(vec_view_side_->value(i,k), nv)*fe_values_side_.JxW(k) / cell_lower_dim.elm().measure();
             }
         	k++;
@@ -830,6 +854,183 @@ private:
     friend class GenericAssembly;
 
 };
+
+
+void rref(arma::mat& M, double tol) {
+    int lead = 0;
+    int rowCount = M.n_rows;
+    int columnCount = M.n_cols;
+
+    for (int r = 0; r < rowCount; ++r) {
+        if (columnCount <= lead) return;
+        int i = r;
+        while (fabs(M(i, lead)) < tol) {
+            i++;
+            if (rowCount == i) {
+                i = r;
+                lead++;
+                if (columnCount == lead) return;
+            }
+        }
+        M.swap_rows(i, r);
+        if (fabs(M(r, lead)) > tol) M.row(r) /= M(r, lead);
+        for (int i = 0; i < rowCount; ++i) {
+            if (i != r) M.row(i) -= M(i, lead) * M.row(r);
+        }
+        lead++;
+    }
+}
+
+
+template <unsigned int dim>
+class DirichletAssemblyElasticity : public AssemblyBase<dim>
+{
+public:
+    typedef typename Elasticity::EqFields EqFields;
+    typedef typename Elasticity::EqData EqData;
+
+    static constexpr const char * name() { return "DirichletAssemblyElasticity"; }
+
+    /// Constructor.
+    DirichletAssemblyElasticity(EqFields *eq_fields, EqData *eq_data)
+    : AssemblyBase<dim>(1), eq_fields_(eq_fields), eq_data_(eq_data), drop_tol(1e-12) {
+        this->active_integrals_ = ActiveIntegrals::boundary;
+        this->used_fields_ += eq_fields_->bc_type;
+        this->used_fields_ += eq_fields_->bc_displacement;
+    }
+
+    /// Destructor.
+    ~DirichletAssemblyElasticity() {}
+
+    /// Initialize auxiliary vectors and other data members
+    void initialize(ElementCacheMap *element_cache_map) {
+        this->element_cache_map_ = element_cache_map;
+
+        shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(1);
+        shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
+        fe_ = std::make_shared<FESystem<dim>>(fe_p, FEVector, 3);
+        fe_values_bdr_side_.initialize(*this->quad_low_, *fe_,
+                update_values | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
+        n_dofs_ = fe_->n_dofs();
+        dof_indices_.resize(n_dofs_);
+        vec_view_bdr_ = &fe_values_bdr_side_.vector_view(0);
+    }
+
+
+    /// Assembles boundary integral.
+    void boundary_side_integral(DHCellSide cell_side)
+    {
+    	ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
+
+        Side side = cell_side.side();
+        const DHCellAccessor &dh_cell = cell_side.cell();
+        dof_indices_ = dh_cell.get_loc_dof_indices();
+        fe_values_bdr_side_.reinit(side);
+
+        unsigned int bc_type;
+        {
+            auto p_side = *( this->boundary_points(cell_side).begin() );
+    	    auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
+    	    bc_type = eq_fields_->bc_type(p_bdr);
+        }
+
+        unsigned int k = 0;
+        if (bc_type == EqFields::bc_type_displacement)
+        {
+            arma::mat A(n_dofs_,n_dofs_+1);
+            for (auto p : this->boundary_points(cell_side) )
+            {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                auto bc_displacement = eq_fields_->bc_displacement(p_bdr);
+                for (unsigned int i=0; i<n_dofs_; i++) {
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        A(i,j) += arma::dot(vec_view_bdr_->value(j,k), vec_view_bdr_->value(i,k)) *
+                            fe_values_bdr_side_.JxW(k);
+                    A(i,n_dofs_) += arma::dot(bc_displacement, vec_view_bdr_->value(i,k)) *
+                            fe_values_bdr_side_.JxW(k);
+                }
+                ++k;
+            }
+            rref(A, drop_tol);
+            for (unsigned int row_idx=0; row_idx<A.n_rows; row_idx++) {
+                arma::uvec indices = arma::find(arma::abs(A(row_idx, arma::span(0,A.n_cols-2))) > drop_tol);
+                ASSERT_LE(indices.size(), 1).error("Dirichlet constraint applies to more than one dof!");
+                if (indices.size() == 1) {
+                    if (std::find(eq_data_->dirichlet_dofs.begin(), eq_data_->dirichlet_dofs.end(), dof_indices_[indices(0)]) == eq_data_->dirichlet_dofs.end()) {
+                        eq_data_->dirichlet_dofs.push_back(dof_indices_[indices(0)]);
+                        eq_data_->dirichlet_coefs.push_back(A(row_idx,indices(0)));
+                        eq_data_->dirichlet_values.push_back(A(row_idx,A.n_cols-1));
+                        eq_data_->dirichlet_row_starts.push_back( eq_data_->dirichlet_row_starts.back() + indices.size() );
+                    }
+                }
+            }
+
+        }
+        else if (bc_type == EqFields::bc_type_displacement_normal)
+        {
+            arma::mat A(n_dofs_,n_dofs_+1);
+            for (auto p : this->boundary_points(cell_side) )
+            {
+                auto p_bdr = p.point_bdr( side.cond().element_accessor() );
+                normal_vector_ = fe_values_bdr_side_.normal_vector(k);
+                auto bc_displacement = eq_fields_->bc_displacement(p_bdr);
+                for (unsigned int i=0; i<n_dofs_; i++) {
+                    for (unsigned int j=0; j<n_dofs_; j++)
+                        A(i,j) += arma::dot(vec_view_bdr_->value(j,k), normal_vector_) *
+                            arma::dot(vec_view_bdr_->value(i,k), normal_vector_) *
+                            fe_values_bdr_side_.JxW(k);
+                    A(i,n_dofs_) += arma::dot(bc_displacement, normal_vector_) *
+                            arma::dot(vec_view_bdr_->value(i,k),normal_vector_) *
+                            fe_values_bdr_side_.JxW(k);
+                }
+                ++k;
+            }
+            rref(A, drop_tol);
+            for (unsigned int row_idx=0; row_idx<A.n_rows; row_idx++) {
+                arma::uvec indices = arma::find(arma::abs(A(row_idx, arma::span(0,A.n_cols-2))) > drop_tol);
+                // ASSERT_LE(indices.size(), 1).error("Dirichlet constraint applies to more than one dof!");
+                if (indices.size() > 0) {
+                    for (unsigned int i=0; i<indices.size(); i++) {
+                        eq_data_->dirichlet_dofs.push_back(dof_indices_[indices(i)]);
+                        eq_data_->dirichlet_coefs.push_back(A(row_idx,indices(i)));
+                    }
+                    eq_data_->dirichlet_values.push_back(A(row_idx,A.n_cols-1));
+                    eq_data_->dirichlet_row_starts.push_back( eq_data_->dirichlet_row_starts.back() + indices.size() );
+                }
+            }
+        }
+
+    }
+
+
+
+
+
+private:
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+
+    /// Data objects shared with Elasticity
+    EqFields *eq_fields_;
+    EqData *eq_data_;
+
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
+
+    unsigned int n_dofs_;                                     ///< Number of dofs
+    FEValues<3> fe_values_bdr_side_;                          ///< FEValues of side (boundary integral) object
+
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
+    const FEValuesViews::Vector<3> * vec_view_bdr_;           ///< Vector view in boundary calculation.
+
+    arma::vec3 normal_vector_;
+
+    const double drop_tol;                              // Tolerance to drop small values.
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
 
 
 #endif /* ASSEMBLY_ELASTICITY_HH_ */
