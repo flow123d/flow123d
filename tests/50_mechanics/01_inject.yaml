@@ -53,9 +53,11 @@ problem: !Coupling_Sequential
           - region: rock
             young_modulus: 1e3
             poisson_ratio: 0.25
+            shear_modulus: 0.4e3
           - region: [ fracture_lower, fracture_upper ]
             young_modulus: 1
             poisson_ratio: 0.25
+            shear_modulus: 0.4
           - region: .left
             bc_type: displacement
             bc_displacement: 0

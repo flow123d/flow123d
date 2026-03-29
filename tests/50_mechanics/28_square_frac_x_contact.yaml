@@ -50,9 +50,11 @@ problem: !Coupling_Sequential
           - region: rock
             young_modulus: 1e9
             poisson_ratio: 0.25
+            shear_modulus: 0.4e9
           - region: [ fracture_x, fracture_xy ]
             young_modulus: 1e6
             poisson_ratio: 0.25
+            shear_modulus: 0.4e6
             cross_section_min: 0.01
 
           - region: .bottom

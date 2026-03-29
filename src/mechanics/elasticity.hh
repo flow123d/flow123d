@@ -43,6 +43,51 @@ template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
+class StressTensor
+{
+public:
+
+    virtual arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor) = 0;
+
+    virtual double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor) = 0;
+
+    virtual arma::vec3 eigenvalues(BulkPoint &p) = 0;
+};
+
+// class StressTensorIsotropic : public StressTensor
+// {
+// private:
+//
+//     Field<3, FieldValue<3>::VectorFixed> young_modulus;
+//     Field<3, FieldValue<3>::VectorFixed> poisson_ratio;
+//
+// public:
+//
+//     arma::mat33 evaluate(BulkPoint &p, const arma::mat33 &strain_tensor)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1)*strain_tensor + E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::eye(3,3);
+//     }
+//
+//     double action(BulkPoint &p, const arma::mat33 &strain_tensor, const arma::mat33 &test_tensor)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1)*arma::dot(strain_tensor,test_tensor)
+//               +E*nu/((nu+1)*(1-2*nu))*arma::trace(strain_tensor)*arma::trace(test_tensor);
+//     }
+//
+//     arma::vec3 eigenvalues(BulkPoint &p)
+//     {
+//         double E = young_modulus(p);
+//         double nu = poisson_ratio(p);
+//
+//         return E/(nu+1) * (1 + nu/(1-2*nu))*arma::ones(3);
+//     }
+// }
 
 
 class Elasticity : public EquationBase
@@ -63,13 +108,17 @@ public:
         
         static const Input::Type::Selection & get_bc_type_selection();
 
+        arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor);
+
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
         BCField<3, FieldValue<3>::VectorFixed> bc_traction;
 		BCField<3, FieldValue<3>::TensorFixed> bc_stress;
         Field<3, FieldValue<3>::VectorFixed> load;
-        Field<3, FieldValue<3>::Scalar> young_modulus;
-        Field<3, FieldValue<3>::Scalar> poisson_ratio;
+        Field<3, FieldValue<3>::TensorFixed> principal_axes;
+        Field<3, FieldValue<3>::VectorFixed> young_modulus;
+        Field<3, FieldValue<3>::VectorFixed> shear_modulus;
+        Field<3, FieldValue<3>::VectorFixed> poisson_ratio;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
         Field<3, FieldValue<3>::TensorFixed> initial_stress;
 		
@@ -91,8 +140,8 @@ public:
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
 
-        Field<3, FieldValue<3>::Scalar > lame_mu;
-        Field<3, FieldValue<3>::Scalar > lame_lambda;
+        Field<3, FieldValue<3>::VectorFixed > lame_mu;
+        Field<3, FieldValue<3>::VectorFixed > lame_lambda;
         Field<3, FieldValue<3>::Scalar > dirichlet_penalty;
 
     	// @}
@@ -259,15 +308,6 @@ private:
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 
 };
-
-
-/*
- * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
- */
-double lame_mu(double young, double poisson);
-double lame_lambda(double young, double poisson);
-
-
 
 
 
