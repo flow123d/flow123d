@@ -20,7 +20,6 @@
 #include "quadrature/quadrature.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_system.hh"
 
 

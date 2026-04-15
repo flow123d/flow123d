@@ -12,7 +12,7 @@
  *
  *
  * @file    patch_fe_values.cc
- * @brief   Class FEValues calculates finite element data on the actual
+ * @brief   Class PatchFEValues calculates finite element data on the actual
  *          cells such as shape function values, gradients, Jacobian of
  *          the mapping from the reference cell etc.
  * @author  Jan Stebel, David Flanderka
@@ -21,9 +21,6 @@
 #include "fem/patch_fe_values.hh"
 #include "fem/patch_point_values.hh"
 #include "fem/op_accessors_impl.hh"
-#include "fem/mapping_p1.hh"
-#include "fem/fe_system.hh"
-#include "fem/fe_values_map.hh"
 
 
 

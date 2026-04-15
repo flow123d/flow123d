@@ -24,7 +24,6 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
-#include "fem/fe_system.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
 #include "la/linsys_PERMON.hh"
