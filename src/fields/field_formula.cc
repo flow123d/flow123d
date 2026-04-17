@@ -220,7 +220,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+void FieldFormula<spacedim, Value>::cache_reinit(FMT_UNUSED ElementCacheMap &cache_map)
 {
 	// Can not compile expression in set_time as the necessary cache size is not known there yet.
 

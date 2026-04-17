@@ -113,7 +113,7 @@ public:
      *
      * Reinit arena data member.
      */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
+    void cache_reinit(ElementCacheMap &cache_map) override;
 
     virtual ~FieldFormula();
 

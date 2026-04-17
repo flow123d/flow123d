@@ -353,7 +353,7 @@ public:
     /**
      * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    void cache_reallocate(ElementCacheMap &cache_map, FieldSet &used_fieldset) {
     	this->set_dependency(used_fieldset);
     	for (auto reg_it : region_field_update_order_) {
     	    unsigned int region_idx = reg_it.first;

@@ -259,7 +259,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::cache_reinit(const ElementCacheMap &cache_map)
+void FieldFE<spacedim, Value>::cache_reinit(ElementCacheMap &cache_map)
 {
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
