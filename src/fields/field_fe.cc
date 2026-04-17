@@ -134,7 +134,7 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED),
-  boundary_domain_(false), fe_values_(4)
+  boundary_domain_(false), fe_values_(4), patch_fe_values_(nullptr)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -239,7 +239,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
         if (elm_idx != last_element_idx) {
             ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
-            fe_values_[elm.dim()].reinit( elm );
+            fe_values_[elm.dim()].reinit( elm ); // TODO PatchFeValues reinit and update before these loops
             cell = dh_->cell_accessor_from_element( elm_idx );
             loc_dofs = cell.get_loc_dof_indices();
             last_element_idx = elm_idx;
@@ -263,10 +263,20 @@ void FieldFE<spacedim, Value>::cache_reinit(ElementCacheMap &cache_map)
 {
     std::shared_ptr<EvalPoints> eval_points = cache_map.eval_points();
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-    fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values);
+    fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
     fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
     fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
     fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
+    // Creates PatchFeValues, Integrals and operations only once
+    if (patch_fe_values_ == nullptr) {
+        patch_fe_values_ = new PatchFEValues<spacedim>(fe_);
+
+        this->create_dim_op<1>( &quads[1], cache_map);
+        this->create_dim_op<2>( &quads[2], cache_map);
+        this->create_dim_op<3>( &quads[3], cache_map);
+
+        patch_fe_values_->init_finalize();
+    }
 }
 
 
@@ -831,7 +841,9 @@ Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> Field
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
-{}
+{
+    if (patch_fe_values_!=nullptr)  delete patch_fe_values_;
+}
 
 
 // Instantiations of FieldFE

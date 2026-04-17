@@ -32,10 +32,12 @@
 #include "io/msh_basereader.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
+#include "fem/patch_fe_values.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/mapping_p1.hh"
+#include "fem/integral_acc.hh"
 #include "input/factory.hh"
 
 #include <memory>
@@ -53,6 +55,7 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 	typedef typename Field<spacedim, Value>::FactoryBase FieldFactoryBaseType;
+	typedef typename Value::return_type ReturnType;
 
 	/**
 	 * Possible interpolations of input data.
@@ -261,7 +264,7 @@ private:
     {
         Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
         for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c);
+            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c); // TODO use PatchFeValues
         if (Value::NRows_ == Value::NCols_)
             return v;
         else
@@ -319,6 +322,31 @@ private:
     	return qgauss.size();
     }
 
+    /**
+     * Declare FE operation of given dimension.
+     *
+     * Warning: Method is temporary and must be call in ascending order for dim = 1,2,3
+     */
+    template<int elemdim>
+    void create_dim_op(Quadrature * quad, ElementCacheMap &cache_map)
+    {
+        auto bulk_integral = std::make_shared<BulkIntegralAcc<elemdim>>(cache_map.eval_points(), quad, patch_fe_values_, &cache_map);
+        bulk_integrals_[elemdim-1] = std::static_pointer_cast<BulkIntegral>(bulk_integral);
+
+        if constexpr (std::is_same_v<typename Value::element_type, double>) {
+            if constexpr (Value::NRows_ * Value::NCols_ == 1) {
+                shape_vals_.push_back( bulk_integral->scalar_shape() );
+            } else if constexpr (Value::NRows_ * Value::NCols_ == 3) {
+                shape_vals_.push_back( bulk_integral->vector_shape() );
+            } else if constexpr (Value::NRows_ * Value::NCols_ == 9) {
+                shape_vals_.push_back( bulk_integral->tensor_shape() );
+            } else {
+                ASSERT_PERMANENT(false).error("Sholud not happen!\n");
+            }
+        }
+    }
+
+
 
     /// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -350,7 +378,12 @@ private:
     bool boundary_domain_;
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
+    /// TODO use PatchFeValues
     std::vector<FEValues<spacedim>> fe_values_;
+    PatchFEValues<spacedim> *patch_fe_values_;
+
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;
+    std::vector< FeQArray<ReturnType> > shape_vals_;
 
     /// Maps element indices from computational mesh to the  source (data).
     std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;

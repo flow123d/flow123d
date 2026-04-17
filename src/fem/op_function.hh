@@ -598,7 +598,7 @@ public:
             for (uint i_row=0; i_row<n_comp; ++i_row)
                 for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), i_col)[i_row];
+                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), i_col*n_comp+i_row);
         }
     }
 
