@@ -579,6 +579,32 @@ public:
     void eval() override {}
 };
 
+/// Fixed operation of vector shape reference values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class RefTensor : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	RefTensor(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {fe->n_components(), fe->n_components()}, fe->n_dofs())
+    {
+        this->domain_ = Domain::domain();
+        uint n_points = quad->size();
+        uint n_comp = fe->n_components();
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint i_col=0; i_col<n_comp; ++i_col) {
+            for (uint i_row=0; i_row<n_comp; ++i_row)
+                for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                    for (uint i_p=0; i_p<n_points; ++i_p)
+                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad->point<dim>(i_p), i_col)[i_row];
+        }
+    }
+
+    void eval() override {}
+};
+
 /// Fixed operation of gradient scalar reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefGradScalar : public PatchOp<spacedim> {
@@ -975,6 +1001,44 @@ public:
 
 private:
     PatchOp<spacedim> *in_op_;
+};
+
+/// Evaluates vector values (FEType == FEVector)
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class TensorShape : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	TensorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
+    {
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Domain, spacedim>, dim >(quad, fe) );
+	}
+
+    void eval() override {
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_elem = this->ppv().n_mesh_items();
+
+        ArenaVec<double> elem_vec(n_elem, this->patch_arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> elem_ovec(elem_vec);
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(spacedim, spacedim);
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint c=0; c<spacedim*spacedim; ++c) {
+                ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(i_dof * spacedim*spacedim + c));
+            }
+
+            Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
+            for (uint c=0; c<spacedim*spacedim; ++c)
+                result_vec(c) = result_ovec(i_dof * spacedim*spacedim + c).get_vec();
+        }
+    }
 };
 
 /// Evaluates gradient scalar values

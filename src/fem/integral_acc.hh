@@ -382,8 +382,16 @@ public:
         return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
     }
 
-//    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
-//    {}
+    /**
+     * @brief Return the value of the @p function_no-th tensor shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
+    {
+        return factory_.template make_qarray<Tensor, Op::TensorShape, Op::BulkDomain>(component_idx);
+    }
 
     /**
      * @brief Return the value of the @p function_no-th gradient shape function at
