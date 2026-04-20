@@ -585,11 +585,11 @@ class RefTensor : public PatchOp<spacedim> {
 public:
     /// Constructor
 	RefTensor(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {fe->n_components(), fe->n_components()}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
         uint n_points = quad->size();
-        uint n_comp = fe->n_components();
+        uint n_comp = spacedim;
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_tensor_value = this->result_matrix();
