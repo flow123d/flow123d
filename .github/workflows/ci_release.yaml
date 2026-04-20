@@ -6,9 +6,9 @@ on:
     push:
         branches:
         - master
-        - JB_shared_system
-        - JB_release_tests   
-        - JB_py123d    
+        #- JB_shared_system
+        #- JB_release_tests   
+        #- JB_py123d    
         - 3.9.1
         - DF_patch_fe_values
         #- DF_profiler_memory_monitor
