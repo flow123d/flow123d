@@ -268,15 +268,15 @@ void FieldFE<spacedim, Value>::cache_reinit(ElementCacheMap &cache_map)
     fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
     fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
     // Creates PatchFeValues, Integrals and operations only once
-    if (patch_fe_values_ == nullptr) {
-        patch_fe_values_ = new PatchFEValues<spacedim>(fe_);
-
-        this->create_dim_op<1>( &quads[1], cache_map);
-        this->create_dim_op<2>( &quads[2], cache_map);
-        this->create_dim_op<3>( &quads[3], cache_map);
-
-        patch_fe_values_->init_finalize();
-    }
+//    if (patch_fe_values_ == nullptr) {
+//        patch_fe_values_ = new PatchFEValues<spacedim>(fe_);
+//
+//        this->create_dim_op<1>( &quads[1], cache_map);
+//        this->create_dim_op<2>( &quads[2], cache_map);
+//        this->create_dim_op<3>( &quads[3], cache_map);
+//
+//        patch_fe_values_->init_finalize();
+//    }
 }
 
 

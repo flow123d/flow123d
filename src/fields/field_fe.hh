@@ -327,24 +327,24 @@ private:
      *
      * Warning: Method is temporary and must be call in ascending order for dim = 1,2,3
      */
-    template<int elemdim>
-    void create_dim_op(Quadrature * quad, ElementCacheMap &cache_map)
-    {
-        auto bulk_integral = std::make_shared<BulkIntegralAcc<elemdim>>(cache_map.eval_points(), quad, patch_fe_values_, &cache_map);
-        bulk_integrals_[elemdim-1] = std::static_pointer_cast<BulkIntegral>(bulk_integral);
-
-        if constexpr (std::is_same_v<typename Value::element_type, double>) {
-            if constexpr (Value::NRows_ * Value::NCols_ == 1) {
-                shape_vals_.push_back( bulk_integral->scalar_shape() );
-            } else if constexpr (Value::NRows_ * Value::NCols_ == 3) {
-                shape_vals_.push_back( bulk_integral->vector_shape() );
-            } else if constexpr (Value::NRows_ * Value::NCols_ == 9) {
-                shape_vals_.push_back( bulk_integral->tensor_shape() );
-            } else {
-                ASSERT_PERMANENT(false).error("Sholud not happen!\n");
-            }
-        }
-    }
+//    template<int elemdim>
+//    void create_dim_op(Quadrature * quad, ElementCacheMap &cache_map)
+//    {
+//        auto bulk_integral = std::make_shared<BulkIntegralAcc<elemdim>>(cache_map.eval_points(), quad, patch_fe_values_, &cache_map);
+//        bulk_integrals_[elemdim-1] = std::static_pointer_cast<BulkIntegral>(bulk_integral);
+//
+//        if constexpr (std::is_same_v<typename Value::element_type, double>) {
+//            if constexpr (Value::NRows_ * Value::NCols_ == 1) {
+//                shape_vals_.push_back( bulk_integral->scalar_shape() );
+//            } else if constexpr (Value::NRows_ * Value::NCols_ == 3) {
+//                shape_vals_.push_back( bulk_integral->vector_shape() );
+//            } else if constexpr (Value::NRows_ * Value::NCols_ == 9) {
+//                shape_vals_.push_back( bulk_integral->tensor_shape() );
+//            } else {
+//                ASSERT_PERMANENT(false).error("Sholud not happen!\n");
+//            }
+//        }
+//    }
 
 
 
