@@ -148,7 +148,7 @@ public:
 
     /// Return reference of PatchPointValues
     inline PatchPointValues<spacedim> &ppv() const {
-        return patch_fe_->patch_point_vals_[domain_][this->dim_-1];
+        return patch_fe_->patch_point_vals_[domain_][this->dim_];
     }
 
     /// Reinit function of operation. Implementation in descendants.
