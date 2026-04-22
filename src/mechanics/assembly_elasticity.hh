@@ -782,7 +782,7 @@ public:
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
         DHCellAccessor cell_higher_dim = eq_data_->dh_->cell_accessor_from_element( neighb_side.element().idx() );
-		cell_higher_dim.get_dof_indices(dof_indices_);
+		dof_indices_ = cell_higher_dim.get_loc_dof_indices();
 
         vector<LongIdx> lower_nodes;
         for (unsigned int i=0; i<dim; i++)
@@ -822,9 +822,9 @@ public:
         	k++;
         }
 
-        int arow[1] = { eq_data_->constraint_idx[cell_lower_dim.elm_idx()] };
-        MatSetValues(eq_data_->constraint_matrix, 1, arow, n_dofs_, dof_indices_.data(), &(local_matrix_[0]), ADD_VALUES);
-        VecSetValue(eq_data_->constraint_vec, arow[0], local_vector, ADD_VALUES);
+        int arow_local[1] = { eq_data_->constraint_idx_local[cell_lower_dim.elm_idx()] };
+        MatSetValuesLocal(eq_data_->constraint_matrix, 1, arow_local, n_dofs_, dof_indices_.memptr(), &(local_matrix_[0]), ADD_VALUES);
+        VecSetValueLocal(eq_data_->constraint_vec, arow_local[0], local_vector, ADD_VALUES);
     }
 
 
@@ -845,7 +845,7 @@ private:
     unsigned int n_dofs_;                                     ///< Number of dofs
     FEValues<3> fe_values_side_;                              ///< FEValues of side object
 
-    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    LocDofVec dof_indices_;                             ///< Vector of global DOF indices
     vector<vector<LongIdx> > side_dof_indices_;               ///< 2 items vector of DOF indices in neighbour calculation.
     vector<PetscScalar> local_matrix_;                        ///< Auxiliary vector for assemble methods
     const FEValuesViews::Vector<3> * vec_view_side_;          ///< Vector view in boundary / neighbour calculation.
@@ -1034,4 +1034,3 @@ private:
 
 
 #endif /* ASSEMBLY_ELASTICITY_HH_ */
-

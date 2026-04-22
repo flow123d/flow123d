@@ -430,6 +430,8 @@ void Elasticity::initialize()
     has_contact_ = input_rec.val<bool>("contact");
     if (has_contact_) {
         // allocate constraint matrix and vector
+        eq_data_->constraint_idx.clear();
+        eq_data_->constraint_idx_local.clear();
         unsigned int n_own_constraints = 0; // count locally owned cells with neighbours
         for (auto cell : eq_data_->dh_->own_range())
             if (cell.elm()->n_neighs_vb() > 0)
@@ -438,11 +440,31 @@ void Elasticity::initialize()
         for (auto elm : mesh_->elements_range())
             if (elm->n_neighs_vb() > 0)
                 eq_data_->constraint_idx[elm.idx()] = n_constraints++;
+        std::vector<PetscInt> constraint_rows_l2g;
+        constraint_rows_l2g.reserve(n_own_constraints);
+        unsigned int local_constraint_idx = 0;
+        for (auto cell : eq_data_->dh_->own_range()) {
+            if (cell.elm()->n_neighs_vb() > 0) {
+                eq_data_->constraint_idx_local[cell.elm_idx()] = local_constraint_idx++;
+                constraint_rows_l2g.push_back(eq_data_->constraint_idx[cell.elm_idx()]);
+            }
+        }
         unsigned int nnz = eq_data_->dh_->ds()->fe()[1_d]->n_dofs()*mesh_->max_edge_sides(1) +
                         eq_data_->dh_->ds()->fe()[2_d]->n_dofs()*mesh_->max_edge_sides(2) +
                         eq_data_->dh_->ds()->fe()[3_d]->n_dofs()*mesh_->max_edge_sides(3);
-        MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
-        VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
+        ISLocalToGlobalMapping row_l2g = NULL, col_l2g = NULL;
+        Mat constraint_matrix_local = NULL;
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, n_own_constraints, constraint_rows_l2g.data(), PETSC_COPY_VALUES, &row_l2g);
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->get_local_to_global_map().size(),
+                                     eq_data_->dh_->get_local_to_global_map().data(), PETSC_COPY_VALUES, &col_l2g);
+        MatCreateIS(PETSC_COMM_WORLD, 1, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE,
+                    row_l2g, col_l2g, &eq_data_->constraint_matrix);
+        MatISGetLocalMat(eq_data_->constraint_matrix, &constraint_matrix_local);
+        MatSeqAIJSetPreallocation(constraint_matrix_local, nnz, NULL);
+        MatISRestoreLocalMat(eq_data_->constraint_matrix, &constraint_matrix_local);
+        MatCreateVecs(eq_data_->constraint_matrix, NULL, &eq_data_->constraint_vec);
+        ISLocalToGlobalMappingDestroy(&row_l2g);
+        ISLocalToGlobalMappingDestroy(&col_l2g);
         ls->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
