@@ -320,7 +320,7 @@ void LinSys_PETSC::apply_constrains( double scalar )
     PetscScalar * valuePtr  = this->makePetscPointer_( values );
 
     // set matrix rows to zero 
-    ierr = MatZeroRows( matrix_, numConstraints, globalDofPtr, diagScalar, PETSC_NULL, PETSC_NULL ); CHKERRV( ierr ); 
+    ierr = MatZeroRows( matrix_, numConstraints, globalDofPtr, diagScalar, PETSC_NULLPTR, PETSC_NULLPTR ); CHKERRV( ierr ); 
     matrix_changed_ = true;
 
     // set RHS entries to values (crashes if called with NULL pointers)
