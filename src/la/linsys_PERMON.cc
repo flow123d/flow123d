@@ -18,6 +18,8 @@
 
 // derived from base linsys
 #include "la/linsys_PERMON.hh"
+#include <algorithm>
+#include <unordered_map>
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
@@ -27,7 +29,93 @@
 
 
 
+
+
+
+
 namespace it = Input::Type;
+
+namespace {
+
+PetscErrorCode convert_ineq_is_to_aij(Mat matrix_ineq_is, Mat *matrix_ineq_aij)
+{
+    PetscFunctionBegin;
+    PetscCheck(matrix_ineq_is, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null inequality matrix.");
+    PetscCheck(matrix_ineq_aij, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null output inequality matrix pointer.");
+    PetscCall(MatConvert(matrix_ineq_is, MATAIJ, MAT_INITIAL_MATRIX, matrix_ineq_aij));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode convert_ineq_is_to_feti_decomposed(Mat matrix_ineq_is,
+                                                  IS isnz,
+                                                  Mat A_decomposed,
+                                                  Mat *matrix_ineq_decomp)
+{
+    Mat Bloc = NULL, Bloc_reduced = NULL;
+    IS ris_all = NULL;
+    ISLocalToGlobalMapping row_l2g = NULL, col_l2g_dec = NULL;
+    const PetscInt *row_gidx = NULL, *col_gidx_dec = NULL;
+    PetscInt nrows_local, ncols_local_dec;
+    PetscInt M_rows, N_cols_dec;
+
+    PetscFunctionBegin;
+    PetscCheck(matrix_ineq_is, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null inequality matrix.");
+    PetscCheck(isnz, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null reduced-column index set.");
+    PetscCheck(A_decomposed, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null decomposed operator.");
+    PetscCheck(matrix_ineq_decomp, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null output inequality matrix pointer.");
+
+    PetscCall(MatISGetLocalMat(matrix_ineq_is, &Bloc));
+    PetscCall(MatGetLocalSize(Bloc, &nrows_local, NULL));
+    PetscCall(ISCreateStride(PETSC_COMM_SELF, nrows_local, 0, 1, &ris_all));
+    PetscCall(MatCreateSubMatrix(Bloc, ris_all, isnz, MAT_INITIAL_MATRIX, &Bloc_reduced));
+
+    PetscCall(MatGetLocalSize(Bloc_reduced, &nrows_local, &ncols_local_dec));
+    PetscCall(MatGetSize(matrix_ineq_is, &M_rows, NULL));
+    PetscCall(MatGetSize(A_decomposed, NULL, &N_cols_dec));
+
+    PetscCall(MatGetLocalToGlobalMapping(matrix_ineq_is, &row_l2g, NULL));
+    PetscCall(ISLocalToGlobalMappingGetIndices(row_l2g, &row_gidx));
+    PetscCall(MatGetLocalToGlobalMapping(A_decomposed, &col_l2g_dec, NULL));
+    PetscCall(ISLocalToGlobalMappingGetIndices(col_l2g_dec, &col_gidx_dec));
+
+    PetscCall(MatCreateAIJ(PetscObjectComm((PetscObject)matrix_ineq_is),
+                           nrows_local, ncols_local_dec,
+                           M_rows,     N_cols_dec,
+                           32, NULL, 32, NULL,
+                           matrix_ineq_decomp));
+
+    for (PetscInt i = 0; i < nrows_local; ++i) {
+        PetscInt ncols;
+        const PetscInt *cols_loc;
+        const PetscScalar *vals;
+        PetscInt row_global = row_gidx[i];
+
+        PetscCall(MatGetRow(Bloc_reduced, i, &ncols, &cols_loc, &vals));
+        if (ncols > 0) {
+            std::vector<PetscInt> cols_global(ncols);
+            for (PetscInt j = 0; j < ncols; ++j) {
+                PetscInt loc_col = cols_loc[j];
+                PetscCheck(loc_col >= 0 && loc_col < ncols_local_dec,
+                           PetscObjectComm((PetscObject)matrix_ineq_is), PETSC_ERR_ARG_OUTOFRANGE,
+                           "Reduced local inequality column index out of range.");
+                cols_global[j] = col_gidx_dec[loc_col];
+            }
+            PetscCall(MatSetValues(*matrix_ineq_decomp, 1, &row_global, ncols, cols_global.data(), vals, ADD_VALUES));
+        }
+        PetscCall(MatRestoreRow(Bloc_reduced, i, &ncols, &cols_loc, &vals));
+    }
+
+    PetscCall(MatAssemblyBegin(*matrix_ineq_decomp, MAT_FINAL_ASSEMBLY));
+    PetscCall(MatAssemblyEnd(*matrix_ineq_decomp, MAT_FINAL_ASSEMBLY));
+    PetscCall(ISLocalToGlobalMappingRestoreIndices(col_l2g_dec, &col_gidx_dec));
+    PetscCall(ISLocalToGlobalMappingRestoreIndices(row_l2g, &row_gidx));
+    PetscCall(ISDestroy(&ris_all));
+    PetscCall(MatDestroy(&Bloc_reduced));
+    PetscCall(MatISRestoreLocalMat(matrix_ineq_is, &Bloc));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+} // namespace
 
 const it::Record & LinSys_PERMON::get_input_type() {
 	return it::Record("Permon", "PERMON solver settings.\n It provides interface to various PERMON solvers. The convergence criteria is:\n"
@@ -370,9 +458,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
-    if (ineq_) {
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-    }
     if (eq_) {
         chkerr(QPSetEq(system, matrix_eq_, eq_));
     }
@@ -424,7 +509,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
             }
         }
         chkerr(ISRestoreIndices(isnz, &nz_arr));
-        chkerr(ISDestroy(&isnz));
         chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
         chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
         
@@ -434,14 +518,29 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatDestroy(&Aloc_feti));
-        chkerr(ISLocalToGlobalMappingDestroy(&mapping));
 
         // set QP matrix
         chkerr(QPSetOperator(system, Afixed));
+        PetscInt size_fixed;
+        MatGetLocalSize(Afixed, &size_fixed, NULL);
         chkerr(MatDestroy(&Afixed));
 
         chkerr(QPTMatISToBlockDiag(system));
-        chkerr(QPGetChild(system, &system));
+        chkerr(QPGetChild(system, &system)); // now system is decomposed
+
+        {
+            Mat Adecomposed;
+            QPGetOperator(system, &Adecomposed);
+            if (matrix_ineq_) {
+                Mat matrix_ineq_decomposed = NULL;
+                chkerr(convert_ineq_is_to_feti_decomposed(matrix_ineq_, isnz, Adecomposed, &matrix_ineq_decomposed));
+                chkerr(QPSetIneq(system, matrix_ineq_decomposed, ineq_));
+                chkerr(MatDestroy(&matrix_ineq_decomposed));
+                chkerr(PetscOptionsInsertString(NULL, "-qpt_dualize_B_nest_extension"));
+            }
+        }
+        chkerr(ISLocalToGlobalMappingDestroy(&mapping));
+        chkerr(ISDestroy(&isnz));
         chkerr(QPFetiSetUp(system));
         chkerr(PetscOptionsInsertString(NULL, "-feti"));
 
@@ -457,6 +556,12 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
         chkerr(QPSetOperator(system, matrix_aij));
         chkerr(MatDestroy(&matrix_aij));
+        if (ineq_) {
+            Mat matrix_ineq_aij = NULL;
+            chkerr(convert_ineq_is_to_aij(matrix_ineq_, &matrix_ineq_aij));
+            chkerr(QPSetIneq(system, matrix_ineq_aij, ineq_));
+            chkerr(MatDestroy(&matrix_ineq_aij));
+        }
 
         if (ineq_ || eq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));

@@ -135,8 +135,10 @@ public:
         Mat constraint_matrix;
         Vec constraint_vec;
 
-        // map local element -> constraint index
+        // map element -> global constraint row index
         std::map<LongIdx,LongIdx> constraint_idx;
+        // map owned element -> local constraint row index
+        std::map<LongIdx,LongIdx> constraint_idx_local;
 
 		Mat dirichlet_matrix;
 		Vec dirichlet_vec;
