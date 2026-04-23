@@ -163,17 +163,13 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
     
-    class EqData
+    class EqData : public EquationBase::EqDataBase
     {
     public:
         typedef HM_Iterative::EqFields EqFields;
 
-        EqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
-
-        /// Returns pointer to mesh.
-        inline const Mesh *mesh() const {
-            return eq_fields_->mesh();
-        }
+        EqData(shared_ptr<EqFields> eq_fields)
+        : EquationBase::EqDataBase(eq_fields), eq_fields_(eq_fields) {}
 
         /// Shared pointer of EqFields
         std::shared_ptr<EqFields> eq_fields_;

@@ -110,12 +110,12 @@ public:
 	};
 
 	/// Data of equation parameters
-	class EqData {
+	class EqData : public EquationBase::EqDataBase {
 	public:
    	    typedef Elasticity::EqFields EqFields;
 
 		EqData(shared_ptr<EqFields> eq_fields)
-        : eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+        : EquationBase::EqDataBase(eq_fields_), eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
@@ -129,11 +129,6 @@ public:
         /// Returns quad_order
         inline unsigned int quad_order() const {
             return 1;
-        }
-
-        /// Returns pointer to mesh.
-        inline const Mesh *mesh() const {
-            return eq_fields_->mesh();
         }
 
 		/// Shared pointer of EqFields

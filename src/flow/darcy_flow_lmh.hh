@@ -207,7 +207,7 @@ public:
         Field<3, FieldValue<3>::Scalar> ref_divergence;
     };
 
-    class EqData {
+    class EqData : public EquationBase::EqDataBase {
     public:
    	    typedef DarcyLMH::EqFields EqFields;
 
@@ -215,11 +215,6 @@ public:
         
         void init();     ///< Initialize vectors, ...
         void reset();    ///< Reset data members
-
-        /// Returns pointer to mesh.
-        inline const Mesh *mesh() const {
-            return mesh_;
-        }
 
 		/// Shared pointer of EqFields
 		std::shared_ptr<EqFields> eq_fields_;
@@ -232,7 +227,6 @@ public:
         arma::vec3 gravity_vec_;
 
         // Mirroring the following members of DarcyLMH:
-        Mesh *mesh_;
         std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
         std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
         std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides

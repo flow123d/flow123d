@@ -132,11 +132,7 @@ public:
     /// Collect all fields
     void set_eq_fields(std::shared_ptr<EqFields> eq_fields) {
         eq_fields_ = eq_fields;
-    }
-
-    /// Returns pointer to mesh.
-    inline const Mesh *mesh() const {
-        return eq_fields_->mesh();
+        this->mesh_ = eq_fields_->mesh();
     }
 
     /// Shared pointer of EqFields

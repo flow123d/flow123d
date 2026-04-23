@@ -30,6 +30,7 @@
 #include "system/logger.hh"                            // for Logger, DebugOut
 #include "tools/time_governor.hh"                      // for TimeGovernor
 #include "tools/time_marks.hh"                         // for TimeMark, Time...
+#include "fields/field_set.hh"                            // for Logger, DebugOut
 class Balance;
 class FieldSet;
 class Mesh;
@@ -61,6 +62,31 @@ public:
 
     /// Template Record with common key user_fields for derived equations.
     static Input::Type::Record & user_fields_template(std::string equation_name);
+
+    /**
+     * Holds common equation data.
+     */
+    class EqDataBase {
+    public:
+    	/// Constructor
+    	EqDataBase()
+    	{}
+
+    	/// Constructor
+    	EqDataBase(std::shared_ptr<FieldSet> field_set)
+    	{
+    		mesh_ = field_set->mesh();
+    	}
+
+        /// Returns pointer to mesh.
+        inline const Mesh *mesh() const {
+            return mesh_;
+        }
+
+        /// Pointer of computational mesh.
+        const Mesh *mesh_;
+    };
+
 
     /**
      * Default constructor. Sets all virtual methods empty. Necessary to make tests fixtures for equations.
