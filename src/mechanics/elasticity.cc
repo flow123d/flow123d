@@ -519,12 +519,26 @@ void Elasticity::update_output_fields()
     // update ghost values of solution vector and prepare dependent fields
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().zero_entries();
+    eq_fields_->output_von_mises_stress_ptr->vec().zero_entries();
+    eq_fields_->output_mean_stress_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
     output_fields_assembly_->assemble(eq_data_->dh_);
+
+    // finish assembly of vectors
+    eq_fields_->output_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_stress_ptr->vec().assembly_end();
+    eq_fields_->output_von_mises_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_von_mises_stress_ptr->vec().assembly_end();
+    eq_fields_->output_mean_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_mean_stress_ptr->vec().assembly_end();
+    eq_fields_->output_cross_section_ptr->vec().assembly_begin();
+    eq_fields_->output_cross_section_ptr->vec().assembly_end();
+    eq_fields_->output_div_ptr->vec().assembly_begin();
+    eq_fields_->output_div_ptr->vec().assembly_end();
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
@@ -680,8 +694,6 @@ void Elasticity::solve_linear_system()
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }
-
-
 
 
 
