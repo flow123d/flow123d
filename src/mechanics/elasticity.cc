@@ -16,6 +16,7 @@
  * @author  Jan Stebel
  */
 
+#include <boost/lexical_cast.hpp>
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
 #include "mechanics/assembly_elasticity.hh"
@@ -566,10 +567,6 @@ void Elasticity::zero_time_step()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
     eq_data_->ls->finish_assembly();
-    if (view_matrices) {
-        eq_data_->dh_->view_dof_to_node_map("mechanics");
-        eq_data_->ls->view("permon");
-    }
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
@@ -698,6 +695,11 @@ void Elasticity::output_data()
     //if (eq_fields_->output_fields.is_field_output_time(eq_fields_->output_field, this->time().step()) )
     update_output_fields();
     eq_fields_->output_fields.output(this->time().step());
+
+    if (view_matrices) {
+        eq_data_->dh_->view_dof_to_node_map("mechanics" + boost::lexical_cast<std::string>(this->time().step()));
+        eq_data_->ls->view("permon");
+    }
 
 //     START_TIMER("Mechanics-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
