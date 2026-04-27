@@ -563,14 +563,14 @@ public:
                                 for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                     local_matrix_[i*fe_values_vec_[sd[m]].n_dofs()+j] = 0;
 
-                            for (k=0; k<this->quad_low_->size(); ++k)
+                            for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
                             {
-                                for (unsigned int i=0; i<fe_values_vec_[sd[n]].n_dofs(); i++)
+                                for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
                                 {
-                                    for (unsigned int j=0; j<fe_values_vec_[sd[m]].n_dofs(); j++)
-                                    {
-                                        int index = i*fe_values_vec_[sd[m]].n_dofs()+j;
+                                    int index = i*fe_values_vec_[sd[m]].n_dofs()+j;
 
+                                    for (k=0; k<this->quad_low_->size(); ++k)
+                                    {
                                         local_matrix_[index] += (
                                             // flux due to transport (applied on interior edges) (average times jump)
                                             transport_flux*jumps[n][k*fe_->n_dofs()+i]*averages[sd[m]][k*fe_->n_dofs()+j]
@@ -581,8 +581,9 @@ public:
                                         // terms due to diffusion
                                             - jumps[n][k*fe_->n_dofs()+i]*waverages[m][k*fe_->n_dofs()+j]
                                             - eq_data_->dg_variant*waverages[n][k*fe_->n_dofs()+i]*jumps[m][k*fe_->n_dofs()+j]
-                                            )*fe_values_vec_[0].JxW(k) + LocalSystem::almost_zero;
+                                            )*fe_values_vec_[0].JxW(k);
                                     }
+                                    local_matrix_[index] += LocalSystem::almost_zero;
                                 }
                             }
                             eq_data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));

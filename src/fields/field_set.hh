@@ -30,6 +30,7 @@
 #include "fields/field.hh"
 #include "fields/field_coords.hh"  // for FieldCoords
 #include "fields/field_depth.hh"   // for FieldDepth
+#include "fields/field_mesh_step.hh"
 #include "fields/surface_depth.hh" // for SurfaceDepth
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
@@ -437,6 +438,9 @@ protected:
 
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
+
+    /// Field holds mesh step of element for computing of FieldFormulas
+    FieldMeshStep mesh_step_;
 
     /**
      * Stream output operator

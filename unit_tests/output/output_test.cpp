@@ -236,6 +236,7 @@ public:
 	}
 	virtual ~TestOutputTime() {
 	    delete my_mesh;
+        Profiler::uninitialize();
 	}
 	int write_data(void) override {return 0;};
 	//int write_head(void) override {return 0;};

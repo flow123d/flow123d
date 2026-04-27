@@ -16,16 +16,16 @@
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class MassAssembly : public AssemblyBase<dim>
+class Mass_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename AssemblyBenchmarkTest::EqFields EqFields;
-    typedef typename AssemblyBenchmarkTest::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "MassAssembly"; }
 
     /// Constructor.
-    MassAssembly(EqFields *eq_fields, EqData *eq_data)
+    Mass_FullAssembly(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->mass_matrix_coef;
@@ -33,7 +33,7 @@ public:
     }
 
     /// Destructor.
-    ~MassAssembly() {}
+    ~Mass_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -52,7 +52,7 @@ public:
 
 
     /// Assemble integral over element
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
@@ -93,12 +93,16 @@ public:
                 }
             }
 
-            eq_data_->ls_dt[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
-            VecSetValues(eq_data_->ret_vec[sbi], ndofs_, &(dof_indices_[0]), &(local_retardation_balance_vector_[0]), ADD_VALUES);
+            this->cell_integral_set_values(sbi);
         }
     }
 
-    private:
+    protected:
+        virtual void cell_integral_set_values(unsigned int sbi) {
+            this->eq_data_->ls_dt[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
+            VecSetValues(this->eq_data_->ret_vec[sbi], this->ndofs_, &(this->dof_indices_[0]), &(this->local_retardation_balance_vector_[0]), ADD_VALUES);
+        }
+
         shared_ptr<FiniteElement<dim>> fe_;                    ///< Finite element for the solution of the advection-diffusion equation.
 
         /// Data objects shared with TransportDG
@@ -122,20 +126,69 @@ public:
 };
 
 
+template <unsigned int dim>
+class Mass_ComputeLocal : public Mass_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "MassAssembly"; }
+
+    /// Constructor.
+    Mass_ComputeLocal(EqFields *eq_fields, EqData *eq_data)
+    : Mass_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Mass_ComputeLocal() {}
+
+protected:
+    void cell_integral_set_values(unsigned int sbi) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Mass_EvalFields : public Mass_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "MassAssembly"; }
+
+    /// Constructor.
+    Mass_EvalFields(EqFields *eq_fields, EqData *eq_data)
+    : Mass_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Mass_EvalFields() {}
+
+    void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class StiffnessAssembly : public AssemblyBase<dim>
+class Stiffness_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename AssemblyBenchmarkTest::EqFields EqFields;
-    typedef typename AssemblyBenchmarkTest::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "StiffnessAssembly"; }
 
     /// Constructor.
-    StiffnessAssembly(EqFields *eq_fields, EqData *eq_data)
+    Stiffness_FullAssembly(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
         this->used_fields_ += eq_fields_->advection_coef;
@@ -149,7 +202,7 @@ public:
     }
 
     /// Destructor.
-    ~StiffnessAssembly() {
+    ~Stiffness_FullAssembly() {
         for (auto a : averages) if (a != nullptr) delete[] a;
         for (auto a : waverages) if (a != nullptr) delete[] a;
         for (auto a : jumps) if (a != nullptr) delete[] a;
@@ -202,7 +255,7 @@ public:
 
 
     /// Assembles the cell (volume) integral into the stiffness matrix.
-    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
+    inline virtual void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
     {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
         if (!cell.is_own()) return;
@@ -235,13 +288,13 @@ public:
                 }
                 k++;
             }
-            eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            this->cell_integral_set_values(sbi);
         }
     }
 
 
     /// Assembles the fluxes on the boundary.
-    inline void boundary_side_integral(DHCellSide cell_side)
+    inline virtual void boundary_side_integral(DHCellSide cell_side)
     {
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
@@ -271,7 +324,7 @@ public:
             auto p_side = *( this->boundary_points(cell_side).begin() );
             auto p_bdr = p_side.point_bdr( side.cond().element_accessor() );
             unsigned int bc_type = eq_fields_->bc_type[sbi](p_bdr);
-            if (bc_type == AssemblyBenchmarkTest::abc_dirichlet)
+            if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
             {
                 // set up the parameters for DG method
                 k=0; // temporary solution, set dif_coef until set_DG_parameters_boundary will not be removed
@@ -288,18 +341,18 @@ public:
             for (auto p : this->boundary_points(cell_side) )
             {
                 double flux_times_JxW;
-                if (bc_type == AssemblyBenchmarkTest::abc_total_flux)
+                if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_total_flux)
                 {
                     //sigma_ corresponds to robin_sigma
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
                     flux_times_JxW = eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr)*fe_values_side_.JxW(k);
                 }
-                else if (bc_type == AssemblyBenchmarkTest::abc_diffusive_flux)
+                else if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_diffusive_flux)
                 {
                     auto p_bdr = p.point_bdr(side.cond().element_accessor());
                     flux_times_JxW = (transport_flux + eq_fields_->cross_section(p)*eq_fields_->bc_robin_sigma[sbi](p_bdr))*fe_values_side_.JxW(k);
                 }
-                else if (bc_type == AssemblyBenchmarkTest::abc_inflow && side_flux < 0)
+                else if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_inflow && side_flux < 0)
                     flux_times_JxW = 0;
                 else
                     flux_times_JxW = transport_flux*fe_values_side_.JxW(k);
@@ -312,7 +365,7 @@ public:
                         local_matrix_[i*ndofs_+j] += flux_times_JxW*fe_values_side_.shape_value(i,k)*fe_values_side_.shape_value(j,k);
 
                         // flux due to diffusion (only on dirichlet and inflow boundary)
-                        if (bc_type == AssemblyBenchmarkTest::abc_dirichlet)
+                        if (bc_type == DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly>::abc_dirichlet)
                             local_matrix_[i*ndofs_+j] -= (arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(j,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(i,k)
                                     + arma::dot(eq_fields_->diffusion_coef[sbi](p)*fe_values_side_.shape_grad(i,k),fe_values_side_.normal_vector(k))*fe_values_side_.shape_value(j,k)*eq_data_->dg_variant
                                     )*fe_values_side_.JxW(k);
@@ -321,13 +374,13 @@ public:
                 k++;
             }
 
-            eq_data_->ls[sbi]->mat_set_values(ndofs_, &(dof_indices_[0]), ndofs_, &(dof_indices_[0]), &(local_matrix_[0]));
+            this->boundary_side_integral_set_values(sbi);
         }
     }
 
 
     /// Assembles the fluxes between sides of elements of the same dimension.
-    inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
+    inline virtual void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) {
         ASSERT_EQ(edge_side_range.begin()->element().dim(), dim).error("Dimension of element mismatch!");
 
         unsigned int k;
@@ -484,7 +537,7 @@ public:
                                     }
                                 }
                             }
-                            eq_data_->ls[sbi]->mat_set_values(fe_values_vec_[sd[n]].n_dofs(), &(side_dof_indices_[sd[n]][0]), fe_values_vec_[sd[m]].n_dofs(), &(side_dof_indices_[sd[m]][0]), &(local_matrix_[0]));
+                            this->edge_integral_set_values(sbi, m, n, sd);
                         }
                     }
                 }
@@ -495,7 +548,7 @@ public:
 
 
     /// Assembles the fluxes between elements of different dimensions.
-    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+    inline virtual void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
         if (dim == 1) return;
         ASSERT_EQ(cell_lower_dim.dim(), dim-1).error("Dimension of element mismatch!");
 
@@ -565,12 +618,29 @@ public:
                 }
                 k++;
             }
-            eq_data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(side_dof_indices_vb_[0]), &(local_matrix_[0]));
+            this->dimjoin_intergral_set_values(sbi, n_dofs);
         }
     }
 
 
-private:
+protected:
+    virtual void cell_integral_set_values(unsigned int sbi) {
+        this->eq_data_->ls[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
+    }
+
+    virtual void boundary_side_integral_set_values(unsigned int sbi) {
+        this->eq_data_->ls[sbi]->mat_set_values(this->ndofs_, &(this->dof_indices_[0]), this->ndofs_, &(this->dof_indices_[0]), &(this->local_matrix_[0]));
+    }
+
+    virtual void edge_integral_set_values(unsigned int sbi, int m, int n, int sd[2]) {
+        this->eq_data_->ls[sbi]->mat_set_values(this->fe_values_vec_[sd[n]].n_dofs(), &(this->side_dof_indices_[sd[n]][0]), this->fe_values_vec_[sd[m]].n_dofs(), &(this->side_dof_indices_[sd[m]][0]), &(this->local_matrix_[0]));
+    }
+
+    virtual void dimjoin_intergral_set_values(unsigned int sbi, unsigned int n_dofs[2]) {
+        this-> eq_data_->ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], &(this->side_dof_indices_vb_[0]), n_dofs[0]+n_dofs[1], &(this->side_dof_indices_vb_[0]), &(this->local_matrix_[0]));
+    }
+
+
     shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
     shared_ptr<FiniteElement<dim-1>> fe_low_;   ///< Finite element for the solution of the advection-diffusion equation (dim-1).
 
@@ -604,20 +674,87 @@ private:
 };
 
 
+template <unsigned int dim>
+class Stiffness_ComputeLocal : public Stiffness_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "StiffnessAssembly"; }
+
+    /// Constructor.
+    Stiffness_ComputeLocal(EqFields *eq_fields, EqData *eq_data)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Stiffness_ComputeLocal() {}
+
+protected:
+    void cell_integral_set_values(unsigned int sbi) override {}
+
+    void boundary_side_integral_set_values(unsigned int sbi) override {}
+
+    void edge_integral_set_values(unsigned int sbi, int m, int n, int sd[2]) override {}
+
+    void dimjoin_intergral_set_values(unsigned int sbi, unsigned int n_dofs[2]) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Stiffness_EvalFields : public Stiffness_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "StiffnessAssembly"; }
+
+    /// Constructor.
+    Stiffness_EvalFields(EqFields *eq_fields, EqData *eq_data)
+    : Stiffness_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Stiffness_EvalFields() {}
+
+    /// Assembles the cell (volume) integral into the stiffness matrix.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+
+    /// Assembles the fluxes on the boundary.
+    inline void boundary_side_integral(DHCellSide cell_side) override {}
+
+
+    /// Assembles the fluxes between sides of elements of the same dimension.
+    inline void edge_integral(RangeConvert<DHEdgeSide, DHCellSide> edge_side_range) override {}
+
+
+    /// Assembles the fluxes between elements of different dimensions.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
 /**
  * Auxiliary container class for Finite element and related objects of given dimension.
  */
 template <unsigned int dim>
-class SourcesAssembly : public AssemblyBase<dim>
+class Sources_FullAssembly : public AssemblyBase<dim>
 {
 public:
-    typedef typename AssemblyBenchmarkTest::EqFields EqFields;
-    typedef typename AssemblyBenchmarkTest::EqData EqData;
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
 
     static constexpr const char * name() { return "SourcesAssembly"; }
 
     /// Constructor.
-    SourcesAssembly(EqFields *eq_fields, EqData *eq_data)
+    Sources_FullAssembly(EqFields *eq_fields, EqData *eq_data)
     : AssemblyBase<dim>(eq_data->dg_order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = ActiveIntegrals::bulk;
         this->used_fields_ += eq_fields_->sources_density_out;
@@ -626,7 +763,7 @@ public:
     }
 
     /// Destructor.
-    ~SourcesAssembly() {}
+    ~Sources_FullAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
     void initialize(ElementCacheMap *element_cache_map) {
@@ -671,7 +808,7 @@ public:
                     local_rhs_[i] += source*fe_values_.shape_value(i,k);
                 k++;
             }
-            eq_data_->ls[sbi]->rhs_set_values(ndofs_, &(dof_indices_[0]), &(local_rhs_[0]));
+            this->cell_integral_set_values(sbi);
 
             for (unsigned int i=0; i<ndofs_; i++)
             {
@@ -688,26 +825,80 @@ public:
     }
 
 
-    private:
-        shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
+protected:
+    virtual void cell_integral_set_values(unsigned int sbi) {
+        this->eq_data_->ls[sbi]->rhs_set_values(this->ndofs_, &(this->dof_indices_[0]), &(this->local_rhs_[0]));
+    }
 
-        /// Data objects shared with TransportDG
-        EqFields *eq_fields_;
-        EqData *eq_data_;
 
-        /// Sub field set contains fields used in calculation.
-        FieldSet used_fields_;
+    shared_ptr<FiniteElement<dim>> fe_;         ///< Finite element for the solution of the advection-diffusion equation.
 
-        unsigned int ndofs_;                                      ///< Number of dofs
-        FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+    /// Data objects shared with TransportDG
+    EqFields *eq_fields_;
+    EqData *eq_data_;
 
-        vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
-        vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
-        vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
-        vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
+    /// Sub field set contains fields used in calculation.
+    FieldSet used_fields_;
 
-        template < template<IntDim...> class DimAssembly>
-        friend class GenericAssembly;
+    unsigned int ndofs_;                                      ///< Number of dofs
+    FEValues<3> fe_values_;                                   ///< FEValues of object (of P disc finite element type)
+
+    vector<LongIdx> dof_indices_;                             ///< Vector of global DOF indices
+    vector<PetscScalar> local_rhs_;                           ///< Auxiliary vector for set_sources method.
+    vector<PetscScalar> local_source_balance_vector_;         ///< Auxiliary vector for set_sources method.
+    vector<PetscScalar> local_source_balance_rhs_;            ///< Auxiliary vector for set_sources method.
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Sources_ComputeLocal : public Sources_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "SourcesAssembly"; }
+
+    /// Constructor.
+    Sources_ComputeLocal(EqFields *eq_fields, EqData *eq_data)
+    : Sources_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Sources_ComputeLocal() {}
+
+protected:
+    virtual void cell_integral_set_values(unsigned int sbi) {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+
+};
+
+
+template <unsigned int dim>
+class Sources_EvalFields : public Sources_FullAssembly<dim>
+{
+public:
+    typedef equation_data::EqFields EqFields;
+    typedef equation_data::EqData EqData;
+
+    static constexpr const char * name() { return "SourcesAssembly"; }
+
+    /// Constructor.
+    Sources_EvalFields(EqFields *eq_fields, EqData *eq_data)
+    : Sources_FullAssembly<dim>(eq_fields, eq_data) {}
+
+    /// Destructor.
+    ~Sources_EvalFields() {}
+
+    void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {}
+
+    template < template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
 
 };
 

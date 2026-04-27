@@ -24,7 +24,6 @@
 #include <set>                               // for set
 #include <string>                            // for string
 #include <vector>                            // for vector
-#include "yaml-cpp/node/detail/bool_type.h"  // for Node::operator void (*)(...
 #include "yaml-cpp/node/impl.h"              // for Node::Node, Node::operat...
 #include "yaml-cpp/node/node.h"              // for Node
 

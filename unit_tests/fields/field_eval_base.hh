@@ -301,7 +301,9 @@ public:
         eq_data_ = std::make_shared<EqData>();
     }
 
-    ~FieldEvalBaseTest() {}
+    ~FieldEvalBaseTest() {
+        Profiler::uninitialize();
+    }
 
     static Input::Type::Record & get_input_type() {
         return IT::Record("SomeEquation","")

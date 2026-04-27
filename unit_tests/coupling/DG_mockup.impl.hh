@@ -4,7 +4,88 @@
 #include "DG_mockup.hh"
 #include "DG_mockup_assembly.hh"
 
-void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::string> substances) {
+
+void DGMockupTest::run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file) {
+    // FullAssembly + field_const
+    START_TIMER("FullAssembly_const");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test_full_asm_const;
+    test_full_asm_const.create_and_set_mesh(mesh_file);
+    test_full_asm_const.initialize( eq_data_input, {"A", "B"} );
+    test_full_asm_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+    test_full_asm_const.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("FullAssembly_const");
+}
+
+void DGMockupTest::run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file) {
+    // FullAssembly + field_model
+    START_TIMER("FullAssembly_model");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_FullAssembly, Stiffness_FullAssembly, Sources_FullAssembly> test_full_asm_model;
+    test_full_asm_model.create_and_set_mesh(mesh_file);
+    test_full_asm_model.initialize( eq_data_input, {"A", "B"} );
+    test_full_asm_model.eq_fields_->init_field_models();
+    test_full_asm_model.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("FullAssembly_model");
+}
+
+void DGMockupTest::run_computelocal_const(const string &eq_data_input, const std::string &mesh_file) {
+    // ComputeLocal + field_const
+    START_TIMER("ComputeLocal_const");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_ComputeLocal, Stiffness_ComputeLocal, Sources_ComputeLocal> test_comp_local_const;
+    test_comp_local_const.create_and_set_mesh(mesh_file);
+    test_comp_local_const.initialize( eq_data_input, {"A", "B"} );
+    test_comp_local_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+    test_comp_local_const.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("ComputeLocal_const");
+}
+
+void DGMockupTest::run_computelocal_model(const string &eq_data_input, const std::string &mesh_file) {
+    // ComputeLocal + field_model
+    START_TIMER("ComputeLocal_model");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_ComputeLocal, Stiffness_ComputeLocal, Sources_ComputeLocal> test_comp_local_model;
+    test_comp_local_model.create_and_set_mesh(mesh_file);
+    test_comp_local_model.initialize( eq_data_input, {"A", "B"} );
+    test_comp_local_model.eq_fields_->init_field_models();
+    test_comp_local_model.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("ComputeLocal_model");
+}
+
+void DGMockupTest::run_evalfields_const(const string &eq_data_input, const std::string &mesh_file) {
+    // EvalFields + field_const
+    START_TIMER("EvalFields_const");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_const;
+    test_eval_fields_const.create_and_set_mesh(mesh_file);
+    test_eval_fields_const.initialize( eq_data_input, {"A", "B"} );
+    test_eval_fields_const.eq_fields_->init_field_constants(1, 0.5, 0.75, 1, 0.25, 0.5, arma::vec3("1 2 3"), arma::mat33("0.5 0 0, 0 0.75 0, 0 0 1"));
+    test_eval_fields_const.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("EvalFields_const");
+}
+
+void DGMockupTest::run_evalfields_model(const string &eq_data_input, const std::string &mesh_file) {
+    // EvalFields + field_model
+    START_TIMER("EvalFields_model");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<Mass_EvalFields, Stiffness_EvalFields, Sources_EvalFields> test_eval_fields_model;
+    test_eval_fields_model.create_and_set_mesh(mesh_file);
+    test_eval_fields_model.initialize( eq_data_input, {"A", "B"} );
+    test_eval_fields_model.eq_fields_->init_field_models();
+    test_eval_fields_model.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("EvalFields_model");
+}
+
+
+template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
+void DGMockup<Mass, Stiffness, Sources>::initialize(const string &input, std::vector<std::string> substances) {
     Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
     in_rec_ = reader.get_root_interface<Input::Record>();
 
@@ -69,9 +150,9 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
     }
 
     // create assemblation object, finite element structures and distribute DOFs
-    mass_assembly_ = new GenericAssembly< MassAssembly >(eq_fields_.get(), eq_data_.get());
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssembly >(eq_fields_.get(), eq_data_.get());
-    sources_assembly_ = new GenericAssembly< SourcesAssembly >(eq_fields_.get(), eq_data_.get());
+    mass_assembly_ = new GenericAssembly< Mass >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_fields_.get(), eq_data_.get());
+    sources_assembly_ = new GenericAssembly< Sources >(eq_fields_.get(), eq_data_.get());
 
     int qsize = mass_assembly_->eval_points()->max_size();
     eq_data_->dif_coef.resize(eq_data_->n_substances());
@@ -81,7 +162,8 @@ void AssemblyBenchmarkTest::initialize(const string &input, std::vector<std::str
     }
 }
 
-void AssemblyBenchmarkTest::zero_time_step() {
+template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
+void DGMockup<Mass, Stiffness, Sources>::zero_time_step() {
     START_TIMER("ZERO-TIME STEP");
 
     DebugOut().fmt("zero_time_step time {}\n", this->time_->t());
@@ -107,7 +189,8 @@ void AssemblyBenchmarkTest::zero_time_step() {
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
     END_TIMER("data initialize");
-
+    
+    
     START_TIMER("assembly");
     stiffness_assembly_->assemble(eq_data_->dh_);
     mass_assembly_->assemble(eq_data_->dh_);
@@ -119,13 +202,14 @@ void AssemblyBenchmarkTest::zero_time_step() {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
       VecAssemblyEnd(eq_data_->ret_vec[i]);
     }
-
+    
     //output_data();
     END_TIMER("ZERO-TIME STEP");
 }
 
 
-void AssemblyBenchmarkTest::update_solution()
+template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
+void DGMockup<Mass, Stiffness, Sources>::update_solution()
 {
     START_TIMER("SIMULATION-ONE STEP");
 

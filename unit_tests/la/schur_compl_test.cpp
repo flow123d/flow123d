@@ -89,11 +89,21 @@ public:
 	{ r_tol_ = 1e-12; a_tol_ = 1e-12; }
 };
 
+class SchurTest : public testing::Test {
+protected:
+	SchurTest() {
+        // setup FilePath directories
+        Profiler::instance();
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+    };
 
-TEST(schur, complement) {
-    Profiler::instance();
-   
+    ~SchurTest() {
+        Profiler::uninitialize();
+    };
+};
 
+TEST_F(SchurTest, complement) {
 	IS set;
 	// vytvorit rozdeleni bloku na procesory ve tvaru "part" (tj. indexy prvnich radku na procesorech)
     int np, rank;

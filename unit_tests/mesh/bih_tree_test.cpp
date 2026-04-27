@@ -149,7 +149,7 @@ public:
 		//test_insec_points();
 
         //Profiler::instance()->output(MPI_COMM_WORLD, cout);
-		Profiler::instance()->output();
+		Profiler::instance()->output(std::cout);
 
 		bt->test_tree_params();
 		//bt->BIH_output();
@@ -306,6 +306,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	}
 
 	delete mesh;
+    Profiler::uninitialize();
 }
 
 
@@ -353,5 +354,6 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 	}
 
 	delete mesh;
+    Profiler::uninitialize();
 }
 

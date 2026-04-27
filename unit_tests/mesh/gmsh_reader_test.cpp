@@ -55,4 +55,5 @@ TEST(GMSHReader, read_mesh_from_file) {
     EXPECT_EQ(216, mesh->n_elements());
 
     delete mesh;
+    Profiler::uninitialize();
 }

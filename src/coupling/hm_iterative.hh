@@ -28,6 +28,7 @@
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
 #include "system/exceptions.hh"
+#include "system/sys_profiler.hh"
 
 class Mesh;
 class FieldCommon;
@@ -71,6 +72,7 @@ public:
 
     void solve_step()
     {
+        START_TIMER("HM step");
         it = 0;
         double abs_error = std::numeric_limits<double>::max();
         double rel_error = std::numeric_limits<double>::max();
@@ -83,6 +85,7 @@ public:
             update_after_iteration();
         }
         update_after_converged();
+        END_TIMER("HM step");
     }
 
     unsigned int iteration()

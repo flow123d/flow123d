@@ -96,6 +96,7 @@ protected:
 	}
     virtual void TearDown() {
         delete my_mesh;
+        Profiler::uninitialize();
     }
 
     IT::Record & get_input_type() {
@@ -195,6 +196,8 @@ TEST_F(TestParallelOutput, continuous_mesh)
             for (unsigned int i=0; i<current_vec.size(); ++i) EXPECT_DOUBLE_EQ( expected_field_data[field_name][i], current_vec[i] );
         }
     }
+
+    stream.reset();
 }
 
 
@@ -250,4 +253,6 @@ TEST_F(TestParallelOutput, discontinuous_mesh)
             for (unsigned int i=0; i<current_vec.size(); ++i) EXPECT_DOUBLE_EQ( expected_field_data[field_name][i], current_vec[i] );
         }
     }
+
+    stream.reset();
 }

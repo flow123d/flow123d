@@ -148,7 +148,7 @@ TEST(PythonLoader, compilation_error) {
     EXPECT_THROW_WHAT(
         { PythonLoader::load_module_from_string("test2", "func_xyz", invalid_code); },
         PythonLoader::ExcPythonError,
-        "invalid syntax"
+        "Missing parentheses in call to 'print'"
     );
     EXPECT_THROW_WHAT(
         { PythonLoader::load_module_from_string("test3", "func_xyz", invalid_code2); },

@@ -52,15 +52,15 @@ TEST_F(FieldEvalPythonTest, evaluate) {
       - region: 3D left
         time: 0.0
         scalar_field: !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest1
           used_fields: ['X']
         vector_field: !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest1
           used_fields: ['X']
         tensor_field: !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest1
           used_fields: ['X']
         scalar_ref: !FieldFormula
@@ -72,15 +72,15 @@ TEST_F(FieldEvalPythonTest, evaluate) {
       - region: 3D right
         time: 0.0
         scalar_field: !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest2
           used_fields: ['X']
         vector_field:  !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest2
           used_fields: ['X']
         tensor_field: !FieldPython
-          source_file: fields/field_python_test.py
+          source_file: ./fields/field_python_test.py
           class: FieldPythonTest2
           used_fields: ['X']
         scalar_ref: !FieldFormula

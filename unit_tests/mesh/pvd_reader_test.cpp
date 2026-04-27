@@ -46,6 +46,7 @@ TEST(PVDReader, read_pvd) {
     reader.test_find_header(0.05, 0.0, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
     reader.test_find_header(0.11, 0.1, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
     reader.test_find_header(0.21, 0.2, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
+    Profiler::uninitialize();
 }
 
 
@@ -90,4 +91,5 @@ TEST(PVDReader, get_element_data) {
         	EXPECT_DOUBLE_EQ( (i*2+1)*(j%3+1)*0.5, vec[j] );
         }
     }
+    Profiler::uninitialize();
 }

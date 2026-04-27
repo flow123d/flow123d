@@ -24,15 +24,17 @@
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 
-set(libs  coupling_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs  flow123d_core) #coupling_lib fem_lib flow123d_system ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 add_test_directory("${libs}")
 
 
     
 define_mpi_test(eq_data 1)
-    
-define_mpi_benchmark(dg_asm 1 profiler_to_csv.py 150)
-#define_mpi_benchmark(asm_const 1 profiler_to_csv.py 150)
+define_mpi_test(application 1)
+define_mpi_test(application 2)    
+define_mpi_benchmark(dg_asm 1 3600)
+define_mpi_benchmark(elasticity_asm 1 3600)
+#define_mpi_benchmark(asm_const 1 150)
 
 
 

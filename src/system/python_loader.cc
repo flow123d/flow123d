@@ -25,7 +25,7 @@
 //#include <iostream>
 #include <fstream>
 //#include <sstream>
-#include <pybind11/pybind11.h>
+//#include <pybind11/pybind11.h>
 #include <pybind11/embed.h> // everything needed for embedding
 
 using namespace std;
@@ -183,9 +183,9 @@ PythonRunning::PythonRunning()
 {
     // initialize the Python interpreter.
     py::initialize_interpreter();
-    std::string flowpy_path = std::string(FLOW123D_SOURCE_DIR) + "/src/python";
+    std::string py123d_path = std::string(FLOW123D_SOURCE_DIR) + "/src";
     std::string fieldproxypy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
-    PythonLoader::add_sys_path(flowpy_path);
+    PythonLoader::add_sys_path(py123d_path);
     PythonLoader::add_sys_path(fieldproxypy_path);
 
 #ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH

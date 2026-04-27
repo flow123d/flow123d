@@ -4,11 +4,11 @@ echo "-- Editing PYTHONPATH variable"
 # get absolute dir in which is this script stored
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # populated by configure_file in cmake call
-PYTHON_PATHS="@PY_WRAPPER_PATHS@"
+PYTHONPATHS="@PY_WRAPPER_PATHS@"
 
 # temporatily set for separator to colon (;)
 export IFS=";"
-for path in $PYTHON_PATHS
+for path in $PYTHONPATHS
 do
    # add all paths to PYTHONPATH variable
    PYTHONPATH=${PYTHONPATH}:${SCRIPT_DIR}/../build_tree${path}

@@ -24,7 +24,7 @@
 #include <sys/param.h>
 #include <unordered_map>
 
-#include <pybind11/pybind11.h>
+//#include <pybind11/pybind11.h>
 
 #include "sys_profiler.hh"
 #include "system/system.hh"
@@ -115,7 +115,8 @@ Timer::Timer(const CodePoint &cp, int parent)
   max_allocated_(0),
   current_allocated_(0),
   alloc_called(0),
-  dealloc_called(0)
+  dealloc_called(0),
+  memory_monitor_on_(false)
 #ifdef FLOW123D_HAVE_PETSC
 , petsc_start_memory(0),
   petsc_end_memory (0),
@@ -166,7 +167,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     parent.dealloc_called += child.dealloc_called;
     
 #ifdef FLOW123D_HAVE_PETSC
-    if (petsc_monitor_memory) {
+    if (global_monitor_memory) {
         // add differences from child
         parent.petsc_memory_difference += child.petsc_memory_difference;
         parent.current_allocated_ += child.current_allocated_;
@@ -183,7 +184,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
 
 void Timer::pause() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // get the maximum resident set size (memory used) for the program.
         PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
         if (petsc_peak_memory < petsc_local_peak_memory)
@@ -194,7 +195,7 @@ void Timer::pause() {
 
 void Timer::resume() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // tell PETSc to monitor the maximum memory usage so
         //   that PetscMemoryGetMaximumUsage() will work.
         PetscMemorySetGetMaximumUsage();
@@ -203,15 +204,6 @@ void Timer::resume() {
 }
 
 void Timer::start() {
-#ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
-        // Tell PETSc to monitor the maximum memory usage so
-        //   that PetscMemoryGetMaximumUsage() will work.
-        PetscMemorySetGetMaximumUsage();
-        PetscMemoryGetCurrentUsage (&petsc_start_memory);
-    }
-#endif // FLOW123D_HAVE_PETSC
-    
     if (start_count == 0) {
         start_time = TimePoint();
     }
@@ -221,9 +213,22 @@ void Timer::start() {
 
 
 
+void Timer::start_memory_monitoring() {
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_global_memory_monitoring()) {
+        // Tell PETSc to monitor the maximum memory usage so
+        //   that PetscMemoryGetMaximumUsage() will work.
+        PetscMemorySetGetMaximumUsage();
+        PetscMemoryGetCurrentUsage (&petsc_start_memory);
+        memory_monitor_on_ = true;
+    }
+#endif // FLOW123D_HAVE_PETSC
+}
+
+
 bool Timer::stop(bool forced) {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // get current memory usage
         PetscMemoryGetCurrentUsage (&petsc_end_memory);
         petsc_memory_difference += petsc_end_memory - petsc_start_memory;
@@ -232,6 +237,8 @@ bool Timer::stop(bool forced) {
         PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
         if (petsc_peak_memory < petsc_local_peak_memory)
             petsc_peak_memory = petsc_local_peak_memory;
+
+        memory_monitor_on_ = false;
     }
 #endif // FLOW123D_HAVE_PETSC
     
@@ -305,13 +312,13 @@ Profiler::Profiler()
 : actual_node(0),
   task_size_(1),
   start_time( time(NULL) ),
-  json_filepath(""),
+  //json_filepath(""),
   none_timer_(CODE_POINT("NONE TIMER"), 0),
   calibration_time_(-1)
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-    set_memory_monitoring(true, true);
+    set_memory_monitoring(false);
 #ifdef FLOW123D_DEBUG_PROFILER
     MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
     timers_.push_back( Timer(main_cp, 0) );
@@ -484,6 +491,12 @@ void Profiler::stop_timer(int timer_index) {
 }
 
 
+void Profiler::start_memory_monitoring() {
+    if ( get_global_memory_monitoring() ) {
+        timers_[actual_node].start_memory_monitoring();
+    }
+}
+
 
 void Profiler::add_calls(unsigned int n_calls) {
     timers_[actual_node].call_count += n_calls-1;
@@ -615,12 +628,15 @@ void save_nonmpi_metric (nlohmann::json &node, T * ptr, string name) {
     node[name + "-sum"] = *ptr;
 }
 
-std::shared_ptr<std::ostream> Profiler::get_output_stream(string path) {
-    if (path == "") path = "profiler_info.log.json";
-    json_filepath = FilePath(path, FilePath::output_file);
 
-    //LogOut() << "output into: " << json_filepath << std::endl;
-    return make_shared<ofstream>(json_filepath.c_str());
+
+string _profiler_output_path(string path) {
+    if (path == "") path = "profiler_info.log.json";
+    return FilePath(path, FilePath::output_file);
+}
+
+std::shared_ptr<std::ostream> _profiler_output_stream(const string &path) {
+	return make_shared<ofstream>(path.c_str());
 }
 
 
@@ -641,7 +657,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     
     // stop monitoring memory
     bool temp_memory_monitoring = global_monitor_memory;
-    set_memory_monitoring(false, petsc_monitor_memory);
+    set_memory_monitoring(false);
 
     chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
     MPI_Comm_size(comm, &mpi_size);
@@ -708,27 +724,23 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     	}
     }
     // restore memory monitoring
-    set_memory_monitoring(temp_memory_monitoring, petsc_monitor_memory);
+    set_memory_monitoring(temp_memory_monitoring);
 }
 
 
-void Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
-  int mpi_rank;
-  chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
+string Profiler::output(MPI_Comm comm, string profiler_path /* = "" */) {
+    int mpi_rank;
+    chkerr(MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank));
 
+    // all processes must call output, but only rank 0 would use the output stream
     if (mpi_rank == 0) {
-//        if (profiler_path == "") {
-//        	profiler_path ="profiler_info.log.json"
-//          output(comm, *get_default_output_stream());
-//        } else {
-//          json_filepath = profiler_path;
-//          std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-//
-//        }
-        output(comm, *get_output_stream(profiler_path));
+        string out_path = _profiler_output_path(profiler_path);
+    	output(comm, *_profiler_output_stream(out_path));
+        return out_path;
     } else {
       ostringstream os;
       output(comm, os);
+      return "";
     }
 }
 
@@ -803,15 +815,10 @@ void Profiler::output(ostream &os) {
 }
 
 
-void Profiler::output(string profiler_path /* = "" */) {
-//    if(profiler_path == "") {
-//        output();
-//    } else {
-//        json_filepath = profiler_path;
-//        std::shared_ptr<std::ostream> os = make_shared<ofstream>(profiler_path.c_str());
-//
-//    }
-    output(*get_output_stream(profiler_path));
+string Profiler::output(string profiler_path /* = "" */) {
+    string out_path = _profiler_output_path(profiler_path);
+	output(*_profiler_output_stream(out_path));
+    return out_path;
 }
 
 void Profiler::output_header (nlohmann::json &root, int mpi_size) {
@@ -846,28 +853,7 @@ void Profiler::output_header (nlohmann::json &root, int mpi_size) {
     root["run-finished-at"] =     end_time_string;
 }
 
-void Profiler::transform_profiler_data (const string &output_file_suffix, const string &formatter) {
-	namespace py = pybind11;
 
-    if (json_filepath == "") return;
-
-    // error under CYGWIN environment : more details in this repo 
-    // https://github.com/x3mSpeedy/cygwin-python-issue
-    // 
-    // For now we only support profiler report conversion in UNIX environment
-    // Windows users will have to use a python script located in bin folder
-    // 
-
-    // grab module and function by importing module profiler_formatter_module.py
-    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
-    //
-    // def convert (json_location, output_file, formatter):
-    //
-    auto convert_method = python_module.attr("convert");
-    // execute method with arguments
-    convert_method(json_filepath, (json_filepath + output_file_suffix), formatter);
-
-}
 
 
 void Profiler::uninitialize() {
@@ -875,15 +861,13 @@ void Profiler::uninitialize() {
     	ASSERT_PERMANENT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         Profiler::instance()->stop_timer(0);
-        set_memory_monitoring(false, false);
+        set_memory_monitoring(false);
         Profiler::instance(true);
     }
 }
 bool Profiler::global_monitor_memory = false;
-bool Profiler::petsc_monitor_memory = true;
-void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
+void Profiler::set_memory_monitoring(const bool global_monitor) {
     global_monitor_memory = global_monitor;
-    petsc_monitor_memory = petsc_monitor;
 }
 
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {

@@ -11,6 +11,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -161,6 +162,7 @@ void compute_intersection_23d(Mesh *mesh,
 
 
 TEST(intersection_prolongation_23d, all) {
+    Profiler::instance();
     
 //     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
@@ -187,4 +189,5 @@ TEST(intersection_prolongation_23d, all) {
         
         compute_intersection_23d(mesh, solution[s]);
     }
+    Profiler::uninitialize();
 }

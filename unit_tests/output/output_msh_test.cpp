@@ -30,12 +30,24 @@ format: !gmsh
 )YAML";
 
 
+class TestMSH : public testing::Test {
+protected:
+    TestMSH()
+    {
+        Profiler::instance();
+    }
+
+    ~TestMSH()
+    {
+        Profiler::uninitialize();
+    }
+};
+
 class TestOutputMSH : public OutputMSH, public std::enable_shared_from_this<OutputMSH> {
 public:
 	TestOutputMSH()
     : OutputMSH()
     {
-        Profiler::instance();
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
@@ -125,7 +137,7 @@ public:
 };
 
 
-TEST(TestOutputMSH, write_data) {
+TEST_F(TestMSH, write_data) {
 	std::shared_ptr<TestOutputMSH> output_msh = std::make_shared<TestOutputMSH>();
 	output_msh->init_mesh(test_output_time);
 

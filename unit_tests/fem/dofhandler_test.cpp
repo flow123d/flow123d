@@ -9,12 +9,15 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "tools/mixed.hh"
+#include "system/sys_profiler.hh"
 
 
 
 
 
 TEST(DOFHandler, test_all) {
+  FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+  Profiler::instance();
   
   // distribute dofs for continuous P1 finite element.
   // The test checks that the dofs are
@@ -44,7 +47,6 @@ TEST(DOFHandler, test_all) {
     5: 345
  *
  */
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh.msh\", optimize_mesh=false }");
     
     MixedPtr<FE_P> fe(1);
@@ -112,7 +114,6 @@ TEST(DOFHandler, test_all) {
     //  |   1   4   \   |
     //  | /           \ |
     //  1---------------2
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh_junction.msh\", optimize_mesh=false }");
     
     MixedPtr<FE_P> fe(1);
@@ -169,11 +170,13 @@ TEST(DOFHandler, test_all) {
 
   }
 
+  Profiler::uninitialize();
 }
 
 
 TEST(DOFHandler, test_sub_handler)
 {
+    Profiler::instance();
     FESystem<0> fe_sys0({ std::make_shared<FE_P_disc<0> >(0),
                           std::make_shared<FE_P<0> >(0),
                           std::make_shared<FE_CR<0> >() });
@@ -198,16 +201,16 @@ TEST(DOFHandler, test_sub_handler)
     std::vector<LocDofVec > loc_indices(mesh->n_elements());
     LocDofVec loc_sub_indices;
 
-    dh->print();    
+    dh->print();
     sub_dh->print();
-    
+
     VectorMPI vec = dh->create_vector();
     VectorMPI subvec = sub_dh->create_vector();
-    
+
     // init cell dof indices
     for (auto cell : dh->local_range())
         loc_indices[cell.elm_idx()] = cell.get_loc_dof_indices();
-    
+
     // init vec and update subvec
     for (auto cell : dh->own_range())
         for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
@@ -215,7 +218,7 @@ TEST(DOFHandler, test_sub_handler)
     vec.local_to_ghost_begin();
     vec.local_to_ghost_end();
     sub_dh->update_subvector(vec, subvec);
-    
+
     // check that dofs on sub_dh are equal to dofs on dh
     for (auto cell : sub_dh->local_range())
     {
@@ -246,9 +249,10 @@ TEST(DOFHandler, test_sub_handler)
         for (unsigned int i=0; i<cell.n_dofs(); i++)
             EXPECT_EQ( vec.get(loc_indices[cell.elm_idx()][i]), subvec.get(loc_sub_indices[i]) );
     }
-    
+
     delete mesh;
-    
+
+    Profiler::uninitialize();
 }
 
 
@@ -260,6 +264,7 @@ TEST(DOFHandler, test_sub_handler)
 TEST(DOFHandler, test_rt)
 {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Profiler::instance();
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"fem/small_mesh_junction.msh\", optimize_mesh=false }");
 
     MixedPtr<FE_RT0> fe;
@@ -283,24 +288,26 @@ TEST(DOFHandler, test_rt)
 
     // dof at el. 1 side 1 equals dof at el. 2 side 0
     if (own_elem[0] & own_elem[1]) EXPECT_EQ( indices[0][1], indices[1][0] );
-    
+
     // dof at el. 1 side 1 equals dof at el. 3 side 0
     if (own_elem[0] & own_elem[2]) EXPECT_EQ( indices[0][1], indices[2][0] );
-    
+
     // dof at el. 4 side 2 equals dof at el. 6 side 0
     if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
-    
+
     // dof at el. 6 side 1 equals dof at el. 8 side 0
     if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][0] );
 
     delete mesh;
 
+    Profiler::uninitialize();
 }
 
 
 
 TEST(DHAccessors, dh_cell_accessors) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Profiler::instance();
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     DOFHandlerMultiDim dh(*mesh);
@@ -349,4 +356,5 @@ TEST(DHAccessors, dh_cell_accessors) {
     }
 
     delete mesh;
+    Profiler::uninitialize();
 }

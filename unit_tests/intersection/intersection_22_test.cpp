@@ -9,6 +9,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -59,6 +60,8 @@ void compute_intersection(Mesh *mesh, TestCaseResult result)
 TEST(intersection_prolongation_23d, all) {
     DebugOut() << "start";    
   
+    Profiler::instance();
+
     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = "intersection/2d-2d/";
@@ -79,4 +82,5 @@ TEST(intersection_prolongation_23d, all) {
         
         compute_intersection(mesh, case_result);
     }
+    Profiler::uninitialize();
 }

@@ -301,6 +301,7 @@ void copy_field(const FieldFE<dim, Value> &from_field, FieldFE<dim, Value> &to_f
 
 void HM_Iterative::zero_time_step()
 {
+    START_TIMER("HM zero time step");
     eq_fields_->set_time(time_->step(), LimitSide::right);
     std::stringstream ss;
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
@@ -316,6 +317,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
     copy_field(*eq_data_->mechanics_->eq_fields().output_cross_section.get_field_fe(), *eq_fields_->old_cs_ptr_);
     eq_fields_->old_iter_pressure.set_time_result_changed();
+    END_TIMER("HM zero time step");
 }
 
 
@@ -330,6 +332,7 @@ void HM_Iterative::update_solution()
 
 void HM_Iterative::solve_iteration()
 {
+    START_TIMER("HM iteration");
     // pass displacement (divergence) to flow
     // and solve flow problem
     update_flow_fields();
@@ -338,6 +341,7 @@ void HM_Iterative::solve_iteration()
     // pass pressure to mechanics and solve mechanics
     update_potential();
     eq_data_->mechanics_->solve_linear_system();
+    END_TIMER("HM iteration");
 }
 
 

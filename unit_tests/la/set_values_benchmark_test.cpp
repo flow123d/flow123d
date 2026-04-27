@@ -21,31 +21,43 @@ const int
     ls_size = 100,
     offset = 20;
 
+class LinSys_PETSC_Test : public testing::Test {
+protected:
+    LinSys_PETSC_Test() {
+        // setup FilePath directories
+        Profiler::instance();
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+    };
 
-void allocate_linsys(LinSys* ls){
-    ls->start_allocation();
-    for(unsigned int i = 0; i<ls_size; i++)
-        for(unsigned int j = 0; j<ls_size; j++)
-            ls->mat_set_value(i,j,0.0);
-}
+    ~LinSys_PETSC_Test() {
+        Profiler::uninitialize();
+    };
 
-void print_matrix(std::string matlab_file, const Mat* mat){
-    std::string output_file = FilePath(matlab_file + ".m", FilePath::output_file);
-    PetscViewer    viewer;
-    PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
-    PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
-    MatView( *const_cast<Mat*>(mat), viewer);
-}
+    void allocate_linsys(){
+        ls->start_allocation();
+        for(unsigned int i = 0; i<ls_size; i++)
+            for(unsigned int j = 0; j<ls_size; j++)
+                ls->mat_set_value(i,j,0.0);
+    }
+
+    void print_matrix(std::string matlab_file, const Mat* mat){
+        std::string output_file = FilePath(matlab_file + ".m", FilePath::output_file);
+        PetscViewer    viewer;
+        PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+        PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+        MatView( *const_cast<Mat*>(mat), viewer);
+    }
+
+    LinSys * ls;
+};
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test AIJ matrix assembly of an m x m continuous matrix, one by one.
-TEST(LinSys_PETSC, mat_set_value) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
-    
-    LinSys * ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
-    allocate_linsys(ls);
+TEST_F(LinSys_PETSC_Test, mat_set_value) {
+    ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
+    this->allocate_linsys();
     ls->start_add_assembly();
     
     int i,j;
@@ -70,14 +82,11 @@ TEST(LinSys_PETSC, mat_set_value) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test AIJ matrix assembly of an m x m continuous matrix, whole block at once.
-TEST(LinSys_PETSC, mat_set_values_mm) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
-    
-    LinSys * ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
-    allocate_linsys(ls);
+TEST_F(LinSys_PETSC_Test, mat_set_values_mm) {
+    ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
+    this->allocate_linsys();
     ls->start_add_assembly();
-    
+
     // 'local system' to be added
     double vals[m*m];
     for(int i = 0; i<m*m; i++) vals[i] = 1.0;
@@ -86,53 +95,50 @@ TEST(LinSys_PETSC, mat_set_values_mm) {
         rows[i] = offset + i;
         cols[i] = offset + i;
     }
-        
-    
+
+
     START_TIMER("LinSys_PETSC_mat_set_values_mm");
-    
+
     for(unsigned int q = 0; q < n_loops; q++)
         ls->mat_set_values(m, rows, m, cols, vals);
-    
+
     END_TIMER("LinSys_PETSC_mat_set_values_mm");
     EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mm", 4.5);
-    
+
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
-    
+
 //     static ofstream os( FilePath("pr_mat_set_values_mm.log", FilePath::output_file) );
 //     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test AIJ matrix assembly of an m x n_cols continuous matrix, whole block at once.
-TEST(LinSys_PETSC, mat_set_values_mcols) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
-    
-    LinSys * ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
-    allocate_linsys(ls);
+TEST_F(LinSys_PETSC_Test, mat_set_values_mcols) {
+    ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
+    this->allocate_linsys();
     ls->start_add_assembly();
-    
+
     // 'local system' to be added
     double vals[m*n_cols];
     for(int i = 0; i<m*n_cols; i++) vals[i] = 1.0;
     int rows[m], cols[n_cols];
     for(int i = 0; i<m; i++) rows[i] = offset + i;
     for(int i = 0; i<n_cols; i++) cols[i] = offset + i;
-    
-        
-    
+
+
+
     START_TIMER("LinSys_PETSC_mat_set_values_mcols");
-    
+
     for(unsigned int q = 0; q < n_loops; q++)
         ls->mat_set_values(m, rows, n_cols, cols, vals);
-    
+
     END_TIMER("LinSys_PETSC_mat_set_values_mcols");
     EXPECT_TIMER_LE("LinSys_PETSC_mat_set_values_mcols", 1.5);
-    
+
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
-    
+
 //     static ofstream os( FilePath("pr_mat_set_values_mcols.log", FilePath::output_file) );
 //     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
@@ -141,14 +147,11 @@ TEST(LinSys_PETSC, mat_set_values_mcols) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test AIJ matrix assembly of an m x n_cols continuous matrix, using LocalSystem (whole block at once).
-TEST(LinSys_PETSC, set_local_system_mm) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
-    
-    LinSys * ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
-    allocate_linsys(ls);
+TEST_F(LinSys_PETSC_Test, set_local_system_mm) {
+    ls = new LinSys_PETSC(new Distribution(ls_size, MPI_COMM_WORLD));
+    this->allocate_linsys();
     ls->start_add_assembly();
-    
+
     // 'local system' to be added
     LocalSystem loc(m,m);
     arma::umat sp;
@@ -160,18 +163,18 @@ TEST(LinSys_PETSC, set_local_system_mm) {
         for(int j = 0; j<m; j++)
             loc.add_value(i,j,1.0);
     }
-        
+
     START_TIMER("LinSys_PETSC_set_local_system_mm");
-    
+
     for(unsigned int q = 0; q < n_loops; q++)
         ls->set_local_system(loc);
-    
+
     END_TIMER("LinSys_PETSC_set_local_system_mm");
     EXPECT_TIMER_LE("LinSys_PETSC_set_local_system_mm", 6);
-    
+
     ls->finish_assembly();
 //     print_matrix("ls_matrix", ls->get_matrix());
-    
+
 //     static ofstream os( FilePath("pr_set_local_system_mm.log", FilePath::output_file) );
 //     Profiler::instance()->output(MPI_COMM_WORLD, os);
 }
@@ -180,19 +183,16 @@ TEST(LinSys_PETSC, set_local_system_mm) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test AIJ matrix direct PETSC assembly of an m x m continuous matrix, whole block at once.
-TEST(PETSC_mat, mat_set_values_mm) {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",string(UNIT_TESTS_SRC_DIR)+"/la/","",".");
-    
+TEST_F(LinSys_PETSC_Test, PETSC_mat_set_values_mm) {
     PetscErrorCode ierr;
     Mat mat;
-    
+
     ierr = MatCreate(MPI_COMM_WORLD, &mat); CHKERRV( ierr );
     ierr = MatSetSizes(mat, PETSC_DECIDE, PETSC_DECIDE, ls_size, ls_size); CHKERRV( ierr );
     ierr = MatSetType(mat,MATAIJ); CHKERRV( ierr );
     ierr = MatSetUp(mat); CHKERRV( ierr );
     ierr = MatAssemblyBegin(mat, MAT_FLUSH_ASSEMBLY); CHKERRV( ierr );
-    
+
     // 'local system' to be added
     double vals[m*m];
     for(int i = 0; i<m*m; i++) vals[i] = 1.0;
@@ -201,19 +201,19 @@ TEST(PETSC_mat, mat_set_values_mm) {
         rows[i] = offset + i;
         cols[i] = offset + i;
     }
-    
-    
+
+
     START_TIMER("PETSC_mat_petsc_mat_set_values");
-    
+
     for(unsigned int q = 0; q < n_loops; q++)
         ierr = MatSetValues(mat, m, rows, m, cols, vals, ADD_VALUES); CHKERRV( ierr );
-    
+
     END_TIMER("PETSC_mat_petsc_mat_set_values");
     EXPECT_TIMER_LE("PETSC_mat_petsc_mat_set_values", 4.5);
-    
+
     ierr = MatAssemblyEnd(mat, MAT_FINAL_ASSEMBLY); CHKERRV( ierr );
 //     print_matrix("petsc_matrix", &mat);
-    
+
 //     static ofstream os( FilePath("pr_petsc_mat_set_values.log", FilePath::output_file) );
 //     Profiler::instance()->output(MPI_COMM_WORLD, os);
     static ofstream os( FilePath("set_values_profiler.log", FilePath::output_file) );

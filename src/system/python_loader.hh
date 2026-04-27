@@ -23,8 +23,8 @@
 #include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
 
 #include <string>
-#include <pybind11/pybind11.h>
-
+//#include <pybind11/pybind11.h>
+#include <pybind11/embed.h> 
 /*
  * Notes on Python 3 API
  *
@@ -72,7 +72,7 @@ public:
  *   that appears during field_python_test.cpp
  *
  */
-class PythonLoader {
+class __attribute__((visibility("default"))) PythonLoader {
 public:
 
 	/**

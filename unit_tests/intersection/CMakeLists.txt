@@ -23,7 +23,7 @@
 
 #set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib io_lib)
+set(libs mesh_lib flow123d_system io_lib)
 add_test_directory("${libs}")
     
     define_mpi_test(compute_intersection_12 1)

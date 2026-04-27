@@ -690,6 +690,54 @@ public:
         return *this;
     }
 
+//    /**
+//     * Return reference to data of one component
+//     */
+//    inline const Type & operator()(uint i_row, uint i_col) const
+//    {
+//        ASSERT_LT(i_row, n_rows_);
+//        ASSERT_LT(i_col, n_cols_);
+//        return data_[(i_col*n_rows_ + i_row) * reserved_];
+//    }
+
+    /**
+     * Return vector of data of one component
+     */
+    inline Type * operator()(uint i_row, uint i_col) const
+    {
+        ASSERT_LT(i_row, n_rows_);
+        ASSERT_LT(i_col, n_cols_);
+        return &(data_[(i_col*n_rows_ + i_row) * reserved_]);
+    }
+
+    /**
+     * Multiply data of component (i_row, i_col)
+     */
+    inline Array & multiply_comp(uint i_row, uint i_col, Type multi)
+    {
+        ASSERT_LT(i_row, n_rows_);
+        ASSERT_LT(i_col, n_cols_);
+        uint i_begin = (i_col*n_rows_ + i_row) * reserved_;
+        for (uint i=i_begin; i<i_begin+size_; ++i)
+            data_[i] *= multi;
+        return *this;
+    }
+
+    /**
+     * Return reference to data of one component
+     */
+    inline Array & add_comp(uint i_row, uint i_col, uint i_row_b, uint i_col_b, const Array &B)
+    {
+        ASSERT_EQ(this->size(), B.size());
+        Type * comp_data = this->operator()(i_row, i_col);
+        Type * comp_data_b = B(i_row_b, i_col_b);
+
+        uint i_begin = (i_col*n_rows_ + i_row) * reserved_;
+        for (uint i=0; i<this->size(); ++i)
+        	comp_data[i] += comp_data_b[i];
+        return *this;
+    }
+
     /**
      * Drop all data and allocate new space of given size.
      * Change number of elements in the array, while keeping the shape of arrays.

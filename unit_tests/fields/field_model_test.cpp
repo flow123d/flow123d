@@ -25,6 +25,7 @@
 #include "mesh/mesh.h"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "system/sys_profiler.hh"
 
 
 using Scalar = double;
@@ -34,6 +35,7 @@ using Tensor = arma::mat33;
 class FieldModelTest : public testing::Test, public ElementCacheMap {
 public:
     virtual void SetUp() {
+        Profiler::instance();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     	PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         n_items = 10; // number of tested items
@@ -64,6 +66,7 @@ public:
 
     virtual void TearDown() {
     	if (mesh != nullptr) delete mesh;
+        Profiler::uninitialize();
     }
 
     void init_field_caches() {

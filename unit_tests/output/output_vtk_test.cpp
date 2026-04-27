@@ -45,12 +45,24 @@ format: !vtk
 )YAML";
 
 
+class TestVTK : public testing::Test {
+protected:
+	TestVTK()
+    {
+        Profiler::instance();
+    }
+
+    ~TestVTK()
+    {
+        Profiler::uninitialize();
+    }
+};
+
 class TestOutputVTK : public OutputVTK, public std::enable_shared_from_this<OutputVTK> {
 public:
     TestOutputVTK()
     : OutputVTK()
     {
-        Profiler::instance();
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
@@ -177,7 +189,7 @@ public:
 };
 
 
-TEST(TestOutputVTK, write_data_ascii) {
+TEST_F(TestVTK, write_data_ascii) {
 	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
 	output_vtk->init_mesh(test_output_time_ascii);
@@ -204,7 +216,7 @@ TEST(TestOutputVTK, write_data_ascii) {
 }
 
 
-TEST(TestOutputVTK, write_data_binary) {
+TEST_F(TestVTK, write_data_binary) {
 	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
 	output_vtk->init_mesh(test_output_time_binary);
@@ -225,7 +237,7 @@ format: !vtk
   variant: binary_zlib
 )YAML";
 
-TEST(TestOutputVTK, write_data_compressed) {
+TEST_F(TestVTK, write_data_compressed) {
 	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
 	output_vtk->init_mesh(test_output_time_compressed);

@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs la_lib ${DEAL_II_LIBRARY_NAME} system_lib "-lstdc++")
+set(libs la_lib ${DEAL_II_LIBRARY_NAME} flow123d_system "-lstdc++")
 add_test_directory("${libs}")
 
 if (USE_DEAL_II)

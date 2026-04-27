@@ -122,7 +122,7 @@ template <class Value>
 void TableFunction<Value>::interpolated(double coef, unsigned int idx)
 {
 	ASSERT(coef >= 0 && coef <= 1)(coef).error();
-	ASSERT(idx >= 0 && idx <= table_values_.size()-2)(idx).error();
+	ASSERT(idx <= table_values_.size()-2)(idx).error();
 
 	Value val_0(table_values_[idx].r_value_);
 	Value val_1(table_values_[idx+1].r_value_);

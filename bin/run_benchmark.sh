@@ -103,6 +103,6 @@ for (( run_id=1; run_id<=$N_RUNS; run_id++ ));do
     TEST_NAME=${TEST_TARGET_BASE}-${N_PROC}-bench
     ${SCRIPT_DIR}/time_limit.sh -t ${TIMEOUT} ${BUILD_DIR}/bin/mpiexec -np ${N_PROC} ${TEST_BINARY} --gtest_output="xml:${TEST_NAME}.xml"
     ls -l
-    mv ${TEST_TARGET_BASE}_profiler.json ${TEST_NAME}_profiler.json
-    python3 ${FLOW_ROOT_DIR}/unit_tests/${TEST_SUBDIR}/${TEST_TARGET_BASE}_bench_postprocess.py ${TEST_NAME}_profiler.json ${GIT_SHORT_HASH} ${run_id}
+    mv ${TEST_TARGET_BASE}_profiler.json ${TEST_NAME}_profiler_${run_id}.json
+    # python3 ${FLOW_ROOT_DIR}/unit_tests/${TEST_SUBDIR}/${TEST_TARGET_BASE}_bench_postprocess.py ${TEST_NAME}_profiler.json ${GIT_SHORT_HASH} ${run_id}
 done

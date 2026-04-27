@@ -218,4 +218,5 @@ TEST(ElementMapping, element_map) {
         EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25 0.25"), mapping.project_real_to_unit( arma::vec3("0 -0.5 -0.5"), map ) );
         //EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), mapping.project_real_to_unit( arma::vec3("0.1 0.2 0.3"), map ) );
     }
+    Profiler::uninitialize();
 }
