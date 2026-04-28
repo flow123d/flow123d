@@ -27,7 +27,6 @@
 #include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "coupling/equation.hh"
-#include "fem/fe_values_views.hh"
 #include "tools/mixed.hh"
 #include "quadrature/quadrature_lib.hh"
 
@@ -36,10 +35,10 @@ class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim> class FiniteElement;
 class Elasticity;
-template<unsigned int dim> class StiffnessAssemblyElasticity;
-template<unsigned int dim> class RhsAssemblyElasticity;
-template<unsigned int dim> class ConstraintAssemblyElasticity;
-template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
+template<unsigned int dim, class EqData> class StiffnessAssemblyElasticity;
+template<unsigned int dim, class EqData> class RhsAssemblyElasticity;
+template<unsigned int dim, class EqData> class ConstraintAssemblyElasticity;
+template<unsigned int dim, class EqData> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -49,7 +48,7 @@ class Elasticity : public EquationBase
 {
 public:
 
-	class EqFields : public FieldSet {
+    class EqFields : public FieldSet {
 	public:
       
         enum Bc_types {
@@ -62,6 +61,8 @@ public:
         EqFields();
         
         static const Input::Type::Selection & get_bc_type_selection();
+
+        arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor);
 
         BCField<3, FieldValue<3>::Enum > bc_type;
         BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
@@ -108,11 +109,13 @@ public:
 
 	};
 
+	/// Data of equation parameters
 	class EqData {
 	public:
+   	    typedef Elasticity::EqFields EqFields;
 
-		EqData()
-        : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+		EqData(shared_ptr<EqFields> eq_fields)
+        : eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
@@ -121,12 +124,18 @@ public:
 		}
 
 		/// Create DOF handler objects
-        void create_dh(Mesh * mesh, unsigned int fe_order);
+        void create_dh(Mesh * mesh);
+
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 1;
+        }
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
-        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 
     	/// @name Solution of algebraic system
     	// @{
@@ -146,6 +155,39 @@ public:
     	std::shared_ptr<Balance> balance_;
 
 	};
+
+
+	/// Data of output parameters
+	class OutputEqData {
+	public:
+   	    typedef Elasticity::EqFields EqFields;
+
+		OutputEqData(shared_ptr<EqFields> eq_fields)
+        : eq_fields_(eq_fields) {}
+
+		~OutputEqData() {}
+
+		/// Create DOF handler objects
+        void create_dh(Mesh * mesh);
+
+        /// Returns quad_order
+        inline unsigned int quad_order() const {
+            return 0;
+        }
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
+
+        /// Objects for distribution of dofs.
+        std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+        std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
+
+	};
+
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, EqData>;
+    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, EqData>;
+    template<unsigned int dim> using ConstraintAssemblyDim = ConstraintAssemblyElasticity<dim, EqData>;
+    template<unsigned int dim> using OutpuFieldsAssemblyDim = OutpuFieldsAssemblyElasticity<dim, OutputEqData>;
 
 
     /**
@@ -229,6 +271,9 @@ private:
 	/// Data for model parameters.
 	std::shared_ptr<EqData> eq_data_;
 
+	/// Data for output parameters.
+	std::shared_ptr<OutputEqData> output_eq_data_;
+
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
 
@@ -253,19 +298,13 @@ private:
 
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< StiffnessAssemblyElasticity > * stiffness_assembly_;
-    GenericAssembly< RhsAssemblyElasticity > * rhs_assembly_;
-    GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
-    GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
+    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
+    GenericAssembly< RhsAssemblyDim > * rhs_assembly_;
+    GenericAssembly< ConstraintAssemblyDim > * constraint_assembly_;
+    GenericAssembly< OutpuFieldsAssemblyDim > * output_fields_assembly_;
 
 };
 
-
-/*
- * TODO Remove these two methods after implementation new assembly algorithm in HM_Iterative class.
- */
-double lame_mu(double young, double poisson);
-double lame_lambda(double young, double poisson);
 
 
 

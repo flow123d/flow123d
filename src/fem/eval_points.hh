@@ -23,17 +23,28 @@
 #include <vector>
 #include <memory>
 #include <armadillo>
+#include "fem/integral_data.hh"
 #include "mesh/range_wrapper.hh"
 #include "system/asserts.hh"
 #include "system/armor.hh"
 
 class Side;
 class Quadrature;
+class ElementCacheMap;
 class BulkIntegral;
 class EdgeIntegral;
 class CouplingIntegral;
 class BoundaryIntegral;
+template <unsigned int dim> class BulkIntegralAcc;
+template <unsigned int dim> class EdgeIntegralAcc;
+template <unsigned int dim> class CouplingIntegralAcc;
+template <unsigned int dim> class BoundaryIntegralAcc;
 template <int spacedim> class ElementAccessor;
+template <unsigned int spacedim> class PatchFEValues;
+namespace internal_integrals {
+    class Bulk;
+    class Edge;
+}
 
 
 /**
@@ -88,22 +99,15 @@ public:
 
     /**
      * Registers point set from quadrature.
+     *
      * Returns an object referencing to the EvalPoints and list of its points.
      */
     template <unsigned int dim>
-    std::shared_ptr<BulkIntegral> add_bulk(const Quadrature &);
+    std::shared_ptr<internal_integrals::Bulk> add_bulk_internal(Quadrature *);
 
     /// The same as add_bulk but for edge points on sides.
     template <unsigned int dim>
-    std::shared_ptr<EdgeIntegral> add_edge(const Quadrature &);
-
-    /// The same as add_bulk but for points between side points of element of dim and bulk points of element of dim-1.
-    template <unsigned int dim>
-    std::shared_ptr<CouplingIntegral> add_coupling(const Quadrature &);
-
-    /// The same as add_bulk but for edge points on boundary sides.
-    template <unsigned int dim>
-    std::shared_ptr<BoundaryIntegral> add_boundary(const Quadrature &);
+    std::shared_ptr<internal_integrals::Edge> add_edge_internal(Quadrature *);
 
     /// Return maximal size of evaluation points objects.
     inline unsigned int max_size() const {
@@ -114,6 +118,12 @@ public:
         for (uint i=0; i<4; ++i)
             dim_eval_points_[i].clear();
     }
+
+    /// Return maximal size of quadrature of given dimension of bulk integral (Bulk, Coupling /lower-dim/)
+    uint get_max_bulk_quad_size(unsigned int dim) const;
+
+    /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
+    uint get_max_side_quad_size(unsigned int dim) const;
 
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
@@ -174,21 +184,27 @@ private:
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
+
+        friend class EvalPoints;
     };
 
     inline void set_max_size() {
         max_size_ = std::max( std::max( size(0), size(1) ), std::max( size(2), size(3) ) );
     }
 
+    /// Common implementation of get_max_bulk_quad_size and get_max_side_quad_size
+    template<class Integral>
+    uint get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
+
 
     /// Sub objects of dimensions 0,1,2,3
     std::array<DimEvalPoints, 4> dim_eval_points_;
 
-    /// BulkIntegral objects of dimension 0,1,2,3
-    std::array< std::shared_ptr<BulkIntegral>, 4> bulk_integrals_;
+    /// Maps of all BulkIntegrals of dimensions 0,1,2,3
+    IntegralPtrMap<internal_integrals::Bulk> bulk_integrals_;
 
-    /// EdgeIntegral objects of dimension 1,2,3
-    std::array< std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;
+    /// Maps of all EdgeIntegrals of dimensions 1,2,3
+    IntegralPtrMap<internal_integrals::Edge> edge_integrals_;
 
     /// Maximal number of used EvalPoints.
     unsigned int max_size_;

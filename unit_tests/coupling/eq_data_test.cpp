@@ -40,8 +40,8 @@
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "fields/field_constant.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/eval_points.hh"
 #include "coupling/equation.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -171,10 +171,10 @@ public:
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
             Quadrature *q_bdr = new QGauss(2, 0);
-            mass_eval[0] = eval_points_->add_bulk<1>(*q_bulk_1d );
-            mass_eval[1] = eval_points_->add_bulk<2>(*q_bulk_2d );
-            mass_eval[2] = eval_points_->add_bulk<3>(*q_bulk_3d );
-            bdr_eval = eval_points_->add_boundary<3>(*q_bdr );
+            mass_eval[0] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_1d, 1);
+            mass_eval[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_2d, 2);
+            mass_eval[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_3d, 3);
+            bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
             this->init(eval_points_);
         }
 

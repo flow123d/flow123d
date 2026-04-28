@@ -226,7 +226,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     eq_fields_ = std::make_shared<EqFields>();
-    eq_data_ = std::make_shared<EqData>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
@@ -268,8 +268,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get());
-    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get());
+    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
+    residual_assembly_ = new GenericAssembly<ResidualAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
 
     Input::Array user_fields_arr;
     if (input_record_.opt_val("user_fields", user_fields_arr)) {

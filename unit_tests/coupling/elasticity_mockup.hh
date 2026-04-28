@@ -6,9 +6,9 @@
 #include "arma_expect.hh"
 #include <rev_num.h>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
@@ -32,14 +32,10 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "mechanics/elasticity.hh"
+#include "elasticity_mockup_assembly.hh"
 
 class GenericAssemblyBase;
-template<unsigned int dim> class Stiffness_FullAssembly;
-template<unsigned int dim> class Stiffness_ComputeLocal;
-template<unsigned int dim> class Stiffness_EvalFields;
-template<unsigned int dim> class Rhs_FullAssembly;
-template<unsigned int dim> class Rhs_ComputeLocal;
-template<unsigned int dim> class Rhs_EvalFields;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -72,39 +68,6 @@ struct fn_dirichlet_penalty {
 };
 
 
-
-/// Test class
-class ElasticityMockupTest : public testing::Test {
-public:
-	ElasticityMockupTest()
-    {
-		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
-		string build = string(__DATE__) + ", " + string(__TIME__)
-	            + " flags: (unknown compiler flags)";
-
-        FilePath::set_io_dirs(".",root_dir,"",".");
-        Profiler::instance();
-        Profiler::instance()->set_program_info("Flow123d",
-                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false);
-    }
-
-    ~ElasticityMockupTest() {}
-
-    /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
-
-    /// Perform profiler output.
-    void profiler_output(std::string file_name) {
-		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
-		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
-	}
-};
 
 namespace equation_data {
 
@@ -326,6 +289,11 @@ public:
         }
     }
 
+    arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+    {
+        return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+    }
+
     // Definition of Fields
     BCField<3, FieldValue<3>::Enum > bc_type;
     BCField<3, FieldValue<3>::VectorFixed> bc_displacement;
@@ -374,11 +342,18 @@ public:
 
 class EqData {
 public:
-    EqData()
-    : ls(nullptr) {}
+    typedef equation_data::EqFields EqFields;
+
+    EqData(std::shared_ptr<EqFields> eq_fields)
+    : eq_fields_(eq_fields), ls(nullptr) {}
 
     ~EqData() {
         if (ls!=nullptr) delete ls;
+    }
+
+    /// Returns quad_order
+    inline unsigned int quad_order() const {
+        return 1;
     }
 
     /// Create DOF handler objects
@@ -392,6 +367,8 @@ public:
         dh_->distribute_dofs(ds);
     }
 
+    std::shared_ptr<EqFields> eq_fields_;
+
     /// Object for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
@@ -401,6 +378,45 @@ public:
 };
 
 } // end of namespace equation_data
+
+
+/// Test class
+class ElasticityMockupTest : public testing::Test {
+public:
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqData>;
+    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqData>;
+
+	ElasticityMockupTest()
+    {
+		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+		string build = string(__DATE__) + ", " + string(__TIME__)
+	            + " flags: (unknown compiler flags)";
+
+        FilePath::set_io_dirs(".",root_dir,"",".");
+        Profiler::instance();
+        Profiler::instance()->set_program_info("Flow123d",
+                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
+        Profiler::set_memory_monitoring(false);
+    }
+
+    ~ElasticityMockupTest() {}
+
+    /// Run assembly algorithms with different type of assembly and type of field
+    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
+
+    /// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+};
 
 
 /*******************************************************************************
@@ -429,10 +445,11 @@ public:
 
 
     /// Constructor
-    ElasticityMockup()
+    ElasticityMockup(bool use_linsys)
+    : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 
@@ -486,6 +503,7 @@ public:
 
     GenericAssemblyBase * stiffness_assembly_;
     GenericAssemblyBase * rhs_assembly_;
+    bool use_linsys_;
 };
 
 

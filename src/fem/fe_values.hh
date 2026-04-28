@@ -66,18 +66,18 @@ template<unsigned int spacedim = 3>
 class FEValues
 {
 private:
-  
+
     // internal structure that stores all possible views
     // for scalar and vector-valued components of the FE
     struct ViewsCache {
         vector<FEValuesViews::Scalar<spacedim> > scalars;
         vector<FEValuesViews::Vector<spacedim> > vectors;
         vector<FEValuesViews::Tensor<spacedim> > tensors;
-    
+
         template<unsigned int DIM>
         void initialize(const FEValues &fv, const FiniteElement<DIM> &fe);
     };
-  
+
 public:
 
     /// Default constructor with postponed initialization.
@@ -111,7 +111,7 @@ public:
     void allocate(unsigned int n_points,
                   FiniteElement<DIM> &_fe,
                   UpdateFlags flags);
-    
+
     /**
 	 * @brief Initialize structures and calculates cell-independent data.
 	 *
@@ -124,7 +124,7 @@ public:
     void initialize(Quadrature &_quadrature,
                     FiniteElement<DIM> &_fe,
                     UpdateFlags _flags);
-    
+
     /**
      * @brief Update cell-dependent data (gradients, Jacobians etc.)
      *
@@ -269,7 +269,7 @@ public:
       ASSERT_LT(i, views_cache_.scalars.size());
       return views_cache_.scalars[i];
     }
-    
+
     /**
      * @brief Accessor to vector values of multicomponent FE.
      * @param i Index of first vector component.
@@ -279,7 +279,7 @@ public:
       ASSERT_LT(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
     }
-    
+
     /**
      * @brief Accessor to tensor values of multicomponent FE.
      * @param i Index of first tensor component.
@@ -307,7 +307,7 @@ public:
     /// Return dimension of reference space.
     inline unsigned int dim() const
     { return dim_; }
-    
+
 
 protected:
 
@@ -315,15 +315,15 @@ protected:
     class FEInternalData
     {
     public:
-        
+
         FEInternalData(unsigned int np, unsigned int nd);
-        
+
         /// Create a new instance of FEInternalData for a FESystem component or subvector.
         FEInternalData(const FEInternalData &fe_system_data,
                        const std::vector<unsigned int> &dof_indices,
                        unsigned int first_component_idx,
                        unsigned int ncomponents = 1);
-        
+
         /**
          * @brief Precomputed values of basis functions at the quadrature points.
          *
@@ -341,10 +341,10 @@ protected:
          *             x ((dim_ of. ref. cell)x(no. of components in ref. cell))
          */
         std::vector<std::vector<arma::mat> > ref_shape_grads;
-        
+
         /// Number of quadrature points.
         unsigned int n_points;
-        
+
         /// Number of dofs (shape functions).
         unsigned int n_dofs;
     };
@@ -352,11 +352,11 @@ protected:
 
 
 
-    
+
     /// Precompute finite element data on reference element.
     template<unsigned int DIM>
     std::shared_ptr<FEInternalData> init_fe_data(const FiniteElement<DIM> &fe, const Quadrature &q);
-    
+
     /**
      * @brief Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure.
@@ -364,7 +364,7 @@ protected:
      * @param fe_data Precomputed finite element data.
      */
     void fill_data(const ElementValues<spacedim> &elm_values, const FEInternalData &fe_data);
-    
+
     /**
      * @brief Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure. Specialized variant of previous method for
@@ -394,7 +394,7 @@ protected:
 
     /// Numbers of components of FESystem sub-elements in real space.
     std::vector<unsigned int> fe_sys_n_space_components_;
-    
+
     /// Shape functions evaluated at the quadrature points.
     std::vector<std::vector<double> > shape_values;
 
@@ -407,13 +407,13 @@ protected:
 
     /// Auxiliary object for calculation of element-dependent data.
     std::shared_ptr<ElementValues<spacedim> > elm_values;
-    
+
     /// Vector of FEValues for sub-elements of FESystem.
     std::vector<FEValues<spacedim>> fe_values_vec;
-    
+
     /// Number of components of the FE.
     unsigned int n_components_;
-    
+
     /// Auxiliary storage of FEValuesViews accessors.
     ViewsCache views_cache_;
 

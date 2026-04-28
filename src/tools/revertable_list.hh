@@ -42,18 +42,49 @@
 template<class Type>
 struct RevertableList {
 public:
+    /// Default constructor, reserved size is increased by one
+    RevertableList()
+    : temporary_size_(0), permanent_size_(0), enlarged_by_(0)
+    {
+        data_.reserve(0);
+    }
+
     /// Constructor, create new instance with reserved size
-	RevertableList(std::size_t reserved_size, std::size_t enlarged_by = 0)
+    RevertableList(std::size_t reserved_size, std::size_t enlarged_by = 0)
     : temporary_size_(0), permanent_size_(0), enlarged_by_(enlarged_by)
     {
         data_.reserve(reserved_size);
     }
 
     /// Copy constructor
-	RevertableList(const RevertableList& other)
+    RevertableList(const RevertableList& other)
     : data_(other.data_), temporary_size_(other.temporary_size_), permanent_size_(other.permanent_size_), enlarged_by_(other.enlarged_by_)
     {
-		data_.reserve( other.data_.capacity() );
+        data_.reserve( other.data_.capacity() );
+    }
+
+    /// Assignment operator
+    inline RevertableList &operator=(const RevertableList &other) {
+    	data_ = other.data_;
+    	temporary_size_ = other.temporary_size_;
+    	permanent_size_ = other.permanent_size_;
+    	enlarged_by_ = other.enlarged_by_;
+    	data_.reserve( other.data_.capacity() );
+
+    	return *this;
+    }
+    /**
+     * Reinit list initialized by default constructor.
+     *
+     * Set new reserved size and new enlarged by value.
+     * Important: Method can be called only before first usage of RevertableList!
+     */
+    void reinit_default_list(std::size_t new_reserved_size, std::size_t new_enlarged_by)
+    {
+        ASSERT_PERMANENT_EQ(reserved_size(), 0).error("Incorrect usage of method. Method must be called before first usage of RevertableList!");
+
+        enlarged_by_ = new_enlarged_by;
+        data_.reserve(new_reserved_size);
     }
 
     /**
@@ -94,8 +125,7 @@ public:
      */
     inline std::size_t push_back(const Type &t)
     {
-        if (temporary_size_ == reserved_size()) { // enlarge reserved size
-        	ASSERT_PERMANENT((enlarged_by_ > 0)).error("Revertable list overflow!\n");
+        if ( (temporary_size_ == reserved_size()) && (enlarged_by_ > 0) ) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlarged_by_ );
         }
         data_.push_back(t);
@@ -113,9 +143,7 @@ public:
     template<class... Args>
     inline std::size_t emplace_back(Args&&... args)
     {
-        ASSERT((enlarged_by_ > 0) || (temporary_size_ < reserved_size()))
-            (enlarged_by_)(temporary_size_)(reserved_size()).error("Data array overflowed!\n");
-        if (temporary_size_ == reserved_size()) { // enlarge reserved size
+        if ( (temporary_size_ == reserved_size()) && (enlarged_by_ > 0) ) { // enlarge reserved size
         	this->resize( this->reserved_size() + enlarged_by_ );
         }
         data_.emplace_back( std::forward<Args>(args)... );
