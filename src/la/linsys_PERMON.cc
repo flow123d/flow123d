@@ -37,6 +37,7 @@ namespace it = Input::Type;
 
 namespace {
 
+// auxiliary function for converting IS from undecomposed to AIJ indexing
 PetscErrorCode convert_ineq_is_to_aij(Mat matrix_ineq_is, Mat *matrix_ineq_aij)
 {
     PetscFunctionBegin;
@@ -46,6 +47,7 @@ PetscErrorCode convert_ineq_is_to_aij(Mat matrix_ineq_is, Mat *matrix_ineq_aij)
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+// auxiliary function for converting IS from undecomposed to decomposed indexing
 PetscErrorCode convert_ineq_is_to_feti_decomposed(Mat matrix_ineq_is,
                                                   IS isnz,
                                                   Mat A_decomposed,

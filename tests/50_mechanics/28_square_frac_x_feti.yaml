@@ -44,16 +44,15 @@ problem: !Coupling_Sequential
             - stress
             - cross_section_updated
             - region_id
-            - subdomain
+#            - subdomain
         solver:
           a_tol: 1e-9
           r_tol: 1e-12
-#          options: -qps_ksp_monitor_true_residual -qps_view_convergence -qps_type pcpg # for dirichlet_by_eq
-#        contact: true
+          options: -qps_view_convergence -qps_max_it 10000 -qps_smalxe_rho 2400
+        contact: true
         feti: true
 #        view_matrices: true
         fix_nullspace: true
-#        dirichlet_by_eq: true
         input_fields:
           - region: rock
             young_modulus: 1e9
