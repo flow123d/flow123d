@@ -357,9 +357,7 @@ void HM_Iterative::update_potential()
 
     ref_potential_vec_.zero_entries();
     flow_potential_assembly_->assemble(dh);
-
-    ref_potential_vec_.assembly_begin();
-    ref_potential_vec_.assembly_end();
+    
     ref_potential_vec_.local_to_ghost_begin();
     ref_potential_vec_.local_to_ghost_end();
     eq_fields_->pressure_potential.set_time_result_changed();
