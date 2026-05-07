@@ -678,8 +678,6 @@ void FieldFE<spacedim, Value>::calculate_element_values()
     for (unsigned int i=0; i<data_vec_.size(); ++i) {
         if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
     }
-	data_vec_.assembly_begin();
-	data_vec_.assembly_end();
 }
 
 
