@@ -19,7 +19,7 @@
 #define FIELD_MESH_STEP_HH_
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
-#include "fields/field_value_cache.hh"                 // for FieldValueCache
+#include "fem/element_cache_map.hh"                 // for FieldValueCache
 #include "mesh/mesh.h"
 
 template <int spacedim> class ElementAccessor;

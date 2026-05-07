@@ -2,14 +2,15 @@
 #define ELASTICITY_MOCKUP_IMPL_HH_
 
 #include "elasticity_mockup.hh"
-#include "elasticity_mockup_assembly.hh"
+#include "linsys_null.hh"
+#include "mechanics/assembly_elasticity.hh"
 
 
 void ElasticityMockupTest::run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file) {
     // FullAssembly + field_const
     START_TIMER("FullAssembly_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_FullAssembly, Rhs_FullAssembly> test_full_asm_const;
+    ElasticityMockup<StiffnessAssemblyDim, RhsAssemblyDim> test_full_asm_const(true);
     test_full_asm_const.create_and_set_mesh(mesh_file);
     test_full_asm_const.initialize( eq_data_input );
     test_full_asm_const.eq_fields_->init_field_constants(0.5, 0.75, 1);
@@ -22,7 +23,7 @@ void ElasticityMockupTest::run_fullassembly_model(const string &eq_data_input, c
     // FullAssembly + field_model
     START_TIMER("FullAssembly_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_FullAssembly, Rhs_FullAssembly> test_full_asm_model;
+    ElasticityMockup<StiffnessAssemblyDim, RhsAssemblyDim> test_full_asm_model(true);
     test_full_asm_model.create_and_set_mesh(mesh_file);
     test_full_asm_model.initialize( eq_data_input );
     test_full_asm_model.eq_fields_->init_field_models();
@@ -32,10 +33,10 @@ void ElasticityMockupTest::run_fullassembly_model(const string &eq_data_input, c
 }
 
 void ElasticityMockupTest::run_computelocal_const(const string &eq_data_input, const std::string &mesh_file) {
-    // FullAssembly + field_const
+    // Compute loval matrix + field_const
     START_TIMER("ComputeLocal_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_ComputeLocal, Rhs_ComputeLocal> test_comp_local_const;
+    ElasticityMockup<StiffnessAssemblyDim, RhsAssemblyDim> test_comp_local_const(false);
     test_comp_local_const.create_and_set_mesh(mesh_file);
     test_comp_local_const.initialize( eq_data_input );
     test_comp_local_const.eq_fields_->init_field_constants(0.5, 0.75, 1);
@@ -45,10 +46,10 @@ void ElasticityMockupTest::run_computelocal_const(const string &eq_data_input, c
 }
 
 void ElasticityMockupTest::run_computelocal_model(const string &eq_data_input, const std::string &mesh_file) {
-    // FullAssembly + field_model
+    // Compute loval matrix + field_model
     START_TIMER("ComputeLocal_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_ComputeLocal, Rhs_ComputeLocal> test_comp_local_model;
+    ElasticityMockup<StiffnessAssemblyDim, RhsAssemblyDim> test_comp_local_model(false);
     test_comp_local_model.create_and_set_mesh(mesh_file);
     test_comp_local_model.initialize( eq_data_input );
     test_comp_local_model.eq_fields_->init_field_models();
@@ -58,10 +59,10 @@ void ElasticityMockupTest::run_computelocal_model(const string &eq_data_input, c
 }
 
 void ElasticityMockupTest::run_evalfields_const(const string &eq_data_input, const std::string &mesh_file) {
-    // FullAssembly + field_const
+    // Fields evaluation + field_const
     START_TIMER("EvalFields_const");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_EvalFields, Rhs_EvalFields> test_eval_fields_const;
+    ElasticityMockup<StiffnessEvalFieldsDim, RhsEvalFieldsDim> test_eval_fields_const(false);
     test_eval_fields_const.create_and_set_mesh(mesh_file);
     test_eval_fields_const.initialize( eq_data_input );
     test_eval_fields_const.eq_fields_->init_field_constants(0.5, 0.75, 1);
@@ -71,10 +72,10 @@ void ElasticityMockupTest::run_evalfields_const(const string &eq_data_input, con
 }
 
 void ElasticityMockupTest::run_evalfields_model(const string &eq_data_input, const std::string &mesh_file) {
-    // FullAssembly + field_model
+    // Fields evaluation + field_model
     START_TIMER("EvalFields_model");
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
-    ElasticityMockup<Stiffness_EvalFields, Rhs_EvalFields> test_eval_fields_model;
+    ElasticityMockup<StiffnessEvalFieldsDim, RhsEvalFieldsDim> test_eval_fields_model(false);
     test_eval_fields_model.create_and_set_mesh(mesh_file);
     test_eval_fields_model.initialize( eq_data_input );
     test_eval_fields_model.eq_fields_->init_field_models();
@@ -105,19 +106,20 @@ void ElasticityMockup<Stiffness, Rhs>::initialize(const string &input) {
     // set time marks for writing the output
     //eq_fields_->output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
-    // equation default PETSc solver options
-    std::string petsc_default_opts;
-    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
+    if (use_linsys_) {
+        // allocate matrix and vector structures
+        std::string petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
+        LinSys *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
+        ls->set_from_input( input_rec.val<Input::Record>("solver") );
+        ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
+        eq_data_->ls = ls;
+    } else { // use linSysEmpty
+        eq_data_->ls = new LinSysNull(eq_data_->dh_->distr().get());
+    }
 
-    // allocate matrix and vector structures
-    LinSys *ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
-    ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
-    ls->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
-    eq_data_->ls = ls;
-
-    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_fields_.get(), eq_data_.get());
-    rhs_assembly_ = new GenericAssembly< Rhs >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< Stiffness >(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly_ = new GenericAssembly< Rhs >(eq_data_.get(), eq_data_->dh_.get());
 }
 
 template<template<IntDim...> class Stiffness, template<IntDim...> class Rhs>
@@ -137,7 +139,7 @@ void ElasticityMockup<Stiffness, Rhs>::zero_time_step() {
     rhs_assembly_->assemble(eq_data_->dh_);
 
     eq_data_->ls->start_add_assembly();
-    MatSetOption(*eq_data_->ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    if (use_linsys_) MatSetOption(*eq_data_->ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     eq_data_->ls->mat_zero_entries();
     eq_data_->ls->rhs_zero_entries();
     stiffness_assembly_->assemble(eq_data_->dh_);

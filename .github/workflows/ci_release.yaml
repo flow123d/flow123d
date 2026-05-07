@@ -11,6 +11,7 @@ on:
         #- JB_py123d    
         - 3.9.1
         - DF_patch_fe_values
+        #- DF_profiler_memory_monitor
         #- SM_CI_GNU_Integration_tests
         - JS_constraints
 
@@ -272,14 +273,50 @@ jobs:
             pip install nbconvert jupyter papermill -r requirements.txt
             git_branch=`git rev-parse --abbrev-ref HEAD`
             build_dir=build-${git_branch}
-            papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
-            jupyter nbconvert --to html --execute ${{matrix.test.notebook}}_out.ipynb --output-dir public            
-        - name: GitHub Pages action
-          uses: peaceiris/actions-gh-pages@v4.0.0
+            papermill ${{matrix.test.notebook}}.ipynb ${{matrix.test.notebook}}_${{matrix.test.target}}_out.ipynb -p profiler_files "../../../${build_dir}/unit_tests/${{matrix.test.dir}}/${{matrix.test.target}}-1-bench_profiler_*.json"
+            jupyter nbconvert --to html --execute ${{matrix.test.notebook}}_${{matrix.test.target}}_out.ipynb --output-dir public            
+
+        - name: Upload benchmark site fragment
+          uses: actions/upload-artifact@v4
           with:
-              github_token: ${{ secrets.GITHUB_TOKEN }}
-              publish_dir: ./src/py123d/notebooks/public   
-              commit_message: "Benchmark ${{matrix.test.target}}, ${{steps.vars.outputs.dev_version}}"
+            name: bench_pages_${{matrix.test.target}}
+            path: src/py123d/notebooks/public/**
+            if-no-files-found: error
+
+    deploy_pages:
+        name: Deploy benchmark pages
+        needs: [benchmarks]
+        runs-on: ubuntu-latest
+        if: ${{ always() && needs.benchmarks.result != 'skipped' }}
+        permissions:
+          contents: read
+          pages: write
+          id-token: write
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
+        concurrency:
+          group: github-pages
+          cancel-in-progress: true
+        steps:
+        - name: Download benchmark site fragments
+          uses: actions/download-artifact@v4
+          with:
+            pattern: bench_pages_*
+            path: ./_site
+            merge-multiple: true
+
+        - name: Configure Pages
+          uses: actions/configure-pages@v5
+
+        - name: Upload Pages artifact
+          uses: actions/upload-pages-artifact@v3
+          with:
+            path: ./_site
+
+        - name: Deploy to GitHub Pages
+          id: deployment
+          uses: actions/deploy-pages@v4
 
     integration_tests:
         needs: [packages]

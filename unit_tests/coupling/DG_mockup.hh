@@ -6,9 +6,9 @@
 #include "arma_expect.hh"
 #include <rev_num.h>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
@@ -33,6 +33,9 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "transport/assembly_dg.hh"
+#include "DG_mockup_assembly.hh"
+#include "balance_null.hh"
 
 class GenericAssemblyBase;
 template<unsigned int dim> class Mass_FullAssembly;
@@ -139,39 +142,6 @@ struct fn_conc_diff_coef {
 
         return K;
     }
-};
-
-
-class DGMockupTest : public testing::Test {
-public:
-	DGMockupTest()
-    {
-		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
-		string build = string(__DATE__) + ", " + string(__TIME__)
-	            + " flags: (unknown compiler flags)";
-
-        FilePath::set_io_dirs(".",root_dir,"",".");
-        Profiler::instance();
-        Profiler::instance()->set_program_info("Flow123d",
-                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false);
-    }
-
-    ~DGMockupTest() {}
-
-    /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
-
-	/// Perform profiler output.
-    void profiler_output(std::string file_name) {
-		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
-		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
-	}
 };
 
 
@@ -523,10 +493,16 @@ public:
 
 class EqData {
 public:
-    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+    typedef equation_data::EqFields EqFields;
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-    EqData() {}
+    EqData(std::shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
 
+	inline unsigned int quad_order() const {
+	    return dg_order;
+	}
+
+	std::shared_ptr<EqFields> eq_fields_;
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
     unsigned int dg_order;                    ///< Polynomial order of finite elements.
@@ -545,6 +521,9 @@ public:
     FieldFEScalarVec conc_fe;
     std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 
+	vector<unsigned int> subst_idx_;   ///< List of indices used to call balance methods for a set of quantities.
+	std::shared_ptr<BalanceNull> balance_;
+
     inline unsigned int n_substances() const {
         return substances_.size();
     }
@@ -552,6 +531,10 @@ public:
     inline const std::vector<std::string> &subst_names() const {
         return substances_;
     }
+
+    /// Returns reference to the vector of substance indices.
+    const vector<unsigned int> &subst_idx()
+	{ return subst_idx_; }
 
     double elem_anisotropy(ElementAccessor<3> e) const
     {
@@ -602,8 +585,50 @@ public:
 
 } // end of namespace equation_data
 
+
+/// Test class
+class DGMockupTest : public testing::Test {
+public:
+    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqData>;
+    template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+    template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqData>;
+
+	DGMockupTest()
+    {
+		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+		string build = string(__DATE__) + ", " + string(__TIME__)
+	            + " flags: (unknown compiler flags)";
+
+        FilePath::set_io_dirs(".",root_dir,"",".");
+        Profiler::instance();
+        Profiler::instance()->set_program_info("Flow123d",
+                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
+        Profiler::set_memory_monitoring(false);
+    }
+
+    ~DGMockupTest() {}
+
+    /// Run assembly algorithms with different type of assembly and type of field
+    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+};
+
+
 /*******************************************************************************
- * Test class
+ * Equivalent to TransportDG class
  */
 template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
 class DGMockup : public EquationBase {
@@ -640,10 +665,11 @@ public:
 		symmetric = 1        // Symmetric weighted interior penalty DG
 	};
 
-	DGMockup()
+    DGMockup(bool use_linsys)
+    : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
 
         // DG data parameters
@@ -740,6 +766,7 @@ public:
     GenericAssemblyBase * mass_assembly_;
     GenericAssemblyBase * stiffness_assembly_;
     GenericAssemblyBase * sources_assembly_;
+    bool use_linsys_;
 };
 
 

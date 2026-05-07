@@ -134,7 +134,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
     prepare_output(main_mh_in_rec);
 
     flow_eq_fields_ = darcy_flow->eq_fields_;
-    raw_eq_data_ = std::make_shared<RawOutputEqData>();
+    raw_eq_data_ = std::make_shared<RawOutputEqData>(flow_eq_fields_);
     raw_eq_data_->flow_data_ = darcy_flow->eq_data_;
     raw_eq_data_->time_ = &darcy_flow->time();
     ASSERT_PTR(raw_eq_data_->flow_data_);
@@ -165,7 +165,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                         raw_output_file_path.open_stream(raw_eq_data_->raw_output_file);
                     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
 
-                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssembly >(flow_eq_fields_.get(), raw_eq_data_.get());
+                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssemblyDim >(raw_eq_data_.get());
                 }
             }
         }
@@ -205,7 +205,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record main_mh_in_rec)
 
 void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
-    diff_eq_data_ = std::make_shared<DiffEqData>();
+    diff_eq_data_ = std::make_shared<DiffEqData>(flow_eq_fields_);
     diff_eq_data_->flow_data_ = darcy_flow->eq_data_;
 
     { // init DOF handlers represents element DOFs
@@ -235,7 +235,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     if (compute_errors_) {
         set_specific_output_python_fields();
-        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssembly >(flow_eq_fields_.get(), diff_eq_data_.get());
+        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssemblyDim >(diff_eq_data_.get(), diff_eq_data_->flow_data_->dh_.get());
     }
 }
 

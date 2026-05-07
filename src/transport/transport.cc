@@ -52,7 +52,6 @@
 #include "reaction/isotherm.hh" // SorptionType enum
 
 #include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
 #include "quadrature/quadrature_lib.hh"
 
 
@@ -126,8 +125,8 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
   input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
-    eq_data_ = make_shared<EqData>();
     eq_fields_ = make_shared<EqFields>();
+    eq_data_ = make_shared<EqData>(eq_fields_);
 	this->eq_fieldset_ = eq_fields_;
 
 	eq_data_->transport_matrix_time = -1.0; // or -infty
@@ -188,10 +187,10 @@ void ConvectionTransport::initialize()
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
 
-    mass_assembly_ = new GenericAssembly< MassAssemblyConvection >(eq_fields_.get(), eq_data_.get());
-    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvection >(eq_fields_.get(), eq_data_.get());
-    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvection >(eq_fields_.get(), eq_data_.get());
-    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvection >(eq_fields_.get(), eq_data_.get());
+    mass_assembly_ = new GenericAssembly< MassAssemblyConvectionDim >(eq_data_.get());
+    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvectionDim >(eq_data_.get());
+    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
+    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
     matrix_mpi_assembly_->set_min_edge_sides(1);
 }
 
