@@ -154,6 +154,14 @@ public:
     /// Both vector must have the same communicator and distribution.
     void copy_from(const VectorMPI &other);
 
+
+    /// assembly_{begin,end} performs global assembly
+    void assembly_begin()
+    {   VecAssemblyBegin(data_petsc_);}
+
+    /// assembly_{begin,end} performs global assembly
+    void assembly_end()
+    {   VecAssemblyEnd(data_petsc_);}
     
     /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
     void local_to_ghost_begin()
