@@ -222,7 +222,7 @@ public:
         // because it passes element_patch_idx as argument that is not known during patch construction.
         for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
                   i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
-            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx(), bulk_domain);
         }
     }
 
@@ -238,7 +238,7 @@ public:
                     ++ppv_edge.n_mesh_items_;
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
                     for (auto p : edge_integral->points(edge_side, &element_cache_map_) ) {
-                        element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                        element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx(), side_domain);
                     }
                 }
             }
@@ -257,11 +257,11 @@ public:
             unsigned int reg_idx_low = cell.elm().region_idx().idx();
             unsigned int reg_idx_high = neighb_side.element().region_idx().idx();
             for (auto p : coupling_integral->points(neighb_side, &element_cache_map_) ) {
-                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx());
+                element_cache_map_.add_eval_point(reg_idx_high, neighb_side.elem_idx(), p.eval_point_idx(), neighb_side.cell().local_idx(), side_domain);
 
                 if (add_low) {
                     auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                    element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx(), bulk_domain);
                 }
             }
             add_low = false;
@@ -441,7 +441,7 @@ public:
     : PatchFETestBase(dh),
       multidim_asm_(this, quad_order, 0)
     {
-        element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
     }
 
     ~PatchFETestScalar() {}
@@ -678,7 +678,7 @@ public:
     : PatchFETestBase(dh),
       multidim_asm_(this, quad_order, 0)
     {
-		element_cache_map_.init(eval_points_);
+		element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
     }
 
     ~PatchFETestVector() {}
@@ -850,7 +850,7 @@ public:
     : PatchFETestBase(dh_1),
       multidim_asm_(this, quad_order_1, quad_order_2)
     {
-        element_cache_map_.init(eval_points_);
+        element_cache_map_.init(eval_points_, dh_->mesh()->region_db());
 
         ref_bulk_jxw_low_order_ = { 3.46410, 2.82843, 2.82843, 1.33333, 1.33333 };
         ref_bulk_jxw_high_order_ = {

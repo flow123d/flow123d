@@ -94,7 +94,7 @@ public:
     : GenericAssemblyBase(),
 	  multidim_assembly_(eq_data, &this->asm_internals_)
     {
-        initialize();
+        initialize(eq_data);
     }
 
     /**
@@ -109,7 +109,7 @@ public:
     : GenericAssemblyBase(dh->ds()->fe()),
       multidim_assembly_(eq_data, &this->asm_internals_)
     {
-        initialize();
+        initialize(eq_data);
     }
 
     /// Getter to set of assembly objects
@@ -195,8 +195,8 @@ public:
 
 private:
     /// Common part of GenericAssemblz constructors.
-    void initialize() {
-        asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
+    void initialize(typename DimAssembly<1>::EqData *eq_data) {
+        asm_internals_.element_cache_map_.init(asm_internals_.eval_points_, eq_data->mesh()->region_db());
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();

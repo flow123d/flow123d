@@ -115,12 +115,12 @@ public:
     };
 
 
-    class EqData {
+    class EqData : public EquationBase::EqDataBase {
     public:
    	    typedef ConvectionTransport::EqFields EqFields;
 
         EqData(std::shared_ptr<EqFields> eq_fields)
-   	    : eq_fields_(eq_fields), is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
+   	    : EquationBase::EqDataBase(eq_fields), eq_fields_(eq_fields), is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
         virtual ~EqData() {};
 
         /// Returns number of transported substances.
@@ -136,6 +136,11 @@ public:
 		    this->cfl_flow_.resize(lsize);
 		    this->cfl_source_.resize(lsize);
 		}
+
+	    /// Returns pointer to mesh.
+	    inline const Mesh *mesh() const {
+	        return eq_fields_->mesh();
+	    }
 
         /// Shared pointer of EqFields
         std::shared_ptr<EqFields> eq_fields_;

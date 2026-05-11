@@ -301,7 +301,7 @@ protected:
             // because it passes element_patch_idx as argument that is not known during patch construction.
             for (uint i=uint( asm_internals_->eval_points_->subset_begin(dim, subset_idx) );
                       i<uint( asm_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
-                asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+                asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx(), bulk_domain);
             }
         }
     }
@@ -339,12 +339,12 @@ protected:
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
             ++ppv.n_mesh_items_;
             for (auto p : integral->points(bdr_side) ) {
-                asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+                asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx(), side_domain);
 
             	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
             	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
             	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
-            	asm_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+            	asm_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1, bulk_domain);
             }
         }
     }
@@ -370,7 +370,7 @@ protected:
                     ++ppv_low.n_mesh_items_;
                     for (auto p : coupling_integral->points(ngh_side) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                        asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                        asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx(), bulk_domain);
                     }
                     break;
                 }
@@ -394,7 +394,7 @@ protected:
         ++ppv.n_mesh_items_;
         unsigned int reg_idx = cell_side.element().region_idx().idx();
         for (auto p : integral->points(cell_side) ) {
-            asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+            asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx(), side_domain);
         }
     }
 

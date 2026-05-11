@@ -100,6 +100,11 @@ public:
 
         DiffEqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
 
+        /// Returns pointer to mesh.
+        inline const Mesh *mesh() const {
+            return eq_fields_->mesh();
+        }
+
 		/// Shared pointer of EqFields
 		std::shared_ptr<EqFields> eq_fields_;
 
@@ -123,6 +128,11 @@ public:
         typedef typename DarcyLMH::EqFields EqFields;
 
         RawOutputEqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
+
+        /// Returns pointer to mesh.
+        inline const Mesh *mesh() const {
+            return eq_fields_->mesh();
+        }
 
 		/// Shared pointer of EqFields
 		std::shared_ptr<EqFields> eq_fields_;

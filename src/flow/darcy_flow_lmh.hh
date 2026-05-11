@@ -207,7 +207,7 @@ public:
         Field<3, FieldValue<3>::Scalar> ref_divergence;
     };
 
-    class EqData {
+    class EqData : public EquationBase::EqDataBase {
     public:
    	    typedef DarcyLMH::EqFields EqFields;
 
@@ -227,7 +227,6 @@ public:
         arma::vec3 gravity_vec_;
 
         // Mirroring the following members of DarcyLMH:
-        Mesh *mesh;
         std::shared_ptr<DOFHandlerMultiDim> dh_;         ///< full DOF handler represents DOFs of sides, elements and edges
         std::shared_ptr<SubDOFHandlerMultiDim> dh_cr_;   ///< DOF handler represents DOFs of edges
         std::shared_ptr<DOFHandlerMultiDim> dh_cr_disc_; ///< DOF handler represents DOFs of sides

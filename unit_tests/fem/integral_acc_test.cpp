@@ -91,7 +91,7 @@ TEST(IntegralTest, integrals_3d) {
     Mesh * mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     DHCellAccessor dh_cell(dh.get(), 3);
-    element_cache_map.init(eval_points);
+    element_cache_map.init(eval_points, dh->mesh()->region_db());
 
 
     {

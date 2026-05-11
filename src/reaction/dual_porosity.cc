@@ -109,7 +109,9 @@ DualPorosity::EqFields::EqFields()
 }
 
 DualPorosity::EqData::EqData(std::shared_ptr<EqFields> eq_fields)
-: ReactionTerm::EqData(), eq_fields_(eq_fields) {}
+: ReactionTerm::EqData(), eq_fields_(eq_fields) {
+    this->mesh_ = eq_fields_->mesh();
+}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec),

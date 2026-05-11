@@ -175,14 +175,17 @@ public:
             mass_eval[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_2d, 2);
             mass_eval[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_3d, 3);
             bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
-            this->init(eval_points_);
+        }
+
+        EqData(const Mesh * mesh) : SomeEquation::EqData() {
+            this->init(eval_points_, mesh->region_db());
         }
 
         void register_eval_points(bool bdr=false) {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
             unsigned int dim = computed_dh_cell_.dim();
             for (auto p : mass_eval[dim-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+                this->add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx(), bulk_domain);
             }
 
             if (bdr)
@@ -236,10 +239,10 @@ protected:
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
-        data_ = std::make_shared<EqData>();
+        mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
+        data_ = std::make_shared<EqData>(mesh);
         data_->add_coords_field();
         data_->set_default_fieldset();
-        mesh = mesh_full_constructor("{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }");
         dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
         component_names = { "comp_0", "comp_1", "comp_2" };
     }
@@ -312,7 +315,7 @@ IT::Record & SomeEquation::get_input_type() {
 	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
 	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )
-	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") )
+	                .copy_keys( SomeEquation::EqData().make_field_descriptor_type("SomeEquation") ) // TODO error on this line - missing constructor
 	                .declare_key("bc_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 	                .declare_key("init_piezo_head", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
 					.close()
