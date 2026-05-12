@@ -978,7 +978,9 @@ public:
     BoundaryIntegralAcc() : BoundaryIntegral() {}
 
     BoundaryIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-    : BoundaryIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
+    : BoundaryIntegral(eval_points, quad, qdim),
+      factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad),
+	  factory_low_(pfev, element_cache_map, pfev->fe_dim<qdim-1>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
         pfev->set_used_domain(side_domain);
@@ -1035,6 +1037,12 @@ public:
         return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
     }
 
+    /// Same as BulkValues::scalar_shape but register at quadrature points of boundary element (dim-1).
+    inline FeQArray<Scalar> scalar_shape_bdr(uint component_idx = 0)
+    {
+        return factory_low_.template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+    }
+
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
@@ -1083,6 +1091,9 @@ public:
 private:
     /// Defines interface of operation accessors declaration
     internal::IntegralFactory<qdim> factory_;
+
+    /// Defines interface of operation accessors declaration
+    internal::IntegralFactory<qdim-1> factory_low_;
 
     friend class BoundaryPoint;
 };
