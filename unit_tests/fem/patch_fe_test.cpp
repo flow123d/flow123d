@@ -47,6 +47,7 @@ public:
           bulk_integral_diff_order_( create_bulk_integral(quad_diff_order_) ),
   	      edge_integral_( create_edge_integral(quad_low_) ),
   	      coupling_integral_( create_coupling_integral(quad_) ),
+  	      boundary_integral_( create_boundary_integral(quad_low_) ),
 	      det_( bulk_integral_->determinant() ),
 	      jxw_( bulk_integral_->JxW() ),
 	      jxw_side_( edge_integral_->JxW() ),
@@ -94,6 +95,16 @@ public:
             return result.first->second;
         }
 
+        std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(Quadrature *quad) {
+            ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+            auto result = integrals_.boundary_.insert({
+                    tpl,
+                    std::make_shared<BoundaryIntegralAcc<dim>>(generic_->eval_points_, quad, &generic_->patch_fe_values_, &generic_->element_cache_map_)
+                });
+            return result.first->second;
+        }
+
         /** Declaration of data members **/
         PatchFETestBase *generic_;                                        ///< pointer to generic object
         Quadrature *quad_;                                                ///< Quadrature (of dim)
@@ -105,6 +116,7 @@ public:
         std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_diff_order_;  ///< BulkIntegralof high order
         std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral_;             ///< EdgeIntegral
         std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_;     ///< CouplingIntegral between dim and dim+1 elements
+        std::shared_ptr<BoundaryIntegralAcc<dim>> boundary_integral_;     ///< BoundaryIntegral between dim-1 and dim elements
         ElQ<Scalar> det_;
         FeQ<Scalar> jxw_;
         FeQ<Scalar> jxw_side_;
@@ -245,6 +257,31 @@ public:
         }
     }
 
+    void add_boundary_integral(DHCellAccessor cell, std::shared_ptr<BoundaryIntegral> bdr_integral) {
+        if (!cell.is_own()) return; // ghost element
+
+        uint dim = cell.dim();
+        auto &ppv_side = patch_fe_values_.ppv(side_domain, dim);
+        auto &ppv_bdr = patch_fe_values_.ppv(bulk_domain, dim-1);
+        for( DHCellSide bdr_side : cell.side_range() ) {
+            if ( (bdr_side.side().edge().n_sides() == 1) && (bdr_side.side().is_boundary()) ) { // tests if side is really boundary
+                bdr_integral->patch_data().emplace_back(bdr_side);
+
+                unsigned int reg_idx = bdr_side.element().region_idx().idx();
+                ++ppv_side.n_mesh_items_;
+                ++ppv_bdr.n_mesh_items_;
+                for (auto p : bdr_integral->points(bdr_side, &element_cache_map_) ) {
+                    element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+
+                    BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
+                    unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
+                    // invalid local_idx value, DHCellAccessor of boundary element doesn't exist
+                    element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                }
+            }
+        }
+    }
+
     void add_coupling_integral(DHCellAccessor cell, std::shared_ptr<CouplingIntegral> coupling_integral) {
         bool add_low = true;
         uint dim = cell.dim();
@@ -298,6 +335,7 @@ public:
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;             ///< Edge integrals of dim 1,2,3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;     ///< Coupling integrals of dim 1-2,2-3
+    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_integrals_;     ///< Coupling integrals of dim 1-2,2-3
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_diff_order_;  ///< Bulk integrals of dim 1,2,3 of high order
 
     std::vector<unsigned int> used_element_idx_;                              ///< List of mesh idx of elements used in tests
@@ -346,6 +384,8 @@ public:
           //generic_inst_(generic),
 	      scalar_shape_( this->bulk_integral_->scalar_shape() ),
 	      scalar_shape_side_( this->edge_integral_->scalar_shape() ),
+		  scalar_shape_bdr_( this->boundary_integral_->scalar_shape_bdr() ),
+		  scalar_shape_bdr_side_( this->boundary_integral_->scalar_shape() ),
 	      grad_scalar_shape_( this->bulk_integral_->grad_scalar_shape() ),
 	      grad_scalar_shape_side_( this->edge_integral_->grad_scalar_shape() ),
 	      conc_join_shape_( FeQJoin<Scalar>( this->coupling_integral_->scalar_join_shape() ) )
@@ -431,6 +471,8 @@ public:
         //PatchFETestScalar *generic_inst_;                                    ///< pointer to generic object
         FeQArray<Scalar> scalar_shape_;
         FeQArray<Scalar> scalar_shape_side_;
+        FeQArray<Scalar> scalar_shape_bdr_;          ///< Evaluates bulk points on boundary element
+        FeQArray<Scalar> scalar_shape_bdr_side_;     ///< Evaluates side points on bulk element
         FeQArray<Vector> grad_scalar_shape_;
         FeQArray<Vector> grad_scalar_shape_side_;
         FeQJoin<Scalar> conc_join_shape_;
@@ -455,6 +497,9 @@ public:
         this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
         this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
         this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
@@ -466,10 +511,10 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.clean_elements_map();
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_, this->eval_points_);
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
 
         START_TIMER("reinit_patch");
         patch_fe_values_.reinit_patch();
@@ -484,6 +529,7 @@ public:
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
         	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
             this->add_coupling_integral(dh_cell, this->coupling_integrals_[dh_cell.dim()-1]);
+            this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
         	this->patch_fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
@@ -692,6 +738,9 @@ public:
         this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
         this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
         this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
@@ -703,10 +752,10 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.clean_elements_map();
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_, this->eval_points_);
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
 
         START_TIMER("reinit_patch");
         patch_fe_values_.reinit_patch();
@@ -899,6 +948,9 @@ public:
         this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
         this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
         this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
         this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
@@ -910,10 +962,10 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.clean_elements_map();
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_, this->eval_points_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_, this->eval_points_);
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
 
         START_TIMER("reinit_patch");
         patch_fe_values_.reinit_patch();

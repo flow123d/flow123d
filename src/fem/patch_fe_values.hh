@@ -140,16 +140,18 @@ public:
     /** Following methods are used during update of patch. **/
 
     /// Clear elements_map, set values to (-1)
-    inline void clean_elements_map() {
+    inline void prepare_new_patch(std::shared_ptr<EvalPoints> eval_points) {
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
+        if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][0].resize_tables(eval_points->get_max_bulk_quad_size(0), *patch_fe_data_.patch_arena_);
+        for (uint dim=1; dim<=3; ++dim) {
+            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
+            if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
+        }
     }
 
     /// Add elements, sides and quadrature points registered on patch
     template <unsigned int dim>
-    inline void add_patch_points(const DimIntegrals<dim> &integrals, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
-        if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
-        if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
-
+    inline void add_patch_points(const DimIntegrals<dim> &integrals, ElementCacheMap *element_cache_map) {
         // add bulk points
         for (auto integral_it : integrals.bulk_) {
             auto &patch_data = integral_it.second->patch_data();

@@ -259,10 +259,10 @@ private:
 
     /// Reinit PatchFeValues object during construction of patch
     void patch_reinit() {
-        asm_internals_.fe_values_.clean_elements_map();
-        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
-        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
+        asm_internals_.fe_values_.prepare_new_patch(asm_internals_.eval_points_);
+        asm_internals_.fe_values_.add_patch_points<3>(multidim_assembly_[3_d]->integrals(), &asm_internals_.element_cache_map_);
+        asm_internals_.fe_values_.add_patch_points<2>(multidim_assembly_[2_d]->integrals(), &asm_internals_.element_cache_map_);
+        asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_);
 
         asm_internals_.fe_values_.reinit_patch();
     }
