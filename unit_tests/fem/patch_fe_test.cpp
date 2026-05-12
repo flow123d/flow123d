@@ -305,14 +305,6 @@ public:
         }
     }
 
-    void resize_tables() {
-        for (uint i=1; i<=3; ++i) {
-            patch_fe_values_.ppv(bulk_domain, i).resize_tables(eval_points_->get_max_bulk_quad_size(i), patch_fe_values_.patch_arena());
-            patch_fe_values_.ppv(side_domain, i).resize_tables(eval_points_->get_max_side_quad_size(i), patch_fe_values_.patch_arena());
-        }
-        patch_fe_values_.clean_elements_map();
-    }
-
     virtual void update_patch() =0;
 
 	/// Perform profiler output.
