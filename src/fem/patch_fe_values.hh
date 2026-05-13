@@ -157,10 +157,10 @@ public:
             auto &patch_data = integral_it.second->patch_data();
             for (uint i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
                 uint element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
-                uint elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
+                uint elm_pos = this->register_element(patch_data[i_data].cell.elm(), element_patch_idx);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(element_patch_idx) ) {
-                    this->register_bulk_point(patch_data[i_data].cell, elm_pos, p.value_cache_idx(), i_point++);
+                    this->register_bulk_point(patch_data[i_data].cell.elm(), elm_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -169,10 +169,15 @@ public:
         for (auto integral_it : integrals.boundary_) {
             auto &patch_data = integral_it.second->patch_data();
             for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+            	ElementAccessor<spacedim> bdr_elem = patch_data[i_data].side.cond().element_accessor();
+            	uint bdr_element_patch_idx = element_cache_map->position_in_cache(bdr_elem.idx(), true);
+            	uint elem_pos = this->register_element(bdr_elem, bdr_element_patch_idx);
             	uint side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(patch_data[i_data].side) ) {
-                    this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point++);
+                    this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point);
+                    auto p_bdr = p.point_bdr( bdr_elem );
+                    this->register_bulk_point(bdr_elem, elem_pos, p_bdr.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -203,7 +208,7 @@ public:
                 side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
                     element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
-                    elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
+                    elm_pos = this->register_element(patch_data[i_data].cell.elm(), element_patch_idx);
                 }
 
                 uint i_bulk_point = 0, i_side_point = 0;
@@ -212,7 +217,7 @@ public:
                     this->register_side_point(patch_data[i_data].side, side_pos, p_high.value_cache_idx(), i_side_point++);
                     if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
                         auto p_low = p_high.lower_dim(patch_data[i_data].cell);
-                        this->register_bulk_point(patch_data[i_data].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                        this->register_bulk_point(patch_data[i_data].cell.elm(), elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                     }
                 }
                 last_element_idx = patch_data[i_data].cell.elm_idx();
@@ -221,10 +226,10 @@ public:
     }
 
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        uint elem_pos = register_element_internal(cell, element_patch_idx);
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()];
-        auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
+    uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
+        uint elem_pos = register_element_internal(elem, element_patch_idx);
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
+        auto map_it = ppv.n_elems_.insert( { (2*elem.idx() + uint(elem.region_idx().is_boundary()) ), ppv.i_mesh_item_} );
         bool is_elm_added = map_it.second;
         if (is_elm_added) {
             ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
@@ -237,7 +242,7 @@ public:
     uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
         uint dim = cell_side.dim();
         uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
-        uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
+        uint elm_pos = register_element_internal(cell_side.cell().elm(), element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim];
 
         ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
@@ -247,8 +252,8 @@ public:
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(DHCellAccessor cell, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
-        return patch_point_vals_[bulk_domain][cell.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, cell.elm_idx(), i_point_on_elem);
+    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
+        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem);
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side
@@ -364,15 +369,15 @@ public:
 
 private:
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element_internal(DHCellAccessor cell, uint element_patch_idx) {
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()];
+    uint register_element_internal(ElementAccessor<spacedim> elem, uint element_patch_idx) {
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
         if (elements_map_[element_patch_idx] != (uint)-1) {
     	    // Return index of element on patch if it is registered repeatedly
     	    return elements_map_[element_patch_idx];
     	}
 
         elements_map_[element_patch_idx] = ppv.elem_dim_list_->size();
-        ppv.elem_dim_list_->push_back( cell.elm() );
+        ppv.elem_dim_list_->push_back( elem );
         return ppv.elem_dim_list_->size() - 1;
     }
 
