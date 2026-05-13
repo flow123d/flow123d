@@ -17,6 +17,9 @@
  */
 
 #include <boost/lexical_cast.hpp>
+#include <algorithm>
+#include <cmath>
+#include <vector>
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
 #include "mechanics/assembly_elasticity.hh"
@@ -43,6 +46,90 @@
 
 
 using namespace Input::Type;
+
+namespace {
+
+struct ResidualSplit {
+    double norm = 0.0;
+    double free_norm = 0.0;
+    double support_norm = 0.0;
+    double free_max = 0.0;
+    double support_max = 0.0;
+    int free_nnz = 0;
+    int support_nnz = 0;
+    int free_count = 0;
+    int support_count = 0;
+};
+
+ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_data)
+{
+    Mat matrix = *eq_data->ls->get_matrix();
+    Vec rhs = *eq_data->ls->get_rhs();
+    const Vec &solution = eq_data->ls->get_solution();
+    MPI_Comm comm = PetscObjectComm((PetscObject)rhs);
+    Vec residual = NULL;
+    PetscInt global_size = 0, own_begin = 0, own_end = 0;
+    const PetscScalar *residual_array = NULL;
+
+    chkerr(VecGetSize(rhs, &global_size));
+    std::vector<int> local_support(global_size, 0), global_support(global_size, 0);
+    const auto &l2g = eq_data->dh_->get_local_to_global_map();
+    for (unsigned int local_dof : eq_data->dirichlet_dofs) {
+        ASSERT_LT(local_dof, static_cast<unsigned int>(l2g.size()))
+            .error("Dirichlet DOF index out of bounds of local-to-global map.\n");
+        ASSERT_LT(static_cast<unsigned int>(l2g[local_dof]), static_cast<unsigned int>(global_size))
+            .error("Dirichlet DOF index out of bounds of residual vector.\n");
+        local_support[l2g[local_dof]] = 1;
+    }
+    chkerr(MPI_Allreduce(local_support.data(), global_support.data(), global_size, MPI_INT, MPI_MAX, comm));
+
+    chkerr(VecDuplicate(rhs, &residual));
+    chkerr(MatMult(matrix, solution, residual));
+    chkerr(VecAXPY(residual, -1.0, rhs));
+    chkerr(VecGetOwnershipRange(residual, &own_begin, &own_end));
+    chkerr(VecGetArrayRead(residual, &residual_array));
+
+    double local_free_norm_sq = 0.0, local_support_norm_sq = 0.0;
+    double local_free_max = 0.0, local_support_max = 0.0;
+    int local_free_nnz = 0, local_support_nnz = 0;
+    int local_free_count = 0, local_support_count = 0;
+    for (PetscInt i=0; i<own_end-own_begin; i++) {
+        PetscInt global_idx = own_begin + i;
+        double val_abs = PetscAbsScalar(residual_array[i]);
+        if (global_support[global_idx]) {
+            local_support_norm_sq += val_abs * val_abs;
+            local_support_max = std::max(local_support_max, val_abs);
+            local_support_count++;
+            if (val_abs > 1e-12) local_support_nnz++;
+        } else {
+            local_free_norm_sq += val_abs * val_abs;
+            local_free_max = std::max(local_free_max, val_abs);
+            local_free_count++;
+            if (val_abs > 1e-12) local_free_nnz++;
+        }
+    }
+
+    chkerr(VecRestoreArrayRead(residual, &residual_array));
+    chkerr(VecDestroy(&residual));
+
+    double free_norm_sq = 0.0, support_norm_sq = 0.0;
+    ResidualSplit split;
+    chkerr(MPI_Allreduce(&local_free_norm_sq, &free_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_support_norm_sq, &support_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_free_max, &split.free_max, 1, MPI_DOUBLE, MPI_MAX, comm));
+    chkerr(MPI_Allreduce(&local_support_max, &split.support_max, 1, MPI_DOUBLE, MPI_MAX, comm));
+    chkerr(MPI_Allreduce(&local_free_nnz, &split.free_nnz, 1, MPI_INT, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_support_nnz, &split.support_nnz, 1, MPI_INT, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_free_count, &split.free_count, 1, MPI_INT, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_support_count, &split.support_count, 1, MPI_INT, MPI_SUM, comm));
+
+    split.free_norm = std::sqrt(free_norm_sq);
+    split.support_norm = std::sqrt(support_norm_sq);
+    split.norm = std::sqrt(free_norm_sq + support_norm_sq);
+    return split;
+}
+
+} // namespace
 
 
 
@@ -481,10 +568,8 @@ void Elasticity::initialize()
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
 
     eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
-    if (eq_data_->dirichlet_by_eq) {
-        // allocate matrix and vector for dirichlet constraints
-        dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
-    }
+    // Used for equality constraints and residual split over penalty Dirichlet rows.
+    dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
 
     eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
     view_matrices = input_rec.val<bool>("view_matrices");
@@ -580,10 +665,12 @@ void Elasticity::zero_time_step()
     eq_data_->ls->rhs_zero_entries();
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
-    eq_data_->ls->finish_assembly();
-    LinSys::SolveInfo si = eq_data_->ls->solve();
-    MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
+	eq_data_->ls->finish_assembly();
+	LinSys::SolveInfo si = eq_data_->ls->solve();
+    ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
+	MessageOut().fmt(
+            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}\n",
+            si.n_iterations, si.converged_reason, residual.norm, residual.free_norm, residual.support_norm);
     output_data();
     END_TIMER("Mechanics zero time step");
 }
@@ -594,14 +681,17 @@ void Elasticity::preallocate()
 {
     // preallocate system matrix
 	eq_data_->ls->start_allocation();
-    stiffness_assembly_->assemble(eq_data_->dh_);
-    rhs_assembly_->assemble(eq_data_->dh_);
+	stiffness_assembly_->assemble(eq_data_->dh_);
+	rhs_assembly_->assemble(eq_data_->dh_);
+
+    eq_data_->dirichlet_dofs.clear();
+    eq_data_->dirichlet_coefs.clear();
+    eq_data_->dirichlet_values.clear();
+    eq_data_->dirichlet_row_starts.clear();
+    eq_data_->dirichlet_row_starts.push_back(0);
+    dirichlet_assembly_->assemble(eq_data_->dh_);
 
     if (eq_data_->dirichlet_by_eq) {
-        eq_data_->dirichlet_row_starts.clear();
-        eq_data_->dirichlet_row_starts.push_back(0);
-        dirichlet_assembly_->assemble(eq_data_->dh_);
-
         // preallocate dirichlet constraint matrix and vector
         unsigned int n_rows = eq_data_->dirichlet_values.size();
         PetscErrorCode ierr;
@@ -689,8 +779,10 @@ void Elasticity::solve_linear_system()
 
     START_TIMER("solve");
     LinSys::SolveInfo si = eq_data_->ls->solve();
-    MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
-        		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
+    ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
+    MessageOut().fmt(
+            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}\n",
+            si.n_iterations, si.converged_reason, residual.norm, residual.free_norm, residual.support_norm);
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }
