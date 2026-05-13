@@ -197,7 +197,7 @@ struct fn_lame_lambda {
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
 	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e3 * (2 * lame_mu + lame_lambda);
+        return 1e0 * (2 * lame_mu + lame_lambda);
     }
 };
 
