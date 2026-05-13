@@ -20,6 +20,7 @@
 #include "la/linsys_PERMON.hh"
 #include <algorithm>
 #include <unordered_map>
+#include <vector>
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
@@ -473,7 +474,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         ISLocalToGlobalMapping l2g, mapping;
         const PetscInt *l2g_arr, *nz_arr;
         PetscInt *l2g_feti_arr;
-        PetscInt nmap, nrows, i, j, k;
+        PetscInt nmap, nrows, k;
         
         chkerr(MatISGetLocalMat(matrix_, &Aloc));
         chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
@@ -500,15 +501,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(ISLocalToGlobalMappingGetIndices(l2g, &l2g_arr));
         chkerr(ISLocalToGlobalMappingGetSize(l2g, &nmap));
         chkerr(PetscMalloc1(nrows, &l2g_feti_arr));
-        k = 0;
-        for (i=0; i<=nmap; i++) {
-            for (j=0; j<=nrows; j++) {
-                if (i == nz_arr[j]) {
-                    l2g_feti_arr[k] = l2g_arr[i];
-                    k++;
-                    break;
-                }
-            }
+        for (k=0; k<nrows; k++) {
+            ASSERT_LT(static_cast<unsigned int>(nz_arr[k]), static_cast<unsigned int>(nmap))
+                .error("Reduced FETI local row index out of bounds of local-to-global mapping.\n");
+            l2g_feti_arr[k] = l2g_arr[nz_arr[k]];
         }
         chkerr(ISRestoreIndices(isnz, &nz_arr));
         chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
@@ -523,8 +519,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         // set QP matrix
         chkerr(QPSetOperator(system, Afixed));
-        PetscInt size_fixed;
-        MatGetLocalSize(Afixed, &size_fixed, NULL);
         chkerr(MatDestroy(&Afixed));
 
         chkerr(QPTMatISToBlockDiag(system));
