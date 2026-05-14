@@ -878,14 +878,17 @@ void Elasticity::zero_time_step()
             "residual_free_interface: {}, residual_free_interior: {}, "
             "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
             "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}, "
-            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}\n"
+            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}, "
+            "lagrangian_residual: {}, lagrangian_residual_form: {}\n",
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
             residual.free_interface_norm, residual.free_interior_norm,
             residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
             residual.filtered_free_interface_norm, residual.filtered_free_interior_norm,
             residual.solution_interface_jump_norm, residual.solution_interface_jump_max,
-            residual.solution_interface_jump_nnz);
+            residual.solution_interface_jump_nnz,
+            eq_data_->ls->get_lagrangian_residual_norm(),
+            eq_data_->ls->get_lagrangian_residual_name());
     output_data();
     END_TIMER("Mechanics zero time step");
 }
@@ -1000,14 +1003,17 @@ void Elasticity::solve_linear_system()
             "residual_free_interface: {}, residual_free_interior: {}, "
             "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
             "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}, "
-            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}\n"
+            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}, "
+            "lagrangian_residual: {}, lagrangian_residual_form: {}\n",
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
             residual.free_interface_norm, residual.free_interior_norm,
             residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
             residual.filtered_free_interface_norm, residual.filtered_free_interior_norm,
             residual.solution_interface_jump_norm, residual.solution_interface_jump_max,
-            residual.solution_interface_jump_nnz);
+            residual.solution_interface_jump_nnz,
+            eq_data_->ls->get_lagrangian_residual_norm(),
+            eq_data_->ls->get_lagrangian_residual_name());
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }

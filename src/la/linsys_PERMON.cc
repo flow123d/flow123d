@@ -24,6 +24,7 @@
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "permonvec.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
 #include "fem/dofhandler.hh"
@@ -158,6 +159,7 @@ LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &pa
           params_(params),
           init_guess_nonzero(false),
           matrix_(NULL),
+          lagrangian_residual_norm_(-1.0),
           matrix_eq_(NULL),
           eq_(NULL),
           use_feti_(false)
@@ -183,7 +185,9 @@ LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &pa
 }
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
-	: LinSys(other), params_(other.params_), l2g_(other.l2g_), solution_precision_(other.solution_precision_)
+	: LinSys(other), params_(other.params_), l2g_(other.l2g_), solution_precision_(other.solution_precision_),
+      lagrangian_residual_norm_(other.lagrangian_residual_norm_),
+      lagrangian_residual_name_(other.lagrangian_residual_name_)
 {
     MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -456,6 +460,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     }
 
     
+    QP lagrangian_residual_qp = NULL;
+
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
 
@@ -494,6 +500,13 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         }
         ISDestroy(&isnz_tmp);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
+        {
+            PetscInt nrows_feti, ncols_feti;
+            chkerr(MatGetLocalSize(Aloc_feti, &nrows_feti, &ncols_feti));
+            ASSERT_EQ(nrows_feti, nrows).error("Reduced FETI local matrix row count does not match reduced index set size.\n");
+            ASSERT_EQ(ncols_feti, nrows).error("Reduced FETI local matrix column count does not match reduced index set size.\n");
+        }
+
         chkerr(MatISRestoreLocalMat(matrix_, &Aloc));
         chkerr(ISGetIndices(isnz, &nz_arr));
         chkerr(ISGetLocalSize(isnz, &nrows));
@@ -542,6 +555,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
         chkerr(QPTFromOptions(system));
+        lagrangian_residual_qp = system;
         chkerr(QPGetParent(system, &system));
     } else {
         // convert to MATAIJ
@@ -561,6 +575,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         if (ineq_ || eq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+        lagrangian_residual_qp = system;
     }
     
     // Set runtime options, e.g -qp_chain_view_kkt
@@ -593,6 +608,32 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 		QPSGetIterationNumber(solver,&nits);
 		ADD_CALLS(nits);
     }
+
+    {
+        Vec lagrangian_residual = NULL;
+        Vec lagrangian_solution = NULL;
+        char *lagrangian_residual_name = NULL;
+        PetscBool invalid_residual = PETSC_FALSE;
+
+        lagrangian_residual_norm_ = -1.0;
+        lagrangian_residual_name_.clear();
+        chkerr(QPComputeMissingEqMultiplier(lagrangian_residual_qp));
+        chkerr(QPComputeMissingBoxMultipliers(lagrangian_residual_qp));
+        chkerr(QPGetSolutionVector(lagrangian_residual_qp, &lagrangian_solution));
+        chkerr(VecDuplicate(lagrangian_solution, &lagrangian_residual));
+        chkerr(QPComputeLagrangianGradient(lagrangian_residual_qp, lagrangian_solution,
+                                           lagrangian_residual, &lagrangian_residual_name));
+        chkerr(VecIsInvalidated(lagrangian_residual, &invalid_residual));
+        if (!invalid_residual) {
+            chkerr(VecNorm(lagrangian_residual, NORM_2, &lagrangian_residual_norm_));
+        }
+        if (lagrangian_residual_name) {
+            lagrangian_residual_name_ = lagrangian_residual_name;
+            chkerr(PetscFree(lagrangian_residual_name));
+        }
+        chkerr(VecDestroy(&lagrangian_residual));
+    }
+
     // substitute by PETSc call for residual
     //VecNorm(rhs_, NORM_2, &residual_norm_);
     

@@ -123,6 +123,14 @@ public:
 
     double compute_residual() override;
 
+    double get_lagrangian_residual_norm() const {
+        return lagrangian_residual_norm_;
+    }
+
+    const std::string &get_lagrangian_residual_name() const {
+        return lagrangian_residual_name_;
+    }
+
     void use_feti(bool feti = true) {
         use_feti_ = feti;
     }
@@ -167,6 +175,8 @@ protected:
 
 
     double  solution_precision_; // precision of KSP system solver
+    double  lagrangian_residual_norm_;
+    std::string lagrangian_residual_name_;
 
     Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
     Vec     ineq_;               //!< PETSc vector of inequality constraint.
