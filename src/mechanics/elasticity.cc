@@ -53,6 +53,9 @@ struct ResidualSplit {
     double norm = 0.0;
     double free_norm = 0.0;
     double support_norm = 0.0;
+    double filtered_norm = 0.0;
+    double filtered_free_norm = 0.0;
+    double filtered_support_norm = 0.0;
     double free_max = 0.0;
     double support_max = 0.0;
     int free_nnz = 0;
@@ -126,6 +129,114 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     split.free_norm = std::sqrt(free_norm_sq);
     split.support_norm = std::sqrt(support_norm_sq);
     split.norm = std::sqrt(free_norm_sq + support_norm_sq);
+
+    PetscBool is_matis = PETSC_FALSE;
+    chkerr(PetscObjectTypeCompare((PetscObject)matrix, MATIS, &is_matis));
+    if (!is_matis) {
+        split.filtered_norm = split.norm;
+        split.filtered_free_norm = split.free_norm;
+        split.filtered_support_norm = split.support_norm;
+        return split;
+    }
+
+    Mat Aloc = NULL, Aloc_filtered = NULL;
+    IS isnz = NULL, isnz_tmp = NULL;
+    ISLocalToGlobalMapping l2g_mapping = NULL;
+    const PetscInt *l2g_arr = NULL, *nz_arr = NULL;
+    Vec solution_local = NULL, rhs_local = NULL;
+    Vec solution_filtered = NULL, rhs_filtered = NULL, residual_filtered = NULL;
+    IS from = NULL, to = NULL;
+    VecScatter solution_scatter = NULL, rhs_scatter = NULL;
+    const PetscScalar *solution_local_arr = NULL, *rhs_local_arr = NULL;
+    PetscScalar *solution_filtered_arr = NULL, *rhs_filtered_arr = NULL;
+    PetscInt nmap = 0, nrows = 0;
+    double local_filtered_free_norm_sq = 0.0, local_filtered_support_norm_sq = 0.0;
+    double filtered_free_norm_sq = 0.0, filtered_support_norm_sq = 0.0;
+
+    chkerr(MatISGetLocalMat(matrix, &Aloc));
+    chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
+    if (isnz_tmp != NULL) {
+        const PetscInt *nz_idx = NULL;
+        chkerr(ISGetLocalSize(isnz_tmp, &nrows));
+        chkerr(ISGetIndices(isnz_tmp, &nz_idx));
+        chkerr(ISCreateGeneral(PETSC_COMM_SELF, nrows, nz_idx, PETSC_COPY_VALUES, &isnz));
+        chkerr(ISRestoreIndices(isnz_tmp, &nz_idx));
+    } else {
+        chkerr(MatGetLocalSize(Aloc, &nrows, NULL));
+        chkerr(ISCreateStride(PETSC_COMM_SELF, nrows, 0, 1, &isnz));
+    }
+    chkerr(ISDestroy(&isnz_tmp));
+    chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_filtered));
+    chkerr(ISGetIndices(isnz, &nz_arr));
+    chkerr(MatISGetLocalToGlobalMapping(matrix, &l2g_mapping, NULL));
+    chkerr(ISLocalToGlobalMappingGetIndices(l2g_mapping, &l2g_arr));
+    chkerr(ISLocalToGlobalMappingGetSize(l2g_mapping, &nmap));
+
+    chkerr(VecCreateSeq(PETSC_COMM_SELF, nmap, &solution_local));
+    chkerr(VecCreateSeq(PETSC_COMM_SELF, nmap, &rhs_local));
+    chkerr(VecCreateSeq(PETSC_COMM_SELF, nrows, &solution_filtered));
+    chkerr(VecCreateSeq(PETSC_COMM_SELF, nrows, &rhs_filtered));
+    chkerr(VecDuplicate(rhs_filtered, &residual_filtered));
+    chkerr(ISCreateGeneral(comm, nmap, l2g_arr, PETSC_COPY_VALUES, &from));
+    chkerr(ISCreateStride(PETSC_COMM_SELF, nmap, 0, 1, &to));
+    chkerr(VecScatterCreate(solution, from, solution_local, to, &solution_scatter));
+    chkerr(VecScatterCreate(rhs, from, rhs_local, to, &rhs_scatter));
+    chkerr(VecScatterBegin(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
+    chkerr(VecScatterEnd(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
+    chkerr(VecScatterBegin(rhs_scatter, rhs, rhs_local, INSERT_VALUES, SCATTER_FORWARD));
+    chkerr(VecScatterEnd(rhs_scatter, rhs, rhs_local, INSERT_VALUES, SCATTER_FORWARD));
+
+    chkerr(VecGetArrayRead(solution_local, &solution_local_arr));
+    chkerr(VecGetArrayRead(rhs_local, &rhs_local_arr));
+    chkerr(VecGetArray(solution_filtered, &solution_filtered_arr));
+    chkerr(VecGetArray(rhs_filtered, &rhs_filtered_arr));
+    for (PetscInt i=0; i<nrows; i++) {
+        ASSERT_LT(static_cast<unsigned int>(nz_arr[i]), static_cast<unsigned int>(nmap))
+            .error("Filtered residual local row index out of bounds of local-to-global mapping.\n");
+        solution_filtered_arr[i] = solution_local_arr[nz_arr[i]];
+        rhs_filtered_arr[i] = rhs_local_arr[nz_arr[i]];
+    }
+    chkerr(VecRestoreArray(rhs_filtered, &rhs_filtered_arr));
+    chkerr(VecRestoreArray(solution_filtered, &solution_filtered_arr));
+    chkerr(VecRestoreArrayRead(rhs_local, &rhs_local_arr));
+    chkerr(VecRestoreArrayRead(solution_local, &solution_local_arr));
+
+    chkerr(MatMult(Aloc_filtered, solution_filtered, residual_filtered));
+    chkerr(VecAXPY(residual_filtered, -1.0, rhs_filtered));
+    chkerr(VecGetArrayRead(residual_filtered, &residual_array));
+    for (PetscInt i=0; i<nrows; i++) {
+        PetscInt global_idx = l2g_arr[nz_arr[i]];
+        double val_abs = PetscAbsScalar(residual_array[i]);
+        ASSERT_LT(static_cast<unsigned int>(global_idx), static_cast<unsigned int>(global_size))
+            .error("Filtered residual global row index out of bounds of residual vector.\n");
+        if (global_support[global_idx]) {
+            local_filtered_support_norm_sq += val_abs * val_abs;
+        } else {
+            local_filtered_free_norm_sq += val_abs * val_abs;
+        }
+    }
+    chkerr(VecRestoreArrayRead(residual_filtered, &residual_array));
+
+    chkerr(MPI_Allreduce(&local_filtered_free_norm_sq, &filtered_free_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_filtered_support_norm_sq, &filtered_support_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    split.filtered_free_norm = std::sqrt(filtered_free_norm_sq);
+    split.filtered_support_norm = std::sqrt(filtered_support_norm_sq);
+    split.filtered_norm = std::sqrt(filtered_free_norm_sq + filtered_support_norm_sq);
+
+    chkerr(VecScatterDestroy(&rhs_scatter));
+    chkerr(VecScatterDestroy(&solution_scatter));
+    chkerr(ISDestroy(&to));
+    chkerr(ISDestroy(&from));
+    chkerr(VecDestroy(&residual_filtered));
+    chkerr(VecDestroy(&rhs_filtered));
+    chkerr(VecDestroy(&solution_filtered));
+    chkerr(VecDestroy(&rhs_local));
+    chkerr(VecDestroy(&solution_local));
+    chkerr(ISLocalToGlobalMappingRestoreIndices(l2g_mapping, &l2g_arr));
+    chkerr(ISRestoreIndices(isnz, &nz_arr));
+    chkerr(MatDestroy(&Aloc_filtered));
+    chkerr(ISDestroy(&isnz));
+    chkerr(MatISRestoreLocalMat(matrix, &Aloc));
     return split;
 }
 
@@ -669,8 +780,11 @@ void Elasticity::zero_time_step()
 	LinSys::SolveInfo si = eq_data_->ls->solve();
     ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
 	MessageOut().fmt(
-            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}\n",
-            si.n_iterations, si.converged_reason, residual.norm, residual.free_norm, residual.support_norm);
+            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
+            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}\n",
+            si.n_iterations, si.converged_reason,
+            residual.norm, residual.free_norm, residual.support_norm,
+            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm);
     output_data();
     END_TIMER("Mechanics zero time step");
 }
@@ -781,8 +895,11 @@ void Elasticity::solve_linear_system()
     LinSys::SolveInfo si = eq_data_->ls->solve();
     ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
     MessageOut().fmt(
-            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}\n",
-            si.n_iterations, si.converged_reason, residual.norm, residual.free_norm, residual.support_norm);
+            "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
+            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}\n",
+            si.n_iterations, si.converged_reason,
+            residual.norm, residual.free_norm, residual.support_norm,
+            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm);
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }
