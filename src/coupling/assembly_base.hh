@@ -330,14 +330,16 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_boundary_integrals(const DHCellSide &bdr_side) {
-        auto &ppv = asm_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
+        auto &ppv_side = asm_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
+        auto &ppv_bdr = asm_internals_->fe_values_.ppv(bulk_domain, bdr_side.dim()-1);
 
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
             integral->patch_data().emplace_back(bdr_side);
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
-            ++ppv.n_mesh_items_;
+            ++ppv_side.n_mesh_items_;
+            ++ppv_bdr.n_mesh_items_;
             for (auto p : integral->points(bdr_side) ) {
                 asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
