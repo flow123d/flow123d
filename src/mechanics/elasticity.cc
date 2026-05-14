@@ -19,6 +19,7 @@
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
@@ -60,12 +61,15 @@ struct ResidualSplit {
     double free_interior_norm = 0.0;
     double filtered_free_interface_norm = 0.0;
     double filtered_free_interior_norm = 0.0;
+    double solution_interface_jump_norm = 0.0;
+    double solution_interface_jump_max = 0.0;
     double free_max = 0.0;
     double support_max = 0.0;
     int free_nnz = 0;
     int support_nnz = 0;
     int free_count = 0;
     int support_count = 0;
+    int solution_interface_jump_nnz = 0;
 };
 
 std::vector<int> make_interface_mask(Mat matrix, PetscInt global_size, MPI_Comm comm)
@@ -106,6 +110,7 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     Vec residual = NULL;
     PetscInt global_size = 0, own_begin = 0, own_end = 0;
     const PetscScalar *residual_array = NULL;
+    ResidualSplit split;
 
     chkerr(VecGetSize(rhs, &global_size));
     std::vector<int> interface_mask = make_interface_mask(matrix, global_size, comm);
@@ -119,6 +124,65 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
         local_support[l2g[local_dof]] = 1;
     }
     chkerr(MPI_Allreduce(local_support.data(), global_support.data(), global_size, MPI_INT, MPI_MAX, comm));
+
+    PetscBool is_matis = PETSC_FALSE;
+    chkerr(PetscObjectTypeCompare((PetscObject)matrix, MATIS, &is_matis));
+    if (is_matis) {
+        ISLocalToGlobalMapping l2g_mapping = NULL;
+        const PetscInt *matis_l2g_arr = NULL;
+        Vec solution_local = NULL;
+        IS from = NULL, to = NULL;
+        VecScatter solution_scatter = NULL;
+        const PetscScalar *solution_local_arr = NULL;
+        PetscInt nmap = 0;
+        std::vector<int> local_solution_count(global_size, 0), global_solution_count(global_size, 0);
+        std::vector<double> local_solution_min(global_size, std::numeric_limits<double>::infinity());
+        std::vector<double> local_solution_max(global_size, -std::numeric_limits<double>::infinity());
+        std::vector<double> global_solution_min(global_size, 0.0), global_solution_max(global_size, 0.0);
+
+        chkerr(MatISGetLocalToGlobalMapping(matrix, &l2g_mapping, NULL));
+        chkerr(ISLocalToGlobalMappingGetIndices(l2g_mapping, &matis_l2g_arr));
+        chkerr(ISLocalToGlobalMappingGetSize(l2g_mapping, &nmap));
+        chkerr(VecCreateSeq(PETSC_COMM_SELF, nmap, &solution_local));
+        chkerr(ISCreateGeneral(comm, nmap, matis_l2g_arr, PETSC_COPY_VALUES, &from));
+        chkerr(ISCreateStride(PETSC_COMM_SELF, nmap, 0, 1, &to));
+        chkerr(VecScatterCreate(solution, from, solution_local, to, &solution_scatter));
+        chkerr(VecScatterBegin(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
+        chkerr(VecScatterEnd(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
+        chkerr(VecGetArrayRead(solution_local, &solution_local_arr));
+
+        for (PetscInt i=0; i<nmap; i++) {
+            PetscInt global_idx = matis_l2g_arr[i];
+            ASSERT_LT(static_cast<unsigned int>(global_idx), static_cast<unsigned int>(global_size))
+                .error("MatIS local-to-global index out of bounds of solution vector.\n");
+            double value = static_cast<double>(PetscRealPart(solution_local_arr[i]));
+            local_solution_count[global_idx]++;
+            local_solution_min[global_idx] = std::min(local_solution_min[global_idx], value);
+            local_solution_max[global_idx] = std::max(local_solution_max[global_idx], value);
+        }
+
+        chkerr(MPI_Allreduce(local_solution_count.data(), global_solution_count.data(), global_size, MPI_INT, MPI_SUM, comm));
+        chkerr(MPI_Allreduce(local_solution_min.data(), global_solution_min.data(), global_size, MPI_DOUBLE, MPI_MIN, comm));
+        chkerr(MPI_Allreduce(local_solution_max.data(), global_solution_max.data(), global_size, MPI_DOUBLE, MPI_MAX, comm));
+
+        double jump_norm_sq = 0.0;
+        for (PetscInt i=0; i<global_size; i++) {
+            if (global_solution_count[i] > 1) {
+                double jump = global_solution_max[i] - global_solution_min[i];
+                jump_norm_sq += jump * jump;
+                split.solution_interface_jump_max = std::max(split.solution_interface_jump_max, jump);
+                if (jump > 1e-12) split.solution_interface_jump_nnz++;
+            }
+        }
+        split.solution_interface_jump_norm = std::sqrt(jump_norm_sq);
+
+        chkerr(VecRestoreArrayRead(solution_local, &solution_local_arr));
+        chkerr(VecScatterDestroy(&solution_scatter));
+        chkerr(ISDestroy(&to));
+        chkerr(ISDestroy(&from));
+        chkerr(VecDestroy(&solution_local));
+        chkerr(ISLocalToGlobalMappingRestoreIndices(l2g_mapping, &matis_l2g_arr));
+    }
 
     chkerr(VecDuplicate(rhs, &residual));
     chkerr(MatMult(matrix, solution, residual));
@@ -157,7 +221,6 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
 
     double free_norm_sq = 0.0, support_norm_sq = 0.0;
     double free_interface_norm_sq = 0.0, free_interior_norm_sq = 0.0;
-    ResidualSplit split;
     chkerr(MPI_Allreduce(&local_free_norm_sq, &free_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     chkerr(MPI_Allreduce(&local_support_norm_sq, &support_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     chkerr(MPI_Allreduce(&local_free_interface_norm_sq, &free_interface_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
@@ -175,8 +238,6 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     split.free_interface_norm = std::sqrt(free_interface_norm_sq);
     split.free_interior_norm = std::sqrt(free_interior_norm_sq);
 
-    PetscBool is_matis = PETSC_FALSE;
-    chkerr(PetscObjectTypeCompare((PetscObject)matrix, MATIS, &is_matis));
     if (!is_matis) {
         split.filtered_norm = split.norm;
         split.filtered_free_norm = split.free_norm;
@@ -816,12 +877,15 @@ void Elasticity::zero_time_step()
             "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
             "residual_free_interface: {}, residual_free_interior: {}, "
             "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
-            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}\n",
+            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}, "
+            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}\n"
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
             residual.free_interface_norm, residual.free_interior_norm,
             residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
-            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm);
+            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm,
+            residual.solution_interface_jump_norm, residual.solution_interface_jump_max,
+            residual.solution_interface_jump_nnz);
     output_data();
     END_TIMER("Mechanics zero time step");
 }
@@ -935,12 +999,15 @@ void Elasticity::solve_linear_system()
             "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
             "residual_free_interface: {}, residual_free_interior: {}, "
             "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
-            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}\n",
+            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}, "
+            "solution_interface_jump_norm: {}, solution_interface_jump_max: {}, solution_interface_jump_nnz: {}\n"
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
             residual.free_interface_norm, residual.free_interior_norm,
             residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
-            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm);
+            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm,
+            residual.solution_interface_jump_norm, residual.solution_interface_jump_max,
+            residual.solution_interface_jump_nnz);
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }
