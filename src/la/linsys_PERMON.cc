@@ -24,6 +24,7 @@
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "permonvec.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
 #include "fem/dofhandler.hh"
@@ -455,7 +456,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         use_feti_ = false;
     }
 
-    
+    QP system_dual = NULL;
+
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
 
@@ -542,6 +544,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
         chkerr(QPTFromOptions(system));
+        system_dual = system;
         chkerr(QPGetParent(system, &system));
     } else {
         // convert to MATAIJ
@@ -599,7 +602,31 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     LogOut().fmt("convergence reason {}, number of iterations is {}\n", reason, nits);
 
     // get residual norm
-    compute_residual();
+    if (use_feti_ && system_dual) {
+        // compute the Lagrangian residual |A*x - b + B'*lambda|
+        Vec lagrangian_solution = NULL;
+        Vec lagrangian_residual = NULL;
+        char *lagrangian_residual_name = NULL;
+        PetscBool invalid_residual = PETSC_FALSE;
+
+        solution_precision_ = -1.0;
+        chkerr(QPComputeMissingEqMultiplier(system_dual));
+        chkerr(QPComputeMissingBoxMultipliers(system_dual));
+        chkerr(QPGetSolutionVector(system_dual, &lagrangian_solution));
+        chkerr(VecDuplicate(lagrangian_solution, &lagrangian_residual));
+        chkerr(QPComputeLagrangianGradient(system_dual, lagrangian_solution,
+                                           lagrangian_residual, &lagrangian_residual_name));
+        chkerr(VecIsInvalidated(lagrangian_residual, &invalid_residual));
+        if (!invalid_residual) {
+            chkerr(VecNorm(lagrangian_residual, NORM_2, &solution_precision_));
+        }
+        chkerr(PetscFree(lagrangian_residual_name));
+        chkerr(VecDestroy(&lagrangian_residual));
+    } else {
+        MatMult(matrix_, solution_, residual_);
+        VecAXPY(residual_,-1.0, rhs_);
+        VecNorm(residual_, NORM_2, &solution_precision_);
+    }
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
@@ -733,9 +760,5 @@ double LinSys_PERMON::get_solution_precision()
 
 double LinSys_PERMON::compute_residual()
 {
-    // TODO return ||A*x - b + B'*lambda||?
-    MatMult(matrix_, solution_, residual_);
-    VecAXPY(residual_,-1.0, rhs_);
-    VecNorm(residual_, NORM_2, &solution_precision_);
     return solution_precision_;
 }
