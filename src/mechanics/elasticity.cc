@@ -56,6 +56,10 @@ struct ResidualSplit {
     double filtered_norm = 0.0;
     double filtered_free_norm = 0.0;
     double filtered_support_norm = 0.0;
+    double free_interface_norm = 0.0;
+    double free_interior_norm = 0.0;
+    double filtered_free_interface_norm = 0.0;
+    double filtered_free_interior_norm = 0.0;
     double free_max = 0.0;
     double support_max = 0.0;
     int free_nnz = 0;
@@ -63,6 +67,35 @@ struct ResidualSplit {
     int free_count = 0;
     int support_count = 0;
 };
+
+std::vector<int> make_interface_mask(Mat matrix, PetscInt global_size, MPI_Comm comm)
+{
+    PetscBool is_matis = PETSC_FALSE;
+    chkerr(PetscObjectTypeCompare((PetscObject)matrix, MATIS, &is_matis));
+    if (!is_matis) return std::vector<int>(global_size, 0);
+
+    ISLocalToGlobalMapping l2g_mapping = NULL;
+    const PetscInt *l2g_arr = NULL;
+    PetscInt nmap = 0;
+    std::vector<int> local_count(global_size, 0), global_count(global_size, 0);
+
+    chkerr(MatISGetLocalToGlobalMapping(matrix, &l2g_mapping, NULL));
+    chkerr(ISLocalToGlobalMappingGetIndices(l2g_mapping, &l2g_arr));
+    chkerr(ISLocalToGlobalMappingGetSize(l2g_mapping, &nmap));
+    for (PetscInt i=0; i<nmap; i++) {
+        ASSERT_LT(static_cast<unsigned int>(l2g_arr[i]), static_cast<unsigned int>(global_size))
+            .error("MatIS local-to-global index out of bounds of residual vector.\n");
+        local_count[l2g_arr[i]]++;
+    }
+    chkerr(ISLocalToGlobalMappingRestoreIndices(l2g_mapping, &l2g_arr));
+    chkerr(MPI_Allreduce(local_count.data(), global_count.data(), global_size, MPI_INT, MPI_SUM, comm));
+
+    std::vector<int> interface_mask(global_size, 0);
+    for (PetscInt i=0; i<global_size; i++) {
+        interface_mask[i] = (global_count[i] > 1);
+    }
+    return interface_mask;
+}
 
 ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_data)
 {
@@ -75,6 +108,7 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     const PetscScalar *residual_array = NULL;
 
     chkerr(VecGetSize(rhs, &global_size));
+    std::vector<int> interface_mask = make_interface_mask(matrix, global_size, comm);
     std::vector<int> local_support(global_size, 0), global_support(global_size, 0);
     const auto &l2g = eq_data->dh_->get_local_to_global_map();
     for (unsigned int local_dof : eq_data->dirichlet_dofs) {
@@ -93,6 +127,7 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     chkerr(VecGetArrayRead(residual, &residual_array));
 
     double local_free_norm_sq = 0.0, local_support_norm_sq = 0.0;
+    double local_free_interface_norm_sq = 0.0, local_free_interior_norm_sq = 0.0;
     double local_free_max = 0.0, local_support_max = 0.0;
     int local_free_nnz = 0, local_support_nnz = 0;
     int local_free_count = 0, local_support_count = 0;
@@ -106,6 +141,11 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
             if (val_abs > 1e-12) local_support_nnz++;
         } else {
             local_free_norm_sq += val_abs * val_abs;
+            if (interface_mask[global_idx]) {
+                local_free_interface_norm_sq += val_abs * val_abs;
+            } else {
+                local_free_interior_norm_sq += val_abs * val_abs;
+            }
             local_free_max = std::max(local_free_max, val_abs);
             local_free_count++;
             if (val_abs > 1e-12) local_free_nnz++;
@@ -116,9 +156,12 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     chkerr(VecDestroy(&residual));
 
     double free_norm_sq = 0.0, support_norm_sq = 0.0;
+    double free_interface_norm_sq = 0.0, free_interior_norm_sq = 0.0;
     ResidualSplit split;
     chkerr(MPI_Allreduce(&local_free_norm_sq, &free_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     chkerr(MPI_Allreduce(&local_support_norm_sq, &support_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_free_interface_norm_sq, &free_interface_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_free_interior_norm_sq, &free_interior_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     chkerr(MPI_Allreduce(&local_free_max, &split.free_max, 1, MPI_DOUBLE, MPI_MAX, comm));
     chkerr(MPI_Allreduce(&local_support_max, &split.support_max, 1, MPI_DOUBLE, MPI_MAX, comm));
     chkerr(MPI_Allreduce(&local_free_nnz, &split.free_nnz, 1, MPI_INT, MPI_SUM, comm));
@@ -129,6 +172,8 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     split.free_norm = std::sqrt(free_norm_sq);
     split.support_norm = std::sqrt(support_norm_sq);
     split.norm = std::sqrt(free_norm_sq + support_norm_sq);
+    split.free_interface_norm = std::sqrt(free_interface_norm_sq);
+    split.free_interior_norm = std::sqrt(free_interior_norm_sq);
 
     PetscBool is_matis = PETSC_FALSE;
     chkerr(PetscObjectTypeCompare((PetscObject)matrix, MATIS, &is_matis));
@@ -136,6 +181,8 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
         split.filtered_norm = split.norm;
         split.filtered_free_norm = split.free_norm;
         split.filtered_support_norm = split.support_norm;
+        split.filtered_free_interface_norm = split.free_interface_norm;
+        split.filtered_free_interior_norm = split.free_interior_norm;
         return split;
     }
 
@@ -149,7 +196,9 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     Vec residual_filtered = NULL;
     PetscInt nmap = 0, nrows = 0;
     double local_filtered_free_norm_sq = 0.0, local_filtered_support_norm_sq = 0.0;
+    double local_filtered_free_interface_norm_sq = 0.0, local_filtered_free_interior_norm_sq = 0.0;
     double filtered_free_norm_sq = 0.0, filtered_support_norm_sq = 0.0;
+    double filtered_free_interface_norm_sq = 0.0, filtered_free_interior_norm_sq = 0.0;
 
     chkerr(MatISGetLocalMat(matrix, &Aloc));
     chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
@@ -196,15 +245,24 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
             local_filtered_support_norm_sq += val_abs * val_abs;
         } else {
             local_filtered_free_norm_sq += val_abs * val_abs;
+            if (interface_mask[global_idx]) {
+                local_filtered_free_interface_norm_sq += val_abs * val_abs;
+            } else {
+                local_filtered_free_interior_norm_sq += val_abs * val_abs;
+            }
         }
     }
     chkerr(VecRestoreArrayRead(residual_filtered, &residual_array));
 
     chkerr(MPI_Allreduce(&local_filtered_free_norm_sq, &filtered_free_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     chkerr(MPI_Allreduce(&local_filtered_support_norm_sq, &filtered_support_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_filtered_free_interface_norm_sq, &filtered_free_interface_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
+    chkerr(MPI_Allreduce(&local_filtered_free_interior_norm_sq, &filtered_free_interior_norm_sq, 1, MPI_DOUBLE, MPI_SUM, comm));
     split.filtered_free_norm = std::sqrt(filtered_free_norm_sq);
     split.filtered_support_norm = std::sqrt(filtered_support_norm_sq);
     split.filtered_norm = std::sqrt(filtered_free_norm_sq + filtered_support_norm_sq);
+    split.filtered_free_interface_norm = std::sqrt(filtered_free_interface_norm_sq);
+    split.filtered_free_interior_norm = std::sqrt(filtered_free_interior_norm_sq);
 
     chkerr(VecDestroy(&residual_filtered));
     chkerr(MatDestroy(&matrix_filtered));
@@ -756,10 +814,14 @@ void Elasticity::zero_time_step()
     ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
 	MessageOut().fmt(
             "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
-            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}\n",
+            "residual_free_interface: {}, residual_free_interior: {}, "
+            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
+            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}\n",
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
-            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm);
+            residual.free_interface_norm, residual.free_interior_norm,
+            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
+            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm);
     output_data();
     END_TIMER("Mechanics zero time step");
 }
@@ -871,10 +933,14 @@ void Elasticity::solve_linear_system()
     ResidualSplit residual = compute_residual_split_by_dirichlet_dofs(eq_data_.get());
     MessageOut().fmt(
             "[mech solver] lin. it: {}, reason: {}, residual: {}, residual_free: {}, residual_support: {}, "
-            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}\n",
+            "residual_free_interface: {}, residual_free_interior: {}, "
+            "residual_filtered: {}, residual_filtered_free: {}, residual_filtered_support: {}, "
+            "residual_filtered_free_interface: {}, residual_filtered_free_interior: {}\n",
             si.n_iterations, si.converged_reason,
             residual.norm, residual.free_norm, residual.support_norm,
-            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm);
+            residual.free_interface_norm, residual.free_interior_norm,
+            residual.filtered_norm, residual.filtered_free_norm, residual.filtered_support_norm,
+            residual.filtered_free_interface_norm, residual.filtered_free_interior_norm);
     END_TIMER("solve");
     END_TIMER("Mechanics step");
 }
