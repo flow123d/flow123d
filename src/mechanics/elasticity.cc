@@ -140,15 +140,13 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     }
 
     Mat Aloc = NULL, Aloc_filtered = NULL;
+    Mat matrix_filtered = NULL;
     IS isnz = NULL, isnz_tmp = NULL;
     ISLocalToGlobalMapping l2g_mapping = NULL;
+    ISLocalToGlobalMapping filtered_mapping = NULL;
     const PetscInt *l2g_arr = NULL, *nz_arr = NULL;
-    Vec solution_local = NULL, rhs_local = NULL;
-    Vec solution_filtered = NULL, rhs_filtered = NULL, residual_filtered = NULL;
-    IS from = NULL, to = NULL;
-    VecScatter solution_scatter = NULL, rhs_scatter = NULL;
-    const PetscScalar *solution_local_arr = NULL, *rhs_local_arr = NULL;
-    PetscScalar *solution_filtered_arr = NULL, *rhs_filtered_arr = NULL;
+    PetscInt *l2g_filtered_arr = NULL;
+    Vec residual_filtered = NULL;
     PetscInt nmap = 0, nrows = 0;
     double local_filtered_free_norm_sq = 0.0, local_filtered_support_norm_sq = 0.0;
     double filtered_free_norm_sq = 0.0, filtered_support_norm_sq = 0.0;
@@ -171,44 +169,29 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     chkerr(MatISGetLocalToGlobalMapping(matrix, &l2g_mapping, NULL));
     chkerr(ISLocalToGlobalMappingGetIndices(l2g_mapping, &l2g_arr));
     chkerr(ISLocalToGlobalMappingGetSize(l2g_mapping, &nmap));
-
-    chkerr(VecCreateSeq(PETSC_COMM_SELF, nmap, &solution_local));
-    chkerr(VecCreateSeq(PETSC_COMM_SELF, nmap, &rhs_local));
-    chkerr(VecCreateSeq(PETSC_COMM_SELF, nrows, &solution_filtered));
-    chkerr(VecCreateSeq(PETSC_COMM_SELF, nrows, &rhs_filtered));
-    chkerr(VecDuplicate(rhs_filtered, &residual_filtered));
-    chkerr(ISCreateGeneral(comm, nmap, l2g_arr, PETSC_COPY_VALUES, &from));
-    chkerr(ISCreateStride(PETSC_COMM_SELF, nmap, 0, 1, &to));
-    chkerr(VecScatterCreate(solution, from, solution_local, to, &solution_scatter));
-    chkerr(VecScatterCreate(rhs, from, rhs_local, to, &rhs_scatter));
-    chkerr(VecScatterBegin(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
-    chkerr(VecScatterEnd(solution_scatter, solution, solution_local, INSERT_VALUES, SCATTER_FORWARD));
-    chkerr(VecScatterBegin(rhs_scatter, rhs, rhs_local, INSERT_VALUES, SCATTER_FORWARD));
-    chkerr(VecScatterEnd(rhs_scatter, rhs, rhs_local, INSERT_VALUES, SCATTER_FORWARD));
-
-    chkerr(VecGetArrayRead(solution_local, &solution_local_arr));
-    chkerr(VecGetArrayRead(rhs_local, &rhs_local_arr));
-    chkerr(VecGetArray(solution_filtered, &solution_filtered_arr));
-    chkerr(VecGetArray(rhs_filtered, &rhs_filtered_arr));
+    chkerr(PetscMalloc1(nrows, &l2g_filtered_arr));
     for (PetscInt i=0; i<nrows; i++) {
         ASSERT_LT(static_cast<unsigned int>(nz_arr[i]), static_cast<unsigned int>(nmap))
             .error("Filtered residual local row index out of bounds of local-to-global mapping.\n");
-        solution_filtered_arr[i] = solution_local_arr[nz_arr[i]];
-        rhs_filtered_arr[i] = rhs_local_arr[nz_arr[i]];
+        l2g_filtered_arr[i] = l2g_arr[nz_arr[i]];
     }
-    chkerr(VecRestoreArray(rhs_filtered, &rhs_filtered_arr));
-    chkerr(VecRestoreArray(solution_filtered, &solution_filtered_arr));
-    chkerr(VecRestoreArrayRead(rhs_local, &rhs_local_arr));
-    chkerr(VecRestoreArrayRead(solution_local, &solution_local_arr));
+    chkerr(ISRestoreIndices(isnz, &nz_arr));
+    chkerr(ISLocalToGlobalMappingRestoreIndices(l2g_mapping, &l2g_arr));
+    chkerr(ISLocalToGlobalMappingCreate(comm, 1, nrows, l2g_filtered_arr, PETSC_OWN_POINTER, &filtered_mapping));
+    chkerr(MatCreateIS(comm, 1, eq_data->dh_->lsize(), eq_data->dh_->lsize(),
+                       PETSC_DETERMINE, PETSC_DETERMINE, filtered_mapping, filtered_mapping, &matrix_filtered));
+    chkerr(MatISSetLocalMat(matrix_filtered, Aloc_filtered));
+    chkerr(MatAssemblyBegin(matrix_filtered, MAT_FINAL_ASSEMBLY));
+    chkerr(MatAssemblyEnd(matrix_filtered, MAT_FINAL_ASSEMBLY));
 
-    chkerr(MatMult(Aloc_filtered, solution_filtered, residual_filtered));
-    chkerr(VecAXPY(residual_filtered, -1.0, rhs_filtered));
+    chkerr(VecDuplicate(rhs, &residual_filtered));
+    chkerr(MatMult(matrix_filtered, solution, residual_filtered));
+    chkerr(VecAXPY(residual_filtered, -1.0, rhs));
+    chkerr(VecGetOwnershipRange(residual_filtered, &own_begin, &own_end));
     chkerr(VecGetArrayRead(residual_filtered, &residual_array));
-    for (PetscInt i=0; i<nrows; i++) {
-        PetscInt global_idx = l2g_arr[nz_arr[i]];
+    for (PetscInt i=0; i<own_end-own_begin; i++) {
+        PetscInt global_idx = own_begin + i;
         double val_abs = PetscAbsScalar(residual_array[i]);
-        ASSERT_LT(static_cast<unsigned int>(global_idx), static_cast<unsigned int>(global_size))
-            .error("Filtered residual global row index out of bounds of residual vector.\n");
         if (global_support[global_idx]) {
             local_filtered_support_norm_sq += val_abs * val_abs;
         } else {
@@ -223,17 +206,9 @@ ResidualSplit compute_residual_split_by_dirichlet_dofs(Elasticity::EqData *eq_da
     split.filtered_support_norm = std::sqrt(filtered_support_norm_sq);
     split.filtered_norm = std::sqrt(filtered_free_norm_sq + filtered_support_norm_sq);
 
-    chkerr(VecScatterDestroy(&rhs_scatter));
-    chkerr(VecScatterDestroy(&solution_scatter));
-    chkerr(ISDestroy(&to));
-    chkerr(ISDestroy(&from));
     chkerr(VecDestroy(&residual_filtered));
-    chkerr(VecDestroy(&rhs_filtered));
-    chkerr(VecDestroy(&solution_filtered));
-    chkerr(VecDestroy(&rhs_local));
-    chkerr(VecDestroy(&solution_local));
-    chkerr(ISLocalToGlobalMappingRestoreIndices(l2g_mapping, &l2g_arr));
-    chkerr(ISRestoreIndices(isnz, &nz_arr));
+    chkerr(MatDestroy(&matrix_filtered));
+    chkerr(ISLocalToGlobalMappingDestroy(&filtered_mapping));
     chkerr(MatDestroy(&Aloc_filtered));
     chkerr(ISDestroy(&isnz));
     chkerr(MatISRestoreLocalMat(matrix, &Aloc));
