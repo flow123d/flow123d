@@ -209,20 +209,20 @@ public:
 
 /// Define Integral Tuple hash function - helper struct of OperationMap
 struct OperationTplHash {
-    std::size_t operator()(std::tuple<std::string, uint> tpl) const {
+    std::size_t operator()(std::tuple<std::string, uint, std::string> tpl) const {
         return boost::hash_value( tpl );
     }
 
     /// Create tuple from typeid(Operation).name and size of Quadrature
-    static std::tuple<std::string, uint> op_tuple(std::string op_type, uint quad_size) {
-        return std::make_tuple(op_type, quad_size);
+    static std::tuple<std::string, uint, std::string> op_tuple(std::string op_type, uint quad_size, std::string f_name) {
+        return std::make_tuple(op_type, quad_size, f_name);
     }
 
 };
 
 /// Alias for unordered_map of Operation pointer with custom hash
 template<typename Operation>
-using OperationMap = std::unordered_map<std::tuple<std::string, uint>, Operation *, OperationTplHash>;
+using OperationMap = std::unordered_map<std::tuple<std::string, uint, std::string>, Operation *, OperationTplHash>;
 
 
 

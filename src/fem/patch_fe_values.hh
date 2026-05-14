@@ -279,9 +279,9 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad) {
+    PatchOp<spacedim>* get(const Quadrature *quad, std::string f_name = "None") {
         std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
+        auto tpl = OperationTplHash::op_tuple(op_name, quad->size(), f_name);
         auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad);
@@ -302,9 +302,9 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
+    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::string f_name = "None") {
         std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
+        auto tpl = OperationTplHash::op_tuple(op_name, quad->size(), f_name);
         auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
