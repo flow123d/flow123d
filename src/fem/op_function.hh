@@ -605,6 +605,33 @@ public:
     void eval() override {}
 };
 
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class RefTensor<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    RefTensor(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {(dim+1)*spacedim, spacedim}, fe->n_dofs())
+    {
+        this->domain_ = Op::SideDomain::domain();
+        uint n_points = quad->size();
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad->make_from_side<dim>(s);
+            for (uint i_c=0; i_c<spacedim; ++i_c)
+                for (uint i_r=0; i_r<spacedim; ++i_r)
+                    for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                        for (uint i_p=0; i_p<n_points; ++i_p)
+                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c)[i_r];
+        }
+    }
+
+    void eval() override {}
+};
+
 /// Fixed operation of gradient scalar reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefGradScalar : public PatchOp<spacedim> {
@@ -1011,6 +1038,7 @@ public:
 	TensorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
     {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
@@ -1038,6 +1066,31 @@ public:
             for (uint c=0; c<spacedim*spacedim; ++c)
                 result_vec(c) = result_ovec(i_dof * spacedim*spacedim + c).get_vec();
         }
+    }
+};
+
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class TensorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	TensorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
+    }
+
+    void eval() override {
+        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size(); // number of points on patch
+        this->allocate_result(n_patch_points, this->patch_arena());
+
+        auto ref_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        for (uint c=0; c<spacedim*spacedim; c++)
+            FuncHelper<spacedim>::copy_ref_side_on_quads_data(*this, c, ref_vec, result_vec);
     }
 };
 
