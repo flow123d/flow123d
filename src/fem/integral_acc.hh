@@ -983,6 +983,7 @@ public:
 	  factory_low_(pfev, element_cache_map, pfev->fe_dim<qdim-1>(), quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
+        pfev->set_used_domain(bulk_domain);
         pfev->set_used_domain(side_domain);
     }
 
