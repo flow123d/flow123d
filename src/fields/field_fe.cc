@@ -134,7 +134,7 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED),
-  boundary_domain_(false), fe_values_(4), patch_fe_values_(nullptr)
+  boundary_domain_(false), fe_values_(4)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -267,16 +267,6 @@ void FieldFE<spacedim, Value>::cache_reinit(ElementCacheMap &cache_map)
     fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
     fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
     fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
-    // Creates PatchFeValues, Integrals and operations only once
-//    if (patch_fe_values_ == nullptr) {
-//        patch_fe_values_ = new PatchFEValues<spacedim>(fe_);
-//
-//        this->create_dim_op<1>( &quads[1], cache_map);
-//        this->create_dim_op<2>( &quads[2], cache_map);
-//        this->create_dim_op<3>( &quads[3], cache_map);
-//
-//        patch_fe_values_->init_finalize();
-//    }
 }
 
 
@@ -841,9 +831,7 @@ Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> Field
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
-{
-    if (patch_fe_values_!=nullptr)  delete patch_fe_values_;
-}
+{}
 
 
 // Instantiations of FieldFE

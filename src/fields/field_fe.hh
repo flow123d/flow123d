@@ -380,7 +380,6 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     /// TODO use PatchFeValues
     std::vector<FEValues<spacedim>> fe_values_;
-    PatchFEValues<spacedim> *patch_fe_values_;
 
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;
     std::vector< FeQArray<ReturnType> > shape_vals_;
