@@ -39,6 +39,7 @@
 #include "fem/mapping_p1.hh"
 #include "fem/integral_acc.hh"
 #include "input/factory.hh"
+#include "coupling/assembly_internals.hh"
 
 #include <memory>
 
@@ -145,7 +146,7 @@ public:
      *
      * Reinit fe_values_ data member.
      */
-    void cache_reinit(ElementCacheMap &cache_map) override;
+    void cache_reinit(AssemblyInternals &asm_internals) override;
 
 	/**
 	 * Initialization from the input interface.

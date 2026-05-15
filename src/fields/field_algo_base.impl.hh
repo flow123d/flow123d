@@ -146,7 +146,7 @@ void FieldAlgorithmBase<spacedim, Value>::cache_update(
 
 
 template<int spacedim, class Value>
-void FieldAlgorithmBase<spacedim, Value>::cache_reinit(FMT_UNUSED ElementCacheMap &cache_map)
+void FieldAlgorithmBase<spacedim, Value>::cache_reinit(FMT_UNUSED AssemblyInternals &asm_internals)
 {}
 
 

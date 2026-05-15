@@ -30,6 +30,8 @@
 #include <string>
 #include <pybind11/pybind11.h>
 
+struct AssemblyInternals;
+
 using namespace std;
 namespace py = pybind11;
 
@@ -79,7 +81,7 @@ public:
      *
      * Reinit dictionary of used fields and update result field to dictionary of resul fields.
      */
-    void cache_reinit(ElementCacheMap &cache_map) override;
+    void cache_reinit(AssemblyInternals &asm_internals) override;
 
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;

@@ -40,6 +40,7 @@
 #include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
 #include "system/flag_array.hh"    // for FlagArray<>::Mask
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
+#include "coupling/assembly_internals.hh"
 class Mesh;
 class Region;
 template <int spacedim, class Value> class FieldFormula;
@@ -353,12 +354,12 @@ public:
     /**
      * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_reallocate(ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    void cache_reallocate(AssemblyInternals &asm_internals, FieldSet &used_fieldset) {
     	this->set_dependency(used_fieldset);
     	for (auto reg_it : region_field_update_order_) {
     	    unsigned int region_idx = reg_it.first;
     	    for (auto f_it : reg_it.second) {
-    	        f_it->cache_reallocate(cache_map, region_idx);
+    	        f_it->cache_reallocate(asm_internals, region_idx);
     	    }
     	}
         //for(auto field : field_list) field->cache_reallocate(cache_map);

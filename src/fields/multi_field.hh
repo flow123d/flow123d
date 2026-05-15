@@ -55,6 +55,7 @@ class OutputTime;
 class EvalPoints;
 class ElementCacheMap;
 class FieldSet;
+struct AssemblyInternals;
 
 
 namespace IT=Input::Type;
@@ -242,7 +243,7 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /// Implements FieldCommon::cache_reallocate
-    void cache_reallocate(ElementCacheMap &cache_map, unsigned int region_idx) const override;
+    void cache_reallocate(AssemblyInternals &asm_internals, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;

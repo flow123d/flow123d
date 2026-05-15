@@ -120,7 +120,7 @@ public:
 private:
     /// Calls cache_reallocate method on set of used fields
     inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->asm_internals_.element_cache_map_, multidim_assembly_[1_d]->used_fields_);
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->asm_internals_, multidim_assembly_[1_d]->used_fields_);
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
