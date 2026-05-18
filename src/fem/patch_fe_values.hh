@@ -51,7 +51,7 @@ public:
 
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
-	  elem_dim_list_vec_(4),
+	  elem_dim_list_vec_(spacedim+1),
       patch_point_vals_(2),
 	  elements_map_(300, (uint)-1)
     {
@@ -229,7 +229,10 @@ public:
     uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
         uint elem_pos = register_element_internal(elem, element_patch_idx);
         PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
-        auto map_it = ppv.n_elems_.insert( { (2*elem.idx() + uint(elem.region_idx().is_boundary()) ), ppv.i_mesh_item_} );
+        std::size_t h =
+            (static_cast<std::size_t>(elem.region_idx().is_boundary()) << 32) |
+            static_cast<std::size_t>(elem.idx());
+        auto map_it = ppv.n_elems_.insert( {h, ppv.i_mesh_item_} );
         bool is_elm_added = map_it.second;
         if (is_elm_added) {
             ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;

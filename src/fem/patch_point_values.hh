@@ -286,7 +286,7 @@ public:
      *
      * TODO will be deleted after sorting elements in ElementCacheMap by dimension
      */
-    std::unordered_map<uint, uint> n_elems_;
+    std::unordered_map<std::size_t, uint> n_elems_;
     std::vector<Side> side_list_;             ///< List of sides on patch
 };
 
