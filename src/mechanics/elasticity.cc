@@ -611,11 +611,14 @@ void Elasticity::preallocate()
         for (unsigned int i=dir_row_ds.begin(); i<dir_row_ds.end(); i++)
             rows_l2g_indices.push_back(i);
         ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, n_rows,
-            rows_l2g_indices.data(), PETSC_USE_POINTER, &l2g_rows); CHKERRV(ierr);
+            rows_l2g_indices.data(), PETSC_COPY_VALUES, &l2g_rows); CHKERRV(ierr);
         ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->get_local_to_global_map().size(),
-            eq_data_->dh_->get_local_to_global_map().data(), PETSC_USE_POINTER, &l2g_cols); CHKERRV(ierr);
+            eq_data_->dh_->get_local_to_global_map().data(), PETSC_COPY_VALUES, &l2g_cols); CHKERRV(ierr);
         ierr = MatCreateIS(PETSC_COMM_WORLD, 1, n_rows, eq_data_->dh_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                                   l2g_rows, l2g_cols, &eq_data_->dirichlet_matrix); CHKERRV( ierr );
+        ISLocalToGlobalMappingDestroy(&l2g_rows);
+        ISLocalToGlobalMappingDestroy(&l2g_cols);
+
         PetscInt *on_nz, *off_nz;
         on_nz  = new PetscInt[ n_rows ];
         off_nz = new PetscInt[ n_rows ];
