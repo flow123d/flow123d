@@ -24,6 +24,7 @@
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "petscblaslapack.h"
 #include "permonvec.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
@@ -122,6 +123,115 @@ PetscErrorCode convert_mat_is_to_feti_decomposed(Mat matrix_is,
     PetscCall(ISDestroy(&ris_all));
     PetscCall(MatDestroy(&Bloc_reduced));
     PetscCall(MatISRestoreLocalMat(matrix_is, &Bloc));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessian)
+{
+    PetscBool enabled = PETSC_FALSE;
+    PetscReal zero_rel_tol = 1.0e-8;
+    PetscReal negative_rel_tol = 1.0e-10;
+    PetscInt max_print = 16;
+
+    PetscFunctionBegin;
+    PetscCall(PetscOptionsGetBool(NULL, NULL,
+                                  "-flow123d_feti_local_hessian_spectrum",
+                                  &enabled, NULL));
+    if (!enabled) PetscFunctionReturn(PETSC_SUCCESS);
+
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_local_hessian_spectrum_zero_rel_tol",
+                                  &zero_rel_tol, NULL));
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_local_hessian_spectrum_negative_rel_tol",
+                                  &negative_rel_tol, NULL));
+    PetscCall(PetscOptionsGetInt(NULL, NULL,
+                                 "-flow123d_feti_local_hessian_spectrum_max_print",
+                                 &max_print, NULL));
+
+    PetscInt m, n;
+    PetscCall(MatGetSize(local_hessian, &m, &n));
+    PetscCheck(m == n, comm, PETSC_ERR_ARG_SIZ,
+               "Local FETI Hessian is not square.");
+
+    PetscMPIInt rank;
+    PetscCallMPI(MPI_Comm_rank(comm, &rank));
+
+    if (n == 0) {
+        PetscCall(PetscSynchronizedPrintf(comm,
+            "[feti local Hessian spectrum] rank: %d, size: 0\n", rank));
+        PetscCall(PetscSynchronizedFlush(comm, PETSC_STDOUT));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    Mat dense = NULL;
+    PetscCall(MatConvert(local_hessian, MATSEQDENSE, MAT_INITIAL_MATRIX, &dense));
+
+    PetscScalar *array = NULL;
+    PetscCall(MatDenseGetArray(dense, &array));
+
+    PetscBLASInt bn, lda, info;
+    PetscCall(PetscBLASIntCast(n, &bn));
+    lda = bn;
+
+    PetscReal *eigenvalues = NULL;
+    PetscCall(PetscMalloc1(n, &eigenvalues));
+
+    PetscBLASInt lwork = -1;
+    PetscScalar work_query;
+    LAPACKsyev_("N", "U", &bn, array, &lda, eigenvalues,
+                &work_query, &lwork, &info);
+    PetscCheck(info == 0, comm, PETSC_ERR_LIB,
+               "LAPACKsyev workspace query failed with info=%d", (int)info);
+
+    lwork = static_cast<PetscBLASInt>(PetscRealPart(work_query));
+    PetscScalar *work = NULL;
+    PetscCall(PetscMalloc1(lwork, &work));
+
+    LAPACKsyev_("N", "U", &bn, array, &lda, eigenvalues,
+                work, &lwork, &info);
+
+    PetscCall(MatDenseRestoreArray(dense, &array));
+    PetscCall(MatDestroy(&dense));
+    PetscCall(PetscFree(work));
+
+    PetscCheck(info == 0, comm, PETSC_ERR_LIB,
+               "LAPACKsyev failed with info=%d", (int)info);
+
+    PetscReal max_abs = 0.0;
+    for (PetscInt i = 0; i < n; ++i)
+        max_abs = std::max(max_abs, PetscAbsReal(eigenvalues[i]));
+
+    const PetscReal scale = max_abs > 0.0 ? max_abs : 1.0;
+    const PetscReal zero_tol = zero_rel_tol * scale;
+    const PetscReal negative_tol = negative_rel_tol * scale;
+
+    PetscInt near_zero = 0;
+    PetscInt negative = 0;
+    for (PetscInt i = 0; i < n; ++i) {
+        if (PetscAbsReal(eigenvalues[i]) <= zero_tol) ++near_zero;
+        if (eigenvalues[i] < -negative_tol) ++negative;
+    }
+
+    PetscCall(PetscSynchronizedPrintf(comm,
+        "[feti local Hessian spectrum] rank: %d, size: %d, lambda_min: %.16e, "
+        "lambda_max: %.16e, max_abs: %.16e, near_zero: %d, negative: %d, "
+        "zero_tol: %.16e, negative_tol: %.16e\n",
+        rank, (int)n, (double)eigenvalues[0], (double)eigenvalues[n - 1],
+        (double)max_abs, (int)near_zero, (int)negative,
+        (double)zero_tol, (double)negative_tol));
+
+    const PetscInt nprint = std::max<PetscInt>(0, std::min(n, max_print));
+    PetscCall(PetscSynchronizedPrintf(comm,
+        "[feti local Hessian spectrum] rank: %d, first_eigenvalues:", rank));
+    for (PetscInt i = 0; i < nprint; ++i)
+        PetscCall(PetscSynchronizedPrintf(comm, " %.16e", (double)eigenvalues[i]));
+    if (nprint < n)
+        PetscCall(PetscSynchronizedPrintf(comm, " ..."));
+    PetscCall(PetscSynchronizedPrintf(comm, "\n"));
+    PetscCall(PetscSynchronizedFlush(comm, PETSC_STDOUT));
+
+    PetscCall(PetscFree(eigenvalues));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -502,6 +612,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         }
         ISDestroy(&isnz_tmp);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
+        chkerr(print_feti_local_hessian_spectrum(comm_, Aloc_feti));
         chkerr(MatISRestoreLocalMat(matrix_, &Aloc));
         chkerr(ISGetIndices(isnz, &nz_arr));
         chkerr(ISGetLocalSize(isnz, &nrows));
