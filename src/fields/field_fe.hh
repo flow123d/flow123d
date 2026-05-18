@@ -38,10 +38,116 @@
 #include "fem/dh_cell_accessor.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/integral_acc.hh"
+#include "fem/op_function.hh"
 #include "input/factory.hh"
 #include "coupling/assembly_internals.hh"
 
 #include <memory>
+
+
+
+namespace Op {
+
+/// Evaluates scalar shape values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class FieldFeBase : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	FieldFeBase(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::initializer_list<uint> shape, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : PatchOp<spacedim>(dim, pfev, quad, shape),
+	  dh_(dh), data_vec_(data_vec)
+    {}
+
+    void eval() override {
+        auto shape_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+        PatchPointValues<spacedim> &ppv = this->ppv();
+
+        uint n_dofs = this->input_ops(0)->n_dofs();
+        uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
+
+        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> data_vec_pts(n_dofs);
+        for (uint i=0; i<n_dofs; ++i) {
+            data_vec_pts(i) = ArenaVec<double>( n_patch_points, this->patch_arena() );
+            for (uint i_p=0; i_p<result_vec(i).data_size(); ++i_p) {
+                result_vec(i)(i_p) = 0.0;
+            }
+        }
+
+        unsigned int last_element_idx = -1;
+        LocDofVec loc_dofs;
+        unsigned int range_bgn=0, range_end=0;
+        for (uint i=0; i<n_patch_points; ++i) {
+            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
+            if (elm_idx != last_element_idx) {
+                DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
+                loc_dofs = cell.get_loc_dof_indices();
+                last_element_idx = elm_idx;
+                range_bgn = this->fe_item_[cell.dim()].range_begin_;
+                range_end = this->fe_item_[cell.dim()].range_end_;
+            }
+            for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
+                data_vec_pts(i_cdof)(i) = data_vec_.get(loc_dofs[i_dof]);
+            }
+        }
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint i_c=0; i_c<this->n_comp(); ++i_c) {
+                result_vec(i_c) += data_vec_pts(i_dof) * shape_vec(i_dof*this->n_comp() + i_c);
+            }
+        }
+    }
+
+protected:
+    /// Data members shared with FieldFE
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    VectorMPI data_vec_;
+};
+
+/// Evaluates scalar shape values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class FieldFeScalar : public FieldFeBase<dim, Domain, spacedim> {
+public:
+    /// Constructor
+	FieldFeScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {1}, dh, data_vec)
+    {
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::ScalarShape<dim, Domain, spacedim>, dim >(quad, fe) );
+    }
+
+};
+
+/// Evaluates scalar shape values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class FieldFeVector : public FieldFeBase<dim, Domain, spacedim> {
+public:
+    /// Constructor
+	FieldFeVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {spacedim}, dh, data_vec)
+    {
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::VectorShape<dim, Domain, spacedim>, dim >(quad, fe) );
+    }
+
+};
+
+/// Evaluates scalar shape values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class FieldFeTensor : public FieldFeBase<dim, Domain, spacedim> {
+public:
+    /// Constructor
+	FieldFeTensor(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {spacedim, spacedim}, dh, data_vec)
+    {
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::TensorShape<dim, Domain, spacedim>, dim >(quad, fe) );
+    }
+
+};
+
+}
+
 
 
 
