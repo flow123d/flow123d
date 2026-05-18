@@ -235,6 +235,60 @@ PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessia
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+PetscErrorCode print_feti_permon_nullspace_dimension(MPI_Comm comm, QP qp)
+{
+    PetscBool enabled = PETSC_FALSE;
+
+    PetscFunctionBegin;
+    PetscCall(PetscOptionsGetBool(NULL, NULL,
+                                  "-flow123d_feti_permon_nullspace_dimension",
+                                  &enabled, NULL));
+    if (!enabled) PetscFunctionReturn(PETSC_SUCCESS);
+
+    PetscMPIInt rank;
+    PetscCallMPI(MPI_Comm_rank(comm, &rank));
+
+    PetscInt chain_index = 0;
+    QP current = qp;
+    while (current) {
+        Mat R = NULL;
+        PetscErrorCode (*transform)(QP) = NULL;
+        PetscCall(QPGetOperatorNullSpace(current, &R));
+        PetscCall(QPGetTransform(current, &transform));
+
+        const char *transform_name = "root";
+        if (transform == (PetscErrorCode (*)(QP))QPTScale) transform_name = "QPTScale";
+        else if (transform == (PetscErrorCode (*)(QP))QPTEnforceEqByProjector) transform_name = "QPTEnforceEqByProjector";
+        else if (transform == (PetscErrorCode (*)(QP))QPTHomogenizeEq) transform_name = "QPTHomogenizeEq";
+        else if (transform) transform_name = "other";
+
+        if (!R) {
+            PetscCall(PetscSynchronizedPrintf(comm,
+                "[feti PERMON nullspace] rank: %d, qp_chain_index: %d, "
+                "transform: %s, R: null, dim: 0\n",
+                rank, (int)chain_index, transform_name));
+        } else {
+            PetscInt m_local, n_local, m_global, n_global;
+            PetscCall(MatGetLocalSize(R, &m_local, &n_local));
+            PetscCall(MatGetSize(R, &m_global, &n_global));
+
+            PetscCall(PetscSynchronizedPrintf(comm,
+                "[feti PERMON nullspace] rank: %d, qp_chain_index: %d, "
+                "transform: %s, R_local_size: %d x %d, "
+                "R_global_size: %d x %d, dim: %d\n",
+                rank, (int)chain_index, transform_name,
+                (int)m_local, (int)n_local, (int)m_global, (int)n_global,
+                (int)n_global));
+        }
+
+        PetscCall(QPGetChild(current, &current));
+        ++chain_index;
+    }
+    PetscCall(PetscSynchronizedFlush(comm, PETSC_STDOUT));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 } // namespace
 
 const it::Record & LinSys_PERMON::get_input_type() {
@@ -668,6 +722,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
         chkerr(QPTFromOptions(system));
+        chkerr(print_feti_permon_nullspace_dimension(comm_, system));
         system_dual = system;
         chkerr(QPGetParent(system, &system));
     } else {
