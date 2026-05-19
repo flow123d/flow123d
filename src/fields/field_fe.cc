@@ -264,7 +264,7 @@ void FieldFE<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
     std::shared_ptr<EvalPoints> eval_points = asm_internals.eval_points_;
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
-    fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
+    fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values); // add operation to asm_internals.fe_values_
     fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
     fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
 }
@@ -811,21 +811,6 @@ double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, unsigned int e
 
     return return_val;
 }
-
-
-
-/*template <int spacedim, class Value>
-Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
-        unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-{
-    Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
-    for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-        v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
-    if (Value::NRows_ == Value::NCols_)
-        return v;
-    else
-        return v.t();
-}*/
 
 
 
