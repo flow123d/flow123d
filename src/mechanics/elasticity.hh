@@ -115,7 +115,8 @@ public:
 		EqData()
         : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
 		  dirichlet_matrix(nullptr), dirichlet_vec(nullptr),
-          rigid_body_modes_matrix(nullptr)
+          rigid_body_modes_matrix(nullptr),
+		  feti_user_nullspace(false)
 		{}
 
 		~EqData();
@@ -153,6 +154,7 @@ public:
 
 		bool fix_nullspace;
 		bool dirichlet_by_eq; // enforce Dirichlet b.c. by equality constraints
+		bool feti_user_nullspace; // provide explicitly assembled local RBM nullspace to PERMON FETI
 
     	// @}
 

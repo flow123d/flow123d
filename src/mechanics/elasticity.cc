@@ -72,6 +72,7 @@ const Record & Elasticity::get_input_type() {
            .declare_key("feti", Bool(), IT::Default("false"), "Use FETI domain decomposition.")
            .declare_key("view_matrices", Bool(), IT::Default("false"), "Print system matrices and vectors.")
            .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
+           .declare_key("feti_user_nullspace", Bool(), IT::Default("false"), "Use explicitly assembled rigid body modes as the FETI operator nullspace.")
            .declare_key("dirichlet_by_eq", Bool(), IT::Default("false"), "Enforce Dirichlet b.c. by equality constraints instead of penalization.")
 		   .close();
 }
@@ -481,7 +482,8 @@ void Elasticity::initialize()
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    if (use_feti)
+    eq_data_->feti_user_nullspace = input_rec.val<bool>("feti_user_nullspace");
+    if (use_feti && eq_data_->feti_user_nullspace)
         rigid_body_modes_assembly_ = new RigidBodyModesAssemblyElasticity(eq_data_.get());
 
     eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
