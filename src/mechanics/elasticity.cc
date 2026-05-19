@@ -291,6 +291,7 @@ Elasticity::EqData::~EqData()
     if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
     if (dirichlet_matrix!=nullptr) MatDestroy(&dirichlet_matrix);
     if (dirichlet_vec!=nullptr) VecDestroy(&dirichlet_vec);
+    if (rigid_body_modes_matrix!=nullptr) MatDestroy(&rigid_body_modes_matrix);
 }
 
 void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
@@ -325,7 +326,8 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
 		  output_fields_assembly_(nullptr),
-          dirichlet_assembly_(nullptr)
+          dirichlet_assembly_(nullptr),
+          rigid_body_modes_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
@@ -479,6 +481,8 @@ void Elasticity::initialize()
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    if (use_feti)
+        rigid_body_modes_assembly_ = new RigidBodyModesAssemblyElasticity(eq_data_.get());
 
     eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
     if (eq_data_->dirichlet_by_eq) {
@@ -505,6 +509,7 @@ Elasticity::~Elasticity()
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
     if (dirichlet_assembly_!=nullptr) delete dirichlet_assembly_;
+    if (rigid_body_modes_assembly_!=nullptr) delete rigid_body_modes_assembly_;
 
     eq_data_.reset();
     eq_fields_.reset();
@@ -644,6 +649,13 @@ void Elasticity::preallocate()
         VecAssemblyBegin(eq_data_->dirichlet_vec);
         VecAssemblyEnd(eq_data_->dirichlet_vec);
         eq_data_->ls->set_equality(eq_data_->dirichlet_matrix, eq_data_->dirichlet_vec);
+    }
+
+    if (rigid_body_modes_assembly_ != nullptr) {
+        rigid_body_modes_assembly_->assemble(eq_data_->dh_);
+        MatAssemblyBegin(eq_data_->rigid_body_modes_matrix, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(eq_data_->rigid_body_modes_matrix, MAT_FINAL_ASSEMBLY);
+        eq_data_->ls->set_operator_nullspace(eq_data_->rigid_body_modes_matrix);
     }
 
     if (has_contact_)

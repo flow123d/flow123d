@@ -19,6 +19,7 @@
 // derived from base linsys
 #include "la/linsys_PERMON.hh"
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 #include <vector>
 #include "petscvec.h"
@@ -26,6 +27,7 @@
 #include "petscmat.h"
 #include "petscblaslapack.h"
 #include "permonvec.h"
+#include "permonmat.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
 #include "fem/dofhandler.hh"
@@ -123,6 +125,130 @@ PetscErrorCode convert_mat_is_to_feti_decomposed(Mat matrix_is,
     PetscCall(ISDestroy(&ris_all));
     PetscCall(MatDestroy(&Bloc_reduced));
     PetscCall(MatISRestoreLocalMat(matrix_is, &Bloc));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode create_reduced_nullspace_local(Mat nullspace_is,
+                                               IS isnz,
+                                               Mat *Rloc_reduced)
+{
+    Mat Rloc = NULL;
+    IS cis_all = NULL;
+    PetscInt nrows_local, ncols_local;
+
+    PetscFunctionBegin;
+    PetscCheck(nullspace_is, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null operator nullspace matrix.");
+    PetscCheck(isnz, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null reduced-row index set.");
+    PetscCheck(Rloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null output reduced local nullspace matrix pointer.");
+
+    PetscCall(MatISGetLocalMat(nullspace_is, &Rloc));
+    PetscCall(MatGetLocalSize(Rloc, &nrows_local, &ncols_local));
+    PetscCall(ISCreateStride(PETSC_COMM_SELF, ncols_local, 0, 1, &cis_all));
+    PetscCall(MatCreateSubMatrix(Rloc, isnz, cis_all,
+                                 MAT_INITIAL_MATRIX, Rloc_reduced));
+    PetscCall(MatISRestoreLocalMat(nullspace_is, &Rloc));
+    PetscCall(ISDestroy(&cis_all));
+
+    PetscCall(MatAssemblyBegin(*Rloc_reduced, MAT_FINAL_ASSEMBLY));
+    PetscCall(MatAssemblyEnd(*Rloc_reduced, MAT_FINAL_ASSEMBLY));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode convert_nullspace_to_feti_blockdiag(Mat Rloc_reduced,
+                                                   Mat *nullspace_blockdiag)
+{
+    PetscFunctionBegin;
+    PetscCheck(Rloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null reduced local nullspace matrix.");
+    PetscCheck(nullspace_blockdiag, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null output nullspace matrix pointer.");
+    PetscCall(MatCreateBlockDiag(PETSC_COMM_WORLD,
+                                 Rloc_reduced,
+                                 nullspace_blockdiag));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode orthonormalize_reduced_nullspace(Mat Rloc_reduced, Mat *Qloc_reduced)
+{
+    PetscFunctionBegin;
+    PetscCheck(Rloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null reduced local nullspace matrix.");
+    PetscCheck(Qloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
+               "Null output orthonormalized local nullspace matrix pointer.");
+
+    PetscInt m, n;
+    PetscCall(MatGetSize(Rloc_reduced, &m, &n));
+    if (n == 0) {
+        PetscCall(MatDuplicate(Rloc_reduced, MAT_COPY_VALUES, Qloc_reduced));
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    Mat gram = NULL, dense_gram = NULL;
+    PetscCall(MatTransposeMatMult(Rloc_reduced, Rloc_reduced, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &gram));
+    PetscCall(MatConvert(gram, MATSEQDENSE, MAT_INITIAL_MATRIX, &dense_gram));
+    PetscCall(MatDestroy(&gram));
+
+    PetscScalar *gram_array = NULL;
+    PetscCall(MatDenseGetArray(dense_gram, &gram_array));
+
+    PetscBLASInt bn, lda, info;
+    PetscCall(PetscBLASIntCast(n, &bn));
+    lda = bn;
+
+    PetscReal *eigenvalues = NULL;
+    PetscCall(PetscMalloc1(n, &eigenvalues));
+
+    PetscBLASInt lwork = -1;
+    PetscScalar work_query;
+    LAPACKsyev_("V", "U", &bn, gram_array, &lda, eigenvalues,
+                &work_query, &lwork, &info);
+    PetscCheck(info == 0, PETSC_COMM_SELF, PETSC_ERR_LIB,
+               "LAPACKsyev workspace query failed with info=%d", (int)info);
+
+    lwork = static_cast<PetscBLASInt>(PetscRealPart(work_query));
+    PetscScalar *work = NULL;
+    PetscCall(PetscMalloc1(lwork, &work));
+
+    LAPACKsyev_("V", "U", &bn, gram_array, &lda, eigenvalues,
+                work, &lwork, &info);
+    PetscCheck(info == 0, PETSC_COMM_SELF, PETSC_ERR_LIB,
+               "LAPACKsyev failed with info=%d", (int)info);
+
+    PetscReal lambda_max = 0.0;
+    for (PetscInt i = 0; i < n; ++i)
+        lambda_max = std::max(lambda_max, PetscAbsReal(eigenvalues[i]));
+    PetscReal rank_rel_tol = 1e-12;
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_user_nullspace_orthonormalize_rank_rel_tol",
+                                  &rank_rel_tol, NULL));
+    PetscReal rank_tol = rank_rel_tol * (lambda_max > 0.0 ? lambda_max : 1.0);
+
+    Mat transform = NULL;
+    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, n, n, NULL, &transform));
+    PetscScalar *transform_array = NULL;
+    PetscCall(MatDenseGetArray(transform, &transform_array));
+    for (PetscInt col = 0; col < n; ++col) {
+        PetscCheck(eigenvalues[col] > rank_tol, PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG,
+                   "User FETI nullspace matrix is rank deficient.");
+        PetscReal inv_sqrt_lambda = 1.0 / std::sqrt(eigenvalues[col]);
+        for (PetscInt row = 0; row < n; ++row)
+            transform_array[col*n + row] = gram_array[col*n + row] * inv_sqrt_lambda;
+    }
+    PetscCall(MatDenseRestoreArray(transform, &transform_array));
+    PetscCall(MatAssemblyBegin(transform, MAT_FINAL_ASSEMBLY));
+    PetscCall(MatAssemblyEnd(transform, MAT_FINAL_ASSEMBLY));
+
+    PetscCall(MatDenseRestoreArray(dense_gram, &gram_array));
+    PetscCall(MatDestroy(&dense_gram));
+    PetscCall(PetscFree(work));
+    PetscCall(PetscFree(eigenvalues));
+
+    PetscCall(MatMatMult(Rloc_reduced, transform, MAT_INITIAL_MATRIX, PETSC_DEFAULT, Qloc_reduced));
+    PetscCall(MatDestroy(&transform));
+
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -331,6 +457,7 @@ LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &pa
           matrix_(NULL),
           matrix_eq_(NULL),
           eq_(NULL),
+          operator_nullspace_(NULL),
           use_feti_(false)
 {
     PetscErrorCode ierr;
@@ -354,7 +481,8 @@ LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &pa
 }
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
-	: LinSys(other), params_(other.params_), l2g_(other.l2g_), solution_precision_(other.solution_precision_)
+	: LinSys(other), params_(other.params_), l2g_(other.l2g_), solution_precision_(other.solution_precision_),
+      operator_nullspace_(other.operator_nullspace_)
 {
     MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.rhs_, rhs_);
@@ -384,6 +512,12 @@ void LinSys_PERMON::set_equality(Mat matrix_eq, Vec eq)
 {
     matrix_eq_ = matrix_eq;
     eq_ = eq;
+}
+
+void LinSys_PERMON::set_operator_nullspace(Mat operator_nullspace)
+{
+    // TODO ref count?
+    operator_nullspace_ = operator_nullspace;
 }
 
 
@@ -688,7 +822,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(MatISSetLocalMat(Afixed, Aloc_feti));
         chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
         chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
-        chkerr(MatDestroy(&Aloc_feti));
 
         // set QP matrix
         chkerr(QPSetOperator(system, Afixed));
@@ -697,8 +830,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(QPTMatISToBlockDiag(system));
         chkerr(QPGetChild(system, &system)); // now system is decomposed
 
+        Mat Adecomposed = NULL;
         {
-            Mat Adecomposed;
             QPGetOperator(system, &Adecomposed);
             if (matrix_ineq_) {
                 Mat matrix_ineq_decomposed = NULL;
@@ -715,6 +848,19 @@ LinSys::SolveInfo LinSys_PERMON::solve()
                 chkerr(PetscOptionsInsertString(NULL, "-qpt_dualize_B_nest_extension"));
             }
         }
+        if (operator_nullspace_) {
+            Mat Rloc_reduced = NULL;
+            Mat Qloc_reduced = NULL;
+            Mat nullspace_decomposed = NULL;
+            chkerr(create_reduced_nullspace_local(operator_nullspace_, isnz, &Rloc_reduced));
+            chkerr(orthonormalize_reduced_nullspace(Rloc_reduced, &Qloc_reduced));
+            chkerr(convert_nullspace_to_feti_blockdiag(Qloc_reduced, &nullspace_decomposed));
+            chkerr(QPSetOperatorNullSpace(system, nullspace_decomposed));
+            chkerr(MatDestroy(&nullspace_decomposed));
+            chkerr(MatDestroy(&Qloc_reduced));
+            chkerr(MatDestroy(&Rloc_reduced));
+        }
+        chkerr(MatDestroy(&Aloc_feti));
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
         chkerr(ISDestroy(&isnz));
         chkerr(QPFetiSetUp(system));

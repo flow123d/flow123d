@@ -59,6 +59,8 @@ public:
 
     void set_equality(Mat matrix_eq, Vec eq);
 
+    void set_operator_nullspace(Mat operator_nullspace);
+
     void start_allocation() override;
 
     void start_add_assembly() override;
@@ -173,6 +175,7 @@ protected:
     Mat     matrix_eq_;          //!< PETSc matrix of equality constraint.
     Vec     eq_;                 //!< PETSc vector of equality constraint.
     Vec     warm_solution_;
+    Mat     operator_nullspace_; //!< User-provided Hessian nullspace.
 
     QP      system;
     QPS     solver;

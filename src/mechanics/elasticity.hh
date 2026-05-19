@@ -40,6 +40,7 @@ template<unsigned int dim> class RhsAssemblyElasticity;
 template<unsigned int dim> class ConstraintAssemblyElasticity;
 template<unsigned int dim> class OutpuFieldsAssemblyElasticity;
 template<unsigned int dim> class DirichletAssemblyElasticity;
+class RigidBodyModesAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -113,7 +114,8 @@ public:
 
 		EqData()
         : ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
-		  dirichlet_matrix(nullptr), dirichlet_vec(nullptr)
+		  dirichlet_matrix(nullptr), dirichlet_vec(nullptr),
+          rigid_body_modes_matrix(nullptr)
 		{}
 
 		~EqData();
@@ -146,6 +148,8 @@ public:
 		std::vector<double> dirichlet_coefs;
 		std::vector<double> dirichlet_values;
 		std::vector<unsigned int> dirichlet_row_starts;
+
+        Mat rigid_body_modes_matrix;
 
 		bool fix_nullspace;
 		bool dirichlet_by_eq; // enforce Dirichlet b.c. by equality constraints
@@ -269,6 +273,7 @@ private:
     GenericAssembly< ConstraintAssemblyElasticity > * constraint_assembly_;
     GenericAssembly< OutpuFieldsAssemblyElasticity > * output_fields_assembly_;
 	GenericAssembly< DirichletAssemblyElasticity > * dirichlet_assembly_;
+    RigidBodyModesAssemblyElasticity * rigid_body_modes_assembly_;
 
 };
 

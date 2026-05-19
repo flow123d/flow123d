@@ -18,6 +18,8 @@
 #ifndef ASSEMBLY_ELASTICITY_HH_
 #define ASSEMBLY_ELASTICITY_HH_
 
+#include <algorithm>
+
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "mechanics/elasticity.hh"
@@ -1029,6 +1031,159 @@ private:
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
+};
+
+
+class RigidBodyModesAssemblyElasticity
+{
+public:
+    typedef Elasticity::EqData EqData;
+
+    RigidBodyModesAssemblyElasticity(EqData *eq_data)
+    : eq_data_(eq_data), max_dim_(0), n_modes_(0) {}
+
+    ~RigidBodyModesAssemblyElasticity() {}
+
+    void assemble(std::shared_ptr<DOFHandlerMultiDim> dh)
+    {
+        max_dim_ = find_largest_element_dimension(dh);
+        init_default_normals();
+        n_modes_ = 3 + normal_vectors_.size();
+        compute_local_origin(dh);
+        create_modes_matrix(dh);
+
+        for (auto cell : dh->own_range())
+            assemble_cell(cell);
+    }
+
+private:
+    unsigned int find_largest_element_dimension(std::shared_ptr<DOFHandlerMultiDim> dh) const
+    {
+        unsigned int max_dim = 0;
+        for (auto cell : dh->own_range())
+            max_dim = std::max(max_dim, cell.dim());
+        return max_dim;
+    }
+
+    void init_default_normals()
+    {
+        normal_vectors_.clear();
+
+        // TODO: Replace by user hints or mesh-based heuristic.
+        if (max_dim_ == 2) {
+            arma::vec3 n;
+            n.zeros();
+            n[2] = 1.0;
+            normal_vectors_.push_back(n);
+        } else if (max_dim_ == 1) {
+            arma::vec3 n1, n2;
+            n1.zeros();
+            n2.zeros();
+            n1[1] = 1.0;
+            n2[2] = 1.0;
+            normal_vectors_.push_back(n1);
+            normal_vectors_.push_back(n2);
+        }
+    }
+
+    void compute_local_origin(std::shared_ptr<DOFHandlerMultiDim> dh)
+    {
+        origin_.zeros();
+        unsigned int n_points = 0;
+
+        for (auto cell : dh->own_range()) {
+            if (cell.dim() != max_dim_) continue;
+            for (unsigned int i=0; i<cell.elm()->n_nodes(); ++i) {
+                origin_ += *cell.elm().node(i);
+                ++n_points;
+            }
+        }
+
+        if (n_points > 0) origin_ /= n_points;
+    }
+
+    void create_modes_matrix(std::shared_ptr<DOFHandlerMultiDim> dh)
+    {
+        if (eq_data_->rigid_body_modes_matrix != nullptr)
+            MatDestroy(&eq_data_->rigid_body_modes_matrix);
+
+        PetscInt first_mode = 0;
+        PetscInt n_modes_petsc = n_modes_;
+        MPI_Exscan(&n_modes_petsc, &first_mode, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD);
+
+        std::vector<PetscInt> cols_l2g(n_modes_);
+        for (unsigned int i=0; i<n_modes_; ++i)
+            cols_l2g[i] = first_mode + i;
+
+        ISLocalToGlobalMapping row_l2g = NULL;
+        ISLocalToGlobalMapping col_l2g = NULL;
+
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1,
+            dh->get_local_to_global_map().size(),
+            dh->get_local_to_global_map().data(),
+            PETSC_COPY_VALUES, &row_l2g);
+
+        ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1,
+            n_modes_, cols_l2g.data(), PETSC_COPY_VALUES, &col_l2g);
+
+        MatCreateIS(PETSC_COMM_WORLD, 1,
+                    dh->lsize(), n_modes_,
+                    PETSC_DETERMINE, PETSC_DETERMINE,
+                    row_l2g, col_l2g,
+                    &eq_data_->rigid_body_modes_matrix);
+
+        Mat local_modes = NULL;
+        MatISGetLocalMat(eq_data_->rigid_body_modes_matrix, &local_modes);
+        MatSeqAIJSetPreallocation(local_modes, n_modes_, NULL);
+        MatISRestoreLocalMat(eq_data_->rigid_body_modes_matrix, &local_modes);
+
+        ISLocalToGlobalMappingDestroy(&row_l2g);
+        ISLocalToGlobalMappingDestroy(&col_l2g);
+
+        MatZeroEntries(eq_data_->rigid_body_modes_matrix);
+    }
+
+    void assemble_cell(DHCellAccessor cell)
+    {
+        LocDofVec dof_indices = cell.get_loc_dof_indices();
+
+        for (unsigned int i=0; i<cell.n_dofs(); ++i) {
+            const Dof &dof = cell.cell_dof(i);
+            const arma::vec &dof_coefs = dof.coefs;
+            arma::vec3 x = dof_real_point(cell, dof);
+            arma::vec3 mode_value;
+
+            for (unsigned int mode=0; mode<3; ++mode) {
+                mode_value.zeros();
+                mode_value[mode] = 1.0;
+                MatSetValueLocal(eq_data_->rigid_body_modes_matrix,
+                                 dof_indices[i], mode, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
+            }
+
+            for (unsigned int n=0; n<normal_vectors_.size(); ++n) {
+                mode_value = arma::cross(normal_vectors_[n], x - origin_);
+                MatSetValueLocal(eq_data_->rigid_body_modes_matrix,
+                                 dof_indices[i], 3+n, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
+            }
+        }
+    }
+
+    arma::vec3 dof_real_point(DHCellAccessor cell, const Dof &dof) const
+    {
+        arma::vec3 x;
+        x.zeros();
+        for (unsigned int i=0; i<dof.coords.n_elem; ++i)
+            x += dof.coords[i] * (*cell.elm().node(i));
+        return x;
+    }
+
+    EqData *eq_data_;
+
+    unsigned int max_dim_;
+    unsigned int n_modes_;
+
+    arma::vec3 origin_;
+    std::vector<arma::vec3> normal_vectors_;
 };
 
 
