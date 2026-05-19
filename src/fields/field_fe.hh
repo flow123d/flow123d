@@ -48,15 +48,18 @@
 
 namespace Op {
 
-/// Evaluates scalar shape values
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class FieldFeBase : public PatchOp<spacedim> {
+/// Evaluates FieldFE on quadrature points defined in patch
+template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3>
+class FieldFeOp : public PatchOp<spacedim> {
 public:
     /// Constructor
-	FieldFeBase(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::initializer_list<uint> shape, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : PatchOp<spacedim>(dim, pfev, quad, shape),
+	FieldFeOp(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
 	  dh_(dh), data_vec_(data_vec)
-    {}
+	    {
+	        this->domain_ = Domain::domain();
+	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
+	    }
 
     void eval() override {
         auto shape_vec = this->input_ops(0)->result_matrix();
@@ -104,49 +107,7 @@ protected:
     VectorMPI data_vec_;
 };
 
-/// Evaluates scalar shape values
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class FieldFeScalar : public FieldFeBase<dim, Domain, spacedim> {
-public:
-    /// Constructor
-	FieldFeScalar(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {1}, dh, data_vec)
-    {
-        this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::ScalarShape<dim, Domain, spacedim>, dim >(quad, fe) );
-    }
-
-};
-
-/// Evaluates scalar shape values
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class FieldFeVector : public FieldFeBase<dim, Domain, spacedim> {
-public:
-    /// Constructor
-	FieldFeVector(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {spacedim}, dh, data_vec)
-    {
-        this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::VectorShape<dim, Domain, spacedim>, dim >(quad, fe) );
-    }
-
-};
-
-/// Evaluates scalar shape values
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
-class FieldFeTensor : public FieldFeBase<dim, Domain, spacedim> {
-public:
-    /// Constructor
-	FieldFeTensor(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : FieldFeBase<dim, Domain, spacedim>(pfev, quad, {spacedim, spacedim}, dh, data_vec)
-    {
-        this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::TensorShape<dim, Domain, spacedim>, dim >(quad, fe) );
-    }
-
-};
-
-}
+} // end of namespace Op
 
 
 

@@ -736,9 +736,11 @@ public:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class ScalarShape : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {1};
+
     /// Constructor
     ScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, ScalarShape<dim, Domain, spacedim>::result_shape, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
         this->domain_ = Domain::domain();
@@ -774,9 +776,11 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class ScalarShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {1};
+
     /// Constructor
     ScalarShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, ScalarShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FEScalar).error("Type of FiniteElement of scalar_shape must be FEScalar!\n");
         this->domain_ = Op::SideDomain::domain();
@@ -798,9 +802,11 @@ public:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorShape : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim};
+
     /// Constructor
 	VectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, VectorShape<dim, Domain, spacedim>::result_shape, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Domain, spacedim>, dim >(quad, fe) );
@@ -837,9 +843,11 @@ private:
 template<unsigned int dim, unsigned int spacedim>
 class VectorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim};
+
     /// Constructor
 	VectorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
+    : PatchOp<spacedim>(dim, pfev, quad, VectorShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs()), dispatch_op_(dispatch_op)
     {
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefVector<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
@@ -1034,9 +1042,11 @@ private:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class TensorShape : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+
     /// Constructor
 	TensorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Domain, spacedim>::result_shape, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
         this->domain_ = Domain::domain();
@@ -1073,9 +1083,11 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class TensorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+
     /// Constructor
 	TensorShape(PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs())
     {
         ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
         this->domain_ = Op::SideDomain::domain();
