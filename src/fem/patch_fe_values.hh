@@ -58,7 +58,7 @@ public:
         for (uint dim=0; dim<spacedim+1; ++dim) {
             patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim], bulk_domain) );
             patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim], side_domain) );
-            element_quads_.push_back( QGauss(dim, 0) );
+            element_quads_.push_back( new QGauss(dim, 0) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
     }
@@ -282,15 +282,15 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad, std::string f_name = "None") {
+    PatchOp<spacedim>* get(Quadrature &quad, std::string f_name = "None") {
         std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size(), f_name);
+        auto tpl = OperationTplHash::op_tuple(op_name, quad.size(), f_name);
         auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad);
             op_dependency_[tpl] = new_op;
             operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
+            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad.size());
             return new_op;
         } else {
             return it->second;
@@ -305,15 +305,15 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe, std::string f_name = "None") {
+    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, std::string f_name = "None") {
         std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size(), f_name);
+        auto tpl = OperationTplHash::op_tuple(op_name, quad.size(), f_name);
         auto it = op_dependency_.find( tpl );
         if (it == op_dependency_.end()) {
             PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
             op_dependency_[tpl] = new_op;
             operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
+            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad.size());
             return new_op;
         } else {
             return it->second;
@@ -365,9 +365,9 @@ public:
     }
 
     /// Return element quadrature (passed to element / side operations)
-    const Quadrature* element_quad(unsigned int dim) const {
+    Quadrature &element_quad(unsigned int dim) const {
         ASSERT( dim <= 3 );
-        return &element_quads_[dim];
+        return *(element_quads_[dim]);
     }
 
 private:
@@ -412,7 +412,7 @@ private:
      * of these operations (with different quadrature sizes). Quadrature size has no effect on result
      * of these operations.
      */
-    std::vector<Quadrature> element_quads_;
+    std::vector<Quadrature *> element_quads_;
 
     friend class PatchOp<spacedim>;
 };

@@ -49,7 +49,7 @@ public:
      *
      * Set all data members.
      */
-    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, const Quadrature *quad, std::initializer_list<uint> shape, uint n_dofs = 1)
+    PatchOp(uint dim, PatchFEValues<spacedim> &pfev, Quadrature &quad, std::initializer_list<uint> shape, uint n_dofs = 1)
     : dim_(dim), shape_(set_shape_vec(shape)), n_dofs_(n_dofs), patch_fe_(&pfev), quad_(quad)
     {
         ASSERT_GT(n_dofs, 0);
@@ -173,7 +173,7 @@ public:
 
     /// Return size of quadrature
     inline unsigned int quad_size() const {
-        return quad_->size();
+        return quad_.size();
     }
 
     /// return reference to patch arena
@@ -190,7 +190,7 @@ protected:
     std::vector<PatchOp<spacedim> *> input_ops_;  ///< Indices of operations in PatchPointValues::operations_ vector on which PatchOp is depended
     uint n_dofs_;                                 ///< Number of DOFs of FE operations (or 1 in case of element operations)
     PatchFEValues<spacedim> *patch_fe_;           ///< Pointer to PatchFEValues object
-    const Quadrature* quad_;                      ///< Pointer to Quadrature
+    Quadrature &quad_;                      ///< Reference to Quadrature
 
     friend class PatchFEValues<spacedim>;
 };

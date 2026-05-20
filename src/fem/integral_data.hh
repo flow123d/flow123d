@@ -225,5 +225,75 @@ template<typename Operation>
 using OperationMap = std::unordered_map<std::tuple<std::string, uint, std::string>, Operation *, OperationTplHash>;
 
 
+/** New computation of operation hash **/
+
+/*
+#include <memory>
+#include <unordered_map>
+#include <typeinfo>
+#include <mutex>
+#include <functional>
+#include <type_traits>
+#include <utility>
+
+inline void hash_combine(std::size_t& seed, std::size_t value)
+{
+    seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+}
+
+template <class T>
+void hash_one(std::size_t& seed, const T& value)
+{
+    using U = std::decay_t<T>;
+    hash_combine(seed, std::hash<U>{}(value));
+}
+
+template <class... Args>
+std::size_t hash_args(const Args&... args)
+{
+    std::size_t seed = 0;
+    (hash_one(seed, args), ...);
+    return seed;
+}
+
+template <class BaseT>
+class CachedFactory {
+public:
+    template <class DerivedT, class... Args>
+    static std::shared_ptr<BaseT> get(Args&&... args)
+    {
+        static_assert(std::is_base_of_v<BaseT, DerivedT>,
+                      "DerivedT must derive from BaseT");
+
+        std::size_t key = 0;
+
+        hash_combine(key, typeid(DerivedT).hash_code());
+        hash_combine(key, hash_args(args...));
+
+        std::lock_guard<std::mutex> lock(mutex_);
+
+        auto it = cache_.find(key);
+        if (it != cache_.end()) {
+            if (auto existing = it->second.lock()) {
+                return existing;
+            }
+        }
+
+        auto created = std::make_shared<DerivedT>(
+            std::forward<Args>(args)...
+        );
+
+        cache_[key] = created;
+        return created;
+    }
+
+private:
+    static inline std::mutex mutex_;
+    static inline std::unordered_map<
+        std::size_t,
+        std::weak_ptr<BaseT>
+    > cache_;
+};
+// */
 
 #endif /* INTEGRAL_DATA_HH_ */
