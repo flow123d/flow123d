@@ -379,12 +379,95 @@ PetscErrorCode print_feti_user_nullspace_test(MPI_Comm comm, Mat Aloc_feti, Mat 
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessian)
+PetscErrorCode print_feti_local_hessian_graph_components(MPI_Comm comm, Mat local_hessian)
+{
+    PetscBool enabled = PETSC_FALSE;
+    PetscReal drop_tol = 0.0;
+
+    PetscFunctionBegin;
+    PetscCall(PetscOptionsGetBool(NULL, NULL,
+                                  "-flow123d_feti_local_hessian_graph",
+                                  &enabled, NULL));
+    if (!enabled) PetscFunctionReturn(PETSC_SUCCESS);
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_local_hessian_graph_drop_tol",
+                                  &drop_tol, NULL));
+
+    PetscMPIInt rank;
+    PetscCallMPI(MPI_Comm_rank(comm, &rank));
+
+    PetscInt nrows, ncols;
+    PetscCall(MatGetSize(local_hessian, &nrows, &ncols));
+    PetscCheck(nrows == ncols, comm, PETSC_ERR_ARG_SIZ,
+               "Local FETI Hessian graph diagnostic needs a square matrix.");
+
+    std::vector<PetscInt> parent(nrows);
+    std::vector<PetscInt> comp_size(nrows, 1);
+    for (PetscInt i = 0; i < nrows; ++i) parent[i] = i;
+
+    auto find_root = [&parent](PetscInt i) {
+        PetscInt root = i;
+        while (parent[root] != root) root = parent[root];
+        while (parent[i] != i) {
+            PetscInt next = parent[i];
+            parent[i] = root;
+            i = next;
+        }
+        return root;
+    };
+
+    auto unite = [&parent, &comp_size, &find_root](PetscInt a, PetscInt b) {
+        PetscInt ra = find_root(a);
+        PetscInt rb = find_root(b);
+        if (ra == rb) return;
+        if (comp_size[ra] < comp_size[rb]) std::swap(ra, rb);
+        parent[rb] = ra;
+        comp_size[ra] += comp_size[rb];
+    };
+
+    for (PetscInt i = 0; i < nrows; ++i) {
+        PetscInt ncols_row = 0;
+        const PetscInt *cols = NULL;
+        const PetscScalar *vals = NULL;
+        PetscCall(MatGetRow(local_hessian, i, &ncols_row, &cols, &vals));
+        for (PetscInt j = 0; j < ncols_row; ++j) {
+            if (cols[j] == i) continue;
+            if (cols[j] < 0 || cols[j] >= nrows) continue;
+            if (PetscAbsScalar(vals[j]) <= drop_tol) continue;
+            unite(i, cols[j]);
+        }
+        PetscCall(MatRestoreRow(local_hessian, i, &ncols_row, &cols, &vals));
+    }
+
+    std::unordered_map<PetscInt, PetscInt> sizes;
+    for (PetscInt i = 0; i < nrows; ++i)
+        ++sizes[find_root(i)];
+
+    std::vector<PetscInt> sorted_sizes;
+    sorted_sizes.reserve(sizes.size());
+    for (const auto &item : sizes) sorted_sizes.push_back(item.second);
+    std::sort(sorted_sizes.begin(), sorted_sizes.end(), std::greater<PetscInt>());
+
+    PetscCall(PetscSynchronizedPrintf(comm,
+        "[feti local Hessian graph] rank: %d, size: %d, components: %d, "
+        "drop_tol: %.16e, component_sizes:",
+        rank, (int)nrows, (int)sorted_sizes.size(), (double)drop_tol));
+    for (PetscInt size : sorted_sizes)
+        PetscCall(PetscSynchronizedPrintf(comm, " %d", (int)size));
+    PetscCall(PetscSynchronizedPrintf(comm, "\n"));
+    PetscCall(PetscSynchronizedFlush(comm, PETSC_STDOUT));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessian,
+                                                 IS reduced_rows, PetscInt owned_local_size)
 {
     PetscBool enabled = PETSC_FALSE;
     PetscReal zero_rel_tol = 1.0e-8;
     PetscReal negative_rel_tol = 1.0e-10;
     PetscInt max_print = 16;
+    PetscInt max_vector_print = 0;
 
     PetscFunctionBegin;
     PetscCall(PetscOptionsGetBool(NULL, NULL,
@@ -401,6 +484,9 @@ PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessia
     PetscCall(PetscOptionsGetInt(NULL, NULL,
                                  "-flow123d_feti_local_hessian_spectrum_max_print",
                                  &max_print, NULL));
+    PetscCall(PetscOptionsGetInt(NULL, NULL,
+                                 "-flow123d_feti_local_hessian_spectrum_vector_split_max_print",
+                                 &max_vector_print, NULL));
 
     PetscInt m, n;
     PetscCall(MatGetSize(local_hessian, &m, &n));
@@ -432,7 +518,8 @@ PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessia
 
     PetscBLASInt lwork = -1;
     PetscScalar work_query;
-    LAPACKsyev_("N", "U", &bn, array, &lda, eigenvalues,
+    const char jobz = max_vector_print > 0 ? 'V' : 'N';
+    LAPACKsyev_(&jobz, "U", &bn, array, &lda, eigenvalues,
                 &work_query, &lwork, &info);
     PetscCheck(info == 0, comm, PETSC_ERR_LIB,
                "LAPACKsyev workspace query failed with info=%d", (int)info);
@@ -441,11 +528,9 @@ PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessia
     PetscScalar *work = NULL;
     PetscCall(PetscMalloc1(lwork, &work));
 
-    LAPACKsyev_("N", "U", &bn, array, &lda, eigenvalues,
+    LAPACKsyev_(&jobz, "U", &bn, array, &lda, eigenvalues,
                 work, &lwork, &info);
 
-    PetscCall(MatDenseRestoreArray(dense, &array));
-    PetscCall(MatDestroy(&dense));
     PetscCall(PetscFree(work));
 
     PetscCheck(info == 0, comm, PETSC_ERR_LIB,
@@ -482,8 +567,50 @@ PetscErrorCode print_feti_local_hessian_spectrum(MPI_Comm comm, Mat local_hessia
     if (nprint < n)
         PetscCall(PetscSynchronizedPrintf(comm, " ..."));
     PetscCall(PetscSynchronizedPrintf(comm, "\n"));
+
+    if (max_vector_print > 0 && reduced_rows != NULL) {
+        const PetscInt *rows = NULL;
+        PetscInt nrows_reduced = 0;
+        PetscCall(ISGetLocalSize(reduced_rows, &nrows_reduced));
+        PetscCheck(nrows_reduced == n, comm, PETSC_ERR_ARG_SIZ,
+                   "Reduced row IS size is not compatible with local Hessian size.");
+        PetscCall(ISGetIndices(reduced_rows, &rows));
+
+        PetscInt printed = 0;
+        for (PetscInt ev = 0; ev < n && printed < max_vector_print; ++ev) {
+            if (PetscAbsReal(eigenvalues[ev]) > zero_tol) continue;
+
+            PetscReal owned_norm2 = 0.0;
+            PetscReal ghost_norm2 = 0.0;
+            PetscReal max_abs = 0.0;
+            PetscInt max_row = -1;
+            for (PetscInt row = 0; row < n; ++row) {
+                const PetscScalar value = array[ev*n + row];
+                const PetscReal abs_value = PetscAbsScalar(value);
+                const PetscReal value_norm2 = abs_value * abs_value;
+                if (rows[row] < owned_local_size) owned_norm2 += value_norm2;
+                else ghost_norm2 += value_norm2;
+                if (abs_value > max_abs) {
+                    max_abs = abs_value;
+                    max_row = rows[row];
+                }
+            }
+
+            PetscCall(PetscSynchronizedPrintf(comm,
+                "[feti local Hessian near-zero vector] rank: %d, eigen_index: %d, "
+                "eigenvalue: %.16e, owned_norm: %.16e, ghost_norm: %.16e, "
+                "max_abs: %.16e, max_original_local_row: %d\n",
+                rank, (int)ev, (double)eigenvalues[ev],
+                (double)std::sqrt(owned_norm2), (double)std::sqrt(ghost_norm2),
+                (double)max_abs, (int)max_row));
+            ++printed;
+        }
+        PetscCall(ISRestoreIndices(reduced_rows, &rows));
+    }
     PetscCall(PetscSynchronizedFlush(comm, PETSC_STDOUT));
 
+    PetscCall(MatDenseRestoreArray(dense, &array));
+    PetscCall(MatDestroy(&dense));
     PetscCall(PetscFree(eigenvalues));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -924,7 +1051,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         }
         ISDestroy(&isnz_tmp);
         chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
-        chkerr(print_feti_local_hessian_spectrum(comm_, Aloc_feti));
+        chkerr(print_feti_local_hessian_graph_components(comm_, Aloc_feti));
+        chkerr(print_feti_local_hessian_spectrum(comm_, Aloc_feti, isnz, rows_ds_->lsize()));
         chkerr(MatISRestoreLocalMat(matrix_, &Aloc));
         chkerr(ISGetIndices(isnz, &nz_arr));
         chkerr(ISGetLocalSize(isnz, &nrows));
