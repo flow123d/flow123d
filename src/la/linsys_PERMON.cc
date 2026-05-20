@@ -20,6 +20,7 @@
 #include "la/linsys_PERMON.hh"
 #include <algorithm>
 #include <cmath>
+#include <functional>
 #include <unordered_map>
 #include <vector>
 #include "petscvec.h"
@@ -893,9 +894,6 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
-    if (eq_) {
-        chkerr(QPSetEq(system, matrix_eq_, eq_));
-    }
 
     if (use_feti_) {
 
@@ -1003,17 +1001,23 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // convert to MATAIJ
         Mat matrix_aij;
         chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
-        if (!eq_)
+        if (eq_) {
+            Mat matrix_eq_aij = NULL;
+            chkerr(convert_mat_is_to_aij(matrix_eq_, &matrix_eq_aij));
+            chkerr(QPSetEq(system, matrix_eq_aij, eq_));
+        }
+        else {
             chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
         // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
-        chkerr(QPSetOperator(system, matrix_aij));
-        chkerr(MatDestroy(&matrix_aij));
+        }
         if (ineq_) {
             Mat matrix_ineq_aij = NULL;
             chkerr(convert_mat_is_to_aij(matrix_ineq_, &matrix_ineq_aij));
             chkerr(QPSetIneq(system, matrix_ineq_aij, ineq_));
             chkerr(MatDestroy(&matrix_ineq_aij));
         }
+        chkerr(QPSetOperator(system, matrix_aij));
+        chkerr(MatDestroy(&matrix_aij));
 
         if (ineq_ || eq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
