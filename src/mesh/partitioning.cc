@@ -50,6 +50,9 @@ const IT::Record & Partitioning::get_input_type() {
     static IT::Record input_type = IT::Record("Partition","Setting for various types of mesh partitioning." )
 		.declare_key("tool", Partitioning::get_tool_sel(), IT::Default("\"METIS\""),  "Software package used for partitioning. See corresponding selection.")
 		.declare_key("graph_type", Partitioning::get_graph_type_sel(), IT::Default("\"any_neighboring\""), "Algorithm for generating graph and its weights from a multidimensional mesh.")
+		.declare_key("fracture_coupling_weight", IT::Integer(1), IT::Default("10"),
+                "Edge weight for graph connections between lower-dimensional fracture elements and adjacent higher-dimensional elements. "
+                "This is used only for graph_type any_weight_lower_dim_cuts. Values greater than one discourage partition cuts through fracture-bulk coupling stencils.")
 		.allow_auto_conversion("graph_type") // mainly in order to allow Default value for the whole record Partition
 		.close();
     input_type.finish();
@@ -98,7 +101,10 @@ void Partitioning::make_element_connection_graph() {
     int i_s, n_s;
 
     // Add nigbouring edges only for "any_*" graph types
-    bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
+    const PartitionGraphType graph_type = in_.val<PartitionGraphType>("graph_type");
+    bool neigh_on = ( graph_type != same_dimension_neighboring );
+    const int fracture_coupling_weight =
+        (graph_type == any_weight_lower_dim_cuts) ? in_.val<int>("fracture_coupling_weight") : 1;
 
     for (auto ele : mesh_->elements_range()) {
         // skip non-local elements
@@ -127,8 +133,8 @@ void Partitioning::make_element_connection_graph() {
                n_s = ele->neigh_vb[i_neigh]->edge().n_sides();
                 for (i_s = 0; i_s < n_s; i_s++) {
                    e_idx = ele->neigh_vb[i_neigh]->edge().side(i_s)->element().idx();
-                    graph_->set_edge( ele.idx(), e_idx );
-                    graph_->set_edge( e_idx, ele.idx() );
+                    graph_->set_edge( ele.idx(), e_idx, fracture_coupling_weight );
+                    graph_->set_edge( e_idx, ele.idx(), fracture_coupling_weight );
                 }
             }
         }
