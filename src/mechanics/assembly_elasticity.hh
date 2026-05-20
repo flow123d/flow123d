@@ -1052,7 +1052,7 @@ public:
         compute_local_origin(dh);
         create_modes_matrix(dh);
 
-        for (auto cell : dh->own_range())
+        for (auto cell : dh->local_range())
             assemble_cell(cell);
     }
 
@@ -1060,7 +1060,7 @@ private:
     unsigned int find_largest_element_dimension(std::shared_ptr<DOFHandlerMultiDim> dh) const
     {
         unsigned int max_dim = 0;
-        for (auto cell : dh->own_range())
+        for (auto cell : dh->local_range())
             max_dim = std::max(max_dim, cell.dim());
         return max_dim;
     }
@@ -1091,7 +1091,7 @@ private:
         origin_.zeros();
         unsigned int n_points = 0;
 
-        for (auto cell : dh->own_range()) {
+        for (auto cell : dh->local_range()) {
             if (cell.dim() != max_dim_) continue;
             for (unsigned int i=0; i<cell.elm()->n_nodes(); ++i) {
                 origin_ += *cell.elm().node(i);
