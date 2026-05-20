@@ -19,6 +19,7 @@
 #define ASSEMBLY_ELASTICITY_HH_
 
 #include <algorithm>
+#include <cmath>
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
@@ -859,28 +860,46 @@ private:
 
 
 void rref(arma::mat& M, double tol) {
-    int lead = 0;
-    int rowCount = M.n_rows;
-    int columnCount = M.n_cols;
+    const unsigned int row_count = M.n_rows;
+    const unsigned int column_count = M.n_cols;
+    if (row_count == 0 || column_count <= 1) return;
 
-    for (int r = 0; r < rowCount; ++r) {
-        if (columnCount <= lead) return;
-        int i = r;
-        while (fabs(M(i, lead)) < tol) {
-            i++;
-            if (rowCount == i) {
-                i = r;
-                lead++;
-                if (columnCount == lead) return;
+    // The last column is the right-hand side; pivot only in coefficient columns.
+    const unsigned int coefficient_columns = column_count - 1;
+    unsigned int row = 0;
+
+    for (unsigned int lead = 0; lead < coefficient_columns && row < row_count; ++lead) {
+        unsigned int pivot_row = row;
+        double pivot_abs = std::abs(M(pivot_row, lead));
+        for (unsigned int i = row + 1; i < row_count; ++i) {
+            const double value_abs = std::abs(M(i, lead));
+            if (value_abs > pivot_abs) {
+                pivot_abs = value_abs;
+                pivot_row = i;
             }
         }
-        M.swap_rows(i, r);
-        if (fabs(M(r, lead)) > tol) M.row(r) /= M(r, lead);
-        for (int i = 0; i < rowCount; ++i) {
-            if (i != r) M.row(i) -= M(i, lead) * M.row(r);
+
+        if (pivot_abs <= tol) {
+            M.submat(row, lead, row_count - 1, lead).zeros();
+            continue;
         }
-        lead++;
+
+        M.swap_rows(row, pivot_row);
+        M.row(row) /= M(row, lead);
+
+        for (unsigned int i = 0; i < row_count; ++i) {
+            if (i == row) continue;
+            const double factor = M(i, lead);
+            if (std::abs(factor) > tol)
+                M.row(i) -= factor * M.row(row);
+            else
+                M(i, lead) = 0.0;
+        }
+
+        ++row;
     }
+
+    M.elem(arma::find(arma::abs(M) <= tol)).zeros();
 }
 
 
@@ -939,7 +958,7 @@ public:
         unsigned int k = 0;
         if (bc_type == EqFields::bc_type_displacement)
         {
-            arma::mat A(n_dofs_,n_dofs_+1);
+            arma::mat A(n_dofs_,n_dofs_+1, arma::fill::zeros);
             for (auto p : this->boundary_points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
@@ -970,7 +989,7 @@ public:
         }
         else if (bc_type == EqFields::bc_type_displacement_normal)
         {
-            arma::mat A(n_dofs_,n_dofs_+1);
+            arma::mat A(n_dofs_,n_dofs_+1, arma::fill::zeros);
             for (auto p : this->boundary_points(cell_side) )
             {
                 auto p_bdr = p.point_bdr( side.cond().element_accessor() );
