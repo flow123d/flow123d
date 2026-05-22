@@ -37,10 +37,39 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
+#include "fem/dofhandler.hh"
+#include "la/vector_mpi.hh"
 
-//template<unsigned int dim> class BulkValues;
-//template<unsigned int dim> class SideValues;
-//template<unsigned int dim> class JoinValues;
+
+
+/**
+ * Helper class that holds data used in FieldFE operations
+ * (see source file src/fields/field_fee.hh).
+ */
+class FieldFeOpData {
+public:
+    /// Constructor
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+    : dh_(dh), data_vec_(data_vec) {}
+
+    inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
+    	return dh_;
+    }
+
+    inline VectorMPI data_vec() const {
+    	return data_vec_;
+    }
+
+    bool operator==(const FieldFeOpData &other)
+    {
+        return (dh_->hash() == other.dh_->hash()) &&
+               (data_vec_.size() == other.data_vec_.size());
+    }
+
+private:
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    VectorMPI data_vec_;
+};
 
 
 
@@ -289,9 +318,9 @@ public:
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(Quadrature &quad) {
-        auto cache_it = op_cache_.template get<OpType>(*this, quad);
+    template<class OpType, unsigned int dim, class... Args>
+    PatchOp<spacedim>* get(Args&&... args) {
+        auto cache_it = op_cache_.template get<OpType>( *this, std::forward<Args>(args)... );
         if (cache_it.second) {
         	operations_.push_back(cache_it.first);
         }
@@ -301,18 +330,28 @@ public:
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get_for_elem_quad() {
-        return this->template get<OpType, dim>( this->element_quad(dim) );
+        return this->template get<OpType, dim, Quadrature &>( this->element_quad(dim) );
     }
 
-    /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe) {
-        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe);
-        if (cache_it.second) {
-        	operations_.push_back(cache_it.first);
-        }
-        return cache_it.first;
-    }
+//    /// Returns operation of given dim and OpType, creates it if doesn't exist
+//    template<class OpType, unsigned int dim>
+//    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe) {
+//        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe);
+//        if (cache_it.second) {
+//        	operations_.push_back(cache_it.first);
+//        }
+//        return cache_it.first;
+//    }
+//
+//    /// Returns operation of given dim and OpType, creates it if doesn't exist
+//    template<class OpType, unsigned int dim>
+//    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData op_data) {
+//        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe, op_data);
+//        if (cache_it.second) {
+//        	operations_.push_back(cache_it.first);
+//        }
+//        return cache_it.first;
+//    }
 
     /// Print table of all used operations - development method
     void print_operations(ostream& stream) const {
@@ -415,7 +454,20 @@ private:
 
 namespace std {
 
-/// Template specialization of std::hash for Quadrature
+/// Template specialization of std::hash for FieldFeOpData
+template<>
+struct hash< FieldFeOpData > {
+    std::size_t operator()(const FieldFeOpData &op_data) const noexcept {
+        std::size_t h1 = std::hash<std::size_t>{}( op_data.dh()->hash() );
+        std::size_t h2 = std::hash<uint>{}( op_data.data_vec().size() );
+
+        // hash combine
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
+
+/// Template specialization of std::hash for PatchFEValues
 template< unsigned int spacedim >
 struct hash< PatchFEValues<spacedim> > {
     std::size_t operator()(const PatchFEValues<spacedim> &pfev) const noexcept {

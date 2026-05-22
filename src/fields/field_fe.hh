@@ -53,9 +53,9 @@ template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedi
 class FieldFeOp : public PatchOp<spacedim> {
 public:
     /// Constructor
-	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
+	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
-	  dh_(dh), data_vec_(data_vec)
+	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec())
 	    {
 	        this->domain_ = Domain::domain();
 	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
