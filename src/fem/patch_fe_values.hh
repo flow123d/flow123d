@@ -79,6 +79,14 @@ public:
     ~PatchFEValues()
     {}
 
+    bool operator==(const PatchFEValues<spacedim> &other)
+    {
+        return (this->fe_[0_d] == other.fe_[0_d]) &&
+               (this->fe_[1_d] == other.fe_[1_d]) &&
+               (this->fe_[2_d] == other.fe_[2_d]) &&
+               (this->fe_[3_d] == other.fe_[3_d]);
+    }
+
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
         patch_fe_data_.patch_arena_ = patch_fe_data_.asm_arena_.get_child_arena();
@@ -133,7 +141,7 @@ public:
 
     /// Returns pointer to FiniteElement of given dimension.
     template<unsigned int dim>
-    std::shared_ptr<FiniteElement<dim>> fe_dim() {
+    std::shared_ptr<FiniteElement<dim>> fe_dim() const {
         return fe_[Dim<dim>{}];
     }
 
@@ -282,19 +290,12 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(Quadrature &quad, std::string f_name = "None") {
-        std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad.size(), f_name);
-        auto it = op_dependency_.find( tpl );
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad);
-            op_dependency_[tpl] = new_op;
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad.size());
-            return new_op;
-        } else {
-            return it->second;
+    PatchOp<spacedim>* get(Quadrature &quad) {
+        auto cache_it = op_cache_.template get<OpType>(*this, quad);
+        if (cache_it.second) {
+        	operations_.push_back(cache_it.first);
         }
+        return cache_it.first;
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
@@ -305,19 +306,12 @@ public:
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, std::string f_name = "None") {
-        std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad.size(), f_name);
-        auto it = op_dependency_.find( tpl );
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
-            op_dependency_[tpl] = new_op;
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad.size());
-            return new_op;
-        } else {
-            return it->second;
+    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe) {
+        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe);
+        if (cache_it.second) {
+        	operations_.push_back(cache_it.first);
         }
+        return cache_it.first;
     }
 
     /// Print table of all used operations - development method
@@ -396,7 +390,7 @@ private:
     bool used_domain_[2];          ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    OperationMap< PatchOp<spacedim> > op_dependency_;
+    CachedFactory< PatchOp<spacedim> > op_cache_;
 
     /**
      * Map of element patch indices to PatchOp::result_ and int_table_ tables
@@ -417,6 +411,26 @@ private:
     friend class PatchOp<spacedim>;
 };
 
+
+
+namespace std {
+
+/// Template specialization of std::hash for Quadrature
+template< unsigned int spacedim >
+struct hash< PatchFEValues<spacedim> > {
+    std::size_t operator()(const PatchFEValues<spacedim> &pfev) const noexcept {
+
+        std::size_t h = 0;
+        hash_combine(h, std::hash<FiniteElement<0>>{}( *(pfev.template fe_dim<0>().get()) ));
+        hash_combine(h, std::hash<FiniteElement<1>>{}( *(pfev.template fe_dim<1>().get()) ));
+        hash_combine(h, std::hash<FiniteElement<2>>{}( *(pfev.template fe_dim<2>().get()) ));
+        hash_combine(h, std::hash<FiniteElement<3>>{}( *(pfev.template fe_dim<3>().get()) ));
+
+        return h;
+    }
+};
+
+} // namespace std
 
 
 #endif /* PATCH_FE_VALUES_HH_ */

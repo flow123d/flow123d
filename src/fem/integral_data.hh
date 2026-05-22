@@ -24,6 +24,11 @@
 #include <armadillo>
 #include <unordered_set>
 #include <unordered_map>
+#include <typeinfo>
+//#include <mutex>
+#include <functional>
+#include <type_traits>
+#include <utility>
 #include <boost/functional/hash.hpp>      // for boost::hash_value
 #include "fem/dh_cell_accessor.hh"
 #include "tools/revertable_list.hh"
@@ -207,34 +212,6 @@ public:
 
 
 
-/// Define Integral Tuple hash function - helper struct of OperationMap
-struct OperationTplHash {
-    std::size_t operator()(std::tuple<std::string, uint, std::string> tpl) const {
-        return boost::hash_value( tpl );
-    }
-
-    /// Create tuple from typeid(Operation).name and size of Quadrature
-    static std::tuple<std::string, uint, std::string> op_tuple(std::string op_type, uint quad_size, std::string f_name) {
-        return std::make_tuple(op_type, quad_size, f_name);
-    }
-
-};
-
-/// Alias for unordered_map of Operation pointer with custom hash
-template<typename Operation>
-using OperationMap = std::unordered_map<std::tuple<std::string, uint, std::string>, Operation *, OperationTplHash>;
-
-
-/** New computation of operation hash **/
-
-/*
-#include <memory>
-#include <unordered_map>
-#include <typeinfo>
-#include <mutex>
-#include <functional>
-#include <type_traits>
-#include <utility>
 
 inline void hash_combine(std::size_t& seed, std::size_t value)
 {
@@ -260,7 +237,7 @@ template <class BaseT>
 class CachedFactory {
 public:
     template <class DerivedT, class... Args>
-    static std::shared_ptr<BaseT> get(Args&&... args)
+    std::pair<BaseT *, bool> get(Args&&... args)
     {
         static_assert(std::is_base_of_v<BaseT, DerivedT>,
                       "DerivedT must derive from BaseT");
@@ -270,30 +247,27 @@ public:
         hash_combine(key, typeid(DerivedT).hash_code());
         hash_combine(key, hash_args(args...));
 
-        std::lock_guard<std::mutex> lock(mutex_);
+//        std::lock_guard<std::mutex> lock(mutex_);
 
         auto it = cache_.find(key);
         if (it != cache_.end()) {
-            if (auto existing = it->second.lock()) {
-                return existing;
-            }
+            return std::make_pair(it->second, false);
+//            if (auto existing = it->second->lock()) {
+//                return std::make_pair<existing, false>;
+//            }
         }
 
-        auto created = std::make_shared<DerivedT>(
+        BaseT * created = new DerivedT(
             std::forward<Args>(args)...
         );
 
         cache_[key] = created;
-        return created;
+        return std::make_pair(created, true);
     }
 
 private:
-    static inline std::mutex mutex_;
-    static inline std::unordered_map<
-        std::size_t,
-        std::weak_ptr<BaseT>
-    > cache_;
+    //std::mutex mutex_;
+    std::unordered_map<std::size_t, BaseT *> cache_;
 };
-// */
 
 #endif /* INTEGRAL_DATA_HH_ */

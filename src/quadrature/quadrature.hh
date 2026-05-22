@@ -113,6 +113,8 @@ public:
 
     Quadrature &operator=(const Quadrature &q);
     
+    bool operator==(const Quadrature &q);
+
     /**
      * Create bulk quadrature from side quadrature.
      * 
@@ -144,6 +146,23 @@ protected:
 
 };
 
+
+
+namespace std {
+
+/// Template specialization of std::hash for Quadrature
+template<>
+struct hash<Quadrature> {
+    std::size_t operator()(const Quadrature &q) const noexcept {
+        std::size_t h1 = std::hash<uint>{}(q.dim());
+        std::size_t h2 = std::hash<uint>{}(q.size());
+
+        // hash combine
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
+} // namespace std
 
 
 
