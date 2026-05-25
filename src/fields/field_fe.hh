@@ -209,6 +209,12 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
+     * Replace previous method - in progress
+     */
+    void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
+
+    /**
      * Overload @p FieldAlgorithmBase::cache_reinit
      *
      * Reinit fe_values_ data member.
@@ -390,6 +396,11 @@ private:
     	return qgauss.size();
     }
 
+    template <unsigned int elemdim>
+    void FieldFE<spacedim, Value>::cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
+            ElementCacheMap &cache_map, std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral,
+    		FeQ<ReturnType> &value_acc, unsigned int element_patch_idx, unsigned int i_data);
+
     /**
      * Declare FE operation of given dimension.
      *
@@ -464,6 +475,14 @@ private:
 
     /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
     ElementDataCache<double>::CacheData input_data_cache_;
+
+    // Data membersof 'new' version of cache_update
+    std::shared_ptr< BulkIntegralAcc<1> > bulk_integral_1d_;
+    std::shared_ptr< BulkIntegralAcc<2> > bulk_integral_2d_;
+    std::shared_ptr< BulkIntegralAcc<3> > bulk_integral_3d_;
+    FeQ<ReturnType> value_acc_1d_;
+    FeQ<ReturnType> value_acc_2d_;
+    FeQ<ReturnType> value_acc_3d_;
 
     /// Registrar of class to factory
     static const int registrar;

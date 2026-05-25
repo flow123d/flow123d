@@ -259,6 +259,66 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
 
 template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
+{
+    auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if ( (region_idx % 2) == this->boundary_domain_ ) {
+        // Skip evaluation of boundary fields on bulk regions and vice versa
+        return;
+    }
+
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+    DHCellAccessor cell = *( dh_->local_range().begin() ); //needs set variable for correct compiling
+    unsigned int last_element_idx = -1;
+
+    // Throws exception if any element value of processed region is NaN
+    unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+    if (region_value_err_[r_idx].is_invalid_)
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
+
+    for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+        unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+        if (elm_idx != last_element_idx) {
+            cell = dh_->cell_accessor_from_element( elm_idx );
+            unsigned int element_patch_idx = cache_map.position_in_cache(elm_idx);
+            last_element_idx = elm_idx;
+
+            if (this->boundary_domain_) {
+                // boundary FieldFE
+            } else {
+                switch (cell.dim()) {
+                    case 1:
+                        this->cache_update_bulk_elem<1>(data_cache, cache_map, bulk_integral_1d_, value_acc_1d_, element_patch_idx, i_data);
+                        break;
+                    case 2:
+                        this->cache_update_bulk_elem<2>(data_cache, cache_map, bulk_integral_2d_, value_acc_2d_, element_patch_idx, i_data);
+                        break;
+                    case 3:
+                        this->cache_update_bulk_elem<3>(data_cache, cache_map, bulk_integral_3d_, value_acc_3d_, element_patch_idx, i_data);
+                        break;
+                }
+            }
+        }
+    }
+}
+
+
+template <int spacedim, class Value>
+template <unsigned int elemdim>
+void FieldFE<spacedim, Value>::cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
+        ElementCacheMap &cache_map, std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral,
+		FeQ<ReturnType> &value_acc, unsigned int element_patch_idx, unsigned int i_data)
+{
+    for (auto p : bulk_integral->points(element_patch_idx) ) {
+        data_cache.set(i_data) = value_acc(p);
+        i_data++;
+    }
+}
+
+
+template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
 {
     std::shared_ptr<EvalPoints> eval_points = asm_internals.eval_points_;
