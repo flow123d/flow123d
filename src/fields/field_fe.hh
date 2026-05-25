@@ -37,6 +37,7 @@
 #include "fem/dh_cell_accessor.hh"
 #include "fem/mapping_p1.hh"
 #include "input/factory.hh"
+#include "coupling/assembly_internals.hh"
 
 #include <memory>
 
@@ -142,7 +143,8 @@ public:
      *
      * Reinit fe_values_ data member.
      */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
+    void cache_reinit(AssemblyInternals &asm_internals) override;
+
 
 	/**
 	 * Initialization from the input interface.
