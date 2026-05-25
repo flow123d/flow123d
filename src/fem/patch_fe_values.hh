@@ -333,26 +333,6 @@ public:
         return this->template get<OpType, dim, Quadrature &>( this->element_quad(dim) );
     }
 
-//    /// Returns operation of given dim and OpType, creates it if doesn't exist
-//    template<class OpType, unsigned int dim>
-//    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe) {
-//        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe);
-//        if (cache_it.second) {
-//        	operations_.push_back(cache_it.first);
-//        }
-//        return cache_it.first;
-//    }
-//
-//    /// Returns operation of given dim and OpType, creates it if doesn't exist
-//    template<class OpType, unsigned int dim>
-//    PatchOp<spacedim>* get(Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData op_data) {
-//        auto cache_it = op_cache_.template get<OpType>(*this, quad, fe, op_data);
-//        if (cache_it.second) {
-//        	operations_.push_back(cache_it.first);
-//        }
-//        return cache_it.first;
-//    }
-
     /// Print table of all used operations - development method
     void print_operations(ostream& stream) const {
         stream << endl << "Table of patch FE operations:" << endl;
