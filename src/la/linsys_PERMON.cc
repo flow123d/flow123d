@@ -199,87 +199,6 @@ PetscErrorCode print_feti_user_nullspace_dimension(MPI_Comm comm, Mat R)
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-PetscErrorCode orthonormalize_reduced_nullspace(Mat Rloc_reduced, Mat *Qloc_reduced)
-{
-    PetscFunctionBegin;
-    PetscCheck(Rloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
-               "Null reduced local nullspace matrix.");
-    PetscCheck(Qloc_reduced, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL,
-               "Null output orthonormalized local nullspace matrix pointer.");
-
-    PetscInt m, n;
-    PetscCall(MatGetSize(Rloc_reduced, &m, &n));
-    if (n == 0) {
-        PetscCall(MatDuplicate(Rloc_reduced, MAT_COPY_VALUES, Qloc_reduced));
-        PetscFunctionReturn(PETSC_SUCCESS);
-    }
-
-    Mat gram = NULL, dense_gram = NULL;
-    PetscCall(MatTransposeMatMult(Rloc_reduced, Rloc_reduced, MAT_INITIAL_MATRIX, PETSC_DEFAULT, &gram));
-    PetscCall(MatConvert(gram, MATSEQDENSE, MAT_INITIAL_MATRIX, &dense_gram));
-    PetscCall(MatDestroy(&gram));
-
-    PetscScalar *gram_array = NULL;
-    PetscCall(MatDenseGetArray(dense_gram, &gram_array));
-
-    PetscBLASInt bn, lda, info;
-    PetscCall(PetscBLASIntCast(n, &bn));
-    lda = bn;
-
-    PetscReal *eigenvalues = NULL;
-    PetscCall(PetscMalloc1(n, &eigenvalues));
-
-    PetscBLASInt lwork = -1;
-    PetscScalar work_query;
-    LAPACKsyev_("V", "U", &bn, gram_array, &lda, eigenvalues,
-                &work_query, &lwork, &info);
-    PetscCheck(info == 0, PETSC_COMM_SELF, PETSC_ERR_LIB,
-               "LAPACKsyev workspace query failed with info=%d", (int)info);
-
-    lwork = static_cast<PetscBLASInt>(PetscRealPart(work_query));
-    PetscScalar *work = NULL;
-    PetscCall(PetscMalloc1(lwork, &work));
-
-    LAPACKsyev_("V", "U", &bn, gram_array, &lda, eigenvalues,
-                work, &lwork, &info);
-    PetscCheck(info == 0, PETSC_COMM_SELF, PETSC_ERR_LIB,
-               "LAPACKsyev failed with info=%d", (int)info);
-
-    PetscReal lambda_max = 0.0;
-    for (PetscInt i = 0; i < n; ++i)
-        lambda_max = std::max(lambda_max, PetscAbsReal(eigenvalues[i]));
-    PetscReal rank_rel_tol = 1e-12;
-    PetscCall(PetscOptionsGetReal(NULL, NULL,
-                                  "-flow123d_feti_user_nullspace_orthonormalize_rank_rel_tol",
-                                  &rank_rel_tol, NULL));
-    PetscReal rank_tol = rank_rel_tol * (lambda_max > 0.0 ? lambda_max : 1.0);
-
-    Mat transform = NULL;
-    PetscCall(MatCreateSeqDense(PETSC_COMM_SELF, n, n, NULL, &transform));
-    PetscScalar *transform_array = NULL;
-    PetscCall(MatDenseGetArray(transform, &transform_array));
-    for (PetscInt col = 0; col < n; ++col) {
-        PetscCheck(eigenvalues[col] > rank_tol, PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG,
-                   "User FETI nullspace matrix is rank deficient.");
-        PetscReal inv_sqrt_lambda = 1.0 / std::sqrt(eigenvalues[col]);
-        for (PetscInt row = 0; row < n; ++row)
-            transform_array[col*n + row] = gram_array[col*n + row] * inv_sqrt_lambda;
-    }
-    PetscCall(MatDenseRestoreArray(transform, &transform_array));
-    PetscCall(MatAssemblyBegin(transform, MAT_FINAL_ASSEMBLY));
-    PetscCall(MatAssemblyEnd(transform, MAT_FINAL_ASSEMBLY));
-
-    PetscCall(MatDenseRestoreArray(dense_gram, &gram_array));
-    PetscCall(MatDestroy(&dense_gram));
-    PetscCall(PetscFree(work));
-    PetscCall(PetscFree(eigenvalues));
-
-    PetscCall(MatMatMult(Rloc_reduced, transform, MAT_INITIAL_MATRIX, PETSC_DEFAULT, Qloc_reduced));
-    PetscCall(MatDestroy(&transform));
-
-    PetscFunctionReturn(PETSC_SUCCESS);
-}
-
 PetscErrorCode print_feti_user_nullspace_test(MPI_Comm comm, Mat Aloc_feti, Mat Rloc_reduced)
 {
     PetscBool enabled = PETSC_FALSE, dimension_enabled = PETSC_FALSE;
@@ -1027,7 +946,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // create new matrix without zero rows
         Mat Afixed;
         Mat Aloc, Aloc_feti;
-        IS isnz, isnz_tmp;
+        IS isnz, isnz_tmp = NULL;
         ISLocalToGlobalMapping l2g, mapping;
         const PetscInt *l2g_arr, *nz_arr;
         PetscInt *l2g_feti_arr;
@@ -1102,17 +1021,15 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         }
         if (operator_nullspace_) {
             Mat Rloc_reduced = NULL;
-            Mat Qloc_reduced = NULL;
             Mat nullspace_decomposed = NULL;
             chkerr(create_reduced_nullspace_local(operator_nullspace_, isnz, &Rloc_reduced));
-            chkerr(orthonormalize_reduced_nullspace(Rloc_reduced, &Qloc_reduced));
-            chkerr(print_feti_user_nullspace_test(comm_, Aloc_feti, Qloc_reduced));
-            chkerr(convert_nullspace_to_feti_blockdiag(Qloc_reduced, &nullspace_decomposed));
+            chkerr(print_feti_user_nullspace_test(comm_, Aloc_feti, Rloc_reduced));
+            chkerr(convert_nullspace_to_feti_blockdiag(Rloc_reduced, &nullspace_decomposed));
             chkerr(print_feti_user_nullspace_dimension(comm_, nullspace_decomposed));
             chkerr(QPSetOperatorNullSpace(system, nullspace_decomposed));
             chkerr(MatDestroy(&nullspace_decomposed));
-            chkerr(MatDestroy(&Qloc_reduced));
             chkerr(MatDestroy(&Rloc_reduced));
+            chkerr(PetscOptionsInsertString(NULL, "-qpt_dualize_Kplus_mp -regularize 0"));
         }
         chkerr(MatDestroy(&Aloc_feti));
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
