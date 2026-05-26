@@ -25,22 +25,8 @@
 #include "fem/patch_fe_values.hh"
 #include "tools/revertable_list.hh"
 #include "system/sys_profiler.hh"
+#include "coupling/assembly_internals.hh"
 
-
-
-/// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
-struct AssemblyInternals {
-public:
-    AssemblyInternals()
-    : eval_points_(std::make_shared<EvalPoints>()) {}
-
-    AssemblyInternals(MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
-
-    std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
-    ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
-    PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
-};
 
 
 /**
@@ -137,7 +123,7 @@ public:
 	 */
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
-        this->reallocate_cache();
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(asm_internals_, multidim_assembly_[1_d]->used_fields_);
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
@@ -265,12 +251,6 @@ private:
         asm_internals_.fe_values_.add_patch_points<1>(multidim_assembly_[1_d]->integrals(), &asm_internals_.element_cache_map_, asm_internals_.eval_points_);
 
         asm_internals_.fe_values_.reinit_patch();
-    }
-
-    /// Calls cache_reallocate method on
-    inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(asm_internals_.element_cache_map_, multidim_assembly_[1_d]->used_fields_);
-        // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
 

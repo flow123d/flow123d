@@ -43,6 +43,7 @@
 
 template <int spacedim> class ElementAccessor;
 class SurfaceDepth;
+struct AssemblyInternals;
 
 using namespace std;
 
@@ -113,7 +114,7 @@ public:
      *
      * Reinit arena data member.
      */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
+    void cache_reinit(AssemblyInternals &asm_internals) override;
 
     virtual ~FieldFormula();
 
