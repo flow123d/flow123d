@@ -20,6 +20,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
+#include <queue>
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
@@ -1059,11 +1061,13 @@ public:
     {
         max_dim_ = find_largest_element_dimension(dh);
         init_default_normals();
-        n_modes_ = 3 + normal_vectors_.size();
-        compute_local_origin(dh);
+        detect_components(dh);
+        modes_per_component_ = 3 + normal_vectors_.size();
+        n_modes_ = modes_per_component_ * component_origins_.size();
+        print_component_diagnostics();
         create_modes_matrix(dh);
 
-        for (auto cell : dh->local_range())
+        for (auto cell : dh->own_range())
             assemble_cell(cell);
     }
 
@@ -1081,7 +1085,18 @@ private:
         normal_vectors_.clear();
 
         // TODO: Replace by user hints or mesh-based heuristic.
-        if (max_dim_ == 2) {
+        if (max_dim_ == 3) {
+            arma::vec3 n1, n2, n3;
+            n1.zeros();
+            n2.zeros();
+            n3.zeros();
+            n1[1] = 1.0;
+            n2[2] = 1.0;
+            n3[0] = 1.0;
+            normal_vectors_.push_back(n1);
+            normal_vectors_.push_back(n2);
+            normal_vectors_.push_back(n3);
+        } else if (max_dim_ == 2) {
             arma::vec3 n;
             n.zeros();
             n[2] = 1.0;
@@ -1097,20 +1112,117 @@ private:
         }
     }
 
-    void compute_local_origin(std::shared_ptr<DOFHandlerMultiDim> dh)
+    void detect_components(std::shared_ptr<DOFHandlerMultiDim> dh)
     {
-        origin_.zeros();
-        unsigned int n_points = 0;
+        cell_component_.clear();
+        component_origins_.clear();
 
-        for (auto cell : dh->local_range()) {
+        // Traverse the local cell graph in all dimensions. Components are seeded
+        // only by max-dimensional cells, but lower-dimensional cells can connect
+        // max-dimensional cells through fractures and mixed-dimensional joins.
+        for (auto cell : dh->own_range())
+            cell_component_[cell.elm_idx()] = -1;
+
+        std::map<unsigned int, std::vector<unsigned int>> cell_neighbors;
+        auto add_edge = [&](unsigned int a, unsigned int b) {
+            if (a == b) return;
+            if (cell_component_.find(a) == cell_component_.end()) return;
+            if (cell_component_.find(b) == cell_component_.end()) return;
+
+            cell_neighbors[a].push_back(b);
+            cell_neighbors[b].push_back(a);
+        };
+
+        for (auto cell : dh->own_range()) {
+            if (cell.dim() > 0) {
+                for (DHCellSide side : cell.side_range()) {
+                    for (DHCellSide edge_side : side.edge_sides())
+                        add_edge(cell.elm_idx(), edge_side.cell().elm_idx());
+                }
+            }
+
+            for (DHCellSide neighb_side : cell.neighb_sides())
+                add_edge(cell.elm_idx(), neighb_side.cell().elm_idx());
+        }
+
+        int component_id = 0;
+        for (auto cell : dh->own_range()) {
             if (cell.dim() != max_dim_) continue;
+            if (cell_component_[cell.elm_idx()] >= 0) continue;
+
+            std::queue<unsigned int> queue;
+            queue.push(cell.elm_idx());
+            cell_component_[cell.elm_idx()] = component_id;
+
+            while (!queue.empty()) {
+                unsigned int current_elm_idx = queue.front();
+                queue.pop();
+
+                for (unsigned int neighbor_elm_idx : cell_neighbors[current_elm_idx]) {
+                    auto component_it = cell_component_.find(neighbor_elm_idx);
+                    if (component_it == cell_component_.end()) continue;
+                    if (component_it->second >= 0) continue;
+
+                    component_it->second = component_id;
+                    queue.push(neighbor_elm_idx);
+                }
+            }
+
+            ++component_id;
+        }
+
+        component_origins_.assign(component_id, arma::vec3());
+        std::vector<unsigned int> n_points(component_id, 0);
+        for (auto &origin : component_origins_)
+            origin.zeros();
+
+        for (auto cell : dh->own_range()) {
+            if (cell.dim() != max_dim_) continue;
+            const int cell_component = component_of_cell(cell);
+            if (cell_component < 0) continue;
+
             for (unsigned int i=0; i<cell.elm()->n_nodes(); ++i) {
-                origin_ += *cell.elm().node(i);
-                ++n_points;
+                component_origins_[cell_component] += *cell.elm().node(i);
+                ++n_points[cell_component];
             }
         }
 
-        if (n_points > 0) origin_ /= n_points;
+        for (unsigned int c=0; c<component_origins_.size(); ++c) {
+            if (n_points[c] > 0)
+                component_origins_[c] /= n_points[c];
+        }
+    }
+
+    int component_of_cell(DHCellAccessor cell) const
+    {
+        auto component_it = cell_component_.find(cell.elm_idx());
+        if (component_it != cell_component_.end() && component_it->second >= 0)
+            return component_it->second;
+
+        if (cell.dim() >= max_dim_) return -1;
+
+        // Fallback for lower-dimensional local cells not reached during BFS.
+        // Normally they are assigned by the all-dimensional traversal.
+        int component = -1;
+        for (DHCellSide neighb_side : cell.neighb_sides()) {
+            DHCellAccessor neighbor = neighb_side.cell();
+            if (neighbor.dim() != max_dim_) continue;
+
+            auto neighbor_component_it = cell_component_.find(neighbor.elm_idx());
+            if (neighbor_component_it == cell_component_.end()) continue;
+            if (neighbor_component_it->second < 0) continue;
+
+            if (component < 0) {
+                component = neighbor_component_it->second;
+            } else if (component != neighbor_component_it->second) {
+                // Ambiguous lower-dimensional cell on an interface between local
+                // components. Keep deterministic ownership to avoid writing one
+                // DOF into multiple RBM blocks.
+                component = std::min(component, neighbor_component_it->second);
+            }
+        }
+
+        return component;
     }
 
     void create_modes_matrix(std::shared_ptr<DOFHandlerMultiDim> dh)
@@ -1154,9 +1266,27 @@ private:
         MatZeroEntries(eq_data_->rigid_body_modes_matrix);
     }
 
+    void print_component_diagnostics() const
+    {
+        PetscMPIInt rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD,
+            "[feti user nullspace components] rank: %d, components: %d, "
+            "modes_per_component: %d, local_modes: %d\n",
+            rank, (int)component_origins_.size(), (int)modes_per_component_, (int)n_modes_);
+        PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
+    }
+
     void assemble_cell(DHCellAccessor cell)
     {
         LocDofVec dof_indices = cell.get_loc_dof_indices();
+
+        const int component = component_of_cell(cell);
+        if (component < 0) return;
+
+        const unsigned int first_mode = component * modes_per_component_;
+        const arma::vec3 &origin = component_origins_[component];
 
         for (unsigned int i=0; i<cell.n_dofs(); ++i) {
             const Dof &dof = cell.cell_dof(i);
@@ -1168,13 +1298,13 @@ private:
                 mode_value.zeros();
                 mode_value[mode] = 1.0;
                 MatSetValueLocal(eq_data_->rigid_body_modes_matrix,
-                                 dof_indices[i], mode, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
+                                 dof_indices[i], first_mode + mode, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
             }
 
             for (unsigned int n=0; n<normal_vectors_.size(); ++n) {
-                mode_value = arma::cross(normal_vectors_[n], x - origin_);
+                mode_value = arma::cross(normal_vectors_[n], x - origin);
                 MatSetValueLocal(eq_data_->rigid_body_modes_matrix,
-                                 dof_indices[i], 3+n, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
+                                 dof_indices[i], first_mode + 3+n, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
             }
         }
     }
@@ -1192,8 +1322,10 @@ private:
 
     unsigned int max_dim_;
     unsigned int n_modes_;
+    unsigned int modes_per_component_;
 
-    arma::vec3 origin_;
+    std::vector<arma::vec3> component_origins_;
+    std::map<unsigned int, int> cell_component_;
     std::vector<arma::vec3> normal_vectors_;
 };
 
