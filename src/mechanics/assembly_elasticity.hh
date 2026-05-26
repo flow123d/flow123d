@@ -186,12 +186,6 @@ public:
         side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
-        // mark dofs that do not contribute to dimjoin coupling
-        vector<LongIdx> lower_nodes;
-        for (unsigned int i=0; i<dim; i++)
-            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
-        vector<double> ignore_dofs(n_dofs_, false);
-
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
                 for (unsigned int i=0; i<n_dofs_*n_dofs_; i++)
@@ -208,7 +202,6 @@ public:
             {
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
-                    if (n == 1 && ignore_dofs[i]) continue;
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
@@ -221,7 +214,6 @@ public:
                     for (int m=0; m<2; m++)
                     {
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
-                            if (m == 1 && ignore_dofs[j]) continue;
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
