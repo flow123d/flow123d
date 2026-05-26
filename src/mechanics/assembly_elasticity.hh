@@ -1060,10 +1060,8 @@ public:
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh)
     {
         max_dim_ = find_largest_element_dimension(dh);
-        init_default_normals();
         detect_components(dh);
-        modes_per_component_ = 3 + normal_vectors_.size();
-        n_modes_ = modes_per_component_ * component_origins_.size();
+        compute_component_modes(dh);
         print_component_diagnostics();
         create_modes_matrix(dh);
 
@@ -1078,38 +1076,6 @@ private:
         for (auto cell : dh->local_range())
             max_dim = std::max(max_dim, cell.dim());
         return max_dim;
-    }
-
-    void init_default_normals()
-    {
-        normal_vectors_.clear();
-
-        // TODO: Replace by user hints or mesh-based heuristic.
-        if (max_dim_ == 3) {
-            arma::vec3 n1, n2, n3;
-            n1.zeros();
-            n2.zeros();
-            n3.zeros();
-            n1[1] = 1.0;
-            n2[2] = 1.0;
-            n3[0] = 1.0;
-            normal_vectors_.push_back(n1);
-            normal_vectors_.push_back(n2);
-            normal_vectors_.push_back(n3);
-        } else if (max_dim_ == 2) {
-            arma::vec3 n;
-            n.zeros();
-            n[2] = 1.0;
-            normal_vectors_.push_back(n);
-        } else if (max_dim_ == 1) {
-            arma::vec3 n1, n2;
-            n1.zeros();
-            n2.zeros();
-            n1[1] = 1.0;
-            n2[2] = 1.0;
-            normal_vectors_.push_back(n1);
-            normal_vectors_.push_back(n2);
-        }
     }
 
     void detect_components(std::shared_ptr<DOFHandlerMultiDim> dh)
@@ -1170,9 +1136,115 @@ private:
 
             ++component_id;
         }
+    }
 
-        component_origins_.assign(component_id, arma::vec3());
-        std::vector<unsigned int> n_points(component_id, 0);
+    arma::vec3 normalized_vector(const arma::vec3 &v, const arma::vec3 &fallback) const
+    {
+        const double norm = arma::norm(v);
+        if (norm > 0.0) return v / norm;
+        return fallback;
+    }
+
+    arma::vec3 eigenvector_3d(const arma::mat &eigenvectors, unsigned int column) const
+    {
+        arma::vec3 v;
+        v.zeros();
+        for (unsigned int i=0; i<3; ++i)
+            v[i] = eigenvectors(i, column);
+        return v;
+    }
+
+    void init_component_normals(unsigned int component, const arma::mat33 &covariance)
+    {
+        component_normal_vectors_[component].clear();
+
+        arma::vec eigenvalues;
+        arma::mat eigenvectors;
+        bool eig_ok = arma::eig_sym(eigenvalues, eigenvectors, covariance);
+
+        arma::vec3 ex, ey, ez;
+        ex.zeros();
+        ey.zeros();
+        ez.zeros();
+        ex[0] = 1.0;
+        ey[1] = 1.0;
+        ez[2] = 1.0;
+
+        if (max_dim_ == 3 || !eig_ok) {
+            component_normal_vectors_[component].push_back(ex);
+            component_normal_vectors_[component].push_back(ey);
+            component_normal_vectors_[component].push_back(ez);
+            return;
+        }
+
+        const double lambda_max = std::max(0.0, eigenvalues[eigenvalues.n_elem-1]);
+        const double geometry_tol = 1e-8;
+
+        if (max_dim_ == 2) {
+            arma::vec3 normal = normalized_vector(eigenvector_3d(eigenvectors, 0), ez);
+
+            if (lambda_max > 0.0) {
+                const double relative_thickness =
+                    std::sqrt(std::max(0.0, eigenvalues[0]) / lambda_max);
+                if (relative_thickness > geometry_tol) {
+                    PetscMPIInt rank;
+                    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+                    PetscSynchronizedPrintf(PETSC_COMM_WORLD,
+                        "[feti user nullspace components] rank: %d, component: %d, "
+                        "warning: 2D component is not planar, relative_thickness: %.16e\n",
+                        rank, (int)component, relative_thickness);
+                    PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
+                }
+            }
+
+            component_normal_vectors_[component].push_back(normal);
+            return;
+        }
+
+        if (max_dim_ == 1) {
+            arma::vec3 tangent = normalized_vector(eigenvector_3d(eigenvectors, 2), ex);
+
+            if (lambda_max > 0.0) {
+                const double relative_width =
+                    std::sqrt(std::max(0.0, eigenvalues[1]) / lambda_max);
+                if (relative_width > geometry_tol) {
+                    PetscMPIInt rank;
+                    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+                    PetscSynchronizedPrintf(PETSC_COMM_WORLD,
+                        "[feti user nullspace components] rank: %d, component: %d, "
+                        "warning: 1D component is not linear, relative_width: %.16e\n",
+                        rank, (int)component, relative_width);
+                    PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
+                }
+            }
+
+            arma::vec3 helper = ex;
+            if (std::abs(arma::dot(tangent, ey)) < std::abs(arma::dot(tangent, helper)))
+                helper = ey;
+            if (std::abs(arma::dot(tangent, ez)) < std::abs(arma::dot(tangent, helper)))
+                helper = ez;
+
+            arma::vec3 n1 = normalized_vector(arma::cross(tangent, helper), ey);
+            arma::vec3 n2 = normalized_vector(arma::cross(tangent, n1), ez);
+            component_normal_vectors_[component].push_back(n1);
+            component_normal_vectors_[component].push_back(n2);
+        }
+    }
+
+    void compute_component_modes(std::shared_ptr<DOFHandlerMultiDim> dh)
+    {
+        unsigned int n_components = 0;
+        for (const auto &item : cell_component_) {
+            if (item.second >= 0)
+                n_components = std::max(n_components, static_cast<unsigned int>(item.second + 1));
+        }
+
+        component_origins_.assign(n_components, arma::vec3());
+        component_normal_vectors_.assign(n_components, std::vector<arma::vec3>());
+        component_first_mode_.assign(n_components, 0);
+        component_n_modes_.assign(n_components, 0);
+
+        std::vector<unsigned int> n_points(n_components, 0);
         for (auto &origin : component_origins_)
             origin.zeros();
 
@@ -1190,6 +1262,29 @@ private:
         for (unsigned int c=0; c<component_origins_.size(); ++c) {
             if (n_points[c] > 0)
                 component_origins_[c] /= n_points[c];
+        }
+
+        std::vector<arma::mat33> covariances(n_components);
+        for (auto &covariance : covariances)
+            covariance.zeros();
+
+        for (auto cell : dh->own_range()) {
+            if (cell.dim() != max_dim_) continue;
+            const int cell_component = component_of_cell(cell);
+            if (cell_component < 0) continue;
+
+            for (unsigned int i=0; i<cell.elm()->n_nodes(); ++i) {
+                arma::vec3 x = *cell.elm().node(i) - component_origins_[cell_component];
+                covariances[cell_component] += x * x.t();
+            }
+        }
+
+        n_modes_ = 0;
+        for (unsigned int c=0; c<n_components; ++c) {
+            init_component_normals(c, covariances[c]);
+            component_first_mode_[c] = n_modes_;
+            component_n_modes_[c] = 3 + component_normal_vectors_[c].size();
+            n_modes_ += component_n_modes_[c];
         }
     }
 
@@ -1273,8 +1368,11 @@ private:
 
         PetscSynchronizedPrintf(PETSC_COMM_WORLD,
             "[feti user nullspace components] rank: %d, components: %d, "
-            "modes_per_component: %d, local_modes: %d\n",
-            rank, (int)component_origins_.size(), (int)modes_per_component_, (int)n_modes_);
+            "local_modes: %d, component_modes:",
+            rank, (int)component_origins_.size(), (int)n_modes_);
+        for (unsigned int c=0; c<component_n_modes_.size(); ++c)
+            PetscSynchronizedPrintf(PETSC_COMM_WORLD, " %d", (int)component_n_modes_[c]);
+        PetscSynchronizedPrintf(PETSC_COMM_WORLD, "\n");
         PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT);
     }
 
@@ -1285,8 +1383,9 @@ private:
         const int component = component_of_cell(cell);
         if (component < 0) return;
 
-        const unsigned int first_mode = component * modes_per_component_;
+        const unsigned int first_mode = component_first_mode_[component];
         const arma::vec3 &origin = component_origins_[component];
+        const std::vector<arma::vec3> &normal_vectors = component_normal_vectors_[component];
 
         for (unsigned int i=0; i<cell.n_dofs(); ++i) {
             const Dof &dof = cell.cell_dof(i);
@@ -1301,8 +1400,8 @@ private:
                                  dof_indices[i], first_mode + mode, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
             }
 
-            for (unsigned int n=0; n<normal_vectors_.size(); ++n) {
-                mode_value = arma::cross(normal_vectors_[n], x - origin);
+            for (unsigned int n=0; n<normal_vectors.size(); ++n) {
+                mode_value = arma::cross(normal_vectors[n], x - origin);
                 MatSetValueLocal(eq_data_->rigid_body_modes_matrix,
                                  dof_indices[i], first_mode + 3+n, arma::dot(dof_coefs, mode_value), INSERT_VALUES);
             }
@@ -1322,11 +1421,12 @@ private:
 
     unsigned int max_dim_;
     unsigned int n_modes_;
-    unsigned int modes_per_component_;
 
     std::vector<arma::vec3> component_origins_;
+    std::vector<std::vector<arma::vec3>> component_normal_vectors_;
+    std::vector<unsigned int> component_first_mode_;
+    std::vector<unsigned int> component_n_modes_;
     std::map<unsigned int, int> cell_component_;
-    std::vector<arma::vec3> normal_vectors_;
 };
 
 
