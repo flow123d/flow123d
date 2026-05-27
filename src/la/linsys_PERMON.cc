@@ -588,6 +588,32 @@ PetscErrorCode print_feti_permon_nullspace_dimension(MPI_Comm comm, QP qp)
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+PetscErrorCode compute_qp_lagrangian_residual_norm(QP qp, PetscReal *norm)
+{
+    Vec solution = NULL;
+    Vec residual = NULL;
+    char *residual_name = NULL;
+    PetscBool invalid_residual = PETSC_FALSE;
+
+    PetscFunctionBegin;
+    PetscCheck(qp, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null QP for residual computation.");
+    PetscCheck(norm, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null residual norm pointer.");
+
+    *norm = -1.0;
+    PetscCall(QPComputeMissingEqMultiplier(qp));
+    PetscCall(QPComputeMissingBoxMultipliers(qp));
+    PetscCall(QPGetSolutionVector(qp, &solution));
+    PetscCall(VecDuplicate(solution, &residual));
+    PetscCall(QPComputeLagrangianGradient(qp, solution, residual, &residual_name));
+    PetscCall(VecIsInvalidated(residual, &invalid_residual));
+    if (!invalid_residual)
+        PetscCall(VecNorm(residual, NORM_2, norm));
+    PetscCall(PetscFree(residual_name));
+    PetscCall(VecDestroy(&residual));
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 } // namespace
 
 const it::Record & LinSys_PERMON::get_input_type() {
@@ -933,7 +959,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         use_feti_ = false;
     }
 
-    QP system_dual = NULL;
+    QP primal_qp = NULL;
 
     chkerr(QPCreate(comm_, &system));
     chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
@@ -1040,7 +1066,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
         chkerr(QPTFromOptions(system));
         chkerr(print_feti_permon_nullspace_dimension(comm_, system));
-        system_dual = system;
+        primal_qp = system;
         chkerr(QPGetParent(system, &system));
     } else {
         // convert to MATAIJ
@@ -1066,6 +1092,8 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         if (ineq_ || eq_) // dualization without FETI
             chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+        if (ineq_ || eq_)
+            primal_qp = system;
     }
     
     // Set runtime options, e.g -qp_chain_view_kkt
@@ -1104,26 +1132,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     LogOut().fmt("convergence reason {}, number of iterations is {}\n", reason, nits);
 
     // get residual norm
-    if (use_feti_ && system_dual) {
-        // compute the Lagrangian residual |A*x - b + B'*lambda|
-        Vec lagrangian_solution = NULL;
-        Vec lagrangian_residual = NULL;
-        char *lagrangian_residual_name = NULL;
-        PetscBool invalid_residual = PETSC_FALSE;
-
-        solution_precision_ = -1.0;
-        chkerr(QPComputeMissingEqMultiplier(system_dual));
-        chkerr(QPComputeMissingBoxMultipliers(system_dual));
-        chkerr(QPGetSolutionVector(system_dual, &lagrangian_solution));
-        chkerr(VecDuplicate(lagrangian_solution, &lagrangian_residual));
-        chkerr(QPComputeLagrangianGradient(system_dual, lagrangian_solution,
-                                           lagrangian_residual, &lagrangian_residual_name));
-        chkerr(VecIsInvalidated(lagrangian_residual, &invalid_residual));
-        if (!invalid_residual) {
-            chkerr(VecNorm(lagrangian_residual, NORM_2, &solution_precision_));
-        }
-        chkerr(PetscFree(lagrangian_residual_name));
-        chkerr(VecDestroy(&lagrangian_residual));
+    if (primal_qp) {
+        // Compute the Lagrangian residual |A*x - b + B'*lambda| on the
+        // primal QP in both FETI and constrained non-FETI paths.
+        chkerr(compute_qp_lagrangian_residual_norm(primal_qp, &solution_precision_));
     } else {
         MatMult(matrix_, solution_, residual_);
         VecAXPY(residual_,-1.0, rhs_);
