@@ -42,37 +42,6 @@
 
 
 
-/**
- * Helper class that holds data used in FieldFE operations
- * (see source file src/fields/field_fee.hh).
- */
-class FieldFeOpData {
-public:
-    /// Constructor
-    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : dh_(dh), data_vec_(data_vec) {}
-
-    inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
-    	return dh_;
-    }
-
-    inline VectorMPI data_vec() const {
-    	return data_vec_;
-    }
-
-    bool operator==(const FieldFeOpData &other)
-    {
-        return (dh_->hash() == other.dh_->hash()) &&
-               (data_vec_.size() == other.data_vec_.size());
-    }
-
-private:
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
-    VectorMPI data_vec_;
-};
-
-
-
 template<unsigned int spacedim = 3>
 class PatchFEValues {
 public:
@@ -107,14 +76,6 @@ public:
     /// Destructor
     ~PatchFEValues()
     {}
-
-    bool operator==(const PatchFEValues<spacedim> &other)
-    {
-        return (this->fe_[0_d] == other.fe_[0_d]) &&
-               (this->fe_[1_d] == other.fe_[1_d]) &&
-               (this->fe_[2_d] == other.fe_[2_d]) &&
-               (this->fe_[3_d] == other.fe_[3_d]);
-    }
 
     /// Finalize initialization, creates child (patch) arena and passes it to PatchPointValue objects
     void init_finalize() {
@@ -320,7 +281,7 @@ public:
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim, class... Args>
     PatchOp<spacedim>* get(Args&&... args) {
-        auto cache_it = op_cache_.template get<OpType>( *this, std::forward<Args>(args)... );
+        auto cache_it = op_cache_.template get<OpType, PatchFEValues>( *this, std::forward<Args>(args)... );
         if (cache_it.second) {
         	operations_.push_back(cache_it.first);
         }
@@ -430,39 +391,6 @@ private:
     friend class PatchOp<spacedim>;
 };
 
-
-
-namespace std {
-
-/// Template specialization of std::hash for FieldFeOpData
-template<>
-struct hash< FieldFeOpData > {
-    std::size_t operator()(const FieldFeOpData &op_data) const noexcept {
-        std::size_t h1 = std::hash<std::size_t>{}( op_data.dh()->hash() );
-        std::size_t h2 = std::hash<uint>{}( op_data.data_vec().size() );
-
-        // hash combine
-        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
-    }
-};
-
-
-/// Template specialization of std::hash for PatchFEValues
-template< unsigned int spacedim >
-struct hash< PatchFEValues<spacedim> > {
-    std::size_t operator()(const PatchFEValues<spacedim> &pfev) const noexcept {
-
-        std::size_t h = 0;
-        hash_combine(h, std::hash<FiniteElement<0>>{}( *(pfev.template fe_dim<0>().get()) ));
-        hash_combine(h, std::hash<FiniteElement<1>>{}( *(pfev.template fe_dim<1>().get()) ));
-        hash_combine(h, std::hash<FiniteElement<2>>{}( *(pfev.template fe_dim<2>().get()) ));
-        hash_combine(h, std::hash<FiniteElement<3>>{}( *(pfev.template fe_dim<3>().get()) ));
-
-        return h;
-    }
-};
-
-} // namespace std
 
 
 #endif /* PATCH_FE_VALUES_HH_ */

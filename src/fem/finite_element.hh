@@ -314,12 +314,6 @@ public:
      */
     virtual ~FiniteElement() {};
 
-    bool operator==(const FiniteElement<dim> &other)
-    {
-        return (this->n_dofs() == other.n_dofs()) &&
-               (this->n_components() == other.n_components());
-    }
-
 protected:
   
     /**
@@ -406,23 +400,6 @@ protected:
     friend class FE_P_disc<dim>;
     friend class SubDOFHandlerMultiDim;
 };
-
-
-namespace std {
-
-/// Template specialization of std::hash for Quadrature
-template< unsigned int dim >
-struct hash< FiniteElement<dim> > {
-    std::size_t operator()(const FiniteElement<dim> &fe) const noexcept {
-        std::size_t h1 = std::hash<uint>{}(fe.n_dofs());
-        std::size_t h2 = std::hash<uint>{}(fe.n_components());
-
-        // hash combine
-        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
-    }
-};
-
-} // namespace std
 
 
 
