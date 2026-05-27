@@ -245,6 +245,7 @@ public:
      */
     void cache_reinit(AssemblyInternals &asm_internals) override;
 
+
 	/**
 	 * Initialization from the input interface.
 	 */
