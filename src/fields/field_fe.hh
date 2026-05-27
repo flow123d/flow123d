@@ -46,6 +46,33 @@
 
 
 
+namespace internal {
+
+template<unsigned int dim>
+class FieldFeOpFactory : public internal::IntegralFactory<dim>
+{
+public:
+    // Default constructor
+	FieldFeOpFactory() : internal::IntegralFactory<dim>()
+    {}
+
+    // Constructor
+	FieldFeOpFactory(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
+    : internal::IntegralFactory<dim>(pfev, element_cache_map, fe, quad)
+    {}
+
+    /// Factory method. Same as previous but creates FE operation.
+    template<class ValueType, template<unsigned int, class, class, unsigned int> class OpType, class Domain, template<unsigned int, class, unsigned int> class OpBaseShape>
+    FeQ<ValueType> make_field_fe_q(FieldFeOpData field_fe_op_data, uint component_idx = 0) {
+        std::shared_ptr<FiniteElement<dim>> fe_component = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
+        return FeQ<ValueType>(this->patch_fe_values_->template get< OpType<dim, Domain, OpBaseShape<dim, Domain, 3>, 3>, dim >(*this->quad_, fe_component, field_fe_op_data));
+    }
+
+};
+
+} // end of namespace internal
+
+
 namespace Op {
 
 /// Evaluates FieldFE on quadrature points defined in patch
@@ -62,16 +89,19 @@ public:
 	    }
 
     void eval() override {
-        auto shape_vec = this->input_ops(0)->result_matrix();
-        auto result_vec = this->result_matrix();
         PatchPointValues<spacedim> &ppv = this->ppv();
-
         uint n_dofs = this->input_ops(0)->n_dofs();
         uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
 
-        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> data_vec_pts(n_dofs);
+        auto shape_vec = this->input_ops(0)->result_matrix();
+        this->allocate_result(n_patch_points, this->patch_arena());
+        auto result_vec = this->result_matrix();
+
+        Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> data_vec_pts(n_dofs);
         for (uint i=0; i<n_dofs; ++i) {
             data_vec_pts(i) = ArenaVec<double>( n_patch_points, this->patch_arena() );
+        }
+        for (uint i=0; i<this->n_comp(); ++i) {
             for (uint i_p=0; i_p<result_vec(i).data_size(); ++i_p) {
                 result_vec(i)(i_p) = 0.0;
             }
@@ -79,24 +109,24 @@ public:
 
         unsigned int last_element_idx = -1;
         LocDofVec loc_dofs;
-        unsigned int range_bgn=0, range_end=0;
+        unsigned int range_bgn=0;
         for (uint i=0; i<n_patch_points; ++i) {
             uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
             if (elm_idx != last_element_idx) {
                 DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
                 loc_dofs = cell.get_loc_dof_indices();
                 last_element_idx = elm_idx;
-                range_bgn = this->fe_item_[cell.dim()].range_begin_;
-                range_end = this->fe_item_[cell.dim()].range_end_;
+                // TODO range_bgn must be set to non-zero value in case if fe_ is of type FeSystem
+                //range_bgn = this->fe_item_[dim].range_begin_;
             }
-            for (unsigned int i_dof=range_bgn, i_cdof=0; i_dof<range_end; i_dof++, i_cdof++) {
+            for (unsigned int i_dof=range_bgn, i_cdof=0; i_cdof<n_dofs; i_dof++, i_cdof++) {
                 data_vec_pts(i_cdof)(i) = data_vec_.get(loc_dofs[i_dof]);
             }
         }
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             for (uint i_c=0; i_c<this->n_comp(); ++i_c) {
-                result_vec(i_c) += data_vec_pts(i_dof) * shape_vec(i_dof*this->n_comp() + i_c);
+                result_vec(i_c) = result_vec(i_c) + data_vec_pts(i_dof) * shape_vec(i_dof*this->n_comp() + i_c);
             }
         }
     }
