@@ -72,7 +72,7 @@ const Record & Elasticity::get_input_type() {
            .declare_key("feti", Bool(), IT::Default("false"), "Use FETI domain decomposition.")
            .declare_key("view_matrices", Bool(), IT::Default("false"), "Print system matrices and vectors.")
            .declare_key("fix_nullspace", Bool(), IT::Default("false"), "Correct formulation to preserve rotational DOF in nullspace of stiffness matrix.")
-           .declare_key("feti_user_nullspace", Bool(), IT::Default("false"), "Use explicitly assembled rigid body modes as the FETI operator nullspace.")
+           .declare_key("feti_user_nullspace", Bool(), IT::Default("true"), "Use explicitly assembled rigid body modes as the FETI operator nullspace.")
            .declare_key("dirichlet_by_eq", Bool(), IT::Default("false"), "Enforce Dirichlet b.c. by equality constraints instead of penalization.")
 		   .close();
 }
@@ -423,8 +423,8 @@ void Elasticity::initialize()
     eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
 
     // equation default PETSc solver options
-    std::string petsc_default_opts;
-    petsc_default_opts = "-permon_pc_type hypre";
+    std::string petsc_default_opts = "";
+    // petsc_default_opts = "-permon_pc_type hypre";
     
     // allocate matrix and vector structures
 #ifndef FLOW123D_HAVE_PERMON
@@ -479,21 +479,27 @@ void Elasticity::initialize()
     ls->use_feti(use_feti);
     eq_data_->ls = ls;
 
+    eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
+    eq_data_->feti_user_nullspace = input_rec.val<bool>("feti_user_nullspace");
+    eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
+    view_matrices = input_rec.val<bool>("view_matrices");
+    if (use_feti && mesh_->get_el_ds()->np() > 1) {
+        eq_data_->dirichlet_by_eq = true; // force Dirichlet by equality constraints if FETI is on
+        eq_data_->fix_nullspace = true;
+        eq_data_->feti_user_nullspace = true;
+    }
+
     stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
     output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    eq_data_->feti_user_nullspace = input_rec.val<bool>("feti_user_nullspace");
+    
     if (use_feti && eq_data_->feti_user_nullspace)
         rigid_body_modes_assembly_ = new RigidBodyModesAssemblyElasticity(eq_data_.get());
 
-    eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
     if (eq_data_->dirichlet_by_eq) {
         // allocate matrix and vector for dirichlet constraints
         dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
     }
-
-    eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
-    view_matrices = input_rec.val<bool>("view_matrices");
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),
