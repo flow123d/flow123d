@@ -28,6 +28,8 @@
 #include "input/input_exception.hh"
 #include "io/observe.hh"
 
+struct AssemblyInternals;
+
 namespace it = Input::Type;
 
 /******************************************************************************************
@@ -346,7 +348,7 @@ std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const {
+void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED AssemblyInternals &asm_internals, FMT_UNUSED unsigned int region_idx) const {
     //for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
 	ASSERT_PERMANENT(false).error("Cache reallocate of MultiField should be performed by individual components!\n");
 }

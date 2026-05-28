@@ -24,12 +24,13 @@
 #include "system/sys_profiler.hh"
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
+#include "coupling/assembly_internals.hh"
 
 
 class GenericFieldTest : public testing::Test {
 
 public:
-    class EqOutput : public FieldSet, public ElementCacheMap {
+    class EqOutput : public FieldSet {
     public:
         EqOutput() {
             *this += region_id.name("region_id")
@@ -42,42 +43,41 @@ public:
 
 
             // Asumme following types:
-            eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk_1d = new QGauss(1, 0);
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
-            bulk_int[0] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_1d, 1);
-            bulk_int[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_2d, 2);
-            bulk_int[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_3d, 3);
-            this->init(eval_points_);
+            bulk_int[0] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_1d, 1);
+            bulk_int[1] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_2d, 2);
+            bulk_int[2] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_3d, 3);
+            asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
         }
 
         void register_eval_points() {
             for(auto dh_cell : dh_->local_range() ) {
                 uint subset_idx = bulk_int[dh_cell.dim()-1]->get_subset_idx();
                 unsigned int reg_idx = dh_cell.elm().region_idx().idx();
-                for (uint i=uint( eval_points_->subset_begin(dh_cell.dim(), subset_idx) );
-                          i<uint( eval_points_->subset_end(dh_cell.dim(), subset_idx) ); ++i) {
-                    this->add_eval_point(reg_idx, dh_cell.elm_idx(), i, dh_cell.local_idx());
+                for (uint i=uint( asm_internals_.eval_points_->subset_begin(dh_cell.dim(), subset_idx) );
+                          i<uint( asm_internals_.eval_points_->subset_end(dh_cell.dim(), subset_idx) ); ++i) {
+                    asm_internals_.element_cache_map_.add_eval_point(reg_idx, dh_cell.elm_idx(), i, dh_cell.local_idx());
                 }
             }
-            this->eval_point_data_.make_permanent();
+            asm_internals_.element_cache_map_.make_paermanent_eval_points();
         }
 
         void update_cache() {
             this->register_eval_points();
-            this->create_patch();
-            this->cache_update(*this);
-            this->finish_elements_update();
+            asm_internals_.element_cache_map_.create_patch();
+            this->cache_update(asm_internals_.element_cache_map_);
+            asm_internals_.element_cache_map_.finish_elements_update();
         }
 
 
         // fields
         Field<3, FieldValue<3>::Scalar> region_id;
         //Field<3, FieldValue<3>::Scalar> subdomain; // test of subdomain is not solved now
-        std::shared_ptr<EvalPoints> eval_points_;
         std::array<std::shared_ptr<BulkIntegral>, 3> bulk_int;  // dim 1,2,3
         std::shared_ptr<DOFHandlerMultiDim> dh_;
+        AssemblyInternals asm_internals_;
     };
 
     GenericFieldTest()
@@ -102,7 +102,7 @@ public:
         eq_output_->region_id = GenericField<3>::region_id(*mesh_);
         //eq_output_->subdomain = GenericField<3>::subdomain(*mesh_);
         eq_output_->set_time(tg.step(), LimitSide::right);
-        eq_output_->cache_reallocate( *(eq_output_.get()), *(eq_output_.get()) );
+        eq_output_->cache_reallocate( eq_output_->asm_internals_, *(eq_output_.get()) );
     }
 
 
@@ -113,11 +113,11 @@ public:
 
 TEST_F(GenericFieldTest, all) {
     this->initialize();
-    eq_output_->start_elements_update();
+    eq_output_->asm_internals_.element_cache_map_.start_elements_update();
     eq_output_->update_cache();
 
     for(auto dh_cell : eq_output_->dh_->local_range() ) {
-        auto p = *( eq_output_->bulk_int[dh_cell.dim()-1]->points(eq_output_->position_in_cache(dh_cell.elm_idx()), eq_output_.get()).begin() );
+        auto p = *( eq_output_->bulk_int[dh_cell.dim()-1]->points(eq_output_->asm_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx()), &eq_output_->asm_internals_.element_cache_map_).begin() );
         EXPECT_EQ( dh_cell.elm().region().id(), eq_output_->region_id(p) );
     }
 }

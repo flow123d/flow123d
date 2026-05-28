@@ -50,6 +50,7 @@
 #include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
+#include "coupling/assembly_internals.hh"
 #include <armadillo>
 
 using namespace std;
@@ -147,7 +148,7 @@ const IT::Selection & SomeEquationBase::EqData::get_bc_type_selection() {
 class SomeEquation : public testing::Test, SomeEquationBase {
 public:
 
-    class EqData : public SomeEquationBase::EqData, public ElementCacheMap {
+    class EqData : public SomeEquationBase::EqData {
     public:
 
         EqData() : SomeEquationBase::EqData() {
@@ -166,23 +167,22 @@ public:
             bc_piezo_head.units(UnitSI().m());
 
             // Asumme following types:
-            eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk_1d = new QGauss(1, 0);
             Quadrature *q_bulk_2d = new QGauss(2, 0);
             Quadrature *q_bulk_3d = new QGauss(3, 0);
             Quadrature *q_bdr = new QGauss(2, 0);
-            mass_eval[0] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_1d, 1);
-            mass_eval[1] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_2d, 2);
-            mass_eval[2] = std::make_shared<BulkIntegral>(eval_points_, q_bulk_3d, 3);
-            bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
-            this->init(eval_points_);
+            mass_eval[0] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_1d, 1);
+            mass_eval[1] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_2d, 2);
+            mass_eval[2] = std::make_shared<BulkIntegral>(asm_internals_.eval_points_, q_bulk_3d, 3);
+            bdr_eval = std::make_shared<BoundaryIntegral>(asm_internals_.eval_points_, q_bdr, 3);
+            asm_internals_.element_cache_map_.init(asm_internals_.eval_points_);
         }
 
         void register_eval_points(bool bdr=false) {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
             unsigned int dim = computed_dh_cell_.dim();
-            for (auto p : mass_eval[dim-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            for (auto p : mass_eval[dim-1]->points(asm_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &asm_internals_.element_cache_map_) ) {
+                asm_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
 
             if (bdr)
@@ -190,24 +190,24 @@ public:
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         unsigned int bdr_reg = cell_side.cond().element_accessor().region_idx().idx(); // region of boundary element
                         //std::cout << "Bulk elm: " << computed_dh_cell_.elm_idx() << ", boundary element: " << cell_side.cond().bc_ele_idx() << ", region: " << bdr_reg << std::endl;
-                        for (auto p : bdr_eval->points(cell_side, this) ) {
+                        for (auto p : bdr_eval->points(cell_side, &asm_internals_.element_cache_map_) ) {
                             // point on side of bulk element
-                            this->eval_point_data_.emplace_back(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+                            asm_internals_.element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
                             // point on boundary element
                             BulkPoint p_bdr = p.point_bdr(cell_side.cond().element_accessor()); // equivalent point on boundary element
-                            this->eval_point_data_.emplace_back(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                            asm_internals_.element_cache_map_.add_eval_point(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
                         }
                     }
                 }
-            this->eval_point_data_.make_permanent();
+            asm_internals_.element_cache_map_.make_paermanent_eval_points();
         }
 
         void update_cache(bool bdr=false) {
-        	this->start_elements_update();
+        	asm_internals_.element_cache_map_.start_elements_update();
             this->register_eval_points(bdr);
-            this->create_patch();
-            this->cache_update(*this);
-            this->finish_elements_update();
+            asm_internals_.element_cache_map_.create_patch();
+            this->cache_update(asm_internals_.element_cache_map_);
+            asm_internals_.element_cache_map_.finish_elements_update();
         }
 
 
@@ -217,10 +217,10 @@ public:
         BCField<3, FieldValue<3>::VectorFixed > bc_gravity;      // Holds gravity vector
         BCField<3, FieldValue<3>::Scalar> bc_piezo_head;
         MultiField<3, FieldValue<3>::Scalar > conc_mobile;
-        std::shared_ptr<EvalPoints> eval_points_;
         std::array<std::shared_ptr<BulkIntegral>, 3> mass_eval;  // dim 1,2,3
         std::shared_ptr<BoundaryIntegral> bdr_eval;              // only dim 2
         DHCellAccessor computed_dh_cell_;
+        AssemblyInternals asm_internals_;
     };
 
 protected:
@@ -285,7 +285,7 @@ protected:
 
         data_->set_input_list( inputs[input_last], tg );
         data_->set_time(tg.step(), LimitSide::right);
-        data_->cache_reallocate( *(data_.get()), *(data_.get()) );
+        data_->cache_reallocate( data_->asm_internals_, *(data_.get()) );
     }
 
     ~SomeEquation() {
@@ -364,7 +364,7 @@ TEST_F(SomeEquation, values) {
         // region 37 "1D diagonal"
         this->set_dh_cell(0, 37);
 
-        auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
+        auto p = *( data_->mass_eval[0]->points(data_->asm_internals_.element_cache_map_.position_in_cache(data_->computed_dh_cell_.elm_idx()), &data_->asm_internals_.element_cache_map_).begin() );
 
         EXPECT_DOUBLE_EQ(1.1, data_->init_pressure(p) );            // scalar
         for (unsigned int i=0; i<data_->conc_mobile.size(); ++i) {  // multifield
@@ -384,7 +384,7 @@ TEST_F(SomeEquation, values) {
         // region 38 "2D XY diagonal"
         this->set_dh_cell(1, 38);
 
-        auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
+        auto p = *( data_->mass_eval[0]->points(data_->asm_internals_.element_cache_map_.position_in_cache(data_->computed_dh_cell_.elm_idx()), &data_->asm_internals_.element_cache_map_).begin() );
 
         EXPECT_DOUBLE_EQ(2.2, data_->init_pressure(p) );            // scalar
         for (unsigned int i=0; i<data_->conc_mobile.size(); ++i) {  // multifield
@@ -398,7 +398,7 @@ TEST_F(SomeEquation, values) {
         // region 39 "3D back"
         this->set_dh_cell(3, 39);
 
-        auto p = *( data_->mass_eval[0]->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()).begin() );
+        auto p = *( data_->mass_eval[0]->points(data_->asm_internals_.element_cache_map_.position_in_cache(data_->computed_dh_cell_.elm_idx()), &data_->asm_internals_.element_cache_map_).begin() );
 
         EXPECT_DOUBLE_EQ(2.2, data_->init_pressure(p) );
         EXPECT_EQ( 5.7, data_->bulk_set_field(p) );
@@ -415,7 +415,7 @@ TEST_F(SomeEquation, values) {
                     found_bdr = true;
                     EXPECT_EQ(101, cell_side.cond().element_accessor().region().id());
 
-                    auto p_side = *( data_->bdr_eval->points(cell_side, data_.get()).begin() );
+                    auto p_side = *( data_->bdr_eval->points(cell_side, &data_->asm_internals_.element_cache_map_).begin() );
                     auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                     EXPECT_EQ( EqData::dirichlet, data_->bc_type(p_bdr) );
                     EXPECT_DOUBLE_EQ(1.23, data_->bc_pressure(p_bdr) );
@@ -436,7 +436,7 @@ TEST_F(SomeEquation, values) {
                     found_bdr = true;
                     EXPECT_EQ(102, cell_side.cond().element_accessor().region().id());
 
-                    auto p_side = *( data_->bdr_eval->points(cell_side, data_.get()).begin() );
+                    auto p_side = *( data_->bdr_eval->points(cell_side, &data_->asm_internals_.element_cache_map_).begin() );
                     auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                     arma::vec3 elm_center = cell_side.cond().element_accessor().centre();
                     EXPECT_EQ( EqData::dirichlet, data_->bc_type(p_bdr) );
