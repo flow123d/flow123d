@@ -312,7 +312,7 @@ public:
      * Create PETSc solution
      */
     void set_solution() {
-        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+        v_solution_   = new double[ rows_ds_->lsize() + 1 ]();
         own_vec_ = true;
         own_solution_ = true;
         PetscErrorCode ierr;
