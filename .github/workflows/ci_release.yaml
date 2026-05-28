@@ -13,6 +13,7 @@ on:
         - DF_patch_fe_values
         #- DF_profiler_memory_monitor
         #- SM_CI_GNU_Integration_tests
+        - JS_constraints
 
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
