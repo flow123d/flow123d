@@ -966,6 +966,17 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
+    {
+        Vec qp_solution = NULL;
+        PetscReal qp_solution_norm;
+        chkerr(QPGetSolutionVector(system, &qp_solution));
+        chkerr(VecNorm(qp_solution, NORM_2, &qp_solution_norm));
+        if (!std::isfinite(qp_solution_norm)) {
+            WarningOut() << "PERMON QP initial vector contains NaN or Inf values. "
+                         << "Resetting the initial vector to zero.\n";
+            chkerr(VecSet(qp_solution, 0.0));
+        }
+    }
 
     if (use_feti_) {
 
