@@ -236,8 +236,8 @@ std::size_t hash_args(const Args&... args)
 template <class BaseT>
 class CachedFactory {
 public:
-    template <class DerivedT, class... Args>
-    std::pair<BaseT *, bool> get(Args&&... args)
+    template <class DerivedT, class U, class... Args>
+    std::pair<BaseT *, bool> get(U &ref, Args&&... args)
     {
         static_assert(std::is_base_of_v<BaseT, DerivedT>,
                       "DerivedT must derive from BaseT");
@@ -258,7 +258,7 @@ public:
         }
 
         BaseT * created = new DerivedT(
-            std::forward<Args>(args)...
+            ref, std::forward<Args>(args)...
         );
 
         cache_[key] = created;

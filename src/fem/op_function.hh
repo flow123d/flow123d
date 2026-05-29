@@ -872,6 +872,8 @@ private:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class VectorPiolaShape : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim};
+
     /// Constructor
 	VectorPiolaShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
@@ -928,6 +930,8 @@ private:
 template<unsigned int dim, unsigned int spacedim>
 class VectorPiolaShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim};
+
     /// Constructor
 	VectorPiolaShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, PatchOp<spacedim> &dispatch_op)
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), dispatch_op_(dispatch_op)
@@ -1002,6 +1006,8 @@ private:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class DispatchVectorShape : public PatchOp<spacedim> {
 public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim};
+
     /// Constructor
     DispatchVectorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, quad, {spacedim}, fe->n_dofs()), in_op_(nullptr)
@@ -1074,7 +1080,7 @@ public:
 
             Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
             for (uint c=0; c<spacedim*spacedim; ++c)
-                result_vec(c) = result_ovec(i_dof * spacedim*spacedim + c).get_vec();
+                result_vec(c) = result_ovec(c).get_vec();
         }
     }
 };

@@ -1,0 +1,655 @@
+#define TEST_USE_MPI
+#define FEAL_OVERRIDE_ASSERTS
+#include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
+#include "arma_expect.hh"
+
+#include "quadrature/quadrature_lib.hh"
+#include "fem/integral_acc.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
+#include "fem/patch_fe_values.hh"
+#include "fem/patch_op_impl.hh"
+#include "fem/fe_p.hh"
+#include "tools/revertable_list.hh"
+#include "fields/field_fe.hh"
+#include "system/sys_profiler.hh"
+
+
+
+// Define EXPECT_<...>_NEAR with fixed abs_error 1e-5
+#define EXPECT_TEST_NEAR( A, B )\
+  EXPECT_NEAR(A, B, 1e-4)
+
+#define EXPECT_TEST_ARMA_NEAR( A, B ) \
+    EXPECT_ARMA_NEAR(A, B, 1e-4);
+
+
+
+class FieldFePatchOpTestBase {
+public:
+
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmBase {
+    public:
+        /**
+         * Constructor
+         *
+         * @param quad_order      Order of Quadrature (quad_, quad_low_) objects.
+         */
+        AsmBase(FieldFePatchOpTestBase *generic, uint quad_order)
+        : generic_(generic),
+          quad_( new QGauss(dim, 2*quad_order) ),
+          quad_low_( new QGauss(dim-1, 2*quad_order) ),
+          bulk_integral_( create_bulk_integral(quad_) ),
+  	      boundary_integral_( create_boundary_integral(quad_low_) ),
+	      det_( bulk_integral_->determinant() )
+        {}
+
+    	/// Destructor
+        virtual ~AsmBase() {
+            delete quad_;
+            delete quad_low_;
+        }
+
+
+        std::shared_ptr<BulkIntegralAcc<dim>> create_bulk_integral(Quadrature *quad) {
+            ASSERT_PERMANENT_EQ(quad->dim(), dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+            auto result = integrals_.bulk_.insert({
+                    tpl,
+                    std::make_shared<BulkIntegralAcc<dim>>(generic_->eval_points_, quad, &generic_->patch_fe_values_, &generic_->element_cache_map_)
+                });
+            return result.first->second;
+        }
+
+        std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(Quadrature *quad) {
+            ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+            auto result = integrals_.boundary_.insert({
+                    tpl,
+                    std::make_shared<BoundaryIntegralAcc<dim>>(generic_->eval_points_, quad, &generic_->patch_fe_values_, &generic_->element_cache_map_)
+                });
+            return result.first->second;
+        }
+
+        /** Declaration of data members **/
+        FieldFePatchOpTestBase *generic_;                                 ///< pointer to generic object
+        Quadrature *quad_;                                                ///< Quadrature (of dim)
+        Quadrature *quad_low_;                                            ///< Quadrature (of dim-1).
+        DimIntegrals<dim> integrals_;                                     ///< Set of used integrals.
+        std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;             ///< BulkIntegral
+        std::shared_ptr<BoundaryIntegralAcc<dim>> boundary_integral_;     ///< BoundaryIntegral between dim-1 and dim elements
+        ElQ<Scalar> det_;
+
+    };
+
+
+    FieldFePatchOpTestBase(std::shared_ptr<DOFHandlerMultiDim> dh)
+    : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
+      fe_(dh_->ds()->fe()),
+	  eval_points_( std::make_shared<EvalPoints>() )
+    {
+        used_element_idx_ = {0, 1, 2, 3, 8}; // dimension of used elements: 1D, 2D, 2D, 3D, 3D
+
+        ref_bulk_det_ = { 3.46410, 5.65685, 5.65685, 8.00000, 8.00000 };
+//        ref_bulk_scalar_shape_dof0_ = {
+//            { 0.78868, 0.66667, 0.66667, 0.58541, 0.58541 },
+//            { 0.68730, -0.08473, -0.08473, 0.32018, 0.32018 }
+//        };
+//        ref_bulk_scalar_shape_dof1_ = {
+//            { 0.21132, 0.16667, 0.16667, 0.13820, 0.13820 },
+//            { 0.40000, 0.19283, 0.19283, 0.26774, 0.26774 }
+//        };
+//        ref_bulk_vector_shape_dof0_ = {
+//            {0.78868, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}
+//        };
+//        ref_bulk_vector_shape_dof1_ = {
+//            {0.21132, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}
+//        };
+//        ref_bulk_grad_vector_dof0_ = {
+//            { -0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000 },
+//            { 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
+//            { 0.25000, 0.00000, 0.00000, 0.25000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
+//            { 0.50000, -0.00000, -0.00000, 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000 },
+//            { 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000, 0.50000, -0.00000, -0.00000 }
+//        };
+//        ref_bulk_grad_vector_dof1_ = {
+//            { 0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000 },
+//            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, -0.50000, 0.00000, 0.00000 },
+//            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000 },
+//            { -0.50000, -0.00000, -0.00000, 0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000 },
+//            { -0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000 }
+//        };
+    }
+
+    ~FieldFePatchOpTestBase() {}
+
+    void add_bulk_integral(DHCellAccessor cell, std::shared_ptr<BulkIntegral> bulk_integral) {
+        uint subset_idx = bulk_integral->get_subset_idx();
+        bulk_integral->patch_data().emplace_back(cell);
+        uint dim = cell.dim();
+
+        unsigned int reg_idx = cell.elm().region_idx().idx();
+        // Different access than in other integrals: We can't use range method CellIntegral::points
+        // because it passes element_patch_idx as argument that is not known during patch construction.
+        for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
+                  i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
+            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+        }
+    }
+
+    void add_boundary_integral(DHCellAccessor cell, std::shared_ptr<BoundaryIntegral> bdr_integral) {
+        if (!cell.is_own()) return; // ghost element
+
+        uint dim = cell.dim();
+        auto &ppv_side = patch_fe_values_.ppv(side_domain, dim);
+        auto &ppv_bdr = patch_fe_values_.ppv(bulk_domain, dim-1);
+        for( DHCellSide bdr_side : cell.side_range() ) {
+            if ( (bdr_side.side().edge().n_sides() == 1) && (bdr_side.side().is_boundary()) ) { // tests if side is really boundary
+                bdr_integral->patch_data().emplace_back(bdr_side);
+
+                unsigned int reg_idx = bdr_side.element().region_idx().idx();
+                ++ppv_side.n_mesh_items_;
+                ++ppv_bdr.n_mesh_items_;
+                for (auto p : bdr_integral->points(bdr_side, &element_cache_map_) ) {
+                    element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+
+                    BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
+                    unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
+                    // invalid local_idx value, DHCellAccessor of boundary element doesn't exist
+                    element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                }
+            }
+        }
+    }
+
+    virtual void update_patch() =0;
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+
+    /// reset patch data
+    virtual void reset() =0;
+
+    virtual void set_integrals_arrays() =0;
+
+    void initialize() {
+        set_integrals_arrays();
+        this->patch_fe_values_.init_finalize();
+    }
+
+    /// Create and return integral factory of given dimension.
+    template<unsigned int dim>
+    internal::FieldFeOpFactory<dim> integral_factory(Quadrature *quad) const {
+    	return internal::FieldFeOpFactory<dim>(&patch_fe_values_, &element_cache_map_, fe_[Dim<dim>{}], quad);
+    }
+
+
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    PatchFEValues<3> patch_fe_values_;                                        ///< Common FEValues object over all dimensions
+
+    MixedPtr<FiniteElement> fe_;
+
+    std::shared_ptr<EvalPoints> eval_points_;                                 ///< EvalPoints object shared by all integrals
+    ElementCacheMap element_cache_map_;                                       ///< ElementCacheMap according to EvalPoints
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
+    std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;             ///< Edge integrals of dim 1,2,3
+    std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;     ///< Coupling integrals of dim 1-2,2-3
+    std::array<std::shared_ptr<BoundaryIntegral>, 3> boundary_integrals_;     ///< Coupling integrals of dim 1-2,2-3
+    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_diff_order_;  ///< Bulk integrals of dim 1,2,3 of high order
+
+    std::vector<unsigned int> used_element_idx_;                              ///< List of mesh idx of elements used in tests
+
+    /* Reference values */
+    std::vector<double> ref_bulk_det_;
+//    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof0_;
+//    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof1_;
+//    std::vector<arma::vec3> ref_bulk_vector_shape_dof0_;
+//    std::vector<arma::vec3> ref_bulk_vector_shape_dof1_;
+//    std::vector<arma::mat33> ref_bulk_grad_vector_dof0_;
+//    std::vector<arma::mat33> ref_bulk_grad_vector_dof1_;
+};
+
+
+/**
+ * Specialization defining FE scalar operations
+ */
+class FieldFePatchOpTestScalar : public FieldFePatchOpTestBase {
+public:
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmScalar : public FieldFePatchOpTestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+        AsmScalar(FieldFePatchOpTestScalar *generic, uint quad_order)
+        : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
+          //generic_inst_(generic),
+		  scalar_field_fe_op_( this->field_fe_scalar_op() )
+        {}
+
+        /// Destructor
+        virtual ~AsmScalar() {}
+
+        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_run, unsigned int i_test_elem) {
+            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            double det = this->det_(p);
+
+            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+        }
+
+        inline FeQ<Scalar> field_fe_scalar_op()
+        {
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
+                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            data_vec.zero_entries();
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
+            return FeQ<Scalar>(factory.template make_field_fe_q< Scalar, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
+        }
+
+
+        /** Declaration of data members **/
+        //FieldFePatchOpTestScalar *generic_inst_;     ///< pointer to generic object
+        FeQ<Scalar> scalar_field_fe_op_;
+    };
+
+
+    FieldFePatchOpTestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : FieldFePatchOpTestBase(dh),
+      multidim_asm_(this, quad_order)
+    {
+        element_cache_map_.init(eval_points_);
+    }
+
+    ~FieldFePatchOpTestScalar() {}
+
+    void set_integrals_arrays() override {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
+    }
+
+    void update_patch() override {
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(unsigned int i_run, bool print_tables=false) {
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+            //this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
+        }
+        multidim_asm_[1_d]->integrals_.make_permanent();
+        multidim_asm_[2_d]->integrals_.make_permanent();
+        multidim_asm_[3_d]->integrals_.make_permanent();
+
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            switch (dh_cell.dim()) {
+            case 1:
+                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
+                break;
+            case 2:
+                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
+                break;
+            case 3:
+                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
+                break;
+            }
+            ++i_test_elem;
+        }
+    }
+
+    void reset() override {
+        multidim_asm_[1_d]->integrals_.reset();
+        multidim_asm_[2_d]->integrals_.reset();
+        multidim_asm_[3_d]->integrals_.reset();
+        this->element_cache_map_.clear_element_eval_points_map();
+        this->patch_fe_values_.reset();
+    }
+
+
+    MixedPtr<AsmScalar, 1> multidim_asm_;  ///< Assembly object
+};
+
+
+/**
+ * Specialization defining FE vector operations
+ */
+class FieldFePatchOpTestVector : public FieldFePatchOpTestBase {
+public:
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmVector : public FieldFePatchOpTestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+    	AsmVector(FieldFePatchOpTestVector *generic, uint quad_order)
+        : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
+          //generic_inst_(generic),
+		  vector_field_fe_op_( this->field_fe_vector_op() )
+        {}
+
+        /// Destructor
+        virtual ~AsmVector() {}
+
+        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
+            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            double det = this->det_(p);
+
+            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+        }
+
+        inline FeQ<Vector> field_fe_vector_op()
+        {
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
+                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            data_vec.zero_entries();
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
+            return FeQ<Vector>(factory.template make_field_fe_q< Vector, Op::FieldFeOp, Op::BulkDomain, Op::DispatchVectorShape >(field_fe_op_data));
+        }
+
+
+        /** Declaration of data members **/
+        //FieldFePatchOpTestVector *generic_inst_;     ///< pointer to generic object
+        FeQ<Vector> vector_field_fe_op_;
+    };
+
+
+    FieldFePatchOpTestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : FieldFePatchOpTestBase(dh),
+      multidim_asm_(this, quad_order)
+    {
+        element_cache_map_.init(eval_points_);
+    }
+
+    ~FieldFePatchOpTestVector() {}
+
+    void set_integrals_arrays() override {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
+    }
+
+    void update_patch() override {
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
+        }
+        multidim_asm_[1_d]->integrals_.make_permanent();
+        multidim_asm_[2_d]->integrals_.make_permanent();
+        multidim_asm_[3_d]->integrals_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            switch (dh_cell.dim()) {
+            case 1:
+                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 2:
+                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 3:
+                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            }
+            ++i_test_elem;
+        }
+    }
+
+    void reset() override {
+        multidim_asm_[1_d]->integrals_.reset();
+        multidim_asm_[2_d]->integrals_.reset();
+        multidim_asm_[3_d]->integrals_.reset();
+        this->element_cache_map_.clear_element_eval_points_map();
+        this->patch_fe_values_.reset();
+    }
+
+
+    MixedPtr<AsmVector, 1> multidim_asm_;  ///< Assembly object
+};
+
+
+/**
+ * Specialization defining FE tensor operations
+ */
+class FieldFePatchOpTestTensor : public FieldFePatchOpTestBase {
+public:
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmTensor : public FieldFePatchOpTestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+    	AsmTensor(FieldFePatchOpTestTensor *generic, uint quad_order)
+        : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
+          //generic_inst_(generic),
+		  tensor_field_fe_op_( this->field_fe_tensor_op() )
+        {}
+
+        /// Destructor
+        virtual ~AsmTensor() {}
+
+        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
+            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            double det = this->det_(p);
+
+            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+        }
+
+        inline FeQ<Tensor> field_fe_tensor_op()
+        {
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
+                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            data_vec.zero_entries();
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
+            return FeQ<Tensor>(factory.template make_field_fe_q< Tensor, Op::FieldFeOp, Op::BulkDomain, Op::TensorShape >(field_fe_op_data));
+        }
+
+
+        /** Declaration of data members **/
+        //FieldFePatchOpTestVector *generic_inst_;     ///< pointer to generic object
+        FeQ<Tensor> tensor_field_fe_op_;
+    };
+
+
+    FieldFePatchOpTestTensor(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : FieldFePatchOpTestBase(dh),
+      multidim_asm_(this, quad_order)
+    {
+        element_cache_map_.init(eval_points_);
+    }
+
+    ~FieldFePatchOpTestTensor() {}
+
+    void set_integrals_arrays() override {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
+    }
+
+    void update_patch() override {
+        patch_fe_values_.prepare_new_patch(this->eval_points_);
+        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
+        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+
+        START_TIMER("reinit_patch");
+        patch_fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            ++ppv_bulk.n_mesh_items_;
+        	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->patch_fe_values_.make_permanent_ppv_data();
+        }
+        multidim_asm_[1_d]->integrals_.make_permanent();
+        multidim_asm_[2_d]->integrals_.make_permanent();
+        multidim_asm_[3_d]->integrals_.make_permanent();
+        element_cache_map_.make_paermanent_eval_points();
+        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            switch (dh_cell.dim()) {
+            case 1:
+                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 2:
+                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 3:
+                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            }
+            ++i_test_elem;
+        }
+    }
+
+    void reset() override {
+        multidim_asm_[1_d]->integrals_.reset();
+        multidim_asm_[2_d]->integrals_.reset();
+        multidim_asm_[3_d]->integrals_.reset();
+        this->element_cache_map_.clear_element_eval_points_map();
+        this->patch_fe_values_.reset();
+    }
+
+
+    MixedPtr<AsmTensor, 1> multidim_asm_;  ///< Assembly object
+};
+
+
+/// Complete test with FE scalar operations
+void compare_evaluation_func_scalar(Mesh* mesh, unsigned int i_run, bool print_fa_data = false) {
+    std::vector<uint> quad_orders = {1, 2};
+    MixedPtr<FE_P_disc> fe(quad_orders[i_run]);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    FieldFePatchOpTestScalar patch_fe(quad_orders[i_run], dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(i_run, print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation(i_run);
+}
+
+
+/// Complete test with FE vector operations
+void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    MixedPtr<FE_P> fe_p( quad_order );
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    FieldFePatchOpTestVector patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
+
+/// Complete test with FE vector operations
+void compare_evaluation_func_tensor(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    MixedPtr<FE_P> fe_p( quad_order );
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FETensor, 9);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    FieldFePatchOpTestTensor patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
+
+TEST(FieldFePatchOpTest, complete_evaluation) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Profiler::instance();
+    PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
+
+    std::string input_str = "{ mesh_file=\"mesh/simplest_cube.msh\", optimize_mesh=false }";
+    Mesh* mesh = mesh_full_constructor(input_str);
+
+    // two tests with different quad_order and Scalar / Vector FE operations
+    compare_evaluation_func_scalar(mesh, 0, true);
+    compare_evaluation_func_scalar(mesh, 1);
+    compare_evaluation_func_vector(mesh, 1, true);
+    compare_evaluation_func_tensor(mesh, 1);
+}
+
