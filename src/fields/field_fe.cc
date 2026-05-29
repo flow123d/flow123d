@@ -290,30 +290,17 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
             } else {
                 switch (cell.dim()) {
                     case 1:
-                        this->cache_update_bulk_elem<1>(data_cache, cache_map, bulk_integral_1d_, value_acc_1d_, element_patch_idx, i_data);
+                        this->cache_update_bulk_elem<1>(data_cache, bulk_integral_1d_, value_acc_1d_, element_patch_idx, i_data);
                         break;
                     case 2:
-                        this->cache_update_bulk_elem<2>(data_cache, cache_map, bulk_integral_2d_, value_acc_2d_, element_patch_idx, i_data);
+                        this->cache_update_bulk_elem<2>(data_cache, bulk_integral_2d_, value_acc_2d_, element_patch_idx, i_data);
                         break;
                     case 3:
-                        this->cache_update_bulk_elem<3>(data_cache, cache_map, bulk_integral_3d_, value_acc_3d_, element_patch_idx, i_data);
+                        this->cache_update_bulk_elem<3>(data_cache, bulk_integral_3d_, value_acc_3d_, element_patch_idx, i_data);
                         break;
                 }
             }
         }
-    }
-}
-
-
-template <int spacedim, class Value>
-template <unsigned int elemdim>
-void FieldFE<spacedim, Value>::cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
-        ElementCacheMap &cache_map, std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral,
-		FeQ<ReturnType> &value_acc, unsigned int element_patch_idx, unsigned int i_data)
-{
-    for (auto p : bulk_integral->points(element_patch_idx) ) {
-        data_cache.set(i_data) = value_acc(p);
-        i_data++;
     }
 }
 

@@ -33,6 +33,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
 #include "fem/patch_fe_values.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
@@ -273,7 +274,7 @@ public:
      * Replace previous method - in progress
      */
     void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
+			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
 
     /**
      * Overload @p FieldAlgorithmBase::cache_reinit
@@ -459,9 +460,15 @@ private:
     }
 
     template <unsigned int elemdim>
-    void FieldFE<spacedim, Value>::cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
-            ElementCacheMap &cache_map, std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral,
-    		FeQ<ReturnType> &value_acc, unsigned int element_patch_idx, unsigned int i_data);
+    void cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
+            std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral, FeQ<ReturnType> &value_acc,
+	        unsigned int element_patch_idx, unsigned int i_data)
+    {
+        for (auto p : bulk_integral->points(element_patch_idx) ) {
+            data_cache.set(i_data) = value_acc(p);
+            i_data++;
+        }
+    }
 
     /**
      * Declare FE operation of given dimension.
