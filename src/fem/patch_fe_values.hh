@@ -223,46 +223,6 @@ public:
         }
     }
 
-    /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
-        uint elem_pos = register_element_internal(elem, element_patch_idx);
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
-        std::size_t h =
-            (static_cast<std::size_t>(elem.region_idx().is_boundary()) << 32) |
-            static_cast<std::size_t>(elem.idx());
-        auto map_it = ppv.n_elems_.insert( {h, ppv.i_mesh_item_} );
-        bool is_elm_added = map_it.second;
-        if (is_elm_added) {
-            ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
-            ppv.i_mesh_item_++;
-        }
-        return map_it.first->second;
-    }
-
-    /// Register side to patch_point_vals_ table by dimension of side
-    uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
-        uint dim = cell_side.dim();
-        uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
-        uint elm_pos = register_element_internal(cell_side.cell().elm(), element_patch_idx);
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim];
-
-        ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
-        ppv.int_table_(ref_side_on_sides)(ppv.i_mesh_item_) = cell_side.side_idx();
-        ppv.side_list_.push_back( cell_side.side() );
-        return ppv.i_mesh_item_++;
-    }
-
-    /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
-        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem);
-    }
-
-    /// Register side point to patch_point_vals_ table by dimension of side
-    uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
-        return patch_point_vals_[side_domain][cell_side.dim()].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
-                cell_side.side_idx(), i_point_on_side);
-    }
-
     /// return reference to assembly arena
     inline AssemblyArena &asm_arena() {
     	return patch_fe_data_.asm_arena_;
@@ -345,6 +305,46 @@ public:
     }
 
 private:
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
+        uint elem_pos = register_element_internal(elem, element_patch_idx);
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
+        std::size_t h =
+            (static_cast<std::size_t>(elem.region_idx().is_boundary()) << 32) |
+            static_cast<std::size_t>(elem.idx());
+        auto map_it = ppv.n_elems_.insert( {h, ppv.i_mesh_item_} );
+        bool is_elm_added = map_it.second;
+        if (is_elm_added) {
+            ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
+            ppv.i_mesh_item_++;
+        }
+        return map_it.first->second;
+    }
+
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
+        uint dim = cell_side.dim();
+        uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
+        uint elm_pos = register_element_internal(cell_side.cell().elm(), element_patch_idx);
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim];
+
+        ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(ref_side_on_sides)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.side_list_.push_back( cell_side.side() );
+        return ppv.i_mesh_item_++;
+    }
+
+    /// Register bulk point to patch_point_vals_ table by dimension of element
+    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
+        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem);
+    }
+
+    /// Register side point to patch_point_vals_ table by dimension of side
+    uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
+        return patch_point_vals_[side_domain][cell_side.dim()].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
+                cell_side.side_idx(), i_point_on_side);
+    }
+
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element_internal(ElementAccessor<spacedim> elem, uint element_patch_idx) {
         PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
