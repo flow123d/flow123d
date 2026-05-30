@@ -410,7 +410,7 @@ void SparseGraphMETIS::partition(int *part)
                   options[METIS_OPTION_CTYPE]     = METIS_CTYPE_RM;
                   options[METIS_OPTION_IPTYPE]    = METIS_IPTYPE_GROW;
                   options[METIS_OPTION_RTYPE]     = METIS_RTYPE_GREEDY;
-                  options[METIS_OPTION_NCUTS]     = 1;
+                  options[METIS_OPTION_NCUTS]     = 10;
                   options[METIS_OPTION_NSEPS]     = 1;
                   options[METIS_OPTION_NUMBERING] = num_flag;
                   options[METIS_OPTION_NITER]     = 10;
@@ -454,6 +454,7 @@ void SparseGraphMETIS::partition(int *part)
                   } else {
     
 #if (METIS_VER_MAJOR >= 5)
+                      options[METIS_OPTION_OBJTYPE]   = METIS_OBJTYPE_VOL;
                       options[METIS_OPTION_PTYPE]     = METIS_PTYPE_KWAY;
                       options[METIS_OPTION_UFACTOR]   = 30;
                       METIS_PartGraphKway(&n_vtx, &ncon, rows, adj,
