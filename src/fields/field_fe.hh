@@ -396,6 +396,10 @@ private:
 	template <unsigned int dim>
 	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
 
+	/// Create PatcFe operation of given dimension and ReturnType.
+	template <unsigned int dim>
+	FeQ<ReturnType> create_dim_patch_op(AssemblyInternals &asm_internals);
+
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)
     {

@@ -309,6 +309,13 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
 {
     std::shared_ptr<EvalPoints> eval_points = asm_internals.eval_points_;
+
+    // new code PatchFeValues
+    value_acc_1d_ = this->create_dim_patch_op<1>(asm_internals);
+    value_acc_2d_ = this->create_dim_patch_op<2>(asm_internals);
+    value_acc_3d_ = this->create_dim_patch_op<3>(asm_internals);
+
+    // old code FeValues
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
     fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values); // add operation to asm_internals.fe_values_
@@ -325,6 +332,20 @@ Quadrature FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_
     for (unsigned int k=0; k<eval_points->size(dim); k++)
         quad.set(k) = eval_points->local_point<dim>(k);
     return quad;
+}
+
+
+template <int spacedim, class Value>
+template <unsigned int dim>
+FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(AssemblyInternals &asm_internals)
+{
+    FieldFeOpData field_fe_op_data(dh_, data_vec_);
+    Quadrature quad = this->init_quad<dim>(asm_internals.eval_points_);
+    internal::FieldFeOpFactory<dim> factory(&asm_internals.fe_values_, &asm_internals.element_cache_map_,
+            this->fe_[Dim<dim>{}], &quad);
+    return FeQ<ReturnType>();
+    //return FeQ<ReturnType>(factory.template make_field_fe_q< ReturnType, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
+    //                                                                                                    ???
 }
 
 
