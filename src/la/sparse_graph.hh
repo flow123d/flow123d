@@ -79,6 +79,14 @@ public:
     void set_edge(const int a, const int b, int weight=1);
 
     /**
+     * Set computational weight of a local vertex.
+     *
+     * The weight is passed to the partitioner as a balancing weight; it does
+     * not affect graph connectivity or edge-cut costs.
+     */
+    void set_vtx_weight(const int vtx, int weight);
+
+    /**
      * Set position and possibly weight of a local vertex. Assume that vtx is an index of local vertex.
      * Positions are used for initial distribution when using ParMETIS.
      *

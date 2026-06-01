@@ -71,6 +71,14 @@ void SparseGraph::set_edge(const int a, const int b,int weight)
 }
 
 
+void SparseGraph::set_vtx_weight(const int vtx, int weight)
+{
+	ASSERT(vtx_distr.is_local(vtx))(vtx).error("Can not set vertex weight for nonlocal vertex.\n");
+    int loc_index=vtx-vtx_distr.begin();
+    vtx_weights[loc_index]=weight;
+}
+
+
 
 
 void SparseGraph::set_vtx_position(const int vtx, const float xyz[3],int weight)
@@ -185,7 +193,10 @@ void SparseGraph::finalize()
    Edge *last_edge=&unknown_edge;
 
    for(i=0;i<size;i++) {
-       if (! (*last_edge < edges[i]) ) continue; // skip equivalent edges
+       if (! (*last_edge < edges[i]) ) {
+           adj_weights[i_adj-1] = std::max(adj_weights[i_adj-1], edges[i].weight);
+           continue;
+       }
        last_edge=edges+i;
 
        ASSERT(vtx_distr.is_local(edges[i].from))(edges[i].from)(edges[i].to)(i).error(
@@ -194,13 +205,16 @@ void SparseGraph::finalize()
        loc_from=edges[i].from-vtx_distr.begin();
        ASSERT( row <= loc_from )(i).error("Decrease in sorted edges at 'i'\n");
 
-       while ( row < loc_from ) rows[++row]=i;
+       while ( row < loc_from ) rows[++row]=i_adj;
        adj[i_adj]=edges[i].to;
        adj_weights[i_adj]=edges[i].weight;
        i_adj++;
    }
-   rows[++row]=i; // i==size (of adj array)
+   rows[++row]=i_adj; // i_adj==size of compacted adj array
+   while (row < (int)vtx_distr.lsize()) rows[++row]=i_adj;
 
+   } else {
+       for (unsigned int row = 1; row <= vtx_distr.lsize(); row++) rows[row]=0;
    }
 
    delete [] recvbuf;
