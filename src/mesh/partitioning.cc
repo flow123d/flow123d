@@ -24,6 +24,10 @@
 #include "mesh/range_wrapper.hh"
 #include "mesh/neighbours.h"
 
+#include <algorithm>
+#include <numeric>
+#include <vector>
+
 #include "petscao.h"
 
 
@@ -35,6 +39,9 @@ const IT::Selection & Partitioning::get_graph_type_sel() {
             "neighboring of elements of different dimension.")
 		.add_value(any_neighboring, "any_neighboring", "Add an edge for any pair of neighboring elements.")
 		.add_value(any_weight_lower_dim_cuts, "any_weight_lower_dim_cuts",  "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.")
+		.add_value(any_contract_lower_dim_stars, "any_contract_lower_dim_stars",
+                "Contract every lower-dimensional fracture element with adjacent higher-dimensional elements before partitioning. "
+                "This prevents partition cuts through fracture-bulk coupling stencils.")
 		.add_value(same_dimension_neighboring, "same_dimension_neighboring", "Add an edge for any pair of neighboring elements of the same dimension (bad for matrix multiply).")
 		.close();
 }
@@ -59,6 +66,35 @@ const IT::Record & Partitioning::get_input_type() {
 
     return input_type;
 }
+
+namespace {
+
+int find_component_root(std::vector<int> &parent, int component)
+{
+    int root = component;
+    while (parent[root] != root) root = parent[root];
+
+    while (parent[component] != component) {
+        int next = parent[component];
+        parent[component] = root;
+        component = next;
+    }
+
+    return root;
+}
+
+void union_components(std::vector<int> &parent, std::vector<int> &rank, int left, int right)
+{
+    left = find_component_root(parent, left);
+    right = find_component_root(parent, right);
+    if (left == right) return;
+
+    if (rank[left] < rank[right]) std::swap(left, right);
+    parent[right] = left;
+    if (rank[left] == rank[right]) rank[left]++;
+}
+
+} // namespace
 
 
 Partitioning::Partitioning(Mesh *mesh, Input::Record in)
@@ -88,6 +124,121 @@ const Distribution * Partitioning::get_init_distr() const {
 const LongIdx * Partitioning::get_loc_part() const {
 	ASSERT_PTR(loc_part_).error("NULL local partitioning.");
     return loc_part_;
+}
+
+
+Partitioning::ContractedGraph Partitioning::make_contracted_fracture_components() const {
+    ContractedGraph contracted;
+    const int n_elements = mesh_->n_elements();
+
+    std::vector<int> parent(n_elements);
+    std::vector<int> rank(n_elements, 0);
+    std::iota(parent.begin(), parent.end(), 0);
+
+    for (auto ele : mesh_->elements_range()) {
+        for (unsigned int i_neigh = 0; i_neigh < ele->n_neighs_vb(); i_neigh++) {
+            const int n_sides = ele->neigh_vb[i_neigh]->edge().n_sides();
+            for (int i_side = 0; i_side < n_sides; i_side++) {
+                int higher_element = ele->neigh_vb[i_neigh]->edge().side(i_side)->element().idx();
+                union_components(parent, rank, ele.idx(), higher_element);
+            }
+        }
+    }
+
+    std::vector<int> root_component(n_elements, -1);
+    contracted.element_component.resize(n_elements);
+    for (int i_element = 0; i_element < n_elements; i_element++) {
+        int root = find_component_root(parent, i_element);
+        if (root_component[root] == -1) {
+            root_component[root] = contracted.component_weight.size();
+            contracted.component_weight.push_back(0);
+        }
+        contracted.element_component[i_element] = root_component[root];
+        contracted.component_weight[root_component[root]]++;
+    }
+
+    return contracted;
+}
+
+
+
+void Partitioning::make_contracted_fracture_partition() {
+    ContractedGraph contracted = make_contracted_fracture_components();
+    const int n_components = contracted.component_weight.size();
+    const int num_of_procs = init_el_ds_->np();
+    if (n_components < num_of_procs) {
+        THROW( ExcDecomposeContractedMesh() << EI_NComponents( n_components ) << EI_NProcs( num_of_procs ) );
+    }
+
+    std::unique_ptr<Distribution> contracted_ds;
+    if (in_.val<PartitionTool>("tool") == PETSc) {
+        contracted_ds.reset(new Distribution(DistributionBlock(), n_components, mesh_->get_comm()));
+    } else {
+        contracted_ds.reset(new Distribution(DistributionLocalized(), n_components, mesh_->get_comm()));
+    }
+    switch (in_.val<PartitionTool>("tool")) {
+    case PETSc:
+        graph_ = new SparseGraphPETSC(*contracted_ds);
+        break;
+    case METIS:
+        graph_ = new SparseGraphMETIS(*contracted_ds);
+        break;
+    }
+
+    for (unsigned int component = contracted_ds->begin(); component < contracted_ds->end(); component++) {
+        graph_->set_vtx_weight(component, contracted.component_weight[component]);
+    }
+
+    const int fracture_coupling_weight = in_.val<int>("fracture_coupling_weight");
+    for (auto ele : mesh_->elements_range()) {
+        int component = contracted.element_component[ele.idx()];
+        if (!contracted_ds->is_local(component)) continue;
+
+        for (unsigned int si=0; si<ele->n_sides(); si++) {
+            Edge edg = ele.side(si)->edge();
+            for (unsigned int li=0; li<edg.n_sides(); li++) {
+                int neigh_component = contracted.element_component[edg.side(li)->element().idx()];
+                if (neigh_component != component) {
+                    graph_->set_edge(component, neigh_component);
+                }
+            }
+        }
+
+        for (unsigned int i_neigh = 0; i_neigh < ele->n_neighs_vb(); i_neigh++) {
+            const int n_sides = ele->neigh_vb[i_neigh]->edge().n_sides();
+            for (int i_side = 0; i_side < n_sides; i_side++) {
+                int neigh_component = contracted.element_component[
+                        ele->neigh_vb[i_neigh]->edge().side(i_side)->element().idx()];
+                if (neigh_component != component) {
+                    graph_->set_edge(component, neigh_component, fracture_coupling_weight);
+                    graph_->set_edge(neigh_component, component, fracture_coupling_weight);
+                }
+            }
+        }
+    }
+
+    graph_->finalize();
+
+    std::vector<int> component_part(contracted_ds->lsize());
+    graph_->partition(component_part.data());
+    delete graph_; graph_ = NULL;
+
+    std::vector<int> all_component_part(n_components);
+    std::vector<int> counts(contracted_ds->np());
+    std::vector<int> starts(contracted_ds->np());
+    for (unsigned int i_proc = 0; i_proc < contracted_ds->np(); i_proc++) {
+        counts[i_proc] = contracted_ds->lsize(i_proc);
+        starts[i_proc] = contracted_ds->begin(i_proc);
+    }
+    MPI_Allgatherv(component_part.data(), contracted_ds->lsize(), MPI_INT,
+            all_component_part.data(), counts.data(), starts.data(), MPI_INT,
+            contracted_ds->get_comm());
+
+    loc_part_ = new LongIdx[init_el_ds_->lsize()];
+    for (unsigned int i_local = 0; i_local < init_el_ds_->lsize(); i_local++) {
+        int i_element = init_el_ds_->begin() + i_local;
+        loc_part_[i_local] = all_component_part[contracted.element_component[i_element]];
+    }
 }
 
 
@@ -163,6 +314,11 @@ void Partitioning::make_partition() {
     int num_of_procs = init_el_ds_->np();
     if (mesh_size < num_of_procs) { // check if decomposing is possible
         THROW( ExcDecomposeMesh() << EI_NElems( mesh_size ) << EI_NProcs( num_of_procs ) );
+    }
+
+    if (in_.val<PartitionGraphType>("graph_type") == any_contract_lower_dim_stars) {
+        make_contracted_fracture_partition();
+        return;
     }
 
     make_element_connection_graph();

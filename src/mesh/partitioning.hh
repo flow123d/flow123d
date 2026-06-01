@@ -60,9 +60,13 @@ public:
 	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
 	TYPEDEF_ERR_INFO(EI_NElems, unsigned int);
 	TYPEDEF_ERR_INFO(EI_NProcs, unsigned int);
+	TYPEDEF_ERR_INFO(EI_NComponents, unsigned int);
 	DECLARE_INPUT_EXCEPTION(ExcDecomposeMesh,
 			<< "Number of processors " << EI_NProcs::val << " greater then number of elements "
 			<< EI_NElems::val << ". Can not make partitioning of the mesh " << EI_MeshFile::qval << ".\n" );
+	DECLARE_INPUT_EXCEPTION(ExcDecomposeContractedMesh,
+			<< "Number of processors " << EI_NProcs::val << " greater then number of contracted mesh components "
+			<< EI_NComponents::val << ". Can not make constrained fracture partitioning.\n" );
 
     /**
      *  Constructor. A pointer to the mesh and accessor to an input record have to be provided.
@@ -112,7 +116,16 @@ private:
     enum PartitionGraphType {
         any_neighboring,               ///< Add edge for any pair of neighboring elements
         any_weight_lower_dim_cuts,      ///< Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face
+        any_contract_lower_dim_stars,   ///< Contract lower-dimensional fracture stars before partitioning
         same_dimension_neighboring,     ///< Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply)
+    };
+
+    /**
+     * Description of a graph whose vertices are components of original mesh elements.
+     */
+    struct ContractedGraph {
+        std::vector<int> element_component; ///< Component id for every original mesh element.
+        std::vector<int> component_weight;  ///< Number of original elements represented by every component.
     };
 
     /// The input mesh
@@ -133,6 +146,16 @@ private:
      * Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_
      */
     void make_element_connection_graph();
+    /**
+     * Build components that keep lower-dimensional fracture elements with their
+     * adjacent higher-dimensional elements.
+     */
+    ContractedGraph make_contracted_fracture_components() const;
+    /**
+     * Creates and partitions a graph of contracted components, then expands the
+     * component partitioning back to the original element partition array.
+     */
+    void make_contracted_fracture_partition();
     /**
      * Creates sparse parallel graph from the mesh (using algorithm given by the key "graph_type" of the input record accessor @p in_)
      * calls partitioning tool given by the key "tool" of the input record accessor @p in_)
