@@ -41,8 +41,8 @@ public:
     static constexpr const char * name() { return "Convection_Mass_Assembly"; }
 
     /// Constructor.
-    MassAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    MassAssemblyConvection(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->water_content;
@@ -125,8 +125,8 @@ public:
     static constexpr const char * name() { return "Convection_InitCond_Assembly"; }
 
     /// Constructor.
-    InitCondAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    InitCondAssemblyConvection(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc;
     }
@@ -192,8 +192,8 @@ public:
     static constexpr const char * name() { return "Convection_ConcSourcesBdr_Assembly"; }
 
     /// Constructor.
-    ConcSourcesBdrAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ConcSourcesBdrAssemblyConvection(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       JxW_bdr_( bdr_integral_->JxW() ),
@@ -364,8 +364,8 @@ public:
     static constexpr const char * name() { return "Convection_MatrixMpi_Assembly"; }
 
     /// Constructor.
-    MatrixMpiAssemblyConvection(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    MatrixMpiAssemblyConvection(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       edge_integral_( this->create_edge_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_side_( edge_integral_->JxW() ),

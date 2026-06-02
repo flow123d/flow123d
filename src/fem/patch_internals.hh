@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    assembly_internals.hh
+ * @file    patch_internals.hh
  * @brief
  */
 
-#ifndef ASSEMBLY_INTERNALS_HH_
-#define ASSEMBLY_INTERNALS_HH_
+#ifndef PATCH_INTERNALS_HH_
+#define PATCH_INTERNALS_HH_
 
 #include "fem/eval_points.hh"
 #include "fem/element_cache_map.hh"
@@ -25,12 +25,12 @@
 
 
 /// Holds common data shared between GenericAssemblz and Assembly<dim> classes.
-struct AssemblyInternals {
+struct PatchInternals {
 public:
-    AssemblyInternals()
+    PatchInternals()
     : eval_points_(std::make_shared<EvalPoints>()) {}
 
-    AssemblyInternals(MixedPtr<FiniteElement> fe)
+    PatchInternals(MixedPtr<FiniteElement> fe)
     : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
@@ -39,4 +39,4 @@ public:
 };
 
 
-#endif /* ASSEMBLY_INTERNALS_HH_ */
+#endif /* PATCH_INTERNALS_HH_ */

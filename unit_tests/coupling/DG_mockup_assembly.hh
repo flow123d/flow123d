@@ -23,8 +23,8 @@ public:
     static constexpr const char * name() { return "DG_Mass_Assembly"; }
 
     /// Constructor.
-    MassEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MassAssemblyDG<dim, TEqData>(eq_data, asm_internals) {}
+    MassEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : MassAssemblyDG<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~MassEvalFields() {}
@@ -47,8 +47,8 @@ public:
     static constexpr const char * name() { return "DG_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : StiffnessAssemblyDG<dim, TEqData>(eq_data, asm_internals) {}
+    StiffnessEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : StiffnessAssemblyDG<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~StiffnessEvalFields() {}
@@ -83,8 +83,8 @@ public:
     static constexpr const char * name() { return "DG_Sources_Assembly"; }
 
     /// Constructor.
-    SourcesEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : SourcesAssemblyDG<dim, TEqData>(eq_data, asm_internals) {}
+    SourcesEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : SourcesAssemblyDG<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~SourcesEvalFields() {}

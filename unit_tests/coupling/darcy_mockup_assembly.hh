@@ -23,8 +23,8 @@ public:
     static constexpr const char * name() { return "Darcy_MHMatrix_Assembly"; }
 
     /// Constructor.
-    MHMatrixEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, asm_internals) {}
+    MHMatrixEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~MHMatrixEvalFields() {}

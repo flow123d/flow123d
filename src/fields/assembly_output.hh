@@ -43,15 +43,15 @@ public:
     typedef TEqData EqData;
 
     /// Constructor.
-    AssemblyOutputBase(unsigned int quad_order, EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(quad_order, asm_internals), eq_fields_(eq_data), eq_data_(eq_data) {
+    AssemblyOutputBase(unsigned int quad_order, EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(quad_order, patch_internals), eq_fields_(eq_data), eq_data_(eq_data) {
         offsets_.resize(CacheMapElementNumber::get());
     }
 
     /// Constructor.
-    AssemblyOutputBase(EqData *eq_data, AssemblyInternals *asm_internals)
+    AssemblyOutputBase(EqData *eq_data, PatchInternals *patch_internals)
     : AssemblyBasePatch<dim>(), eq_fields_(eq_data), eq_data_(eq_data) {
-        this->asm_internals_ = asm_internals;
+        this->patch_internals_ = patch_internals;
         offsets_.resize(CacheMapElementNumber::get());
     }
 
@@ -102,8 +102,8 @@ public:
     static constexpr const char * name() { return "Output_ElemData_Assembly"; }
 
     /// Constructor.
-    AssemblyOutputElemData(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyOutputBase<dim, TEqData>(0, eq_data, asm_internals),
+    AssemblyOutputElemData(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyOutputBase<dim, TEqData>(0, eq_data, patch_internals),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {}
 
     /// Destructor.
@@ -115,9 +115,9 @@ public:
     	this->reset_offsets();
     	auto &patch_data = bulk_integral_->patch_data();
     	for (unsigned int i=0; i<patch_data.permanent_size(); ++i) { // holds only one BulkIntegral and uses zero index fixedly
-            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
+            element_patch_idx = this->patch_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
             auto p = *( bulk_integral_->points(element_patch_idx).begin() ); // evaluation point (in element center)
-            field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
+            field_value_cache_position = this->patch_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             val_idx = this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(patch_data[i].cell.elm_idx());
             this->offsets_[field_value_cache_position] = val_idx;
     	}
@@ -147,8 +147,8 @@ public:
     static constexpr const char * name() { return "Output_NodeData_Assembly"; }
 
     /// Constructor.
-    AssemblyOutputNodeData(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyOutputBase<dim, TEqData>(eq_data, asm_internals) {
+    AssemblyOutputNodeData(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyOutputBase<dim, TEqData>(eq_data, patch_internals) {
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)
         {
@@ -174,10 +174,10 @@ public:
     	this->reset_offsets();
     	auto &patch_data = bulk_integral_->patch_data();
     	for (unsigned int i=0; i<patch_data.permanent_size(); ++i) { // holds only one BulkIntegral and uses zero index fixedly
-            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
+            element_patch_idx = this->patch_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
             val_idx = (*offset_vec_)[ this->stream_->get_output_mesh_ptr()->get_loc_elem_idx(patch_data[i].cell.elm_idx()) ];
             auto p = *( bulk_integral_->points(element_patch_idx).begin() );
-            field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
+            field_value_cache_position = this->patch_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx());
             for (uint j=0; j<patch_data[i].cell.dim()+1; ++j) {
                 this->offsets_[field_value_cache_position+j] = val_idx+j;
             }

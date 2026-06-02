@@ -220,7 +220,7 @@ std::vector<const FieldCommon * > FieldFormula<spacedim, Value>::set_dependency(
 
 
 template <int spacedim, class Value>
-void FieldFormula<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
+void FieldFormula<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
 	// Can not compile expression in set_time as the necessary cache size is not known there yet.
 
@@ -231,10 +231,10 @@ void FieldFormula<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internal
     uint vec_size = CacheMapElementNumber::get();
 
     // number of subset alignment to block size
-    uint n_subsets = vec_size / asm_internals.element_cache_map_.simd_size_double;
+    uint n_subsets = vec_size / patch_internals.element_cache_map_.simd_size_double;
     uint res_comp = Value::NRows_ * Value::NCols_;
     uint n_vectors = sum_shape_sizes_ + res_comp; // needs add space of result vector
-    arena_alloc_ = new bparser::ArenaAlloc(asm_internals.element_cache_map_.simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
+    arena_alloc_ = new bparser::ArenaAlloc(patch_internals.element_cache_map_.simd_size_double, n_vectors * vec_size * sizeof(double) + n_subsets * sizeof(uint));
     res_ = arena_alloc_->create_array<double>(vec_size * res_comp);
     for (auto field : required_fields_) {
         std::string field_name = field->name();

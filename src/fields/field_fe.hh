@@ -40,7 +40,7 @@
 #include "fem/integral_acc.hh"
 #include "fem/op_function.hh"
 #include "input/factory.hh"
-#include "coupling/assembly_internals.hh"
+#include "fem/patch_internals.hh"
 
 #include <memory>
 
@@ -274,7 +274,7 @@ public:
      *
      * Reinit fe_values_ data member.
      */
-    void cache_reinit(AssemblyInternals &asm_internals) override;
+    void cache_reinit(PatchInternals &patch_internals) override;
 
 
 	/**

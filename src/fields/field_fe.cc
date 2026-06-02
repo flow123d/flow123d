@@ -259,9 +259,9 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
+void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
-    std::shared_ptr<EvalPoints> eval_points = asm_internals.eval_points_;
+    std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
     fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values); // add operation to asm_internals.fe_values_
@@ -678,6 +678,8 @@ void FieldFE<spacedim, Value>::calculate_element_values()
     for (unsigned int i=0; i<data_vec_.size(); ++i) {
         if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
     }
+	data_vec_.assembly_begin();
+	data_vec_.assembly_end();
 }
 
 

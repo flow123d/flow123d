@@ -281,7 +281,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
 
 
     MatCreateAIJ(PETSC_COMM_WORLD, lsize, lsize, mesh_->n_elements(),
-            mesh_->n_elements(), 16, PETSC_NULL, 4, PETSC_NULL, &eq_data_->tm);
+            mesh_->n_elements(), 16, PETSC_NULLPTR, 4, PETSC_NULLPTR, &eq_data_->tm);
     
     VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &eq_data_->mass_diag);
     VecCreateMPI(PETSC_COMM_WORLD, lsize, mesh_->n_elements(), &vpmass_diag);

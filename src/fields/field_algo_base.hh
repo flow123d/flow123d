@@ -48,7 +48,7 @@ class UnitSI;
 class DOFHandlerMultiDim;
 class FieldSet;
 class FieldCommon;
-struct AssemblyInternals;
+struct PatchInternals;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -201,7 +201,7 @@ public:
        { ASSERT_PERMANENT(false).error("Not implemented yet."); return 0.0; }
 
        /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
-       virtual void cache_reinit(AssemblyInternals &asm_internals);
+       virtual void cache_reinit(PatchInternals &patch_internals);
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				   ElementCacheMap &cache_map, unsigned int region_patch_idx);
