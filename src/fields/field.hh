@@ -56,7 +56,7 @@ class BulkPoint;
 class SidePoint;
 class FieldSet;
 class ElementDataCacheBase;
-struct AssemblyInternals;
+struct PatchInternals;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -321,7 +321,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(AssemblyInternals &asm_internals, unsigned int region_idx) const override;
+    void cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;

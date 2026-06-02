@@ -38,11 +38,11 @@ public:
      * Constructor
      *
      * @param quad_order    Order of Quadrature objects.
-     * @param asm_internals Holds shared data with GenericAssembly
+     * @param patch_internals Holds shared data with GenericAssembly
      */
-    AssemblyBasePatch(unsigned int quad_order, AssemblyInternals *asm_internals)
+    AssemblyBasePatch(unsigned int quad_order, PatchInternals *patch_internals)
     : AssemblyBasePatch<dim>() {
-    	asm_internals_ = asm_internals;
+    	patch_internals_ = patch_internals;
         quad_ = new QGauss(dim, 2*quad_order);
         quad_low_ = new QGauss(dim-1, 2*quad_order);
     }
@@ -105,7 +105,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.bulk_.insert({
                 tpl,
-                std::make_shared<BulkIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
+                std::make_shared<BulkIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
             });
         return result.first->second;
     }
@@ -120,7 +120,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.edge_.insert({
                 tpl,
-                std::make_shared<EdgeIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
+                std::make_shared<EdgeIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
             });
         return result.first->second;
     }
@@ -138,7 +138,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.coupling_.insert({
                 tpl,
-                std::make_shared<CouplingIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
+                std::make_shared<CouplingIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
             });
         return result.first->second;
     }
@@ -154,7 +154,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.boundary_.insert({
                 tpl,
-                std::make_shared<BoundaryIntegralAcc<dim>>(asm_internals_->eval_points_, quad, &asm_internals_->fe_values_, &asm_internals_->element_cache_map_)
+                std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
             });
         return result.first->second;
     }
@@ -171,7 +171,7 @@ public:
 
         if (cell.is_own()) { // Not ghost
             if (integrals_.bulk_.size() > 0)
-                ++( asm_internals_->fe_values_.ppv(bulk_domain, cell.dim()) ).n_mesh_items_;
+                ++( patch_internals_->fe_values_.ppv(bulk_domain, cell.dim()) ).n_mesh_items_;
             this->add_volume_integrals(cell);
         }
 
@@ -187,7 +187,7 @@ public:
 
         add_coupling_integrals(cell);
 
-        if (asm_internals_->element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
+        if (patch_internals_->element_cache_map_.get_simd_rounded_size() > CacheMapElementNumber::get()) {
             integrals_.revert_temporary();
             return true;
         } else {
@@ -204,7 +204,7 @@ public:
     virtual inline void assemble_cell_integrals() {
     	for (unsigned int i=0; i<integrals_.n_patch_cells(); ++i) {
             this->cell_integral(integrals_.bulk_.begin()->second->patch_data()[i].cell,
-                                asm_internals_->element_cache_map_.position_in_cache(integrals_.bulk_.begin()->second->patch_data()[i].cell.elm_idx())
+                                patch_internals_->element_cache_map_.position_in_cache(integrals_.bulk_.begin()->second->patch_data()[i].cell.elm_idx())
 			                   );
     	}
     	// Possibly optimization but not so fast as we would assume (needs change interface of cell_integral)
@@ -269,12 +269,12 @@ public:
 
     /// Return number of DOFs
     inline unsigned int n_dofs() {
-        return asm_internals_->fe_values_.template n_dofs<dim>();
+        return patch_internals_->fe_values_.template n_dofs<dim>();
     }
 
     /// Return number of DOFs of higher dim element
     inline unsigned int n_dofs_high() {
-        return asm_internals_->fe_values_.template n_dofs_high<dim>();
+        return patch_internals_->fe_values_.template n_dofs_high<dim>();
     }
 
 protected:
@@ -284,7 +284,7 @@ protected:
 	 * Be aware if you use this constructor. Quadrature objects must be initialized manually in descendant.
 	 */
 	AssemblyBasePatch()
-	: quad_(nullptr), quad_low_(nullptr), asm_internals_(nullptr), min_edge_sides_(2) {}
+	: quad_(nullptr), quad_low_(nullptr), patch_internals_(nullptr), min_edge_sides_(2) {}
 
     /**
      * Add data of volume integrals to appropriate data structure.
@@ -299,9 +299,9 @@ protected:
             unsigned int reg_idx = cell.elm().region_idx().idx();
             // Different access than in other integrals: We can't use range method CellIntegral::points
             // because it passes element_patch_idx as argument that is not known during patch construction.
-            for (uint i=uint( asm_internals_->eval_points_->subset_begin(dim, subset_idx) );
-                      i<uint( asm_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
-                asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+            for (uint i=uint( patch_internals_->eval_points_->subset_begin(dim, subset_idx) );
+                      i<uint( patch_internals_->eval_points_->subset_end(dim, subset_idx) ); ++i) {
+                patch_internals_->element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
             }
         }
     }
@@ -314,7 +314,7 @@ protected:
     inline void add_edge_integrals(const DHCellSide &cell_side) {
 	    auto range = cell_side.edge_sides();
 
-        auto &ppv = asm_internals_->fe_values_.ppv(side_domain, cell_side.dim());
+        auto &ppv = patch_internals_->fe_values_.ppv(side_domain, cell_side.dim());
         for (auto integral_it : integrals_.edge_) {
             integral_it.second->patch_data().emplace_back(range);
 
@@ -330,7 +330,7 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_boundary_integrals(const DHCellSide &bdr_side) {
-        auto &ppv = asm_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
+        auto &ppv = patch_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
 
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
@@ -339,12 +339,12 @@ protected:
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
             ++ppv.n_mesh_items_;
             for (auto p : integral->points(bdr_side) ) {
-                asm_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+                patch_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
             	BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
             	unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
             	// invalid local_idx value, DHCellAccessor of boundary element doesn't exist
-            	asm_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+            	patch_internals_->element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
             }
         }
     }
@@ -356,8 +356,8 @@ protected:
      */
     inline void add_coupling_integrals(const DHCellAccessor &cell) {
         if (dim==3) return;
-        auto &ppv_low = asm_internals_->fe_values_.ppv(bulk_domain, cell.dim());
-        auto &ppv_high = asm_internals_->fe_values_.ppv(side_domain, cell.dim()+1);
+        auto &ppv_low = patch_internals_->fe_values_.ppv(bulk_domain, cell.dim());
+        auto &ppv_high = patch_internals_->fe_values_.ppv(side_domain, cell.dim()+1);
         uint i_int=0;
     	for (auto coupling_integral_it : integrals_.coupling_) {
     	    auto coupling_integral = coupling_integral_it.second;
@@ -370,7 +370,7 @@ protected:
                     ++ppv_low.n_mesh_items_;
                     for (auto p : coupling_integral->points(ngh_side) ) {
                         auto p_low = p.lower_dim(cell); // equivalent point on low dim cell
-                        asm_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
+                        patch_internals_->element_cache_map_.add_eval_point(reg_idx_low, cell.elm_idx(), p_low.eval_point_idx(), cell.local_idx());
                     }
                     break;
                 }
@@ -394,14 +394,14 @@ protected:
         ++ppv.n_mesh_items_;
         unsigned int reg_idx = cell_side.element().region_idx().idx();
         for (auto p : integral->points(cell_side) ) {
-            asm_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+            patch_internals_->element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
         }
     }
 
     Quadrature *quad_;                                     ///< Quadrature used in assembling methods.
     Quadrature *quad_low_;                                 ///< Quadrature used in assembling methods (dim-1).
     DimIntegrals<dim> integrals_;                          ///< Set of used integrals.
-    AssemblyInternals *asm_internals_;                     ///< Holds shared internals data with GeneriAssembly
+    PatchInternals *patch_internals_;                     ///< Holds shared internals data with GeneriAssembly
 
     /**
      * Minimal number of sides on edge.

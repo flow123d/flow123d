@@ -41,8 +41,8 @@ public:
     static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
+    StiffnessAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
@@ -276,8 +276,8 @@ public:
     static constexpr const char * name() { return "Elasticity_Rhs_Assembly"; }
 
     /// Constructor.
-    RhsAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    RhsAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
@@ -538,8 +538,8 @@ public:
     static constexpr const char * name() { return "Elasticity_OutpuFields_Assembly"; }
 
     /// Constructor.
-    OutpuFieldsAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    OutpuFieldsAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
       normal_join_( coupling_integral_->normal_vector() ),
@@ -699,8 +699,8 @@ public:
     static constexpr const char * name() { return "Elasticity_Constraint_Assembly"; }
 
     /// Constructor.
-    ConstraintAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ConstraintAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       coupling_integral_( this->create_coupling_integral(this->quad_) ),
       JxW_join_( coupling_integral_->JxW() ),
       normal_join_( coupling_integral_->normal_vector() ),

@@ -26,7 +26,7 @@
 #include "mesh/point.hh"                               // for Point
 
 template <int spacedim> class ElementAccessor;
-struct AssemblyInternals;
+struct PatchInternals;
 
 namespace IT=Input::Type;
 
@@ -97,7 +97,7 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(FMT_UNUSED AssemblyInternals &asm_internals, FMT_UNUSED unsigned int region_idx) const override
+    void cache_reallocate(FMT_UNUSED PatchInternals &patch_internals, FMT_UNUSED unsigned int region_idx) const override
     {}
 
     /// Implements FieldCommon::cache_update

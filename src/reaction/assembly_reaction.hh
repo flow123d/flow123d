@@ -39,8 +39,8 @@ public:
     static constexpr const char * name() { return "Dp_InitCondition_Assembly"; }
 
     /// Constructor.
-    InitConditionAssemblyDp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    InitConditionAssemblyDp(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc_immobile;
     }
@@ -94,8 +94,8 @@ public:
     static constexpr const char * name() { return "Dp_InitCondition_Assembly"; }
 
     /// Constructor.
-    ReactionAssemblyDp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ReactionAssemblyDp(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->porosity;
         this->used_fields_ += eq_fields_->porosity_immobile;
@@ -204,8 +204,8 @@ public:
     static constexpr const char * name() { return "Sorp_InitCondition_Assembly"; }
 
     /// Constructor.
-    InitConditionAssemblySorp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    InitConditionAssemblySorp(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->init_conc_solid;
     }
@@ -258,8 +258,8 @@ public:
     static constexpr const char * name() { return "Sorp_Reaction_Assembly"; }
 
     /// Constructor.
-    ReactionAssemblySorp(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ReactionAssemblySorp(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       mass_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->scale_aqua;
         this->used_fields_ += eq_fields_->scale_sorbed;

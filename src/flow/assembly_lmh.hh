@@ -51,8 +51,8 @@ public:
     static constexpr const char * name() { return "Darcy_ReadInitCond_Assembly"; }
 
     /// Constructor.
-    ReadInitCondAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ReadInitCondAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_pressure;
     }
@@ -123,8 +123,8 @@ public:
     static constexpr const char * name() { return "Darcy_MHMatrix_Assembly"; }
 
     /// Constructor.
-    MHMatrixAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), quad_rt_(dim, 2),
+    MHMatrixAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), quad_rt_(dim, 2),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
       asm_sides_integral_( this->create_bulk_integral(&quad_rt_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
@@ -169,7 +169,7 @@ public:
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
         reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
 
-        n_dofs_ = this->asm_internals_->fe_values_.template fe_comp<dim>(this->asm_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
+        n_dofs_ = this->patch_internals_->fe_values_.template fe_comp<dim>(this->patch_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
     }
 
 
@@ -700,7 +700,7 @@ protected:
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
-        	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
+        	unsigned int pos_in_cache = this->patch_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
         	auto p = *( bulk_integral_->points(pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
@@ -802,8 +802,8 @@ public:
     static constexpr const char * name() { return "Darcy_ReconstructSchur_Assembly"; }
 
     /// Constructor.
-    ReconstructSchurAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, asm_internals) {}
+    ReconstructSchurAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)
