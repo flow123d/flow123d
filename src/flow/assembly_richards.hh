@@ -35,8 +35,8 @@ public:
     static constexpr const char * name() { return "Richards_InitCondPostprocess_Assembly"; }
 
     /// Constructor.
-    InitCondPostprocessAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    InitCondPostprocessAssembly(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
@@ -150,8 +150,8 @@ public:
 
     static constexpr const char * name() { return "Richards_MHMatrix_Assembly"; }
 
-    MHMatrixAssemblyRichards(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
+    MHMatrixAssemblyRichards(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
@@ -405,8 +405,8 @@ public:
 
     static constexpr const char * name() { return "Richards_ReconstructSchur_Assembly"; }
 
-    ReconstructSchurAssemblyRichards(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyRichards<dim, TEqData>(eq_data, asm_internals) {
+    ReconstructSchurAssemblyRichards(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyRichards<dim, TEqData>(eq_data, patch_internals) {
     }
 
     /// Integral over element.

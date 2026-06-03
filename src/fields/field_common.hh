@@ -51,7 +51,7 @@ class ElementCacheMap;
 class FieldSet;
 class BulkPoint;
 class ElementDataCacheBase;
-struct AssemblyInternals;
+struct PatchInternals;
 
 
 using namespace std;
@@ -464,7 +464,7 @@ public:
     /**
      * Reallocate field value cache of Field on given region.
      */
-    virtual void cache_reallocate(AssemblyInternals &asm_internals, unsigned int region_idx) const = 0;
+    virtual void cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const = 0;
 
     /**
      * Read data to cache for appropriate elements given by ElementCacheMap object.

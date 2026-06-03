@@ -42,8 +42,8 @@ public:
     static constexpr const char * name() { return "HM_FlowPotential_Assembly"; }
 
     /// Constructor.
-    FlowPotentialAssemblyHM(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(1, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    FlowPotentialAssemblyHM(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(1, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
       JxW_bdr_( bdr_integral_->JxW() )  {
         this->used_fields_ += eq_fields_->alpha;
@@ -131,8 +131,8 @@ public:
     static constexpr const char * name() { return "HM_Residual_Assembly"; }
 
     /// Constructor.
-    ResidualAssemblyHM(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(1, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ResidualAssemblyHM(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(1, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_)),
       JxW_( bulk_integral_->JxW() )  {
         this->used_fields_ += eq_data_->flow_->eq_fields().field_ele_pressure;

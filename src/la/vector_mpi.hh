@@ -79,8 +79,11 @@ public:
     Vec &petsc_vec()
     {   return data_petsc_;}
 
-    void zero_entries()
-    {   chkerr(VecZeroEntries( data_petsc_ ));}
+    void zero_entries() {
+        ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+        std::fill(data_ptr_->begin(), data_ptr_->end(), 0.0);
+        chkerr(VecZeroEntries( data_petsc_ ));
+    }
 
     //VectorData &data()
     //{
@@ -151,6 +154,14 @@ public:
     /// Both vector must have the same communicator and distribution.
     void copy_from(const VectorMPI &other);
 
+
+    /// assembly_{begin,end} performs global assembly
+    void assembly_begin()
+    {   VecAssemblyBegin(data_petsc_);}
+
+    /// assembly_{begin,end} performs global assembly
+    void assembly_end()
+    {   VecAssemblyEnd(data_petsc_);}
     
     /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
     void local_to_ghost_begin()

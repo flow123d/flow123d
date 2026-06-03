@@ -306,14 +306,14 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::cache_reinit(AssemblyInternals &asm_internals)
+void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
-    std::shared_ptr<EvalPoints> eval_points = asm_internals.eval_points_;
+    std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
 
     // new code PatchFeValues
-    value_acc_1d_ = this->create_dim_patch_op<1>(asm_internals);
-    value_acc_2d_ = this->create_dim_patch_op<2>(asm_internals);
-    value_acc_3d_ = this->create_dim_patch_op<3>(asm_internals);
+    value_acc_1d_ = this->create_dim_patch_op<1>(patch_internals);
+    value_acc_2d_ = this->create_dim_patch_op<2>(patch_internals);
+    value_acc_3d_ = this->create_dim_patch_op<3>(patch_internals);
 
     // old code FeValues
     std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
@@ -337,11 +337,11 @@ Quadrature FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_
 
 template <int spacedim, class Value>
 template <unsigned int dim>
-FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(AssemblyInternals &asm_internals)
+FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_internals)
 {
     FieldFeOpData field_fe_op_data(dh_, data_vec_);
-    Quadrature quad = this->init_quad<dim>(asm_internals.eval_points_);
-    internal::FieldFeOpFactory<dim> factory(&asm_internals.fe_values_, &asm_internals.element_cache_map_,
+    Quadrature quad = this->init_quad<dim>(patch_internals.eval_points_);
+    internal::FieldFeOpFactory<dim> factory(&patch_internals.fe_values_, &patch_internals.element_cache_map_,
             this->fe_[Dim<dim>{}], &quad);
     return FeQ<ReturnType>();
     //return FeQ<ReturnType>(factory.template make_field_fe_q< ReturnType, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
@@ -746,6 +746,8 @@ void FieldFE<spacedim, Value>::calculate_element_values()
     for (unsigned int i=0; i<data_vec_.size(); ++i) {
         if (count_vector[i]>0) data_vec_.normalize(i, count_vector[i]);
     }
+	data_vec_.assembly_begin();
+	data_vec_.assembly_end();
 }
 
 

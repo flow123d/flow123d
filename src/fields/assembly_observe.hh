@@ -66,12 +66,12 @@ public:
     GenericAssemblyObserve( typename DimAssembly<1>::EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list,
             std::shared_ptr<Observe> observe)
     : GenericAssemblyBase(),
-      multidim_assembly_(eq_fields, observe_fields_list, observe.get(), &this->asm_internals_), observe_(observe), patch_data_(20, 10)
+      multidim_assembly_(eq_fields, observe_fields_list, observe.get(), &this->patch_internals_), observe_(observe), patch_data_(20, 10)
     {
         multidim_assembly_[1_d]->create_observe_integrals(bulk_integrals_);
         multidim_assembly_[2_d]->create_observe_integrals(bulk_integrals_);
         multidim_assembly_[3_d]->create_observe_integrals(bulk_integrals_);
-        this->asm_internals_.element_cache_map_.init(this->asm_internals_.eval_points_);
+        this->patch_internals_.element_cache_map_.init(this->patch_internals_.eval_points_);
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();
@@ -95,24 +95,24 @@ public:
         auto &patch_point_data = observe_->patch_point_data();
         for(auto & p_data : patch_point_data) {
             subset_idx = bulk_integrals_[p_data.i_quad]->get_subset_idx();
-        	subset_begin = this->asm_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
+        	subset_begin = this->patch_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
             i_ep = subset_begin + p_data.i_quad_point;
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             patch_data_.emplace_back(dh_cell, p_data.i_quad_point);
-            this->asm_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            this->patch_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
         }
         patch_data_.make_permanent();
-        this->asm_internals_.element_cache_map_.make_paermanent_eval_points();
+        this->patch_internals_.element_cache_map_.make_paermanent_eval_points();
 
         this->reallocate_cache();
-        this->asm_internals_.element_cache_map_.create_patch();
-        multidim_assembly_[1_d]->eq_fields_->cache_update(this->asm_internals_.element_cache_map_);
+        this->patch_internals_.element_cache_map_.create_patch();
+        multidim_assembly_[1_d]->eq_fields_->cache_update(this->patch_internals_.element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(patch_data_);
         multidim_assembly_[2_d]->assemble_cell_integrals(patch_data_);
         multidim_assembly_[3_d]->assemble_cell_integrals(patch_data_);
         patch_data_.reset();
-        this->asm_internals_.element_cache_map_.clear_element_eval_points_map();
+        this->patch_internals_.element_cache_map_.clear_element_eval_points_map();
         END_TIMER( DimAssembly<1>::name() );
     }
 
@@ -120,7 +120,7 @@ public:
 private:
     /// Calls cache_reallocate method on set of used fields
     inline void reallocate_cache() {
-        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->asm_internals_, multidim_assembly_[1_d]->used_fields_);
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->patch_internals_, multidim_assembly_[1_d]->used_fields_);
         // DebugOut() << "Order of evaluated fields (" << DimAssembly<1>::name() << "):" << multidim_assembly_[1_d]->eq_fields_->print_dependency();
     }
 
@@ -140,9 +140,9 @@ public:
     static constexpr const char * name() { return "Output_Observe_Assembly"; }
 
     /// Constructor.
-    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe, AssemblyInternals *asm_internals)
+    AssemblyObserveOutput(EqFields *eq_fields, const std::unordered_set<string> &observe_fields_list, Observe *observe, PatchInternals *patch_internals)
     : AssemblyBasePatch<dim>(), eq_fields_(eq_fields), observe_(observe) {
-        this->asm_internals_ = asm_internals;
+        this->patch_internals_ = patch_internals;
         offsets_.resize(1.1 * CacheMapElementNumber::get());
 
         for (auto observe_field : observe_fields_list) {
@@ -163,9 +163,9 @@ public:
         this->reset_offsets();
         for (unsigned int i=0; i<patch_data.permanent_size(); ++i) {
             if (patch_data[i].cell.dim() != dim) continue;
-            element_patch_idx = this->asm_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
+            element_patch_idx = this->patch_internals_->element_cache_map_.position_in_cache(patch_data[i].cell.elm_idx());
             auto p = *( bulk_integral_->points(element_patch_idx).begin()); // evaluation point
-            field_value_cache_position = this->asm_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx() + patch_data[i].subset_index);
+            field_value_cache_position = this->patch_internals_->element_cache_map_.element_eval_point(element_patch_idx, p.eval_point_idx() + patch_data[i].subset_index);
             val_idx = ObservePointAccessor(observe_, i).loc_point_time_index();
             this->offsets_[field_value_cache_position] = val_idx;
         }

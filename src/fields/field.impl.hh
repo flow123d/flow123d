@@ -31,7 +31,7 @@
 #include "io/observe.hh"
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
-#include "coupling/assembly_internals.hh"
+#include "fem/patch_internals.hh"
 
 
 /******************************************************************************************
@@ -699,10 +699,10 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_reallocate(AssemblyInternals &asm_internals, unsigned int region_idx) const {
+void Field<spacedim, Value>::cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const {
     // Call cache_reinit of FieldAlgoBase descendant on appropriate region
 	if (region_fields_[region_idx] != nullptr)
-	    region_fields_[region_idx]->cache_reinit(asm_internals);
+	    region_fields_[region_idx]->cache_reinit(patch_internals);
 }
 
 

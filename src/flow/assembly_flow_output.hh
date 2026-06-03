@@ -58,8 +58,8 @@ public:
     static constexpr const char * name() { return "Output_L2Difference_Assembly"; }
 
     /// Constructor.
-    L2DifferenceAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(2, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    L2DifferenceAssembly(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(2, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( output_integral_->JxW() ),
 	  pt_coords_( output_integral_->coords() ),
@@ -255,8 +255,8 @@ public:
     static constexpr const char * name() { return "Output_InternalFlow_Assembly"; }
 
     /// Constructor.
-    OutputInternalFlowAssembly(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    OutputInternalFlowAssembly(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       output_integral_( this->create_bulk_integral(this->quad_) )  {
         this->used_fields_ += eq_fields_->field_ele_velocity;
     }

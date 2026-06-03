@@ -235,7 +235,7 @@ namespace detail
   	// set field on all regions
     result.set_mesh( *mesh );
   	result.set(f_product, time);
-    result.cache_reallocate(asm_internals);
+    result.cache_reallocate(patch_internals);
     result.set_time(tg.step(), LimitSide::right);
 
   	// cache_update

@@ -41,7 +41,7 @@
 #include "fem/integral_acc.hh"
 #include "fem/op_function.hh"
 #include "input/factory.hh"
-#include "coupling/assembly_internals.hh"
+#include "fem/patch_internals.hh"
 
 #include <memory>
 
@@ -281,7 +281,7 @@ public:
      *
      * Reinit fe_values_ data member.
      */
-    void cache_reinit(AssemblyInternals &asm_internals) override;
+    void cache_reinit(PatchInternals &patch_internals) override;
 
 
 	/**
@@ -398,7 +398,7 @@ private:
 
 	/// Create PatcFe operation of given dimension and ReturnType.
 	template <unsigned int dim>
-	FeQ<ReturnType> create_dim_patch_op(AssemblyInternals &asm_internals);
+	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)

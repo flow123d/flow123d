@@ -43,8 +43,7 @@ public:
           quad_( new QGauss(dim, 2*quad_order) ),
           quad_low_( new QGauss(dim-1, 2*quad_order) ),
           bulk_integral_( create_bulk_integral(quad_) ),
-  	      boundary_integral_( create_boundary_integral(quad_low_) ),
-	      det_( bulk_integral_->determinant() )
+  	      boundary_integral_( create_boundary_integral(quad_low_) )
         {}
 
     	/// Destructor
@@ -81,7 +80,6 @@ public:
         DimIntegrals<dim> integrals_;                                     ///< Set of used integrals.
         std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;             ///< BulkIntegral
         std::shared_ptr<BoundaryIntegralAcc<dim>> boundary_integral_;     ///< BoundaryIntegral between dim-1 and dim elements
-        ElQ<Scalar> det_;
 
     };
 
@@ -93,35 +91,20 @@ public:
     {
         used_element_idx_ = {0, 1, 2, 3, 8}; // dimension of used elements: 1D, 2D, 2D, 3D, 3D
 
-        ref_bulk_det_ = { 3.46410, 5.65685, 5.65685, 8.00000, 8.00000 };
-//        ref_bulk_scalar_shape_dof0_ = {
-//            { 0.78868, 0.66667, 0.66667, 0.58541, 0.58541 },
-//            { 0.68730, -0.08473, -0.08473, 0.32018, 0.32018 }
-//        };
-//        ref_bulk_scalar_shape_dof1_ = {
-//            { 0.21132, 0.16667, 0.16667, 0.13820, 0.13820 },
-//            { 0.40000, 0.19283, 0.19283, 0.26774, 0.26774 }
-//        };
-//        ref_bulk_vector_shape_dof0_ = {
-//            {0.78868, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.66667, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}, {0.58541, 0.00000, 0.00000}
-//        };
-//        ref_bulk_vector_shape_dof1_ = {
-//            {0.21132, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.16667, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}, {0.13820, 0.00000, 0.00000}
-//        };
-//        ref_bulk_grad_vector_dof0_ = {
-//            { -0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000 },
-//            { 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
-//            { 0.25000, 0.00000, 0.00000, 0.25000, 0.00000, 0.00000, 0.50000, 0.00000, 0.00000 },
-//            { 0.50000, -0.00000, -0.00000, 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000 },
-//            { 0.00000, 0.00000, 0.00000, 0.50000, -0.00000, -0.00000, 0.50000, -0.00000, -0.00000 }
-//        };
-//        ref_bulk_grad_vector_dof1_ = {
-//            { 0.16667, 0.00000, 0.00000, 0.16667, 0.00000, 0.00000, -0.16667, 0.00000, 0.00000 },
-//            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, -0.50000, 0.00000, 0.00000 },
-//            { -0.25000, 0.00000, 0.00000, -0.25000, 0.00000, 0.00000, 0.00000, 0.00000, 0.00000 },
-//            { -0.50000, -0.00000, -0.00000, 0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000 },
-//            { -0.50000, 0.00000, 0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000, -0.00000 }
-//        };
+        ref_scalar_fe_op_ = {
+            { 1.31132, 2.6, 2.6, 2.68541, 2.1 },
+            { 1.3254, 1.89548, 1.89548, 1.2032, 2.54359 }
+        };
+        ref_vector_fe_op_ = {
+            {1.73397, 1.88868, 2.88868}, {2.6, 3.6, 1.93333}, {3.6, 1.93333, 2.26667}, {1.92918, 2.37639, 2.82361}, {2.65279, 3.1, 2.99443}
+        };
+        ref_tensor_fe_op_ = {
+            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.232457 },
+            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.683333 },
+            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.183333 },
+            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.428409 },
+            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.290213 }
+        };
     }
 
     ~FieldFePatchOpTestBase() {}
@@ -206,13 +189,9 @@ public:
     std::vector<unsigned int> used_element_idx_;                              ///< List of mesh idx of elements used in tests
 
     /* Reference values */
-    std::vector<double> ref_bulk_det_;
-//    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof0_;
-//    std::vector< std::vector<double> > ref_bulk_scalar_shape_dof1_;
-//    std::vector<arma::vec3> ref_bulk_vector_shape_dof0_;
-//    std::vector<arma::vec3> ref_bulk_vector_shape_dof1_;
-//    std::vector<arma::mat33> ref_bulk_grad_vector_dof0_;
-//    std::vector<arma::mat33> ref_bulk_grad_vector_dof1_;
+    std::vector< std::vector<double> > ref_scalar_fe_op_;
+    std::vector<arma::vec3> ref_vector_fe_op_;
+    std::vector<arma::mat33> ref_tensor_fe_op_;
 };
 
 
@@ -237,9 +216,9 @@ public:
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_run, unsigned int i_test_elem) {
             auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
-            double det = this->det_(p);
+            double fe_op = this->scalar_field_fe_op_(p);
 
-            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+            EXPECT_TEST_NEAR( fe_op, this->generic_->ref_scalar_fe_op_[i_run][i_test_elem] );
         }
 
         inline FeQ<Scalar> field_fe_scalar_op()
@@ -247,7 +226,8 @@ public:
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
-            data_vec.zero_entries();
+            for (uint i=0; i<data_vec.size(); ++i)
+                data_vec.set(i, (1.1 + i%3) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
             return FeQ<Scalar>(factory.template make_field_fe_q< Scalar, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
         }
@@ -363,9 +343,9 @@ public:
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
             auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
-            double det = this->det_(p);
+            arma::vec3 fe_op = vector_field_fe_op_(p);
 
-            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_vector_fe_op_[i_test_elem] );
         }
 
         inline FeQ<Vector> field_fe_vector_op()
@@ -373,7 +353,8 @@ public:
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
-            data_vec.zero_entries();
+            for (uint i=0; i<data_vec.size(); ++i)
+                data_vec.set(i, (1.1 + i%4) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
             return FeQ<Vector>(factory.template make_field_fe_q< Vector, Op::FieldFeOp, Op::BulkDomain, Op::DispatchVectorShape >(field_fe_op_data));
         }
@@ -487,9 +468,9 @@ public:
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
             auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
-            double det = this->det_(p);
+            arma::mat33 fe_op = tensor_field_fe_op_(p);
 
-            EXPECT_TEST_NEAR( det, this->generic_->ref_bulk_det_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_tensor_fe_op_[i_test_elem] );
         }
 
         inline FeQ<Tensor> field_fe_tensor_op()
@@ -497,7 +478,8 @@ public:
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
-            data_vec.zero_entries();
+            for (uint i=0; i<data_vec.size(); ++i)
+                data_vec.set(i, (1.1 + i%5) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
             return FeQ<Tensor>(factory.template make_field_fe_q< Tensor, Op::FieldFeOp, Op::BulkDomain, Op::TensorShape >(field_fe_op_data));
         }
