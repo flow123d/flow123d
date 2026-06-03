@@ -819,7 +819,7 @@ public:
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_high_.template make_qarray<Vector, Op::DispatchVectorShape<qdim, Op::SideDomain, 3>>(component_idx); // error
+        return factory_high_.template make_qarray<Vector, Op::DispatchVectorShape<qdim+1, Op::SideDomain, 3>>(component_idx);
     }
 
     inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
