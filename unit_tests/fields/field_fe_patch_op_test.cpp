@@ -223,13 +223,15 @@ public:
 
         inline FeQ<Scalar> field_fe_scalar_op()
         {
+        	using ShapeSelector = internal::InputOpType<1, 1>;
+
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Scalar>(factory.template make_field_fe_q< Scalar, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
+            return FeQ<Scalar>(factory.template make_field_fe_q< Scalar, Op::FieldFeOp, Op::BulkDomain, ShapeSelector >(field_fe_op_data));
         }
 
 
@@ -350,13 +352,15 @@ public:
 
         inline FeQ<Vector> field_fe_vector_op()
         {
+        	using ShapeSelector = internal::InputOpType<3, 1>;
+
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Vector>(factory.template make_field_fe_q< Vector, Op::FieldFeOp, Op::BulkDomain, Op::DispatchVectorShape >(field_fe_op_data));
+            return FeQ<Vector>(factory.template make_field_fe_q< Vector, Op::FieldFeOp, Op::BulkDomain, ShapeSelector >(field_fe_op_data));
         }
 
 
@@ -475,13 +479,15 @@ public:
 
         inline FeQ<Tensor> field_fe_tensor_op()
         {
+        	using ShapeSelector = internal::InputOpType<3, 3>;
+
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
                     this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Tensor>(factory.template make_field_fe_q< Tensor, Op::FieldFeOp, Op::BulkDomain, Op::TensorShape >(field_fe_op_data));
+            return FeQ<Tensor>(factory.template make_field_fe_q< Tensor, Op::FieldFeOp, Op::BulkDomain, ShapeSelector >(field_fe_op_data));
         }
 
 

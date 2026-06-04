@@ -80,6 +80,33 @@ private:
 
 namespace internal {
 
+// general element type
+template<int NRows, int NCols>
+struct InputOpType;
+
+template<>
+struct InputOpType<1,1>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::ScalarShape<dim, Domain, spacedim>;
+};
+
+template<>
+struct InputOpType<3,1>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
+};
+
+template<>
+struct InputOpType<3,3>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::TensorShape<dim, Domain, spacedim>;
+};
+
+
+
 template<unsigned int dim>
 class FieldFeOpFactory : public internal::IntegralFactory<dim>
 {
@@ -93,13 +120,16 @@ public:
     : internal::IntegralFactory<dim>(pfev, element_cache_map, fe, quad)
     {}
 
-    /// Factory method. Same as previous but creates FE operation.
-    template<class ValueType, template<unsigned int, class, class, unsigned int> class OpType, class Domain, template<unsigned int, class, unsigned int> class OpBaseShape>
+    template<class ValueType, template<unsigned int, class, class, unsigned int> class OpType, class Domain, class ShapeSelector>
     FeQ<ValueType> make_field_fe_q(FieldFeOpData field_fe_op_data, uint component_idx = 0) {
         std::shared_ptr<FiniteElement<dim>> fe_component = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
-        return FeQ<ValueType>(this->patch_fe_values_->template get< OpType<dim, Domain, OpBaseShape<dim, Domain, 3>, 3>, dim >(*this->quad_, fe_component, field_fe_op_data));
+        return FeQ<ValueType>(
+            this->patch_fe_values_->template get<
+                OpType<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
+                dim
+            >(*this->quad_, fe_component, field_fe_op_data)
+        );
     }
-
 };
 
 } // end of namespace internal

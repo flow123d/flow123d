@@ -339,13 +339,13 @@ template <int spacedim, class Value>
 template <unsigned int dim>
 FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_internals)
 {
+    using ShapeSelector = internal::InputOpType<Value::NRows_, Value::NCols_>;
+
     FieldFeOpData field_fe_op_data(dh_, data_vec_);
     Quadrature quad = this->init_quad<dim>(patch_internals.eval_points_);
     internal::FieldFeOpFactory<dim> factory(&patch_internals.fe_values_, &patch_internals.element_cache_map_,
             this->fe_[Dim<dim>{}], &quad);
-    return FeQ<ReturnType>();
-    //return FeQ<ReturnType>(factory.template make_field_fe_q< ReturnType, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
-    //                                                                                                    ???
+    return FeQ<ReturnType>(factory.template make_field_fe_q< ReturnType, Op::FieldFeOp, Op::BulkDomain, ShapeSelector >(field_fe_op_data));
 }
 
 
