@@ -110,12 +110,6 @@ public:
     }
 
     /**
-     * @brief Returns the number of shape functions og higher dim element.
-     */
-    template<unsigned int dim>
-    unsigned int n_dofs_high() const;
-
-    /**
      * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
      */
     template<unsigned int dim>

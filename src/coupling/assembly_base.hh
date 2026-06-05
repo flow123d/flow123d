@@ -272,11 +272,6 @@ public:
         return patch_internals_->fe_values_.template n_dofs<dim>();
     }
 
-    /// Return number of DOFs of higher dim element
-    inline unsigned int n_dofs_high() {
-        return patch_internals_->fe_values_.template n_dofs_high<dim>();
-    }
-
 protected:
 	/**
 	 * Default constructor.

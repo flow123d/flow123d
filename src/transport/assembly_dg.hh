@@ -270,7 +270,7 @@ public:
     /// Initialize auxiliary vectors and other data members
     void initialize() {
         ndofs_ = this->n_dofs();
-        unsigned int ndofs_high = this->n_dofs_high();
+        unsigned int ndofs_high = conc_join_shape_.n_dofs_high();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_high);
         side_dof_indices_vb_.resize(2*ndofs_high);
