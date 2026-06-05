@@ -494,13 +494,21 @@ private:
     }
 
     template <unsigned int elemdim>
-    void cache_update_bulk_elem(FieldValueCache<typename Value::element_type> &data_cache,
-            std::shared_ptr< BulkIntegralAcc<elemdim> > bulk_integral, FeQ<ReturnType> &value_acc,
-	        unsigned int element_patch_idx, unsigned int i_data)
+    void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
+            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc,
+	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
     {
-        for (auto p : bulk_integral->points(element_patch_idx) ) {
+        unsigned int element_patch_idx = 0;
+        unsigned int last_element_idx = -1;
+        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+            if (elm_idx != last_element_idx) {
+                element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
+                last_element_idx = elm_idx;
+            }
+
+            BulkPoint p(&cache_map, element_patch_idx, cache_map.eval_point_data(i_data).i_eval_point_);
             data_cache.set(i_data) = value_acc(p);
-            i_data++;
         }
     }
 
@@ -579,10 +587,7 @@ private:
     /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
     ElementDataCache<double>::CacheData input_data_cache_;
 
-    // Data membersof 'new' version of cache_update
-    std::shared_ptr< BulkIntegralAcc<1> > bulk_integral_1d_;
-    std::shared_ptr< BulkIntegralAcc<2> > bulk_integral_2d_;
-    std::shared_ptr< BulkIntegralAcc<3> > bulk_integral_3d_;
+    // Data members of 'new' version of cache_update
     FeQ<ReturnType> value_acc_1d_;
     FeQ<ReturnType> value_acc_2d_;
     FeQ<ReturnType> value_acc_3d_;

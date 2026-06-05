@@ -270,37 +270,30 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
 
     unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
     unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
-    DHCellAccessor cell = *( dh_->local_range().begin() ); //needs set variable for correct compiling
-    unsigned int last_element_idx = -1;
 
     // Throws exception if any element value of processed region is NaN
     unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
     if (region_value_err_[r_idx].is_invalid_)
         THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
 
-    for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
-        unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
-        if (elm_idx != last_element_idx) {
-            cell = dh_->cell_accessor_from_element( elm_idx );
-            unsigned int element_patch_idx = cache_map.position_in_cache(elm_idx);
-            last_element_idx = elm_idx;
+    MeshBase *mesh;
+    if (this->boundary_domain_) {
+    	mesh = dh_->mesh()->bc_mesh();
+    } else {
+    	mesh = dh_->mesh();
+    }
 
-            if (this->boundary_domain_) {
-                // boundary FieldFE
-            } else {
-                switch (cell.dim()) {
-                    case 1:
-                        this->cache_update_bulk_elem<1>(data_cache, bulk_integral_1d_, value_acc_1d_, element_patch_idx, i_data);
-                        break;
-                    case 2:
-                        this->cache_update_bulk_elem<2>(data_cache, bulk_integral_2d_, value_acc_2d_, element_patch_idx, i_data);
-                        break;
-                    case 3:
-                        this->cache_update_bulk_elem<3>(data_cache, bulk_integral_3d_, value_acc_3d_, element_patch_idx, i_data);
-                        break;
-                }
-            }
-        }
+    ElementAccessor<spacedim> elm_acc(mesh, cache_map.eval_point_data(reg_chunk_begin).i_element_);
+    switch (elm_acc.dim()) {
+        case 1:
+            this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_, reg_chunk_begin, reg_chunk_end);
+            break;
+        case 2:
+            this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_, reg_chunk_begin, reg_chunk_end);
+            break;
+        case 3:
+            this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_, reg_chunk_begin, reg_chunk_end);
+            break;
     }
 }
 
