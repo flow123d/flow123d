@@ -101,15 +101,6 @@ public:
     }
 
     /**
-     * @brief Returns the number of shape functions.
-     */
-    template<unsigned int dim>
-    inline unsigned int n_dofs() const {
-        ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
-        return fe_[Dim<dim>{}]->n_dofs();
-    }
-
-    /**
      * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
      */
     template<unsigned int dim>
