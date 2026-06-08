@@ -267,11 +267,6 @@ public:
     	return integrals_;
     }
 
-    /// Return number of DOFs
-    inline unsigned int n_dofs() {
-        return patch_internals_->fe_values_.template n_dofs<dim>();
-    }
-
 protected:
 	/**
 	 * Default constructor.

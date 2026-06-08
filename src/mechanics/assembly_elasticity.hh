@@ -73,7 +73,7 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
 
-        n_dofs_ = this->n_dofs();
+        n_dofs_ = grad_deform_.n_dofs();
         n_dofs_high_ = deform_join_.n_dofs_high();
         n_dofs_ngh_ = { n_dofs_, n_dofs_high_ };
         dof_indices_.resize(n_dofs_high_);
@@ -313,7 +313,7 @@ public:
         shared_ptr<FE_P<dim-1>> fe_p_low = std::make_shared< FE_P<dim-1> >(1);
         shared_ptr<FiniteElement<dim-1>> fe_low = std::make_shared<FESystem<dim-1>>(fe_p_low, FEVector, 3);
 
-        n_dofs_ = this->n_dofs();
+        n_dofs_ = deform_.n_dofs();
         n_dofs_high_ = deform_join_.n_dofs_high();
         n_dofs_ngh_ = { n_dofs_, n_dofs_high_ };
         dof_indices_.resize(n_dofs_high_);
@@ -560,7 +560,7 @@ public:
     void initialize() {
         //this->balance_ = eq_data_->balance_;
 
-        n_dofs_ = this->n_dofs();
+        n_dofs_ = grad_deform_.n_dofs();
         n_dofs_high_ = deform_join_.n_dofs();
 
         output_vec_ = eq_fields_->output_field_ptr->vec();
@@ -714,7 +714,10 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
+        std::cout << "Constraint initialize dim " << dim << std::endl;
         n_dofs_ = deform_join_.n_dofs();
+        std::cout << " .. n_dofs_ " << n_dofs_ << std::endl;
+        std::cout << " .. OK" << std::endl;
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
     }
