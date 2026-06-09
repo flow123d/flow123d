@@ -58,7 +58,7 @@ public:
             std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
             auto result = integrals_.bulk_.insert({
                     tpl,
-                    std::make_shared<BulkIntegralAcc<dim>>(generic_->eval_points_, quad, &generic_->patch_fe_values_, &generic_->element_cache_map_)
+                    std::make_shared<BulkIntegralAcc<dim>>(generic_->patch_internals_, quad)
                 });
             return result.first->second;
         }
@@ -68,7 +68,7 @@ public:
             std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
             auto result = integrals_.boundary_.insert({
                     tpl,
-                    std::make_shared<BoundaryIntegralAcc<dim>>(generic_->eval_points_, quad, &generic_->patch_fe_values_, &generic_->element_cache_map_)
+                    std::make_shared<BoundaryIntegralAcc<dim>>(generic_->patch_internals_, quad)
                 });
             return result.first->second;
         }
@@ -85,9 +85,8 @@ public:
 
 
     FieldFePatchOpTestBase(std::shared_ptr<DOFHandlerMultiDim> dh)
-    : dh_(dh), patch_fe_values_(dh_->ds()->fe()),
-      fe_(dh_->ds()->fe()),
-	  eval_points_( std::make_shared<EvalPoints>() )
+    : dh_(dh),
+	  patch_internals_(dh_->ds()->fe())
     {
         used_element_idx_ = {0, 1, 2, 3, 8}; // dimension of used elements: 1D, 2D, 2D, 3D, 3D
 
@@ -117,9 +116,9 @@ public:
         unsigned int reg_idx = cell.elm().region_idx().idx();
         // Different access than in other integrals: We can't use range method CellIntegral::points
         // because it passes element_patch_idx as argument that is not known during patch construction.
-        for (uint i=uint( eval_points_->subset_begin(dim, subset_idx) );
-                  i<uint( eval_points_->subset_end(dim, subset_idx) ); ++i) {
-            element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+        for (uint i=uint( patch_internals_.eval_points_->subset_begin(dim, subset_idx) );
+                  i<uint( patch_internals_.eval_points_->subset_end(dim, subset_idx) ); ++i) {
+            patch_internals_.element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
         }
     }
 
@@ -127,8 +126,8 @@ public:
         if (!cell.is_own()) return; // ghost element
 
         uint dim = cell.dim();
-        auto &ppv_side = patch_fe_values_.ppv(side_domain, dim);
-        auto &ppv_bdr = patch_fe_values_.ppv(bulk_domain, dim-1);
+        auto &ppv_side = patch_internals_.fe_values_.ppv(side_domain, dim);
+        auto &ppv_bdr = patch_internals_.fe_values_.ppv(bulk_domain, dim-1);
         for( DHCellSide bdr_side : cell.side_range() ) {
             if ( (bdr_side.side().edge().n_sides() == 1) && (bdr_side.side().is_boundary()) ) { // tests if side is really boundary
                 bdr_integral->patch_data().emplace_back(bdr_side);
@@ -136,13 +135,13 @@ public:
                 unsigned int reg_idx = bdr_side.element().region_idx().idx();
                 ++ppv_side.n_mesh_items_;
                 ++ppv_bdr.n_mesh_items_;
-                for (auto p : bdr_integral->points(bdr_side, &element_cache_map_) ) {
-                    element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
+                for (auto p : bdr_integral->points(bdr_side, &patch_internals_.element_cache_map_) ) {
+                    patch_internals_.element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
                     BulkPoint p_bdr = p.point_bdr(bdr_side.cond().element_accessor()); // equivalent point on boundary element
                     unsigned int bdr_reg = bdr_side.cond().element_accessor().region_idx().idx();
                     // invalid local_idx value, DHCellAccessor of boundary element doesn't exist
-                    element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                    patch_internals_.element_cache_map_.add_eval_point(bdr_reg, bdr_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
                 }
             }
         }
@@ -163,23 +162,19 @@ public:
 
     void initialize() {
         set_integrals_arrays();
-        this->patch_fe_values_.init_finalize();
+        this->patch_internals_.fe_values_.init_finalize();
     }
 
     /// Create and return integral factory of given dimension.
     template<unsigned int dim>
     internal::FieldFeOpFactory<dim> integral_factory(Quadrature *quad) const {
-    	return internal::FieldFeOpFactory<dim>(&patch_fe_values_, &element_cache_map_, fe_[Dim<dim>{}], quad);
+    	return internal::FieldFeOpFactory<dim>(&patch_internals_.fe_values_, &patch_internals_.element_cache_map_, patch_internals_.fe_[Dim<dim>{}], quad);
     }
 
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    PatchFEValues<3> patch_fe_values_;                                        ///< Common FEValues object over all dimensions
 
-    MixedPtr<FiniteElement> fe_;
-
-    std::shared_ptr<EvalPoints> eval_points_;                                 ///< EvalPoints object shared by all integrals
-    ElementCacheMap element_cache_map_;                                       ///< ElementCacheMap according to EvalPoints
+    PatchInternals patch_internals_;                                          ///< Holds common patch objects (EvalPoints, ElementCacheMap ...)
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
     std::array<std::shared_ptr<EdgeIntegral>, 3> edge_integrals_;             ///< Edge integrals of dim 1,2,3
     std::array<std::shared_ptr<CouplingIntegral>, 2> coupling_integrals_;     ///< Coupling integrals of dim 1-2,2-3
@@ -215,7 +210,7 @@ public:
         virtual ~AsmScalar() {}
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_run, unsigned int i_test_elem) {
-            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            auto p = *( this->bulk_integral_->points(this->generic_->patch_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
             double fe_op = this->scalar_field_fe_op_(p);
 
             EXPECT_TEST_NEAR( fe_op, this->generic_->ref_scalar_fe_op_[i_run][i_test_elem] );
@@ -223,8 +218,8 @@ public:
 
         inline FeQ<Scalar> field_fe_scalar_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
+                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
@@ -243,7 +238,7 @@ public:
     : FieldFePatchOpTestBase(dh),
       multidim_asm_(this, quad_order)
     {
-        element_cache_map_.init(eval_points_);
+        patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
     }
 
     ~FieldFePatchOpTestScalar() {}
@@ -258,36 +253,36 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.prepare_new_patch(this->eval_points_);
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+        patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+        patch_internals_.fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->patch_internals_.element_cache_map_);
 
         START_TIMER("reinit_patch");
-        patch_fe_values_.reinit_patch();
+        patch_internals_.fe_values_.reinit_patch();
         END_TIMER("reinit_patch");
     }
 
     void test_evaluation(unsigned int i_run, bool print_tables=false) {
         for (auto elm_idx : used_element_idx_) {
             DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
             //this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
-        	this->patch_fe_values_.make_permanent_ppv_data();
+        	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
         multidim_asm_[2_d]->integrals_.make_permanent();
         multidim_asm_[3_d]->integrals_.make_permanent();
 
-        element_cache_map_.make_paermanent_eval_points();
-        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
         update_patch();
 
         if (print_tables) {
             std::stringstream ss;
-            patch_fe_values_.print_operations(ss);
+            patch_internals_.fe_values_.print_operations(ss);
             WarningOut() << ss.str();
         }
 
@@ -313,8 +308,8 @@ public:
         multidim_asm_[1_d]->integrals_.reset();
         multidim_asm_[2_d]->integrals_.reset();
         multidim_asm_[3_d]->integrals_.reset();
-        this->element_cache_map_.clear_element_eval_points_map();
-        this->patch_fe_values_.reset();
+        this->patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        this->patch_internals_.fe_values_.reset();
     }
 
 
@@ -342,7 +337,7 @@ public:
         virtual ~AsmVector() {}
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
-            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            auto p = *( this->bulk_integral_->points(this->generic_->patch_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
             arma::vec3 fe_op = vector_field_fe_op_(p);
 
             EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_vector_fe_op_[i_test_elem] );
@@ -350,8 +345,8 @@ public:
 
         inline FeQ<Vector> field_fe_vector_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
+                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
@@ -370,7 +365,7 @@ public:
     : FieldFePatchOpTestBase(dh),
       multidim_asm_(this, quad_order)
     {
-        element_cache_map_.init(eval_points_);
+        patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
     }
 
     ~FieldFePatchOpTestVector() {}
@@ -385,34 +380,34 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.prepare_new_patch(this->eval_points_);
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+        patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+        patch_internals_.fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->patch_internals_.element_cache_map_);
 
         START_TIMER("reinit_patch");
-        patch_fe_values_.reinit_patch();
+        patch_internals_.fe_values_.reinit_patch();
         END_TIMER("reinit_patch");
     }
 
     void test_evaluation(bool print_tables=false) {
         for (auto elm_idx : used_element_idx_) {
             DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
-        	this->patch_fe_values_.make_permanent_ppv_data();
+        	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
         multidim_asm_[2_d]->integrals_.make_permanent();
         multidim_asm_[3_d]->integrals_.make_permanent();
-        element_cache_map_.make_paermanent_eval_points();
-        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
         update_patch();
 
         if (print_tables) {
             std::stringstream ss;
-            patch_fe_values_.print_operations(ss);
+            patch_internals_.fe_values_.print_operations(ss);
             WarningOut() << ss.str();
         }
 
@@ -438,8 +433,8 @@ public:
         multidim_asm_[1_d]->integrals_.reset();
         multidim_asm_[2_d]->integrals_.reset();
         multidim_asm_[3_d]->integrals_.reset();
-        this->element_cache_map_.clear_element_eval_points_map();
-        this->patch_fe_values_.reset();
+        this->patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        this->patch_internals_.fe_values_.reset();
     }
 
 
@@ -467,7 +462,7 @@ public:
         virtual ~AsmTensor() {}
 
         void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
-            auto p = *( this->bulk_integral_->points(this->generic_->element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+            auto p = *( this->bulk_integral_->points(this->generic_->patch_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
             arma::mat33 fe_op = tensor_field_fe_op_(p);
 
             EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_tensor_fe_op_[i_test_elem] );
@@ -475,8 +470,8 @@ public:
 
         inline FeQ<Tensor> field_fe_tensor_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
+                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
@@ -495,7 +490,7 @@ public:
     : FieldFePatchOpTestBase(dh),
       multidim_asm_(this, quad_order)
     {
-        element_cache_map_.init(eval_points_);
+        patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
     }
 
     ~FieldFePatchOpTestTensor() {}
@@ -510,34 +505,34 @@ public:
     }
 
     void update_patch() override {
-        patch_fe_values_.prepare_new_patch(this->eval_points_);
-        patch_fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->element_cache_map_);
-        patch_fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->element_cache_map_);
+        patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+        patch_internals_.fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->patch_internals_.element_cache_map_);
 
         START_TIMER("reinit_patch");
-        patch_fe_values_.reinit_patch();
+        patch_internals_.fe_values_.reinit_patch();
         END_TIMER("reinit_patch");
     }
 
     void test_evaluation(bool print_tables=false) {
         for (auto elm_idx : used_element_idx_) {
             DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
-            auto &ppv_bulk = patch_fe_values_.ppv(bulk_domain, dh_cell.dim());
+            auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
-        	this->patch_fe_values_.make_permanent_ppv_data();
+        	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
         multidim_asm_[2_d]->integrals_.make_permanent();
         multidim_asm_[3_d]->integrals_.make_permanent();
-        element_cache_map_.make_paermanent_eval_points();
-        element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
         update_patch();
 
         if (print_tables) {
             std::stringstream ss;
-            patch_fe_values_.print_operations(ss);
+            patch_internals_.fe_values_.print_operations(ss);
             WarningOut() << ss.str();
         }
 
@@ -563,8 +558,8 @@ public:
         multidim_asm_[1_d]->integrals_.reset();
         multidim_asm_[2_d]->integrals_.reset();
         multidim_asm_[3_d]->integrals_.reset();
-        this->element_cache_map_.clear_element_eval_points_map();
-        this->patch_fe_values_.reset();
+        this->patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        this->patch_internals_.fe_values_.reset();
     }
 
 

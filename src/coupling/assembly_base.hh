@@ -105,7 +105,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.bulk_.insert({
                 tpl,
-                std::make_shared<BulkIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<BulkIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -120,7 +120,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.edge_.insert({
                 tpl,
-                std::make_shared<EdgeIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<EdgeIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -138,7 +138,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.coupling_.insert({
                 tpl,
-                std::make_shared<CouplingIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<CouplingIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -154,7 +154,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.boundary_.insert({
                 tpl,
-                std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<BoundaryIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }

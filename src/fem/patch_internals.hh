@@ -31,11 +31,12 @@ public:
     : eval_points_(std::make_shared<EvalPoints>()) {}
 
     PatchInternals(MixedPtr<FiniteElement> fe)
-    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe) {}
+    : eval_points_(std::make_shared<EvalPoints>()), fe_values_(fe), fe_(fe) {}
 
     std::shared_ptr<EvalPoints> eval_points_;                     ///< EvalPoints object shared by all integrals
     ElementCacheMap element_cache_map_;                           ///< ElementCacheMap according to EvalPoints
     PatchFEValues<3> fe_values_;                                  ///< Common FEValues object over all dimensions
+    MixedPtr<FiniteElement> fe_;                                  ///< FineteElements object of all dimensions used in assembly class
 };
 
 
