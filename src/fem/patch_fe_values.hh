@@ -59,12 +59,6 @@ public:
             element_quads_.push_back( new QGauss(dim, 0) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
-    }
-
-    PatchFEValues(MixedPtr<FiniteElement> fe)
-    : PatchFEValues<spacedim>()
-    {
-        fe_ = fe;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
         uint zero_vec_size = 300;
@@ -112,12 +106,6 @@ public:
             ASSERT_EQ(component_idx, 0).warning("Non-zero component_idx can only be used for FESystem.");
             return fe;
         }
-    }
-
-    /// Returns pointer to FiniteElement of given dimension.
-    template<unsigned int dim>
-    std::shared_ptr<FiniteElement<dim>> fe_dim() const {
-        return fe_[Dim<dim>{}];
     }
 
     /** Following methods are used during update of patch. **/

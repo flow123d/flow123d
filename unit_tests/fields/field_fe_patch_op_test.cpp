@@ -219,7 +219,7 @@ public:
         inline FeQ<Scalar> field_fe_scalar_op()
         {
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
-                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
+                    this->generic_->patch_internals_.fe_[Dim<dim>{}], this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
@@ -346,7 +346,7 @@ public:
         inline FeQ<Vector> field_fe_vector_op()
         {
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
-                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
+                    this->generic_->patch_internals_.fe_[Dim<dim>{}], this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
@@ -471,7 +471,7 @@ public:
         inline FeQ<Tensor> field_fe_tensor_op()
         {
             internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_internals_.fe_values_, &this->generic_->patch_internals_.element_cache_map_,
-                    this->generic_->patch_internals_.fe_values_.template fe_dim<dim>(), this->quad_);
+                    this->generic_->patch_internals_.fe_[Dim<dim>{}], this->quad_);
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
