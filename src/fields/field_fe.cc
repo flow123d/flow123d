@@ -336,9 +336,14 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
 
     FieldFeOpData field_fe_op_data(dh_, data_vec_);
     Quadrature quad = this->init_quad<dim>(patch_internals.eval_points_);
-    internal::FieldFeOpFactory<dim> factory(&patch_internals.fe_values_, &patch_internals.element_cache_map_,
-            this->fe_[Dim<dim>{}], &quad);
-    return FeQ<ReturnType>(factory.template make_field_fe_q< ReturnType, Op::FieldFeOp, Op::BulkDomain, ShapeSelector >(field_fe_op_data));
+    std::shared_ptr<FiniteElement<dim>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<dim>{}], 0);
+
+    return FeQ<ReturnType>(
+        patch_internals.fe_values_.template get<
+            Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, spacedim>, spacedim>,
+            dim
+        >(quad, fe_component, field_fe_op_data)
+    );
 }
 
 

@@ -105,33 +105,6 @@ struct InputOpType<3,3>
     using type = Op::TensorShape<dim, Domain, spacedim>;
 };
 
-
-
-template<unsigned int dim>
-class FieldFeOpFactory : public internal::IntegralFactory<dim>
-{
-public:
-    // Default constructor
-	FieldFeOpFactory() : internal::IntegralFactory<dim>()
-    {}
-
-    // Constructor
-	FieldFeOpFactory(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
-    : internal::IntegralFactory<dim>(pfev, element_cache_map, fe, quad)
-    {}
-
-    template<class ValueType, template<unsigned int, class, class, unsigned int> class OpType, class Domain, class ShapeSelector>
-    FeQ<ValueType> make_field_fe_q(FieldFeOpData field_fe_op_data, uint component_idx = 0) {
-        std::shared_ptr<FiniteElement<dim>> fe_component = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
-        return FeQ<ValueType>(
-            this->patch_fe_values_->template get<
-                OpType<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
-                dim
-            >(*this->quad_, fe_component, field_fe_op_data)
-        );
-    }
-};
-
 } // end of namespace internal
 
 
