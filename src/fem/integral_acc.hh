@@ -92,9 +92,9 @@ public:
     {}
 
     /// Factory method. Creates operation of given OpType.
-    template<class OpType>
-    PatchOp<3> *make_patch_op() {
-        return patch_fe_values_->get< OpType, dim >(*quad_);
+    template<class OpType, class... Args>
+    inline PatchOp<3> *make_patch_op(Args&&... args) {
+        return patch_fe_values_->template get< OpType, dim >( *quad_, std::forward<Args>(args)... );
     }
 
     /// Factory method. Creates element / side operation of given OpType.
@@ -104,11 +104,12 @@ public:
     }
 
     /// Factory method. Same as previous but creates FE operation.
-    template<class ValueType, template<unsigned int, class, unsigned int> class OpType, class Domain>
+    template<class ValueType, class OpType>
     FeQArray<ValueType> make_qarray(uint component_idx = 0) {
         std::shared_ptr<FiniteElement<dim>> fe_component = patch_fe_values_->fe_comp(fe_, component_idx);
-        return FeQArray<ValueType>(patch_fe_values_->template get< OpType<dim, Domain, 3>, dim >(*quad_, fe_component));
+        return FeQArray<ValueType>(this->template make_patch_op< OpType >(fe_component));
     }
+
 
     PatchFEValues<3> *patch_fe_values_;
     ElementCacheMap *element_cache_map_;
@@ -368,7 +369,7 @@ public:
      */
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -379,7 +380,7 @@ public:
      */
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -390,7 +391,7 @@ public:
      */
     inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Tensor, Op::TensorShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -401,7 +402,7 @@ public:
      */
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -412,7 +413,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -423,7 +424,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
     /**
@@ -434,7 +435,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::BulkDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence<qdim, Op::BulkDomain, 3>>(component_idx);
     }
 
 private:
@@ -596,19 +597,19 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -619,7 +620,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -630,7 +631,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -641,7 +642,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
 private:
@@ -818,7 +819,7 @@ public:
 
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_high_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx); // error
+        return factory_high_.template make_qarray<Vector, Op::DispatchVectorShape<qdim+1, Op::SideDomain, 3>>(component_idx);
     }
 
     inline FeQJoin<Scalar> scalar_join_shape(uint component_idx = 0)
@@ -1035,25 +1036,25 @@ public:
     /// Same as BulkValues::scalar_shape but register at side quadrature points.
     inline FeQArray<Scalar> scalar_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Scalar, Op::ScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::ScalarShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::scalar_shape but register at quadrature points of boundary element (dim-1).
     inline FeQArray<Scalar> scalar_shape_bdr(uint component_idx = 0)
     {
-        return factory_low_.template make_qarray<Scalar, Op::ScalarShape, Op::BulkDomain>(component_idx);
+        return factory_low_.template make_qarray<Scalar, Op::ScalarShape<qdim-1, Op::BulkDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::vector_shape but register at side quadrature points.
     inline FeQArray<Vector> vector_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Vector, Op::DispatchVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::DispatchVectorShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Vector, Op::GradScalarShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Vector, Op::GradScalarShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -1064,7 +1065,7 @@ public:
      */
     inline FeQArray<Tensor> grad_vector_shape(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::DispatchGradVectorShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -1075,7 +1076,7 @@ public:
      */
     inline FeQArray<Tensor> vector_sym_grad(uint component_idx=0)
     {
-        return factory_.template make_qarray<Tensor, Op::VectorSymGrad, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::VectorSymGrad<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /**
@@ -1086,7 +1087,7 @@ public:
      */
     inline FeQArray<Scalar> vector_divergence(uint component_idx=0)
     {
-        return factory_.template make_qarray<Scalar, Op::VectorDivergence, Op::SideDomain>(component_idx);
+        return factory_.template make_qarray<Scalar, Op::VectorDivergence<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
 private:

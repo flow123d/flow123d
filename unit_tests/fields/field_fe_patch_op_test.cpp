@@ -166,12 +166,6 @@ public:
         this->patch_fe_values_.init_finalize();
     }
 
-    /// Create and return integral factory of given dimension.
-    template<unsigned int dim>
-    internal::FieldFeOpFactory<dim> integral_factory(Quadrature *quad) const {
-    	return internal::FieldFeOpFactory<dim>(&patch_fe_values_, &element_cache_map_, fe_[Dim<dim>{}], quad);
-    }
-
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     PatchFEValues<3> patch_fe_values_;                                        ///< Common FEValues object over all dimensions
@@ -223,13 +217,20 @@ public:
 
         inline FeQ<Scalar> field_fe_scalar_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+        	using ShapeSelector = internal::InputOpType<1, 1>;
+
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Scalar>(factory.template make_field_fe_q< Scalar, Op::FieldFeOp, Op::BulkDomain, Op::ScalarShape >(field_fe_op_data));
+
+            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_fe_values_.fe_comp(this->generic_->fe_[Dim<dim>{}], 0);
+            return FeQ<Scalar>(
+                this->generic_->patch_fe_values_.template get<
+                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
+                    dim
+                >(*this->quad_, fe_component, field_fe_op_data)
+            );
         }
 
 
@@ -350,13 +351,20 @@ public:
 
         inline FeQ<Vector> field_fe_vector_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+        	using ShapeSelector = internal::InputOpType<3, 1>;
+
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Vector>(factory.template make_field_fe_q< Vector, Op::FieldFeOp, Op::BulkDomain, Op::DispatchVectorShape >(field_fe_op_data));
+
+            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_fe_values_.fe_comp(this->generic_->fe_[Dim<dim>{}], 0);
+            return FeQ<Vector>(
+                this->generic_->patch_fe_values_.template get<
+                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
+                    dim
+                >(*this->quad_, fe_component, field_fe_op_data)
+            );
         }
 
 
@@ -475,13 +483,20 @@ public:
 
         inline FeQ<Tensor> field_fe_tensor_op()
         {
-            internal::FieldFeOpFactory<dim> factory(&this->generic_->patch_fe_values_, &this->generic_->element_cache_map_,
-                    this->generic_->patch_fe_values_.template fe_dim<dim>(), this->quad_);
+        	using ShapeSelector = internal::InputOpType<3, 3>;
+
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
             FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-            return FeQ<Tensor>(factory.template make_field_fe_q< Tensor, Op::FieldFeOp, Op::BulkDomain, Op::TensorShape >(field_fe_op_data));
+
+            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_fe_values_.fe_comp(this->generic_->fe_[Dim<dim>{}], 0);
+            return FeQ<Tensor>(
+                this->generic_->patch_fe_values_.template get<
+                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
+                    dim
+                >(*this->quad_, fe_component, field_fe_op_data)
+            );
         }
 
 
