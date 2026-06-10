@@ -124,6 +124,7 @@ public:
     void assemble(std::shared_ptr<DOFHandlerMultiDim> dh) override {
         START_TIMER( DimAssembly<1>::name() );
         multidim_assembly_[1_d]->eq_fields_->cache_reallocate(patch_internals_, multidim_assembly_[1_d]->used_fields_);
+        patch_internals_.fe_values_.init_finalize();
         multidim_assembly_[1_d]->begin();
 
         bool add_into_patch = false; // control variable
@@ -186,7 +187,7 @@ private:
         multidim_assembly_[1_d]->initialize();
         multidim_assembly_[2_d]->initialize();
         multidim_assembly_[3_d]->initialize();
-        patch_internals_.fe_values_.init_finalize();
+        //patch_internals_.fe_values_.init_finalize();
     }
 
     /// Call assemblations when patch is filled
@@ -195,13 +196,13 @@ private:
         patch_internals_.element_cache_map_.create_patch();
         END_TIMER("create_patch");
 
-        START_TIMER("cache_update");
-        multidim_assembly_[1_d]->eq_fields_->cache_update(patch_internals_.element_cache_map_); // TODO replace with sub FieldSet
-        END_TIMER("cache_update");
-
         START_TIMER("patch_reinit");
         patch_reinit(); // reinit PatchFeValues
         END_TIMER("patch_reinit");
+
+        START_TIMER("cache_update");
+        multidim_assembly_[1_d]->eq_fields_->cache_update(patch_internals_.element_cache_map_); // TODO replace with sub FieldSet
+        END_TIMER("cache_update");
 
         patch_internals_.element_cache_map_.finish_elements_update();
 
