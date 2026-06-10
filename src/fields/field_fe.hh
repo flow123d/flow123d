@@ -397,11 +397,11 @@ private:
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
-	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
+	Quadrature *init_quad(std::shared_ptr<EvalPoints> eval_points);
 
 	/// Create PatcFe operation of given dimension and ReturnType.
 	template <unsigned int dim>
-	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals);
+	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals, Quadrature &qua);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)
@@ -485,30 +485,6 @@ private:
         }
     }
 
-    /**
-     * Declare FE operation of given dimension.
-     *
-     * Warning: Method is temporary and must be call in ascending order for dim = 1,2,3
-     */
-//    template<int elemdim>
-//    void create_dim_op(Quadrature * quad, ElementCacheMap &cache_map)
-//    {
-//        auto bulk_integral = std::make_shared<BulkIntegralAcc<elemdim>>(cache_map.eval_points(), quad, patch_fe_values_, &cache_map);
-//        bulk_integrals_[elemdim-1] = std::static_pointer_cast<BulkIntegral>(bulk_integral);
-//
-//        if constexpr (std::is_same_v<typename Value::element_type, double>) {
-//            if constexpr (Value::NRows_ * Value::NCols_ == 1) {
-//                shape_vals_.push_back( bulk_integral->scalar_shape() );
-//            } else if constexpr (Value::NRows_ * Value::NCols_ == 3) {
-//                shape_vals_.push_back( bulk_integral->vector_shape() );
-//            } else if constexpr (Value::NRows_ * Value::NCols_ == 9) {
-//                shape_vals_.push_back( bulk_integral->tensor_shape() );
-//            } else {
-//                ASSERT_PERMANENT(false).error("Sholud not happen!\n");
-//            }
-//        }
-//    }
-
 
 
     /// DOF handler object
@@ -543,9 +519,6 @@ private:
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
     /// TODO use PatchFeValues
     std::vector<FEValues<spacedim>> fe_values_;
-
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;
-    std::vector< FeQArray<ReturnType> > shape_vals_;
 
     /// Maps element indices from computational mesh to the  source (data).
     std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
