@@ -714,10 +714,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        std::cout << "Constraint initialize dim " << dim << std::endl;
         n_dofs_ = deform_join_.n_dofs();
-        std::cout << " .. n_dofs_ " << n_dofs_ << std::endl;
-        std::cout << " .. OK" << std::endl;
         dof_indices_.resize(n_dofs_);
         local_matrix_.resize(n_dofs_*n_dofs_);
     }
