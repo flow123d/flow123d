@@ -274,6 +274,12 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
+     * Temporary - old version of update_cache
+     */
+    void cache_update_old(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
+
+    /**
      * Replace previous method - in progress
      */
     void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,

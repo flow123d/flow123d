@@ -215,6 +215,15 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
+	//this->cache_update_old(data_cache, cache_map, region_patch_idx);
+	this->cache_update_new(data_cache, cache_map, region_patch_idx);
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update_old(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
+{
     auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
     if ( (region_idx % 2) == this->boundary_domain_ ) {
         // Skip evaluation of boundary fields on bulk regions and vice versa
