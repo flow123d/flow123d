@@ -84,6 +84,18 @@ inline Tensor PatchOp<3>::point_value<Tensor>(uint point_idx, uint i_dof) const 
     return val;
 }
 
+template <>
+template <>
+inline unsigned int PatchOp<3>::point_value<unsigned int>(FMT_UNUSED uint point_idx, FMT_UNUSED uint i_dof) const {
+    return 0;
+}
+
+template <>
+template <>
+inline int PatchOp<3>::point_value<int>(FMT_UNUSED uint point_idx, FMT_UNUSED uint i_dof) const {
+    return 0;
+}
+
 
 
 

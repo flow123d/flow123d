@@ -33,6 +33,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
 #include "fem/patch_fe_values.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
@@ -79,26 +80,29 @@ private:
 
 namespace internal {
 
-template<unsigned int dim>
-class FieldFeOpFactory : public internal::IntegralFactory<dim>
+// general element type
+template<int NRows, int NCols>
+struct InputOpType;
+
+template<>
+struct InputOpType<1,1>
 {
-public:
-    // Default constructor
-	FieldFeOpFactory() : internal::IntegralFactory<dim>()
-    {}
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::ScalarShape<dim, Domain, spacedim>;
+};
 
-    // Constructor
-	FieldFeOpFactory(PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map, std::shared_ptr< FiniteElement<dim> > fe, Quadrature *quad)
-    : internal::IntegralFactory<dim>(pfev, element_cache_map, fe, quad)
-    {}
+template<>
+struct InputOpType<3,1>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
+};
 
-    /// Factory method. Same as previous but creates FE operation.
-    template<class ValueType, template<unsigned int, class, class, unsigned int> class OpType, class Domain, template<unsigned int, class, unsigned int> class OpBaseShape>
-    FeQ<ValueType> make_field_fe_q(FieldFeOpData field_fe_op_data, uint component_idx = 0) {
-        std::shared_ptr<FiniteElement<dim>> fe_component = this->patch_fe_values_->fe_comp(this->fe_, component_idx);
-        return FeQ<ValueType>(this->patch_fe_values_->template get< OpType<dim, Domain, OpBaseShape<dim, Domain, 3>, 3>, dim >(*this->quad_, fe_component, field_fe_op_data));
-    }
-
+template<>
+struct InputOpType<3,3>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::TensorShape<dim, Domain, spacedim>;
 };
 
 } // end of namespace internal
@@ -270,6 +274,12 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
+     * Replace previous method - in progress
+     */
+    void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
+
+    /**
      * Overload @p FieldAlgorithmBase::cache_reinit
      *
      * Reinit fe_values_ data member.
@@ -387,7 +397,11 @@ private:
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
-	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
+	Quadrature *init_quad(std::shared_ptr<EvalPoints> eval_points);
+
+	/// Create PatcFe operation of given dimension and ReturnType.
+	template <unsigned int dim>
+	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals, Quadrature &qua);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)
@@ -452,29 +466,24 @@ private:
     	return qgauss.size();
     }
 
-    /**
-     * Declare FE operation of given dimension.
-     *
-     * Warning: Method is temporary and must be call in ascending order for dim = 1,2,3
-     */
-//    template<int elemdim>
-//    void create_dim_op(Quadrature * quad, ElementCacheMap &cache_map)
-//    {
-//        auto bulk_integral = std::make_shared<BulkIntegralAcc<elemdim>>(cache_map.eval_points(), quad, patch_fe_values_, &cache_map);
-//        bulk_integrals_[elemdim-1] = std::static_pointer_cast<BulkIntegral>(bulk_integral);
-//
-//        if constexpr (std::is_same_v<typename Value::element_type, double>) {
-//            if constexpr (Value::NRows_ * Value::NCols_ == 1) {
-//                shape_vals_.push_back( bulk_integral->scalar_shape() );
-//            } else if constexpr (Value::NRows_ * Value::NCols_ == 3) {
-//                shape_vals_.push_back( bulk_integral->vector_shape() );
-//            } else if constexpr (Value::NRows_ * Value::NCols_ == 9) {
-//                shape_vals_.push_back( bulk_integral->tensor_shape() );
-//            } else {
-//                ASSERT_PERMANENT(false).error("Sholud not happen!\n");
-//            }
-//        }
-//    }
+    template <unsigned int elemdim>
+    void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
+            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc,
+	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
+    {
+        unsigned int element_patch_idx = 0;
+        unsigned int last_element_idx = -1;
+        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+            if (elm_idx != last_element_idx) {
+                element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
+                last_element_idx = elm_idx;
+            }
+
+            BulkPoint p(&cache_map, element_patch_idx, cache_map.eval_point_data(i_data).i_eval_point_);
+            data_cache.set(i_data) = value_acc(p);
+        }
+    }
 
 
 
@@ -511,9 +520,6 @@ private:
     /// TODO use PatchFeValues
     std::vector<FEValues<spacedim>> fe_values_;
 
-    std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;
-    std::vector< FeQArray<ReturnType> > shape_vals_;
-
     /// Maps element indices from computational mesh to the  source (data).
     std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
 
@@ -526,6 +532,11 @@ private:
 
     /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
     ElementDataCache<double>::CacheData input_data_cache_;
+
+    // Data members of 'new' version of cache_update
+    FeQ<ReturnType> value_acc_1d_;
+    FeQ<ReturnType> value_acc_2d_;
+    FeQ<ReturnType> value_acc_3d_;
 
     /// Registrar of class to factory
     static const int registrar;
