@@ -98,7 +98,7 @@ public:
             std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, q_bulk_->size());
             auto result = integrals_.bulk_.insert({
                     tpl,
-                    std::make_shared<BulkIntegralAcc<dim>>(patch_internals.eval_points_, q_bulk_, &patch_internals.fe_values_, &patch_internals.element_cache_map_)
+                    std::make_shared<BulkIntegralAcc<dim>>(patch_internals, q_bulk_)
                 });
             return result.first->second;
         }
@@ -108,7 +108,7 @@ public:
             std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, q_bdr_->size());
             auto result = integrals_.boundary_.insert({
                     tpl,
-                    std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals.eval_points_, q_bdr_, &patch_internals.fe_values_, &patch_internals.element_cache_map_)
+                    std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals, q_bdr_)
                 });
             return result.first->second;
         }
