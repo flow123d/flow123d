@@ -46,12 +46,12 @@ class FieldEvalFETest : public FieldEvalBaseTest {
 public:
 
     class EqData : public FieldEvalBaseTest::EqData {
-        EqData() : FieldEvalBaseTest::EqData() {
-        	this->use_pfev_ = true;
-        }
+        EqData() : FieldEvalBaseTest::EqData() {}
     };
 
-    FieldEvalFETest() : FieldEvalBaseTest() {}
+    FieldEvalFETest() : FieldEvalBaseTest() {
+    	this->eq_data_->use_pfev_ = true;
+    }
 
     ~FieldEvalFETest() {}
 
