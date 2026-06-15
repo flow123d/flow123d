@@ -30,6 +30,7 @@
 #include "fem/patch_fe_values.hh"
 #include "fem/op_function.hh"
 #include "fem/op_accessors_impl.hh"
+#include "fem/patch_internals.hh"
 
 
 class BulkIntegral;
@@ -317,11 +318,12 @@ public:
     BulkIntegralAcc() : BulkIntegral() {}
 
     /// Constructor of bulk integral
-    BulkIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-     : BulkIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
+    BulkIntegralAcc(PatchInternals &patch_internals, Quadrature *quad)
+     : BulkIntegral(patch_internals.eval_points_, quad, qdim),
+       factory_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim>{}], quad)
     {
         ASSERT_EQ(quad->dim(), qdim);
-        pfev->set_used_domain(bulk_domain);
+        patch_internals.fe_values_.set_used_domain(bulk_domain);
 	}
 
     /// Destructor
@@ -540,11 +542,12 @@ public:
     EdgeIntegralAcc() : EdgeIntegral() {}
 
     /// Constructor of edge integral
-    EdgeIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-    : EdgeIntegral(eval_points, quad, qdim), factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad)
+    EdgeIntegralAcc(PatchInternals &patch_internals, Quadrature *quad)
+    : EdgeIntegral(patch_internals.eval_points_, quad, qdim),
+      factory_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim>{}], quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
-        pfev->set_used_domain(side_domain);
+        patch_internals.fe_values_.set_used_domain(side_domain);
     }
 
 
@@ -740,14 +743,14 @@ public:
     CouplingIntegralAcc() : CouplingIntegral() {}
 
     /// Constructor of ngh integral
-    CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-     : CouplingIntegral(eval_points, quad, qdim),
-       factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad),
-       factory_high_(pfev, element_cache_map, pfev->fe_dim<qdim+1>(), quad)
+    CouplingIntegralAcc(PatchInternals &patch_internals, Quadrature *quad)
+     : CouplingIntegral(patch_internals.eval_points_, quad, qdim),
+       factory_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim>{}], quad),
+       factory_high_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim+1>{}], quad)
     {
         ASSERT_EQ(quad->dim(), qdim);
-        pfev->set_used_domain(bulk_domain);
-        pfev->set_used_domain(side_domain);
+        patch_internals.fe_values_.set_used_domain(bulk_domain);
+        patch_internals.fe_values_.set_used_domain(side_domain);
     }
 
     /// Destructor
@@ -856,12 +859,12 @@ public:
     CouplingIntegralAcc() : CouplingIntegral() {}
 
     /// Constructor of ngh integral
-    CouplingIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
+    CouplingIntegralAcc(PatchInternals &patch_internals, Quadrature *quad)
      : CouplingIntegral(),
-	   factory_(pfev, element_cache_map, pfev->fe_dim<3>(), quad)
+	   factory_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<3>{}], quad)
     {
         ASSERT_EQ(quad->dim(), 3);
-        this->eval_points_ = eval_points;
+        this->eval_points_ = patch_internals.eval_points_;
         this->dim_ = 3;
     }
 
@@ -978,14 +981,14 @@ public:
     /// Default constructor
     BoundaryIntegralAcc() : BoundaryIntegral() {}
 
-    BoundaryIntegralAcc(std::shared_ptr<EvalPoints> eval_points, Quadrature *quad, PatchFEValues<3> *pfev, ElementCacheMap *element_cache_map)
-    : BoundaryIntegral(eval_points, quad, qdim),
-      factory_(pfev, element_cache_map, pfev->fe_dim<qdim>(), quad),
-	  factory_low_(pfev, element_cache_map, pfev->fe_dim<qdim-1>(), quad)
+    BoundaryIntegralAcc(PatchInternals &patch_internals, Quadrature *quad)
+    : BoundaryIntegral(patch_internals.eval_points_, quad, qdim),
+      factory_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim>{}], quad),
+	  factory_low_(&patch_internals.fe_values_, &patch_internals.element_cache_map_, patch_internals.fe_[Dim<qdim-1>{}], quad)
     {
         ASSERT_EQ(quad->dim()+1, qdim);
-        pfev->set_used_domain(bulk_domain);
-        pfev->set_used_domain(side_domain);
+        patch_internals.fe_values_.set_used_domain(bulk_domain);
+        patch_internals.fe_values_.set_used_domain(side_domain);
     }
 
     /// Destructor
