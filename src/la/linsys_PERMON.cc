@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 #include "petscvec.h"
@@ -588,6 +589,379 @@ PetscErrorCode print_feti_permon_nullspace_dimension(MPI_Comm comm, QP qp)
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+PetscScalar dense_row_dot(const std::vector<PetscScalar> &left,
+                          const std::vector<PetscScalar> &right)
+{
+    PetscScalar dot = 0.0;
+    for (std::size_t i = 0; i < left.size(); ++i)
+        dot += PetscConj(left[i]) * right[i];
+    return dot;
+}
+
+PetscReal dense_row_norm2(const std::vector<PetscScalar> &row)
+{
+    PetscReal norm2 = 0.0;
+    for (PetscScalar value : row) {
+        const PetscReal abs_value = PetscAbsScalar(value);
+        norm2 += abs_value * abs_value;
+    }
+    return norm2;
+}
+
+void dense_row_subtract_scaled(std::vector<PetscScalar> &row,
+                               PetscScalar scale,
+                               const std::vector<PetscScalar> &basis_row)
+{
+    for (std::size_t i = 0; i < row.size(); ++i)
+        row[i] -= scale * basis_row[i];
+}
+
+PetscErrorCode gather_dense_matrix_rows(Mat matrix,
+                                        std::vector<PetscScalar> &dense_rows,
+                                        PetscInt *global_rows,
+                                        PetscInt *global_cols)
+{
+    Mat matrix_aij = NULL;
+    PetscInt m_global, n_global, rstart, rend;
+    MPI_Comm comm;
+    PetscMPIInt comm_size;
+
+    PetscFunctionBegin;
+    PetscCall(PetscObjectGetComm((PetscObject)matrix, &comm));
+    PetscCallMPI(MPI_Comm_size(comm, &comm_size));
+
+    PetscCall(MatConvert(matrix, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
+    PetscCall(MatGetSize(matrix_aij, &m_global, &n_global));
+    PetscCall(MatGetOwnershipRange(matrix_aij, &rstart, &rend));
+
+    PetscCheck(n_global <= static_cast<PetscInt>(std::numeric_limits<PetscMPIInt>::max()),
+               comm, PETSC_ERR_SUP,
+               "FETI equality-rank filter matrix is too wide for MPI gather diagnostics.");
+
+    const PetscInt local_rows = rend - rstart;
+    PetscCheck(local_rows == 0 ||
+               n_global <= std::numeric_limits<PetscInt>::max() / local_rows,
+               comm, PETSC_ERR_SUP,
+               "FETI equality-rank filter matrix block is too large for dense row gathering.");
+    const PetscInt local_entries = local_rows * n_global;
+    PetscMPIInt local_count;
+    PetscCall(PetscMPIIntCast(local_entries, &local_count));
+
+    std::vector<PetscScalar> local_dense(local_entries, 0.0);
+    for (PetscInt row = rstart; row < rend; ++row) {
+        PetscInt ncols = 0;
+        const PetscInt *cols = NULL;
+        const PetscScalar *vals = NULL;
+
+        PetscCall(MatGetRow(matrix_aij, row, &ncols, &cols, &vals));
+        for (PetscInt j = 0; j < ncols; ++j)
+            local_dense[(row - rstart) * n_global + cols[j]] = vals[j];
+        PetscCall(MatRestoreRow(matrix_aij, row, &ncols, &cols, &vals));
+    }
+
+    std::vector<PetscMPIInt> recv_counts(comm_size, 0);
+    std::vector<PetscMPIInt> recv_displs(comm_size, 0);
+    PetscCallMPI(MPI_Allgather(&local_count, 1, MPI_INT,
+                               recv_counts.data(), 1, MPI_INT, comm));
+
+    PetscMPIInt total_count = 0;
+    for (PetscMPIInt rank = 0; rank < comm_size; ++rank) {
+        recv_displs[rank] = total_count;
+        PetscCheck(total_count <= std::numeric_limits<PetscMPIInt>::max() - recv_counts[rank],
+                   comm, PETSC_ERR_SUP,
+                   "FETI equality-rank filter matrix is too large for MPI dense row gathering.");
+        total_count += recv_counts[rank];
+    }
+
+    PetscCheck(m_global == 0 ||
+               static_cast<std::size_t>(n_global) <=
+               std::numeric_limits<std::size_t>::max() / static_cast<std::size_t>(m_global),
+               comm, PETSC_ERR_SUP,
+               "FETI equality-rank filter matrix is too large for dense row storage.");
+    dense_rows.assign(static_cast<std::size_t>(m_global) * n_global, 0.0);
+    PetscCallMPI(MPI_Allgatherv(local_dense.data(), local_count, MPIU_SCALAR,
+                                dense_rows.data(), recv_counts.data(), recv_displs.data(),
+                                MPIU_SCALAR, comm));
+
+    PetscCall(MatDestroy(&matrix_aij));
+
+    if (global_rows) *global_rows = m_global;
+    if (global_cols) *global_cols = n_global;
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+std::vector<PetscScalar> dense_matrix_row(const std::vector<PetscScalar> &dense_rows,
+                                          PetscInt ncols,
+                                          PetscInt row)
+{
+    auto begin = dense_rows.begin() + static_cast<std::size_t>(row) * ncols;
+    return std::vector<PetscScalar>(begin, begin + ncols);
+}
+
+bool add_row_to_rank_basis(const std::vector<PetscScalar> &input_row,
+                           PetscReal row_norm2,
+                           PetscReal tolerance,
+                           PetscReal scale,
+                           std::vector<std::vector<PetscScalar>> &basis,
+                           PetscReal *residual_norm2)
+{
+    std::vector<PetscScalar> residual = input_row;
+
+    // Two-pass modified Gram-Schmidt is sufficient here because this optional
+    // filter is limited to small equality systems and only decides which
+    // appended gluing rows are numerically dependent on the preceding rows.
+    for (const auto &basis_row : basis)
+        dense_row_subtract_scaled(residual, dense_row_dot(basis_row, residual), basis_row);
+    for (const auto &basis_row : basis)
+        dense_row_subtract_scaled(residual, dense_row_dot(basis_row, residual), basis_row);
+
+    PetscReal res2 = dense_row_norm2(residual);
+    if (residual_norm2) *residual_norm2 = res2;
+
+    const PetscReal threshold = tolerance * std::max(scale, row_norm2);
+    if (res2 <= threshold) return false;
+
+    const PetscReal inv_norm = 1.0 / std::sqrt(res2);
+    for (PetscScalar &value : residual) value *= inv_norm;
+    basis.push_back(std::move(residual));
+    return true;
+}
+
+PetscErrorCode filter_dependent_feti_gluing_rows(MPI_Comm comm, QP qp)
+{
+    PetscBool enabled = PETSC_FALSE;
+    PetscReal tolerance = 1e-10;
+    PetscInt max_rows = 5000;
+    Mat BE = NULL;
+    Vec cE = NULL;
+    PetscBool is_nested = PETSC_FALSE;
+    PetscInt nrow_blocks = 0, ncol_blocks = 0;
+
+    PetscFunctionBegin;
+    PetscCall(PetscOptionsGetBool(NULL, NULL,
+                                  "-flow123d_feti_filter_dependent_gluing",
+                                  &enabled, NULL));
+    if (!enabled) PetscFunctionReturn(PETSC_SUCCESS);
+
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_filter_dependent_gluing_tol",
+                                  &tolerance, NULL));
+    PetscCall(PetscOptionsGetInt(NULL, NULL,
+                                 "-flow123d_feti_filter_dependent_gluing_max_rows",
+                                 &max_rows, NULL));
+
+    // Flow123d adds Dirichlet equalities before QPFetiSetUp(). PERMON then
+    // appends the gluing matrix as the last equality block. Keep the original
+    // rows and remove only gluing rows whose residual against their row span is
+    // below the requested tolerance.
+    PetscCall(QPGetEq(qp, &BE, &cE));
+    if (!BE) PetscFunctionReturn(PETSC_SUCCESS);
+
+    PetscCall(PetscObjectTypeCompareAny((PetscObject)BE, &is_nested,
+                                        MATNEST, MATNESTPERMON, ""));
+    if (!is_nested) {
+        WarningOut() << "Skipping FETI gluing rank filter: equality matrix is not nested.\n";
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    PetscCall(MatNestGetSize(BE, &nrow_blocks, &ncol_blocks));
+    if (ncol_blocks != 1 || nrow_blocks < 2) {
+        WarningOut() << "Skipping FETI gluing rank filter: unexpected equality matrix nest shape.\n";
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    std::vector<Mat> blocks(nrow_blocks, NULL);
+    std::vector<Vec> rhs_blocks(nrow_blocks, NULL);
+    PetscBool has_nested_rhs = PETSC_FALSE;
+    if (cE)
+        PetscCall(PetscObjectTypeCompare((PetscObject)cE, VECNEST, &has_nested_rhs));
+    if (cE && !has_nested_rhs) {
+        WarningOut() << "Skipping FETI gluing rank filter: equality RHS is not nested.\n";
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    for (PetscInt block = 0; block < nrow_blocks; ++block) {
+        PetscCall(MatNestGetSubMat(BE, block, 0, &blocks[block]));
+        PetscCheck(blocks[block], comm, PETSC_ERR_ARG_WRONG,
+                   "Nested equality matrix contains a null block.");
+        PetscCall(PetscObjectReference((PetscObject)blocks[block]));
+        if (has_nested_rhs) {
+            PetscCall(VecNestGetSubVec(cE, block, &rhs_blocks[block]));
+            PetscCall(PetscObjectReference((PetscObject)rhs_blocks[block]));
+        }
+    }
+
+    const PetscInt gluing_block = nrow_blocks - 1;
+    PetscInt total_rows = 0;
+    PetscInt ncols_reference = -1;
+    for (PetscInt block = 0; block < nrow_blocks; ++block) {
+        PetscInt rows, cols;
+        PetscCall(MatGetSize(blocks[block], &rows, &cols));
+        total_rows += rows;
+        if (ncols_reference < 0) ncols_reference = cols;
+        PetscCheck(cols == ncols_reference, comm, PETSC_ERR_ARG_SIZ,
+                   "Nested equality matrix blocks have inconsistent column counts.");
+    }
+
+    if (total_rows > max_rows) {
+        WarningOut() << "Skipping FETI gluing rank filter: equality row count "
+                     << total_rows << " exceeds limit " << max_rows << ".\n";
+        for (PetscInt block = 0; block < nrow_blocks; ++block) {
+            if (rhs_blocks[block]) PetscCall(VecDestroy(&rhs_blocks[block]));
+            PetscCall(MatDestroy(&blocks[block]));
+        }
+        PetscFunctionReturn(PETSC_SUCCESS);
+    }
+
+    std::vector<std::vector<PetscScalar>> basis;
+    basis.reserve(total_rows);
+    PetscReal scale = 0.0;
+    PetscInt fixed_rows = 0;
+    PetscInt fixed_rank = 0;
+    PetscInt fixed_dependent = 0;
+
+    for (PetscInt block = 0; block < gluing_block; ++block) {
+        std::vector<PetscScalar> dense_rows;
+        PetscInt rows, cols;
+        PetscCall(gather_dense_matrix_rows(blocks[block], dense_rows, &rows, &cols));
+        for (PetscInt row = 0; row < rows; ++row) {
+            std::vector<PetscScalar> row_values = dense_matrix_row(dense_rows, cols, row);
+            PetscReal row_norm2 = dense_row_norm2(row_values);
+            scale = std::max(scale, row_norm2);
+            PetscReal residual_norm2;
+            if (add_row_to_rank_basis(row_values, row_norm2, tolerance, scale, basis, &residual_norm2))
+                ++fixed_rank;
+            else
+                ++fixed_dependent;
+            ++fixed_rows;
+        }
+    }
+
+    std::vector<PetscScalar> gluing_dense_rows;
+    PetscInt gluing_rows, gluing_cols;
+    PetscCall(gather_dense_matrix_rows(blocks[gluing_block], gluing_dense_rows,
+                                       &gluing_rows, &gluing_cols));
+
+    std::vector<PetscInt> keep_gluing_rows;
+    keep_gluing_rows.reserve(gluing_rows);
+    PetscReal min_accepted_residual = PETSC_MAX_REAL;
+    PetscReal max_rejected_residual = 0.0;
+    for (PetscInt row = 0; row < gluing_rows; ++row) {
+        std::vector<PetscScalar> row_values = dense_matrix_row(gluing_dense_rows, gluing_cols, row);
+        PetscReal row_norm2 = dense_row_norm2(row_values);
+        scale = std::max(scale, row_norm2);
+        PetscReal residual_norm2;
+        if (add_row_to_rank_basis(row_values, row_norm2, tolerance, scale, basis, &residual_norm2)) {
+            keep_gluing_rows.push_back(row);
+            min_accepted_residual = std::min(min_accepted_residual, residual_norm2);
+        } else {
+            max_rejected_residual = std::max(max_rejected_residual, residual_norm2);
+        }
+    }
+
+    PetscInt rstart, rend, cstart, cend;
+    PetscCall(MatGetOwnershipRange(blocks[gluing_block], &rstart, &rend));
+    PetscCall(MatGetOwnershipRangeColumn(blocks[gluing_block], &cstart, &cend));
+
+    PetscCheck(keep_gluing_rows.size() <=
+               static_cast<std::size_t>(std::numeric_limits<PetscInt>::max()),
+               comm, PETSC_ERR_SUP,
+               "Too many globally kept FETI gluing rows.");
+    std::vector<PetscInt> local_keep_rows;
+    std::vector<PetscInt> local_keep_new_rows;
+    for (PetscInt new_row = 0; new_row < static_cast<PetscInt>(keep_gluing_rows.size()); ++new_row) {
+        const PetscInt source_row = keep_gluing_rows[new_row];
+        if (source_row >= rstart && source_row < rend) {
+            local_keep_rows.push_back(source_row);
+            local_keep_new_rows.push_back(new_row);
+        }
+    }
+
+    Mat filtered_gluing = NULL;
+    PetscCheck(local_keep_rows.size() <=
+               static_cast<std::size_t>(std::numeric_limits<PetscInt>::max()),
+               comm, PETSC_ERR_SUP,
+               "Too many locally kept FETI gluing rows.");
+    const PetscInt n_local_keep_rows = static_cast<PetscInt>(local_keep_rows.size());
+    const PetscInt n_global_keep_rows = static_cast<PetscInt>(keep_gluing_rows.size());
+    std::vector<PetscInt> diagonal_nnz(n_local_keep_rows, 0);
+    std::vector<PetscInt> offdiagonal_nnz(n_local_keep_rows, 0);
+    for (PetscInt local_row = 0; local_row < n_local_keep_rows; ++local_row) {
+        const PetscInt source_row = local_keep_rows[local_row];
+        for (PetscInt col = 0; col < gluing_cols; ++col) {
+            const PetscScalar value =
+                gluing_dense_rows[static_cast<std::size_t>(source_row) * gluing_cols + col];
+            if (PetscAbsScalar(value) == 0.0) continue;
+            if (col >= cstart && col < cend)
+                ++diagonal_nnz[local_row];
+            else
+                ++offdiagonal_nnz[local_row];
+        }
+    }
+
+    PetscCall(MatCreateAIJ(comm, n_local_keep_rows, cend - cstart,
+                           n_global_keep_rows, gluing_cols,
+                           0, diagonal_nnz.data(), 0, offdiagonal_nnz.data(),
+                           &filtered_gluing));
+    PetscInt filtered_rstart, filtered_rend;
+    PetscCall(MatGetOwnershipRange(filtered_gluing, &filtered_rstart, &filtered_rend));
+    if (n_local_keep_rows > 0) {
+        PetscCheck(filtered_rstart == local_keep_new_rows.front() &&
+                   filtered_rend == local_keep_new_rows.back() + 1,
+                   comm, PETSC_ERR_ARG_WRONGSTATE,
+                   "Filtered FETI gluing row ownership is inconsistent.");
+    }
+    for (PetscInt local_row = 0; local_row < n_local_keep_rows; ++local_row) {
+        const PetscInt source_row = local_keep_rows[local_row];
+        const PetscInt new_row = local_keep_new_rows[local_row];
+        std::vector<PetscInt> cols;
+        std::vector<PetscScalar> vals;
+        cols.reserve(diagonal_nnz[local_row] + offdiagonal_nnz[local_row]);
+        vals.reserve(diagonal_nnz[local_row] + offdiagonal_nnz[local_row]);
+        for (PetscInt col = 0; col < gluing_cols; ++col) {
+            const PetscScalar value =
+                gluing_dense_rows[static_cast<std::size_t>(source_row) * gluing_cols + col];
+            if (PetscAbsScalar(value) == 0.0) continue;
+            cols.push_back(col);
+            vals.push_back(value);
+        }
+        PetscCall(MatSetValues(filtered_gluing, 1, &new_row,
+                               static_cast<PetscInt>(cols.size()),
+                               cols.empty() ? NULL : cols.data(),
+                               vals.empty() ? NULL : vals.data(),
+                               INSERT_VALUES));
+    }
+    PetscCall(MatAssemblyBegin(filtered_gluing, MAT_FINAL_ASSEMBLY));
+    PetscCall(MatAssemblyEnd(filtered_gluing, MAT_FINAL_ASSEMBLY));
+    PetscCall(PetscObjectSetName((PetscObject)filtered_gluing, "Bg_filtered"));
+
+    PetscCall(QPSetEq(qp, NULL, NULL));
+    PetscCall(QPSetEq(qp, blocks[0], rhs_blocks[0]));
+    for (PetscInt block = 1; block < gluing_block; ++block)
+        PetscCall(QPAddEq(qp, blocks[block], rhs_blocks[block]));
+    PetscCall(QPAddEq(qp, filtered_gluing, NULL));
+
+    if (min_accepted_residual == PETSC_MAX_REAL) min_accepted_residual = 0.0;
+    PetscCall(PetscPrintf(comm,
+        "[flow123d feti gluing rank filter] fixed_rows: %d, fixed_rank: %d, "
+        "fixed_dependent: %d, gluing_rows_before: %d, gluing_rows_kept: %d, "
+        "gluing_rows_removed: %d, rank_estimate_after: %d, tolerance: %.16e, "
+        "min_accepted_residual2: %.16e, max_rejected_residual2: %.16e\n",
+        (int)fixed_rows, (int)fixed_rank, (int)fixed_dependent,
+        (int)gluing_rows, (int)keep_gluing_rows.size(),
+        (int)(gluing_rows - static_cast<PetscInt>(keep_gluing_rows.size())),
+        (int)basis.size(), (double)tolerance,
+        (double)min_accepted_residual, (double)max_rejected_residual));
+
+    PetscCall(MatDestroy(&filtered_gluing));
+    for (PetscInt block = 0; block < nrow_blocks; ++block) {
+        if (rhs_blocks[block]) PetscCall(VecDestroy(&rhs_blocks[block]));
+        PetscCall(MatDestroy(&blocks[block]));
+    }
+
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 PetscErrorCode compute_qp_lagrangian_residual_norm(QP qp, PetscReal *norm)
 {
     Vec solution = NULL;
@@ -1072,6 +1446,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(ISLocalToGlobalMappingDestroy(&mapping));
         chkerr(ISDestroy(&isnz));
         chkerr(QPFetiSetUp(system));
+        chkerr(filter_dependent_feti_gluing_rows(comm_, system));
         chkerr(PetscOptionsInsertString(NULL, "-feti"));
 
         // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
