@@ -47,6 +47,15 @@ namespace internal_integrals {
 }
 
 
+/// Distinguishes quadrature points of DimEvalPoints by type
+enum points_domain
+{
+	bulk_points =0,
+	side_points =1,
+	repeated_side_points =2
+};
+
+
 /**
  * @brief Class holds local coordinations of evaluating points (bulk and sides)
  * specified by element dimension.
@@ -125,6 +134,11 @@ public:
     /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
     uint get_max_side_quad_size(unsigned int dim) const;
 
+    /// Return begin index of appropriate subset data.
+    inline points_domain point_domain(unsigned int dim, unsigned int local_point_idx) const {
+    	return dim_eval_points_[dim].point_domain(local_point_idx);
+    }
+
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
@@ -173,15 +187,23 @@ private:
         void add_local_points(const Armor::Array<double> & quad_points);
 
         /// Adds new subset and its end size to subset_starts_ array.
-        uint add_subset();
+        uint add_subset(points_domain point_domain, unsigned int quad_size, unsigned int repeated_points=0);
 
         inline void clear() {
             local_points_.resize(0);
             n_subsets_ = 0;
         }
+
+        /// Return begin index of appropriate subset data.
+        inline points_domain point_domain(unsigned int local_point_idx) const {
+            ASSERT_LT(local_point_idx, points_domains_.size());
+        	return points_domains_[local_point_idx];
+        }
+
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
+        std::vector<points_domain> points_domains_;                   ///< Flags hold if quadrature points are bulk or side, temporary data member of FieldFE patch operations
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
 

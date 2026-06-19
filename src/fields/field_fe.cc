@@ -311,20 +311,39 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
     std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
-    std::array<Quadrature *, 4> quads{new QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
+    std::array<Quadrature *, 4> bulk_quads{new QGauss(0, 1), init_bulk_quad<1>(eval_points), init_bulk_quad<2>(eval_points), init_bulk_quad<3>(eval_points)};
 
     // new code PatchFeValues
-    value_acc_1d_ = this->create_dim_patch_op<1>(patch_internals, *quads[1]);
-    value_acc_2d_ = this->create_dim_patch_op<2>(patch_internals, *quads[2]);
-    value_acc_3d_ = this->create_dim_patch_op<3>(patch_internals, *quads[3]);
+    value_acc_1d_ = this->create_dim_patch_op<1>(patch_internals, *bulk_quads[1]);
+    value_acc_2d_ = this->create_dim_patch_op<2>(patch_internals, *bulk_quads[2]);
+    value_acc_3d_ = this->create_dim_patch_op<3>(patch_internals, *bulk_quads[3]);
 
     // old code FeValues
+    std::array<Quadrature *, 4> quads{new QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
     fe_values_[0].initialize(*quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
     fe_values_[1].initialize(*quads[1], *this->fe_[1_d], update_values); // add operation to asm_internals.fe_values_
     fe_values_[2].initialize(*quads[2], *this->fe_[2_d], update_values);
     fe_values_[3].initialize(*quads[3], *this->fe_[3_d], update_values);
 }
 
+
+template <int spacedim, class Value>
+template <unsigned int dim>
+Quadrature* FieldFE<spacedim, Value>::init_bulk_quad(std::shared_ptr<EvalPoints> eval_points)
+{
+    uint n_eval_points = eval_points->size(dim);
+    uint n_eval_points_bulk=0;
+    for (unsigned int k=0; k<n_eval_points; k++)
+        if (eval_points->point_domain(dim, k) == points_domain::bulk_points) ++n_eval_points_bulk;
+
+    Quadrature *quad = new Quadrature(dim, n_eval_points_bulk);
+    for (unsigned int k=0, i_qpt=0; k<eval_points->size(dim); k++)
+        if (eval_points->point_domain(dim, k) == points_domain::bulk_points) {
+            quad->set(i_qpt) = eval_points->local_point<dim>(k);
+            ++i_qpt;
+        }
+    return quad;
+}
 
 template <int spacedim, class Value>
 template <unsigned int dim>

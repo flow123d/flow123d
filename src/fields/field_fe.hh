@@ -401,6 +401,9 @@ private:
 	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
 	void calculate_element_values();
 
+	template <unsigned int dim>
+	Quadrature *init_bulk_quad(std::shared_ptr<EvalPoints> eval_points);
+
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
 	Quadrature *init_quad(std::shared_ptr<EvalPoints> eval_points);
@@ -474,7 +477,7 @@ private:
 
     template <unsigned int elemdim>
     void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
-            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc,
+            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc_bulk,
 	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
     {
         unsigned int element_patch_idx = 0;
@@ -487,7 +490,7 @@ private:
             }
 
             BulkPoint p(&cache_map, element_patch_idx, cache_map.eval_point_data(i_data).i_eval_point_);
-            data_cache.set(i_data) = value_acc(p);
+            data_cache.set(i_data) = value_acc_bulk(p);
         }
     }
 
