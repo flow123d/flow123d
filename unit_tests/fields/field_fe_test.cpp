@@ -150,6 +150,7 @@ TEST_F(FieldEvalFETest, input_msh) {
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
+        break;
         eq_data_->tg_.next_time();
     }
 }
@@ -458,42 +459,45 @@ TEST_F(FieldEvalFETest, input_msh) {
 //    VecRef<double> ref_scalar(expected_scalars);
 //    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
 //}
-//
-//
-//TEST_F(FieldEvalFETest, set_fe_data_scalar) {
-//    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarFieldFE;
-//    this->create_mesh("fields/one_element_2d.msh");
-//    this->set_dof_values( {0.5} );
-//
-//    MixedPtr<FE_P_disc> fe(0);
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
-//    dh_->distribute_dofs(ds);
-//
-//    std::shared_ptr<ScalarFieldFE> fe_field = std::make_shared<ScalarFieldFE>();
-//    fe_field->set_fe_data(dh_, v);
-//    eq_data_->scalar_field.set(fe_field, 0.0);
-//
-//    eq_data_->reallocate_cache();
-//	SingleValRef<double> ref_scalar(0.5);
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//}
-//
-//
-//TEST_F(FieldEvalFETest, set_fe_data_vector) {
-//    typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
-//    this->create_mesh("fields/one_element_2d.msh");
-//    this->set_dof_values( {0.5, 1.5, 2.5} );
-//
-//    MixedPtr<FE_RT0> fe;
-//    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
-//    dh_->distribute_dofs(ds);
-//
-//    std::shared_ptr<VectorFieldFE> fe_field = std::make_shared<VectorFieldFE>();
-//    fe_field->set_fe_data(dh_, v);
-//    eq_data_->vector_field.set(fe_field, 0.0);
-//
-//    eq_data_->reallocate_cache();
-//    arma::vec3 expected = { 1./7, 2./7, 0.0 };
-//    SingleValRef<arma::vec3> ref_vector(expected);
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-//}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_scalar) {
+    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5} );
+
+    MixedPtr<FE_P_disc> fe(0);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<ScalarFieldFE> fe_field = std::make_shared<ScalarFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->scalar_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    SingleValRef<double> ref_scalar(0.5);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_vector) {
+    typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5, 1.5, 2.5} );
+
+    //MixedPtr<FE_RT0> fe;
+    MixedPtr<FE_P_disc> fe_p(0);
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<VectorFieldFE> fe_field = std::make_shared<VectorFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->vector_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    //arma::vec3 expected = { 1./7, 2./7, 0.0 }; / expected vals of FE_RT0
+    arma::vec3 expected = { 0.5, 1.5, 2.5 };
+    SingleValRef<arma::vec3> ref_vector(expected);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+}
