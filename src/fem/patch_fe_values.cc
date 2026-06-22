@@ -24,25 +24,6 @@
 
 
 
-template<unsigned int spacedim>
-template<unsigned int dim>
-unsigned int PatchFEValues<spacedim>::n_dofs_high() const {
-    ASSERT((dim>=0) && (dim<=2))(dim).error("Dimension must be 0, 1, 2.");
-    return fe_[Dim<dim+1>{}]->n_dofs();
-}
-
-template<>
-template<>
-unsigned int PatchFEValues<3>::n_dofs_high<3>() const {
-    return fe_[Dim<3>{}]->n_dofs();
-}
-
-
-
 
 // explicit instantiation
-template unsigned int PatchFEValues<3>::n_dofs_high<1>() const;
-template unsigned int PatchFEValues<3>::n_dofs_high<2>() const;
-template unsigned int PatchFEValues<3>::n_dofs_high<3>() const;
-
 template class PatchFEValues<3>;

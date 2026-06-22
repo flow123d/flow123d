@@ -169,7 +169,7 @@ public:
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
         reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
 
-        n_dofs_ = this->patch_internals_->fe_values_.template fe_comp<dim>(this->patch_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
+        n_dofs_ = fe_system->fe_dofs(0).size();
     }
 
 
