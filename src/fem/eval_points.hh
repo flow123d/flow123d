@@ -134,6 +134,12 @@ public:
     /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
     uint get_max_side_quad_size(unsigned int dim) const;
 
+    /// Return vector of bulk quadratures of given dimension from bulk integrals (Bulk, Coupling /lower-dim/)
+    std::vector<Quadrature *> get_bulk_quad_vector(unsigned int dim) const;
+
+    /// Return vector of side quadratures of given dimension from side integrals (Edge, Coupling /higher-dim/, Boundary)
+    std::vector<Quadrature *> get_side_quad_vector(unsigned int dim) const;
+
     /// Return begin index of appropriate subset data.
     inline points_domain point_domain(unsigned int dim, unsigned int local_point_idx) const {
     	return dim_eval_points_[dim].point_domain(local_point_idx);
@@ -217,6 +223,14 @@ private:
     /// Common implementation of get_max_bulk_quad_size and get_max_side_quad_size
     template<class Integral>
     uint get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
+
+    /**
+     * Common implementation of get_bulk_quad_vector and get_side_quad_vector
+     *
+     * Temporary method that allows implementation PatchFeValues operations in FieldFE
+     */
+    template<class Integral>
+    std::vector<Quadrature *> get_quad_vector(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
 
 
     /// Sub objects of dimensions 0,1,2,3

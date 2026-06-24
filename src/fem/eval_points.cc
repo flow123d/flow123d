@@ -104,6 +104,23 @@ uint EvalPoints::get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, 
     return max_qsize;
 }
 
+std::vector<Quadrature *> EvalPoints::get_bulk_quad_vector(unsigned int dim) const {
+    return get_quad_vector<internal_integrals::Bulk>(bulk_integrals_, dim);
+}
+
+std::vector<Quadrature *> EvalPoints::get_side_quad_vector(unsigned int dim) const {
+    return get_quad_vector<internal_integrals::Edge>(edge_integrals_, dim);
+}
+
+template<class Integral>
+std::vector<Quadrature *> EvalPoints::get_quad_vector(IntegralPtrMap<Integral> integrals, unsigned int dim) const {
+    std::vector<Quadrature *> quad_vec;
+    for (auto integral_it : integrals)
+        if (integral_it.second->dim() == dim)
+            quad_vec.push_back( integral_it.second->quad() );
+    return quad_vec;
+}
+
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
 : local_points_(dim), n_subsets_(0), dim_(dim)
 {
