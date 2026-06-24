@@ -128,7 +128,6 @@ public:
         uint n_dofs = this->input_ops(0)->n_dofs();
         uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
 
-        auto shape_vec = this->input_ops(0)->result_matrix();
         this->allocate_result(n_patch_points, this->patch_arena());
         auto result_vec = this->result_matrix();
 
@@ -160,9 +159,8 @@ public:
         }
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            for (uint i_c=0; i_c<this->n_comp(); ++i_c) {
-                result_vec(i_c) = result_vec(i_c) + data_vec_pts(i_dof) * shape_vec(i_dof*this->n_comp() + i_c);
-            }
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
+            result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
         }
     }
 
