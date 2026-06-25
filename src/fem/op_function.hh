@@ -625,7 +625,7 @@ public:
                 for (uint i_r=0; i_r<spacedim; ++i_r)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c)[i_r];
+                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c*spacedim+i_r);
         }
     }
 
@@ -1080,7 +1080,7 @@ public:
 
             Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
             for (uint c=0; c<spacedim*spacedim; ++c)
-                result_vec(c) = result_ovec(c).get_vec();
+                result_vec(i_dof * spacedim*spacedim + c) = result_ovec(c).get_vec();
         }
     }
 };
