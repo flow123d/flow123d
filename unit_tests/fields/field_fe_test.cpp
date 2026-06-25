@@ -156,41 +156,41 @@ TEST_F(FieldEvalFETest, input_msh) {
 }
 
 
-//TEST_F(FieldEvalFETest, input_vtk) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/vtk_ascii_data.vtu
-//          field_name: scalar_field
-//        vector_field: !FieldFE
-//          mesh_data_file: fields/vtk_ascii_data.vtu
-//          field_name: vector_field
-//        tensor_field: !FieldFE
-//          mesh_data_file: fields/vtk_ascii_data.vtu
-//          field_name: tensor_field
-//        scalar_ref: !FieldFormula
-//          value: X[0]+2*X[1]
-//        vector_ref: !FieldFormula
-//          value: "[X[0]+2*X[1], X[1]+2*X[2], X[2]+2*X[0]]"
-//        tensor_ref: !FieldFormula
-//          value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2], 0], [0, 0, 2*X[2]+X[0]] ]"
-//    )YAML";
-//
-//    this->create_mesh("mesh/simplest_cube.msh");
-//    this->read_input(eq_data_input);
-//
-//    eq_data_->reallocate_cache();
-//	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-//	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
-//	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
-//}
-//
-//
+TEST_F(FieldEvalFETest, input_vtk) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/vtk_ascii_data.vtu
+          field_name: scalar_field
+        vector_field: !FieldFE
+          mesh_data_file: fields/vtk_ascii_data.vtu
+          field_name: vector_field
+        tensor_field: !FieldFE
+          mesh_data_file: fields/vtk_ascii_data.vtu
+          field_name: tensor_field
+        scalar_ref: !FieldFormula
+          value: X[0]+2*X[1]
+        vector_ref: !FieldFormula
+          value: "[X[0]+2*X[1], X[1]+2*X[2], X[2]+2*X[0]]"
+        tensor_ref: !FieldFormula
+          value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2], 0], [0, 0, 2*X[2]+X[0]] ]"
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    eq_data_->reallocate_cache();
+    FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+    FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+    FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+    EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
+}
+
+
 //TEST_F(FieldEvalFETest, time_shift) {
 //    string eq_data_input = R"YAML(
 //    data:

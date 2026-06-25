@@ -244,8 +244,10 @@ public:
             for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(patch_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals_.element_cache_map_) ) {
                 patch_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
-            if (this->use_pfev_)
+            if (this->use_pfev_) {
+            	mass_integral[computed_dh_cell_.dim()-1]->patch_data().emplace_back(computed_dh_cell_);
                 ++( patch_internals_.fe_values_.ppv(bulk_domain, computed_dh_cell_.dim()) ).n_mesh_items_;
+            }
 
             if (bdr)
                 for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
@@ -260,6 +262,7 @@ public:
                             patch_internals_.element_cache_map_.add_eval_point(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
                         }
                         if (this->use_pfev_) {
+                            bdr_integral[computed_dh_cell_.dim()-1]->patch_data().emplace_back(cell_side);
                             ++( patch_internals_.fe_values_.ppv(side_domain, cell_side.dim()) ).n_mesh_items_;
                             ++( patch_internals_.fe_values_.ppv(bulk_domain, cell_side.dim()-1) ).n_mesh_items_;
                         }
@@ -270,14 +273,15 @@ public:
 
         void update_cache(bool bdr=false) {
         	patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        	reset_patch();
         	patch_internals_.element_cache_map_.start_elements_update();
             this->register_eval_points(bdr);
-            if (this->use_pfev_)
-                patch_internals_.fe_values_.make_permanent_ppv_data();
             multidim_asm_[1_d]->integrals_.make_permanent();
             multidim_asm_[2_d]->integrals_.make_permanent();
             multidim_asm_[3_d]->integrals_.make_permanent();
             patch_internals_.element_cache_map_.make_paermanent_eval_points();
+            if (this->use_pfev_)
+                patch_internals_.fe_values_.make_permanent_ppv_data();
             patch_internals_.element_cache_map_.create_patch();
 
             if (this->use_pfev_) {
@@ -290,6 +294,15 @@ public:
 
             this->cache_update(patch_internals_.element_cache_map_);
             patch_internals_.element_cache_map_.finish_elements_update();
+        }
+
+        void reset_patch() {
+            if (this->use_pfev_) {
+                patch_internals_.fe_values_.reset();
+                multidim_asm_[1_d]->integrals_.reset();
+                multidim_asm_[2_d]->integrals_.reset();
+                multidim_asm_[3_d]->integrals_.reset();
+            }
         }
 
         void reallocate_cache() {
