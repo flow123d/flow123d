@@ -37,6 +37,10 @@ public:
         return dim+1;
     }
 
+    static inline constexpr uint quad_dim(uint dim) {
+        return dim;
+    }
+
     /// Return number of mesh entities (in this case elements) on patch
     static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
         return ppv.elem_dim_list_->size();
@@ -45,6 +49,11 @@ public:
     /// Return i_n-th node of i_elm-th element stored in PatchPointValues::elem_dim_list_
     static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
         return (*ppv.elem_dim_list_)[i_elm].node(i_n);
+    }
+
+    /// Temporary method that allows implementation PatchFeValues operations in FieldFE
+    static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
+        return eval_points->get_bulk_quad_vector(dim);
     }
 };
 
@@ -59,6 +68,11 @@ public:
         return dim;
     }
 
+    static inline constexpr uint quad_dim(uint dim) {
+        ASSERT_GT(dim, 0);
+        return dim-1;
+    }
+
     /// Return number of mesh entities (in this case sides) on patch
     static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
         return ppv.side_list_.size();
@@ -67,6 +81,11 @@ public:
     /// Return i_n-th node of i_elm-th side stored in PatchPointValues::side_list_
     static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
         return ppv.side_list_[i_elm].node(i_n);
+    }
+
+    /// Temporary method that allows implementation PatchFeValues operations in FieldFE
+    static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
+        return eval_points->get_side_quad_vector(dim);
     }
 };
 

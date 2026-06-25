@@ -295,13 +295,13 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
     ElementAccessor<spacedim> elm_acc(mesh, cache_map.eval_point_data(reg_chunk_begin).i_element_);
     switch (elm_acc.dim()) {
         case 1:
-            this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_, reg_chunk_begin, reg_chunk_end);
+            this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
             break;
         case 2:
-            this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_, reg_chunk_begin, reg_chunk_end);
+            this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_bulk_, value_acc_2d_side_, reg_chunk_begin, reg_chunk_end);
             break;
         case 3:
-            this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_, reg_chunk_begin, reg_chunk_end);
+            this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_bulk_, value_acc_3d_side_, reg_chunk_begin, reg_chunk_end);
             break;
     }
 }
@@ -311,12 +311,15 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
     std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
-    std::array<Quadrature *, 4> bulk_quads{new QGauss(0, 1), init_bulk_quad<1>(eval_points), init_bulk_quad<2>(eval_points), init_bulk_quad<3>(eval_points)};
 
     // new code PatchFeValues
-    value_acc_1d_ = this->create_dim_patch_op<1>(patch_internals, *bulk_quads[1]);
-    value_acc_2d_ = this->create_dim_patch_op<2>(patch_internals, *bulk_quads[2]);
-    value_acc_3d_ = this->create_dim_patch_op<3>(patch_internals, *bulk_quads[3]);
+    value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals); //, *bulk_quads[1]);
+    value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals); //, *bulk_quads[2]);
+    value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals); //, *bulk_quads[3]);
+
+    value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals); //, *side_quads[1]);
+    value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals); //, *side_quads[2]);
+    value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals); //, *side_quads[3]);
 
     // old code FeValues
     std::array<Quadrature *, 4> quads{new QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
@@ -326,24 +329,6 @@ void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
     fe_values_[3].initialize(*quads[3], *this->fe_[3_d], update_values);
 }
 
-
-template <int spacedim, class Value>
-template <unsigned int dim>
-Quadrature* FieldFE<spacedim, Value>::init_bulk_quad(std::shared_ptr<EvalPoints> eval_points)
-{
-    uint n_eval_points = eval_points->size(dim);
-    uint n_eval_points_bulk=0;
-    for (unsigned int k=0; k<n_eval_points; k++)
-        if (eval_points->point_domain(dim, k) == points_domain::bulk_points) ++n_eval_points_bulk;
-
-    Quadrature *quad = new Quadrature(dim, n_eval_points_bulk);
-    for (unsigned int k=0, i_qpt=0; k<eval_points->size(dim); k++)
-        if (eval_points->point_domain(dim, k) == points_domain::bulk_points) {
-            quad->set(i_qpt) = eval_points->local_point<dim>(k);
-            ++i_qpt;
-        }
-    return quad;
-}
 
 template <int spacedim, class Value>
 template <unsigned int dim>
@@ -357,19 +342,30 @@ Quadrature* FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval
 
 
 template <int spacedim, class Value>
-template <unsigned int dim>
-FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_internals, Quadrature &quad)
+template <unsigned int dim, class Domain>
+FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_internals)
 {
     using ShapeSelector = internal::InputOpType<Value::NRows_, Value::NCols_>;
+
+    std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, dim);
+    uint total_q_points = 0;
+    for (auto *q : quad_vec) total_q_points += q->size();
+    Quadrature *quad = new Quadrature(Domain::quad_dim(dim), total_q_points);
+    for (uint i_quad=0, i_pt_global=0; i_quad<quad_vec.size(); ++i_quad) {
+        for (uint i_pt_local=0; i_pt_local<quad_vec[i_quad]->size(); ++i_pt_local) {
+            quad->set(i_pt_global) = quad_vec[i_quad]->set(i_pt_local);
+            ++i_pt_global;
+        }
+    }
 
     FieldFeOpData field_fe_op_data(dh_, data_vec_);
     std::shared_ptr<FiniteElement<dim>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<dim>{}], 0);
 
     return FeQ<ReturnType>(
         patch_internals.fe_values_.template get<
-            Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, spacedim>, spacedim>,
+            Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, spacedim>, spacedim>,
             dim
-        >(quad, fe_component, field_fe_op_data)
+        >(*quad, fe_component, field_fe_op_data)
     );
 }
 
@@ -477,7 +473,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 template <int spacedim, class Value>
 bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	// Time can be set only for field initialized from input.
-	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
+    if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 	    ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
