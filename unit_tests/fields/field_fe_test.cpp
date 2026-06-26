@@ -135,13 +135,15 @@ TEST_F(FieldEvalFETest, input_msh) {
     	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
     	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
     	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-    	SingleValRef<unsigned int> ref_enum(j);
+		SingleValRef<unsigned int> ref_enum(j);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
-        EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
+        if (j==0) {
+            EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
+        }
 
-//        // BOUNDARY fields
+        // BOUNDARY fields
 //        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
 //        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
 //        FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
@@ -150,8 +152,7 @@ TEST_F(FieldEvalFETest, input_msh) {
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
-        break;
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -191,215 +192,215 @@ TEST_F(FieldEvalFETest, input_vtk) {
 }
 
 
-//TEST_F(FieldEvalFETest, time_shift) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/simplest_cube_data.msh
-//          field_name: scalar
-//          read_time_shift: 1.0
-//        scalar_ref: !FieldFormula
-//          value: X[0]+2*X[1]+(t+1)
-//    )YAML";
-//
-//    this->create_mesh("mesh/simplest_cube.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
-//TEST_F(FieldEvalFETest, default_values) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        vector_field: !FieldFE
-//          mesh_data_file: fields/simplest_cube_data.msh
-//          field_name: unset_bulk
-//          default_value: 0.1
-//    )YAML";
-//
-//    arma::vec3 expected_vector = arma::vec3("0.1 0.1 0.1");
-//
-//    this->create_mesh("mesh/simplest_cube.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//    	SingleValRef<arma::vec3> ref_vector(expected_vector);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
-//TEST_F(FieldEvalFETest, unit_conversion) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: BULK
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/simplest_cube_data.msh
-//          field_name: scalar
-//          unit: "const; const=0.1*m"
-//        scalar_ref: !FieldFormula
-//          value: 0.1*(X[0]+2*X[1]+t)
-//      - region: [".top side", ".bottom side"]
-//        time: 0.0
-//        bc_scalar_field: !FieldFE
-//          mesh_data_file: fields/simplest_cube_data.msh
-//          field_name: scalar
-//          unit: "const; const=0.1*m"
-//          is_boundary: true
-//        bc_scalar_ref: !FieldFormula
-//          value: 0.1*(X[0]+X[1]+X[2]+t)
-//    )YAML";
-//
-//    this->create_mesh("mesh/simplest_cube.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//
-//        // BULK field
-//    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//
+TEST_F(FieldEvalFETest, time_shift) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          read_time_shift: 1.0
+        scalar_ref: !FieldFormula
+          value: X[0]+2*X[1]+(t+1)
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        eq_data_->next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, default_values) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        vector_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: unset_bulk
+          default_value: 0.1
+    )YAML";
+
+    arma::vec3 expected_vector = arma::vec3("0.1 0.1 0.1");
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+    	SingleValRef<arma::vec3> ref_vector(expected_vector);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+        eq_data_->next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, unit_conversion) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: BULK
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          unit: "const; const=0.1*m"
+        scalar_ref: !FieldFormula
+          value: 0.1*(X[0]+2*X[1]+t)
+      - region: [".top side", ".bottom side"]
+        time: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: scalar
+          unit: "const; const=0.1*m"
+          is_boundary: true
+        bc_scalar_ref: !FieldFormula
+          value: 0.1*(X[0]+X[1]+X[2]+t)
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+
+        // BULK field
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+
 //        // BOUNDARY field
-//    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+//        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
-//TEST_F(FieldEvalFETest, identic_mesh) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/identic_mesh_data.msh
-//          field_name: scalar
-//          interpolation: identic_mesh
-//        vector_field: !FieldFE
-//          mesh_data_file: fields/identic_mesh_data.msh
-//          field_name: vector_fixed
-//          interpolation: identic_mesh
-//        scalar_ref: !FieldFormula
-//          value: X[0]+2*X[1]+t
-//        vector_ref: !FieldFormula
-//          value: '[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]'
-//      - region: [".top side", ".bottom side"]
-//        time: 0.0
-//        bc_scalar_field: !FieldFE
-//          mesh_data_file: fields/identic_mesh_data.msh
-//          field_name: scalar
-//          interpolation: identic_mesh
-//          is_boundary: true
-//        bc_vector_field: !FieldFE
-//          mesh_data_file: fields/identic_mesh_data.msh
-//          field_name: vector_fixed
-//          interpolation: identic_mesh
-//          is_boundary: true
-//        bc_scalar_ref: !FieldFormula
-//          value: X[0]+X[1]+X[2]+t
-//        bc_vector_ref: !FieldFormula
-//          value: '[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]'
-//    )YAML";
-//
-//    this->create_mesh("mesh/simplest_cube.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//
-//        // BULK field
-//    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-//    	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-//
+        eq_data_->next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, identic_mesh) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: scalar
+          interpolation: identic_mesh
+        vector_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: vector_fixed
+          interpolation: identic_mesh
+        scalar_ref: !FieldFormula
+          value: X[0]+2*X[1]+t
+        vector_ref: !FieldFormula
+          value: '[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]'
+      - region: [".top side", ".bottom side"]
+        time: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: scalar
+          interpolation: identic_mesh
+          is_boundary: true
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/identic_mesh_data.msh
+          field_name: vector_fixed
+          interpolation: identic_mesh
+          is_boundary: true
+        bc_scalar_ref: !FieldFormula
+          value: X[0]+X[1]+X[2]+t
+        bc_vector_ref: !FieldFormula
+          value: '[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]'
+    )YAML";
+
+    this->create_mesh("mesh/simplest_cube.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+
+        // BULK field
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+
 //        // BOUNDARY field
-//    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
-//    	FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+//        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+//        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
-//TEST_F(FieldEvalFETest, interpolation_gauss) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/interpolation_rectangle.msh
-//          field_name: scalar
-//          default_value: 0.0
-//          #interpolation: P0_gauss
-//        vector_field: !FieldFE
-//          mesh_data_file: fields/interpolation_rectangle.msh
-//          field_name: vector_fixed
-//          default_value: 0.0
-//          #interpolation: P0_gauss
-//    )YAML";
-//
-//    std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };
-//    std::vector< std::vector<arma::vec3> > expected_vectors = { {"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5"},
-//                                                                {"5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"} };
-//
-//    this->create_mesh("fields/interpolation_rect_small.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//        VecRef<double> ref_scalar(expected_scalars[j]);
-//        VecRef<arma::vec3> ref_vector(expected_vectors[j]);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
-//TEST_F(FieldEvalFETest, interpolation_gauss_unit_conversion) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: fields/interpolation_rectangle.msh
-//          field_name: scalar
-//          default_value: 0.0
-//          unit: "conv; conv=10*m"
-//          #interpolation: P0_gauss
-//    )YAML";
-//
-//    std::vector< std::vector<double> > expected_scalars = { {2.5, 1.5, 2.5, 3.5}, {7.5, 6.5, 7.5, 8.5} };
-//
-//    this->create_mesh("fields/interpolation_rect_small.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {  // time loop
-//        eq_data_->reallocate_cache();
-//        VecRef<double> ref_scalar(expected_scalars[j]);
-//        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//        eq_data_->tg_.next_time();
-//    }
-//}
-//
-//
+        eq_data_->next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, interpolation_gauss) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: scalar
+          default_value: 0.0
+          #interpolation: P0_gauss
+        vector_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: vector_fixed
+          default_value: 0.0
+          #interpolation: P0_gauss
+    )YAML";
+
+    std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };
+    std::vector< std::vector<arma::vec3> > expected_vectors = { {"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5"},
+                                                                {"5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"} };
+
+    this->create_mesh("fields/interpolation_rect_small.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        VecRef<double> ref_scalar(expected_scalars[j]);
+        VecRef<arma::vec3> ref_vector(expected_vectors[j]);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+        eq_data_->next_time();
+    }
+}
+
+
+TEST_F(FieldEvalFETest, interpolation_gauss_unit_conversion) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: scalar
+          default_value: 0.0
+          unit: "conv; conv=10*m"
+          #interpolation: P0_gauss
+    )YAML";
+
+    std::vector< std::vector<double> > expected_scalars = { {2.5, 1.5, 2.5, 3.5}, {7.5, 6.5, 7.5, 8.5} };
+
+    this->create_mesh("fields/interpolation_rect_small.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {  // time loop
+        eq_data_->reallocate_cache();
+        VecRef<double> ref_scalar(expected_scalars[j]);
+        EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+        eq_data_->next_time();
+    }
+}
+
+
 //TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
 //    string eq_data_input = R"YAML(
 //    data:
@@ -435,30 +436,30 @@ TEST_F(FieldEvalFETest, input_vtk) {
 //            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_scalar, i, i) );
 //            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_vector, i, i) );
 //        }
-//        eq_data_->tg_.next_time();
+//        eq_data_->next_time();
 //    }
 //}
-//
-//
-//TEST_F(FieldEvalFETest, native) {
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        scalar_field: !FieldFE
-//          mesh_data_file: output/test_output_vtk_ascii_ref.vtu
-//          field_name: flow_data
-//    )YAML";
-//
-//    std::vector<double> expected_scalars = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 };
-//
-//    this->create_mesh("fields/simplest_cube_3d.msh");
-//    this->read_input(eq_data_input);
-//
-//    eq_data_->reallocate_cache();
-//    VecRef<double> ref_scalar(expected_scalars);
-//    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-//}
+
+
+TEST_F(FieldEvalFETest, native) {
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        scalar_field: !FieldFE
+          mesh_data_file: output/test_output_vtk_ascii_ref.vtu
+          field_name: flow_data
+    )YAML";
+
+    std::vector<double> expected_scalars = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 };
+
+    this->create_mesh("fields/simplest_cube_3d.msh");
+    this->read_input(eq_data_input);
+
+    eq_data_->reallocate_cache();
+    VecRef<double> ref_scalar(expected_scalars);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
+}
 
 
 TEST_F(FieldEvalFETest, set_fe_data_scalar) {
