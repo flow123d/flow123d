@@ -207,8 +207,8 @@ public:
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
+                    arma::mat33 gvi = (n==0) ? arma::zeros(3,3) : vec_view_side_->grad(i,k);
                     if (eq_data_->fix_nullspace) {
-                        arma::mat33 gvi = (n==0) ? arma::zeros(3,3) : vec_view_side_->grad(i,k);
                         vi = vi - eq_fields_->cross_section(p_low)/2 * (gvi*nv);
                     }
                     double divvft = (n==0) ? arma::trace(gvft) : 0;
@@ -219,9 +219,9 @@ public:
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
+                            arma::mat33 gui = (m==0) ? arma::zeros(3,3) : vec_view_side_->grad(j,k);
                             double divuft = (m==0) ? arma::trace(guft) : 0;
                             if (eq_data_->fix_nullspace) {
-                                arma::mat33 gui = (m==0) ? arma::zeros(3,3) : vec_view_side_->grad(j,k);
                                 ui = ui - eq_fields_->cross_section(p_low)/2 * (gui*nv);
                             }
 
@@ -233,6 +233,14 @@ public:
                                         )
                                         + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
                                         + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
+
+                                        // artificial tangential stiffness on adjacent dofs
+                                        + eq_data_->fix_nullspace ? ( eq_fields_->cross_section(p_low)*(
+                                                2*eq_fields_->lame_mu(p_low)*arma::dot((gui+gui.t())/2, (gvi+gvi.t())/2)
+                                                + eq_fields_->lame_lambda(p_low)*arma::trace(gvi)*arma::trace(gui)
+                                               )
+                                            ):0
+
                                     )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                         }
                     }
