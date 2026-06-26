@@ -54,7 +54,7 @@ PetscErrorCode convert_mat_is_to_aij(Mat matrix_is, Mat *matrix_aij)
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-// Auxiliary function for converting IS from undecomposed to decomposed indexing.
+// Auxiliary function for converting Matrix from undecomposed to decomposed indexing.
 // input:
 //   matrix_is: Matrix to be converted.
 //   isnz: Index set of nonzero rows/columns in Hessian.
@@ -170,6 +170,138 @@ PetscErrorCode convert_nullspace_to_feti_blockdiag(Mat Rloc_reduced,
     PetscCall(MatCreateBlockDiag(PETSC_COMM_WORLD,
                                  Rloc_reduced,
                                  nullspace_blockdiag));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+/**
+ * Fill stiffness-based direct scaling for decomposed FETI primal DOFs.
+ *
+ * The vector layout is supplied by the caller and must match the decomposed
+ * primal Hessian produced by QPTMatISToBlockDiag(). The local Hessian is the
+ * reduced local matrix Aloc(isnz,isnz), so its local row order is the same as
+ * the order of the reduced local index set isnz.
+ *
+ * For every decomposed copy i of an undecomposed global DOF g(i), this stores
+ *
+ *     w_i = max(abs(A_ii), floor) / sum_{j in copies(g(i))} max(abs(A_jj), floor)
+ *
+ * so the weights form a partition of unity over all decomposed copies of one
+ * undecomposed DOF.
+ */
+PetscErrorCode fill_feti_primal_stiffness_scaling(MPI_Comm comm,
+                                                   Mat local_hessian,
+                                                   IS isnz,
+                                                   ISLocalToGlobalMapping l2g,
+                                                   PetscInt undecomposed_dof_count,
+                                                   Vec scaling)
+{
+    Vec local_diag = NULL;
+    Vec stiffness_sums = NULL;
+    Vec denom_local = NULL;
+    IS undecomposed_dof_is = NULL;
+    VecScatter denom_scatter = NULL;
+    const PetscInt *nz_arr = NULL;
+    const PetscInt *l2g_arr = NULL;
+    PetscScalar *diag_array = NULL;
+    PetscScalar *scale_array = NULL;
+    PetscScalar *denom_array = NULL;
+    PetscInt nrows = 0;
+    PetscInt ncols = 0;
+    PetscInt nmap = 0;
+    PetscInt scaling_local_size = 0;
+    PetscReal rel_floor = 1e-14;
+    PetscReal abs_floor = 1e-300;
+    PetscReal local_max = 0.0;
+    PetscReal global_max = 0.0;
+    PetscReal floor_value = 0.0;
+
+    PetscFunctionBegin;
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_primal_stiffness_scaling_rel_floor",
+                                  &rel_floor, NULL));
+    PetscCall(PetscOptionsGetReal(NULL, NULL,
+                                  "-flow123d_feti_primal_stiffness_scaling_abs_floor",
+                                  &abs_floor, NULL));
+
+    PetscCall(MatGetSize(local_hessian, &nrows, &ncols));
+    PetscCheck(nrows == ncols, comm, PETSC_ERR_ARG_SIZ,
+               "Reduced local FETI Hessian must be square.");
+
+    PetscCall(ISGetLocalSize(isnz, &scaling_local_size));
+    PetscCheck(scaling_local_size == nrows, comm, PETSC_ERR_ARG_SIZ,
+               "Reduced local FETI Hessian size does not match isnz size.");
+
+    PetscCall(VecGetLocalSize(scaling, &scaling_local_size));
+    PetscCheck(scaling_local_size == nrows, comm, PETSC_ERR_ARG_SIZ,
+               "FETI primal scaling vector local size does not match reduced local Hessian size.");
+
+    PetscCall(ISGetIndices(isnz, &nz_arr));
+    PetscCall(ISLocalToGlobalMappingGetIndices(l2g, &l2g_arr));
+    PetscCall(ISLocalToGlobalMappingGetSize(l2g, &nmap));
+
+    std::vector<PetscInt> undecomposed_dofs(nrows);
+    for (PetscInt i = 0; i < nrows; ++i) {
+        PetscCheck(nz_arr[i] >= 0 && nz_arr[i] < nmap,
+                   comm, PETSC_ERR_ARG_OUTOFRANGE,
+                   "Reduced FETI local row index out of bounds of local-to-global mapping.");
+        undecomposed_dofs[i] = l2g_arr[nz_arr[i]];
+        PetscCheck(undecomposed_dofs[i] >= 0 && undecomposed_dofs[i] < undecomposed_dof_count,
+                   comm, PETSC_ERR_ARG_OUTOFRANGE,
+                   "Undecomposed global DOF index out of bounds while building FETI primal scaling.");
+    }
+
+    PetscCall(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
+    PetscCall(ISRestoreIndices(isnz, &nz_arr));
+
+    PetscCall(MatCreateVecs(local_hessian, NULL, &local_diag));
+    PetscCall(MatGetDiagonal(local_hessian, local_diag));
+
+    std::vector<PetscScalar> raw_weights(nrows);
+    PetscCall(VecGetArray(local_diag, &diag_array));
+    for (PetscInt i = 0; i < nrows; ++i) {
+        const PetscReal value = PetscAbsScalar(1/diag_array[i]);
+        raw_weights[i] = value;
+        local_max = std::max(local_max, value);
+    }
+    PetscCall(VecRestoreArray(local_diag, &diag_array));
+
+    PetscCallMPI(MPI_Allreduce(&local_max, &global_max, 1, MPIU_REAL, MPI_MAX, comm));
+    floor_value = std::max(abs_floor, rel_floor * global_max);
+    for (PetscInt i = 0; i < nrows; ++i) {
+        if (PetscAbsScalar(raw_weights[i]) < floor_value) raw_weights[i] = floor_value;
+    }
+
+    PetscCall(VecCreateMPI(comm, PETSC_DECIDE, undecomposed_dof_count, &stiffness_sums));
+    PetscCall(VecSet(stiffness_sums, 0.0));
+    PetscCall(VecSetValues(stiffness_sums, nrows, undecomposed_dofs.data(),
+                           raw_weights.data(), ADD_VALUES));
+    PetscCall(VecAssemblyBegin(stiffness_sums));
+    PetscCall(VecAssemblyEnd(stiffness_sums));
+
+    PetscCall(ISCreateGeneral(PETSC_COMM_SELF, nrows, undecomposed_dofs.data(),
+                              PETSC_COPY_VALUES, &undecomposed_dof_is));
+    PetscCall(VecCreateSeq(PETSC_COMM_SELF, nrows, &denom_local));
+    PetscCall(VecScatterCreate(stiffness_sums, undecomposed_dof_is,
+                               denom_local, NULL, &denom_scatter));
+    PetscCall(VecScatterBegin(denom_scatter, stiffness_sums, denom_local,
+                              INSERT_VALUES, SCATTER_FORWARD));
+    PetscCall(VecScatterEnd(denom_scatter, stiffness_sums, denom_local,
+                            INSERT_VALUES, SCATTER_FORWARD));
+
+    PetscCall(VecGetArray(denom_local, &denom_array));
+    PetscCall(VecGetArray(scaling, &scale_array));
+    for (PetscInt i = 0; i < nrows; ++i) {
+        const PetscReal denom = PetscAbsScalar(denom_array[i]);
+        scale_array[i] = denom > 0.0 ? raw_weights[i] / denom : 1.0;
+    }
+    PetscCall(VecRestoreArray(scaling, &scale_array));
+    PetscCall(VecRestoreArray(denom_local, &denom_array));
+
+    PetscCall(VecScatterDestroy(&denom_scatter));
+    PetscCall(ISDestroy(&undecomposed_dof_is));
+    PetscCall(VecDestroy(&denom_local));
+    PetscCall(VecDestroy(&stiffness_sums));
+    PetscCall(VecDestroy(&local_diag));
     PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -1361,8 +1493,10 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         ISLocalToGlobalMapping l2g, mapping;
         const PetscInt *l2g_arr, *nz_arr;
         PetscInt *l2g_feti_arr;
-        PetscInt nmap, nrows, k;
+        PetscInt nmap, nrows, k, undecomposed_dof_count;
+        Vec feti_primal_scaling = NULL;
         
+        chkerr(MatGetSize(matrix_, &undecomposed_dof_count, NULL));
         chkerr(MatISGetLocalMat(matrix_, &Aloc));
         chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
         if (isnz_tmp != NULL) {
@@ -1414,7 +1548,23 @@ LinSys::SolveInfo LinSys_PERMON::solve()
 
         Mat Adecomposed = NULL;
         {
-            QPGetOperator(system, &Adecomposed);
+            chkerr(QPGetOperator(system, &Adecomposed));
+            PetscBool use_stiffness_scaling = PETSC_FALSE;
+            chkerr(PetscOptionsGetBool(NULL, NULL,
+                                       "-flow123d_feti_primal_stiffness_scaling",
+                                       &use_stiffness_scaling, NULL));
+            if (use_stiffness_scaling) {
+                chkerr(MatCreateVecs(Adecomposed, &feti_primal_scaling, NULL));
+                chkerr(fill_feti_primal_stiffness_scaling(comm_,
+                                                          Aloc_feti,
+                                                          isnz,
+                                                          l2g,
+                                                          undecomposed_dof_count,
+                                                          feti_primal_scaling));
+                chkerr(PetscObjectCompose((PetscObject)system,
+                                          "PCDualPrimalScaling",
+                                          (PetscObject)feti_primal_scaling));
+            }
             if (matrix_ineq_) {
                 Mat matrix_ineq_decomposed = NULL;
                 chkerr(convert_mat_is_to_feti_decomposed(matrix_ineq_, isnz, Adecomposed, &matrix_ineq_decomposed));
@@ -1453,6 +1603,7 @@ LinSys::SolveInfo LinSys_PERMON::solve()
         chkerr(QPTFromOptions(system));
         chkerr(print_feti_permon_nullspace_dimension(comm_, system));
         primal_qp = system;
+        chkerr(VecDestroy(&feti_primal_scaling));
         chkerr(QPGetParent(system, &system));
     } else {
         // convert to MATAIJ
