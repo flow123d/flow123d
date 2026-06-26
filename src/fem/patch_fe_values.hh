@@ -277,6 +277,11 @@ public:
         return *(element_quads_[dim]);
     }
 
+    /// Return if domain is used (at least one operation of given domain is defined)
+    bool is_used_domain(fem_domain domain) const {
+        return used_domain_[domain];
+    }
+
 private:
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {

@@ -313,13 +313,17 @@ void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
     std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
 
     // new code PatchFeValues
-    value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals); //, *bulk_quads[1]);
-    value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals); //, *bulk_quads[2]);
-    value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals); //, *bulk_quads[3]);
+    if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
+        value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+        value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+        value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
+    }
 
-    value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals); //, *side_quads[1]);
-    value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals); //, *side_quads[2]);
-    value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals); //, *side_quads[3]);
+    if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
+        value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
+        value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
+        value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals);
+    }
 
     // old code FeValues
     std::array<Quadrature *, 4> quads{new QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
