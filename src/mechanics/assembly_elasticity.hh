@@ -239,12 +239,10 @@ public:
                             if (eq_data_->fix_nullspace) {
                                 local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
-                                        eq_data_->fix_nullspace ? ( eq_fields_->cross_section(p_low)*(
+                                        eq_fields_->cross_section(p_low)*(
                                                 2*eq_fields_->lame_mu(p_low)*arma::dot((gui+gui.t())/2, (gvi+gvi.t())/2)
                                                 + eq_fields_->lame_lambda(p_low)*arma::trace(gvi)*arma::trace(gui)
                                                )
-                                            ):0
-
                                     )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                             }
                         }
