@@ -1030,10 +1030,28 @@ public:
         return FeQ<Vector>(factory_.template make_patch_op< Op::PtCoords<qdim, Op::SideDomain, 3> >());
     }
 
-    /// Create bulk accessor of jac determinant entity
+    /// Create side accessor of jac determinant entity
     inline ElQ<Scalar> determinant()
     {
         return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim, Op::SideDomain, 3> >());
+    }
+
+    /// Create side accessor of jac determinant entity
+    inline ElQ<Scalar> determinant_bdr()
+    {
+        return ElQ<Scalar>(factory_.template make_patch_op< Op::JacDet<qdim-1, Op::BulkDomain, 3> >());
+    }
+
+    /// Create side accessor of Jacobian entity
+    inline ElQ< arma::mat::fixed<3, qdim-1> > jacobian()
+    {
+        return ElQ< arma::mat::fixed<3, qdim-1> >(factory_.template make_patch_op< Op::Jac<qdim, Op::SideDomain, 3> >());
+    }
+
+    /// Create side accessor of Jacobian entity
+    inline ElQ< arma::mat::fixed<3, qdim-1> > jacobian_bdr()
+    {
+        return ElQ< arma::mat::fixed<3, qdim-1> >(factory_.template make_patch_op< Op::Jac<qdim-1, Op::BulkDomain, 3> >());
     }
 
     /// Same as BulkValues::scalar_shape but register at side quadrature points.

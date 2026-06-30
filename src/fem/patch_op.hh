@@ -183,6 +183,10 @@ public:
 
 
 protected:
+    /// Common implementation of all specializations of elem_value with different matrix template parameter
+    template <unsigned int elemdim>
+    inline arma::mat::fixed<spacedim, elemdim> elem_matrix_value(uint point_idx) const;
+
     uint dim_;                                    ///< Dimension
     ElemDomain domain_;                           ///< Flag: BulkOp = 0, SideOp = 1
     std::vector<uint> shape_;                     ///< Shape of stored data (size of vector or number of rows and cols of matrix)

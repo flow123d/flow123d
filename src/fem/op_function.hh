@@ -185,6 +185,28 @@ public:
     }
 };
 
+/// Template specialization of previous: dim=0, domain=Bulk
+template<>
+class JacDet<0, Op::BulkDomain, 3> : public PatchOp<3> {
+public:
+    /// Constructor
+    JacDet(PatchFEValues<3> &pfev, Quadrature &quad)
+    : PatchOp<3>(1, pfev, quad, {1})
+    {
+        this->domain_ = Op::BulkDomain::domain();
+    }
+
+    void eval() override {
+        PatchPointValues<3> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        this->allocate_result( n_elems, this->patch_arena() );
+        auto jac_det_value = this->result_matrix();
+        for (uint i=0;i<n_elems; ++i) {
+            jac_det_value(0,0)(i) = 1.0;
+        }
+    }
+};
+
 /**
  * Evaluates Inverse Jacobians on Bulk (Element) / Side
  * ElDomain (target) is always Bulk
