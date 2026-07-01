@@ -289,7 +289,7 @@ public:
      */
     static void copy_ref_side_on_sides_tensor_data(PatchOp<spacedim> &op, unsigned int i_dof, unsigned int shape_m, unsigned int shape_n,
             Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-	        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> &target)
+			Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &target)
     {
         PatchPointValues<spacedim> &ppv = op.ppv();
         uint n_sides = ppv.n_mesh_items();
@@ -1146,10 +1146,11 @@ public:
         this->allocate_result(n_patch_points, this->patch_arena());
 
         auto ref_vec = this->input_ops(0)->result_matrix();
-        auto result_vec = this->result_matrix();
 
-        for (uint c=0; c<spacedim*spacedim; c++)
-            FuncHelper<spacedim>::copy_ref_side_on_quads_data(*this, c, ref_vec, result_vec);
+    	for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
+    	    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
+    	    FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, spacedim, spacedim, ref_vec, res_submat);
+    	}
     }
 };
 
@@ -1332,9 +1333,10 @@ public:
         for (uint i=0; i<spacedim*dim; ++i) {
             ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, this->patch_arena() );
         }
+        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> ref_shape_grads_expd_map(ref_shape_grads_expd.data(), dim, spacedim);
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             // prepare copy of reference data by indices of sides on elements
-            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, spacedim, ref_vector_grad, ref_shape_grads_expd);
+            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, spacedim, ref_vector_grad, ref_shape_grads_expd_map);
 
             // computes operation result
             Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = dispatch_op_.result_sub_matrix(i_dof);
@@ -1488,10 +1490,11 @@ public:
         Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> expand_ref_vec(dim, dim);
         for (uint c=0; c<dim*dim; c++)
             expand_ref_vec(c) = ArenaVec<double>(n_patch_points, this->patch_arena());
+        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> expand_ref_vec_map(expand_ref_vec.data(), dim, dim);
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             // prepare copy of reference data by indices of sides on elements
-            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, dim, ref_grads_vec, expand_ref_vec);
+            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, dim, ref_grads_vec, expand_ref_vec_map);
 
             // computes operation result
             Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = dispatch_op_.result_sub_matrix(i_dof);
