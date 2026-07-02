@@ -132,10 +132,10 @@ TEST_F(FieldEvalFETest, input_msh) {
     	eq_data_->reallocate_cache();
 
         // BULK fields
-    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-    	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
-    	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-		SingleValRef<unsigned int> ref_enum(j);
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+        FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+        SingleValRef<unsigned int> ref_enum(j);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
@@ -144,13 +144,13 @@ TEST_F(FieldEvalFETest, input_msh) {
         }
 
         // BOUNDARY fields
-//        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
-//        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
-//        FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+        FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
 //        SingleValRef<unsigned int> ref_bc_enum(j+1);
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
 //        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
         eq_data_->next_time();
     }
