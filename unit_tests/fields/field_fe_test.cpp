@@ -274,9 +274,9 @@ TEST_F(FieldEvalFETest, unit_conversion) {
         FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
 
-//        // BOUNDARY field
-//        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        // BOUNDARY field
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         eq_data_->next_time();
     }
 }
@@ -329,11 +329,11 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
 
-//        // BOUNDARY field
-//        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
-//        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
+        // BOUNDARY field
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
         eq_data_->next_time();
     }
 }
@@ -401,44 +401,44 @@ TEST_F(FieldEvalFETest, interpolation_gauss_unit_conversion) {
 }
 
 
-//TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
-//    string eq_data_input = R"YAML(
-//    data:
-//      - region: ALL
-//        time: 0.0
-//        bc_scalar_field: !FieldFE
-//          mesh_data_file: fields/interpolation_rectangle.msh
-//          field_name: scalar
-//          default_value: 0.0
-//          #interpolation: P0_intersection
-//          is_boundary: true
-//        bc_vector_field: !FieldFE
-//          mesh_data_file: fields/interpolation_rectangle.msh
-//          field_name: vector_fixed
-//          default_value: 0.0
-//          #interpolation: P0_intersection
-//          is_boundary: true
-//    )YAML";
-//
-//    std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };
-//    std::vector< std::vector<arma::vec3> > expected_vectors = {{"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5"},
-//                                                               {"5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"} };
-//
-//    this->create_mesh("fields/interpolation_rect_small.msh");
-//    this->read_input(eq_data_input);
-//
-//    for (unsigned int j=0; j<2; j++) {
-//        eq_data_->reallocate_cache();
-//
-//        for(unsigned int i=0; i < mesh_->n_elements(); i++) {  // time loop
-//            SingleValRef<double> ref_scalar(expected_scalars[j][i]);
-//            SingleValRef<arma::vec3> ref_vector(expected_vectors[j][i]);
-//            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_scalar, i, i) );
-//            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_vector, i, i) );
-//        }
-//        eq_data_->next_time();
-//    }
-//}
+TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
+    string eq_data_input = R"YAML(
+    data:
+      - region: ALL
+        time: 0.0
+        bc_scalar_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: scalar
+          default_value: 0.0
+          #interpolation: P0_intersection
+          is_boundary: true
+        bc_vector_field: !FieldFE
+          mesh_data_file: fields/interpolation_rectangle.msh
+          field_name: vector_fixed
+          default_value: 0.0
+          #interpolation: P0_intersection
+          is_boundary: true
+    )YAML";
+
+    std::vector< std::vector<double> >     expected_scalars = { {0.25, 0.15, 0.25, 0.35}, {0.75, 0.65, 0.75, 0.85} };
+    std::vector< std::vector<arma::vec3> > expected_vectors = {{"2.5 3.5 4.5", "1.5 2.5 3.5", "2.5 3.5 4.5", "3.5 4.5 5.5"},
+                                                               {"5.5 6.5 7.5", "4.5 5.5 6.5", "5.5 6.5 7.5", "6.5 7.5 8.5"} };
+
+    this->create_mesh("fields/interpolation_rect_small.msh");
+    this->read_input(eq_data_input);
+
+    for (unsigned int j=0; j<2; j++) {
+        eq_data_->reallocate_cache();
+
+        for(unsigned int i=0; i < mesh_->n_elements(); i++) {  // time loop
+            SingleValRef<double> ref_scalar(expected_scalars[j][i]);
+            SingleValRef<arma::vec3> ref_vector(expected_vectors[j][i]);
+            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_scalar, i, i) );
+            EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_vector, i, i) );
+        }
+        eq_data_->next_time();
+    }
+}
 
 
 TEST_F(FieldEvalFETest, native) {
