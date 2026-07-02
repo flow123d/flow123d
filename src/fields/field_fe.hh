@@ -54,8 +54,8 @@
 class FieldFeOpData {
 public:
     /// Constructor
-    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec)
-    : dh_(dh), data_vec_(data_vec) {}
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain)
+    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain) {}
 
     inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
     	return dh_;
@@ -63,6 +63,10 @@ public:
 
     inline VectorMPI data_vec() const {
     	return data_vec_;
+    }
+
+    inline uint boundary_domain() const {
+    	return boundary_domain_;
     }
 
     bool operator==(const FieldFeOpData &other)
@@ -74,6 +78,7 @@ public:
 private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     VectorMPI data_vec_;
+    uint boundary_domain_;
 };
 
 
@@ -117,7 +122,7 @@ public:
     /// Constructor
 	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
-	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec())
+	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain())
 	    {
 	        this->domain_ = Domain::domain();
 	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
@@ -145,6 +150,7 @@ public:
         LocDofVec loc_dofs;
         unsigned int range_bgn=0;
         for (uint i=0; i<n_patch_points; ++i) {
+        	if ( ppv.int_table_(mesh_type_on_quads)(i) != boundary_domain_ ) continue;
             uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
             if (elm_idx != last_element_idx) {
                 DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
@@ -168,6 +174,7 @@ protected:
     /// Data members shared with FieldFE
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     VectorMPI data_vec_;
+    uint boundary_domain_;
 };
 
 } // end of namespace Op
@@ -544,6 +551,7 @@ private:
     ElementDataCache<double>::CacheData input_data_cache_;
 
     // Data members of 'new' version of cache_update
+    FeQ<ReturnType> value_acc_0d_bulk_;
     FeQ<ReturnType> value_acc_1d_bulk_;
     FeQ<ReturnType> value_acc_2d_bulk_;
     FeQ<ReturnType> value_acc_3d_bulk_;
@@ -562,11 +570,13 @@ namespace std {
 template<>
 struct hash< FieldFeOpData > {
     std::size_t operator()(const FieldFeOpData &op_data) const noexcept {
-        std::size_t h1 = std::hash<std::size_t>{}( op_data.dh()->hash() );
-        std::size_t h2 = std::hash<uint>{}( op_data.data_vec().size() );
+        std::size_t h = 0;
 
-        // hash combine
-        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+        hash_combine(h, std::hash<std::size_t>{}( op_data.dh()->hash() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.data_vec().size() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
+
+        return h;
     }
 };
 

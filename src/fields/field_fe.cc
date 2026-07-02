@@ -285,15 +285,13 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
     if (region_value_err_[r_idx].is_invalid_)
         THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
 
-    MeshBase *mesh;
-    if (this->boundary_domain_) {
-    	mesh = dh_->mesh()->bc_mesh();
-    } else {
-    	mesh = dh_->mesh();
-    }
+    MeshBase *mesh = dh_->mesh();
 
     ElementAccessor<spacedim> elm_acc(mesh, cache_map.eval_point_data(reg_chunk_begin).i_element_);
     switch (elm_acc.dim()) {
+        case 0:
+            this->cache_update_dim_elem<0>(data_cache, cache_map, value_acc_0d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
+            break;
         case 1:
             this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
             break;
@@ -313,16 +311,24 @@ void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
     std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
 
     // new code PatchFeValues
-    if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
-        value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
-        value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
-        value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
-    }
+    if (this->boundary_domain_) {
+        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
+            value_acc_0d_bulk_ = this->create_dim_patch_op<0, Op::BulkDomain>(patch_internals);
+            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+        }
+    } else {
+        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
+            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+            value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
+        }
 
-    if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
-        value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
-        value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
-        value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals);
+        if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
+            value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
+            value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
+            value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals);
+        }
     }
 
     // old code FeValues
@@ -362,7 +368,7 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
         }
     }
 
-    FieldFeOpData field_fe_op_data(dh_, data_vec_);
+    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_);
     std::shared_ptr<FiniteElement<dim>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<dim>{}], 0);
 
     return FeQ<ReturnType>(
