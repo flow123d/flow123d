@@ -1,0 +1,57 @@
+# Test goal: Steady Darcy flow with a pressure-dependent water source term,
+# solved by the Lumped Mixed Hybrid method.
+# Author:
+# Source for reference: analytical solution.
+#
+# Continuum problem on x in (0, 1):
+#   -K p'' = sigma * (p_ref - p)
+# with:
+#   K = 1, sigma = 4, p_ref = 1,
+#   p(0) = p(1) = 0.
+#
+# Analytical solution:
+#   p(x) = 1 - cosh(2*(x - 0.5)) / cosh(1)
+#   v(x) = -p'(x) = 2*sinh(2*(x - 0.5)) / cosh(1)
+#
+# Reference values:
+#   p(0) = p(1) = 0
+#   p(0.5) = 1 - 1/cosh(1) ~= 0.35194573
+#   v(0.5) = 0
+#   v(0) = -2*tanh(1) ~= -1.52318831
+#   v(1) =  2*tanh(1) ~=  1.52318831
+
+flow123d_version: 4.0.0a01
+problem: !Coupling_Sequential
+  description: Steady LMH flow with analytical pressure-dependent water source.
+  mesh:
+    mesh_file: ../00_mesh/line_x_20el.msh
+  flow_equation: !Flow_Darcy_LMH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-10
+        r_tol: 1.0e-10
+    input_fields:
+      - region: plane
+        conductivity: 1
+        cross_section: 1
+        water_source_density: 0
+        water_source_sigma: 4
+        water_source_ref_pressure: 1
+      - region: .left
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .right
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - water_source_density
+        - water_source_sigma
+        - water_source_ref_pressure
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      precision: 15
