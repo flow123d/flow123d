@@ -472,7 +472,7 @@ protected:
                             -source_term_ - time_term_rhs_);
 
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {source_term_diag_}, {source_term_});
+                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {-source_term_diag_}, {source_term_});
         }
     }
 

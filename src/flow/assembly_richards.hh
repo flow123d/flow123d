@@ -291,7 +291,7 @@ protected:
                                                {0.0}, diagonal_coef_*water_content_vec.get(local_side));
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
                                                 {this->eq_data_->loc_system_[cell.local_idx()].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]},
-                                                {diagonal_coef_*eq_fields_->water_source_sigma(p)},{source_diagonal_});
+                                                {-diagonal_coef_*eq_fields_->water_source_sigma(p)},{source_diagonal_});
         }
     }
 
