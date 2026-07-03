@@ -54,8 +54,8 @@
 class FieldFeOpData {
 public:
     /// Constructor
-    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain)
-    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain) {}
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end)
+    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end) {}
 
     inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
     	return dh_;
@@ -69,16 +69,29 @@ public:
     	return boundary_domain_;
     }
 
+    inline uint range_begin() const {
+    	return range_begin_;
+    }
+
+    inline uint range_end() const {
+    	return range_end_;
+    }
+
     bool operator==(const FieldFeOpData &other)
     {
         return (dh_->hash() == other.dh_->hash()) &&
-               (data_vec_.size() == other.data_vec_.size());
+                (data_vec_.size() == other.data_vec_.size()) &&
+	            (boundary_domain_ == other.boundary_domain_) &&
+	            (range_begin_ == other.range_begin_) &&
+	            (range_end_ == other.range_end_);
     }
 
 private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     VectorMPI data_vec_;
     uint boundary_domain_;
+    unsigned int range_begin_;
+    unsigned int range_end_;
 };
 
 
@@ -122,7 +135,8 @@ public:
     /// Constructor
 	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
-	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain())
+	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain()),
+	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end())
 	    {
 	        this->domain_ = Domain::domain();
 	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
@@ -148,7 +162,6 @@ public:
 
         unsigned int last_element_idx = -1;
         LocDofVec loc_dofs;
-        unsigned int range_bgn=0;
         for (uint i=0; i<n_patch_points; ++i) {
         	if ( ppv.int_table_(mesh_type_on_quads)(i) != boundary_domain_ ) continue;
             uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
@@ -156,10 +169,8 @@ public:
                 DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
                 loc_dofs = cell.get_loc_dof_indices();
                 last_element_idx = elm_idx;
-                // TODO range_bgn must be set to non-zero value in case if fe_ is of type FeSystem
-                //range_bgn = this->fe_item_[dim].range_begin_;
             }
-            for (unsigned int i_dof=range_bgn, i_cdof=0; i_cdof<n_dofs; i_dof++, i_cdof++) {
+            for (unsigned int i_dof=range_begin_, i_cdof=0; i_dof<range_end_; i_dof++, i_cdof++) {
                 data_vec_pts(i_cdof)(i) = data_vec_.get(loc_dofs[i_dof]);
             }
         }
@@ -175,6 +186,8 @@ protected:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     VectorMPI data_vec_;
     uint boundary_domain_;
+    unsigned int range_begin_;
+    unsigned int range_end_;
 };
 
 } // end of namespace Op
@@ -575,6 +588,8 @@ struct hash< FieldFeOpData > {
         hash_combine(h, std::hash<std::size_t>{}( op_data.dh()->hash() ) );
         hash_combine(h, std::hash<uint>{}( op_data.data_vec().size() ) );
         hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.range_begin() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.range_end() ) );
 
         return h;
     }

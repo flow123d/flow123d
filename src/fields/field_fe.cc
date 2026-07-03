@@ -368,7 +368,7 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
         }
     }
 
-    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_);
+    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[dim].range_begin_, fe_item_[dim].range_end_);
     std::shared_ptr<FiniteElement<dim>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<dim>{}], 0);
 
     return FeQ<ReturnType>(

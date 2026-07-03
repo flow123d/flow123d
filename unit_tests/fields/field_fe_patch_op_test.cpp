@@ -217,9 +217,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
@@ -351,9 +351,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
@@ -483,9 +483,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
