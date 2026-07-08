@@ -215,8 +215,8 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
-	//this->cache_update_old(data_cache, cache_map, region_patch_idx);
-	this->cache_update_new(data_cache, cache_map, region_patch_idx);
+    //this->cache_update_old(data_cache, cache_map, region_patch_idx);
+    this->cache_update_new(data_cache, cache_map, region_patch_idx);
 }
 
 
@@ -325,9 +325,9 @@ void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
         }
 
         if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
-            value_acc_1d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
-            value_acc_2d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
-            value_acc_3d_side_ = this->create_dim_patch_op<3, Op::SideDomain>(patch_internals);
+            value_acc_1d_side_ = this->create_dim_patch_op<0, Op::SideDomain>(patch_internals);
+            value_acc_2d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
+            value_acc_3d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
         }
     }
 
@@ -358,23 +358,24 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
     using ShapeSelector = internal::InputOpType<Value::NRows_, Value::NCols_>;
 
     std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, dim);
+    std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
     uint total_q_points = 0;
     for (auto *q : quad_vec) total_q_points += q->size();
-    Quadrature *quad = new Quadrature(Domain::quad_dim(dim), total_q_points);
+    Quadrature *quad = new Quadrature(dim, total_q_points);
     for (uint i_quad=0, i_pt_global=0; i_quad<quad_vec.size(); ++i_quad) {
         for (uint i_pt_local=0; i_pt_local<quad_vec[i_quad]->size(); ++i_pt_local) {
-            quad->set(i_pt_global) = quad_vec[i_quad]->set(i_pt_local);
+            quad->set(i_pt_global) = quad_vec[i_quad]->point<dim>(i_pt_local);
             ++i_pt_global;
         }
     }
 
     FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[dim].range_begin_, fe_item_[dim].range_end_);
-    std::shared_ptr<FiniteElement<dim>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<dim>{}], 0);
+    std::shared_ptr<FiniteElement<Domain::op_dim(dim)>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<Domain::op_dim(dim)>{}], 0);
 
     return FeQ<ReturnType>(
         patch_internals.fe_values_.template get<
-            Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, spacedim>, spacedim>,
-            dim
+            Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+            Domain::op_dim(dim)
         >(*quad, fe_component, field_fe_op_data)
     );
 }

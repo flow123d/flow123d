@@ -37,7 +37,7 @@ public:
         return dim+1;
     }
 
-    static inline constexpr uint quad_dim(uint dim) {
+    static inline constexpr uint op_dim(uint dim) {
         return dim;
     }
 
@@ -68,9 +68,9 @@ public:
         return dim;
     }
 
-    static inline constexpr uint quad_dim(uint dim) {
-        ASSERT_GT(dim, 0);
-        return dim-1;
+    static inline constexpr uint op_dim(uint dim) {
+        ASSERT_LT(dim, 3);
+        return dim+1;
     }
 
     /// Return number of mesh entities (in this case sides) on patch
