@@ -357,7 +357,6 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
 {
     using ShapeSelector = internal::InputOpType<Value::NRows_, Value::NCols_>;
 
-    std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, dim);
     std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
     uint total_q_points = 0;
     for (auto *q : quad_vec) total_q_points += q->size();
