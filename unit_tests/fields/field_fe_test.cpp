@@ -497,8 +497,27 @@ TEST_F(FieldEvalFETest, set_fe_data_vector) {
     eq_data_->vector_field.set(fe_field, 0.0);
 
     eq_data_->reallocate_cache();
-    //arma::vec3 expected = { 1./7, 2./7, 0.0 }; / expected vals of FE_RT0
     arma::vec3 expected = { 0.5, 1.5, 2.5 };
+    SingleValRef<arma::vec3> ref_vector(expected);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_vector_rt0) {
+    typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5, 1.5, 2.5} );
+
+    MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<VectorFieldFE> fe_field = std::make_shared<VectorFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->vector_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    arma::vec3 expected = { 1./7, 2./7, 0.0 };
     SingleValRef<arma::vec3> ref_vector(expected);
     EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
 }
