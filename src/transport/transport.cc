@@ -122,7 +122,7 @@ ConvectionTransport::EqFields::EqFields() : TransportEqFields()
  */
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
-  input_rec(in_rec)
+  input_rec(in_rec), mass_assembly_(nullptr)
 {
 	START_TIMER("ConvectionTransport");
     eq_fields_ = make_shared<EqFields>();
@@ -186,6 +186,17 @@ void ConvectionTransport::initialize()
     eq_data_->balance_ = this->balance();
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
+    initialize_asm();
+}
+
+void ConvectionTransport::initialize_asm()
+{
+    if (mass_assembly_ != nullptr) {
+        delete mass_assembly_;
+        delete init_cond_assembly_;
+        delete conc_sources_bdr_assembly_;
+        delete matrix_mpi_assembly_;
+    }
 
     mass_assembly_ = new GenericAssembly< MassAssemblyConvectionDim >(eq_data_.get());
     init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvectionDim >(eq_data_.get());
@@ -331,6 +342,8 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 
     START_TIMER("data reinit");
     
+    initialize_asm();
+
     bool cfl_changed = false;
     
     // if FLOW or DATA changed ---------------------> recompute transport matrix
@@ -395,6 +408,8 @@ void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
     
+    initialize_asm();
+
     // proceed to next time - which we are about to compute
     // explicit scheme looks one step back and uses data from previous time
     // (data time set previously in assess_time_constraint())

@@ -325,6 +325,8 @@ private:
     
     void output_region_statistics();
 
+    void initialize_asm();
+
 
 
 	/// @name Physical parameters

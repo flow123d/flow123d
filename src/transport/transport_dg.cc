@@ -262,16 +262,7 @@ void TransportDG<Model>::initialize()
 
     init_projection = input_rec.val<bool>("init_projection");
 
-    // create assemblation object, finite element structures and distribute DOFs
-	mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    
-    if(init_projection)
-	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    else
-        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_data_.get());
+    initialize_asm();
 
     // initialization of balance object
     Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
@@ -281,6 +272,29 @@ void TransportDG<Model>::initialize()
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
     }
+}
+
+
+template<class Model>
+void TransportDG<Model>::initialize_asm()
+{
+    if (mass_assembly_ != nullptr) {
+        delete mass_assembly_;
+        delete stiffness_assembly_;
+        delete sources_assembly_;
+        delete bdr_cond_assembly_;
+        delete init_assembly_;
+    }
+
+    mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    
+    if(init_projection)
+	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    else
+        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_data_.get());
 }
 
 
@@ -405,6 +419,7 @@ void TransportDG<Model>::update_solution()
 {
     START_TIMER("DG-ONE STEP");
 
+    initialize_asm();
     Model::time_->next_time();
     Model::time_->view("TDG");
     
@@ -621,6 +636,7 @@ void TransportDG<Model>::set_initial_condition()
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
             eq_data_->ls[sbi]->start_add_assembly();
 
+        initialize_asm();
         init_assembly_->assemble(eq_data_->dh_);
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)

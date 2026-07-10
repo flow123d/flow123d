@@ -288,6 +288,7 @@ private:
 
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
+    void initialize_asm();
 
 
 
