@@ -239,6 +239,12 @@ void RichardsLMH::assembly_linear_system()
 
 
 void RichardsLMH::initialize_asm() {
+    if (this->read_init_cond_assembly_ != nullptr) {
+        delete this->read_init_cond_assembly_;
+        delete this->init_cond_postprocess_assembly_;
+        delete this->mh_matrix_assembly_;
+        delete this->reconstruct_schur_assembly_;
+    }
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
     this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssemblyDim >(this->eq_data_.get(), eq_data_->dh_.get());
     this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichardsDim >(this->eq_data_.get(), eq_data_->dh_.get());

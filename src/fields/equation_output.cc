@@ -159,6 +159,16 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	    dh_node_->distribute_dofs(ds);
     }
 
+    initialize_asm();
+}
+
+void EquationOutput::initialize_asm() {
+    if (output_elem_data_assembly_ != nullptr) {
+        delete output_elem_data_assembly_;
+        delete output_node_data_assembly_;
+        delete output_corner_data_assembly_;
+        delete observe_output_assembly_;
+    }
     output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemDataDim >(this);
     output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeDataDim >(this);
     output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeDataDim >(this);
@@ -261,6 +271,8 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 void EquationOutput::output(TimeStep step)
 {
     ASSERT_PTR(mesh_).error();
+
+    initialize_asm();
 
     // automatically call of stream_->write_time_frame if the time in the TimeStep is higher then in output stream
     if (step.end() > stream_->registered_time()) {

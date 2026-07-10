@@ -704,6 +704,8 @@ void DarcyLMH::update_solution()
 {
     START_TIMER("Darcy solve system");
 
+    this->initialize_asm();
+
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
@@ -838,6 +840,7 @@ void DarcyLMH::solve_nonlinear()
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
         }
+        this->initialize_asm();
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
@@ -1574,6 +1577,11 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 
 
 void DarcyLMH::initialize_asm() {
+    if (this->read_init_cond_assembly_ != nullptr) {
+        delete this->read_init_cond_assembly_;
+        delete this->mh_matrix_assembly_;
+        delete this->reconstruct_schur_assembly_;
+    }
     this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
     this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());
     this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());

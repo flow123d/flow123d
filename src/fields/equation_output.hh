@@ -128,6 +128,9 @@ private:
     /// Initialize data of Field given by passed Input::Record
     void init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg);
 
+    /// Create (or re-create) all assembly data members
+    void initialize_asm();
+
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
