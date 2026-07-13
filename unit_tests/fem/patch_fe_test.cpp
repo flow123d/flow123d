@@ -369,6 +369,10 @@ public:
         AsmScalar(PatchFETestScalar *generic, uint quad_order, uint quad_diff_order)
         : PatchFETestBase::AsmBase<dim>(generic, quad_order, quad_diff_order),
           //generic_inst_(generic),
+          jac_bdr_( this->boundary_integral_->jacobian_bdr() ),
+		  jac_bdr_side_( this->boundary_integral_->jacobian() ),
+          det_bdr_( this->boundary_integral_->determinant_bdr() ),
+		  det_bdr_side_( this->boundary_integral_->determinant() ),
 	      scalar_shape_( this->bulk_integral_->scalar_shape() ),
 	      scalar_shape_side_( this->edge_integral_->scalar_shape() ),
 		  scalar_shape_bdr_( this->boundary_integral_->scalar_shape_bdr() ),
@@ -431,7 +435,7 @@ public:
             RevertableList<CouplingIntegralData> &patch_join_list =  this->integrals_.coupling_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
             for (unsigned int i=0; i<n_patch_ngh; ++i) {
                 DHCellAccessor cell_lower_dim = patch_join_list[i].cell;
-                DHCellSide neighb_side = patch_join_list[i].side;;
+                DHCellSide neighb_side = patch_join_list[i].side;
                 auto p_high = *( this->coupling_integral_->points(neighb_side).begin() );
                 auto p_low = p_high.lower_dim(cell_lower_dim);
 
@@ -453,13 +457,36 @@ public:
 
         }
 
+        void test_bdr_values(unsigned int i_run) {
+            uint n_patch_boundaries = this->integrals_.n_patch_boundaries();
+            if (n_patch_boundaries == 0) return;
+
+            RevertableList<BoundaryIntegralData> &patch_bdr_list = this->integrals_.boundary_.begin()->second->patch_data(); // list of bdrs is same for all items of integrals_.boundaries_
+            for (unsigned int i=0; i<n_patch_boundaries; ++i) {
+                DHCellSide bdr_side = patch_bdr_list[i].side;
+                auto p_side = *( this->boundary_integral_->points(bdr_side).begin() );
+                auto p_bdr = p_side.point_bdr( bdr_side.side().cond().element_accessor() );
+
+                double det_side = this->det_bdr_side_(p_side);
+                double det_bdr  = this->det_bdr_(p_bdr);
+                auto jac_side   = this->jac_bdr_side_(p_side);
+                auto jac_bdr    = this->jac_bdr_(p_bdr);
+                EXPECT_TEST_NEAR( det_side, det_bdr );
+                EXPECT_TEST_ARMA_NEAR( jac_side, jac_bdr );
+            }
+        }
+
 
     	/** Declaration of data members **/
-        //PatchFETestScalar *generic_inst_;                                    ///< pointer to generic object
+        //PatchFETestScalar *generic_inst_;                ///< pointer to generic object
+        ElQ< arma::mat::fixed<3,dim-1> > jac_bdr_;       ///< Evaluates bulk points on boundary element
+        ElQ< arma::mat::fixed<3,dim-1> > jac_bdr_side_;  ///< Evaluates side points on bulk element
+        ElQ<Scalar> det_bdr_;                            ///< Evaluates bulk points on boundary element
+        ElQ<Scalar> det_bdr_side_;                       ///< Evaluates side points on bulk element
         FeQArray<Scalar> scalar_shape_;
         FeQArray<Scalar> scalar_shape_side_;
-        FeQArray<Scalar> scalar_shape_bdr_;          ///< Evaluates bulk points on boundary element
-        FeQArray<Scalar> scalar_shape_bdr_side_;     ///< Evaluates side points on bulk element
+        FeQArray<Scalar> scalar_shape_bdr_;              ///< Evaluates bulk points on boundary element
+        FeQArray<Scalar> scalar_shape_bdr_side_;         ///< Evaluates side points on bulk element
         FeQArray<Vector> grad_scalar_shape_;
         FeQArray<Vector> grad_scalar_shape_side_;
         FeQJoin<Scalar> conc_join_shape_;
@@ -557,6 +584,10 @@ public:
         unsigned int i_test_join=0;
         multidim_asm_[1_d]->test_join_values(i_run, i_test_join);
         multidim_asm_[2_d]->test_join_values(i_run, i_test_join);
+
+        multidim_asm_[1_d]->test_bdr_values(i_run);
+        multidim_asm_[2_d]->test_bdr_values(i_run);
+        multidim_asm_[3_d]->test_bdr_values(i_run);
     }
 
     void reset() override {

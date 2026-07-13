@@ -148,7 +148,7 @@ public:
                 for (auto p : integral_it.second->points(patch_data[i_data].side) ) {
                     this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point);
                     auto p_bdr = p.point_bdr( bdr_elem );
-                    this->register_bulk_point(bdr_elem, elem_pos, p_bdr.value_cache_idx(), i_point++);
+                    this->register_bulk_point(bdr_elem, elem_pos, p_bdr.value_cache_idx(), i_point++, 1);
                 }
             }
         }
@@ -277,6 +277,11 @@ public:
         return *(element_quads_[dim]);
     }
 
+    /// Return if domain is used (at least one operation of given domain is defined)
+    bool is_used_domain(fem_domain domain) const {
+        return used_domain_[domain];
+    }
+
 private:
     /// Register element to patch_point_vals_ table by dimension of element
     uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
@@ -308,8 +313,8 @@ private:
     }
 
     /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
-        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem);
+    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem, uint is_bdr = 0) {
+        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem, is_bdr);
     }
 
     /// Register side point to patch_point_vals_ table by dimension of side

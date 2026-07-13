@@ -25,6 +25,18 @@
 #include "fem/patch_fe_values.hh"
 
 
+template<unsigned int spacedim>
+template <unsigned int elemdim>
+inline arma::mat::fixed<spacedim, elemdim> PatchOp<spacedim>::elem_matrix_value(uint point_idx) const {
+	arma::mat::fixed<spacedim, elemdim> val;
+    PatchPointValues<spacedim> &ppv = patch_fe_->patch_point_vals_[domain_][dim_];
+    uint op_matrix_idx = ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]);
+    for (uint i=0; i<spacedim; ++i)
+        for (uint j=0; j<elemdim; ++j)
+            val(i,j) = result_(i+j*spacedim)(op_matrix_idx);
+    return val;
+}
+
 template<>
 template<>
 inline Scalar PatchOp<3>::elem_value<Scalar>(uint point_idx) const {
@@ -45,14 +57,33 @@ inline Vector PatchOp<3>::elem_value<Vector>(uint point_idx) const {
 
 template<>
 template<>
-inline Tensor PatchOp<3>::elem_value<Tensor>(uint point_idx) const {
-    Tensor val;
-    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_];
-    uint op_matrix_idx = ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]);
-    for (uint i=0; i<3; ++i)
-        for (uint j=0; j<3; ++j)
-            val(i,j) = result_(i+j*3)(op_matrix_idx);
-    return val;
+inline arma::mat::fixed<3,0> PatchOp<3>::elem_value<arma::mat::fixed<3,0>>(uint point_idx) const {
+    return this->elem_matrix_value<0>(point_idx);
+}
+
+template<>
+template<>
+inline arma::mat::fixed<3,1> PatchOp<3>::elem_value<arma::mat::fixed<3,1>>(uint point_idx) const {
+    return this->elem_matrix_value<1>(point_idx);
+}
+
+template<>
+template<>
+inline arma::mat::fixed<3,2> PatchOp<3>::elem_value<arma::mat::fixed<3,2>>(uint point_idx) const {
+    return this->elem_matrix_value<2>(point_idx);
+}
+
+template<>
+template<>
+inline arma::mat::fixed<3,3> PatchOp<3>::elem_value<arma::mat::fixed<3,3>>(uint point_idx) const {
+//    arma::mat::fixed<3,3> val;
+//    PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_];
+//    uint op_matrix_idx = ppv.int_table_(domain_on_quads)(ppv.points_map_[point_idx]);
+//    for (uint i=0; i<3; ++i)
+//        for (uint j=0; j<3; ++j)
+//            val(i,j) = result_(i+j*3)(op_matrix_idx);
+//    return val;
+    return this->elem_matrix_value<3>(point_idx);
 }
 
 template<>

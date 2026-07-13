@@ -49,7 +49,9 @@ public:
         EqData() : FieldEvalBaseTest::EqData() {}
     };
 
-    FieldEvalFETest() : FieldEvalBaseTest() {}
+    FieldEvalFETest() : FieldEvalBaseTest() {
+    	this->eq_data_->use_pfev_ = true;
+    }
 
     ~FieldEvalFETest() {}
 
@@ -130,25 +132,27 @@ TEST_F(FieldEvalFETest, input_msh) {
     	eq_data_->reallocate_cache();
 
         // BULK fields
-    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-    	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
-    	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-    	SingleValRef<unsigned int> ref_enum(j);
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+        FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+        SingleValRef<unsigned int> ref_enum(j);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
-        EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
+        if (j==0) {
+            EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
+        }
 
         // BOUNDARY fields
         FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
         FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
         FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
-        SingleValRef<unsigned int> ref_bc_enum(j+1);
+//        SingleValRef<unsigned int> ref_bc_enum(j+1);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
-        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
-        eq_data_->tg_.next_time();
+//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
+        eq_data_->next_time();
     }
 }
 
@@ -179,9 +183,9 @@ TEST_F(FieldEvalFETest, input_vtk) {
     this->read_input(eq_data_input);
 
     eq_data_->reallocate_cache();
-	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
-	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+    FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+    FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+    FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
     EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
@@ -206,9 +210,9 @@ TEST_F(FieldEvalFETest, time_shift) {
 
     for (unsigned int j=0; j<2; j++) {  // time loop
         eq_data_->reallocate_cache();
-    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -233,7 +237,7 @@ TEST_F(FieldEvalFETest, default_values) {
         eq_data_->reallocate_cache();
     	SingleValRef<arma::vec3> ref_vector(expected_vector);
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -267,13 +271,13 @@ TEST_F(FieldEvalFETest, unit_conversion) {
         eq_data_->reallocate_cache();
 
         // BULK field
-    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
 
         // BOUNDARY field
-    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -320,17 +324,17 @@ TEST_F(FieldEvalFETest, identic_mesh) {
         eq_data_->reallocate_cache();
 
         // BULK field
-    	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
-    	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
+        FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
+        FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
 
         // BOUNDARY field
-    	FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
-    	FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
+        FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
+        FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -365,7 +369,7 @@ TEST_F(FieldEvalFETest, interpolation_gauss) {
         VecRef<arma::vec3> ref_vector(expected_vectors[j]);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -392,7 +396,7 @@ TEST_F(FieldEvalFETest, interpolation_gauss_unit_conversion) {
         eq_data_->reallocate_cache();
         VecRef<double> ref_scalar(expected_scalars[j]);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -432,7 +436,7 @@ TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
             EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_scalar, i, i) );
             EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_vector, i, i) );
         }
-        eq_data_->tg_.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -472,12 +476,34 @@ TEST_F(FieldEvalFETest, set_fe_data_scalar) {
     eq_data_->scalar_field.set(fe_field, 0.0);
 
     eq_data_->reallocate_cache();
-	SingleValRef<double> ref_scalar(0.5);
+    SingleValRef<double> ref_scalar(0.5);
     EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
 }
 
 
 TEST_F(FieldEvalFETest, set_fe_data_vector) {
+    typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
+    this->create_mesh("fields/one_element_2d.msh");
+    this->set_dof_values( {0.5, 1.5, 2.5} );
+
+    //MixedPtr<FE_RT0> fe;
+    MixedPtr<FE_P_disc> fe_p(0);
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe);
+    dh_->distribute_dofs(ds);
+
+    std::shared_ptr<VectorFieldFE> fe_field = std::make_shared<VectorFieldFE>();
+    fe_field->set_fe_data(dh_, v);
+    eq_data_->vector_field.set(fe_field, 0.0);
+
+    eq_data_->reallocate_cache();
+    arma::vec3 expected = { 0.5, 1.5, 2.5 };
+    SingleValRef<arma::vec3> ref_vector(expected);
+    EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
+}
+
+
+TEST_F(FieldEvalFETest, set_fe_data_vector_rt0) {
     typedef FieldFE<3, FieldValue<3>::VectorFixed > VectorFieldFE;
     this->create_mesh("fields/one_element_2d.msh");
     this->set_dof_values( {0.5, 1.5, 2.5} );

@@ -98,11 +98,11 @@ public:
             {1.73397, 1.88868, 2.88868}, {2.6, 3.6, 1.93333}, {3.6, 1.93333, 2.26667}, {1.92918, 2.37639, 2.82361}, {2.65279, 3.1, 2.99443}
         };
         ref_tensor_fe_op_ = {
-            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.232457 },
-            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.683333 },
-            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.183333 },
-            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.428409 },
-            { 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.290213 }
+            { 1.94529946, 1.88867513, 2.88867513, 3.88867513, 4.88867513, 1.94529946, 1.88867513, 2.88867513, 3.88867510 },
+            { 3.60000000, 4.60000000, 2.26666667, 2.43333333, 2.60000000, 3.60000000, 4.60000000, 2.26666667, 2.43333333 },
+            { 2.26666667, 2.43333333, 2.60000000, 3.60000000, 4.60000000, 2.26666667, 2.43333333, 2.60000000, 3.60000000 },
+            { 2.96180340, 3.27082039, 4.27082039, 2.34376941, 2.65278640, 2.96180340, 3.27082039, 4.27082039, 2.34376941 },
+            { 2.51458980, 3.51458980, 3.82360680, 4.13262379, 1.51458980, 2.51458980, 3.51458980, 3.82360680, 4.13262379 }
         };
     }
 
@@ -217,9 +217,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
@@ -351,9 +351,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
@@ -483,9 +483,9 @@ public:
             VectorMPI data_vec = this->generic_->dh_->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec);
-
             std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
+            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
                     Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,

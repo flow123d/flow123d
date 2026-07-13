@@ -37,6 +37,10 @@ public:
         return dim+1;
     }
 
+    static inline constexpr uint op_dim(uint dim) {
+        return dim;
+    }
+
     /// Return number of mesh entities (in this case elements) on patch
     static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
         return ppv.elem_dim_list_->size();
@@ -45,6 +49,11 @@ public:
     /// Return i_n-th node of i_elm-th element stored in PatchPointValues::elem_dim_list_
     static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
         return (*ppv.elem_dim_list_)[i_elm].node(i_n);
+    }
+
+    /// Temporary method that allows implementation PatchFeValues operations in FieldFE
+    static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
+        return eval_points->get_bulk_quad_vector(dim);
     }
 };
 
@@ -59,6 +68,11 @@ public:
         return dim;
     }
 
+    static inline constexpr uint op_dim(uint dim) {
+        ASSERT_LT(dim, 3);
+        return dim+1;
+    }
+
     /// Return number of mesh entities (in this case sides) on patch
     static inline uint n_mesh_entities(PatchPointValues<3> &ppv) {
         return ppv.side_list_.size();
@@ -67,6 +81,11 @@ public:
     /// Return i_n-th node of i_elm-th side stored in PatchPointValues::side_list_
     static inline NodeAccessor<3> node(PatchPointValues<3> &ppv, unsigned int i_elm, unsigned int i_n) {
         return ppv.side_list_[i_elm].node(i_n);
+    }
+
+    /// Temporary method that allows implementation PatchFeValues operations in FieldFE
+    static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
+        return eval_points->get_side_quad_vector(dim);
     }
 };
 
@@ -166,6 +185,28 @@ public:
     }
 };
 
+/// Template specialization of previous: dim=0, domain=Bulk
+template<>
+class JacDet<0, Op::BulkDomain, 3> : public PatchOp<3> {
+public:
+    /// Constructor
+    JacDet(PatchFEValues<3> &pfev, Quadrature &quad)
+    : PatchOp<3>(1, pfev, quad, {1})
+    {
+        this->domain_ = Op::BulkDomain::domain();
+    }
+
+    void eval() override {
+        PatchPointValues<3> &ppv = this->ppv();
+        uint n_elems = ppv.n_mesh_items();
+        this->allocate_result( n_elems, this->patch_arena() );
+        auto jac_det_value = this->result_matrix();
+        for (uint i=0;i<n_elems; ++i) {
+            jac_det_value(0,0)(i) = 1.0;
+        }
+    }
+};
+
 /**
  * Evaluates Inverse Jacobians on Bulk (Element) / Side
  * ElDomain (target) is always Bulk
@@ -248,7 +289,7 @@ public:
      */
     static void copy_ref_side_on_sides_tensor_data(PatchOp<spacedim> &op, unsigned int i_dof, unsigned int shape_m, unsigned int shape_n,
             Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-	        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> &target)
+			Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &target)
     {
         PatchPointValues<spacedim> &ppv = op.ppv();
         uint n_sides = ppv.n_mesh_items();
@@ -625,7 +666,7 @@ public:
                 for (uint i_r=0; i_r<spacedim; ++i_r)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c)[i_r];
+                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c*spacedim+i_r);
         }
     }
 
@@ -1080,7 +1121,7 @@ public:
 
             Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
             for (uint c=0; c<spacedim*spacedim; ++c)
-                result_vec(c) = result_ovec(c).get_vec();
+                result_vec(i_dof * spacedim*spacedim + c) = result_ovec(c).get_vec();
         }
     }
 };
@@ -1105,10 +1146,11 @@ public:
         this->allocate_result(n_patch_points, this->patch_arena());
 
         auto ref_vec = this->input_ops(0)->result_matrix();
-        auto result_vec = this->result_matrix();
 
-        for (uint c=0; c<spacedim*spacedim; c++)
-            FuncHelper<spacedim>::copy_ref_side_on_quads_data(*this, c, ref_vec, result_vec);
+    	for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
+    	    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
+    	    FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, spacedim, spacedim, ref_vec, res_submat);
+    	}
     }
 };
 
@@ -1291,9 +1333,10 @@ public:
         for (uint i=0; i<spacedim*dim; ++i) {
             ref_shape_grads_expd(i) = ArenaVec<double>( n_patch_points, this->patch_arena() );
         }
+        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> ref_shape_grads_expd_map(ref_shape_grads_expd.data(), dim, spacedim);
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             // prepare copy of reference data by indices of sides on elements
-            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, spacedim, ref_vector_grad, ref_shape_grads_expd);
+            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, spacedim, ref_vector_grad, ref_shape_grads_expd_map);
 
             // computes operation result
             Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = dispatch_op_.result_sub_matrix(i_dof);
@@ -1447,10 +1490,11 @@ public:
         Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> expand_ref_vec(dim, dim);
         for (uint c=0; c<dim*dim; c++)
             expand_ref_vec(c) = ArenaVec<double>(n_patch_points, this->patch_arena());
+        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> expand_ref_vec_map(expand_ref_vec.data(), dim, dim);
 
         for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
             // prepare copy of reference data by indices of sides on elements
-            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, dim, ref_grads_vec, expand_ref_vec);
+            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, dim, dim, ref_grads_vec, expand_ref_vec_map);
 
             // computes operation result
             Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = dispatch_op_.result_sub_matrix(i_dof);
