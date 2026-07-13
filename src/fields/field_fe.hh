@@ -32,14 +32,166 @@
 #include "io/msh_basereader.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
+#include "fem/patch_fe_values.hh"
+#include "fem/patch_op_impl.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/mapping_p1.hh"
+#include "fem/integral_acc.hh"
+#include "fem/op_function.hh"
 #include "input/factory.hh"
 #include "fem/patch_internals.hh"
 
 #include <memory>
+
+
+
+/**
+ * Helper class that holds data used in FieldFE operations
+ * (see source file src/fields/field_fee.hh).
+ */
+class FieldFeOpData {
+public:
+    /// Constructor
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end)
+    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end) {}
+
+    inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
+    	return dh_;
+    }
+
+    inline VectorMPI data_vec() const {
+    	return data_vec_;
+    }
+
+    inline uint boundary_domain() const {
+    	return boundary_domain_;
+    }
+
+    inline uint range_begin() const {
+    	return range_begin_;
+    }
+
+    inline uint range_end() const {
+    	return range_end_;
+    }
+
+    bool operator==(const FieldFeOpData &other)
+    {
+        return (dh_->hash() == other.dh_->hash()) &&
+                (data_vec_.size() == other.data_vec_.size()) &&
+	            (boundary_domain_ == other.boundary_domain_) &&
+	            (range_begin_ == other.range_begin_) &&
+	            (range_end_ == other.range_end_);
+    }
+
+private:
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    VectorMPI data_vec_;
+    uint boundary_domain_;
+    unsigned int range_begin_;
+    unsigned int range_end_;
+};
+
+
+
+namespace internal {
+
+// general element type
+template<int NRows, int NCols>
+struct InputOpType;
+
+template<>
+struct InputOpType<1,1>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::ScalarShape<dim, Domain, spacedim>;
+};
+
+template<>
+struct InputOpType<3,1>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
+};
+
+template<>
+struct InputOpType<3,3>
+{
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::TensorShape<dim, Domain, spacedim>;
+};
+
+} // end of namespace internal
+
+
+namespace Op {
+
+/// Evaluates FieldFE on quadrature points defined in patch
+template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3>
+class FieldFeOp : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
+    : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
+	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain()),
+	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end())
+	    {
+	        this->domain_ = Domain::domain();
+	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
+	    }
+
+    void eval() override {
+        PatchPointValues<spacedim> &ppv = this->ppv();
+        uint n_dofs = this->input_ops(0)->n_dofs();
+        uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
+
+        this->allocate_result(n_patch_points, this->patch_arena());
+        auto result_vec = this->result_matrix();
+
+        Eigen::Vector<ArenaVec<double>, Eigen::Dynamic> data_vec_pts(n_dofs);
+        for (uint i=0; i<n_dofs; ++i) {
+            data_vec_pts(i) = ArenaVec<double>( n_patch_points, this->patch_arena() );
+        }
+        for (uint i=0; i<this->n_comp(); ++i) {
+            for (uint i_p=0; i_p<result_vec(i).data_size(); ++i_p) {
+                result_vec(i)(i_p) = 0.0;
+            }
+        }
+
+        unsigned int last_element_idx = -1;
+        LocDofVec loc_dofs;
+        for (uint i=0; i<n_patch_points; ++i) {
+        	if ( ppv.int_table_(mesh_type_on_quads)(i) != boundary_domain_ ) continue;
+            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
+            if (elm_idx != last_element_idx) {
+                DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
+                loc_dofs = cell.get_loc_dof_indices();
+                last_element_idx = elm_idx;
+            }
+            for (unsigned int i_dof=range_begin_, i_cdof=0; i_dof<range_end_; i_dof++, i_cdof++) {
+                data_vec_pts(i_cdof)(i) = data_vec_.get(loc_dofs[i_dof]);
+            }
+        }
+
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
+            result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
+        }
+    }
+
+protected:
+    /// Data members shared with FieldFE
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    VectorMPI data_vec_;
+    uint boundary_domain_;
+    unsigned int range_begin_;
+    unsigned int range_end_;
+};
+
+} // end of namespace Op
+
 
 
 
@@ -54,6 +206,7 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 	typedef typename Field<spacedim, Value>::FactoryBase FieldFactoryBaseType;
+	typedef typename Value::return_type ReturnType;
 
 	/**
 	 * Possible interpolations of input data.
@@ -137,6 +290,18 @@ public:
      */
     void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
+
+    /**
+     * Temporary - old version of update_cache
+     */
+    void cache_update_old(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
+
+    /**
+     * Replace previous method - in progress
+     */
+    void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
+			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
 
     /**
      * Overload @p FieldAlgorithmBase::cache_reinit
@@ -256,14 +421,18 @@ private:
 
 	/// Initialize FEValues object of given dimension.
 	template <unsigned int dim>
-	Quadrature init_quad(std::shared_ptr<EvalPoints> eval_points);
+	Quadrature *init_quad(std::shared_ptr<EvalPoints> eval_points);
+
+	/// Create PatcFe operation of given dimension and ReturnType.
+	template <unsigned int dim, class Domain>
+	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)
     {
         Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
         for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c);
+            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c); // TODO use PatchFeValues
         if (Value::NRows_ == Value::NCols_)
             return v;
         else
@@ -321,6 +490,32 @@ private:
     	return qgauss.size();
     }
 
+    template <unsigned int elemdim>
+    void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
+            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc_bulk, FeQ<ReturnType> &value_acc_side,
+	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
+    {
+        unsigned int element_patch_idx = 0;
+        unsigned int last_element_idx = -1;
+        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+            if (elm_idx != last_element_idx) {
+                element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
+                last_element_idx = elm_idx;
+            }
+
+            uint i_qpoint = cache_map.eval_point_data(i_data).i_eval_point_;
+            BulkPoint p_bulk(&cache_map, element_patch_idx, i_qpoint);
+            if (cache_map.eval_points()->point_domain(elemdim, i_qpoint) == points_domain::bulk_points) {
+                data_cache.set(i_data) = value_acc_bulk(p_bulk);
+            } else {
+                SidePoint p(p_bulk, 0);
+                data_cache.set(i_data) = value_acc_side(p);
+            }
+        }
+    }
+
+
 
     /// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -352,6 +547,7 @@ private:
     bool boundary_domain_;
 
     /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
+    /// TODO use PatchFeValues
     std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices from computational mesh to the  source (data).
@@ -367,9 +563,39 @@ private:
     /// Input ElementDataCache is stored in set_time and used in all evaluation and interpolation methods.
     ElementDataCache<double>::CacheData input_data_cache_;
 
+    // Data members of 'new' version of cache_update
+    FeQ<ReturnType> value_acc_0d_bulk_;
+    FeQ<ReturnType> value_acc_1d_bulk_;
+    FeQ<ReturnType> value_acc_2d_bulk_;
+    FeQ<ReturnType> value_acc_3d_bulk_;
+    FeQ<ReturnType> value_acc_1d_side_;
+    FeQ<ReturnType> value_acc_2d_side_;
+    FeQ<ReturnType> value_acc_3d_side_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
+
+
+namespace std {
+
+/// Template specialization of std::hash for FieldFeOpData
+template<>
+struct hash< FieldFeOpData > {
+    std::size_t operator()(const FieldFeOpData &op_data) const noexcept {
+        std::size_t h = 0;
+
+        hash_combine(h, std::hash<std::size_t>{}( op_data.dh()->hash() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.data_vec().size() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.range_begin() ) );
+        hash_combine(h, std::hash<uint>{}( op_data.range_end() ) );
+
+        return h;
+    }
+};
+
+} // namespace std
 
 
 /** Create FieldFE from dof handler */

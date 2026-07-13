@@ -12,7 +12,7 @@
  *
  *
  * @file    patch_fe_values.hh
- * @brief   Class FEValues calculates finite element data on the actual
+ * @brief   Class PatchFEValues calculates finite element data on the actual
  *          cells such as shape function values, gradients, Jacobian of
  *          the mapping from the reference cell etc.
  * @author  Jan Stebel, David Flanderka
@@ -37,10 +37,8 @@
 #include "quadrature/quadrature_lib.hh"
 #include "fem/arena_resource.hh"
 #include "fem/arena_vec.hh"
-
-//template<unsigned int dim> class BulkValues;
-//template<unsigned int dim> class SideValues;
-//template<unsigned int dim> class JoinValues;
+#include "fem/dofhandler.hh"
+#include "la/vector_mpi.hh"
 
 
 
@@ -51,23 +49,16 @@ public:
 
     PatchFEValues()
     : patch_fe_data_(1024 * 1024, 256),
-	  elem_dim_list_vec_(3),
+	  elem_dim_list_vec_(spacedim+1),
       patch_point_vals_(2),
 	  elements_map_(300, (uint)-1)
     {
-        element_quads_.push_back( QGauss(0, 0) );
-        for (uint dim=1; dim<4; ++dim) {
-            patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], bulk_domain) );
-            patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim-1], side_domain) );
-            element_quads_.push_back( QGauss(dim, 0) );
+        for (uint dim=0; dim<spacedim+1; ++dim) {
+            patch_point_vals_[bulk_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim], bulk_domain) );
+            patch_point_vals_[side_domain].push_back( PatchPointValues<spacedim>(&elem_dim_list_vec_[dim], side_domain) );
+            element_quads_.push_back( new QGauss(dim, 0) );
         }
         used_domain_[bulk_domain] = false; used_domain_[side_domain] = false;
-    }
-
-    PatchFEValues(MixedPtr<FiniteElement> fe)
-    : PatchFEValues<spacedim>()
-    {
-        fe_ = fe;
 
         // TODO move initialization zero_vec_ to patch_fe_data_ constructor when we will create separate ArenaVec of DOshape functions
         uint zero_vec_size = 300;
@@ -88,7 +79,7 @@ public:
     /// Reset PatchpointValues structures
     void reset()
     {
-        for (unsigned int i=0; i<spacedim; ++i) {
+        for (unsigned int i=0; i<spacedim+1; ++i) {
             if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][i].reset();
             if (used_domain_[side_domain]) patch_point_vals_[side_domain][i].reset();
         }
@@ -104,21 +95,6 @@ public:
     }
 
     /**
-     * @brief Returns the number of shape functions.
-     */
-    template<unsigned int dim>
-    inline unsigned int n_dofs() const {
-        ASSERT((dim>=0) && (dim<=3))(dim).error("Dimension must be 0, 1, 2 or 3.");
-        return fe_[Dim<dim>{}]->n_dofs();
-    }
-
-    /**
-     * @brief Returns the number of shape functions og higher dim element.
-     */
-    template<unsigned int dim>
-    unsigned int n_dofs_high() const;
-
-    /**
      * @brief Returnd FiniteElement of \p component_idx for FESystem or \p fe for other types
      */
     template<unsigned int dim>
@@ -132,34 +108,30 @@ public:
         }
     }
 
-    /// Returns pointer to FiniteElement of given dimension.
-    template<unsigned int dim>
-    std::shared_ptr<FiniteElement<dim>> fe_dim() {
-        return fe_[Dim<dim>{}];
-    }
-
     /** Following methods are used during update of patch. **/
 
     /// Clear elements_map, set values to (-1)
-    inline void clean_elements_map() {
+    inline void prepare_new_patch(std::shared_ptr<EvalPoints> eval_points) {
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
+        if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][0].resize_tables(eval_points->get_max_bulk_quad_size(0), *patch_fe_data_.patch_arena_);
+        for (uint dim=1; dim<=3; ++dim) {
+            if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
+            if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
+        }
     }
 
     /// Add elements, sides and quadrature points registered on patch
     template <unsigned int dim>
-    inline void add_patch_points(const DimIntegrals<dim> &integrals, ElementCacheMap *element_cache_map, std::shared_ptr<EvalPoints> eval_points) {
-        if (used_domain_[bulk_domain]) patch_point_vals_[bulk_domain][dim-1].resize_tables(eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
-        if (used_domain_[side_domain]) patch_point_vals_[side_domain][dim-1].resize_tables(eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
-
+    inline void add_patch_points(const DimIntegrals<dim> &integrals, ElementCacheMap *element_cache_map) {
         // add bulk points
         for (auto integral_it : integrals.bulk_) {
             auto &patch_data = integral_it.second->patch_data();
             for (uint i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
                 uint element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
-                uint elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
+                uint elm_pos = this->register_element(patch_data[i_data].cell.elm(), element_patch_idx);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(element_patch_idx) ) {
-                    this->register_bulk_point(patch_data[i_data].cell, elm_pos, p.value_cache_idx(), i_point++);
+                    this->register_bulk_point(patch_data[i_data].cell.elm(), elm_pos, p.value_cache_idx(), i_point++);
                 }
             }
         }
@@ -168,10 +140,15 @@ public:
         for (auto integral_it : integrals.boundary_) {
             auto &patch_data = integral_it.second->patch_data();
             for (unsigned int i_data=0; i_data<patch_data.permanent_size(); ++i_data) {
+            	ElementAccessor<spacedim> bdr_elem = patch_data[i_data].side.cond().element_accessor();
+            	uint bdr_element_patch_idx = element_cache_map->position_in_cache(bdr_elem.idx(), true);
+            	uint elem_pos = this->register_element(bdr_elem, bdr_element_patch_idx);
             	uint side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 uint i_point = 0;
                 for (auto p : integral_it.second->points(patch_data[i_data].side) ) {
-                    this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point++);
+                    this->register_side_point(patch_data[i_data].side, side_pos, p.value_cache_idx(), i_point);
+                    auto p_bdr = p.point_bdr( bdr_elem );
+                    this->register_bulk_point(bdr_elem, elem_pos, p_bdr.value_cache_idx(), i_point++, 1);
                 }
             }
         }
@@ -202,7 +179,7 @@ public:
                 side_pos = this->register_side(patch_data[i_data].side, element_cache_map);
                 if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
                     element_patch_idx = element_cache_map->position_in_cache(patch_data[i_data].cell.elm_idx());
-                    elm_pos = this->register_element(patch_data[i_data].cell, element_patch_idx);
+                    elm_pos = this->register_element(patch_data[i_data].cell.elm(), element_patch_idx);
                 }
 
                 uint i_bulk_point = 0, i_side_point = 0;
@@ -211,49 +188,12 @@ public:
                     this->register_side_point(patch_data[i_data].side, side_pos, p_high.value_cache_idx(), i_side_point++);
                     if (patch_data[i_data].cell.elm_idx() != last_element_idx) {
                         auto p_low = p_high.lower_dim(patch_data[i_data].cell);
-                        this->register_bulk_point(patch_data[i_data].cell, elm_pos, p_low.value_cache_idx(), i_bulk_point++);
+                        this->register_bulk_point(patch_data[i_data].cell.elm(), elm_pos, p_low.value_cache_idx(), i_bulk_point++);
                     }
                 }
                 last_element_idx = patch_data[i_data].cell.elm_idx();
             }
         }
-    }
-
-    /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element(DHCellAccessor cell, uint element_patch_idx) {
-        uint elem_pos = register_element_internal(cell, element_patch_idx);
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
-        auto map_it = ppv.n_elems_.insert( {cell.elm_idx(), ppv.i_mesh_item_} );
-        bool is_elm_added = map_it.second;
-        if (is_elm_added) {
-            ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
-            ppv.i_mesh_item_++;
-        }
-        return map_it.first->second;
-    }
-
-    /// Register side to patch_point_vals_ table by dimension of side
-    uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
-        uint dim = cell_side.dim();
-        uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
-        uint elm_pos = register_element_internal(cell_side.cell(), element_patch_idx);
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim-1];
-
-        ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
-        ppv.int_table_(ref_side_on_sides)(ppv.i_mesh_item_) = cell_side.side_idx();
-        ppv.side_list_.push_back( cell_side.side() );
-        return ppv.i_mesh_item_++;
-    }
-
-    /// Register bulk point to patch_point_vals_ table by dimension of element
-    uint register_bulk_point(DHCellAccessor cell, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem) {
-        return patch_point_vals_[bulk_domain][cell.dim()-1].register_bulk_point(patch_elm_idx, elm_cache_map_idx, cell.elm_idx(), i_point_on_elem);
-    }
-
-    /// Register side point to patch_point_vals_ table by dimension of side
-    uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
-        return patch_point_vals_[side_domain][cell_side.dim()-1].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
-                cell_side.side_idx(), i_point_on_side);
     }
 
     /// return reference to assembly arena
@@ -272,43 +212,19 @@ public:
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad) {
-        std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
-        auto it = op_dependency_.find( tpl );
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad);
-            op_dependency_[tpl] = new_op;
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
-            return new_op;
-        } else {
-            return it->second;
+    template<class OpType, unsigned int dim, class... Args>
+    PatchOp<spacedim>* get(Args&&... args) {
+        auto cache_it = op_cache_.template get<OpType, PatchFEValues>( *this, std::forward<Args>(args)... );
+        if (cache_it.second) {
+        	operations_.push_back(cache_it.first);
         }
+        return cache_it.first;
     }
 
     /// Returns operation of given dim and OpType, creates it if doesn't exist
     template<class OpType, unsigned int dim>
     PatchOp<spacedim>* get_for_elem_quad() {
-        return this->template get<OpType, dim>( this->element_quad(dim) );
-    }
-
-    /// Returns operation of given dim and OpType, creates it if doesn't exist
-    template<class OpType, unsigned int dim>
-    PatchOp<spacedim>* get(const Quadrature *quad, std::shared_ptr<FiniteElement<dim>> fe) {
-        std::string op_name = typeid(OpType).name();
-        auto tpl = OperationTplHash::op_tuple(op_name, quad->size());
-        auto it = op_dependency_.find( tpl );
-        if (it == op_dependency_.end()) {
-            PatchOp<spacedim>* new_op = new OpType(*this, quad, fe);
-            op_dependency_[tpl] = new_op;
-            operations_.push_back(new_op);
-            DebugOut().fmt("Create new operation '{}', dim: {}, quad size: {}.\n", op_name, dim, quad->size());
-            return new_op;
-        } else {
-            return it->second;
-        }
+        return this->template get<OpType, dim, Quadrature &>( this->element_quad(dim) );
     }
 
     /// Print table of all used operations - development method
@@ -343,35 +259,80 @@ public:
     /// Temporary method
     PatchPointValues<spacedim> &ppv(uint domain, uint dim) {
         ASSERT( domain<2 );
-        ASSERT( (dim>0) && (dim<=3) )(dim);
-    	return patch_point_vals_[domain][dim-1];
+        ASSERT_LE(dim, spacedim);
+    	return patch_point_vals_[domain][dim];
     }
 
     /// Marks data of last successfully added element to patch as permanent
     void make_permanent_ppv_data() {
-        for (uint i_dim=0; i_dim<3; ++i_dim)
+        for (uint i_dim=0; i_dim<spacedim+1; ++i_dim)
             for (uint i_domain=0; i_domain<2; ++i_domain) {
                 patch_point_vals_[i_domain][i_dim].n_mesh_items_.make_permanent();
             }
     }
 
     /// Return element quadrature (passed to element / side operations)
-    const Quadrature* element_quad(unsigned int dim) const {
+    Quadrature &element_quad(unsigned int dim) const {
         ASSERT( dim <= 3 );
-        return &element_quads_[dim];
+        return *(element_quads_[dim]);
+    }
+
+    /// Return if domain is used (at least one operation of given domain is defined)
+    bool is_used_domain(fem_domain domain) const {
+        return used_domain_[domain];
     }
 
 private:
     /// Register element to patch_point_vals_ table by dimension of element
-    uint register_element_internal(DHCellAccessor cell, uint element_patch_idx) {
-        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][cell.dim()-1];
+    uint register_element(ElementAccessor<spacedim> elem, uint element_patch_idx) {
+        uint elem_pos = register_element_internal(elem, element_patch_idx);
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
+        std::size_t h =
+            (static_cast<std::size_t>(elem.region_idx().is_boundary()) << 32) |
+            static_cast<std::size_t>(elem.idx());
+        auto map_it = ppv.n_elems_.insert( {h, ppv.i_mesh_item_} );
+        bool is_elm_added = map_it.second;
+        if (is_elm_added) {
+            ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elem_pos;
+            ppv.i_mesh_item_++;
+        }
+        return map_it.first->second;
+    }
+
+    /// Register side to patch_point_vals_ table by dimension of side
+    uint register_side(DHCellSide cell_side, ElementCacheMap *element_cache_map) {
+        uint dim = cell_side.dim();
+        uint element_patch_idx = element_cache_map->position_in_cache(cell_side.elem_idx());
+        uint elm_pos = register_element_internal(cell_side.cell().elm(), element_patch_idx);
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[side_domain][dim];
+
+        ppv.int_table_(patch_elem_on_domain)(ppv.i_mesh_item_) = elm_pos;
+        ppv.int_table_(ref_side_on_sides)(ppv.i_mesh_item_) = cell_side.side_idx();
+        ppv.side_list_.push_back( cell_side.side() );
+        return ppv.i_mesh_item_++;
+    }
+
+    /// Register bulk point to patch_point_vals_ table by dimension of element
+    uint register_bulk_point(ElementAccessor<spacedim> elem, uint patch_elm_idx, uint elm_cache_map_idx, uint i_point_on_elem, uint is_bdr = 0) {
+        return patch_point_vals_[bulk_domain][elem.dim()].register_bulk_point(patch_elm_idx, elm_cache_map_idx, elem.idx(), i_point_on_elem, is_bdr);
+    }
+
+    /// Register side point to patch_point_vals_ table by dimension of side
+    uint register_side_point(DHCellSide cell_side, uint patch_side_idx, uint elm_cache_map_idx, uint i_point_on_side) {
+        return patch_point_vals_[side_domain][cell_side.dim()].register_side_point(patch_side_idx, elm_cache_map_idx, cell_side.elem_idx(),
+                cell_side.side_idx(), i_point_on_side);
+    }
+
+    /// Register element to patch_point_vals_ table by dimension of element
+    uint register_element_internal(ElementAccessor<spacedim> elem, uint element_patch_idx) {
+        PatchPointValues<spacedim> &ppv = patch_point_vals_[bulk_domain][elem.dim()];
         if (elements_map_[element_patch_idx] != (uint)-1) {
     	    // Return index of element on patch if it is registered repeatedly
     	    return elements_map_[element_patch_idx];
     	}
 
         elements_map_[element_patch_idx] = ppv.elem_dim_list_->size();
-        ppv.elem_dim_list_->push_back( cell.elm() );
+        ppv.elem_dim_list_->push_back( elem );
         return ppv.elem_dim_list_->size() - 1;
     }
 
@@ -387,7 +348,7 @@ private:
     bool used_domain_[2];          ///< Pair of flags signs holds info if bulk and side quadratures are used
 
     std::vector< PatchOp<spacedim> *> operations_;
-    OperationMap< PatchOp<spacedim> > op_dependency_;
+    CachedFactory< PatchOp<spacedim> > op_cache_;
 
     /**
      * Map of element patch indices to PatchOp::result_ and int_table_ tables
@@ -403,7 +364,7 @@ private:
      * of these operations (with different quadrature sizes). Quadrature size has no effect on result
      * of these operations.
      */
-    std::vector<Quadrature> element_quads_;
+    std::vector<Quadrature *> element_quads_;
 
     friend class PatchOp<spacedim>;
 };

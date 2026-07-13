@@ -12,7 +12,7 @@
  *
  *
  * @file    patch_fe_values.cc
- * @brief   Class FEValues calculates finite element data on the actual
+ * @brief   Class PatchFEValues calculates finite element data on the actual
  *          cells such as shape function values, gradients, Jacobian of
  *          the mapping from the reference cell etc.
  * @author  Jan Stebel, David Flanderka
@@ -21,31 +21,9 @@
 #include "fem/patch_fe_values.hh"
 #include "fem/patch_point_values.hh"
 #include "fem/op_accessors_impl.hh"
-#include "fem/mapping_p1.hh"
-#include "fem/fe_system.hh"
-#include "fem/fe_values_map.hh"
-
-
-
-template<unsigned int spacedim>
-template<unsigned int dim>
-unsigned int PatchFEValues<spacedim>::n_dofs_high() const {
-    ASSERT((dim>=0) && (dim<=2))(dim).error("Dimension must be 0, 1, 2.");
-    return fe_[Dim<dim+1>{}]->n_dofs();
-}
-
-template<>
-template<>
-unsigned int PatchFEValues<3>::n_dofs_high<3>() const {
-    return fe_[Dim<3>{}]->n_dofs();
-}
 
 
 
 
 // explicit instantiation
-template unsigned int PatchFEValues<3>::n_dofs_high<1>() const;
-template unsigned int PatchFEValues<3>::n_dofs_high<2>() const;
-template unsigned int PatchFEValues<3>::n_dofs_high<3>() const;
-
 template class PatchFEValues<3>;

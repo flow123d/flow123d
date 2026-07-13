@@ -73,6 +73,62 @@ public:
     typedef BCField<3, FieldValue<3>::VectorFixed > BcVectorField;
     typedef BCField<3, FieldValue<3>::TensorFixed > BcTensorField;
 
+
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmBase {
+    public:
+        /**
+         * Constructor
+         */
+        AsmBase(uint quad_order)
+        : q_bulk_( new QGauss(dim, 2*quad_order) ),
+		  q_bdr_( new QGauss(dim-1, 2*quad_order) )
+        {}
+
+    	/// Destructor
+        virtual ~AsmBase() {
+            delete q_bulk_;
+            delete q_bdr_;
+        }
+
+
+        std::shared_ptr<BulkIntegralAcc<dim>> create_bulk_integral(PatchInternals &patch_internals) {
+            ASSERT_PERMANENT_EQ(q_bulk_->dim(), dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, q_bulk_->size());
+            auto result = integrals_.bulk_.insert({
+                    tpl,
+                    std::make_shared<BulkIntegralAcc<dim>>(patch_internals, q_bulk_)
+                });
+            return result.first->second;
+        }
+
+        std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(PatchInternals &patch_internals) {
+            ASSERT_PERMANENT_EQ(q_bdr_->dim()+1, dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, q_bdr_->size());
+            auto result = integrals_.boundary_.insert({
+                    tpl,
+                    std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals, q_bdr_)
+                });
+            return result.first->second;
+        }
+
+        /** Declaration of data members **/
+        DimIntegrals<dim> integrals_;                                     ///< Set of used integrals.
+        Quadrature *q_bulk_;
+        Quadrature *q_bdr_;
+    };
+
+    /// Represent similar object to GenericAssembly in equations
+    class GenericAsm {
+    public:
+    	GenericAsm()
+    	: multidim_asm_(0) {}
+
+        MixedPtr<AsmBase, 1> multidim_asm_;
+        PatchInternals patch_internals_;
+    };
+
     class EqData : public FieldSet {
     public:
         enum enum_type {
@@ -96,7 +152,8 @@ public:
         /**
          * Descendant of FieldSet. Contains different fields for evaluation and referenced.
          */
-        EqData() : tg_(0.0, 1.0) {
+        EqData() : tg_(0.0, 1.0), use_pfev_(false) {
+            generic_asm_ = new GenericAsm();
             *this += scalar_field
                         .name("scalar_field")
                         .description("Scalar field.")
@@ -180,29 +237,32 @@ public:
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
 
-            // Asumme following types:
-            Quadrature *q_bulk1 = new QGauss(1, 0);
-            Quadrature *q_bulk2 = new QGauss(2, 0);
-            Quadrature *q_bulk3 = new QGauss(3, 0);
-            Quadrature *q_bdr1 = new QGauss(0, 0);
-            Quadrature *q_bdr2 = new QGauss(1, 0);
-            Quadrature *q_bdr3 = new QGauss(2, 0);
-            mass_integral[0] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk1, 1);
-            mass_integral[1] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk2, 2);
-            mass_integral[2] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk3, 3);
-            bdr_integral[0] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr1, 1);
-            bdr_integral[1] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr2, 2);
-            bdr_integral[2] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr3, 3);
-            patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
-
             this->add_coords_field();
             this->set_default_fieldset();
+
+            reinit_asm_data();
+        }
+
+        /// Create new integral objects and initialize patch_internals_. Use at the begin of time step.
+        void reinit_asm_data() {
+            // Asumme following types:
+            mass_integral[0] = multidim_asm()[1_d]->create_bulk_integral(patch_internals());
+            mass_integral[1] = multidim_asm()[2_d]->create_bulk_integral(patch_internals());
+            mass_integral[2] = multidim_asm()[3_d]->create_bulk_integral(patch_internals());
+            bdr_integral[0] = multidim_asm()[1_d]->create_boundary_integral(patch_internals());
+            bdr_integral[1] = multidim_asm()[2_d]->create_boundary_integral(patch_internals());
+            bdr_integral[2] = multidim_asm()[3_d]->create_boundary_integral(patch_internals());
+            patch_internals().element_cache_map_.init(patch_internals().eval_points_);
         }
 
         void register_eval_points(bool bdr=false) {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(patch_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals_.element_cache_map_) ) {
-                patch_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(patch_internals().element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals().element_cache_map_) ) {
+                patch_internals().element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            }
+            if (this->use_pfev_) {
+            	mass_integral[computed_dh_cell_.dim()-1]->patch_data().emplace_back(computed_dh_cell_);
+                ++( patch_internals().fe_values_.ppv(bulk_domain, computed_dh_cell_.dim()) ).n_mesh_items_;
             }
 
             if (bdr)
@@ -210,30 +270,77 @@ public:
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         unsigned int bdr_reg = cell_side.cond().element_accessor().region_idx().idx(); // region of boundary element
                         //DebugOut() << "Bulk elm: " << computed_dh_cell_.elm_idx() << ", boundary element: " << cell_side.cond().bc_ele_idx() << ", region: " << bdr_reg << std::endl;
-                        for (auto p : bdr_integral[computed_dh_cell_.dim()-1]->points(cell_side, &patch_internals_.element_cache_map_) ) {
+                        for (auto p : bdr_integral[computed_dh_cell_.dim()-1]->points(cell_side, &patch_internals().element_cache_map_) ) {
                             // point on side of bulk element
-                            patch_internals_.element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+                            patch_internals().element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
                             // point on boundary element
                             BulkPoint p_bdr = p.point_bdr(cell_side.cond().element_accessor()); // equivalent point on boundary element
-                            patch_internals_.element_cache_map_.add_eval_point(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                            patch_internals().element_cache_map_.add_eval_point(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                        }
+                        if (this->use_pfev_) {
+                            bdr_integral[computed_dh_cell_.dim()-1]->patch_data().emplace_back(cell_side);
+                            ++( patch_internals().fe_values_.ppv(side_domain, cell_side.dim()) ).n_mesh_items_;
+                            ++( patch_internals().fe_values_.ppv(bulk_domain, cell_side.dim()-1) ).n_mesh_items_;
                         }
                     }
                 }
-            patch_internals_.element_cache_map_.make_paermanent_eval_points();
+            patch_internals().element_cache_map_.make_paermanent_eval_points();
         }
 
         void update_cache(bool bdr=false) {
-        	patch_internals_.element_cache_map_.clear_element_eval_points_map();
-        	patch_internals_.element_cache_map_.start_elements_update();
+            patch_internals().element_cache_map_.clear_element_eval_points_map();
+        	reset_patch();
+        	patch_internals().element_cache_map_.start_elements_update();
             this->register_eval_points(bdr);
-            patch_internals_.element_cache_map_.create_patch();
-            this->cache_update(patch_internals_.element_cache_map_);
-            patch_internals_.element_cache_map_.finish_elements_update();
+            multidim_asm()[1_d]->integrals_.make_permanent();
+            multidim_asm()[2_d]->integrals_.make_permanent();
+            multidim_asm()[3_d]->integrals_.make_permanent();
+            patch_internals().element_cache_map_.make_paermanent_eval_points();
+            if (this->use_pfev_)
+                patch_internals().fe_values_.make_permanent_ppv_data();
+            patch_internals().element_cache_map_.create_patch();
+
+            if (this->use_pfev_) {
+                patch_internals().fe_values_.prepare_new_patch(patch_internals().eval_points_);
+                patch_internals().fe_values_.add_patch_points<3>(multidim_asm()[3_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.add_patch_points<2>(multidim_asm()[2_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.add_patch_points<1>(multidim_asm()[1_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.reinit_patch();
+            }
+
+            this->cache_update(patch_internals().element_cache_map_);
+            patch_internals().element_cache_map_.finish_elements_update();
+        }
+
+        void reset_patch() {
+            if (this->use_pfev_) {
+                patch_internals().fe_values_.reset();
+                multidim_asm()[1_d]->integrals_.reset();
+                multidim_asm()[2_d]->integrals_.reset();
+                multidim_asm()[3_d]->integrals_.reset();
+            }
         }
 
         void reallocate_cache() {
             this->set_time(tg_.step(), LimitSide::right);
-            this->cache_reallocate(patch_internals_, *this);
+            this->cache_reallocate(patch_internals(), *this);
+            if (this->use_pfev_)
+                patch_internals().fe_values_.init_finalize();
+        }
+
+        void next_time() {
+            delete generic_asm_;
+            tg_.next_time();
+            generic_asm_ = new GenericAsm();
+            reinit_asm_data();
+        }
+
+        inline MixedPtr<AsmBase, 1> &multidim_asm() {
+            return generic_asm_->multidim_asm_;
+        }
+
+        PatchInternals &patch_internals() {
+            return generic_asm_->patch_internals_;
         }
 
 
@@ -256,8 +363,9 @@ public:
         std::array< std::shared_ptr<BulkIntegral>, 3> mass_integral;
         std::array< std::shared_ptr<BoundaryIntegral>, 3> bdr_integral;
         DHCellAccessor computed_dh_cell_;
+        GenericAsm *generic_asm_;
         TimeGovernor tg_;
-        PatchInternals patch_internals_;
+        bool use_pfev_;    ///< Temporary flag marks child tests that needs to work with PatchFeValues object
     };
 
     template<class RefVal>
@@ -370,7 +478,7 @@ public:
             uint dim = eq_data_->computed_dh_cell_.dim()-1;
             eq_data_->update_cache();
 
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
             is_passed = is_passed & check_point_value(eval_field, p, ref_obj.value(i, p) );
         }
 	    return is_passed;
@@ -388,7 +496,7 @@ public:
         for (DHCellSide cell_side : eq_data_->computed_dh_cell_.side_range()) {
             if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                 if (cell_side.cond().bc_ele_idx() == i_bdr_elem) {
-                    auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, &eq_data_->patch_internals_.element_cache_map_).begin() );
+                    auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, &eq_data_->patch_internals().element_cache_map_).begin() );
                     auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                     //DebugOut() << "Input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eval_field(p_bdr) << std::endl;
                     // Boundary found - field is evaluated and checked

@@ -49,7 +49,6 @@ namespace Input {
 	}
 }
 
-template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
 template<unsigned int dim, class TEqData> class L2DifferenceAssembly;
 template<unsigned int dim, class TEqData> class OutputInternalFlowAssembly;

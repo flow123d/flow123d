@@ -64,10 +64,11 @@ enum IntTableRows
     // field_quad_on_quads =0,    ///< Index of quadrature point in ElementCacheMap (field ordering)
     domain_on_quads =1,        ///< Index of bulk element or side for each quadrature point in patch
     mesh_elem_on_quads =2,     ///< Element idx in Mesh for each quadrature point in patch
-    patch_elem_on_domain =3,   ///< Index of patch element for each bulk element or side
+	mesh_type_on_quads =3,     ///< Type of mesh (bulk=0, BcMesh=1) for each quadrature point in patch
+    patch_elem_on_domain =4,   ///< Index of patch element for each bulk element or side
     // - last two rows are allocated only for side point table
-    ref_side_on_sides =4,      ///< Ref index of side in element for each side in patch
-	ref_side_on_quads =5       ///< Ref index of side in element for each quadrature point in patch
+    ref_side_on_sides =5,      ///< Ref index of side in element for each side in patch
+	ref_side_on_quads =6       ///< Ref index of side in element for each quadrature point in patch
 };
 
 
@@ -179,9 +180,9 @@ public:
         reset();
 
         if (domain == bulk_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, pointOp, elemOp};
         } else if (domain == side_domain) {
-            this->int_sizes_ = {pointOp, pointOp, pointOp, elemOp, elemOp, pointOp};
+            this->int_sizes_ = {pointOp, pointOp, pointOp, pointOp, elemOp, elemOp, pointOp};
         }
         int_table_.resize(int_sizes_.size());
     }
@@ -221,11 +222,12 @@ public:
      * @param elem_idx          Index of element in Mesh.
      * @param i_point_on_elem   Index of point on element
      */
-    uint register_bulk_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem) {
+    uint register_bulk_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem, uint is_bdr) {
         uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
         //int_table_(field_quad_on_quads)(point_pos)  = elm_cache_map_idx;
-        int_table_(domain_on_quads)(point_pos) = patch_elm_idx;
+        int_table_(domain_on_quads)(point_pos)        = patch_elm_idx;
         int_table_(mesh_elem_on_quads)(point_pos)     = elem_idx;
+        int_table_(mesh_type_on_quads)(point_pos)     = is_bdr;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -243,9 +245,10 @@ public:
     uint register_side_point(uint patch_side_idx, uint elm_cache_map_idx, uint elem_idx, uint side_idx, uint i_point_on_side) {
         uint point_pos = i_point_on_side * n_mesh_items() + patch_side_idx; // index of side point on patch
         //int_table_(field_quad_on_quads)(point_pos)   = elm_cache_map_idx;
-        int_table_(domain_on_quads)(point_pos)  = patch_side_idx;
-        int_table_(mesh_elem_on_quads)(point_pos)      = elem_idx;
-        int_table_(ref_side_on_quads)(point_pos) = side_idx;
+        int_table_(domain_on_quads)(point_pos)       = patch_side_idx;
+        int_table_(mesh_elem_on_quads)(point_pos)    = elem_idx;
+        int_table_(mesh_type_on_quads)(point_pos)    = 0;
+        int_table_(ref_side_on_quads)(point_pos)     = side_idx;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
@@ -286,7 +289,7 @@ public:
      *
      * TODO will be deleted after sorting elements in ElementCacheMap by dimension
      */
-    std::unordered_map<uint, uint> n_elems_;
+    std::unordered_map<std::size_t, uint> n_elems_;
     std::vector<Side> side_list_;             ///< List of sides on patch
 };
 

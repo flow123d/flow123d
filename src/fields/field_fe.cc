@@ -215,6 +215,15 @@ template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 		ElementCacheMap &cache_map, unsigned int region_patch_idx)
 {
+    //this->cache_update_old(data_cache, cache_map, region_patch_idx);
+    this->cache_update_new(data_cache, cache_map, region_patch_idx);
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update_old(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
+{
     auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
     if ( (region_idx % 2) == this->boundary_domain_ ) {
         // Skip evaluation of boundary fields on bulk regions and vice versa
@@ -239,7 +248,7 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
         unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
         if (elm_idx != last_element_idx) {
             ElementAccessor<spacedim> elm(dh_->mesh(), elm_idx);
-            fe_values_[elm.dim()].reinit( elm );
+            fe_values_[elm.dim()].reinit( elm ); // TODO PatchFeValues reinit and update before these loops
             cell = dh_->cell_accessor_from_element( elm_idx );
             loc_dofs = cell.get_loc_dof_indices();
             last_element_idx = elm_idx;
@@ -259,25 +268,115 @@ void FieldFE<spacedim, Value>::cache_update(FieldValueCache<typename Value::elem
 
 
 template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
+		ElementCacheMap &cache_map, unsigned int region_patch_idx)
+{
+    auto region_idx = cache_map.region_idx_from_chunk_position(region_patch_idx);
+    if ( (region_idx % 2) == this->boundary_domain_ ) {
+        // Skip evaluation of boundary fields on bulk regions and vice versa
+        return;
+    }
+
+    unsigned int reg_chunk_begin = cache_map.region_chunk_begin(region_patch_idx);
+    unsigned int reg_chunk_end = cache_map.region_chunk_end(region_patch_idx);
+
+    // Throws exception if any element value of processed region is NaN
+    unsigned int r_idx = cache_map.eval_point_data(reg_chunk_begin).i_reg_;
+    if (region_value_err_[r_idx].is_invalid_)
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) << EI_File(reader_file_.filename()) );
+
+    MeshBase *mesh = dh_->mesh();
+
+    ElementAccessor<spacedim> elm_acc(mesh, cache_map.eval_point_data(reg_chunk_begin).i_element_);
+    switch (elm_acc.dim()) {
+        case 0:
+            this->cache_update_dim_elem<0>(data_cache, cache_map, value_acc_0d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
+            break;
+        case 1:
+            this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
+            break;
+        case 2:
+            this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_bulk_, value_acc_2d_side_, reg_chunk_begin, reg_chunk_end);
+            break;
+        case 3:
+            this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_bulk_, value_acc_3d_side_, reg_chunk_begin, reg_chunk_end);
+            break;
+    }
+}
+
+
+template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 {
     std::shared_ptr<EvalPoints> eval_points = patch_internals.eval_points_;
-    std::array<Quadrature, 4> quads{QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
-    fe_values_[0].initialize(quads[0], *this->fe_[0_d], update_values);
-    fe_values_[1].initialize(quads[1], *this->fe_[1_d], update_values);
-    fe_values_[2].initialize(quads[2], *this->fe_[2_d], update_values);
-    fe_values_[3].initialize(quads[3], *this->fe_[3_d], update_values);
+
+    // new code PatchFeValues
+    if (this->boundary_domain_) {
+        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
+            value_acc_0d_bulk_ = this->create_dim_patch_op<0, Op::BulkDomain>(patch_internals);
+            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+        }
+    } else {
+        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
+            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+            value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
+        }
+
+        if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
+            value_acc_1d_side_ = this->create_dim_patch_op<0, Op::SideDomain>(patch_internals);
+            value_acc_2d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
+            value_acc_3d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
+        }
+    }
+
+    // old code FeValues
+    std::array<Quadrature *, 4> quads{new QGauss(0, 1), this->init_quad<1>(eval_points), this->init_quad<2>(eval_points), this->init_quad<3>(eval_points)};
+    fe_values_[0].initialize(*quads[0], *this->fe_[0_d], update_values); // TODO remove initialization of FeValues (4 lines)
+    fe_values_[1].initialize(*quads[1], *this->fe_[1_d], update_values); // add operation to asm_internals.fe_values_
+    fe_values_[2].initialize(*quads[2], *this->fe_[2_d], update_values);
+    fe_values_[3].initialize(*quads[3], *this->fe_[3_d], update_values);
 }
 
 
 template <int spacedim, class Value>
 template <unsigned int dim>
-Quadrature FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_points)
+Quadrature* FieldFE<spacedim, Value>::init_quad(std::shared_ptr<EvalPoints> eval_points)
 {
-    Quadrature quad(dim, eval_points->size(dim));
+    Quadrature *quad = new Quadrature(dim, eval_points->size(dim));
     for (unsigned int k=0; k<eval_points->size(dim); k++)
-        quad.set(k) = eval_points->local_point<dim>(k);
+        quad->set(k) = eval_points->local_point<dim>(k);
     return quad;
+}
+
+
+template <int spacedim, class Value>
+template <unsigned int dim, class Domain>
+FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_internals)
+{
+    using ShapeSelector = internal::InputOpType<Value::NRows_, Value::NCols_>;
+
+    std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
+    uint total_q_points = 0;
+    for (auto *q : quad_vec) total_q_points += q->size();
+    Quadrature *quad = new Quadrature(dim, total_q_points);
+    for (uint i_quad=0, i_pt_global=0; i_quad<quad_vec.size(); ++i_quad) {
+        for (uint i_pt_local=0; i_pt_local<quad_vec[i_quad]->size(); ++i_pt_local) {
+            quad->set(i_pt_global) = quad_vec[i_quad]->point<dim>(i_pt_local);
+            ++i_pt_global;
+        }
+    }
+
+    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[dim].range_begin_, fe_item_[dim].range_end_);
+    std::shared_ptr<FiniteElement<Domain::op_dim(dim)>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<Domain::op_dim(dim)>{}], 0);
+
+    return FeQ<ReturnType>(
+        patch_internals.fe_values_.template get<
+            Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+            Domain::op_dim(dim)
+        >(*quad, fe_component, field_fe_op_data)
+    );
 }
 
 
@@ -384,7 +483,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 template <int spacedim, class Value>
 bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	// Time can be set only for field initialized from input.
-	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
+    if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 	    ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
@@ -813,21 +912,6 @@ double FieldFE<spacedim, Value>::get_scaled_value(int i_cache_el, unsigned int e
 
     return return_val;
 }
-
-
-
-/*template <int spacedim, class Value>
-Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> FieldFE<spacedim, Value>::handle_fe_shape(unsigned int dim,
-        unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
-{
-    Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
-    for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-        v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, comp_index+c);
-    if (Value::NRows_ == Value::NCols_)
-        return v;
-    else
-        return v.t();
-}*/
 
 
 
