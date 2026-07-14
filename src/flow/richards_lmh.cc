@@ -126,8 +126,7 @@ const int RichardsLMH::registrar =
 
 
 RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGovernor *tm)
-    : DarcyLMH(mesh_in, in_rec, tm),
-    init_cond_postprocess_assembly_(nullptr)
+    : DarcyLMH(mesh_in, in_rec, tm)
 {
     eq_fields_ = make_shared<EqFields>();
     eq_data_ = make_shared<EqData>(eq_fields_);
@@ -230,7 +229,7 @@ void RichardsLMH::assembly_linear_system()
 
 //        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
         START_TIMER("RichardsLMH::assembly_steady_mh_matrix");
-        this->mh_matrix_assembly_->assemble(eq_data_->dh_); // fill matrix
+        this->mh_matrix_asm();
         END_TIMER("RichardsLMH::assembly_steady_mh_matrix");
 
         lin_sys_schur().finish_assembly();
@@ -238,29 +237,24 @@ void RichardsLMH::assembly_linear_system()
 }
 
 
-void RichardsLMH::initialize_asm() {
-    if (this->read_init_cond_assembly_ != nullptr) {
-        delete this->read_init_cond_assembly_;
-        delete this->init_cond_postprocess_assembly_;
-        delete this->mh_matrix_assembly_;
-        delete this->reconstruct_schur_assembly_;
-    }
-    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
-    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssemblyDim >(this->eq_data_.get(), eq_data_->dh_.get());
-    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichardsDim >(this->eq_data_.get(), eq_data_->dh_.get());
-    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichardsDim >(this->eq_data_.get(), eq_data_->dh_.get());
+void RichardsLMH::mh_matrix_asm() {
+    GenericAssembly< MHMatrixAssemblyRichardsDim > mh_matrix_assembly(eq_data_.get(), eq_data_->dh_.get());
+    mh_matrix_assembly.assemble(eq_data_->dh_);
+}
+
+
+void RichardsLMH::reconstruct_schur_asm() {
+    GenericAssembly< ReconstructSchurAssemblyRichardsDim > reconstruct_schur_assembly(eq_data_.get(), eq_data_->dh_.get());
+    reconstruct_schur_assembly.assemble(eq_data_->dh_);
 }
 
 
 void RichardsLMH::read_init_cond_asm() {
-    this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
-    this->init_cond_postprocess_assembly_->assemble(eq_data_->dh_cr_);
+    GenericAssembly< ReadInitCondAssemblyLMHDim > read_init_cond_assembly(eq_data_.get());
+    read_init_cond_assembly.assemble(eq_data_->dh_cr_);
+    GenericAssembly< InitCondPostprocessAssemblyDim > init_cond_postprocess_assembly(this->eq_data_.get(), eq_data_->dh_.get());
+    init_cond_postprocess_assembly.assemble(eq_data_->dh_cr_);
 }
 
 
-RichardsLMH::~RichardsLMH() {
-    if (init_cond_postprocess_assembly_!=nullptr) {
-        delete init_cond_postprocess_assembly_;
-        init_cond_postprocess_assembly_ = nullptr;
-    }
-}
+RichardsLMH::~RichardsLMH() {}

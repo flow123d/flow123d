@@ -390,10 +390,7 @@ void DarcyLMH::EqData::reset()
 DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
-    data_changed_(false),
-	read_init_cond_assembly_(nullptr),
-	mh_matrix_assembly_(nullptr),
-	reconstruct_schur_assembly_(nullptr)
+    data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");
@@ -609,8 +606,6 @@ void DarcyLMH::initialize() {
     balance_->units(UnitSI().m(3));
 
     eq_data_->balance_ = this->balance_;
-
-    this->initialize_asm();
 }
 
 void DarcyLMH::initialize_specific()
@@ -689,7 +684,7 @@ void DarcyLMH::zero_time_step()
         // during the reconstruction assembly:
         // - the balance objects are actually allocated
         // - the full solution vector is computed
-        this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
+        this->reconstruct_schur_asm();
     }
     //solution_output(T,right_limit); // data for time T in any case
     output_data();
@@ -703,8 +698,6 @@ void DarcyLMH::zero_time_step()
 void DarcyLMH::update_solution()
 {
     START_TIMER("Darcy solve system");
-
-    this->initialize_asm();
 
     time_->next_time();
 
@@ -840,7 +833,6 @@ void DarcyLMH::solve_nonlinear()
         		si.n_iterations, si.converged_reason, residual_norm);
             break;
         }
-        this->initialize_asm();
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
@@ -856,7 +848,7 @@ void DarcyLMH::solve_nonlinear()
     }
     
 //    reconstruct_solution_from_schur(eq_data_->multidim_assembler);
-    this->reconstruct_schur_assembly_->assemble(eq_data_->dh_);
+    this->reconstruct_schur_asm();
 
     // adapt timestep
     if (! this->zero_time_term()) {
@@ -1276,7 +1268,7 @@ void DarcyLMH::assembly_linear_system() {
         
         eq_data_->time_step_ = time_->dt();
 
-        this->mh_matrix_assembly_->assemble(eq_data_->dh_);; // fill matrix
+        this->mh_matrix_asm(); // fill matrix
 //        assembly_mh_matrix( eq_data_->multidim_assembler ); // fill matrix
 
         lin_sys_schur().finish_assembly();
@@ -1531,19 +1523,6 @@ DarcyLMH::~DarcyLMH() {
 
     if(time_ != nullptr)
         delete time_;
-    
-    if (read_init_cond_assembly_!=nullptr) {
-        delete read_init_cond_assembly_;
-        read_init_cond_assembly_ = nullptr;
-    }
-    if (mh_matrix_assembly_!=nullptr) {
-        delete mh_matrix_assembly_;
-        mh_matrix_assembly_ = nullptr;
-    }
-    if (reconstruct_schur_assembly_!=nullptr) {
-        delete reconstruct_schur_assembly_;
-        reconstruct_schur_assembly_ = nullptr;
-    }
 }
 
 
@@ -1576,20 +1555,21 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 }
 
 
-void DarcyLMH::initialize_asm() {
-    if (this->read_init_cond_assembly_ != nullptr) {
-        delete this->read_init_cond_assembly_;
-        delete this->mh_matrix_assembly_;
-        delete this->reconstruct_schur_assembly_;
-    }
-    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
-    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());
-    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());
+void DarcyLMH::mh_matrix_asm() {
+    GenericAssembly< MHMatrixAssemblyLMHDim > mh_matrix_assembly(eq_data_.get(), eq_data_->dh_.get());
+    mh_matrix_assembly.assemble(eq_data_->dh_);
+}
+
+
+void DarcyLMH::reconstruct_schur_asm() {
+	GenericAssembly< ReconstructSchurAssemblyLMHDim > reconstruct_schur_assembly(eq_data_.get(), eq_data_->dh_.get());
+	reconstruct_schur_assembly.assemble(eq_data_->dh_);
 }
 
 
 void DarcyLMH::read_init_cond_asm() {
-    this->read_init_cond_assembly_->assemble(eq_data_->dh_cr_);
+    GenericAssembly< ReadInitCondAssemblyLMHDim > read_init_cond_assembly(eq_data_.get());
+    read_init_cond_assembly.assemble(eq_data_->dh_cr_);
 }
 
 
