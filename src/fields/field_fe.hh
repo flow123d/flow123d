@@ -587,6 +587,10 @@ struct hash< FieldFeOpData > {
 
         hash_combine(h, std::hash<std::size_t>{}( op_data.dh()->hash() ) );
         hash_combine(h, std::hash<uint>{}( op_data.data_vec().size() ) );
+        if (op_data.data_vec().size() > 0) {
+            hash_combine(h, std::hash<double>{}( op_data.data_vec().get(0) ) );
+            hash_combine(h, std::hash<double>{}( op_data.data_vec().get(op_data.data_vec().size()-1) ) );
+        }
         hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_begin() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_end() ) );
