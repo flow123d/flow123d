@@ -128,9 +128,6 @@ private:
     /// Initialize data of Field given by passed Input::Record
     void init_field_item(Input::Iterator<Input::Record> it, const TimeGovernor & tg);
 
-    /// Create (or re-create) all assembly data members
-    void initialize_asm();
-
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -164,12 +161,6 @@ private:
     /// Objects for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_node_;
-
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< AssemblyOutputElemDataDim > * output_elem_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeDataDim > * output_node_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeDataDim > * output_corner_data_assembly_;
-    GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly_;
 
 };
 
