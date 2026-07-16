@@ -211,9 +211,6 @@ private:
     void compute_iteration_error(double &abs_error, double &rel_error) override;
     
     static const int registrar;
-
-    GenericAssembly<FlowPotentialAssemblyHMDim> *flow_potential_assembly_;
-    GenericAssembly<ResidualAssemblyHMDim> *residual_assembly_;
     
     std::shared_ptr<EqFields> eq_fields_;
 

@@ -218,9 +218,7 @@ void HM_Iterative::EqFields::initialize(Mesh &mesh, HM_Iterative::EqData &eq_dat
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record),
-  IterativeCoupling(in_record),
-  flow_potential_assembly_(nullptr),
-  residual_assembly_(nullptr)
+  IterativeCoupling(in_record)
 {
 	START_TIMER("HM constructor");
     using namespace Input;
@@ -268,9 +266,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
-    residual_assembly_ = new GenericAssembly<ResidualAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
-
     Input::Array user_fields_arr;
     if (input_record_.opt_val("user_fields", user_fields_arr)) {
         FieldSet sham_eq_output; // only for correct call of init_user_fields method
@@ -356,7 +351,8 @@ void HM_Iterative::update_potential()
     auto dh = eq_fields_->ref_potential_ptr_->get_dofhandler();
 
     ref_potential_vec_.zero_entries();
-    flow_potential_assembly_->assemble(dh);
+    GenericAssembly<FlowPotentialAssemblyHMDim> flow_potential_assembly(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
+    flow_potential_assembly.assemble(dh);
 
     ref_potential_vec_.assembly_begin();
     ref_potential_vec_.assembly_end();
@@ -383,7 +379,8 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
     eq_data_->p_dif2 = 0;
     eq_data_->p_norm2 = 0;
 
-    residual_assembly_->assemble(dh);
+    GenericAssembly<ResidualAssemblyHMDim> residual_assembly(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
+    residual_assembly.assemble(dh);
 
     double send_data[] = { eq_data_->p_dif2, eq_data_->p_norm2 };
     double recv_data[2];
@@ -404,8 +401,6 @@ void HM_Iterative::compute_iteration_error(double& abs_error, double& rel_error)
 HM_Iterative::~HM_Iterative() {
 	eq_data_->flow_.reset();
     eq_data_->mechanics_.reset();
-    if (flow_potential_assembly_ != nullptr) delete flow_potential_assembly_;
-    if (residual_assembly_ != nullptr) delete residual_assembly_;
 }
 
 
