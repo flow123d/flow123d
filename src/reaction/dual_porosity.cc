@@ -112,9 +112,7 @@ DualPorosity::EqData::EqData(std::shared_ptr<EqFields> eq_fields)
 : ReactionTerm::EqData(), eq_fields_(eq_fields) {}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
-	: ReactionTerm(init_mesh, in_rec),
-	  init_condition_assembly_(nullptr),
-	  reaction_assembly_(nullptr)
+	: ReactionTerm(init_mesh, in_rec)
 {
     eq_fields_ = std::make_shared<EqFields>();
     eq_fields_->add_coords_field();
@@ -132,10 +130,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 }
 
 DualPorosity::~DualPorosity(void)
-{
-    if (init_condition_assembly_!=nullptr) delete init_condition_assembly_;
-    if (reaction_assembly_!=nullptr) delete reaction_assembly_;
-}
+{}
 
 
 void DualPorosity::make_reactions() {
@@ -190,9 +185,6 @@ void DualPorosity::initialize()
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
   }
-
-  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDpDim >(eq_data_.get());
-  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDpDim >(eq_data_.get());
 
 }
 
@@ -251,7 +243,8 @@ void DualPorosity::zero_time_step()
   if ( FieldCommon::print_message_table(ss, "dual porosity") ) {
       WarningOut() << ss.str();
   }
-  init_condition_assembly_->assemble(eq_data_->dof_handler_);
+  GenericAssembly< InitConditionAssemblyDpDim > init_condition_assembly(eq_data_.get());
+  init_condition_assembly.assemble(eq_data_->dof_handler_);
 
   output_data();
   
@@ -268,7 +261,8 @@ void DualPorosity::update_solution(void)
   eq_fields_->set_time(time_->step(-2), LimitSide::right);
  
   START_TIMER("dual_por_exchange_step");
-  reaction_assembly_->assemble(eq_data_->dof_handler_);
+  GenericAssembly< ReactionAssemblyDpDim > reaction_assembly(eq_data_.get());
+  reaction_assembly.assemble(eq_data_->dof_handler_);
   END_TIMER("dual_por_exchange_step");
   
   if(reaction_mobile) reaction_mobile->update_solution();
