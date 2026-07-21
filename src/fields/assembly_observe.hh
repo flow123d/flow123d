@@ -79,12 +79,26 @@ public:
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             patch_data_.emplace_back(dh_cell, p_data.i_quad_point);
             this->patch_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            auto &ppv = this->patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
+            ++ppv.n_mesh_items_;
         }
         patch_data_.make_permanent();
         this->patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.fe_values_.make_permanent_ppv_data();
 
-        this->reallocate_cache();
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->patch_internals_, multidim_assembly_[1_d]->used_fields_);
+        this->patch_internals_.fe_values_.init_finalize();
         this->patch_internals_.element_cache_map_.create_patch();
+
+        {
+            this->patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+            this->patch_internals_.fe_values_.add_observe_points<3>(multidim_assembly_[3_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+            this->patch_internals_.fe_values_.add_observe_points<2>(multidim_assembly_[2_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+            this->patch_internals_.fe_values_.add_observe_points<1>(multidim_assembly_[1_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+
+            this->patch_internals_.fe_values_.reinit_patch();
+        }
+
         multidim_assembly_[1_d]->eq_fields_->cache_update(this->patch_internals_.element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(patch_data_);

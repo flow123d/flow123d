@@ -196,6 +196,20 @@ public:
         }
     }
 
+    /// Specialization of previous method  used in observe assembly
+    template <unsigned int dim>
+    inline void add_observe_points(std::shared_ptr<BulkIntegralAcc<dim>> integral, const RevertableList<ObserveIntegralData> &integral_data,
+            ElementCacheMap *element_cache_map) {
+        for (uint i_data=0; i_data<integral_data.permanent_size(); ++i_data) {
+            if (integral_data[i_data].cell.dim() != dim) continue;
+            uint element_patch_idx = element_cache_map->position_in_cache(integral_data[i_data].cell.elm_idx());
+            uint elm_pos = this->register_element(integral_data[i_data].cell.elm(), element_patch_idx);
+            auto p = *( integral->points(element_patch_idx).begin()); // evaluation point
+            uint value_cache_idx = element_cache_map->element_eval_point(element_patch_idx, p.eval_point_idx() + integral_data[i_data].subset_index);
+            this->register_bulk_point(integral_data[i_data].cell.elm(), elm_pos, value_cache_idx, 0); // TODO 0 or integral_data[i_data].subset_index
+        }
+    }
+
     /// return reference to assembly arena
     inline AssemblyArena &asm_arena() {
     	return patch_fe_data_.asm_arena_;
