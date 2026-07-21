@@ -72,6 +72,7 @@ public:
 
         unsigned int i_ep, subset_begin, subset_idx;
         auto &patch_point_data = observe_->patch_point_data();
+        std::set<unsigned int> registered_elm_idx;
         for(auto & p_data : patch_point_data) {
             subset_idx = bulk_integrals_[p_data.i_quad]->get_subset_idx();
         	subset_begin = this->patch_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
@@ -79,8 +80,11 @@ public:
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             patch_data_.emplace_back(dh_cell, p_data.i_quad_point);
             this->patch_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
-            auto &ppv = this->patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
-            ++ppv.n_mesh_items_;
+            if (registered_elm_idx.find(p_data.elem_idx) == registered_elm_idx.end()) {
+                auto &ppv = this->patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
+                ++ppv.n_mesh_items_;
+                registered_elm_idx.insert(p_data.elem_idx);
+            }
         }
         patch_data_.make_permanent();
         this->patch_internals_.element_cache_map_.make_paermanent_eval_points();

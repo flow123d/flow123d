@@ -206,7 +206,7 @@ public:
             uint elm_pos = this->register_element(integral_data[i_data].cell.elm(), element_patch_idx);
             auto p = *( integral->points(element_patch_idx).begin()); // evaluation point
             uint value_cache_idx = element_cache_map->element_eval_point(element_patch_idx, p.eval_point_idx() + integral_data[i_data].subset_index);
-            this->register_bulk_point(integral_data[i_data].cell.elm(), elm_pos, value_cache_idx, 0); // TODO 0 or integral_data[i_data].subset_index
+            patch_point_vals_[bulk_domain][integral_data[i_data].cell.dim()].register_observe_point(i_data, elm_pos, value_cache_idx, integral_data[i_data].cell.elm_idx());
         }
     }
 
