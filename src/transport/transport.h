@@ -288,7 +288,10 @@ private:
 
     void alloc_transport_vectors();
     void alloc_transport_structs_mpi();
-    void initialize_asm();
+    void mass_asm();
+    void init_cond_asm();
+    void conc_sources_bdr_asm();
+    void matrix_mpi_asm();
 
 
 
@@ -327,12 +330,6 @@ private:
 
 	std::shared_ptr<OutputTime> output_stream_;
 
-
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< MassAssemblyConvectionDim > * mass_assembly_;
-    GenericAssembly< InitCondAssemblyConvectionDim > * init_cond_assembly_;
-    GenericAssembly< ConcSourcesBdrAssemblyConvectionDim > * conc_sources_bdr_assembly_;
-    GenericAssembly< MatrixMpiAssemblyConvectionDim > * matrix_mpi_assembly_;
 
     friend class TransportOperatorSplitting;
 };

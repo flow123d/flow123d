@@ -150,8 +150,7 @@ template<typename Model>
 TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
         : Model(init_mesh, in_rec),
           input_rec(in_rec),
-          allocation_done(false),
-          mass_assembly_(nullptr)
+          allocation_done(false)
 {
     // Can not use name() + "constructor" here, since START_TIMER only accepts const char *
     // due to constexpr optimization.
@@ -262,39 +261,15 @@ void TransportDG<Model>::initialize()
 
     init_projection = input_rec.val<bool>("init_projection");
 
-    initialize_asm();
-
     // initialization of balance object
-    Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly_->eval_points()->max_size());
+    GenericAssembly< MassAssemblyDim > mass_assembly(eq_data_.get(), eq_data_->dh_.get());
+    Model::balance_->allocate(eq_data_->dh_->distr()->lsize(), mass_assembly.eval_points()->max_size());
 
     eq_fields_->init_condition.setup_components();
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
     {
     	eq_fields_->init_condition[sbi].add_factory( std::make_shared<FieldFE<3, FieldValue<3>::Scalar>::NativeFactory>(sbi, eq_data_->dh_));
     }
-}
-
-
-template<class Model>
-void TransportDG<Model>::initialize_asm()
-{
-    if (mass_assembly_ != nullptr) {
-        delete mass_assembly_;
-        delete stiffness_assembly_;
-        delete sources_assembly_;
-        delete bdr_cond_assembly_;
-        delete init_assembly_;
-    }
-
-    mass_assembly_ = new GenericAssembly< MassAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	sources_assembly_ = new GenericAssembly< SourcesAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-	bdr_cond_assembly_ = new GenericAssembly< BdrConditionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    
-    if(init_projection)
-	    init_assembly_ = new GenericAssembly< InitProjectionAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    else
-        init_assembly_ = new GenericAssembly< InitConditionAssemblyDim >(eq_data_.get());
 }
 
 
@@ -336,14 +311,6 @@ TransportDG<Model>::~TransportDG()
         //delete[] rhs;
         //delete[] mass_vec;
         //delete[] ret_vec;
-
-        if (mass_assembly_ != nullptr) {
-            delete mass_assembly_;
-            delete stiffness_assembly_;
-            delete sources_assembly_;
-            delete bdr_cond_assembly_;
-            delete init_assembly_;
-        }
     }
 
 
@@ -399,10 +366,10 @@ void TransportDG<Model>::preallocate()
         mass_matrix[i] = NULL;
         VecZeroEntries(eq_data_->ret_vec[i]);
     }
-    stiffness_assembly_->assemble(eq_data_->dh_);
-    mass_assembly_->assemble(eq_data_->dh_);
-    sources_assembly_->assemble(eq_data_->dh_);
-    bdr_cond_assembly_->assemble(eq_data_->dh_);
+    stiffness_asm();
+    mass_asm();
+    source_asm();
+    bdr_condition_asm();
     for (unsigned int i=0; i<eq_data_->n_substances(); i++)
     {
       VecAssemblyBegin(eq_data_->ret_vec[i]);
@@ -419,7 +386,6 @@ void TransportDG<Model>::update_solution()
 {
     START_TIMER("DG-ONE STEP");
 
-    initialize_asm();
     Model::time_->next_time();
     Model::time_->view("TDG");
     
@@ -436,7 +402,7 @@ void TransportDG<Model>::update_solution()
         	eq_data_->ls_dt[i]->mat_zero_entries();
             VecZeroEntries(eq_data_->ret_vec[i]);
         }
-        mass_assembly_->assemble(eq_data_->dh_);
+        mass_asm();
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls_dt[i]->finish_assembly();
@@ -466,7 +432,7 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->mat_zero_entries();
         }
-        stiffness_assembly_->assemble(eq_data_->dh_);
+        stiffness_asm();
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
         	eq_data_->ls[i]->finish_assembly();
@@ -488,8 +454,8 @@ void TransportDG<Model>::update_solution()
             eq_data_->ls[i]->start_add_assembly();
             eq_data_->ls[i]->rhs_zero_entries();
         }
-        sources_assembly_->assemble(eq_data_->dh_);
-        bdr_cond_assembly_->assemble(eq_data_->dh_);
+        source_asm();
+        bdr_condition_asm();
         for (unsigned int i=0; i<eq_data_->n_substances(); i++)
         {
             eq_data_->ls[i]->finish_assembly();
@@ -631,13 +597,12 @@ void TransportDG<Model>::set_initial_condition()
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
             eq_data_->ls[sbi]->start_allocation();
         
-        init_assembly_->assemble(eq_data_->dh_);
+        init_projection_asm();
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
             eq_data_->ls[sbi]->start_add_assembly();
 
-        initialize_asm();
-        init_assembly_->assemble(eq_data_->dh_);
+        init_projection_asm();
 
         for (unsigned int sbi=0; sbi<eq_data_->n_substances(); sbi++)
         {
@@ -646,7 +611,7 @@ void TransportDG<Model>::set_initial_condition()
         }
     }
     else
-        init_assembly_->assemble(eq_data_->dh_);
+        init_condition_asm();
 }
 
 
@@ -679,6 +644,49 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     // update mass_vec for the case that mass matrix changes in next time step
     for (unsigned int sbi=0; sbi<eq_data_->n_substances(); ++sbi)
         MatMult(*(eq_data_->ls_dt[sbi]->get_matrix()), eq_data_->ls[sbi]->get_solution(), mass_vec[sbi]);
+}
+
+
+template<class Model>
+void TransportDG<Model>::mass_asm()
+{
+    GenericAssembly< MassAssemblyDim > mass_assembly(eq_data_.get(), eq_data_->dh_.get());
+    mass_assembly.assemble(eq_data_->dh_);
+}
+
+template<class Model>
+void TransportDG<Model>::stiffness_asm()
+{
+	GenericAssembly< StiffnessAssemblyDim > stiffness_assembly(eq_data_.get(), eq_data_->dh_.get());
+    stiffness_assembly.assemble(eq_data_->dh_);
+}
+
+template<class Model>
+void TransportDG<Model>::source_asm()
+{
+	GenericAssembly< SourcesAssemblyDim > sources_assembly(eq_data_.get(), eq_data_->dh_.get());
+    sources_assembly.assemble(eq_data_->dh_);
+}
+
+template<class Model>
+void TransportDG<Model>::bdr_condition_asm()
+{
+	GenericAssembly< BdrConditionAssemblyDim > bdr_cond_assembly(eq_data_.get(), eq_data_->dh_.get());
+    bdr_cond_assembly.assemble(eq_data_->dh_);
+}
+
+template<class Model>
+void TransportDG<Model>::init_condition_asm()
+{
+    GenericAssembly< InitConditionAssemblyDim > init_assembly(eq_data_.get());
+    init_assembly.assemble(eq_data_->dh_);
+}
+
+template<class Model>
+void TransportDG<Model>::init_projection_asm()
+{
+    GenericAssembly< InitProjectionAssemblyDim > init_assembly(eq_data_.get(), eq_data_->dh_.get());
+    init_assembly.assemble(eq_data_->dh_);
 }
 
 

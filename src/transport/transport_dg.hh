@@ -325,7 +325,14 @@ private:
     
     void output_region_statistics();
 
-    void initialize_asm();
+    void mass_asm();
+    void stiffness_asm();
+    void source_asm();
+    void bdr_condition_asm();
+    void init_condition_asm();
+    void init_projection_asm();
+
+
 
 
 
@@ -394,12 +401,6 @@ private:
 	bool init_projection;
     // @}
 
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< MassAssemblyDim > * mass_assembly_;
-    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
-    GenericAssembly< SourcesAssemblyDim > * sources_assembly_;
-    GenericAssembly< BdrConditionAssemblyDim > * bdr_cond_assembly_;
-	GenericAssemblyBase * init_assembly_;
 };
 
 

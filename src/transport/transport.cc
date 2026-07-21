@@ -122,7 +122,7 @@ ConvectionTransport::EqFields::EqFields() : TransportEqFields()
  */
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
-  input_rec(in_rec), mass_assembly_(nullptr)
+  input_rec(in_rec)
 {
 	START_TIMER("ConvectionTransport");
     eq_fields_ = make_shared<EqFields>();
@@ -186,23 +186,6 @@ void ConvectionTransport::initialize()
     eq_data_->balance_ = this->balance();
     eq_data_->set_time_governor(this->time_);
     eq_data_->max_edg_sides = max(this->mesh_->max_edge_sides(1), max(this->mesh_->max_edge_sides(2), this->mesh_->max_edge_sides(3)));
-    initialize_asm();
-}
-
-void ConvectionTransport::initialize_asm()
-{
-    if (mass_assembly_ != nullptr) {
-        delete mass_assembly_;
-        delete init_cond_assembly_;
-        delete conc_sources_bdr_assembly_;
-        delete matrix_mpi_assembly_;
-    }
-
-    mass_assembly_ = new GenericAssembly< MassAssemblyConvectionDim >(eq_data_.get());
-    init_cond_assembly_ = new GenericAssembly< InitCondAssemblyConvectionDim >(eq_data_.get());
-    conc_sources_bdr_assembly_ = new GenericAssembly< ConcSourcesBdrAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
-    matrix_mpi_assembly_ = new GenericAssembly< MatrixMpiAssemblyConvectionDim >(eq_data_.get(), eq_data_->dh_.get());
-    matrix_mpi_assembly_->set_min_edge_sides(1);
 }
 
 
@@ -234,12 +217,6 @@ ConvectionTransport::~ConvectionTransport()
         delete vpconc;
         delete eq_data_->bcvcorr;
         delete vcumulative_corr;
-        
-        // assembly objects
-        delete mass_assembly_;
-        delete init_cond_assembly_;
-        delete conc_sources_bdr_assembly_;
-        delete matrix_mpi_assembly_;
     }
 }
 
@@ -313,19 +290,19 @@ void ConvectionTransport::zero_time_step()
 	}
 
     //set_initial_condition();
-    init_cond_assembly_->assemble(eq_data_->dh_);
+    init_cond_asm();
     //create_mass_matrix();
-    mass_assembly_->assemble(eq_data_->dh_);
+    mass_asm();
     
     START_TIMER("Convection balance zero time step");
 
     START_TIMER("convection_matrix_assembly");
     //create_transport_matrix_mpi();
-    matrix_mpi_assembly_->assemble(eq_data_->dh_);
+    matrix_mpi_asm();
     END_TIMER("convection_matrix_assembly");
 	START_TIMER("sources_reinit_set_bc");
     //conc_sources_bdr_conditions();
-    conc_sources_bdr_assembly_->assemble(eq_data_->dh_);
+	conc_sources_bdr_asm();
 	END_TIMER("sources_reinit_set_bc");
 
     // write initial condition
@@ -341,8 +318,6 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     eq_fields_->set_time(time_->step(), LimitSide::right); // set to the last computed time
 
     START_TIMER("data reinit");
-    
-    initialize_asm();
 
     bool cfl_changed = false;
     
@@ -351,7 +326,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     {
         START_TIMER("convection_matrix_assembly");
         //create_transport_matrix_mpi();
-        matrix_mpi_assembly_->assemble(eq_data_->dh_);
+        matrix_mpi_asm();
         END_TIMER("convection_matrix_assembly");
         eq_data_->is_convection_matrix_scaled=false;
         cfl_changed = true;
@@ -361,7 +336,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     if (eq_data_->is_mass_diag_changed)
     {
         //create_mass_matrix();
-        mass_assembly_->assemble(eq_data_->dh_);
+    	mass_asm();
         cfl_changed = true;
         DebugOut() << "CFL changed - mass matrix.\n";
     }
@@ -373,7 +348,7 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
     {
     	START_TIMER("sources_reinit_set_bc");
         //conc_sources_bdr_conditions();
-        conc_sources_bdr_assembly_->assemble(eq_data_->dh_);
+    	conc_sources_bdr_asm();
     	END_TIMER("sources_reinit_set_bc");
         if( eq_data_->sources_changed_ ) {
             is_src_term_scaled = false;
@@ -407,8 +382,6 @@ bool ConvectionTransport::evaluate_time_constraint(double& time_constraint)
 void ConvectionTransport::update_solution() {
 
     START_TIMER("convection-one step");
-    
-    initialize_asm();
 
     // proceed to next time - which we are about to compute
     // explicit scheme looks one step back and uses data from previous time
@@ -463,7 +436,7 @@ void ConvectionTransport::update_solution() {
     {
         VecCopy(eq_data_->mass_diag, vpmass_diag);
         //create_mass_matrix();
-        mass_assembly_->assemble(eq_data_->dh_);
+        mass_asm();
     } else eq_data_->is_mass_diag_changed = false;
     
 
@@ -555,4 +528,29 @@ void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 	balance_ = balance;
 	eq_data_->subst_idx = balance_->add_quantities(eq_data_->substances_.names());
     eq_data_->balance_ = this->balance();
+}
+
+void ConvectionTransport::mass_asm()
+{
+    GenericAssembly< MassAssemblyConvectionDim > mass_assembly(eq_data_.get());
+    mass_assembly.assemble(eq_data_->dh_);
+}
+
+void ConvectionTransport::init_cond_asm()
+{
+    GenericAssembly< InitCondAssemblyConvectionDim > init_cond_assembly(eq_data_.get());
+    init_cond_assembly.assemble(eq_data_->dh_);
+}
+
+void ConvectionTransport::conc_sources_bdr_asm()
+{
+    GenericAssembly< ConcSourcesBdrAssemblyConvectionDim > conc_sources_bdr_assembly(eq_data_.get(), eq_data_->dh_.get());
+    conc_sources_bdr_assembly.assemble(eq_data_->dh_);
+}
+
+void ConvectionTransport::matrix_mpi_asm()
+{
+    GenericAssembly< MatrixMpiAssemblyConvectionDim > matrix_mpi_assembly(eq_data_.get(), eq_data_->dh_.get());
+    matrix_mpi_assembly.set_min_edge_sides(1);
+    matrix_mpi_assembly.assemble(eq_data_->dh_);
 }
