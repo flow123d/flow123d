@@ -1054,6 +1054,203 @@ public:
 };
 
 
+/**
+ * Specialization defining FE vector operations
+ */
+class PatchFETestTensor : public PatchFETestBase {
+public:
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmTensor : public PatchFETestBase::AsmBase<dim> {
+    public:
+        /// Constructor
+        AsmTensor(PatchFETestTensor *generic, uint quad_order, uint quad_diff_order)
+        : PatchFETestBase::AsmBase<dim>(generic, quad_order, quad_diff_order),
+          generic_inst_(generic),
+          tensor_shape_( this->bulk_integral_->tensor_shape() ),
+          tensor_shape_side_( this->edge_integral_->tensor_shape() )
+        {
+            shared_ptr<FE_P<dim>> fe_p = std::make_shared< FE_P<dim> >(quad_order);
+            shared_ptr<FiniteElement<dim>> fe = std::make_shared<FESystem<dim>>(fe_p, FETensor, 9);
+        }
+
+        /// Destructor
+        virtual ~AsmTensor() {}
+
+        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
+            auto p = *( this->bulk_integral_->points(this->generic_->patch_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
+
+            double jxw = this->jxw_(p);
+            arma::mat33 tensor_shape_dof1 = tensor_shape_.shape(1)(p);
+            arma::mat33 tensor_shape_dof6 = tensor_shape_.shape(6)(p);
+
+            EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_bulk_jxw_tensor_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_bulk_tensor_shape_dof1_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_bulk_tensor_shape_dof6_[i_test_elem] );
+        }
+
+        void test_side_values() {
+            uint n_patch_edges = this->integrals_.n_patch_edges();
+            if (n_patch_edges == 0) return;
+
+            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
+            for (unsigned int i=0; i<n_patch_edges; ++i) {
+                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
+
+                uint k=0;
+                for (DHCellSide cell_side : range) {
+                    auto p = *( this->edge_integral_->points(cell_side).begin() );
+
+                    double jxw = this->jxw_side_(p);
+                    arma::mat33 tensor_shape_dof1 = tensor_shape_side_.shape(1)(p);
+                    arma::mat33 tensor_shape_dof6 = tensor_shape_side_.shape(6)(p);
+
+                    EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_side_jxw_tensor_[k] );
+                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_side_tensor_shape_dof1_[k] );
+                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_side_tensor_shape_dof6_[k] );
+                    ++k;
+                }
+            }
+        }
+
+    	/** Declaration of data members **/
+        PatchFETestTensor *generic_inst_;                                    ///< pointer to generic object
+        FeQArray<Tensor> tensor_shape_;
+        FeQArray<Tensor> tensor_shape_side_;
+    };
+
+
+    PatchFETestTensor(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
+    : PatchFETestBase(dh),
+      multidim_asm_(this, quad_order, 0)
+    {
+	    patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
+
+	    ref_bulk_jxw_tensor_ = { 3.46410, 2.82843, 2.82843, 1.33333, 1.33333 };
+	    ref_side_jxw_tensor_ = { 2.82843, 2.82843 };
+	    ref_bulk_tensor_shape_dof1_ = {
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
+        };
+	    ref_bulk_tensor_shape_dof6_ = {
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
+        };
+	    ref_side_tensor_shape_dof1_ = {
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
+        };
+	    ref_side_tensor_shape_dof6_ = {
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
+        };
+    }
+
+    ~PatchFETestTensor() {}
+
+    void set_integrals_arrays() {
+        this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
+        this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
+        this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
+        this->coupling_integrals_[0] = multidim_asm_[1_d]->coupling_integral_;
+        this->coupling_integrals_[1] = multidim_asm_[2_d]->coupling_integral_;
+        this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
+        this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
+        this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
+        this->bulk_integrals_diff_order_[0] = multidim_asm_[1_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[1] = multidim_asm_[2_d]->bulk_integral_diff_order_;
+        this->bulk_integrals_diff_order_[2] = multidim_asm_[3_d]->bulk_integral_diff_order_;
+    }
+
+    void initialize() {
+        set_integrals_arrays();
+        this->patch_internals_.fe_values_.init_finalize();
+    }
+
+    void update_patch() override {
+        patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+        patch_internals_.fe_values_.add_patch_points<3>(multidim_asm_[3_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->patch_internals_.element_cache_map_);
+        patch_internals_.fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->patch_internals_.element_cache_map_);
+
+        START_TIMER("reinit_patch");
+        patch_internals_.fe_values_.reinit_patch();
+        END_TIMER("reinit_patch");
+    }
+
+    void test_evaluation(bool print_tables=false) {
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
+            ++ppv_bulk.n_mesh_items_;
+            this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+            this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
+            this->add_coupling_integral(dh_cell, this->coupling_integrals_[dh_cell.dim()-1]);
+            this->patch_internals_.fe_values_.make_permanent_ppv_data();
+        }
+        multidim_asm_[1_d]->integrals_.make_permanent();
+        multidim_asm_[2_d]->integrals_.make_permanent();
+        multidim_asm_[3_d]->integrals_.make_permanent();
+        patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.element_cache_map_.create_patch(); // simplest_cube.msh contains 4 bulk regions, 9 bulk elements and 32 bulk points
+        update_patch();
+
+        if (print_tables) {
+            std::stringstream ss;
+            patch_internals_.fe_values_.print_operations(ss);
+            WarningOut() << ss.str();
+        }
+
+        unsigned int i_test_elem = 0;
+        for (auto elm_idx : used_element_idx_) {
+            DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
+            switch (dh_cell.dim()) {
+            case 1:
+                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 2:
+                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            case 3:
+                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_test_elem);
+                break;
+            }
+            ++i_test_elem;
+        }
+
+        multidim_asm_[1_d]->test_side_values();
+        multidim_asm_[2_d]->test_side_values();
+        multidim_asm_[3_d]->test_side_values();
+    }
+
+    void reset() override {
+        multidim_asm_[1_d]->integrals_.reset();
+        multidim_asm_[2_d]->integrals_.reset();
+        multidim_asm_[3_d]->integrals_.reset();
+        this->patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        this->patch_internals_.fe_values_.reset();
+    }
+
+    MixedPtr<AsmTensor, 1> multidim_asm_;  ///< Assembly object
+
+    std::vector<double> ref_bulk_jxw_tensor_;
+    std::vector<double> ref_side_jxw_tensor_;
+    std::vector<arma::mat33> ref_bulk_tensor_shape_dof1_;
+    std::vector<arma::mat33> ref_bulk_tensor_shape_dof6_;
+    std::vector<arma::mat33> ref_side_tensor_shape_dof1_;
+    std::vector<arma::mat33> ref_side_tensor_shape_dof6_;
+};
+
+
 /// Complete test with FE scalar operations
 void compare_evaluation_func_scalar(Mesh* mesh, unsigned int i_run, bool print_fa_data = false) {
     std::vector<uint> quad_orders = {1, 2};
@@ -1100,6 +1297,21 @@ void compare_evaluation_diff_orders(Mesh* mesh, unsigned int quad_order_1, unsig
     patch_fe.test_evaluation();
 }
 
+/// Complete test with FE tensor operations
+void compare_evaluation_func_tensor(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    MixedPtr<FE_P> fe_p( quad_order );
+    MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FETensor, 9);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    PatchFETestTensor patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.reset();
+    patch_fe.test_evaluation();
+}
+
 
 
 TEST(PatchFeTest, complete_evaluation) {
@@ -1111,11 +1323,15 @@ TEST(PatchFeTest, complete_evaluation) {
     Mesh* mesh = mesh_full_constructor(input_str);
 
     // two tests with different quad_order and Scalar / Vector FE operations
+    std::cout << " - Scalar test -----------------------------" << std::endl;
     compare_evaluation_func_scalar(mesh, 0, true);
     compare_evaluation_func_scalar(mesh, 1);
+    std::cout << " - Vector test -----------------------------" << std::endl;
     compare_evaluation_func_vector(mesh, 1, true);
     std::cout << " - Different quad orders test -----------------------------" << std::endl;
     compare_evaluation_diff_orders(mesh, 0, 2, true);
+    std::cout << " - Tensor test -----------------------------" << std::endl;
+    compare_evaluation_func_tensor(mesh, 0);
 }
 
 
