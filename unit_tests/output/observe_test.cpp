@@ -241,6 +241,12 @@ TEST(ObservePoint, find_observe_point) {
 }
 
 
+void observe_asm(std::shared_ptr<EqData> field_set, std::unordered_set<string> observe_fields_list, std::shared_ptr<TestObserve> obs, std::shared_ptr<DOFHandlerMultiDim> dh) {
+    GenericAssemblyObserve< AssemblyObserveOutput > observe_output_assembly( field_set.get(), observe_fields_list, std::dynamic_pointer_cast<Observe>(obs) );
+    observe_output_assembly.assemble(dh);
+}
+
+
 TEST(Observe, all) {
     Profiler::instance();
     armadillo_setup();
@@ -274,8 +280,6 @@ TEST(Observe, all) {
     observe_fields_list.insert("vector_field");
     observe_fields_list.insert("tensor_field");
     //observe_fields_list.insert("enum_field");
-    GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly;
-    observe_output_assembly = new GenericAssemblyObserve< AssemblyObserveOutput >( field_set.get(), observe_fields_list, std::dynamic_pointer_cast<Observe>(obs) );
 
     // read fiels
     TimeGovernor tg(0.0, 1.0);
@@ -287,12 +291,12 @@ TEST(Observe, all) {
         obs->prepare_compute_data(field.name(), field.time(), field.n_shape());
     }
 
-    observe_output_assembly->assemble(dh);
+    observe_asm(field_set, observe_fields_list, obs, dh);
     obs->output_time_frame( true );
 
     tg.next_time();
     field_set->set_time( tg.step(), LimitSide::right);
-    observe_output_assembly->assemble(dh);
+    observe_asm(field_set, observe_fields_list, obs, dh);
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results

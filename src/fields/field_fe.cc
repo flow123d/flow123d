@@ -312,23 +312,17 @@ void FieldFE<spacedim, Value>::cache_reinit(PatchInternals &patch_internals)
 
     // new code PatchFeValues
     if (this->boundary_domain_) {
-        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
-            value_acc_0d_bulk_ = this->create_dim_patch_op<0, Op::BulkDomain>(patch_internals);
-            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
-            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
-        }
+        value_acc_0d_bulk_ = this->create_dim_patch_op<0, Op::BulkDomain>(patch_internals);
+        value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+        value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
     } else {
-        if ( patch_internals.fe_values_.is_used_domain(bulk_domain) ) {
-            value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
-            value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
-            value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
-        }
+        value_acc_1d_bulk_ = this->create_dim_patch_op<1, Op::BulkDomain>(patch_internals);
+        value_acc_2d_bulk_ = this->create_dim_patch_op<2, Op::BulkDomain>(patch_internals);
+        value_acc_3d_bulk_ = this->create_dim_patch_op<3, Op::BulkDomain>(patch_internals);
 
-        if ( patch_internals.fe_values_.is_used_domain(side_domain) ) {
-            value_acc_1d_side_ = this->create_dim_patch_op<0, Op::SideDomain>(patch_internals);
-            value_acc_2d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
-            value_acc_3d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
-        }
+        value_acc_1d_side_ = this->create_dim_patch_op<0, Op::SideDomain>(patch_internals);
+        value_acc_2d_side_ = this->create_dim_patch_op<1, Op::SideDomain>(patch_internals);
+        value_acc_3d_side_ = this->create_dim_patch_op<2, Op::SideDomain>(patch_internals);
     }
 
     // old code FeValues
@@ -360,6 +354,11 @@ FeQ<typename FieldFE<spacedim, Value>::ReturnType> FieldFE<spacedim, Value>::cre
     std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
     uint total_q_points = 0;
     for (auto *q : quad_vec) total_q_points += q->size();
+
+    if (total_q_points == 0) {
+        return FeQ<ReturnType>();
+    }
+
     Quadrature *quad = new Quadrature(dim, total_q_points);
     for (uint i_quad=0, i_pt_global=0; i_quad<quad_vec.size(); ++i_quad) {
         for (uint i_pt_local=0; i_pt_local<quad_vec[i_quad]->size(); ++i_pt_local) {

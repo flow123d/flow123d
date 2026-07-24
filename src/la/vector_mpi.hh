@@ -216,6 +216,12 @@ public:
      * Set some vector elements on local indices @p idx.
      */
     void set_subvec(const LocDofVec& loc_indices, const arma::vec& values);
+
+    /**
+     * Compute hash value of VectorMPI.
+     */
+    std::size_t hash() const;
+
 private:
 
     /// shared pointer to vector of data
