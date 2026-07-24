@@ -609,6 +609,17 @@ public:
         return factory_.template make_qarray<Vector, Op::DispatchVectorShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
+    /**
+     * @brief Return the value of the @p function_no-th tensor shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
+    {
+        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::SideDomain, 3>>(component_idx);
+    }
+
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
     inline FeQArray<Vector> grad_scalar_shape(uint component_idx=0)
     {
