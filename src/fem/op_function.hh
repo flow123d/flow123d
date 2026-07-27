@@ -639,7 +639,7 @@ public:
             for (uint i_row=0; i_row<n_comp; ++i_row)
                 for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                     for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col*n_comp+i_row);
+                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+n_comp*i_row);
         }
     }
 
@@ -662,11 +662,11 @@ public:
 
         for (uint s=0; s<dim+1; ++s) {
             Quadrature side_q = quad.make_from_side<dim>(s);
-            for (uint i_c=0; i_c<spacedim; ++i_c)
-                for (uint i_r=0; i_r<spacedim; ++i_r)
+            for (uint i_col=0; i_col<spacedim; ++i_col)
+                for (uint i_row=0; i_row<spacedim; ++i_row)
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_tensor_value(s*spacedim+i_r, spacedim*i_dof+i_c)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_c*spacedim+i_r);
+                            ref_tensor_value(s*spacedim+i_row, spacedim*i_dof+i_col)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+spacedim*i_row);
         }
     }
 
