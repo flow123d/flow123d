@@ -43,6 +43,7 @@ public:
           quad_( new QGauss(dim, 2*quad_order) ),
           quad_low_( new QGauss(dim-1, 2*quad_order) ),
           bulk_integral_( create_bulk_integral(quad_) ),
+  	      edge_integral_( create_edge_integral(quad_low_) ),
   	      boundary_integral_( create_boundary_integral(quad_low_) )
         {}
 
@@ -63,6 +64,16 @@ public:
             return result.first->second;
         }
 
+        std::shared_ptr<EdgeIntegralAcc<dim>> create_edge_integral(Quadrature *quad) {
+            ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
+            auto result = integrals_.edge_.insert({
+                    tpl,
+                    std::make_shared<EdgeIntegralAcc<dim>>(generic_->patch_internals_, quad)
+                });
+            return result.first->second;
+        }
+
         std::shared_ptr<BoundaryIntegralAcc<dim>> create_boundary_integral(Quadrature *quad) {
             ASSERT_PERMANENT_EQ(quad->dim()+1, dim);
             std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
@@ -79,6 +90,7 @@ public:
         Quadrature *quad_low_;                                            ///< Quadrature (of dim-1).
         DimIntegrals<dim> integrals_;                                     ///< Set of used integrals.
         std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;             ///< BulkIntegral
+        std::shared_ptr<EdgeIntegralAcc<dim>> edge_integral_;             ///< EdgeIntegral
         std::shared_ptr<BoundaryIntegralAcc<dim>> boundary_integral_;     ///< BoundaryIntegral between dim-1 and dim elements
 
     };
@@ -94,8 +106,32 @@ public:
             { 1.31132, 2.6, 2.6, 2.68541, 2.1 },
             { 1.3254, 1.89548, 1.89548, 1.2032, 2.54359 }
         };
+        ref_scalar_fe_side_op_ = {
+            { 1.6, 1.6 },
+            { 2.8107497, 3.1847305 }
+        };
+        ref_scalar_fe_bdr_side_op_ = {
+            {
+                { 1.1, 2.1 },
+                { 2.67735027, 1.31132487, 2.67735027, 2.88867513 },
+                { 2.6, 2.76666667, 2.1, 1.93333333 }
+            },
+            {
+                { 1.1, 3.1 },
+                { 1.32540333, 2.7, 1.32540333, 0.92540333 },
+                { 1.89548023, 1.99189698, 1.21978928, 2.35272815 }
+            }
+        };
         ref_vector_fe_op_ = {
             {1.73397, 1.88868, 2.88868}, {2.6, 3.6, 1.93333}, {3.6, 1.93333, 2.26667}, {1.92918, 2.37639, 2.82361}, {2.65279, 3.1, 2.99443}
+        };
+        ref_vector_fe_side_op_ = {
+            {3.6, 1.9333333, 2.2666667}, {3.6, 1.9333333, 2.2666667}
+        };
+        ref_vector_fe_bdr_side_op_ = {
+            { {1.1, 2.1, 3.1}, {4.1, 1.1, 2.1} },
+            { {2.88867513, 3.88867513, 1.73397460}, {1.88867513, 2.88867513, 3.88867513}, {3.88867513, 1.73397460, 1.88867513}, {3.67735027, 1.52264973, 2.52264973} },
+            { {1.93333333, 2.26666667, 2.6}, {1.76666667, 2.1, 3.1}, {2.43333333, 3.43333333, 3.1}, {2.6, 2.93333333, 3.26666667} }
         };
         ref_tensor_fe_op_ = {
             { 1.94529946, 3.88867513, 1.88867513, 1.88867513, 4.88867513, 2.88867513, 2.88867513, 1.94529946, 3.88867510 },
@@ -103,6 +139,10 @@ public:
             { 2.26666667, 3.60000000, 2.43333333, 2.43333333, 4.60000000, 2.60000000, 2.60000000, 2.26666667, 3.60000000 },
             { 2.96180340, 2.34376941, 3.27082039, 3.27082039, 2.65278640, 4.27082039, 4.27082039, 2.96180340, 2.34376941 },
             { 2.51458980, 4.13262379, 3.51458980, 3.51458980, 1.51458980, 3.82360680, 3.82360680, 2.51458980, 4.13262379 }
+        };
+        ref_tensor_fe_side_op_ = {
+            { 2.43333333, 4.6, 2.6, 2.6, 2.26666667, 3.6, 3.6, 2.43333333, 4.6 },
+            { 2.43333333, 4.6, 2.6, 2.6, 2.26666667, 3.6, 3.6, 2.43333333, 4.6 }
         };
     }
 
@@ -119,6 +159,25 @@ public:
         for (uint i=uint( patch_internals_.eval_points_->subset_begin(dim, subset_idx) );
                   i<uint( patch_internals_.eval_points_->subset_end(dim, subset_idx) ); ++i) {
             patch_internals_.element_cache_map_.add_eval_point(reg_idx, cell.elm_idx(), i, cell.local_idx());
+        }
+    }
+
+    void add_edge_integral(DHCellAccessor cell, std::shared_ptr<EdgeIntegral> edge_integral) {
+        uint dim = cell.dim();
+        auto &ppv_edge = patch_internals_.fe_values_.ppv(side_domain, dim);
+        for( DHCellSide cell_side : cell.side_range() ) {
+            if ( (cell_side.n_edge_sides() >= 2) && (cell_side.edge_sides().begin()->element().idx() == cell.elm_idx())) {
+                auto range = cell_side.edge_sides();
+                edge_integral->patch_data().emplace_back(range);
+
+                for( DHCellSide edge_side : range ) {
+                    ++ppv_edge.n_mesh_items_;
+                    unsigned int reg_idx = edge_side.element().region_idx().idx();
+                    for (auto p : edge_integral->points(edge_side, &patch_internals_.element_cache_map_) ) {
+                        patch_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                    }
+                }
+            }
         }
     }
 
@@ -179,8 +238,13 @@ public:
 
     /* Reference values */
     std::vector< std::vector<double> > ref_scalar_fe_op_;
+    std::vector< std::vector<double> > ref_scalar_fe_side_op_;
+    std::vector< std::vector< std::vector<double> > > ref_scalar_fe_bdr_side_op_;
     std::vector<arma::vec3> ref_vector_fe_op_;
+    std::vector<arma::vec3> ref_vector_fe_side_op_;
+    std::vector< std::vector<arma::vec3> > ref_vector_fe_bdr_side_op_;
     std::vector<arma::mat33> ref_tensor_fe_op_;
+    std::vector<arma::mat33> ref_tensor_fe_side_op_;
 };
 
 
@@ -197,7 +261,9 @@ public:
         AsmScalar(FieldFePatchOpTestScalar *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  scalar_field_fe_op_( this->field_fe_scalar_op() )
+		  scalar_field_fe_op_( this->field_fe_scalar_op<Op::BulkDomain>(this->quad_) ),
+		  scalar_field_fe_side_op_( this->field_fe_scalar_op<Op::SideDomain>(this->quad_low_) ),
+		  scalar_field_fe_bdr_side_op_( this->field_fe_scalar_op<Op::SideDomain>(this->quad_low_) )
         {}
 
         /// Destructor
@@ -210,7 +276,42 @@ public:
             EXPECT_TEST_NEAR( fe_op, this->generic_->ref_scalar_fe_op_[i_run][i_test_elem] );
         }
 
-        inline FeQ<Scalar> field_fe_scalar_op()
+        void test_side_values(unsigned int i_run) {
+            uint n_patch_edges = this->integrals_.n_patch_edges();
+            if (n_patch_edges == 0) return;
+
+            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
+            for (unsigned int i=0; i<n_patch_edges; ++i) {
+                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
+
+                uint k=0;
+                for (DHCellSide cell_side : range) {
+                    auto p = *( this->edge_integral_->points(cell_side).begin() );
+
+                    double fe_op_val = this->scalar_field_fe_side_op_(p);
+                    EXPECT_TEST_NEAR( fe_op_val, this->generic_->ref_scalar_fe_side_op_[i_run][k] );
+                    ++k;
+                }
+            }
+        }
+
+        void test_bdr_values(unsigned int i_run) {
+            uint n_patch_boundaries = this->integrals_.n_patch_boundaries();
+            if (n_patch_boundaries == 0) return;
+
+            RevertableList<BoundaryIntegralData> &patch_bdr_list = this->integrals_.boundary_.begin()->second->patch_data(); // list of bdrs is same for all items of integrals_.boundaries_
+            for (unsigned int i=0; i<n_patch_boundaries; ++i) {
+                DHCellSide bdr_side = patch_bdr_list[i].side;
+                auto p_side = *( this->boundary_integral_->points(bdr_side).begin() );
+                //auto p_bdr = p_side.point_bdr( bdr_side.side().cond().element_accessor() );
+
+                double fe_op_val = this->scalar_field_fe_bdr_side_op_(p_side);
+                EXPECT_TEST_NEAR( fe_op_val, this->generic_->ref_scalar_fe_bdr_side_op_[i_run][dim-1][i] );
+            }
+        }
+
+        template <class Domain>
+        inline FeQ<Scalar> field_fe_scalar_op(Quadrature *quad)
         {
         	using ShapeSelector = internal::InputOpType<1, 1>;
 
@@ -222,9 +323,9 @@ public:
 
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
-                    dim
-                >(*this->quad_, fe_component, field_fe_op_data)
+                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
+				    dim
+                >(*quad, fe_component, field_fe_op_data)
             );
         }
 
@@ -232,6 +333,8 @@ public:
         /** Declaration of data members **/
         //FieldFePatchOpTestScalar *generic_inst_;     ///< pointer to generic object
         FeQ<Scalar> scalar_field_fe_op_;
+        FeQ<Scalar> scalar_field_fe_side_op_;
+        FeQ<Scalar> scalar_field_fe_bdr_side_op_;
     };
 
 
@@ -248,6 +351,9 @@ public:
         this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
         this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
         this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
         this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
         this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
@@ -259,7 +365,6 @@ public:
         patch_internals_.fe_values_.add_patch_points<2>(multidim_asm_[2_d]->integrals_, &this->patch_internals_.element_cache_map_);
         patch_internals_.fe_values_.add_patch_points<1>(multidim_asm_[1_d]->integrals_, &this->patch_internals_.element_cache_map_);
 
-        START_TIMER("reinit_patch");
         patch_internals_.fe_values_.reinit_patch();
         END_TIMER("reinit_patch");
     }
@@ -270,7 +375,8 @@ public:
             auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
-            //this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
+            this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
         	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
@@ -303,6 +409,14 @@ public:
             }
             ++i_test_elem;
         }
+
+        multidim_asm_[1_d]->test_side_values(i_run);
+        multidim_asm_[2_d]->test_side_values(i_run);
+        multidim_asm_[3_d]->test_side_values(i_run);
+
+        multidim_asm_[1_d]->test_bdr_values(i_run);
+        multidim_asm_[2_d]->test_bdr_values(i_run);
+        multidim_asm_[3_d]->test_bdr_values(i_run);
     }
 
     void reset() override {
@@ -331,7 +445,9 @@ public:
     	AsmVector(FieldFePatchOpTestVector *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  vector_field_fe_op_( this->field_fe_vector_op() )
+		  vector_field_fe_op_( this->field_fe_vector_op<Op::BulkDomain>(this->quad_) ),
+		  vector_field_fe_side_op_( this->field_fe_vector_op<Op::SideDomain>(this->quad_low_) ),
+		  vector_field_fe_bdr_side_op_( this->field_fe_vector_op<Op::SideDomain>(this->quad_low_) )
         {}
 
         /// Destructor
@@ -344,7 +460,42 @@ public:
             EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_vector_fe_op_[i_test_elem] );
         }
 
-        inline FeQ<Vector> field_fe_vector_op()
+        void test_side_values() {
+            uint n_patch_edges = this->integrals_.n_patch_edges();
+            if (n_patch_edges == 0) return;
+
+            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
+            for (unsigned int i=0; i<n_patch_edges; ++i) {
+                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
+
+                uint k=0;
+                for (DHCellSide cell_side : range) {
+                    auto p = *( this->edge_integral_->points(cell_side).begin() );
+
+                    arma::vec3 fe_op_val = this->vector_field_fe_side_op_(p);
+                    EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_side_op_[k] );
+                    ++k;
+                }
+            }
+        }
+
+        void test_bdr_values() {
+            uint n_patch_boundaries = this->integrals_.n_patch_boundaries();
+            if (n_patch_boundaries == 0) return;
+
+            RevertableList<BoundaryIntegralData> &patch_bdr_list = this->integrals_.boundary_.begin()->second->patch_data(); // list of bdrs is same for all items of integrals_.boundaries_
+            for (unsigned int i=0; i<n_patch_boundaries; ++i) {
+                DHCellSide bdr_side = patch_bdr_list[i].side;
+                auto p_side = *( this->boundary_integral_->points(bdr_side).begin() );
+                //auto p_bdr = p_side.point_bdr( bdr_side.side().cond().element_accessor() );
+
+                arma::vec3 fe_op_val = this->vector_field_fe_bdr_side_op_(p_side);
+                EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_bdr_side_op_[dim-1][i] );
+            }
+        }
+
+        template <class Domain>
+        inline FeQ<Vector> field_fe_vector_op(Quadrature *quad)
         {
         	using ShapeSelector = internal::InputOpType<3, 1>;
 
@@ -356,9 +507,9 @@ public:
 
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
+                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
                     dim
-                >(*this->quad_, fe_component, field_fe_op_data)
+                >(*quad, fe_component, field_fe_op_data)
             );
         }
 
@@ -366,6 +517,8 @@ public:
         /** Declaration of data members **/
         //FieldFePatchOpTestVector *generic_inst_;     ///< pointer to generic object
         FeQ<Vector> vector_field_fe_op_;
+        FeQ<Vector> vector_field_fe_side_op_;
+        FeQ<Vector> vector_field_fe_bdr_side_op_;
     };
 
 
@@ -382,6 +535,9 @@ public:
         this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
         this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
         this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
         this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
         this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
@@ -404,6 +560,8 @@ public:
             auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
+            this->add_boundary_integral(dh_cell, this->boundary_integrals_[dh_cell.dim()-1]);
         	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
@@ -435,6 +593,14 @@ public:
             }
             ++i_test_elem;
         }
+
+        multidim_asm_[1_d]->test_side_values();
+        multidim_asm_[2_d]->test_side_values();
+        multidim_asm_[3_d]->test_side_values();
+
+        multidim_asm_[1_d]->test_bdr_values();
+        multidim_asm_[2_d]->test_bdr_values();
+        multidim_asm_[3_d]->test_bdr_values();
     }
 
     void reset() override {
@@ -463,7 +629,8 @@ public:
     	AsmTensor(FieldFePatchOpTestTensor *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  tensor_field_fe_op_( this->field_fe_tensor_op() )
+		  tensor_field_fe_op_( this->field_fe_tensor_op<Op::BulkDomain>(this->quad_) ),
+		  tensor_field_fe_side_op_( this->field_fe_tensor_op<Op::SideDomain>(this->quad_low_) )
         {}
 
         /// Destructor
@@ -476,7 +643,27 @@ public:
             EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_tensor_fe_op_[i_test_elem] );
         }
 
-        inline FeQ<Tensor> field_fe_tensor_op()
+        void test_side_values() {
+            uint n_patch_edges = this->integrals_.n_patch_edges();
+            if (n_patch_edges == 0) return;
+
+            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
+            for (unsigned int i=0; i<n_patch_edges; ++i) {
+                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
+
+                uint k=0;
+                for (DHCellSide cell_side : range) {
+                    auto p = *( this->edge_integral_->points(cell_side).begin() );
+
+                    arma::mat33 fe_op_val = this->tensor_field_fe_side_op_(p);
+                    EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_tensor_fe_side_op_[k] );
+                    ++k;
+                }
+            }
+        }
+
+        template <class Domain>
+        inline FeQ<Tensor> field_fe_tensor_op(Quadrature *quad)
         {
         	using ShapeSelector = internal::InputOpType<3, 3>;
 
@@ -488,9 +675,9 @@ public:
 
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Op::BulkDomain, typename ShapeSelector::type<dim, Op::BulkDomain, 3>, 3>,
+                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
                     dim
-                >(*this->quad_, fe_component, field_fe_op_data)
+                >(*quad, fe_component, field_fe_op_data)
             );
         }
 
@@ -498,6 +685,7 @@ public:
         /** Declaration of data members **/
         //FieldFePatchOpTestVector *generic_inst_;     ///< pointer to generic object
         FeQ<Tensor> tensor_field_fe_op_;
+        FeQ<Tensor> tensor_field_fe_side_op_;
     };
 
 
@@ -514,6 +702,9 @@ public:
         this->bulk_integrals_[0] = multidim_asm_[1_d]->bulk_integral_;
         this->bulk_integrals_[1] = multidim_asm_[2_d]->bulk_integral_;
         this->bulk_integrals_[2] = multidim_asm_[3_d]->bulk_integral_;
+        this->edge_integrals_[0] = multidim_asm_[1_d]->edge_integral_;
+        this->edge_integrals_[1] = multidim_asm_[2_d]->edge_integral_;
+        this->edge_integrals_[2] = multidim_asm_[3_d]->edge_integral_;
         this->boundary_integrals_[0] = multidim_asm_[1_d]->boundary_integral_;
         this->boundary_integrals_[1] = multidim_asm_[2_d]->boundary_integral_;
         this->boundary_integrals_[2] = multidim_asm_[3_d]->boundary_integral_;
@@ -536,6 +727,7 @@ public:
             auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
             ++ppv_bulk.n_mesh_items_;
         	this->add_bulk_integral(dh_cell, this->bulk_integrals_[dh_cell.dim()-1]);
+        	this->add_edge_integral(dh_cell, this->edge_integrals_[dh_cell.dim()-1]);
         	this->patch_internals_.fe_values_.make_permanent_ppv_data();
         }
         multidim_asm_[1_d]->integrals_.make_permanent();
@@ -567,6 +759,10 @@ public:
             }
             ++i_test_elem;
         }
+
+        multidim_asm_[1_d]->test_side_values();
+        multidim_asm_[2_d]->test_side_values();
+        multidim_asm_[3_d]->test_side_values();
     }
 
     void reset() override {
@@ -639,9 +835,12 @@ TEST(FieldFePatchOpTest, complete_evaluation) {
     Mesh* mesh = mesh_full_constructor(input_str);
 
     // two tests with different quad_order and Scalar / Vector FE operations
+    std::cout << " --- scalar" << std::endl;
     compare_evaluation_func_scalar(mesh, 0, true);
     compare_evaluation_func_scalar(mesh, 1);
+    std::cout << " --- vectorr" << std::endl;
     compare_evaluation_func_vector(mesh, 1, true);
+    std::cout << " --- tensor" << std::endl;
     compare_evaluation_func_tensor(mesh, 1);
 }
 
