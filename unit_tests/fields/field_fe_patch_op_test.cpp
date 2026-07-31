@@ -97,8 +97,8 @@ public:
     };
 
 
-    FieldFePatchOpTestBase(std::shared_ptr<DOFHandlerMultiDim> dh)
-    : dh_(dh),
+    FieldFePatchOpTestBase(std::shared_ptr<DOFHandlerMultiDim> dh, std::shared_ptr<DOFHandlerMultiDim> dh_bc)
+    : dh_(dh), dh_bc_(dh_bc),
 	  patch_internals_(dh_->ds()->fe())
     {
         used_element_idx_ = {0, 1, 2, 3, 8}; // dimension of used elements: 1D, 2D, 2D, 3D, 3D
@@ -235,7 +235,8 @@ public:
     }
 
 
-    std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;                                  ///< DofHandler of bulk mesh
+    std::shared_ptr<DOFHandlerMultiDim> dh_bc_;                               ///< DofHandler of boundary mesh
 
     PatchInternals patch_internals_;                                          ///< Holds common patch objects (EvalPoints, ElementCacheMap ...)
     std::array<std::shared_ptr<BulkIntegral>, 3> bulk_integrals_;             ///< Bulk integrals of dim 1,2,3
@@ -271,9 +272,10 @@ public:
         AsmScalar(FieldFePatchOpTestScalar *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  scalar_field_fe_op_( this->field_fe_scalar_op<Op::BulkDomain>(this->quad_) ),
-		  scalar_field_fe_side_op_( this->field_fe_scalar_op<Op::SideDomain>(this->quad_low_) ),
-		  scalar_field_fe_bdr_side_op_( this->field_fe_scalar_op<Op::SideDomain>(this->quad_low_) )
+		  scalar_field_fe_op_( this->field_fe_scalar_op<Op::BulkDomain, dim>(this->quad_, this->generic_->dh_, 0) ),
+		  scalar_field_fe_side_op_( this->field_fe_scalar_op<Op::SideDomain, dim>(this->quad_low_, this->generic_->dh_, 0) ),
+		  scalar_field_fe_bdr_op_( this->field_fe_scalar_op<Op::BulkDomain, dim-1>(this->quad_low_, this->generic_->dh_bc_, 1) ),
+		  scalar_field_fe_bdr_side_op_( this->field_fe_scalar_op<Op::SideDomain, dim>(this->quad_low_, this->generic_->dh_, 0) )
         {}
 
         /// Destructor
@@ -315,26 +317,28 @@ public:
                 auto p_side = *( this->boundary_integral_->points(bdr_side).begin() );
                 //auto p_bdr = p_side.point_bdr( bdr_side.side().cond().element_accessor() );
 
-                double fe_op_val = this->scalar_field_fe_bdr_side_op_(p_side);
-                EXPECT_TEST_NEAR( fe_op_val, this->generic_->ref_scalar_fe_bdr_side_op_[i_run][dim-1][i] );
+                double fe_op_side_val = this->scalar_field_fe_bdr_side_op_(p_side);
+                //double fe_op_bdr_val = this->scalar_field_fe_bdr_op_(p_bdr);
+                EXPECT_TEST_NEAR( fe_op_side_val, this->generic_->ref_scalar_fe_bdr_side_op_[i_run][dim-1][i] );
+                //std::cout << std::setprecision(8) << " - test_bdr_values dim " << dim << ", i_run " << i_run << ", i_bdr " << i << ", value " << fe_op_bdr_val << std::endl;
             }
         }
 
-        template <class Domain>
-        inline FeQ<Scalar> field_fe_scalar_op(Quadrature *quad)
+        template <class Domain, uint op_dim>
+        inline FeQ<Scalar> field_fe_scalar_op(Quadrature *quad, std::shared_ptr<DOFHandlerMultiDim> dh, uint is_bdr)
         {
         	using ShapeSelector = internal::InputOpType<1, 1>;
 
-            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            VectorMPI data_vec = dh->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
-            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+            std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
 
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
-				    dim
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+				    op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
         }
@@ -344,12 +348,13 @@ public:
         //FieldFePatchOpTestScalar *generic_inst_;     ///< pointer to generic object
         FeQ<Scalar> scalar_field_fe_op_;
         FeQ<Scalar> scalar_field_fe_side_op_;
+        FeQ<Scalar> scalar_field_fe_bdr_op_;
         FeQ<Scalar> scalar_field_fe_bdr_side_op_;
     };
 
 
-    FieldFePatchOpTestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : FieldFePatchOpTestBase(dh),
+    FieldFePatchOpTestScalar(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh, std::shared_ptr<DOFHandlerMultiDim> dh_bc)
+    : FieldFePatchOpTestBase(dh, dh_bc),
       multidim_asm_(this, quad_order)
     {
         patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
@@ -455,9 +460,9 @@ public:
     	AsmVector(FieldFePatchOpTestVector *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  vector_field_fe_op_( this->field_fe_vector_op<Op::BulkDomain>(this->quad_) ),
-		  vector_field_fe_side_op_( this->field_fe_vector_op<Op::SideDomain>(this->quad_low_) ),
-		  vector_field_fe_bdr_side_op_( this->field_fe_vector_op<Op::SideDomain>(this->quad_low_) )
+		  vector_field_fe_op_( this->field_fe_vector_op<Op::BulkDomain, dim>(this->quad_, this->generic_->dh_, 0) ),
+		  vector_field_fe_side_op_( this->field_fe_vector_op<Op::SideDomain, dim>(this->quad_low_, this->generic_->dh_, 0) ),
+		  vector_field_fe_bdr_side_op_( this->field_fe_vector_op<Op::SideDomain, dim>(this->quad_low_, this->generic_->dh_, 0) )
         {}
 
         /// Destructor
@@ -504,21 +509,21 @@ public:
             }
         }
 
-        template <class Domain>
-        inline FeQ<Vector> field_fe_vector_op(Quadrature *quad)
+        template <class Domain, uint op_dim>
+        inline FeQ<Vector> field_fe_vector_op(Quadrature *quad, std::shared_ptr<DOFHandlerMultiDim> dh, uint is_bdr)
         {
         	using ShapeSelector = internal::InputOpType<3, 1>;
 
-            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            VectorMPI data_vec = dh->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
-            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+            std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
 
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
-                    dim
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+                    op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
         }
@@ -532,8 +537,8 @@ public:
     };
 
 
-    FieldFePatchOpTestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : FieldFePatchOpTestBase(dh),
+    FieldFePatchOpTestVector(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh, std::shared_ptr<DOFHandlerMultiDim> dh_bc)
+    : FieldFePatchOpTestBase(dh, dh_bc),
       multidim_asm_(this, quad_order)
     {
         patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
@@ -639,8 +644,8 @@ public:
     	AsmTensor(FieldFePatchOpTestTensor *generic, uint quad_order)
         : FieldFePatchOpTestBase::AsmBase<dim>(generic, quad_order),
           //generic_inst_(generic),
-		  tensor_field_fe_op_( this->field_fe_tensor_op<Op::BulkDomain>(this->quad_) ),
-		  tensor_field_fe_side_op_( this->field_fe_tensor_op<Op::SideDomain>(this->quad_low_) )
+		  tensor_field_fe_op_( this->field_fe_tensor_op<Op::BulkDomain, dim>(this->quad_, this->generic_->dh_, 0) ),
+		  tensor_field_fe_side_op_( this->field_fe_tensor_op<Op::SideDomain, dim>(this->quad_low_, this->generic_->dh_, 0) )
         {}
 
         /// Destructor
@@ -672,21 +677,21 @@ public:
             }
         }
 
-        template <class Domain>
-        inline FeQ<Tensor> field_fe_tensor_op(Quadrature *quad)
+        template <class Domain, uint op_dim>
+        inline FeQ<Tensor> field_fe_tensor_op(Quadrature *quad, std::shared_ptr<DOFHandlerMultiDim> dh, uint is_bdr)
         {
         	using ShapeSelector = internal::InputOpType<3, 3>;
 
-            VectorMPI data_vec = this->generic_->dh_->create_vector();
+            VectorMPI data_vec = dh->create_vector();
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
-            std::shared_ptr<FiniteElement<dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<dim>{}], 0);
-            FieldFeOpData field_fe_op_data(this->generic_->dh_, data_vec, 0, 0, fe_component->n_dofs());
+            std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
 
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<dim, Domain, typename ShapeSelector::type<dim, Domain, 3>, 3>,
-                    dim
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+                    op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
         }
@@ -699,8 +704,8 @@ public:
     };
 
 
-    FieldFePatchOpTestTensor(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh)
-    : FieldFePatchOpTestBase(dh),
+    FieldFePatchOpTestTensor(unsigned int quad_order, std::shared_ptr<DOFHandlerMultiDim> dh, std::shared_ptr<DOFHandlerMultiDim> dh_bc)
+    : FieldFePatchOpTestBase(dh, dh_bc),
       multidim_asm_(this, quad_order)
     {
         patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
@@ -795,8 +800,12 @@ void compare_evaluation_func_scalar(Mesh* mesh, unsigned int i_run, bool print_f
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
+    MeshBase* bc_mesh = mesh->bc_mesh();
+    std::shared_ptr<DiscreteSpace> ds_bc = std::make_shared<EqualOrderDiscreteSpace>( bc_mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh_bc = std::make_shared<DOFHandlerMultiDim>(*bc_mesh);
+    dh_bc->distribute_dofs(ds_bc);
 
-    FieldFePatchOpTestScalar patch_fe(quad_orders[i_run], dh);
+    FieldFePatchOpTestScalar patch_fe(quad_orders[i_run], dh, dh_bc);
     patch_fe.initialize();
     patch_fe.test_evaluation(i_run, print_fa_data);
     patch_fe.reset();
@@ -811,8 +820,12 @@ void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool pr
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
+    MeshBase* bc_mesh = mesh->bc_mesh();
+    std::shared_ptr<DiscreteSpace> ds_bc = std::make_shared<EqualOrderDiscreteSpace>( bc_mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh_bc = std::make_shared<DOFHandlerMultiDim>(*bc_mesh);
+    dh_bc->distribute_dofs(ds_bc);
 
-    FieldFePatchOpTestVector patch_fe(quad_order, dh);
+    FieldFePatchOpTestVector patch_fe(quad_order, dh, dh_bc);
     patch_fe.initialize();
     patch_fe.test_evaluation(0, print_fa_data); // i_run = 0 ... index of ref_result of FE_P type
     patch_fe.reset();
@@ -826,8 +839,12 @@ void compare_evaluation_func_rt0_vector(Mesh* mesh, unsigned int quad_order, boo
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
+    MeshBase* bc_mesh = mesh->bc_mesh();
+    std::shared_ptr<DiscreteSpace> ds_bc = std::make_shared<EqualOrderDiscreteSpace>( bc_mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh_bc = std::make_shared<DOFHandlerMultiDim>(*bc_mesh);
+    dh_bc->distribute_dofs(ds_bc);
 
-    FieldFePatchOpTestVector patch_fe(quad_order, dh);
+    FieldFePatchOpTestVector patch_fe(quad_order, dh, dh_bc);
     patch_fe.initialize();
     patch_fe.test_evaluation(1, print_fa_data); // i_run = 1 ... index of ref_result of FE_RT0 type
     patch_fe.reset();
@@ -842,8 +859,12 @@ void compare_evaluation_func_tensor(Mesh* mesh, unsigned int quad_order, bool pr
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
+    MeshBase* bc_mesh = mesh->bc_mesh();
+    std::shared_ptr<DiscreteSpace> ds_bc = std::make_shared<EqualOrderDiscreteSpace>( bc_mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh_bc = std::make_shared<DOFHandlerMultiDim>(*bc_mesh);
+    dh_bc->distribute_dofs(ds_bc);
 
-    FieldFePatchOpTestTensor patch_fe(quad_order, dh);
+    FieldFePatchOpTestTensor patch_fe(quad_order, dh, dh_bc);
     patch_fe.initialize();
     patch_fe.test_evaluation(print_fa_data);
     patch_fe.reset();
