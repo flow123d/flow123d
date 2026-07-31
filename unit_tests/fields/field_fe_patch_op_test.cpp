@@ -11,6 +11,7 @@
 #include "fem/patch_fe_values.hh"
 #include "fem/patch_op_impl.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "tools/revertable_list.hh"
 #include "fields/field_fe.hh"
 #include "system/sys_profiler.hh"
@@ -123,15 +124,24 @@ public:
             }
         };
         ref_vector_fe_op_ = {
-            {1.73397, 1.88868, 2.88868}, {2.6, 3.6, 1.93333}, {3.6, 1.93333, 2.26667}, {1.92918, 2.37639, 2.82361}, {2.65279, 3.1, 2.99443}
+            { {1.73397, 1.88868, 2.88868}, {2.6, 3.6, 1.93333}, {3.6, 1.93333, 2.26667}, {1.92918, 2.37639, 2.82361}, {2.65279, 3.1, 2.99443} },
+            { {-0.24466, -0.24466, 0.24466}, {-0.60693, -0.60693, 1.56742}, {0.54801, 0.54801, 0.19445}, {1.16276, 0.33138, -0.16862}, {1.12408, 1.74817, 0.12408} }
         };
         ref_vector_fe_side_op_ = {
-            {3.6, 1.9333333, 2.2666667}, {3.6, 1.9333333, 2.2666667}
+            { {3.6, 1.9333333, 2.2666667}, {3.6, 1.9333333, 2.2666667} },
+			{ {-1.7333333, 0.1833333, -0.3166667}, {0.3166667, 0.1833333, 1.7333333} }
         };
         ref_vector_fe_bdr_side_op_ = {
-            { {1.1, 2.1, 3.1}, {4.1, 1.1, 2.1} },
-            { {2.88867513, 3.88867513, 1.73397460}, {1.88867513, 2.88867513, 3.88867513}, {3.88867513, 1.73397460, 1.88867513}, {3.67735027, 1.52264973, 2.52264973} },
-            { {1.93333333, 2.26666667, 2.6}, {1.76666667, 2.1, 3.1}, {2.43333333, 3.43333333, 3.1}, {2.6, 2.93333333, 3.26666667} }
+            {
+                { {1.1, 2.1, 3.1}, {4.1, 1.1, 2.1} },
+                { {2.88867513, 3.88867513, 1.73397460}, {1.88867513, 2.88867513, 3.88867513}, {3.88867513, 1.73397460, 1.88867513}, {3.67735027, 1.52264973, 2.52264973} },
+                { {1.93333333, 2.26666667, 2.6}, {1.76666667, 2.1, 3.1}, {2.43333333, 3.43333333, 3.1}, {2.6, 2.93333333, 3.26666667} }
+            },
+            {
+                { {-0.6350853, -0.6350853, 0.6350853}, {1.2124356, 1.2124356, -1.2124356} },
+                { {-1.0960155, -1.0960155, 1.925453}, {-0.4758841, -0.4758841, -0.3889087}, {0.4011695, 0.4011695, 0.7424621}, {1.0960155, 1.0960155, 0.0476161} },
+                { {0.8666667, 0.1833333, 0.55}, {1.7333333, 1.05, -0.3166667}, {0.9333333, 1.3666667, 1.05}, {2.05, 2.4833333, -0.0666667} }
+            }
         };
         ref_tensor_fe_op_ = {
             { 1.94529946, 3.88867513, 1.88867513, 1.88867513, 4.88867513, 2.88867513, 2.88867513, 1.94529946, 3.88867510 },
@@ -240,9 +250,9 @@ public:
     std::vector< std::vector<double> > ref_scalar_fe_op_;
     std::vector< std::vector<double> > ref_scalar_fe_side_op_;
     std::vector< std::vector< std::vector<double> > > ref_scalar_fe_bdr_side_op_;
-    std::vector<arma::vec3> ref_vector_fe_op_;
-    std::vector<arma::vec3> ref_vector_fe_side_op_;
-    std::vector< std::vector<arma::vec3> > ref_vector_fe_bdr_side_op_;
+    std::vector< std::vector< arma::vec3 > > ref_vector_fe_op_;
+    std::vector< std::vector< arma::vec3 > > ref_vector_fe_side_op_;
+    std::vector< std::vector< std::vector< arma::vec3 > > > ref_vector_fe_bdr_side_op_;
     std::vector<arma::mat33> ref_tensor_fe_op_;
     std::vector<arma::mat33> ref_tensor_fe_side_op_;
 };
@@ -453,14 +463,14 @@ public:
         /// Destructor
         virtual ~AsmVector() {}
 
-        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_test_elem) {
+        void test_bulk_values(DHCellAccessor dh_cell, unsigned int i_run, unsigned int i_test_elem) {
             auto p = *( this->bulk_integral_->points(this->generic_->patch_internals_.element_cache_map_.position_in_cache(dh_cell.elm_idx())).begin() );
-            arma::vec3 fe_op = vector_field_fe_op_(p);
+            arma::vec3 fe_op_val = vector_field_fe_op_(p);
 
-            EXPECT_TEST_ARMA_NEAR( fe_op, this->generic_->ref_vector_fe_op_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_op_[i_run][i_test_elem] );
         }
 
-        void test_side_values() {
+        void test_side_values(unsigned int i_run) {
             uint n_patch_edges = this->integrals_.n_patch_edges();
             if (n_patch_edges == 0) return;
 
@@ -473,13 +483,13 @@ public:
                     auto p = *( this->edge_integral_->points(cell_side).begin() );
 
                     arma::vec3 fe_op_val = this->vector_field_fe_side_op_(p);
-                    EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_side_op_[k] );
+                    EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_side_op_[i_run][k] );
                     ++k;
                 }
             }
         }
 
-        void test_bdr_values() {
+        void test_bdr_values(unsigned int i_run) {
             uint n_patch_boundaries = this->integrals_.n_patch_boundaries();
             if (n_patch_boundaries == 0) return;
 
@@ -490,7 +500,7 @@ public:
                 //auto p_bdr = p_side.point_bdr( bdr_side.side().cond().element_accessor() );
 
                 arma::vec3 fe_op_val = this->vector_field_fe_bdr_side_op_(p_side);
-                EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_bdr_side_op_[dim-1][i] );
+                EXPECT_TEST_ARMA_NEAR( fe_op_val, this->generic_->ref_vector_fe_bdr_side_op_[i_run][dim-1][i] );
             }
         }
 
@@ -554,7 +564,7 @@ public:
         END_TIMER("reinit_patch");
     }
 
-    void test_evaluation(bool print_tables=false) {
+    void test_evaluation(unsigned int i_run, bool print_tables=false) {
         for (auto elm_idx : used_element_idx_) {
             DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
             auto &ppv_bulk = patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
@@ -582,25 +592,25 @@ public:
             DHCellAccessor dh_cell = dh_->cell_accessor_from_element(elm_idx);
             switch (dh_cell.dim()) {
             case 1:
-                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_test_elem);
+                multidim_asm_[1_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
                 break;
             case 2:
-                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_test_elem);
+                multidim_asm_[2_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
                 break;
             case 3:
-                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_test_elem);
+                multidim_asm_[3_d]->test_bulk_values(dh_cell, i_run, i_test_elem);
                 break;
             }
             ++i_test_elem;
         }
 
-        multidim_asm_[1_d]->test_side_values();
-        multidim_asm_[2_d]->test_side_values();
-        multidim_asm_[3_d]->test_side_values();
+        multidim_asm_[1_d]->test_side_values(i_run);
+        multidim_asm_[2_d]->test_side_values(i_run);
+        multidim_asm_[3_d]->test_side_values(i_run);
 
-        multidim_asm_[1_d]->test_bdr_values();
-        multidim_asm_[2_d]->test_bdr_values();
-        multidim_asm_[3_d]->test_bdr_values();
+        multidim_asm_[1_d]->test_bdr_values(i_run);
+        multidim_asm_[2_d]->test_bdr_values(i_run);
+        multidim_asm_[3_d]->test_bdr_values(i_run);
     }
 
     void reset() override {
@@ -804,13 +814,28 @@ void compare_evaluation_func_vector(Mesh* mesh, unsigned int quad_order, bool pr
 
     FieldFePatchOpTestVector patch_fe(quad_order, dh);
     patch_fe.initialize();
-    patch_fe.test_evaluation(print_fa_data);
+    patch_fe.test_evaluation(0, print_fa_data); // i_run = 0 ... index of ref_result of FE_P type
     patch_fe.reset();
-    patch_fe.test_evaluation();
+    patch_fe.test_evaluation(0);
 }
 
 
 /// Complete test with FE vector operations
+void compare_evaluation_func_rt0_vector(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
+    MixedPtr<FE_RT0> fe;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+
+    FieldFePatchOpTestVector patch_fe(quad_order, dh);
+    patch_fe.initialize();
+    patch_fe.test_evaluation(1, print_fa_data); // i_run = 1 ... index of ref_result of FE_RT0 type
+    patch_fe.reset();
+    patch_fe.test_evaluation(1);
+}
+
+
+/// Complete test with FE tensor operations
 void compare_evaluation_func_tensor(Mesh* mesh, unsigned int quad_order, bool print_fa_data = false) {
     MixedPtr<FE_P> fe_p( quad_order );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FETensor, 9);
@@ -838,8 +863,10 @@ TEST(FieldFePatchOpTest, complete_evaluation) {
     std::cout << " --- scalar" << std::endl;
     compare_evaluation_func_scalar(mesh, 0, true);
     compare_evaluation_func_scalar(mesh, 1);
-    std::cout << " --- vectorr" << std::endl;
+    std::cout << " --- vector FE_P" << std::endl;
     compare_evaluation_func_vector(mesh, 1, true);
+    std::cout << " --- vector FE_RT0" << std::endl;
+    compare_evaluation_func_rt0_vector(mesh, 1);
     std::cout << " --- tensor" << std::endl;
     compare_evaluation_func_tensor(mesh, 1);
 }
