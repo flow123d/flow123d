@@ -21,9 +21,9 @@
 #include "field.hh"
 #include "field_algo_base.impl.hh"
 #include "field_fe.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/integral_points.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_set.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
@@ -31,6 +31,7 @@
 #include "io/observe.hh"
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
+#include "fem/patch_internals.hh"
 
 
 /******************************************************************************************
@@ -698,10 +699,10 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const {
+void Field<spacedim, Value>::cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const {
     // Call cache_reinit of FieldAlgoBase descendant on appropriate region
 	if (region_fields_[region_idx] != nullptr)
-	    region_fields_[region_idx]->cache_reinit(cache_map);
+	    region_fields_[region_idx]->cache_reinit(patch_internals);
 }
 
 

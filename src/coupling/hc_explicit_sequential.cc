@@ -223,7 +223,6 @@ void HC_ExplicitSequential::run_simulation()
     const double theta=0.5;
 
     {
-        START_TIMER("HC water zero time step");
         water->zero_time_step();
         for(auto &process : processes_)
             process.velocity_changed = true;
@@ -291,6 +290,7 @@ void HC_ExplicitSequential::run_simulation()
 
 
 HC_ExplicitSequential::~HC_ExplicitSequential() {
+    START_TIMER("HC destructor");
 	water.reset();
 	for(auto &pdata : processes_) pdata.process.reset();
     delete mesh;

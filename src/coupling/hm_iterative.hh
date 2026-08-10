@@ -28,13 +28,14 @@
 #include "flow/darcy_flow_interface.hh"
 #include "mechanics/elasticity.hh"
 #include "system/exceptions.hh"
+#include "system/sys_profiler.hh"
 
 class Mesh;
 class FieldCommon;
 class DarcyLMH;
 
-template<unsigned int dim> class FlowPotentialAssemblyHM;
-template<unsigned int dim> class ResidualAssemblyHM;
+template<unsigned int dim, class EqData> class FlowPotentialAssemblyHM;
+template<unsigned int dim, class EqData> class ResidualAssemblyHM;
 
 namespace it = Input::Type;
 
@@ -71,6 +72,7 @@ public:
 
     void solve_step()
     {
+        START_TIMER("HM step");
         it = 0;
         double abs_error = std::numeric_limits<double>::max();
         double rel_error = std::numeric_limits<double>::max();
@@ -83,6 +85,7 @@ public:
             update_after_iteration();
         }
         update_after_converged();
+        END_TIMER("HM step");
     }
 
     unsigned int iteration()
@@ -132,21 +135,8 @@ private:
  */
 class HM_Iterative : public DarcyFlowInterface, public IterativeCoupling {
 public:
+	class EqData;
     
-    class EqData
-    {
-    public:
-        /// steady or unsteady water flow simulator based on MH scheme
-        std::shared_ptr<DarcyLMH> flow_;
-
-        /// solute transport with chemistry through operator splitting
-        std::shared_ptr<Elasticity> mechanics_;
-
-        double p_dif2; ///< Squared norm of pressure difference in two subsequent iterations.
-        double p_norm2; ///< Squared pressure norm in the last iteration.
-    };
-
-
     class EqFields : public FieldSet
     {
     public:
@@ -173,6 +163,30 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > old_div_u_ptr_;
     };
     
+    class EqData
+    {
+    public:
+        typedef HM_Iterative::EqFields EqFields;
+
+        EqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
+
+        /// Shared pointer of EqFields
+        std::shared_ptr<EqFields> eq_fields_;
+
+        /// steady or unsteady water flow simulator based on MH scheme
+        std::shared_ptr<DarcyLMH> flow_;
+
+        /// solute transport with chemistry through operator splitting
+        std::shared_ptr<Elasticity> mechanics_;
+
+        double p_dif2; ///< Squared norm of pressure difference in two subsequent iterations.
+        double p_norm2; ///< Squared pressure norm in the last iteration.
+    };
+
+
+    template<unsigned int dim> using FlowPotentialAssemblyHMDim = FlowPotentialAssemblyHM<dim, EqData>;
+    template<unsigned int dim> using ResidualAssemblyHMDim = ResidualAssemblyHM<dim, EqData>;
+
     /// Define input record.
     static const Input::Type::Record & get_input_type();
 
@@ -198,8 +212,8 @@ private:
     
     static const int registrar;
 
-    GenericAssembly<FlowPotentialAssemblyHM> *flow_potential_assembly_;
-    GenericAssembly<ResidualAssemblyHM> *residual_assembly_;
+    GenericAssembly<FlowPotentialAssemblyHMDim> *flow_potential_assembly_;
+    GenericAssembly<ResidualAssemblyHMDim> *residual_assembly_;
     
     std::shared_ptr<EqFields> eq_fields_;
 

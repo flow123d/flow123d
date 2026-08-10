@@ -115,7 +115,8 @@ Timer::Timer(const CodePoint &cp, int parent)
   max_allocated_(0),
   current_allocated_(0),
   alloc_called(0),
-  dealloc_called(0)
+  dealloc_called(0),
+  memory_monitor_on_(false)
 #ifdef FLOW123D_HAVE_PETSC
 , petsc_start_memory(0),
   petsc_end_memory (0),
@@ -166,7 +167,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
     parent.dealloc_called += child.dealloc_called;
     
 #ifdef FLOW123D_HAVE_PETSC
-    if (petsc_monitor_memory) {
+    if (global_monitor_memory) {
         // add differences from child
         parent.petsc_memory_difference += child.petsc_memory_difference;
         parent.current_allocated_ += child.current_allocated_;
@@ -183,7 +184,7 @@ void Profiler::accept_from_child(Timer &parent, Timer &child) {
 
 void Timer::pause() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // get the maximum resident set size (memory used) for the program.
         PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
         if (petsc_peak_memory < petsc_local_peak_memory)
@@ -194,7 +195,7 @@ void Timer::pause() {
 
 void Timer::resume() {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // tell PETSc to monitor the maximum memory usage so
         //   that PetscMemoryGetMaximumUsage() will work.
         PetscMemorySetGetMaximumUsage();
@@ -203,15 +204,6 @@ void Timer::resume() {
 }
 
 void Timer::start() {
-#ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
-        // Tell PETSc to monitor the maximum memory usage so
-        //   that PetscMemoryGetMaximumUsage() will work.
-        PetscMemorySetGetMaximumUsage();
-        PetscMemoryGetCurrentUsage (&petsc_start_memory);
-    }
-#endif // FLOW123D_HAVE_PETSC
-    
     if (start_count == 0) {
         start_time = TimePoint();
     }
@@ -221,9 +213,22 @@ void Timer::start() {
 
 
 
+void Timer::start_memory_monitoring() {
+#ifdef FLOW123D_HAVE_PETSC
+    if (Profiler::get_global_memory_monitoring()) {
+        // Tell PETSc to monitor the maximum memory usage so
+        //   that PetscMemoryGetMaximumUsage() will work.
+        PetscMemorySetGetMaximumUsage();
+        PetscMemoryGetCurrentUsage (&petsc_start_memory);
+        memory_monitor_on_ = true;
+    }
+#endif // FLOW123D_HAVE_PETSC
+}
+
+
 bool Timer::stop(bool forced) {
 #ifdef FLOW123D_HAVE_PETSC
-    if (Profiler::get_petsc_memory_monitoring()) {
+    if (memory_monitor_on_) {
         // get current memory usage
         PetscMemoryGetCurrentUsage (&petsc_end_memory);
         petsc_memory_difference += petsc_end_memory - petsc_start_memory;
@@ -232,6 +237,8 @@ bool Timer::stop(bool forced) {
         PetscMemoryGetMaximumUsage(&petsc_local_peak_memory);
         if (petsc_peak_memory < petsc_local_peak_memory)
             petsc_peak_memory = petsc_local_peak_memory;
+
+        memory_monitor_on_ = false;
     }
 #endif // FLOW123D_HAVE_PETSC
     
@@ -311,7 +318,7 @@ Profiler::Profiler()
 
 {
     static CONSTEXPR_ CodePoint main_cp = CODE_POINT("Whole Program");
-    set_memory_monitoring(true, true);
+    set_memory_monitoring(false);
 #ifdef FLOW123D_DEBUG_PROFILER
     MemoryAlloc::malloc_map().reserve(Profiler::malloc_map_reserve);
     timers_.push_back( Timer(main_cp, 0) );
@@ -484,6 +491,12 @@ void Profiler::stop_timer(int timer_index) {
 }
 
 
+void Profiler::start_memory_monitoring() {
+    if ( get_global_memory_monitoring() ) {
+        timers_[actual_node].start_memory_monitoring();
+    }
+}
+
 
 void Profiler::add_calls(unsigned int n_calls) {
     timers_[actual_node].call_count += n_calls-1;
@@ -644,7 +657,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     
     // stop monitoring memory
     bool temp_memory_monitoring = global_monitor_memory;
-    set_memory_monitoring(false, petsc_monitor_memory);
+    set_memory_monitoring(false);
 
     chkerr( MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank) );
     MPI_Comm_size(comm, &mpi_size);
@@ -711,7 +724,7 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     	}
     }
     // restore memory monitoring
-    set_memory_monitoring(temp_memory_monitoring, petsc_monitor_memory);
+    set_memory_monitoring(temp_memory_monitoring);
 }
 
 
@@ -848,15 +861,13 @@ void Profiler::uninitialize() {
     	ASSERT_PERMANENT(Profiler::instance()->actual_node==0)(Profiler::instance()->timers_[Profiler::instance()->actual_node].tag())
     			.error("Forbidden to uninitialize the Profiler when actual timer is not zero.");
         Profiler::instance()->stop_timer(0);
-        set_memory_monitoring(false, false);
+        set_memory_monitoring(false);
         Profiler::instance(true);
     }
 }
 bool Profiler::global_monitor_memory = false;
-bool Profiler::petsc_monitor_memory = true;
-void Profiler::set_memory_monitoring(const bool global_monitor, const bool petsc_monitor) {
+void Profiler::set_memory_monitoring(const bool global_monitor) {
     global_monitor_memory = global_monitor;
-    petsc_monitor_memory = petsc_monitor;
 }
 
 unordered_map_with_alloc & MemoryAlloc::malloc_map() {

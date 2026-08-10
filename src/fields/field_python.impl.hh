@@ -92,7 +92,7 @@ void FieldPython<spacedim, Value>::init_from_input(const Input::Record &rec, con
 template <int spacedim, class Value>
 void FieldPython<spacedim, Value>::set_python_field_from_class(const string &file_name, const string &class_name)
 {
-    py::module_ flowpy_module = PythonLoader::load_module_by_name("flowpy");
+    py::module_ flowpy_module = PythonLoader::load_module_by_name("py123d.field");
     py::module_ class_module = PythonLoader::load_module_from_file( string(file_name) );
     try {
         user_class_instance_ = flowpy_module.attr("PythonFieldBase").attr("_create")(class_module, class_name.c_str());
@@ -125,7 +125,7 @@ std::vector<const FieldCommon * > FieldPython<spacedim, Value>::set_dependency(F
 
 
 template <int spacedim, class Value>
-void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED const ElementCacheMap &cache_map)
+void FieldPython<spacedim, Value>::cache_reinit(FMT_UNUSED PatchInternals &patch_internals)
 {
     std::vector<FieldCacheProxy> field_data;
     for (auto field_ptr : required_fields_) {

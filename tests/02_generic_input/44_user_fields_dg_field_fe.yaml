@@ -1,0 +1,182 @@
+#################
+# Test goal: Test usage of FieldFE user fields.
+# Author: Jan Brezina, David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 4.0.0
+problem: !Coupling_Sequential
+  description: |
+      Transport problem with Darcy flow driven by the boundary condition from the larger model.
+      Source term is prescribed as volumetric in container region given by the index of container position.
+  mesh:
+    mesh_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+    regions:
+      # Resolve fracture regions.
+      # Allow empty regions if no fractures are present.
+      - !Union
+        name: .box
+        regions:
+          - .fracture_bottom
+          - .fracture_top
+          - .left
+          - .right
+          - .rock_bottom
+          - .rock_top
+      - !From_Label
+        name: .fractures_box
+        mesh_label: .fractures_out
+        allow_empty: True
+      - !From_Label
+        name: fr_large_temp
+        mesh_label: fr_large
+        allow_empty: True
+      - !From_Label
+        name: fr_small_temp
+        mesh_label: fr_small
+        allow_empty: True
+      - !Union
+        name: fractures
+        regions:
+            - fr_large_temp
+            - fr_small_temp
+
+  flow_equation: !Flow_Darcy_LMH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-15
+        r_tol: 1e-15
+        options: -ksp_type cg -pc_type hypre -pc_hypre_type boomeramg  -pc_hypre_boomeramg_coarsen_type HMIS -pc_hypre_boomeramg_strong_threshold 0.5  -ksp_monitor
+
+    input_fields:
+      - region: .box 
+        bc_type: dirichlet
+        bc_piezo_head: !FieldFormula
+          # Kravi hora (local model) pressure gradient estimate: 20 m / 400 m = 0.05 [m/m]
+          value: 0.05*(-y+0.1*z)
+      - region: BULK
+        conductivity: 1.0
+        cross_section:  1.0
+        anisotropy: 0.5
+        #anisotropy: !FieldFE    # eigen values in range 1.15e-11 up to 4.88e-11; 1e-16 on fractures
+        #  mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+        #  field_name: conductivity_tn
+#          interpolation: P0_intersection
+        sigma: 0.01 
+      - region: [fractures]
+        anisotropy: 1.0
+        conductivity:  0.6
+        #conductivity:  !FieldFE
+        #  mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+        #  field_name: conductivity
+        #  #interpolation: P0_intersection
+        cross_section:  0.1
+        #cross_section:  !FieldFE
+        #  mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+        #  field_name: cross_section
+        #  #interpolation: P0_intersection
+        
+
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        #- pressure_p1
+        - velocity_p0
+        - region_id
+        - conductivity
+        - cross_section
+    balance:
+      cumulative: true
+    output_stream:
+      format: !vtk
+        variant: ascii
+
+  solute_equation: !Coupling_OperatorSplitting
+    substances:
+        - name: <conc_name> # uranium 235; should rather be Iodium with zero K_d.
+          molar_mass: 0.235
+    transport: !Solute_AdvectionDiffusion_DG
+      user_fields:
+        - name: source_level
+          #field: 0.5
+          field: !FieldFE
+            mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+            field_name: source_level
+            default_value: 0.15
+      input_fields:
+        - region: [ALL]
+          # dg_penalty: 1       # mass: 80, error: 4.5, default value, solution highly oscilates
+          # dg_penalty: 10      # mass: 40, error: 4.0,  high error, hard to converge
+          # dg_penalty: 100     # mass: 27, error: 16,  high error, hard to converge
+          dg_penalty: 1 # <dg_penalty>
+
+        # ROCK and DFN
+        - region: [rock, fracture]
+          porosity: !FieldFE
+            mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+            field_name: porosity
+            default_value: 0.4
+
+          diff_m: 1.9413057386567374e-13
+          disp_l: 2.045783596113651
+          disp_t: !FieldFormula
+            value: 2.045783596113651/10
+
+        # BACKFILL
+        # - region: [ main_tunnel, storages, plug, container ]
+        #   porosity: 0.5069137270617484
+        #   diff_m: 1.034007806573414e-11
+        #   disp_l: 0.06249836631547284
+        #   disp_t: !FieldFormula
+        #     value: 0.06249836631547284/10
+
+        # SOURCE - conc pulse
+        # - region: .BOUNDARY
+        #   bc_conc: 1e-5
+          
+        - region: [ BULK ]
+          time: 0
+          sources_conc: 1
+          sources_sigma: !FieldFormula
+            # # UOS surface: S = pi * du * hu [m2]
+            # # container region volume: V = pi * dc^2/4 * hc [m3]
+            # # max. apparent diffusion of I in bentonite: D = 2e-10 [m2.s-1]
+            # # surrounding bentonite buffer layer: w = 0.368m
+            # # new sigma: D/w * S/V [m2.s-1 . m-1 . m2 . m-3 = s-1]
+            value:  source_level * (2e-10) / 0.368  * 10.882665447594258 / 9.707639109316968
+          #sources_sigma: !FieldFE
+          #  mesh_data_file: ../00_mesh/rectangle_0.2x1_frac.msh2
+          #  field_name: source_level
+        - region: [ ALL ]
+          time: [50, 'y']
+#          sources_conc: 0
+          sources_sigma: 0
+
+      solver:
+        a_tol: 1e-15
+        r_tol: 1e-12
+        options: -ksp_type gmres -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_factor_fill 1.0 -ksp_monitor
+
+      output:
+        fields:
+          - field: conc
+            interpolation: [P0_value, D1_value] #[P0_value, P1_average, D1_value]
+          - field: region_id
+            interpolation: [P0_value]
+          - porosity
+    output_stream:
+      format: !vtk
+        variant: ascii
+#        variant: binary_zlib
+      times: [[0, 'y'], [100, 'y'], [200, 'y'], [400, 'y'], [800, 'y'], [2000, 'y'], [4000, 'y'], [8000, 'y'], [20000, 'y'], [40000, 'y'], [80000.0, 'y'], [120000.0, 'y'], [160000.0, 'y'], [240000.0, 'y'], [320000.0, 'y'], [480000.0, 'y'], [640000, 'y']]
+
+
+    time:
+      end_time: [640000, 'y']
+      max_dt: [160000, 'y']
+      dt_limits: [{'time': [0, 'y'], 'max_dt': [25, 'y']}, {'time': [100, 'y'], 'max_dt': [50, 'y']}, {'time': [200, 'y'], 'max_dt': [100, 'y']}, {'time': [400, 'y'], 'max_dt': [200, 'y']}, {'time': [800, 'y'], 'max_dt': [400, 'y']}, {'time': [2000, 'y'], 'max_dt': [1000, 'y']}, {'time': [4000, 'y'], 'max_dt': [2000, 'y']}, {'time': [8000, 'y'], 'max_dt': [4000, 'y']}, {'time': [20000, 'y'], 'max_dt': [10000, 'y']}, {'time': [40000, 'y'], 'max_dt': [20000, 'y']}, {'time': [80000, 'y'], 'max_dt': [40000, 'y']}, {'time': [160000, 'y'], 'max_dt': [80000, 'y']}, {'time': [320000, 'y'], 'max_dt': [160000, 'y']}]
+      common_time_unit: y
+      write_used_timesteps: time_steps.yaml
+    balance:
+      cumulative: true

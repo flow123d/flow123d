@@ -226,7 +226,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     eq_fields_ = std::make_shared<EqFields>();
-    eq_data_ = std::make_shared<EqData>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
 
     time_ = new TimeGovernor(in_record.val<Record>("time"));
     ASSERT( time_->is_default() == false ).error("Missing key 'time' in Coupling_Iterative.");
@@ -268,8 +268,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
 void HM_Iterative::initialize()
 {
-    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHM>(eq_fields_.get(), eq_data_.get());
-    residual_assembly_ = new GenericAssembly<ResidualAssemblyHM>(eq_fields_.get(), eq_data_.get());
+    flow_potential_assembly_ = new GenericAssembly<FlowPotentialAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
+    residual_assembly_ = new GenericAssembly<ResidualAssemblyHMDim>(eq_data_.get(), eq_data_->mechanics_->eq_data().dh_.get());
 
     Input::Array user_fields_arr;
     if (input_record_.opt_val("user_fields", user_fields_arr)) {
@@ -290,6 +290,7 @@ void copy_field(const FieldFE<dim, Value> &from_field, FieldFE<dim, Value> &to_f
 
 void HM_Iterative::zero_time_step()
 {
+    START_TIMER("HM zero time step");
     eq_fields_->set_time(time_->step(), LimitSide::right);
     std::stringstream ss;
     if ( FieldCommon::print_message_table(ss, "coupling_iterative") )
@@ -303,6 +304,7 @@ void HM_Iterative::zero_time_step()
     copy_field(*eq_data_->flow_->eq_fields().field_ele_pressure.get_field_fe(), *eq_fields_->old_iter_pressure_ptr_);
     copy_field(*eq_data_->mechanics_->eq_fields().output_divergence.get_field_fe(), *eq_fields_->old_div_u_ptr_);
     eq_fields_->old_iter_pressure.set_time_result_changed();
+    END_TIMER("HM zero time step");
 }
 
 
@@ -317,6 +319,7 @@ void HM_Iterative::update_solution()
 
 void HM_Iterative::solve_iteration()
 {
+    START_TIMER("HM iteration");
     // pass displacement (divergence) to flow
     // and solve flow problem
     update_flow_fields();
@@ -325,6 +328,7 @@ void HM_Iterative::solve_iteration()
     // pass pressure to mechanics and solve mechanics
     update_potential();
     eq_data_->mechanics_->solve_linear_system();
+    END_TIMER("HM iteration");
 }
 
 
@@ -353,7 +357,9 @@ void HM_Iterative::update_potential()
 
     ref_potential_vec_.zero_entries();
     flow_potential_assembly_->assemble(dh);
-    
+
+    ref_potential_vec_.assembly_begin();
+    ref_potential_vec_.assembly_end();
     ref_potential_vec_.local_to_ghost_begin();
     ref_potential_vec_.local_to_ghost_end();
     eq_fields_->pressure_potential.set_time_result_changed();

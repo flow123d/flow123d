@@ -263,9 +263,16 @@ void FieldSet::add_coords_field() {
                .flags( FieldFlag::input_copy )
                .description("Depth field.");
 
+    *this += mesh_step_.name("h")
+               .units(UnitSI().m())
+               .input_default("0.0")
+               .flags( FieldFlag::input_copy )
+               .description("Mesh step field.");
+
     if (this->mesh_ != nullptr) {
         X_.set_mesh(*this->mesh_);
         depth_.set_mesh(*this->mesh_);
+        mesh_step_.set_mesh(*this->mesh_);
     }
 
     depth_.set_field_coords(&X_);

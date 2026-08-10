@@ -33,6 +33,7 @@
 
 template<unsigned int dim> class FESystem;
 template<unsigned int spacedim> class FEValues;
+template<unsigned int spacedim> class PatchFEValues;
 template<unsigned int dim> class FE_P_disc;
 
 
@@ -192,7 +193,7 @@ protected:
  * FEMixedSystem         value   depends on sub-elements
  *                       grad    depends on sub-elements
  * 
- * The transformation itself is done in FEValuesBase::fill_..._data() methods.
+ * The transformation itself is done in FEValues::fill_..._data() methods.
  * 
  * Note that we use columnwise gradients, i.e. gradient of each component is a column vector.
  */
@@ -303,6 +304,11 @@ public:
     /// Used in BDDC for unknown reason.
     virtual std::vector< arma::vec::fixed<dim+1> > dof_points() const;
 
+    /// Return type of finite element
+    inline FEType fe_type() const {
+        return type_;
+    }
+
     /**
      * @brief Destructor.
      */
@@ -390,6 +396,7 @@ protected:
     
     friend class FESystem<dim>;
     friend class FEValues<3>;
+    friend class PatchFEValues<3>;
     friend class FE_P_disc<dim>;
     friend class SubDOFHandlerMultiDim;
 };

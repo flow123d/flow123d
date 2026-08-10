@@ -17,7 +17,7 @@
 #
 
 
-set(libs coupling_lib mesh_lib system_lib)
+set(libs coupling_lib mesh_lib flow123d_system)
 add_test_directory("${libs}")
 
 define_mpi_test( reader_cache 1 )

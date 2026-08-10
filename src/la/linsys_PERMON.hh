@@ -79,7 +79,7 @@ private:
     T *  makePetscPointer_( std::vector<T> & array )
     {
         if ( array.size() ) return &(array[0]);
-        return PETSC_NULL;
+        return PETSC_NULLPTR;
     }
 
     // PetscScalar to double casting functor

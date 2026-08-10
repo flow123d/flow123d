@@ -44,8 +44,8 @@ namespace Input {
 		class Record;
 	}
 }
-template<unsigned int dim> class InitConditionAssemblyDp;
-template<unsigned int dim> class ReactionAssemblyDp;
+template<unsigned int dim, class EqData> class InitConditionAssemblyDp;
+template<unsigned int dim, class EqData> class ReactionAssemblyDp;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -87,9 +87,13 @@ public:
   class EqData : public ReactionTerm::EqData
   {
   public:
+    typedef DualPorosity::EqFields EqFields;
 
     /// Constructor
-    EqData();
+    EqData(std::shared_ptr<EqFields> eq_fields);
+
+    /// Shared pointer of EqFields
+    std::shared_ptr<EqFields> eq_fields_;
 
     /// Dual porosity computational scheme tolerance.
     /** According to this tolerance the analytical solution of dual porosity concentrations or
@@ -101,6 +105,9 @@ public:
     TimeGovernor *time_;
 
   };
+
+  template<unsigned int dim> using InitConditionAssemblyDpDim = InitConditionAssemblyDp<dim, EqData>;
+  template<unsigned int dim> using ReactionAssemblyDpDim = ReactionAssemblyDp<dim, EqData>;
 
   /// Constructor.
   DualPorosity(Mesh &init_mesh, Input::Record in_rec);
@@ -155,8 +162,8 @@ protected:
   std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
   
   /// general assembly objects, hold assembly objects of appropriate dimension
-  GenericAssembly< InitConditionAssemblyDp > * init_condition_assembly_;
-  GenericAssembly< ReactionAssemblyDp > * reaction_assembly_;
+  GenericAssembly< InitConditionAssemblyDpDim > * init_condition_assembly_;
+  GenericAssembly< ReactionAssemblyDpDim > * reaction_assembly_;
 
 private:
   /// Registrar of class to factory

@@ -37,7 +37,7 @@ BaseMeshReader::BaseMeshReader(const FilePath &file_name, std::shared_ptr<Elemen
 
 std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath &file_name) {
 	std::shared_ptr<BaseMeshReader> reader_ptr;
-	if ( file_name.extension() == ".msh" ) {
+	if ( file_name.extension() == ".msh" || file_name.extension() == ".msh2") {
 		reader_ptr = std::make_shared<GmshMeshReader>(file_name);
 	} else if ( file_name.extension() == ".vtu" ) {
 		reader_ptr = std::make_shared<VtkMeshReader>(file_name);

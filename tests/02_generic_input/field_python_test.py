@@ -12,7 +12,7 @@
     author: David Flanderka
 """
 
-import flowpy
+from py123d import field as flowpy
 import numpy as np
 
 class FieldPythonTest(flowpy.PythonFieldBase):

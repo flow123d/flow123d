@@ -21,12 +21,14 @@
 
 #include "multi_field.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/eval_subset.hh"
-#include "fields/eval_points.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/integral_acc.hh"
+#include "fem/eval_points.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_set.hh"
 #include "input/input_exception.hh"
 #include "io/observe.hh"
+
+struct PatchInternals;
 
 namespace it = Input::Type;
 
@@ -346,7 +348,7 @@ std::vector<const FieldCommon *> MultiField<spacedim, Value>::set_dependency(FMT
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const {
+void MultiField<spacedim, Value>::cache_reallocate(FMT_UNUSED PatchInternals &patch_internals, FMT_UNUSED unsigned int region_idx) const {
     //for(auto &field : sub_fields_) field.cache_reallocate(cache_map);
 	ASSERT_PERMANENT(false).error("Cache reallocate of MultiField should be performed by individual components!\n");
 }

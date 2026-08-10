@@ -229,6 +229,9 @@ protected:
     /// If true, we do output of profiling information.
     bool use_profiler;
 
+    /// If true, memory monitoring is switched on
+    bool memory_monitoring;
+
     /// location of the profiler report file
     string profiler_path;
 

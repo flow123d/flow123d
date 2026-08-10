@@ -255,7 +255,7 @@ public:
     /// Returns the number of quadrature points.
     inline unsigned int n_points()
     { return n_points_; }
-    
+
     /// Return cell at which the values were reinited.
     const ElementAccessor<spacedim> &cell() const
     { return data.cell; }
@@ -267,7 +267,7 @@ public:
 
 
 protected:
-    
+
     /// Precompute data on reference element.
     RefElementData *init_ref_data(const Quadrature &q);
 
@@ -279,7 +279,7 @@ protected:
     template<unsigned int dim>
     void fill_side_data();
 
-    
+
 
     /// Dimension of space of reference cell.
     const unsigned int dim_;

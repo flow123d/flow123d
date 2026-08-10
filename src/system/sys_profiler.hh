@@ -150,6 +150,17 @@ using namespace std;
 #endif
 
 /**
+ * \def START_MEMORY_MONITORING
+ *
+ * @brief Allow to use monitoring only in part of code.
+ */
+#ifdef FLOW123D_DEBUG_PROFILER
+#define START_MEMORY_MONITORING Profiler::instance()->start_memory_monitoring()
+#else
+#define START_MEMORY_MONITORING
+#endif
+
+/**
  * \def END_START_TIMER(tag)
  *
  * Ends current timer and starts the new one with given tag.  Again this expands into two lines, see ATTENTION in previous macro.
@@ -342,6 +353,15 @@ public:
      */
     void add_child(int child_index, const Timer &child);
 
+    /**
+     * Start PETSC memory monitoring in actual time frame
+     */
+    void start_memory_monitoring();
+
+    inline bool memory_monitor_on() const {
+        return memory_monitor_on_;
+    }
+
 
 protected:
     
@@ -349,13 +369,17 @@ protected:
      * Pauses current timer, save measured petsc memory information util resume.
      * We get Petsc maximum memory usage via PetscMemoryGetMaximumUsage call
      * and save this value into temp value. (we override local maximum if temp
-     * value is greater)
+     * value is greater).
+     * 
+     * Method is not used now. It can be used if necessary.
      */
     void pause();
     /**
      * Resume current timer. e tell Petsc to monitor the maximum memory 
      * usage once again. We call PetscMemorySetGetMaximumUsage so later in 
      * resume() method will PetscMemoryGetMaximumUsage method work.
+     * 
+     * Method is not used now. It can be used if necessary.
      */
     void resume();
     
@@ -428,6 +452,10 @@ protected:
      * Number of times delete/delete[] operator was used in this scope
      */
     int dealloc_called;
+    /**
+     * True if memory monitoring was switched on by macro START_MEMORY_MONITORING.
+     */
+    bool memory_monitor_on_;
     
     #ifdef FLOW123D_HAVE_PETSC
     /**
@@ -567,6 +595,13 @@ public:
     void stop_timer(int timer_index = -1);
 
     /**
+     * Start memory monitoring if it is switched off.
+     *
+     * Memory monitoring is automatically turn off at the end of actual tag.
+     */
+    void start_memory_monitoring();
+
+    /**
      * Adds @p n_calls - 1 to the total number of calls of the current timer. Minus one, since one call is counted when
      * timer was started. You should use macro ADD_CALLS above.
      */
@@ -665,7 +700,7 @@ public:
      * @param global_monitor whether to turn global monitoring on or off
      * @param petsc_monitor petsc monitoring
      */
-    void static set_memory_monitoring(const bool global_monitor, const bool petsc_monitor);
+    void static set_memory_monitoring(const bool global_monitor);
     
     /**
      * Public getter to memory monitoring
@@ -675,14 +710,6 @@ public:
     	return global_monitor_memory;
     }
     
-    /**
-     * Public getter to petsc memory monitoring
-     * @return memory monitoring status
-     */
-    inline bool static get_petsc_memory_monitoring() {
-    	return petsc_monitor_memory;
-    }
-
     /**
      * Run calibration frame "UNIT PAYLOAD".
      * That should be about 100x timer resolution.
@@ -912,6 +939,8 @@ public:
     double calibration_time() {
         return -2;
     }
+    static void set_memory_monitoring(bool)
+    {}
 private:
     Profiler() {}
 };

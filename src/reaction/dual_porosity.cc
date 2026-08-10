@@ -108,8 +108,8 @@ DualPorosity::EqFields::EqFields()
 
 }
 
-DualPorosity::EqData::EqData()
-: ReactionTerm::EqData() {}
+DualPorosity::EqData::EqData(std::shared_ptr<EqFields> eq_fields)
+: ReactionTerm::EqData(), eq_fields_(eq_fields) {}
 
 DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 	: ReactionTerm(init_mesh, in_rec),
@@ -122,7 +122,7 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
     this->eq_fieldset_ = eq_fields_;
     this->eq_fields_base_ = std::static_pointer_cast<ReactionTerm::EqFields>(eq_fields_);
 
-    eq_data_ = std::make_shared<EqData>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
     this->eq_data_base_ = std::static_pointer_cast<ReactionTerm::EqData>(eq_data_);
 
     //reads input and creates possibly other reaction terms
@@ -191,8 +191,8 @@ void DualPorosity::initialize()
     reaction_immobile->initialize();
   }
 
-  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDp >(eq_fields_.get(), eq_data_.get());
-  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDp >(eq_fields_.get(), eq_data_.get());
+  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblyDpDim >(eq_data_.get());
+  reaction_assembly_ = new GenericAssembly< ReactionAssemblyDpDim >(eq_data_.get());
 
 }
 

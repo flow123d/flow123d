@@ -22,7 +22,6 @@
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_system.hh"
@@ -99,6 +98,12 @@ struct fn_dirichlet_penalty {
         return 1e3 * (2 * max(lame_mu) + max(lame_lambda));
     }
 };
+
+
+//arma::mat33 Elasticity::EqFields::stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+//{
+//    return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);///
+//}
 
 
 // Transform (generally nonsymmetric) matrix into a 6-vector.
@@ -337,25 +342,29 @@ Elasticity::EqFields::EqFields()
 
 }
 
-void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
+void Elasticity::EqData::create_dh(Mesh * mesh)
 {
-	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
-    MixedPtr<FE_P> fe_p(1);
+	ASSERT_EQ(quad_order(), 1).error("Unsupported polynomial order for finite elements in Elasticity");
+    MixedPtr<FE_P> fe_p( quad_order() );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
 
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
 	dh_->distribute_dofs(ds);
+}
 
+void Elasticity::OutputEqData::create_dh(Mesh * mesh)
+{
+	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
 
-    MixedPtr<FE_P_disc> fe_p_disc(0);
+	MixedPtr<FE_P_disc> fe_p_disc( quad_order() );
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
 	dh_scalar_->distribute_dofs(ds_scalar);
 
 
-    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>( quad_order() ), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);
@@ -372,10 +381,11 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
-	START_TIMER(name_);
+	START_TIMER("Mechanics constructor");
 
-    eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
+    output_eq_data_ = std::make_shared<OutputEqData>(eq_fields_);
     this->eq_fieldset_ = eq_fields_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
@@ -398,9 +408,10 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     eq_data_->balance_ = this->balance();
     
     // create finite element structures and distribute DOFs
-    eq_data_->create_dh(mesh_, 1);
+    eq_data_->create_dh(mesh_);
+    output_eq_data_->create_dh(mesh_);
     DebugOut().fmt("Mechanics: solution size {}\n", eq_data_->dh_->n_global_dofs());
-    
+    END_TIMER("Mechanics constructor");
 }
 
 
@@ -426,23 +437,23 @@ void Elasticity::initialize()
     eq_fields_->output_field.set(eq_fields_->output_field_ptr, 0.);
     
     // setup output stress
-    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
+    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(output_eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
     // setup output von Mises stress
-    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
 
     // setup output mean stress
-    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
-    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_cross_section.set(eq_fields_->output_cross_section_ptr, 0.);
     
     // setup output divergence
-    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
 
     // read optional user fields
@@ -491,7 +502,7 @@ void Elasticity::initialize()
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
         ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
-        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
@@ -500,9 +511,9 @@ void Elasticity::initialize()
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
     eq_data_->ls = ls;
 
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly_ = new GenericAssembly< RhsAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyDim >(output_eq_data_.get(), eq_data_->dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),
@@ -533,12 +544,26 @@ void Elasticity::update_output_fields()
     // update ghost values of solution vector and prepare dependent fields
 	eq_fields_->output_field_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().zero_entries();
+    eq_fields_->output_von_mises_stress_ptr->vec().zero_entries();
+    eq_fields_->output_mean_stress_ptr->vec().zero_entries();
 	eq_fields_->output_cross_section_ptr->vec().zero_entries();
 	eq_fields_->output_div_ptr->vec().zero_entries();
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
     output_fields_assembly_->assemble(eq_data_->dh_);
+
+    // finish assembly of vectors
+    eq_fields_->output_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_stress_ptr->vec().assembly_end();
+    eq_fields_->output_von_mises_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_von_mises_stress_ptr->vec().assembly_end();
+    eq_fields_->output_mean_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_mean_stress_ptr->vec().assembly_end();
+    eq_fields_->output_cross_section_ptr->vec().assembly_begin();
+    eq_fields_->output_cross_section_ptr->vec().assembly_end();
+    eq_fields_->output_div_ptr->vec().assembly_begin();
+    eq_fields_->output_div_ptr->vec().assembly_end();
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
@@ -558,7 +583,7 @@ void Elasticity::update_output_fields()
 
 void Elasticity::zero_time_step()
 {
-	START_TIMER(name_);
+	START_TIMER("Mechanics zero time step");
 	eq_fields_->mark_input_times( *time_ );
 	eq_fields_->set_time(time_->step(), LimitSide::right);
 	std::stringstream ss; // print warning message with table of uninitialized fields
@@ -585,6 +610,7 @@ void Elasticity::zero_time_step()
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     output_data();
+    END_TIMER("Mechanics zero time step");
 }
 
 
@@ -602,21 +628,6 @@ void Elasticity::preallocate()
 
 
 
-
-void Elasticity::update_solution()
-{
-	START_TIMER("DG-ONE STEP");
-
-    next_time();
-	solve_linear_system();
-
-    calculate_cumulative_balance();
-    
-    output_data();
-
-    END_TIMER("DG-ONE STEP");
-}
-
 void Elasticity::next_time()
 {
     time_->next_time();
@@ -628,6 +639,7 @@ void Elasticity::next_time()
 
 void Elasticity::solve_linear_system()
 {
+    START_TIMER("Mechanics step");
     START_TIMER("data reinit");
     eq_fields_->set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
@@ -659,16 +671,15 @@ void Elasticity::solve_linear_system()
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     END_TIMER("solve");
+    END_TIMER("Mechanics step");
 }
-
-
 
 
 
 
 void Elasticity::output_data()
 {
-    START_TIMER("MECH-OUTPUT");
+    START_TIMER("Mechanics output");
 
     // gather the solution from all processors
     eq_fields_->output_fields.set_time( this->time().step(), LimitSide::left);
@@ -676,12 +687,12 @@ void Elasticity::output_data()
     update_output_fields();
     eq_fields_->output_fields.output(this->time().step());
 
-//     START_TIMER("MECH-balance");
+//     START_TIMER("Mechanics-balance");
 //     balance_->calculate_instant(subst_idx, eq_data_->ls->get_solution());
 //     balance_->output();
-//     END_TIMER("MECH-balance");
+//     END_TIMER("Mechanics-balance");
 
-    END_TIMER("MECH-OUTPUT");
+    END_TIMER("Mechanics output");
 }
 
 

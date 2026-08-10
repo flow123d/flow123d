@@ -23,7 +23,7 @@
 
 #set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(libs coupling_lib mesh_lib fem_lib system_lib ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
+set(libs coupling_lib mesh_lib fem_lib flow123d_system ${Armadillo_LIBRARIES} ${Armadillo_LINK_LIBRARIES} ${PYTHON_LIBRARIES})
 add_test_directory("${libs}")
 
 
@@ -49,12 +49,12 @@ define_mpi_test(generic_field 1)
 #define_mpi_test(field_fe_speed 1)
 #define_mpi_test(field_model_speed 1)
        
-define_mpi_test(eval_subset 1)
 define_mpi_test(field_value_cache 1)
 
 define_test(bparser)
 define_test(field_model)
 
+define_mpi_test(outer_product 1)
 
 
 

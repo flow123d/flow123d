@@ -393,7 +393,7 @@ dbg "autopull       = $autopull"
 dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
-envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v /$HOME:/mnt/$HOME"
+envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -eFLOW123D_DIR=/$OLD_PWD"
 if [ "${flow_image%:*}" == "flow123d/flow-dev-gnu-vtune" ]
 then
   # port binding under Windows 10 needs host local IP adress to be specified.
@@ -402,7 +402,7 @@ fi
 
 if [ -z "${manual_volumes}" ]
 then
-  mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}"
+  mountargs="-w /${OLD_PWD} -v /${OLD_PWD}:/${OLD_PWD} -v /${work}:/${work}  -v /$HOME:/mnt/$HOME"
 else
   mountargs="$manual_volumes"
 fi

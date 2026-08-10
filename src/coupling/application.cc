@@ -81,6 +81,7 @@ Application::Application()
   //passed_argc_(0),
   //passed_argv_(0),
   use_profiler(true),
+  memory_monitoring(false),
   profiler_path(""),
   yaml_balance_output_(false)
 
@@ -169,7 +170,7 @@ void Application::petsc_initialize(int argc, char ** argv) {
     }
 
 
-    PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PetscInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
     if (! signal_handler_off_) {
         // PETSc do not catch SIGINT, but someone on the way does, we try to fix it.
         signal(SIGINT, system_signal_handler);
@@ -206,7 +207,7 @@ int Application::petcs_finalize() {
 
 void Application::permon_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PERMON
-    PermonInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PermonInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
 #endif
 }
 
@@ -338,6 +339,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler,no-profiler", "Turn off profiler output.")
         ("profiler_path,profiler-path", po::value< string >(), "Path to the profiler file")
+        ("memory_monitoring,memory-monitoring", "Switch on memory monitoring.")
         ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
 		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
 		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
@@ -383,6 +385,10 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (vm.count("profiler_path")) {
         profiler_path = vm["profiler_path"].as<string>();
+    }
+
+    if (vm.count("memory_monitoring")) {
+        memory_monitoring=true;
     }
 
     // if there is "help" option
@@ -501,7 +507,8 @@ void Application::init(int argc, char ** argv) {
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 
-    //Profiler::instance();
+    if (use_profiler & memory_monitoring)
+        Profiler::set_memory_monitoring(memory_monitoring);
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
@@ -594,7 +601,7 @@ void _transform_profiler_data (const string &json_filepath, const string &output
     if (json_filepath == "") return;
 
     // grab module and function by importing module profiler_formatter_module.py
-    auto python_module = PythonLoader::load_module_by_name ("profiler.profiler_formatter_module");
+    auto python_module = PythonLoader::load_module_by_name ("py123d.profiler.profiler_formatter_module");
     //
     // def convert (json_location, output_file, formatter):
     //

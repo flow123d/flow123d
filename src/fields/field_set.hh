@@ -24,12 +24,13 @@
 #include <vector>                  // for vector
 #include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
 #include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
-#include "fields/eval_subset.hh"   // for EvalSubset
-#include "fields/eval_points.hh"   // for EvalPoints
-#include "fields/field_value_cache.hh"
+#include "fem/integral_acc.hh"     // for EvalSubset
+#include "fem/eval_points.hh"      // for EvalPoints
+#include "fem/element_cache_map.hh"
 #include "fields/field.hh"
 #include "fields/field_coords.hh"  // for FieldCoords
 #include "fields/field_depth.hh"   // for FieldDepth
+#include "fields/field_mesh_step.hh"
 #include "fields/surface_depth.hh" // for SurfaceDepth
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
@@ -39,6 +40,7 @@
 #include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
 #include "system/flag_array.hh"    // for FlagArray<>::Mask
 #include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
+#include "fem/patch_internals.hh"
 class Mesh;
 class Region;
 template <int spacedim, class Value> class FieldFormula;
@@ -352,12 +354,12 @@ public:
     /**
      * Collective interface to @p FieldCommon::recache_allocate().
      */
-    void cache_reallocate(const ElementCacheMap &cache_map, FieldSet &used_fieldset) {
+    void cache_reallocate(PatchInternals &patch_internals, FieldSet &used_fieldset) {
     	this->set_dependency(used_fieldset);
     	for (auto reg_it : region_field_update_order_) {
     	    unsigned int region_idx = reg_it.first;
     	    for (auto f_it : reg_it.second) {
-    	        f_it->cache_reallocate(cache_map, region_idx);
+    	        f_it->cache_reallocate(patch_internals, region_idx);
     	    }
     	}
         //for(auto field : field_list) field->cache_reallocate(cache_map);
@@ -437,6 +439,9 @@ protected:
 
     /// Field holds surface depth for computing of FieldFormulas
     FieldDepth depth_;
+
+    /// Field holds mesh step of element for computing of FieldFormulas
+    FieldMeshStep mesh_step_;
 
     /**
      * Stream output operator

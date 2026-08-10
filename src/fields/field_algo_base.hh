@@ -36,7 +36,7 @@
 #include <armadillo>                       // for operator%, operator<<
 #include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
 #include "fields/field_flag.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "input/type_selection.hh"         // for Selection
 #include "mesh/point.hh"                   // for Space
 #include "mesh/accessors.hh"
@@ -48,6 +48,7 @@ class UnitSI;
 class DOFHandlerMultiDim;
 class FieldSet;
 class FieldCommon;
+struct PatchInternals;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -200,7 +201,7 @@ public:
        { ASSERT_PERMANENT(false).error("Not implemented yet."); return 0.0; }
 
        /// Allows reinit data members or structures in descendants during reinit of FieldValueCache of 'parental' Field<>
-       virtual void cache_reinit(const ElementCacheMap &cache_map);
+       virtual void cache_reinit(PatchInternals &patch_internals);
 
        virtual void cache_update(FieldValueCache<typename Value::element_type> &data_cache,
 				   ElementCacheMap &cache_map, unsigned int region_patch_idx);

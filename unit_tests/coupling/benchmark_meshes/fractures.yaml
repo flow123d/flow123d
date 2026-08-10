@@ -1,0 +1,83 @@
+# Fracture network configuration, list of fracture families.
+# This data set taken from SKB report OhmanFolin
+# for the repository depths -60 to -245 m
+# tr_a and tr_b are the transmisivity parameters fro the model T = a r^b
+# concentration  = Fisher k ??
+
+
+# TODO
+# - 1 family
+# - zero concentration
+# - tweak density
+
+-   name: EW
+    p_32: 1.41
+    power: 3.45
+
+    r_min: 4
+    r_max: 150
+    
+    trend: 5
+    plunge: 12.7
+    concentration: 0
+
+    tr_a: 6e-9
+    tr_b: 1.29
+
+#-   name: NW
+#    p_32: 0.86
+#    power: 2.95
+#
+#    r_min: 0.038
+#    r_max: 169
+#
+#    trend: 234
+#    plunge: 6
+#    concentration: 12.3
+#
+#    tr_a: 8e-9
+#    tr_b: 1.13
+#
+#    # using corrected value with outlayer data exluded)
+#-   name: NE
+#    p_32: 1.03
+#    power: 3.45
+#
+#    r_min: 0.038
+#    r_max: 169
+#
+#    trend: 128.2
+#    plunge: 5.5
+#    concentration: 11.5
+#
+#    tr_a: 1e-8
+#    tr_b: 1.25
+#
+#
+#-   name: HZ
+#    p_32: 0.85
+#    power: 2.55
+#
+#    r_min: 0.038
+#    r_max: 169
+#
+#    trend: 137
+#    plunge: 84.3
+#    concentration: 42.9
+#
+#    tr_a: 2.06e-9
+#    tr_b: 1.85
+#
+#-   name: Gd
+#    p_32: 1.20
+#    power: 2.72
+#
+#    r_min: 0.038
+#    r_max: 169
+#
+#    trend: 354.2
+#    plunge: 85.4
+#    concentration: 7.1
+#
+#    tr_a: 4e-9
+#    tr_b: 1.05

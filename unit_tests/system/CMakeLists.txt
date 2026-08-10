@@ -21,7 +21,7 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
-set(libs system_lib armadillo)
+set(libs flow123d_system armadillo)
 add_test_directory("${libs}")
 
     define_test(empty)

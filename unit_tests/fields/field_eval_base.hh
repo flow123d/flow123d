@@ -22,9 +22,9 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "tools/unit_si.hh"
@@ -40,6 +40,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "la/vector_mpi.hh"
+#include "fem/patch_internals.hh"
 
 
 /**
@@ -72,7 +73,7 @@ public:
     typedef BCField<3, FieldValue<3>::VectorFixed > BcVectorField;
     typedef BCField<3, FieldValue<3>::TensorFixed > BcTensorField;
 
-    class EqData : public FieldSet, public ElementCacheMap {
+    class EqData : public FieldSet {
     public:
         enum enum_type {
             none=0,
@@ -180,20 +181,19 @@ public:
                         .flags_add(in_main_matrix);
 
             // Asumme following types:
-            eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk1 = new QGauss(1, 0);
             Quadrature *q_bulk2 = new QGauss(2, 0);
             Quadrature *q_bulk3 = new QGauss(3, 0);
             Quadrature *q_bdr1 = new QGauss(0, 0);
             Quadrature *q_bdr2 = new QGauss(1, 0);
             Quadrature *q_bdr3 = new QGauss(2, 0);
-            mass_integral[0] = eval_points_->add_bulk<1>(*q_bulk1 );
-            mass_integral[1] = eval_points_->add_bulk<2>(*q_bulk2 );
-            mass_integral[2] = eval_points_->add_bulk<3>(*q_bulk3 );
-            bdr_integral[0] = eval_points_->add_boundary<1>(*q_bdr1 );
-            bdr_integral[1] = eval_points_->add_boundary<2>(*q_bdr2 );
-            bdr_integral[2] = eval_points_->add_boundary<3>(*q_bdr3 );
-            this->init(eval_points_);
+            mass_integral[0] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk1, 1);
+            mass_integral[1] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk2, 2);
+            mass_integral[2] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk3, 3);
+            bdr_integral[0] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr1, 1);
+            bdr_integral[1] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr2, 2);
+            bdr_integral[2] = std::make_shared<BoundaryIntegral>(patch_internals_.eval_points_, q_bdr3, 3);
+            patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
 
             this->add_coords_field();
             this->set_default_fieldset();
@@ -201,8 +201,8 @@ public:
 
         void register_eval_points(bool bdr=false) {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            for (auto p : mass_integral[computed_dh_cell_.dim()-1]->points(patch_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals_.element_cache_map_) ) {
+                patch_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
 
             if (bdr)
@@ -210,30 +210,30 @@ public:
                     if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                         unsigned int bdr_reg = cell_side.cond().element_accessor().region_idx().idx(); // region of boundary element
                         //DebugOut() << "Bulk elm: " << computed_dh_cell_.elm_idx() << ", boundary element: " << cell_side.cond().bc_ele_idx() << ", region: " << bdr_reg << std::endl;
-                        for (auto p : bdr_integral[computed_dh_cell_.dim()-1]->points(cell_side, this) ) {
+                        for (auto p : bdr_integral[computed_dh_cell_.dim()-1]->points(cell_side, &patch_internals_.element_cache_map_) ) {
                             // point on side of bulk element
-                            this->eval_point_data_.emplace_back(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
+                            patch_internals_.element_cache_map_.add_eval_point(reg_idx, cell_side.elem_idx(), p.eval_point_idx(), cell_side.cell().local_idx());
                             // point on boundary element
                             BulkPoint p_bdr = p.point_bdr(cell_side.cond().element_accessor()); // equivalent point on boundary element
-                            this->eval_point_data_.emplace_back(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
+                            patch_internals_.element_cache_map_.add_eval_point(bdr_reg, cell_side.cond().bc_ele_idx(), p_bdr.eval_point_idx(), -1);
                         }
                     }
                 }
-            this->eval_point_data_.make_permanent();
+            patch_internals_.element_cache_map_.make_paermanent_eval_points();
         }
 
         void update_cache(bool bdr=false) {
-            this->clear_element_eval_points_map();
-            this->start_elements_update();
+        	patch_internals_.element_cache_map_.clear_element_eval_points_map();
+        	patch_internals_.element_cache_map_.start_elements_update();
             this->register_eval_points(bdr);
-            this->create_patch();
-            this->cache_update(*this);
-            this->finish_elements_update();
+            patch_internals_.element_cache_map_.create_patch();
+            this->cache_update(patch_internals_.element_cache_map_);
+            patch_internals_.element_cache_map_.finish_elements_update();
         }
 
         void reallocate_cache() {
             this->set_time(tg_.step(), LimitSide::right);
-            this->cache_reallocate(*this, *this);
+            this->cache_reallocate(patch_internals_, *this);
         }
 
 
@@ -253,11 +253,11 @@ public:
         BcVectorField bc_vector_ref;
         BcTensorField bc_tensor_ref;
 
-        std::shared_ptr<EvalPoints> eval_points_;
         std::array< std::shared_ptr<BulkIntegral>, 3> mass_integral;
         std::array< std::shared_ptr<BoundaryIntegral>, 3> bdr_integral;
         DHCellAccessor computed_dh_cell_;
         TimeGovernor tg_;
+        PatchInternals patch_internals_;
     };
 
     template<class RefVal>
@@ -370,7 +370,7 @@ public:
             uint dim = eq_data_->computed_dh_cell_.dim()-1;
             eq_data_->update_cache();
 
-            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), eq_data_.get()).begin() );
+            auto p = *( eq_data_->mass_integral[dim]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
             is_passed = is_passed & check_point_value(eval_field, p, ref_obj.value(i, p) );
         }
 	    return is_passed;
@@ -388,7 +388,7 @@ public:
         for (DHCellSide cell_side : eq_data_->computed_dh_cell_.side_range()) {
             if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                 if (cell_side.cond().bc_ele_idx() == i_bdr_elem) {
-                    auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, eq_data_.get()).begin() );
+                    auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, &eq_data_->patch_internals_.element_cache_map_).begin() );
                     auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
                     //DebugOut() << "Input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eval_field(p_bdr) << std::endl;
                     // Boundary found - field is evaluated and checked
@@ -413,7 +413,7 @@ public:
 template<class Val>
 bool FieldEvalBaseTest::compare_vals(const Val &field_val, const Val &ref_val)
 {
-    return _expect_arma_eqal(field_val, ref_val, std::cout);
+    return _expect_arma_eqal(field_val, ref_val, 8*std::numeric_limits<double>::epsilon(), std::cout);
 }
 
 

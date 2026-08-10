@@ -1,0 +1,32 @@
+version: 2
+updates:
+  # ----------------------------
+  # Update GitHub Actions workflows
+  # ----------------------------
+  - package-ecosystem: "github-actions"  # This ecosystem covers GitHub Actions workflow files.
+    directory: "/"                       # Location of your workflow files (usually in .github/workflows)
+    schedule:
+      interval: "weekly"                 # Check for updates on a weekly basis.
+    # Optional: You can add additional settings like allowing pre-release updates or ignoring specific actions.
+    # Example: To ignore a specific version of an action, uncomment and modify the block below.
+    # ignore:
+    #   - dependency-name: "actions/checkout"
+    #     versions:
+    #       - "v1"
+
+  # ----------------------------
+  # Example configuration for a C++ project
+  # ----------------------------
+  # If your C++ project uses a package manager (e.g., Conan), you can enable Dependabot to
+  # check for dependency updates. Note that, as of now, Dependabot doesn't officially support
+  # all C++ package ecosystems. Uncomment and adjust the following block if you're using a supported one.
+  #
+  # - package-ecosystem: "conan"         # Replace "conan" with the package ecosystem identifier if available.
+  #   directory: "/"                     # Directory where your conanfile.txt or conanfile.py is located.
+  #   schedule:
+  #     interval: "weekly"               # Update frequency. Options: "daily", "weekly", "monthly".
+  #   # Optional: Define version requirements, commit messages, or ignore specific dependencies.
+  #   # ignore:
+  #   #   - dependency-name: "SomeDependency"
+  #   #     versions:
+  #   #       - "1.0.0"

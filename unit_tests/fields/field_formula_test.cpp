@@ -11,9 +11,9 @@
 #include <mesh_constructor.hh>
 #include "arma_expect.hh"
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_formula.hh"
@@ -29,13 +29,14 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "fem/patch_internals.hh"
 
 
 
 class FieldEvalFormulaTest : public testing::Test {
 
 public:
-    class EqData : public FieldSet, public ElementCacheMap {
+    class EqData : public FieldSet {
     public:
         EqData() {
             *this += vector_field
@@ -65,6 +66,11 @@ public:
                         .description("FieldFormula with depth")
                         .input_default("0.0")
                         .units( UnitSI().m() );
+            *this += scalar_with_mesh_step
+                        .name("scalar_with_mesh_step")
+                        .description("FieldFormula with mesh step")
+                        .input_default("0.0")
+                        .units( UnitSI().m() );
             *this += tensor_field
                         .name("tensor_field")
                         .description("")
@@ -83,13 +89,12 @@ public:
                         .units( UnitSI::dimensionless() );
 
             // Asumme following types:
-            eval_points_ = std::make_shared<EvalPoints>();
             Quadrature *q_bulk = new QGauss(3, 2);
             Quadrature *q_side = new QGauss(2, 2);
-            mass_eval = eval_points_->add_bulk<3>(*q_bulk );
-            side_eval = eval_points_->add_edge<3>(*q_side );
+            mass_eval = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk, 3);
+            side_eval = std::make_shared<EdgeIntegral>(patch_internals_.eval_points_, q_side, 3);
             // ngh_side_eval = ...
-            this->init(eval_points_);
+            patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
 
             this->add_coords_field();
             this->set_default_fieldset();
@@ -97,30 +102,30 @@ public:
 
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : mass_eval->points(this->position_in_cache(computed_dh_cell_.elm_idx()), this) ) {
-                this->eval_point_data_.emplace_back(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            for (auto p : mass_eval->points(patch_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals_.element_cache_map_) ) {
+                patch_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
 
             for (DHCellSide cell_side : computed_dh_cell_.side_range()) {
             	for( DHCellSide edge_side : cell_side.edge_sides() ) {
                     unsigned int reg_idx = edge_side.element().region_idx().idx();
-                    for (auto p : side_eval->points(edge_side, this) ) {
-                        this->eval_point_data_.emplace_back(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
+                    for (auto p : side_eval->points(edge_side, &patch_internals_.element_cache_map_) ) {
+                        patch_internals_.element_cache_map_.add_eval_point(reg_idx, edge_side.elem_idx(), p.eval_point_idx(), edge_side.cell().local_idx());
                     }
                 }
             }
-            this->eval_point_data_.make_permanent();
+            patch_internals_.element_cache_map_.make_paermanent_eval_points();
         }
 
         void update_cache() {
             this->register_eval_points();
-            this->create_patch();
-            this->cache_update(*this);
-            this->finish_elements_update();
+            patch_internals_.element_cache_map_.create_patch();
+            this->cache_update(patch_internals_.element_cache_map_);
+            patch_internals_.element_cache_map_.finish_elements_update();
         }
 
         void reallocate_cache() {
-            this->cache_reallocate(*this, *this);
+            this->cache_reallocate(patch_internals_, *this);
         }
 
 
@@ -128,16 +133,17 @@ public:
         Field<3, FieldValue<3>::Scalar > scalar_field;                 ///< Coordinate 'x' or 'y', reference value of other fields
         Field<3, FieldValue<3>::Scalar > scalar_z;                     ///< Coordinate 'z', reference of depth computing
         Field<3, FieldValue<3>::Scalar > scalar_with_depth;            ///< Tests depth 'd' value
+        Field<3, FieldValue<3>::Scalar > scalar_with_mesh_step;        ///< Tests 'h' value
         Field<3, FieldValue<3>::VectorFixed > vector_field;            ///< Tests formula vector
         Field<3, FieldValue<3>::VectorFixed > density_unit_conversion; ///< Tests unit conversion
         Field<3, FieldValue<3>::TensorFixed > tensor_field;            ///< Tests formula tensor
         Field<3, FieldValue<3>::Scalar > const_scalar;                 ///< Tests field dependency
         Field<3, FieldValue<0>::Integer > integer_scalar;
-        std::shared_ptr<EvalPoints> eval_points_;
         std::shared_ptr<BulkIntegral> mass_eval;
         std::shared_ptr<EdgeIntegral> side_eval;
         //std::shared_ptr<CouplingIntegral> ngh_side_eval;
         DHCellAccessor computed_dh_cell_;
+        PatchInternals patch_internals_;
     };
 
     FieldEvalFormulaTest() {
@@ -162,6 +168,7 @@ public:
                         .declare_key("density_unit_conversion", FieldAlgorithmBase< 3, FieldValue<3>::VectorFixed >::get_input_type_instance(), "" )
                         .declare_key("scalar_z", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("scalar_with_depth", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
+                        .declare_key("scalar_with_mesh_step", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
@@ -207,6 +214,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
+        scalar_with_mesh_step: !FieldFormula
+          value: h
         vector_field: !FieldFormula
           value: "[X[0], 2*X[0], 0.5]"
         density_unit_conversion: !FieldFormula
@@ -224,6 +233,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         scalar_with_depth: !FieldFormula
           value: d
           surface_region: ".2D top"
+        scalar_with_mesh_step: !FieldFormula
+          value: h
         vector_field:  !FieldFormula
           value: "[X[1], 2*X[1], 0.5]"
         density_unit_conversion: !FieldFormula
@@ -244,18 +255,33 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
     for (uint i=0; i<cell_idx.size(); ++i) {
         DebugOut() << "TEST CELL: i=" << i;
         uint test_point = 0; // index to expected vals
-    	data_->start_elements_update();
+    	data_->patch_internals_.element_cache_map_.start_elements_update();
     	data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->update_cache();
 
         uint r_idx = data_->computed_dh_cell_.elm().region().idx(); // element regions: {1,1,1,3} for elements {3,4,5,9}
 
         // Bulk integral, no sides.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->patch_internals_.element_cache_map_.position_in_cache(data_->computed_dh_cell_.elm_idx()), &data_->patch_internals_.element_cache_map_) ) {
             double coord = data_->scalar_field(q_point); // X coord on reg 1,  Y coord on reg 3
 
             double depth = data_->scalar_with_depth(q_point);
             EXPECT_DOUBLE_EQ(1-data_->scalar_z(q_point), depth);
+
+            double measure_ref_val = 1.0;
+            uint dim = data_->computed_dh_cell_.dim();
+            switch (dim) {
+                case 1:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S1();
+                    break;
+                case 2:
+                    measure_ref_val = data_->computed_dh_cell_.elm().jacobian_S2();
+                    break;
+                case 3:
+                    measure_ref_val = fabs( data_->computed_dh_cell_.elm().jacobian_S3() );
+                    break;
+            }
+            EXPECT_DOUBLE_EQ(data_->scalar_with_mesh_step(q_point), pow( measure_ref_val, (1.0 / dim) ));
 
             // Evaluation of the scalar field tested elseewhere. we can
             // Can activqte again only after we support taking values from FieldCommon.
@@ -298,7 +324,7 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
         for (DHCellSide side : data_->computed_dh_cell_.side_range()) {
         	for(DHCellSide edg_side : side.edge_sides()) {
            	    // vector of local side quadrature points
-        	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
+        	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->patch_internals_.element_cache_map_);
         	    for (EdgePoint side_p : side_points) {
 
         	        //uint r_idx = edg_side.element().region().idx();
@@ -359,7 +385,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
     std::vector<double> region_value = { 0, 0.25, 0, 0.75 };
 
     for (uint i=0; i<cell_idx.size(); ++i) {
-        data_->start_elements_update();
+        data_->patch_internals_.element_cache_map_.start_elements_update();
         data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), cell_idx[i]);  // element ids stored to cache: (3 -> 2,3,4), (4 -> 3,4,5,10), (5 -> 0,4,5,11), (10 -> 8,9,10)
         data_->update_cache();
 
@@ -370,7 +396,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
         expected_vector(2) = 0.5;
 
         // Bulk integral, no sides.
-        for( BulkPoint q_point: data_->mass_eval->points(data_->position_in_cache(data_->computed_dh_cell_.elm_idx()), data_.get()) ) {
+        for( BulkPoint q_point: data_->mass_eval->points(data_->patch_internals_.element_cache_map_.position_in_cache(data_->computed_dh_cell_.elm_idx()), &data_->patch_internals_.element_cache_map_) ) {
             EXPECT_DOUBLE_EQ( expected_val, data_->scalar_field(q_point));
             EXPECT_ARMA_EQ(expected_vector, data_->vector_field(q_point));
         }
@@ -381,7 +407,7 @@ TEST_F(FieldEvalFormulaTest, field_dependency) {
             for(DHCellSide edg_side : side.edge_sides()) {
                 //DebugOut() << "ele region: " << edg_side.element().region().idx();
                 // vector of local side quadrature points
-           	    Range<EdgePoint> side_points = data_->side_eval->points(side, data_.get());
+           	    Range<EdgePoint> side_points = data_->side_eval->points(side, &data_->patch_internals_.element_cache_map_);
            	    double expected_edg_side_val = region_value[edg_side.element().region().idx()];
                 for (EdgePoint side_p : side_points) {
 

@@ -27,8 +27,9 @@ namespace Input {
 		class Record;
 	}
 }
-template<unsigned int dim> class InitCondPostprocessAssembly;
-template<unsigned int dim> class MHMatrixAssemblyRichards;
+template<unsigned int dim, class TEqData> class InitCondPostprocessAssembly;
+template<unsigned int dim, class TEqData> class MHMatrixAssemblyRichards;
+template<unsigned int dim, class TEqData> class ReconstructSchurAssemblyRichards;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
@@ -88,8 +89,13 @@ public:
 
     class EqData : public DarcyLMH::EqData {
     public:
+   	    typedef RichardsLMH::EqFields EqFields;
+
         /// Constructor
-        EqData();
+        EqData(shared_ptr<EqFields> eq_fields);
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
         // Auxiliary assembly fields.
         VectorMPI water_content_previous_time;
@@ -97,6 +103,10 @@ public:
 
         std::shared_ptr<SoilModelBase> soil_model_;
     };
+
+    template<unsigned int dim> using InitCondPostprocessAssemblyDim = InitCondPostprocessAssembly<dim, EqData>;
+    template<unsigned int dim> using MHMatrixAssemblyRichardsDim = MHMatrixAssemblyRichards<dim, EqData>;
+    template<unsigned int dim> using ReconstructSchurAssemblyRichardsDim = ReconstructSchurAssemblyRichards<dim, EqData>;
 
     RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
@@ -129,7 +139,7 @@ private:
     std::shared_ptr<EqData> eq_data_;
 
     /// general assembly object, hold assembly objects of appropriate dimension
-    GenericAssembly< InitCondPostprocessAssembly > * init_cond_postprocess_assembly_;
+    GenericAssembly< InitCondPostprocessAssemblyDim > * init_cond_postprocess_assembly_;
 
     static std::string equation_name()
     { return "Flow_Richards_LMH";}
