@@ -799,7 +799,7 @@ public:
     static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
-    RBMAssemblyElasticity(EqData *eq_data, AssemblyInternals *asm_internals)
+    RBMAssemblyElasticity(EqData *eq_data, PatchInternals *asm_internals)
     : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), // quad_order = 1
       rows_{0,1,2,3,4,5},
       bulk_integral_( this->create_bulk_integral(this->quad_)),
