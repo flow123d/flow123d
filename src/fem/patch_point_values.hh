@@ -213,8 +213,8 @@ public:
     }
 
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables(uint max_quad_size, PatchArena &patch_arena) {
-        std::vector<std::size_t> sizes = {n_mesh_items_(), n_mesh_items_()*max_quad_size};
+    void resize_tables(uint n_points, PatchArena &patch_arena) {
+        std::vector<std::size_t> sizes = {n_mesh_items_(), n_points};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }

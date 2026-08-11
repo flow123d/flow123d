@@ -145,7 +145,8 @@ public:
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_dofs = this->input_ops(0)->n_dofs();
-        uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
+        uint n_elems = ppv.n_mesh_items();
+        uint n_patch_points = ppv.int_table_(mesh_elem_on_quads).data_size(); // number of points on patch
 
         this->allocate_result(n_patch_points, this->patch_arena());
         auto result_vec = this->result_matrix();
@@ -163,8 +164,8 @@ public:
         unsigned int last_element_idx = -1;
         LocDofVec loc_dofs;
         for (uint i=0; i<n_patch_points; ++i) {
-        	if ( ppv.int_table_(mesh_type_on_quads)(i) != boundary_domain_ ) continue;
-            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
+        	if ( ppv.int_table_(mesh_type_on_quads)(i % n_elems) != boundary_domain_ ) continue;
+            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i % n_elems); // mesh idx of element
             if (elm_idx != last_element_idx) {
                 DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
                 loc_dofs = cell.get_loc_dof_indices();
