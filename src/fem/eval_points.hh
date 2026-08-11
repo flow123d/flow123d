@@ -134,6 +134,12 @@ public:
     /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
     uint get_max_side_quad_size(unsigned int dim) const;
 
+    /// Temporary method. Return sum of sizes of quadratures of given dimension of bulk integral (Bulk, Coupling /lower-dim/)
+    uint get_sum_bulk_quad_size(unsigned int dim) const;
+
+    /// Temporary method. Return sum of sizes of quadratures of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
+    uint get_sum_side_quad_size(unsigned int dim) const;
+
     /// Return vector of bulk quadratures of given dimension from bulk integrals (Bulk, Coupling /lower-dim/)
     std::vector<Quadrature *> get_bulk_quad_vector(unsigned int dim) const;
 
@@ -223,6 +229,10 @@ private:
     /// Common implementation of get_max_bulk_quad_size and get_max_side_quad_size
     template<class Integral>
     uint get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
+
+    /// Temporary method Common implementation of get_sum_bulk_quad_size and get_sum_side_quad_size
+    template<class Integral>
+    uint get_sum_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const;
 
     /**
      * Common implementation of get_bulk_quad_vector and get_side_quad_vector

@@ -104,6 +104,24 @@ uint EvalPoints::get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, 
     return max_qsize;
 }
 
+uint EvalPoints::get_sum_bulk_quad_size(unsigned int dim) const {
+    return get_sum_integral_quad_size<internal_integrals::Bulk>(bulk_integrals_, dim);
+}
+
+uint EvalPoints::get_sum_side_quad_size(unsigned int dim) const {
+    return get_sum_integral_quad_size<internal_integrals::Edge>(edge_integrals_, dim);
+}
+
+template<class Integral>
+uint EvalPoints::get_sum_integral_quad_size(IntegralPtrMap<Integral> integrals, unsigned int dim) const {
+    uint sum_qsize=0;
+    for (auto integral_it : integrals)
+        if (integral_it.second->dim() == dim) {
+        	sum_qsize += integral_it.second->quad()->size();
+        }
+    return sum_qsize;
+}
+
 std::vector<Quadrature *> EvalPoints::get_bulk_quad_vector(unsigned int dim) const {
     return get_quad_vector<internal_integrals::Bulk>(bulk_integrals_, dim);
 }
@@ -163,6 +181,8 @@ template std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal
 template std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal<3>(Quadrature *);
 template unsigned int EvalPoints::get_max_integral_quad_size<internal_integrals::Bulk>(IntegralPtrMap<internal_integrals::Bulk>, unsigned int) const;
 template unsigned int EvalPoints::get_max_integral_quad_size<internal_integrals::Edge>(IntegralPtrMap<internal_integrals::Edge>, unsigned int) const;
+template unsigned int EvalPoints::get_sum_integral_quad_size<internal_integrals::Bulk>(IntegralPtrMap<internal_integrals::Bulk>, unsigned int) const;
+template unsigned int EvalPoints::get_sum_integral_quad_size<internal_integrals::Edge>(IntegralPtrMap<internal_integrals::Edge>, unsigned int) const;
 
 template void EvalPoints::DimEvalPoints::add_local_points<1>(const Armor::Array<double> &);
 template void EvalPoints::DimEvalPoints::add_local_points<2>(const Armor::Array<double> &);
