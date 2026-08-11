@@ -58,9 +58,15 @@ public:
 		  bc_type_stress,
         };
 
+        enum Elasticity_types {
+            el_type_isotropic,
+            el_type_general
+        };
+
         EqFields();
         
         static const Input::Type::Selection & get_bc_type_selection();
+        static const Input::Type::Selection & get_elasticity_type_selection();
 
         arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor);
 
@@ -71,6 +77,8 @@ public:
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
+        Field<3, FieldValue<3>::TensorFixed> stiffness_tensor[6]; // 6 matrices corresponding to columns of stiffness tensor in Kelvin's notation.
+        Field<3, FieldValue<3>::Enum> elasticity_type;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
         Field<3, FieldValue<3>::TensorFixed> initial_stress;
 		

@@ -103,15 +103,72 @@ struct fn_lame_lambda {
 
 // Functor computing base of dirichlet_penalty (without dividing by side meassure)
 struct fn_dirichlet_penalty {
-	inline double operator() (double lame_mu, double lame_lambda) {
-        return 1e3 * (2 * lame_mu + lame_lambda);
+	inline double operator() (unsigned int el_type, 
+                              double lame_mu, 
+                              double lame_lambda, 
+                              const arma::mat33 &s0, 
+                              const arma::mat33 &s1,
+                              const arma::mat33 &s2, 
+                              const arma::mat33 &s3, 
+                              const arma::mat33 &s4,
+                              const arma::mat33 &s5) 
+    {
+        if (el_type == Elasticity::EqFields::el_type_isotropic)
+            return 1e3 * (2 * lame_mu + lame_lambda);
+        
+        return 1e3 * (s0(0,0) + s1(1,1) + s2(2,2)) / 3;
+        (void)s3;
+        (void)s4;
+        (void)s5;
     }
 };
 
 
+// Transform (generally nonsymmetric) matrix into a 6-vector using Kelvin's notation.
+arma::vec6 kelvin(const arma::mat33 &m)
+{
+    return { m(0,0), m(1,1), m(2,2), (m(1,2)+m(2,1))/sqrt(2), (m(0,2)+m(2,0))/sqrt(2), (m(0,1)+m(1,0))/sqrt(2) };
+}
+
+// Transform 6-vector back into a symmetric matrix using Kelvin's notation.
+arma::mat33 kelvin_inv(const arma::vec6 &v)
+{
+    return { { v(0),         v(5)/sqrt(2), v(4)/sqrt(2) },
+             { v(5)/sqrt(2), v(1),         v(3)/sqrt(2) },
+             { v(4)/sqrt(2), v(3)/sqrt(2), v(2)         } };
+}
+
+/**
+ * Computes stress from the symmetric strain tensor.
+ *
+ * For isotropic elasticity, the stress is computed from Lamé parameters.
+ * For general elasticity, stiffness_tensor[0..5] represent columns of the
+ * 6x6 stiffness matrix in Kelvin notation. The Kelvin component order is:
+ *
+ *   0: xx, 1: yy, 2: zz, 3: yz, 4: xz, 5: xy
+ *
+ * Shear components use sqrt(2) Kelvin scaling, i.e.
+ * strain/stress vectors are [xx, yy, zz, sqrt(2)*yz, sqrt(2)*xz, sqrt(2)*xy].
+ * Each stiffness_tensor[k] is stored as a symmetric 3x3 tensor whose Kelvin
+ * vector form gives column k of the stiffness matrix. The resulting stress is
+ * converted back from Kelvin notation to a symmetric 3x3 tensor.
+ */
 arma::mat33 Elasticity::EqFields::stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
 {
-    return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+    switch (elasticity_type(p)) {
+        case el_type_isotropic:
+            return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+
+        case el_type_general:
+        default:
+            auto strain_vec = kelvin(strain_tensor);
+            arma::mat66 stiffness_mat;
+            for (int i=0; i<6; i++) {
+                stiffness_mat.submat(0,i,5,i) = kelvin(stiffness_tensor[i](p));
+            }
+
+            return kelvin_inv( stiffness_mat*strain_vec );
+    }
 }
 
 
@@ -127,6 +184,15 @@ const Selection & Elasticity::EqFields::get_bc_type_selection() {
                   "Prescribed traction.")
             .add_value(bc_type_stress, "stress",
                   "Prescribed stress tensor.")
+            .close();
+}
+
+const Selection & Elasticity::EqFields::get_elasticity_type_selection() {
+    return Selection("Elasticity_Model_Type", "Types of linear elastic models.")
+            .add_value(el_type_isotropic, "isotropic",
+                  "Isotropic linear elasticity given by Young modulus and Poisson's ratio.")
+            .add_value(el_type_general, "general",
+                  "General elasticity model given by full stiffness tensor in Kelvin's notation.")
             .close();
 }
 
@@ -170,6 +236,15 @@ Elasticity::EqFields::EqFields()
         .input_default("0.0")
         .flags_add(in_rhs);
     
+    *this+=elasticity_type
+        .name("elasticity_type")
+        .description(
+        "Type of linear elastic model.")
+        .units( UnitSI::dimensionless() )
+        .input_default("\"isotropic\"")
+        .input_selection( get_elasticity_type_selection() )
+        .flags_add(FieldFlag::in_rhs & FieldFlag::in_main_matrix);
+
     *this+=young_modulus
         .name("young_modulus")
         .description("Young's modulus.")
@@ -183,7 +258,19 @@ Elasticity::EqFields::EqFields()
         .units( UnitSI().dimensionless() )
          .input_default("0.0")
         .flags_add(in_main_matrix & in_rhs);
-        
+    
+    for (int i=0; i<6; i++) {
+        string name = "stiffness_tensor_" + to_string(i);
+        string desc = "Column " + to_string(i) + " of the 6x6 elasticity stiffness matrix in Kelvin notation. "
+                      "Kelvin order is xx, yy, zz, yz, xz, xy with sqrt(2)-scaled shear components.";
+        *this+=stiffness_tensor[i]
+            .name(name.c_str())
+            .description(desc.c_str())
+            .units( UnitSI().Pa() )
+            .input_default("0.0")
+            .flags_add(in_main_matrix & in_rhs);
+    }
+
     *this+=fracture_sigma
             .name("fracture_sigma")
             .description(
@@ -411,7 +498,16 @@ void Elasticity::initialize()
     // set instances of FieldModel
     eq_fields_->lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
     eq_fields_->lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), eq_fields_->young_modulus, eq_fields_->poisson_ratio), 0.0);
-    eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), eq_fields_->lame_mu, eq_fields_->lame_lambda), 0.0);
+    eq_fields_->dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), 
+        eq_fields_->elasticity_type, 
+        eq_fields_->lame_mu, 
+        eq_fields_->lame_lambda, 
+        eq_fields_->stiffness_tensor[0], 
+        eq_fields_->stiffness_tensor[1], 
+        eq_fields_->stiffness_tensor[2], 
+        eq_fields_->stiffness_tensor[3], 
+        eq_fields_->stiffness_tensor[4], 
+        eq_fields_->stiffness_tensor[5]), 0.0);
 
     // equation default PETSc solver options
     std::string petsc_default_opts;

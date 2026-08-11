@@ -44,10 +44,30 @@ problem: !Coupling_Sequential
         solver: !Petsc
           a_tol: 0
           r_tol: 1e-15
+        user_fields:
+          - name: mu
+            field: !FieldFormula
+              value: 80/(2*(1+0.2))
+          - name: lambda
+            field: !FieldFormula
+              value: 80*0.2/((1+0.2)*(1-2*0.2))
         input_fields:
           - region: BULK
-            young_modulus: 80
-            poisson_ratio: 0.2
+            #young_modulus: 80
+            #poisson_ratio: 0.2
+            elasticity_type: general
+            stiffness_tensor_0: !FieldFormula
+              value: "[[lambda+2*mu,          0,          0], [         0,      lambda,          0], [         0,          0,      lambda]]"
+            stiffness_tensor_1: !FieldFormula
+              value: "[[     lambda,          0,          0], [         0, lambda+2*mu,          0], [         0,          0,      lambda]]"
+            stiffness_tensor_2: !FieldFormula
+              value: "[[     lambda,          0,          0], [         0,      lambda,          0], [         0,          0, lambda+2*mu]]"
+            stiffness_tensor_3: !FieldFormula
+              value: "[[          0,          0,          0], [         0,           0, sqrt(2)*mu], [         0, sqrt(2)*mu,           0]]"
+            stiffness_tensor_4: !FieldFormula
+              value: "[[          0,          0, sqrt(2)*mu], [         0,           0,          0], [sqrt(2)*mu,          0,           0]]"
+            stiffness_tensor_5: !FieldFormula
+              value: "[[          0, sqrt(2)*mu,          0], [sqrt(2)*mu,           0,          0], [         0,          0,           0]]"
 
           - region: [.left_x, .right_x]
             bc_type: displacement_n

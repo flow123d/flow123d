@@ -57,8 +57,10 @@ public:
       deform_join_( coupling_integral_->vector_join_shape() ),
       deform_join_grad_( coupling_integral_->gradient_vector_join_shape() ) {
         this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->elasticity_type;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        for (int i=0; i<6; i++) this->used_fields_ += eq_fields_->stiffness_tensor[i];
         this->used_fields_ += eq_fields_->dirichlet_penalty;
         this->used_fields_ += eq_fields_->bc_type;
         this->used_fields_ += eq_fields_->fracture_sigma;
@@ -548,8 +550,10 @@ public:
       sym_grad_deform_( bulk_integral_->vector_sym_grad() ),
       div_deform_( bulk_integral_->vector_divergence() ) {
         this->used_fields_ += eq_fields_->cross_section;
+        this->used_fields_ += eq_fields_->elasticity_type;
         this->used_fields_ += eq_fields_->lame_mu;
         this->used_fields_ += eq_fields_->lame_lambda;
+        for (int i=0; i<6; i++) this->used_fields_ += eq_fields_->stiffness_tensor[i];
         this->used_fields_ += eq_fields_->initial_stress;
     }
 
