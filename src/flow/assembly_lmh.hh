@@ -51,8 +51,8 @@ public:
     static constexpr const char * name() { return "Darcy_ReadInitCond_Assembly"; }
 
     /// Constructor.
-    ReadInitCondAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    ReadInitCondAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       bulk_integral_( this->create_bulk_integral(this->quad_) ) {
         this->used_fields_ += eq_fields_->init_pressure;
     }
@@ -123,8 +123,8 @@ public:
     static constexpr const char * name() { return "Darcy_MHMatrix_Assembly"; }
 
     /// Constructor.
-    MHMatrixAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(0, asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), quad_rt_(dim, 2),
+    MHMatrixAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data), quad_rt_(dim, 2),
       bulk_integral_( this->create_bulk_integral(this->quad_)) ,
       asm_sides_integral_( this->create_bulk_integral(&quad_rt_)) ,
       bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
@@ -137,6 +137,8 @@ public:
         this->used_fields_ += eq_fields_->anisotropy;
         this->used_fields_ += eq_fields_->sigma;
         this->used_fields_ += eq_fields_->water_source_density;
+        this->used_fields_ += eq_fields_->water_source_sigma;
+        this->used_fields_ += eq_fields_->water_source_ref_pressure;
         this->used_fields_ += eq_fields_->extra_source;
         this->used_fields_ += eq_fields_->storativity;
         this->used_fields_ += eq_fields_->extra_storativity;
@@ -169,7 +171,7 @@ public:
         eq_data_->schur_offset_[dim-1] = eq_data_->loc_edge_dofs[dim-1][0];
         reconstructed_solution_.zeros(eq_data_->schur_offset_[dim-1]);
 
-        n_dofs_ = this->asm_internals_->fe_values_.template fe_comp<dim>(this->asm_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
+        n_dofs_ = this->patch_internals_->fe_values_.template fe_comp<dim>(this->patch_internals_->fe_values_.template fe_dim<dim>(), 0)->n_dofs();
     }
 
 
@@ -425,7 +427,10 @@ protected:
         // compute lumped source
         uint n_sides = cell.elm()->n_sides();
         coef_ = (1.0 / n_sides) * cell.elm().measure() * eq_fields_->cross_section(p);
-        source_term_ = coef_ * (eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
+        source_term_ = coef_ * (eq_fields_->water_source_density(p) +
+                                eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p) +
+                                eq_fields_->extra_source(p));
+        double source_term_diag_ = coef_ * eq_fields_->water_source_sigma(p);
 
         // in unsteady, compute time term
         time_term_diag_ = 0.0;
@@ -459,11 +464,11 @@ protected:
             }
 
             eq_data_->loc_system_[bulk_local_idx_].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                            -time_term_diag_,
+                            -source_term_diag_ - time_term_diag_,
                             -source_term_ - time_term_rhs_);
 
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, cell.elm().region().bulk_idx(),
-                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {0}, {source_term_});
+                            {eq_data_->loc_system_[bulk_local_idx_].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]}, {-source_term_diag_}, {source_term_});
         }
     }
 
@@ -700,7 +705,7 @@ protected:
             // reconstruct the velocity and pressure
             ls->second.reconstruct_solution_schur(eq_data_->schur_offset_[dim-1], schur_solution, reconstructed_solution_);
 
-        	unsigned int pos_in_cache = this->asm_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
+        	unsigned int pos_in_cache = this->patch_internals_->element_cache_map_.position_in_cache(dh_cell.elm_idx());
         	auto p = *( bulk_integral_->points(pos_in_cache).begin() );
             postprocess_velocity_darcy(dh_cell, p, reconstructed_solution_);
 
@@ -724,6 +729,7 @@ protected:
 
         edge_source_term_ = edge_scale_ *
                 ( eq_fields_->water_source_density(p)
+                + eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p)
                 + eq_fields_->extra_source(p));
     }
 
@@ -739,14 +745,14 @@ protected:
 
         for (unsigned int i=0; i<dh_cell.elm()->n_sides(); i++) {
 
+            double new_pressure = eq_data_->p_edge_solution.get(loc_dof_vec[i]);
             if( ! eq_data_->use_steady_assembly_)
             {
-                double new_pressure = eq_data_->p_edge_solution.get(loc_dof_vec[i]);
                 double old_pressure = eq_data_->p_edge_solution_previous_time.get(loc_dof_vec[i]);
                 time_term_ = edge_scale_ * (eq_fields_->storativity(p) + eq_fields_->extra_storativity(p))
                              / eq_data_->time_step_ * (new_pressure - old_pressure);
             }
-            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_;
+            solution[eq_data_->loc_side_dofs[dim-1][i]] += edge_source_term_ - time_term_ - edge_scale_ * eq_fields_->water_source_sigma(p)*new_pressure;
         }
     }
 
@@ -802,8 +808,8 @@ public:
     static constexpr const char * name() { return "Darcy_ReconstructSchur_Assembly"; }
 
     /// Constructor.
-    ReconstructSchurAssemblyLMH(EqData *eq_data, AssemblyInternals *asm_internals)
-    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, asm_internals) {}
+    ReconstructSchurAssemblyLMH(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Integral over element.
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx)

@@ -18,8 +18,8 @@ public:
     static constexpr const char * name() { return "Elasticity_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : StiffnessAssemblyElasticity<dim, TEqData>(eq_data, asm_internals) {}
+    StiffnessEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : StiffnessAssemblyElasticity<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~StiffnessEvalFields() {}
@@ -49,8 +49,8 @@ public:
     static constexpr const char * name() { return "Elasticity_Rhs_Assembly"; }
 
     /// Constructor.
-    RhsEvalFields(EqData *eq_data, AssemblyInternals *asm_internals)
-    : RhsAssemblyElasticity<dim, TEqData>(eq_data, asm_internals) {}
+    RhsEvalFields(EqData *eq_data, PatchInternals *patch_internals)
+    : RhsAssemblyElasticity<dim, TEqData>(eq_data, patch_internals) {}
 
     /// Destructor.
     ~RhsEvalFields() {}

@@ -43,8 +43,8 @@ public:
     static constexpr const char * name() { return "DG_Mass_Assembly"; }
 
     /// Constructor.
-    MassAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    MassAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
@@ -230,8 +230,8 @@ public:
     static constexpr const char * name() { return "DG_Stiffness_Assembly"; }
 
     /// Constructor.
-    StiffnessAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    StiffnessAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_bulk_integral_( this->create_bulk_integral(this->quad_)),
       conc_edge_integral_( this->create_edge_integral(this->quad_low_)),
       conc_bdr_integral_( this->create_boundary_integral(this->quad_low_) ),
@@ -699,8 +699,8 @@ public:
     static constexpr const char * name() { return "DG_Sources_Assembly"; }
 
     /// Constructor.
-    SourcesAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    SourcesAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( conc_integral_->JxW() ),
       conc_shape_( conc_integral_->scalar_shape() ) {
@@ -814,8 +814,8 @@ public:
     static constexpr const char * name() { return "DG_BdrCondition_Assembly"; }
 
     /// Constructor.
-    BdrConditionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    BdrConditionAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       conc_integral_( this->create_boundary_integral(this->quad_low_) ),
       JxW_( conc_integral_->JxW() ),
       normal_( conc_integral_->normal_vector() ),
@@ -1019,8 +1019,8 @@ public:
     static constexpr const char * name() { return "DG_InitProjection_Assembly"; }
 
     /// Constructor.
-    InitProjectionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
-    : AssemblyBasePatch<dim>(eq_data->quad_order(), asm_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+    InitProjectionAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
       init_integral_( this->create_bulk_integral(this->quad_) ),
       JxW_( init_integral_->JxW() ),
       init_shape_( init_integral_->scalar_shape() ) {
@@ -1108,10 +1108,10 @@ public:
     static constexpr const char * name() { return "DG_InitCondition_Assembly"; }
 
     /// Constructor.
-    InitConditionAssemblyDG(EqData *eq_data, AssemblyInternals *asm_internals)
+    InitConditionAssemblyDG(EqData *eq_data, PatchInternals *patch_internals)
     : AssemblyBasePatch<dim>(), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->init_condition;
-        this->asm_internals_ = asm_internals;
+        this->patch_internals_ = patch_internals;
 
         this->quad_ = new Quadrature(dim, RefElement<dim>::n_nodes);
         for(unsigned int i = 0; i<RefElement<dim>::n_nodes; i++)

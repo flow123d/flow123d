@@ -184,14 +184,14 @@ void SchurComplement::form_schur()
         // create RHS sub vecs RHS1, RHS2
     	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(RHS1));
     	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(RHS2));
-        VecScatterCreate(rhs_, IsA, RHS1, PETSC_NULL, &rhs1sc);
-        VecScatterCreate(rhs_, IsB, RHS2, PETSC_NULL, &rhs2sc);
+        VecScatterCreate(rhs_, IsA, RHS1, PETSC_NULLPTR, &rhs1sc);
+        VecScatterCreate(rhs_, IsB, RHS2, PETSC_NULLPTR, &rhs2sc);
 
         // create Solution sub vecs Sol1, Sol2, Compl->solution
     	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(Sol1));
     	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(Sol2));
-        VecScatterCreate(solution_, IsA, Sol1, PETSC_NULL, &sol1sc);
-        VecScatterCreate(solution_, IsB, Sol2, PETSC_NULL, &sol2sc);
+        VecScatterCreate(solution_, IsA, Sol1, PETSC_NULLPTR, &sol1sc);
+        VecScatterCreate(solution_, IsB, Sol2, PETSC_NULLPTR, &sol2sc);
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
@@ -310,8 +310,8 @@ void SchurComplement::create_inversion_matrix()
     MatDuplicate(A, MAT_DO_NOT_COPY_VALUES, &IA);
     //MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
 
-    MatGetOwnershipRange(A,&pos_start,PETSC_NULL);
-    MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
+    MatGetOwnershipRange(A,&pos_start,PETSC_NULLPTR);
+    MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULLPTR);
 
     std::vector<PetscInt> submat_rows;
     const PetscInt *cols;
@@ -326,7 +326,7 @@ void SchurComplement::create_inversion_matrix()
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
         PetscInt b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        MatGetRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatGetRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULLPTR);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -342,7 +342,7 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         ASSERT(ncols-b_vals == size_submat).error("Submatrix cannot contains empty values.\n");
 
-        MatRestoreRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatRestoreRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULLPTR);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
