@@ -47,7 +47,7 @@ problem: !Coupling_Sequential
             - stress
             - region_id
         solver: !Petsc
-          options: -ksp_type preonly -pc_type lu
+          options: -qps_ksp_initial_guess_nonzero false
         input_fields:
           - region: bulk
             young_modulus: 1
