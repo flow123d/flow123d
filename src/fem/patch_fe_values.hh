@@ -216,9 +216,13 @@ public:
             if (integral_data[i_data].cell.dim() != dim) continue;
             uint element_patch_idx = element_cache_map->position_in_cache(integral_data[i_data].cell.elm_idx());
             uint elm_pos = this->register_element(integral_data[i_data].cell.elm(), element_patch_idx);
-            auto p = *( integral->points(element_patch_idx).begin()); // evaluation point
-            uint value_cache_idx = element_cache_map->element_eval_point(element_patch_idx, p.eval_point_idx() + integral_data[i_data].subset_index);
-            patch_point_vals_[bulk_domain][integral_data[i_data].cell.dim()].register_observe_point(i_data, elm_pos, value_cache_idx, integral_data[i_data].cell.elm_idx());
+            uint i_point = 0;
+            auto &ppv = patch_point_vals_[bulk_domain][dim];
+            for (auto p : integral->points(element_patch_idx) ) {
+                bool is_registered = (i_point == integral_data[i_data].subset_index);
+                ppv.register_observe_point(elm_pos, p.value_cache_idx(), integral_data[i_data].cell.elm_idx(), i_point, is_registered);
+                ++i_point;
+            }
         }
     }
 
