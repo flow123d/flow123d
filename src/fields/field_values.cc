@@ -30,9 +30,7 @@ std::string type_name_(FieldEnum) { return "Enum"; }
 
 template class FieldValue_<1,1,FieldEnum>;
 template class FieldValue_<1,1,int>;
-template class FieldValue_<0,1,int>;
 template class FieldValue_<1,1,double>;
-template class FieldValue_<0,1,double>;
 
 template class FieldValue_<2,1,double>;
 template class FieldValue_<3,1,double>;

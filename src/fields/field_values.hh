@@ -89,9 +89,6 @@ struct ReturnType { typedef typename arma::Mat<ET>::template fixed<NRows, NCols>
 template<class ET>
 struct ReturnType<1,1,ET> { typedef ET return_type; };
 
-template <class ET>
-struct ReturnType<0,1,ET> { typedef arma::Col<ET>  return_type; };
-
 template <int NRows, class ET>
 struct ReturnType<NRows,1,ET> { typedef typename arma::Col<ET>::template fixed<NRows> return_type; };
 
@@ -102,9 +99,6 @@ struct ReturnType<NRows, NCols, FieldEnum> { typedef typename arma::Mat<unsigned
 
 template<>
 struct ReturnType<1,1, FieldEnum> { typedef unsigned int return_type; };
-
-template <>
-struct ReturnType<0,1, FieldEnum> { typedef arma::Col<unsigned int> return_type; };
 
 template <int NRows>
 struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>::template fixed<NRows> return_type; };
@@ -407,81 +401,6 @@ private:
 
 
 /// **********************************************************************
-/// Specialization for variable size vectors
-template <class ET>
-class FieldValue_<0,1,ET> {
-public:
-    typedef ET element_type;
-    typedef typename internal::ReturnType<0, 1, ET>::return_type return_type;
-    typedef typename internal::InputType<ET>::type ElementInputType;
-    typedef Input::Array AccessType;
-    const static int NRows_ = 0;
-    const static int NCols_ = 1;
-    const static int rank_ = 10;
-
-
-    static std::string type_name() { return "R[n]"; }
-    static constexpr bool is_scalable() {
-        return std::is_floating_point<element_type>::value;
-    }
-    inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
-    const ET * mem_ptr() const { return value_.memptr(); }
-
-    /// Casts value stored in Armor::Array to return type.
-    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
-        return arr.template vec<NRows_>(idx);
-    }
-
-    inline FieldValue_(return_type &val) : value_(val) {}
-
-
-    void init_from_input( AccessType rec ) {
-        internal::init_vector_from_input(value_, rec);
-    }
-
-    void set_n_comp(unsigned int n_comp) { value_ = return_type(n_comp,1); };
-    inline unsigned int n_cols() const
-        { return 1; }
-    inline unsigned int n_rows() const
-        { return value_.n_rows; }
-    inline ET &operator() ( unsigned int i, unsigned int )
-        { return value_.at(i); }
-    inline ET operator() ( unsigned int i, unsigned int ) const
-        { return value_.at(i); }
-
-    inline operator return_type() const
-        { return value_;}
-
-    // Set value to matrix of zeros.
-    void zeros() {
-        value_.zeros();
-    }
-    // Set value to identity matrix.
-    void eye() {
-        value_.ones();
-    }
-    // Set value to matrix of ones.
-    void ones() {
-        value_.ones();
-    }
-    // Elementwise equivalence.
-    bool equal_to(const  return_type &other) {
-        return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
-    }
-    // Multiplied value_ by double coefficient
-    void scale(double scale_coef) {
-        if (is_scalable())
-            for(unsigned int i=0; i< n_rows(); i++) {
-                value_.at(i) = scale_coef * value_.at(i);
-            }
-    }
-
-
-private:
-    return_type &value_;
-};
-
-/// **********************************************************************
 /// Specialization for fixed size vectors
 template <int NRows, class ET>
 class FieldValue_<NRows,1,ET> {
@@ -568,11 +487,8 @@ struct FieldValue {
     // typedefs for possible field values
     typedef FieldValue_<1,1,int>            Integer;
     typedef FieldValue_<1,1, FieldEnum>     Enum;
-    typedef FieldValue_<0,1, FieldEnum>     EnumVector;
     typedef FieldValue_<1,1,double>         Scalar;
     typedef FieldValue_<spacedim,1,double>  VectorFixed;
-    typedef FieldValue_<0,1,double>         Vector;
-    typedef FieldValue_<0,1,int>            IntVector;
     typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
 };
 
