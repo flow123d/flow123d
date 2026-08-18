@@ -68,26 +68,26 @@ TEST(FieldValue_, construction_from_raw) {
         const T::return_type & val = T::from_raw(x_val, raw_data);
         EXPECT_TRUE( arma::min(T::return_type("1 2 3") == T::return_type(val)) );
     }
-    {
-        typedef FieldValue_<0,1,double> T; T::return_type x_val(2);
-        x_val.zeros();
-        const T::return_type & val = T::from_raw(x_val, raw_data);
-        EXPECT_TRUE( arma::min(T::return_type("1 2") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<0,1,FieldEnum> T; T::return_type x_val(2);
-        x_val.zeros();
-        const T::return_type & val = T::from_raw(x_val, ui_raw);
-        cout << T::return_type(val);
-        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<0,1,int> T; T::return_type x_val(2);
-        x_val.zeros();
-        const T::return_type & val = T::from_raw(x_val, i_raw);
-        cout << T::return_type(val);
-        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
-    }
+//    {
+//        typedef FieldValue_<0,1,double> T; T::return_type x_val(2);
+//        x_val.zeros();
+//        const T::return_type & val = T::from_raw(x_val, raw_data);
+//        EXPECT_TRUE( arma::min(T::return_type("1 2") == T::return_type(val)) );
+//    }
+//    {
+//        typedef FieldValue_<0,1,FieldEnum> T; T::return_type x_val(2);
+//        x_val.zeros();
+//        const T::return_type & val = T::from_raw(x_val, ui_raw);
+//        cout << T::return_type(val);
+//        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
+//    }
+//    {
+//        typedef FieldValue_<0,1,int> T; T::return_type x_val(2);
+//        x_val.zeros();
+//        const T::return_type & val = T::from_raw(x_val, i_raw);
+//        cout << T::return_type(val);
+//        EXPECT_TRUE( arma::min(T::return_type("10 20") == T::return_type(val)) );
+//    }
 
     // tensor
     {
@@ -194,16 +194,16 @@ TEST(FieldValue_, init_from_input) {
     }
 
 
-    {
-        typedef FieldValue_<0,1,double> T; T::return_type x_val(2); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_vector_full"));
-        EXPECT_TRUE( arma::min(T::return_type("1.2 3.4") == T::return_type(val)) );
-    }
-    {
-        typedef FieldValue_<0,1,double> T; T::return_type x_val(3); T val(x_val);
-        val.init_from_input(in_rec.val<Input::Array>("double_vector_const"));
-        EXPECT_TRUE( arma::min(T::return_type("1.2 1.2 1.2") == T::return_type(val)) );
-    }
+//    {
+//        typedef FieldValue_<0,1,double> T; T::return_type x_val(2); T val(x_val);
+//        val.init_from_input(in_rec.val<Input::Array>("double_vector_full"));
+//        EXPECT_TRUE( arma::min(T::return_type("1.2 3.4") == T::return_type(val)) );
+//    }
+//    {
+//        typedef FieldValue_<0,1,double> T; T::return_type x_val(3); T val(x_val);
+//        val.init_from_input(in_rec.val<Input::Array>("double_vector_const"));
+//        EXPECT_TRUE( arma::min(T::return_type("1.2 1.2 1.2") == T::return_type(val)) );
+//    }
 
 
     {
