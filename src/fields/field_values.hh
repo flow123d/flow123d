@@ -93,15 +93,15 @@ template <int NRows, class ET>
 struct ReturnType<NRows,1,ET> { typedef typename arma::Col<ET>::template fixed<NRows> return_type; };
 
 
-// FiledEnum element type - this just returns types with ET=unsigned int, however input should be different
-template<int NRows, int NCols>
-struct ReturnType<NRows, NCols, FieldEnum> { typedef typename arma::Mat<unsigned int>::template fixed<NRows, NCols> return_type; };
-
-template<>
-struct ReturnType<1,1, FieldEnum> { typedef unsigned int return_type; };
-
-template <int NRows>
-struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>::template fixed<NRows> return_type; };
+//// FiledEnum element type - this just returns types with ET=unsigned int, however input should be different
+//template<int NRows, int NCols>
+//struct ReturnType<NRows, NCols, FieldEnum> { typedef typename arma::Mat<unsigned int>::template fixed<NRows, NCols> return_type; };
+//
+//template<>
+//struct ReturnType<1,1, FieldEnum> { typedef unsigned int return_type; };
+//
+//template <int NRows>
+//struct ReturnType<NRows,1, FieldEnum> { typedef typename arma::Col<unsigned int>::template fixed<NRows> return_type; };
 
 
 // Resolution of helper functions for raw constructor
@@ -109,9 +109,9 @@ template <class RT> inline RT & set_raw_scalar(RT &, double *raw_data) { return 
 template <class RT> inline RT & set_raw_scalar(RT &, int *raw_data) { return *raw_data;}
 template <class RT> inline RT & set_raw_scalar(RT &, FieldEnum *raw_data) { return *raw_data;}
 
-template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
-template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
-template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
+//template <class RT> inline RT & set_raw_vec(RT &val, double *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
+//template <class RT> inline RT & set_raw_vec(RT &val, int *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
+//template <class RT> inline RT & set_raw_vec(RT &val, FieldEnum *raw_data) { arma::access::rw(val.mem) = raw_data; return val;}
 
 template <class RT> inline RT & set_raw_fix(RT &val, double *raw_data) {  val = RT(raw_data); return val;}
 template <class RT> inline RT & set_raw_fix(RT &val, int *raw_data) { val = RT(raw_data); return val;}
