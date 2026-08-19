@@ -25,7 +25,7 @@
 #include "system/sys_profiler.hh"
 
 
-typedef FieldValue_<1,1,double> ScalarValue;
+typedef FieldValue_<internal::Scalar<double>,double> ScalarValue;
 
 class FieldValueCacheTest : public testing::Test, public ElementCacheMap {
 
