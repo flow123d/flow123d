@@ -494,25 +494,15 @@ private:
     template <unsigned int elemdim>
     void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
             ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc_bulk, FeQ<ReturnType> &value_acc_side,
-	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
+	        unsigned int i_data, unsigned int element_patch_idx)
     {
-        unsigned int element_patch_idx = 0;
-        unsigned int last_element_idx = -1;
-        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
-            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
-            if (elm_idx != last_element_idx) {
-                element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
-                last_element_idx = elm_idx;
-            }
-
-            uint i_qpoint = cache_map.eval_point_data(i_data).i_eval_point_;
-            BulkPoint p_bulk(&cache_map, element_patch_idx, i_qpoint);
-            if (cache_map.eval_points()->point_domain(elemdim, i_qpoint) == points_domain::bulk_points) {
-                data_cache.set(i_data) = value_acc_bulk(p_bulk);
-            } else {
-                SidePoint p(p_bulk, 0);
-                data_cache.set(i_data) = value_acc_side(p);
-            }
+        uint i_qpoint = cache_map.eval_point_data(i_data).i_eval_point_;
+        BulkPoint p_bulk(&cache_map, element_patch_idx, i_qpoint);
+        if (cache_map.eval_points()->point_domain(elemdim, i_qpoint) == points_domain::bulk_points) {
+            data_cache.set(i_data) = value_acc_bulk(p_bulk);
+        } else {
+            SidePoint p(p_bulk, 0);
+            data_cache.set(i_data) = value_acc_side(p);
         }
     }
 

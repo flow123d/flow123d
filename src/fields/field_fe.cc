@@ -287,20 +287,31 @@ void FieldFE<spacedim, Value>::cache_update_new(FieldValueCache<typename Value::
 
     MeshBase *mesh = dh_->mesh();
 
-    ElementAccessor<spacedim> elm_acc(mesh, cache_map.eval_point_data(reg_chunk_begin).i_element_);
-    switch (elm_acc.dim()) {
-        case 0:
-            this->cache_update_dim_elem<0>(data_cache, cache_map, value_acc_0d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
-            break;
-        case 1:
-            this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_bulk_, value_acc_1d_side_, reg_chunk_begin, reg_chunk_end);
-            break;
-        case 2:
-            this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_bulk_, value_acc_2d_side_, reg_chunk_begin, reg_chunk_end);
-            break;
-        case 3:
-            this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_bulk_, value_acc_3d_side_, reg_chunk_begin, reg_chunk_end);
-            break;
+    unsigned int element_patch_idx = 0, dim = 0;
+    unsigned int last_element_idx = -1;
+    for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
+        unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
+        if (elm_idx != last_element_idx) {
+            element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
+            ElementAccessor<spacedim> elm_acc(mesh, elm_idx);
+            dim = elm_acc.dim();
+            last_element_idx = elm_idx;
+        }
+
+        switch (dim) {
+            case 0:
+                this->cache_update_dim_elem<0>(data_cache, cache_map, value_acc_0d_bulk_, value_acc_1d_side_, i_data, element_patch_idx);
+                break;
+            case 1:
+                this->cache_update_dim_elem<1>(data_cache, cache_map, value_acc_1d_bulk_, value_acc_1d_side_, i_data, element_patch_idx);
+                break;
+            case 2:
+                this->cache_update_dim_elem<2>(data_cache, cache_map, value_acc_2d_bulk_, value_acc_2d_side_, i_data, element_patch_idx);
+                break;
+            case 3:
+                this->cache_update_dim_elem<3>(data_cache, cache_map, value_acc_3d_bulk_, value_acc_3d_side_, i_data, element_patch_idx);
+                break;
+        }
     }
 }
 
