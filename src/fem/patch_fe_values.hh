@@ -115,19 +115,16 @@ public:
         std::fill(elements_map_.begin(), elements_map_.end(), (uint)-1);
         if (used_domain_[bulk_domain]) {
             auto &ppv = patch_point_vals_[bulk_domain][0];
-            //ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_bulk_quad_size(0), *patch_fe_data_.patch_arena_);
-            ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_sum_bulk_quad_size(0), *patch_fe_data_.patch_arena_);
+            ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_bulk_quad_size(0), *patch_fe_data_.patch_arena_);
         }
         for (uint dim=1; dim<=3; ++dim) {
             if (used_domain_[bulk_domain]) {
                 auto &ppv = patch_point_vals_[bulk_domain][dim];
-                //ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
-                ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_sum_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
+                ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_bulk_quad_size(dim), *patch_fe_data_.patch_arena_);
             }
             if (used_domain_[side_domain]) {
                 auto &ppv = patch_point_vals_[side_domain][dim];
-                //ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
-                ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_sum_side_quad_size(dim), *patch_fe_data_.patch_arena_);
+                ppv.resize_tables(ppv.n_mesh_items()*eval_points->get_max_side_quad_size(dim), *patch_fe_data_.patch_arena_);
             }
         }
     }
