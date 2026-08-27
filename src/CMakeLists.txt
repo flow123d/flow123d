@@ -253,9 +253,9 @@ add_library(fem_lib
     fem/fe_p.cc
     fem/fe_rt.cc
     fem/fe_system.cc
-    fem/element_values.cc
-    fem/fe_values.cc
-    fem/fe_values_views.cc
+    fem/old_fe_values/element_values.cc
+    fem/old_fe_values/fe_values.cc
+    fem/old_fe_values/fe_values_views.cc
     fem/mapping_p1.cc
     fem/patch_fe_values.cc
     fem/integral_acc.cc
