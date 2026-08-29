@@ -44,7 +44,7 @@ jobs:
         name: Flow123d release main build
         steps:
         - name: Checkout
-          uses: actions/checkout@v5
+          uses: actions/checkout@v6
     
         - name: Set variables
           id: vars
@@ -100,7 +100,7 @@ jobs:
             status: ${{job.status}}
 
         steps:
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
@@ -175,7 +175,7 @@ jobs:
             - test_scripts
             - tools
         steps:  
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
@@ -199,7 +199,7 @@ jobs:
           status: ${{ job.status }}
       steps:
           - name: Checkout
-            uses: actions/checkout@v5
+            uses: actions/checkout@v6
           - name: Download all unit tests artifacts
             uses: actions/download-artifact@v4
             with:
@@ -233,7 +233,7 @@ jobs:
             - {dir: coupling, target: elasticity_asm, notebook: dg_asm_plots }
             #- {dir: fem, target: fem_tools}
         steps:  
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
@@ -355,7 +355,7 @@ jobs:
             - 50_mechanics
 
         steps:  
-        - uses: actions/checkout@v5
+        - uses: actions/checkout@v6
 
         - name: Set variables
           id: vars
