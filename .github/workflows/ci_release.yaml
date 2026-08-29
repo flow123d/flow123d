@@ -85,7 +85,7 @@ jobs:
           run: |
               build_dir="${{ steps.vars.outputs.builddir }}"
               config/build/tar_build_dir.sh ${build_dir}              
-        - uses: actions/upload-artifact@v4
+        - uses: actions/upload-artifact@v6
           with:         
             name: build_dir
             path: build_dir.tar   
@@ -134,7 +134,7 @@ jobs:
             config/build/make_integration_test_image.sh ${environment} ${release_tag} push
     
         - name: upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v6
           with:       
             path: |
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_doc.pdf 
@@ -184,7 +184,7 @@ jobs:
           run: config/build/run_with_build_dir.sh rel_gnu make -C build_tree/unit_tests/${{matrix.test_dir}} -k all-test
 
         - name: Artifact unit tests for ${{ matrix.test_dir }}
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v6
           with:         
             name: unit_tests_${{ matrix.test_dir }}
             path: build_tree/unit_tests/${{ matrix.test_dir }}/**.xml
@@ -261,7 +261,7 @@ jobs:
               ls build_tree/unit_tests/${{matrix.test.dir}}    
 
         - name: "Upload Artifacts: profiler results"
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v6
           with:     
             name: ${{matrix.test.target}}
             path: |
