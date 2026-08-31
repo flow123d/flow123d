@@ -317,7 +317,8 @@ public:
         auto it = rec.begin<Input::Array>();
 
         if ( it->size() == 1 && rec.size() == 1 ) {
-        	InnerType v = *(it->begin<InnerType>());
+        	//InnerType v = *(it->begin<InnerType>());
+        	ET v=*(it->begin<ET>());
             for(unsigned int i=0; i< spacedim; i++)
                 value.at(i) = v;
         } else if ( it->size() == 1 && rec.size() == spacedim ) {
@@ -470,8 +471,84 @@ public:
             for( unsigned int col=0; col<spacedim; col++)
                 value.at(row,col) = scale_coef * value.at(row,col);
     }
+
 };
 
+
+template <int spacedim, class ET>
+class Tensor4D {
+public:
+    typedef ET element_type;
+    typedef typename arma::Mat<ET>::template fixed<2*spacedim, 2*spacedim> return_type;
+    typedef typename internal::InputType<ET>::type element_input_type;
+    typedef Input::Array AccessType;
+    const static int NRows_ = 2*spacedim;
+    const static int NCols_ = 2*spacedim;
+    const static int rank_ = 3;
+
+    static std::string type_name() { return fmt::format("R[{:d},{:d}]", 2*spacedim, 2*spacedim); }
+
+    inline static const return_type &set_raw_val(return_type &val, ET *raw_data) {
+        val = return_type(raw_data); return val;
+    }
+    inline static const ET * mem_ptr(const return_type &value) {
+    	return value.memptr();
+    }
+
+    /// Casts value stored in Armor::Array to return type.
+    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
+        return arr.template mat<2*spacedim, 2*spacedim>(idx);
+    }
+
+    inline static void init_value_from_input(return_type &value, AccessType rec) {
+        Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
+        // accept only full tensor
+        if (rec.size() == 2*spacedim && it->size() == 2*spacedim) {
+
+            for (unsigned int row = 0; row < 2*spacedim; row++, ++it) {
+                if (it->size() != 2*spacedim)
+                    THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
+                                             << rec.ei_address());
+                Input::Iterator<ET> col_it = it->begin<ET>();
+                for (unsigned int col = 0; col < 2*spacedim; col++, ++col_it)
+                    value.at(row, col) = *col_it;
+            }
+        } else {
+            THROW( ExcFV_Input()
+                    << EI_InputMsg(
+                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
+                                    2*spacedim, 2*spacedim, rec.size(), it->size()))
+                    << rec.ei_address()
+                );
+        }
+    }
+
+    inline static ET &value_at(return_type &value, unsigned int i, unsigned int j)
+        { return value.at(i,j); }
+    inline static ET value_at(const return_type &value, unsigned int i, unsigned int j)
+        { return value.at(i,j); }
+    // Set value to matrix of zeros.
+    inline static void zeros(return_type &value) {
+        value.zeros();
+    }
+    // Set value to identity matrix.
+    inline static void eye(return_type &value) {
+        value.eye();
+    }
+    // Set value to matrix of ones.
+    inline static void ones(return_type &value) {
+        value.ones();
+    }
+    inline static bool equal_to(const return_type &value, const return_type &other) {
+        return arma::max(arma::max(arma::abs(value - other))) < 4*std::numeric_limits<ET>::epsilon();
+    }
+    // Multiplied value_ by double coefficient
+    inline static void scale(return_type &value, double scale_coef) {
+        for( unsigned int row=0; row<2*spacedim; row++)
+            for( unsigned int col=0; col<2*spacedim; col++)
+                value.at(row,col) = scale_coef * value.at(row,col);
+    }
+};
 
 
 } // namespace internal
@@ -813,17 +890,19 @@ struct FieldValue {
 //    typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
 
 private:
-    typedef typename internal::Scalar<int>                _in_scalar_int;
-    typedef typename internal::Scalar<FieldEnum>          _in_scalar_enum;
-    typedef typename internal::Scalar<double>             _in_scalar_double;
-    typedef typename internal::Vector<spacedim, double>   _in_vector;
-    typedef typename internal::Tensor<spacedim, double>   _in_tensor;
+    typedef typename internal::Scalar<int>                   _in_scalar_int;
+    typedef typename internal::Scalar<FieldEnum>             _in_scalar_enum;
+    typedef typename internal::Scalar<double>                _in_scalar_double;
+    typedef typename internal::Vector<spacedim, double>      _in_vector;
+    typedef typename internal::Tensor<spacedim, double>      _in_tensor;
+    typedef typename internal::Tensor4D<2*spacedim, double>  _in_tensor_4d;
 public:
-    typedef FieldValue_<_in_scalar_int>                   Integer;
-    typedef FieldValue_<_in_scalar_enum>                  Enum;
-    typedef FieldValue_<_in_scalar_double>                Scalar;
-    typedef FieldValue_<_in_vector>                       VectorFixed;
-    typedef FieldValue_<_in_tensor>                       TensorFixed;
+    typedef FieldValue_<_in_scalar_int>                      Integer;
+    typedef FieldValue_<_in_scalar_enum>                     Enum;
+    typedef FieldValue_<_in_scalar_double>                   Scalar;
+    typedef FieldValue_<_in_vector>                          VectorFixed;
+    typedef FieldValue_<_in_tensor>                          TensorFixed;
+    typedef FieldValue_<_in_tensor_4d>                       Tensor4Dvoigt;
 };
 
 

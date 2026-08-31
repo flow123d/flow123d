@@ -38,7 +38,7 @@ TEST(FieldValue_, all) {
 
 TEST(FieldValue_, construction_from_raw) {
 
-    double raw_data[9]={1,2,3,4,5,6,7,8,9};
+    double raw_data[36]={1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9};
     FieldEnum ui_raw[6]={10, 20, 30 ,40, 50, 60};
     int i_raw[6]={10, 20, 30 ,40, 50, 60};
     // scalars
@@ -95,6 +95,16 @@ TEST(FieldValue_, construction_from_raw) {
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);
         arma::umat match = (T::return_type("1 4 7; 2 5 8; 3 6 9") == T::return_type(val));
+
+        EXPECT_TRUE( match.min());
+    }
+
+    // tensor 4D
+    {
+        typedef FieldValue_<internal::Tensor4D<3, double>> T; T::return_type x_val;
+        x_val.zeros();
+        const T::return_type & val = T::from_raw(x_val, raw_data);
+        arma::umat match = (T::return_type("1 7 4 1 7 4; 2 8 5 2 8 5; 3 9 6 3 9 6; 4 1 7 4 1 7; 5 2 8 5 2 8; 6 3 9 6 3 9") == T::return_type(val));
 
         EXPECT_TRUE( match.min());
     }
