@@ -28,15 +28,15 @@ std::string type_name_(FieldEnum) { return "Enum"; }
 } // namespace internal
 
 
-template class FieldValue_<internal::Scalar<uint>,FieldEnum>;
-template class FieldValue_<internal::Scalar<int>,int>;
-template class FieldValue_<internal::Scalar<double>,double>;
+template class FieldValue_<internal::Scalar<FieldEnum>>;
+template class FieldValue_<internal::Scalar<int>>;
+template class FieldValue_<internal::Scalar<double>>;
 
-template class FieldValue_<internal::Vector<2, double>,double>;
-template class FieldValue_<internal::Vector<3, double>,double>;
+template class FieldValue_<internal::Vector<2, double>>;
+template class FieldValue_<internal::Vector<3, double>>;
 
-template class FieldValue_<internal::Tensor<2, double>,double>;
-template class FieldValue_<internal::Tensor<3, double>,double>;
+template class FieldValue_<internal::Tensor<2, double>>;
+template class FieldValue_<internal::Tensor<3, double>>;
 
 //template class FieldValue_<1,1,FieldEnum>;
 //template class FieldValue_<1,1,int>;

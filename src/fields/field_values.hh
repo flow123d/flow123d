@@ -487,10 +487,10 @@ public:
  *
  *
  */
-template <class Shape, class ET> // new implementation
+template <class Shape>
 class FieldValue_ {
 public:
-    typedef ET element_type;
+    typedef typename Shape::element_type element_type;
     typedef typename Shape::return_type return_type;
     typedef typename Shape::element_input_type ElementInputType;
     const static int NRows_ = Shape::NRows_;
@@ -505,10 +505,10 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
-    inline static const return_type &from_raw(return_type &val, ET *raw_data) {
+    inline static const return_type &from_raw(return_type &val, element_type *raw_data) {
         return Shape::set_raw_val(val, raw_data);
     }
-    const ET * mem_ptr() const {
+    const element_type * mem_ptr() const {
         return Shape::mem_ptr(value_);
     }
 
@@ -526,9 +526,9 @@ public:
         { return Shape::NCols_; }
     inline unsigned int n_rows() const
         { return Shape::NRows_; }
-    inline ET &operator() ( unsigned int i, unsigned int j)
+    inline element_type &operator() ( unsigned int i, unsigned int j)
         { return Shape::value_at(value_, i, j); }
-    inline ET operator() ( unsigned int i, unsigned int j) const
+    inline element_type operator() ( unsigned int i, unsigned int j) const
         { return Shape::value_at(value_, i, j); }
     inline operator return_type() const
         { return value_;}
@@ -814,16 +814,16 @@ struct FieldValue {
 
 private:
     typedef typename internal::Scalar<int>                _in_scalar_int;
-    typedef typename internal::Scalar<uint>               _in_scalar_enum;
+    typedef typename internal::Scalar<FieldEnum>          _in_scalar_enum;
     typedef typename internal::Scalar<double>             _in_scalar_double;
     typedef typename internal::Vector<spacedim, double>   _in_vector;
     typedef typename internal::Tensor<spacedim, double>   _in_tensor;
 public:
-    typedef FieldValue_<_in_scalar_int,int>               Integer;
-    typedef FieldValue_<_in_scalar_enum, FieldEnum>       Enum;
-    typedef FieldValue_<_in_scalar_double,double>         Scalar;
-    typedef FieldValue_<_in_vector,double>                VectorFixed;
-    typedef FieldValue_<_in_tensor,double>                TensorFixed;
+    typedef FieldValue_<_in_scalar_int>                   Integer;
+    typedef FieldValue_<_in_scalar_enum>                  Enum;
+    typedef FieldValue_<_in_scalar_double>                Scalar;
+    typedef FieldValue_<_in_vector>                       VectorFixed;
+    typedef FieldValue_<_in_tensor>                       TensorFixed;
 };
 
 

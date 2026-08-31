@@ -20,7 +20,7 @@ using namespace std;
 TEST(FieldValue_, all) {
 
     {
-        typedef FieldValue_<internal::Tensor<2, double>, double> T;
+        typedef FieldValue_<internal::Tensor<2, double>> T;
         T::return_type x_val;
         T val(x_val);
         val(0,0)=3.0; val(0,1)=4.0;
@@ -43,19 +43,19 @@ TEST(FieldValue_, construction_from_raw) {
     int i_raw[6]={10, 20, 30 ,40, 50, 60};
     // scalars
     {
-        typedef FieldValue_<internal::Scalar<double>,double> T; T::return_type x_val;
+        typedef FieldValue_<internal::Scalar<double>> T; T::return_type x_val;
         x_val=0;
         const T::return_type & val = T::from_raw(x_val, raw_data);
         EXPECT_DOUBLE_EQ(1, double(val));
     }
     {
-        typedef FieldValue_<internal::Scalar<int>,int> T; T::return_type x_val;
+        typedef FieldValue_<internal::Scalar<int>> T; T::return_type x_val;
         x_val=0;
         const T::return_type & val = T::from_raw(x_val, i_raw);
         EXPECT_DOUBLE_EQ(10, int(val));
     }
     {
-        typedef FieldValue_<internal::Scalar<uint>,FieldEnum> T; T::return_type x_val;
+        typedef FieldValue_<internal::Scalar<FieldEnum>> T; T::return_type x_val;
         x_val=0;
         const T::return_type & val = T::from_raw(x_val, ui_raw);
         EXPECT_DOUBLE_EQ(10, FieldEnum(val));
@@ -63,7 +63,7 @@ TEST(FieldValue_, construction_from_raw) {
 
     // vectors
     {
-        typedef FieldValue_<internal::Vector<3, double>,double> T; T::return_type x_val;
+        typedef FieldValue_<internal::Vector<3, double>> T; T::return_type x_val;
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);
         EXPECT_TRUE( arma::min(T::return_type("1 2 3") == T::return_type(val)) );
@@ -91,7 +91,7 @@ TEST(FieldValue_, construction_from_raw) {
 
     // tensor
     {
-        typedef FieldValue_<internal::Tensor<3, double>,double> T; T::return_type x_val;
+        typedef FieldValue_<internal::Tensor<3, double>> T; T::return_type x_val;
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);
         arma::umat match = (T::return_type("1 4 7; 2 5 8; 3 6 9") == T::return_type(val));
@@ -156,18 +156,18 @@ TEST(FieldValue_, init_from_input) {
     typedef typename internal::Tensor<2, double> Tensor22;
     typedef typename internal::Tensor<3, double> Tensor33;
     Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
-    	.declare_key("double_scalar",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_scalar",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_full",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_vector_const",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_vector_full",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_vector_const",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_full",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_vector_const",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
-    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<Tensor33,double> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_full",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_symm",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
     	.close();
 
@@ -177,20 +177,20 @@ TEST(FieldValue_, init_from_input) {
 
 
     {
-        typedef FieldValue_<internal::Scalar<double>,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<internal::Scalar<double>> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_scalar"));
         EXPECT_EQ(T::return_type(val), 1.3);
     }
 
 
     {
-        typedef FieldValue_<internal::Vector<3, double>,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<internal::Vector<3, double>> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_vector_full"));
         T::return_type expected("1.2 3.4 5.6");
         EXPECT_TRUE( arma::min(expected == T::return_type(val)) );
     }
     {
-        typedef FieldValue_<internal::Vector<3, double>,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<internal::Vector<3, double>> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_vector_const"));
         EXPECT_TRUE( arma::min(T::return_type("1.3 1.3 1.3") == T::return_type(val)) );
     }
@@ -209,25 +209,25 @@ TEST(FieldValue_, init_from_input) {
 
 
     {
-        typedef FieldValue_<Tensor33,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<Tensor33> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_full"));
         arma::umat match = (T::return_type("1.1 1.2 1.3; 2.1 2.2 2.3; 3.1 3.2 3.3") == T::return_type(val));
         EXPECT_TRUE( match.min());
     }
     {
-        typedef FieldValue_<Tensor22,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<Tensor22> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_symm"));
         arma::umat match = (T::return_type("1 2; 2 3") == T::return_type(val));
         EXPECT_TRUE( match.min());
     }
     {
-        typedef FieldValue_<Tensor22,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<Tensor22> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_diag"));
         arma::umat match = (T::return_type("1 0; 0 2") == T::return_type(val));
         EXPECT_TRUE( match.min());
     }
     {
-        typedef FieldValue_<Tensor22,double> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<Tensor22> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_cdiag"));
         arma::umat match = (T::return_type("1.3 0; 0 1.3") == T::return_type(val));
         EXPECT_TRUE( match.min());
@@ -241,7 +241,7 @@ TEST(FieldValue_, get_from_array) {
         Armor::ArmaMat<double, 1, 1> m1{1.5}; // first item
         arr.set(0) = m1;
 
-        typedef FieldValue_<internal::Scalar<double>,double> T;
+        typedef FieldValue_<internal::Scalar<double>> T;
         EXPECT_EQ(T::get_from_array(arr, 0), 1.5);
     }
     {  // vector
@@ -249,7 +249,7 @@ TEST(FieldValue_, get_from_array) {
         Armor::ArmaMat<double, 3, 1> m1{1, 2, 3}; // first item
         arr.set(0) = m1;
 
-        typedef FieldValue_<internal::Vector<3, double>,double> T;
+        typedef FieldValue_<internal::Vector<3, double>> T;
         arma::vec3 expected = {1, 2, 3};
         EXPECT_ARMA_EQ(T::get_from_array(arr, 0), expected);
     }
@@ -258,7 +258,7 @@ TEST(FieldValue_, get_from_array) {
         Armor::ArmaMat<double, 3, 3> m1{1, 2, 3, 4, 5, 6, 7, 8, 9}; // first item
         arr.set(0) = m1;
 
-        typedef FieldValue_<internal::Tensor<3, double>,double> T;
+        typedef FieldValue_<internal::Tensor<3, double>> T;
         arma::mat33 expected = {1, 2, 3, 4, 5, 6, 7, 8, 9};
         EXPECT_ARMA_EQ(T::get_from_array(arr, 0), expected);
     }
@@ -267,7 +267,7 @@ TEST(FieldValue_, get_from_array) {
         Armor::ArmaMat<unsigned int, 1, 1> m1{0}; // first item
         arr.set(0) = m1;
 
-        typedef FieldValue_<internal::Scalar<uint>,FieldEnum> T;
+        typedef FieldValue_<internal::Scalar<FieldEnum>> T;
         EXPECT_EQ(T::get_from_array(arr, 0), 0);
     }
     {  // int
@@ -275,7 +275,7 @@ TEST(FieldValue_, get_from_array) {
         Armor::ArmaMat<int, 1, 1> m1{1}; // first item
         arr.set(0) = m1;
 
-        typedef FieldValue_<internal::Scalar<int>,int> T;
+        typedef FieldValue_<internal::Scalar<int>> T;
         EXPECT_EQ(T::get_from_array(arr, 0), 1);
     }
 }
