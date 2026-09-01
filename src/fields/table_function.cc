@@ -142,3 +142,4 @@ template class TableFunction<FieldValue<0>::Scalar >;
 //template class TableFunction<FieldValue<2>::TensorFixed >;
 template class TableFunction<FieldValue<3>::VectorFixed >;
 template class TableFunction<FieldValue<3>::TensorFixed >;
+template class TableFunction<FieldValue<3>::Tensor4DVoigt >;

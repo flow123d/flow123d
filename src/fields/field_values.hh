@@ -895,14 +895,14 @@ private:
     typedef typename internal::Scalar<double>                _in_scalar_double;
     typedef typename internal::Vector<spacedim, double>      _in_vector;
     typedef typename internal::Tensor<spacedim, double>      _in_tensor;
-    typedef typename internal::Tensor4D<2*spacedim, double>  _in_tensor_4d;
+    typedef typename internal::Tensor4D<spacedim, double>    _in_tensor_4d;
 public:
     typedef FieldValue_<_in_scalar_int>                      Integer;
     typedef FieldValue_<_in_scalar_enum>                     Enum;
     typedef FieldValue_<_in_scalar_double>                   Scalar;
     typedef FieldValue_<_in_vector>                          VectorFixed;
     typedef FieldValue_<_in_tensor>                          TensorFixed;
-    typedef FieldValue_<_in_tensor_4d>                       Tensor4Dvoigt;
+    typedef FieldValue_<_in_tensor_4d>                       Tensor4DVoigt;
 };
 
 
