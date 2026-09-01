@@ -125,6 +125,28 @@ struct BoundaryIntegralData {
     DHCellSide side;                   ///< Specified cell side (bulk element)
 };
 
+/**
+ * Helper structure holds patch data of observe output
+ *
+ * Data is specified by cell and subset index in EvalPoint object
+ */
+struct ObserveIntegralData {
+	/// Default constructor
+	ObserveIntegralData() {}
+
+    /// Constructor with data mebers initialization
+	ObserveIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
+    : cell(dhcell), subset_index(subset_idx) {}
+
+    /// Copy constructor
+	ObserveIntegralData(const ObserveIntegralData &other)
+    : cell(other.cell), subset_index(other.subset_index) {}
+
+    DHCellAccessor cell;          ///< Specified cell (element)
+    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
+};
+
+
 
 
 

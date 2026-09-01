@@ -193,10 +193,6 @@ protected:
     
     //MixedPtr<FE_P_disc> fe_p0;
 
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< L2DifferenceAssemblyDim > * l2_difference_assembly_;
-    GenericAssembly< OutputInternalFlowAssemblyDim > * output_internal_assembly_;
-
 };
 
 

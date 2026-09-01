@@ -454,8 +454,8 @@ public:
 
 
     /// Internal method of eval_bulk_field and eval_boundary_field
-    template<class EvalField, class RefVal>
-    bool check_point_value(EvalField &field, BulkPoint &point, const RefVal &ref_val)
+    template<class EvalField, class TPoint, class RefVal>
+    bool check_point_value(EvalField &field, TPoint &point, const RefVal &ref_val)
     {
 	    try {
             auto field_val = field( point );
@@ -487,7 +487,7 @@ public:
 
     /// Evaluates and compare boundary field, uses FieldFormula as reference
     template<class FieldType, class RefType>
-    bool eval_boundary_field(FieldType &eval_field, RefType &ref_obj, unsigned int i_bulk_elem, unsigned int i_bdr_elem)
+    bool eval_boundary_field(FieldType &eval_field, RefType &ref_obj, unsigned int i_bulk_elem, unsigned int i_bdr_elem, bool test_bdr=true)
     {
         eq_data_->computed_dh_cell_ = DHCellAccessor(dh_.get(), i_bulk_elem);
         uint dim = eq_data_->computed_dh_cell_.dim()-1;
@@ -497,10 +497,14 @@ public:
             if ( (cell_side.side().edge().n_sides() == 1) && (cell_side.side().is_boundary()) ) {
                 if (cell_side.cond().bc_ele_idx() == i_bdr_elem) {
                     auto p_side = *( eq_data_->bdr_integral[dim]->points(cell_side, &eq_data_->patch_internals().element_cache_map_).begin() );
-                    auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
-                    //DebugOut() << "Input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eval_field(p_bdr) << std::endl;
-                    // Boundary found - field is evaluated and checked
-                    return check_point_value(eval_field, p_bdr, ref_obj.value(0, p_bdr)); // boundary compares only single value, we don't need 'i'
+                    if (test_bdr) {
+                        auto p_bdr = p_side.point_bdr( cell_side.cond().element_accessor() );
+                        //DebugOut() << "Input_id: " << cell_side.cond().element_accessor().input_id() << ", value: " << eval_field(p_bdr) << std::endl;
+                        // Boundary found - field is evaluated and checked
+                        return check_point_value(eval_field, p_bdr, ref_obj.value(0, p_bdr)); // boundary compares only single value, we don't need 'i'
+                    } else {
+                        return check_point_value(eval_field, p_side, ref_obj.value(0, p_side));
+                    }
                 }
             }
         }

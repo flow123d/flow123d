@@ -312,11 +312,7 @@ void Elasticity::OutputEqData::create_dh(Mesh * mesh)
 
 Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGovernor *tm)
         : EquationBase(init_mesh, in_rec),
-		  input_rec(in_rec),
-		  stiffness_assembly_(nullptr),
-		  rhs_assembly_(nullptr),
-          constraint_assembly_(nullptr),
-		  output_fields_assembly_(nullptr)
+		  input_rec(in_rec)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
@@ -440,8 +436,6 @@ void Elasticity::initialize()
         MatCreateAIJ(PETSC_COMM_WORLD, n_own_constraints, eq_data_->dh_->lsize(), PETSC_DECIDE, PETSC_DECIDE, nnz, 0, nnz, 0, &eq_data_->constraint_matrix);
         VecCreateMPI(PETSC_COMM_WORLD, n_own_constraints, PETSC_DECIDE, &eq_data_->constraint_vec);
         ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
-
-        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
@@ -449,10 +443,6 @@ void Elasticity::initialize()
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
     eq_data_->ls = ls;
-
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    rhs_assembly_ = new GenericAssembly< RhsAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyDim >(output_eq_data_.get(), eq_data_->dh_.get());
 
     // initialization of balance object
 //     balance_->allocate(eq_data_->dh_->distr()->lsize(),
@@ -464,11 +454,6 @@ void Elasticity::initialize()
 Elasticity::~Elasticity()
 {
 //     delete time_;
-
-    if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
-    if (rhs_assembly_!=nullptr) delete rhs_assembly_;
-    if (constraint_assembly_ != nullptr) delete constraint_assembly_;
-    if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
     eq_fields_.reset();
@@ -490,7 +475,7 @@ void Elasticity::update_output_fields()
 	eq_fields_->output_field_ptr->vec().local_to_ghost_end();
 
     // compute new output fields depending on solution (stress, divergence etc.)
-    output_fields_assembly_->assemble(eq_data_->dh_);
+    output_fields_asm();
 
     // finish assembly of vectors
     eq_fields_->output_stress_ptr->vec().assembly_begin();
@@ -542,8 +527,8 @@ void Elasticity::zero_time_step()
     MatSetOption(*eq_data_->ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     eq_data_->ls->mat_zero_entries();
     eq_data_->ls->rhs_zero_entries();
-    stiffness_assembly_->assemble(eq_data_->dh_);
-    rhs_assembly_->assemble(eq_data_->dh_);
+    stiffness_asm();
+    rhs_asm();
     eq_data_->ls->finish_assembly();
     LinSys::SolveInfo si = eq_data_->ls->solve();
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
@@ -558,8 +543,8 @@ void Elasticity::preallocate()
 {
     // preallocate system matrix
 	eq_data_->ls->start_allocation();
-    stiffness_assembly_->assemble(eq_data_->dh_);
-    rhs_assembly_->assemble(eq_data_->dh_);
+	stiffness_asm();
+	rhs_asm();
 
     if (has_contact_)
         assemble_constraint_matrix();
@@ -590,7 +575,7 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling matrix.\n";
         eq_data_->ls->start_add_assembly();
         eq_data_->ls->mat_zero_entries();
-        stiffness_assembly_->assemble(eq_data_->dh_);
+        stiffness_asm();
         eq_data_->ls->finish_assembly();
     }
 
@@ -601,7 +586,7 @@ void Elasticity::solve_linear_system()
         DebugOut() << "Mechanics: Assembling right hand side.\n";
         eq_data_->ls->start_add_assembly();
         eq_data_->ls->rhs_zero_entries();
-        rhs_assembly_->assemble(eq_data_->dh_);
+        rhs_asm();
         eq_data_->ls->finish_assembly();
     }
 
@@ -650,11 +635,31 @@ void Elasticity::assemble_constraint_matrix()
 {
     MatZeroEntries(eq_data_->constraint_matrix);
     VecZeroEntries(eq_data_->constraint_vec);
-    constraint_assembly_->assemble(eq_data_->dh_);
+    GenericAssembly< ConstraintAssemblyDim > constraint_assembly(eq_data_.get(), eq_data_->dh_.get());
+    constraint_assembly.assemble(eq_data_->dh_);
     MatAssemblyBegin(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
     VecAssemblyBegin(eq_data_->constraint_vec);
     VecAssemblyEnd(eq_data_->constraint_vec);
+}
+
+
+void Elasticity::stiffness_asm()
+{
+    GenericAssembly< StiffnessAssemblyDim > stiffness_assembly(eq_data_.get(), eq_data_->dh_.get());
+    stiffness_assembly.assemble(eq_data_->dh_);
+}
+
+void Elasticity::rhs_asm()
+{
+    GenericAssembly< RhsAssemblyDim > rhs_assembly(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly.assemble(eq_data_->dh_);
+}
+
+void Elasticity::output_fields_asm()
+{
+    GenericAssembly< OutpuFieldsAssemblyDim > output_fields_assembly(output_eq_data_.get(), eq_data_->dh_.get());
+    output_fields_assembly.assemble(eq_data_->dh_);
 }
 
 

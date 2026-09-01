@@ -409,10 +409,13 @@ protected:
     LinSys& lin_sys_schur()
     { return *(eq_data_->lin_sys_schur); }
 
-    /// Create and initialize assembly objects
-    virtual void initialize_asm();
+    /// Call assemble of read_mh_matrix_assembly
+    virtual void mh_matrix_asm();
 
-    /// Call assemble of read_init_cond_assembly_
+    /// Call assemble of reconstruct_schur_assembly
+    virtual void reconstruct_schur_asm();
+
+    /// Call assemble of read_init_cond_assembly
     virtual void read_init_cond_asm();
 
     std::shared_ptr<Balance> balance_;
@@ -436,10 +439,6 @@ protected:
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< ReadInitCondAssemblyLMHDim > * read_init_cond_assembly_;
-    GenericAssemblyBase * mh_matrix_assembly_;
-    GenericAssemblyBase * reconstruct_schur_assembly_;
 private:
     /// Registrar of class to factory
     static const int registrar;

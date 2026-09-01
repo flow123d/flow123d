@@ -90,6 +90,12 @@ public:
         return *this;
     }
 
+    inline RevertibleValue &operator= (std::size_t value) {
+    	permanent_ = value;
+    	temporary_ = value;
+        return *this;
+    }
+
     inline RevertibleValue& operator++ ()
     {
     	temporary_++;
@@ -228,6 +234,26 @@ public:
         int_table_(domain_on_quads)(point_pos)        = patch_elm_idx;
         int_table_(mesh_elem_on_quads)(point_pos)     = elem_idx;
         int_table_(mesh_type_on_quads)(point_pos)     = is_bdr;
+
+        points_map_[elm_cache_map_idx] = point_pos;
+        return point_pos;
+    }
+
+    /**
+     * Register ObservePoint, add to int_table_
+     *
+     * @param point_pos         Position of ObservePoint in quadrature.
+     * @param patch_elm_idx     Index of element on patch (in int_table_).
+     * @param elm_cache_map_idx Index of point in ElementCacheMap.
+     * @param elem_idx          Index of element in Mesh.
+     * @param i_point_on_elem   Index of point on element
+     */
+    uint register_observe_point(uint point_pos, uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx) {
+        //uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
+        //int_table_(field_quad_on_quads)(point_pos)  = elm_cache_map_idx;
+        int_table_(domain_on_quads)(point_pos)        = patch_elm_idx;
+        int_table_(mesh_elem_on_quads)(point_pos)     = elem_idx;
+        int_table_(mesh_type_on_quads)(point_pos)     = 0;
 
         points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
