@@ -24,29 +24,8 @@
 #include "coupling/assembly_base.hh"
 #include "fem/dofhandler.hh"
 #include "fem/element_cache_map.hh"
+#include "fem/integral_data.hh"
 #include "io/observe.hh"
-
-
-/**
- * Helper structure holds patch data of observe output
- *
- * Data is specified by cell and subset index in EvalPoint object
- */
-struct ObserveIntegralData {
-	/// Default constructor
-	ObserveIntegralData() {}
-
-    /// Constructor with data mebers initialization
-	ObserveIntegralData(DHCellAccessor dhcell, unsigned int subset_idx)
-    : cell(dhcell), subset_index(subset_idx) {}
-
-    /// Copy constructor
-	ObserveIntegralData(const ObserveIntegralData &other)
-    : cell(other.cell), subset_index(other.subset_index) {}
-
-    DHCellAccessor cell;          ///< Specified cell (element)
-    unsigned int subset_index;    ///< Index (order) of subset in EvalPoints object
-};
 
 
 /**
@@ -93,6 +72,7 @@ public:
 
         unsigned int i_ep, subset_begin, subset_idx;
         auto &patch_point_data = observe_->patch_point_data();
+        std::set<unsigned int> registered_elm_idx;
         for(auto & p_data : patch_point_data) {
             subset_idx = bulk_integrals_[p_data.i_quad]->get_subset_idx();
         	subset_begin = this->patch_internals_.eval_points_->subset_begin(p_data.i_quad+1, subset_idx);
@@ -100,12 +80,29 @@ public:
             DHCellAccessor dh_cell = dh->cell_accessor_from_element(p_data.elem_idx);
             patch_data_.emplace_back(dh_cell, p_data.i_quad_point);
             this->patch_internals_.element_cache_map_.eval_point_data_.emplace_back(p_data.i_reg, p_data.elem_idx, i_ep, 0);
+            if (registered_elm_idx.find(p_data.elem_idx) == registered_elm_idx.end()) {
+                auto &ppv = this->patch_internals_.fe_values_.ppv(bulk_domain, dh_cell.dim());
+                ++ppv.n_mesh_items_;
+                registered_elm_idx.insert(p_data.elem_idx);
+            }
         }
         patch_data_.make_permanent();
         this->patch_internals_.element_cache_map_.make_paermanent_eval_points();
+        patch_internals_.fe_values_.make_permanent_ppv_data();
 
-        this->reallocate_cache();
+        multidim_assembly_[1_d]->eq_fields_->cache_reallocate(this->patch_internals_, multidim_assembly_[1_d]->used_fields_);
+        this->patch_internals_.fe_values_.init_finalize();
         this->patch_internals_.element_cache_map_.create_patch();
+
+        {
+            this->patch_internals_.fe_values_.prepare_new_patch(this->patch_internals_.eval_points_);
+            this->patch_internals_.fe_values_.add_observe_points<3>(multidim_assembly_[3_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+            this->patch_internals_.fe_values_.add_observe_points<2>(multidim_assembly_[2_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+            this->patch_internals_.fe_values_.add_observe_points<1>(multidim_assembly_[1_d]->bulk_integral_, patch_data_, &this->patch_internals_.element_cache_map_);
+
+            this->patch_internals_.fe_values_.reinit_patch();
+        }
+
         multidim_assembly_[1_d]->eq_fields_->cache_update(this->patch_internals_.element_cache_map_);
 
         multidim_assembly_[1_d]->assemble_cell_integrals(patch_data_);

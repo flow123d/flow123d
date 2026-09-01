@@ -105,7 +105,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.bulk_.insert({
                 tpl,
-                std::make_shared<BulkIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<BulkIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -120,7 +120,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.edge_.insert({
                 tpl,
-                std::make_shared<EdgeIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<EdgeIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -138,7 +138,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.coupling_.insert({
                 tpl,
-                std::make_shared<CouplingIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<CouplingIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -154,7 +154,7 @@ public:
         std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, quad->size());
         auto result = integrals_.boundary_.insert({
                 tpl,
-                std::make_shared<BoundaryIntegralAcc<dim>>(patch_internals_->eval_points_, quad, &patch_internals_->fe_values_, &patch_internals_->element_cache_map_)
+                std::make_shared<BoundaryIntegralAcc<dim>>(*patch_internals_, quad)
             });
         return result.first->second;
     }
@@ -267,16 +267,6 @@ public:
     	return integrals_;
     }
 
-    /// Return number of DOFs
-    inline unsigned int n_dofs() {
-        return patch_internals_->fe_values_.template n_dofs<dim>();
-    }
-
-    /// Return number of DOFs of higher dim element
-    inline unsigned int n_dofs_high() {
-        return patch_internals_->fe_values_.template n_dofs_high<dim>();
-    }
-
 protected:
 	/**
 	 * Default constructor.
@@ -330,14 +320,16 @@ protected:
      * Method is used internally in AssemblyBase
      */
     inline void add_boundary_integrals(const DHCellSide &bdr_side) {
-        auto &ppv = patch_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
+        auto &ppv_side = patch_internals_->fe_values_.ppv(side_domain, bdr_side.dim());
+        auto &ppv_bdr = patch_internals_->fe_values_.ppv(bulk_domain, bdr_side.dim()-1);
 
         for (auto integral_it : integrals_.boundary_) {
             auto integral = integral_it.second;
             integral->patch_data().emplace_back(bdr_side);
 
             unsigned int reg_idx = bdr_side.element().region_idx().idx();
-            ++ppv.n_mesh_items_;
+            ++ppv_side.n_mesh_items_;
+            ++ppv_bdr.n_mesh_items_;
             for (auto p : integral->points(bdr_side) ) {
                 patch_internals_->element_cache_map_.add_eval_point(reg_idx, bdr_side.elem_idx(), p.eval_point_idx(), bdr_side.cell().local_idx());
 
