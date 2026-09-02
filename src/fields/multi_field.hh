@@ -90,7 +90,6 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
-    typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
 
     TYPEDEF_ERR_INFO( EI_MultiFieldName, const string );
     TYPEDEF_ERR_INFO( EI_Size, unsigned int );

@@ -159,6 +159,3 @@ FieldConstant<spacedim, Value>::~FieldConstant() {
 // Instantiations of FieldConstant
 INSTANCE_ALL(FieldConstant)
 
-// temporary solution for computing more fields at once in python
-template class FieldConstant<3, FieldValue<0>::Vector >; // Necessary due to default value of the abstract.
-
