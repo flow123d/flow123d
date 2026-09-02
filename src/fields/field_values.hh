@@ -502,24 +502,55 @@ public:
 
     inline static void init_value_from_input(return_type &value, AccessType rec) {
         Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
-        // accept only full tensor
-        if (rec.size() == 2*spacedim && it->size() == 2*spacedim) {
+        if (it->size() == 1) {
+            // square tensor 4D
+            // input = 6  expands  to [ [ 6 ] ]; init to  6 * (identity matrix)
+            // input = [1, 2, 3, 4, 5, 6] expands to [[1], [2], [3], [4], [5], [6]]; init to diag. matrix
+            // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1, 2, 3, 4, 5, 6], [2, 7, 8, 9, 10, 11], [ 3, 8, 12, 13, 14, 15], ... ]
+            if (rec.size() == 1)  {// scalar times identity
+                value.zeros();
+                ET scalar=*(it->begin<ET>());
+                for(unsigned int i=0; i<2*spacedim; i++) value.at(i,i)=scalar;
+            } else if (rec.size() == 2*spacedim) { // diagonal vector - not supported yet
+                value.zeros();
+                for(unsigned int i=0; i<2*spacedim; i++, ++it) value.at(i,i)=*(it->begin<ET>());
+            } else if (rec.size() == (2*spacedim+1)*spacedim) { // symmetric part - not supported yet
+                for( unsigned int row=0; row<2*spacedim; row++)
+                    for( unsigned int col=0; col<2*spacedim; col++)
+                        if (row <= col) {
+                            value.at(row,col) = *(it->begin<ET>());
+                            ++it;
+                        } else value.at(row,col) = value.at(col,row);
+            } else {
+                THROW( ExcFV_Input()
+                        << EI_InputMsg(
+                                fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}, "
+                                        "should be 1, {:d}, or {:d}.",
+                                        2*spacedim, 2*spacedim, rec.size(), 2*spacedim, (2*spacedim+1)*spacedim))
+                        << rec.ei_address()
 
-            for (unsigned int row = 0; row < 2*spacedim; row++, ++it) {
-                if (it->size() != 2*spacedim)
-                    THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
-                                             << rec.ei_address());
-                Input::Iterator<ET> col_it = it->begin<ET>();
-                for (unsigned int col = 0; col < 2*spacedim; col++, ++col_it)
-                    value.at(row, col) = *col_it;
+                     );
             }
         } else {
-            THROW( ExcFV_Input()
-                    << EI_InputMsg(
-                            fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
-                                    2*spacedim, 2*spacedim, rec.size(), it->size()))
-                    << rec.ei_address()
-                );
+            // accept only full tensor
+            if (rec.size() == 2*spacedim && it->size() == 2*spacedim) {
+
+                for (unsigned int row = 0; row < 2*spacedim; row++, ++it) {
+                    if (it->size() != 2*spacedim)
+                        THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
+                                             << rec.ei_address());
+                    Input::Iterator<ET> col_it = it->begin<ET>();
+                    for (unsigned int col = 0; col < 2*spacedim; col++, ++col_it)
+                        value.at(row, col) = *col_it;
+                }
+            } else {
+                THROW( ExcFV_Input()
+                        << EI_InputMsg(
+                                fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
+                                        2*spacedim, 2*spacedim, rec.size(), it->size()))
+                        << rec.ei_address()
+                    );
+            }
         }
     }
 
