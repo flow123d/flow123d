@@ -77,6 +77,12 @@ public:
                         .input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+            *this += tensor_4d_field
+                        .name("tensor_4d_field")
+                        .description("")
+                        .input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
             *this += const_scalar
                         .name("const_scalar")
                         .input_default("0.0")
@@ -137,6 +143,7 @@ public:
         Field<3, FieldValue<3>::VectorFixed > vector_field;            ///< Tests formula vector
         Field<3, FieldValue<3>::VectorFixed > density_unit_conversion; ///< Tests unit conversion
         Field<3, FieldValue<3>::TensorFixed > tensor_field;            ///< Tests formula tensor
+        Field<3, FieldValue<3>::Tensor4DVoigt > tensor_4d_field;       ///< Tests formula tensor 4D
         Field<3, FieldValue<3>::Scalar > const_scalar;                 ///< Tests field dependency
         Field<3, FieldValue<0>::Integer > integer_scalar;
         std::shared_ptr<BulkIntegral> mass_eval;
@@ -170,6 +177,7 @@ public:
                         .declare_key("scalar_with_depth", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("scalar_with_mesh_step", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
+                        .declare_key("tensor_4d_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor4DVoigt >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
                         .close()
@@ -223,6 +231,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           unit: g*cm^-3
         tensor_field: !FieldFormula
           value: "[ [X[0], 0.2, 0.3], [0.2, 0.4, 0.5], [0.3, 0.5, 0.6] ]"
+        tensor_4d_field: !FieldFormula
+          value: "[ [X[0], 0, 1, 2, 3, 4], [0, 5, 6, 7, 8, 9], [1, 6, 10, 11, 12, 13], [2, 7, 11, 14, 15, 16], [3, 8, 12, 15, 17, 18], [4, 9, 13, 16, 18, 19] ]"
         integer_scalar: 1
       - region: 3D right
         time: 0.0
@@ -242,6 +252,8 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
           unit: g*cm^-3
         tensor_field: !FieldFormula
           value: "[ [X[1], 2.2, 2.3], [2.2, 2.4, 2.5], [2.3, 2.5, 2.6] ]"
+        tensor_4d_field: !FieldFormula
+          value: "[ [X[1], 1, 2, 3, 4, 5], [1, 6, 7, 8, 9, 10], [2, 7, 11, 12, 13, 14], [3, 8, 12, 15, 16, 17], [4, 9, 13, 16, 18, 19], [5, 10, 14, 17, 19, 20] ]"
         integer_scalar: 1
     )YAML";
 	this->read_input(eq_data_input);
@@ -252,6 +264,12 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
                                                  {0.1, 0.2, 0.3, 0.2, 0.4, 0.5, 0.3, 0.5, 0.6},  //region 1
                                                  {0, 0, 0, 0, 0, 0, 0, 0, 0},
                                                  {2.1, 2.2, 2.3, 2.2, 2.4, 2.5, 2.3, 2.5, 2.6}};  //region 3
+    std::vector<arma::mat::fixed<6,6>> expected_tensor_4d = {
+            {0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0.0, 0, 1, 2, 3, 4, 0, 5, 6, 7, 8, 9, 1, 6, 10, 11, 12, 13, 2, 7, 11, 14, 15, 16, 3, 8, 12, 15, 17, 18, 4, 9, 13, 16, 18, 19},    //region 1
+            {0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+            {0.0, 1, 2, 3, 4, 5, 1, 6, 7, 8, 9, 10, 2, 7, 11, 12, 13, 14, 3, 8, 12, 15, 16, 17, 4, 9, 13, 16, 18, 19, 5, 10, 14, 17, 19, 20}   //region 3
+    };
     for (uint i=0; i<cell_idx.size(); ++i) {
         DebugOut() << "TEST CELL: i=" << i;
         uint test_point = 0; // index to expected vals
@@ -307,6 +325,10 @@ TEST_F(FieldEvalFormulaTest, evaluate) {
             auto exp_tensor = expected_tensor[r_idx];
             exp_tensor(0,0) = coord;
             EXPECT_ARMA_EQ(exp_tensor, data_->tensor_field(q_point));
+
+            auto exp_tensor_4d = expected_tensor_4d[r_idx];
+            exp_tensor_4d(0,0) = coord;
+            EXPECT_ARMA_EQ(exp_tensor_4d, data_->tensor_4d_field(q_point));
             test_point++;
             /* // Extracting the cached values.
             double cs = cross_section(q_point);
