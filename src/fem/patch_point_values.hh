@@ -213,8 +213,8 @@ public:
     }
 
     /// Resize data tables. Method is called before reinit of patch.
-    void resize_tables(uint max_quad_size, PatchArena &patch_arena) {
-        std::vector<std::size_t> sizes = {n_mesh_items_(), n_mesh_items_()*max_quad_size};
+    void resize_tables(uint n_points, PatchArena &patch_arena) {
+        std::vector<std::size_t> sizes = {n_mesh_items_(), n_points};
 	    for (uint i=0; i<int_table_.rows(); ++i) {
 	        int_table_(i) = ArenaVec<uint>(sizes[ int_sizes_[i] ], patch_arena);
 	    }
@@ -248,14 +248,15 @@ public:
      * @param elem_idx          Index of element in Mesh.
      * @param i_point_on_elem   Index of point on element
      */
-    uint register_observe_point(uint point_pos, uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx) {
-        //uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
+    uint register_observe_point(uint patch_elm_idx, uint elm_cache_map_idx, uint elem_idx, uint i_point_on_elem, bool is_registered) {
+        uint point_pos = i_point_on_elem * n_mesh_items() + patch_elm_idx; // index of bulk point on patch
         //int_table_(field_quad_on_quads)(point_pos)  = elm_cache_map_idx;
         int_table_(domain_on_quads)(point_pos)        = patch_elm_idx;
         int_table_(mesh_elem_on_quads)(point_pos)     = elem_idx;
         int_table_(mesh_type_on_quads)(point_pos)     = 0;
 
-        points_map_[elm_cache_map_idx] = point_pos;
+        if (is_registered)
+            points_map_[elm_cache_map_idx] = point_pos;
         return point_pos;
     }
 

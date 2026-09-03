@@ -145,7 +145,8 @@ public:
     void eval() override {
         PatchPointValues<spacedim> &ppv = this->ppv();
         uint n_dofs = this->input_ops(0)->n_dofs();
-        uint n_patch_points = ppv.n_mesh_items() * this->quad_size(); // number of points on patch
+        uint n_elems = ppv.n_mesh_items();
+        uint n_patch_points = n_elems * this->quad_size(); // number of points on patch
 
         this->allocate_result(n_patch_points, this->patch_arena());
         auto result_vec = this->result_matrix();
@@ -163,8 +164,8 @@ public:
         unsigned int last_element_idx = -1;
         LocDofVec loc_dofs;
         for (uint i=0; i<n_patch_points; ++i) {
-        	if ( ppv.int_table_(mesh_type_on_quads)(i) != boundary_domain_ ) continue;
-            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i); // mesh idx of element
+        	if ( ppv.int_table_(mesh_type_on_quads)(i % n_elems) != boundary_domain_ ) continue;
+            uint elm_idx = ppv.int_table_(mesh_elem_on_quads)(i % n_elems); // mesh idx of element
             if (elm_idx != last_element_idx) {
                 DHCellAccessor cell = dh_->cell_accessor_from_element( elm_idx );
                 loc_dofs = cell.get_loc_dof_indices();
@@ -425,7 +426,7 @@ private:
 
 	/// Create PatcFe operation of given dimension and ReturnType.
 	template <unsigned int dim, class Domain>
-	FeQ<ReturnType> create_dim_patch_op(PatchInternals &patch_internals);
+	void /*FeQ<ReturnType>*/ create_dim_patch_op(PatchInternals &patch_internals, std::vector< FeQ<ReturnType> > &op_acc_dim);
 
     inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
             unsigned int i_dof, unsigned int i_qp)
@@ -490,31 +491,6 @@ private:
     	return qgauss.size();
     }
 
-    template <unsigned int elemdim>
-    void cache_update_dim_elem(FieldValueCache<typename Value::element_type> &data_cache,
-            ElementCacheMap &cache_map, FeQ<ReturnType> &value_acc_bulk, FeQ<ReturnType> &value_acc_side,
-	        unsigned int reg_chunk_begin, unsigned int reg_chunk_end)
-    {
-        unsigned int element_patch_idx = 0;
-        unsigned int last_element_idx = -1;
-        for (unsigned int i_data = reg_chunk_begin; i_data < reg_chunk_end; ++i_data) { // i_eval_point_data
-            unsigned int elm_idx = cache_map.eval_point_data(i_data).i_element_;
-            if (elm_idx != last_element_idx) {
-                element_patch_idx = cache_map.position_in_cache(elm_idx, this->boundary_domain_);
-                last_element_idx = elm_idx;
-            }
-
-            uint i_qpoint = cache_map.eval_point_data(i_data).i_eval_point_;
-            BulkPoint p_bulk(&cache_map, element_patch_idx, i_qpoint);
-            if (cache_map.eval_points()->point_domain(elemdim, i_qpoint) == points_domain::bulk_points) {
-                data_cache.set(i_data) = value_acc_bulk(p_bulk);
-            } else {
-                SidePoint p(p_bulk, 0);
-                data_cache.set(i_data) = value_acc_side(p);
-            }
-        }
-    }
-
 
 
     /// DOF handler object
@@ -564,13 +540,8 @@ private:
     ElementDataCache<double>::CacheData input_data_cache_;
 
     // Data members of 'new' version of cache_update
-    FeQ<ReturnType> value_acc_0d_bulk_;
-    FeQ<ReturnType> value_acc_1d_bulk_;
-    FeQ<ReturnType> value_acc_2d_bulk_;
-    FeQ<ReturnType> value_acc_3d_bulk_;
-    FeQ<ReturnType> value_acc_1d_side_;
-    FeQ<ReturnType> value_acc_2d_side_;
-    FeQ<ReturnType> value_acc_3d_side_;
+    std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_bulk_;
+    std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_side_;
 
     /// Registrar of class to factory
     static const int registrar;

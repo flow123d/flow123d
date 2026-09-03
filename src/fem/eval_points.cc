@@ -39,7 +39,7 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal(Quadratu
     auto map_it = bulk_integrals_.find( tpl );
     if (map_it == bulk_integrals_.end()) {
         dim_eval_points_[dim].add_local_points<dim>( quad->get_points() );
-        uint i_subset = dim_eval_points_[dim].add_subset(points_domain::bulk_points, quad->size());
+        uint i_subset = dim_eval_points_[dim].add_subset(points_domain::bulk_points, quad);
 
         bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
         map_it = bulk_integrals_.find( tpl );
@@ -56,7 +56,7 @@ std::shared_ptr<internal_integrals::Bulk> EvalPoints::add_bulk_internal<0>(Quadr
     auto tpl = IntegralTplHash::integral_tuple(0, quad->size());
     auto map_it = bulk_integrals_.find( tpl );
     if (map_it == bulk_integrals_.end()) {
-        uint i_subset = dim_eval_points_[0].add_subset(points_domain::bulk_points, quad->size());
+        uint i_subset = dim_eval_points_[0].add_subset(points_domain::bulk_points, quad);
 
         bulk_integrals_[tpl] = std::make_shared<internal_integrals::Bulk>(quad, quad->dim(), shared_from_this(), i_subset);
         map_it = bulk_integrals_.find( tpl );
@@ -77,7 +77,7 @@ std::shared_ptr<internal_integrals::Edge> EvalPoints::add_edge_internal(Quadratu
             Quadrature high_dim_q = quad->make_from_side<dim>(i);
             dim_eval_points_[dim].add_local_points<dim>( high_dim_q.get_points() );
         }
-        uint i_subset = dim_eval_points_[dim].add_subset(points_domain::side_points, quad->size(), quad->size() * dim);
+        uint i_subset = dim_eval_points_[dim].add_subset(points_domain::side_points, quad, quad->size() * dim);
 
         edge_integrals_[tpl] = std::make_shared<internal_integrals::Edge>(quad, quad->dim()+1, shared_from_this(), i_subset);
         map_it = edge_integrals_.find( tpl );
@@ -105,20 +105,11 @@ uint EvalPoints::get_max_integral_quad_size(IntegralPtrMap<Integral> integrals, 
 }
 
 std::vector<Quadrature *> EvalPoints::get_bulk_quad_vector(unsigned int dim) const {
-    return get_quad_vector<internal_integrals::Bulk>(bulk_integrals_, dim);
+    return dim_eval_points_[dim].bulk_quads_;
 }
 
 std::vector<Quadrature *> EvalPoints::get_side_quad_vector(unsigned int dim) const {
-    return get_quad_vector<internal_integrals::Edge>(edge_integrals_, dim);
-}
-
-template<class Integral>
-std::vector<Quadrature *> EvalPoints::get_quad_vector(IntegralPtrMap<Integral> integrals, unsigned int dim) const {
-    std::vector<Quadrature *> quad_vec;
-    for (auto integral_it : integrals)
-        if (integral_it.second->dim() == dim)
-            quad_vec.push_back( integral_it.second->quad() );
-    return quad_vec;
+    return dim_eval_points_[dim].side_quads_;
 }
 
 EvalPoints::DimEvalPoints::DimEvalPoints(unsigned int dim)
@@ -141,15 +132,32 @@ void EvalPoints::DimEvalPoints::add_local_points(const Armor::Array<double> & qu
 }
 
 
-uint EvalPoints::DimEvalPoints::add_subset(points_domain point_domain, unsigned int quad_size, unsigned int repeated_points) {
+uint EvalPoints::DimEvalPoints::add_subset(points_domain point_domain, Quadrature *quad, unsigned int repeated_points) {
     ASSERT_LT(n_subsets_, EvalPoints::max_subsets).error("Maximal number of subsets exceeded!\n");
 
     n_subsets_++;
     subset_starts_[n_subsets_] = this->size();
-    for (uint i=0; i<quad_size; ++i)
-        points_domains_.push_back(point_domain);
-    for (uint i=0; i<repeated_points; ++i)
-        points_domains_.push_back(points_domain::repeated_side_points);
+
+    { // [Remove after cache merge] - block of temporary code
+        unsigned int i_domain_subset=0;
+        if (point_domain == points_domain::bulk_points) {
+            i_domain_subset = bulk_quads_.size();
+            bulk_quads_.push_back(quad);
+        } else {
+            i_domain_subset = side_quads_.size();
+            side_quads_.push_back(quad);
+        }
+
+        for (uint i=0; i<quad->size(); ++i) {
+            points_domains_.push_back(point_domain);
+            points_quads_.push_back(i_domain_subset);
+        }
+        for (uint i=0; i<repeated_points; ++i) {
+            points_domains_.push_back(points_domain::repeated_side_points);
+            points_quads_.push_back(i_domain_subset);
+        }
+    }
+
     return n_subsets_ - 1;
 }
 
