@@ -26,8 +26,8 @@
 #include <new>                                // for operator new[]
 #include <string>                             // for operator<<
 #include <vector>                             // for vector
-#include "fem/element_values.hh"              // for ElementValues
-#include "fem/fe_values_views.hh"             // for FEValuesViews
+#include "fem/old_fe_values/element_values.hh"   // for ElementValues
+#include "fem/old_fe_values/fe_values_views.hh"  // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags

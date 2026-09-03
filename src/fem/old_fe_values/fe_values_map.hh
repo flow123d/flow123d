@@ -19,8 +19,8 @@
 #define FE_VALUES_MAP_HH_
 
 #include <vector>                             // for vector
-#include "fem/fe_values.hh"                   // for FEValues
-#include "fem/element_values.hh"              // for ElementValues
+#include "fem/old_fe_values/fe_values.hh"                   // for FEValues
+#include "fem/old_fe_values/element_values.hh"              // for ElementValues
 
 
 /**
