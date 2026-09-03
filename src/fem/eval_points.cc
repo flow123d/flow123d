@@ -138,23 +138,26 @@ uint EvalPoints::DimEvalPoints::add_subset(points_domain point_domain, Quadratur
     n_subsets_++;
     subset_starts_[n_subsets_] = this->size();
 
-    unsigned int i_domain_subset=0;
-    if (point_domain == points_domain::bulk_points) {
-        i_domain_subset = bulk_quads_.size();
-        bulk_quads_.push_back(quad);
-    } else {
-        i_domain_subset = side_quads_.size();
-        side_quads_.push_back(quad);
+    { // [Remove after cache merge] - block of temporary code
+        unsigned int i_domain_subset=0;
+        if (point_domain == points_domain::bulk_points) {
+            i_domain_subset = bulk_quads_.size();
+            bulk_quads_.push_back(quad);
+        } else {
+            i_domain_subset = side_quads_.size();
+            side_quads_.push_back(quad);
+        }
+
+        for (uint i=0; i<quad->size(); ++i) {
+            points_domains_.push_back(point_domain);
+            points_quads_.push_back(i_domain_subset);
+        }
+        for (uint i=0; i<repeated_points; ++i) {
+            points_domains_.push_back(points_domain::repeated_side_points);
+            points_quads_.push_back(i_domain_subset);
+        }
     }
 
-    for (uint i=0; i<quad->size(); ++i) {
-        points_domains_.push_back(point_domain);
-        points_quads_.push_back(i_domain_subset);
-    }
-    for (uint i=0; i<repeated_points; ++i) {
-        points_domains_.push_back(points_domain::repeated_side_points);
-        points_quads_.push_back(i_domain_subset);
-    }
     return n_subsets_ - 1;
 }
 

@@ -134,18 +134,18 @@ public:
     /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
     uint get_max_side_quad_size(unsigned int dim) const;
 
-    /// Return vector of bulk quadratures of given dimension from bulk integrals (Bulk, Coupling /lower-dim/)
+    /// [Remove after cache merge] Return vector of bulk quadratures of given dimension from bulk integrals (Bulk, Coupling /lower-dim/)
     std::vector<Quadrature *> get_bulk_quad_vector(unsigned int dim) const;
 
-    /// Return vector of side quadratures of given dimension from side integrals (Edge, Coupling /higher-dim/, Boundary)
+    /// [Remove after cache merge] Return vector of side quadratures of given dimension from side integrals (Edge, Coupling /higher-dim/, Boundary)
     std::vector<Quadrature *> get_side_quad_vector(unsigned int dim) const;
 
-    /// Return domain of quadrature point - temporary method.
+    /// [Remove after cache merge] Return domain of quadrature point - temporary method.
     inline points_domain point_domain(unsigned int dim, unsigned int local_point_idx) const {
     	return dim_eval_points_[dim].point_domain(local_point_idx);
     }
 
-    /// Return index of quadrature of quadrature point - temporary method.
+    /// [Remove after cache merge] Return index of quadrature of quadrature point - temporary method.
     inline unsigned int point_quad(unsigned int dim, unsigned int local_point_idx) const {
     	return dim_eval_points_[dim].point_quad(local_point_idx);
     }
@@ -205,13 +205,13 @@ private:
             n_subsets_ = 0;
         }
 
-        /// Return domain of quadrature point - temporary method.
+        /// [Remove after cache merge] Return domain of quadrature point - temporary method
         inline points_domain point_domain(unsigned int local_point_idx) const {
             ASSERT_LT(local_point_idx, points_domains_.size());
         	return points_domains_[local_point_idx];
         }
 
-        /// Return index of quadrature of quadrature point - temporary method.
+        /// [Remove after cache merge] Return index of quadrature of quadrature point - temporary method.
         inline unsigned int point_quad(unsigned int local_point_idx) const {
             ASSERT_LT(local_point_idx, points_quads_.size());
         	return points_quads_[local_point_idx];
@@ -223,8 +223,12 @@ private:
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
 
-        // Following data members are temporary and they are used in evaluation of FieldFeOps.
-        // Data members will be removed after merge of Field and ParchFeValues caches.
+        /*
+         * [Remove after cache merge]
+         *
+         * Following data members are temporary and they are used in evaluation of FieldFeOps.
+         * Data members will be removed after merge of Field and ParchFeValues caches.
+         */
         std::vector<points_domain> points_domains_;                   ///< Flags hold if quadrature points are bulk or side
         std::vector<unsigned int> points_quads_;                      ///< Index of bulk / side quadrature (integral) corresponding to quadrature points
         std::vector<Quadrature *> bulk_quads_;                        ///< Set of bulk quadratures

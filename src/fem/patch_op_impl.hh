@@ -119,6 +119,16 @@ template <>
 template <>
 inline unsigned int PatchOp<3>::point_value<unsigned int>(uint point_idx, uint i_dof) const {
 	PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_];
+	/*
+	 * Default conversion to unsigned int should not be done.
+	 * These results should be returned from "int_result_" (new data member of this class),
+	 * "int_result_" should be allocated only for FieldFeOp. In FieldFeOp evaluation,
+	 * fill both:
+	 *   result_ = ...;
+	 *   int_result_ = (floor(result_)).;
+	 *
+	 * Same problem in is specialization of int bellow.
+	 */
     return result_(i_dof)(ppv.points_map_[point_idx]);
 }
 
