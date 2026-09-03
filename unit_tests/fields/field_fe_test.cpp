@@ -88,6 +88,9 @@ TEST_F(FieldEvalFETest, input_msh) {
         tensor_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
+#        tensor_4d_field: !FieldFE
+#          mesh_data_file: fields/simplest_cube_data.msh
+#          field_name: tensor_4d_voigt
         enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
@@ -97,6 +100,8 @@ TEST_F(FieldEvalFETest, input_msh) {
           value: "[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]"
         tensor_ref: !FieldFormula
           value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2]+0.5*t, 0], [0, 0, 2*X[2]+X[0]+t] ]"
+#        tensor_4d_ref: !FieldFormula
+#          value: "[ [2*X[0]+X[1], 0, 0, 0, 0, 0], [0, 2*X[1]+X[2], 0, 0, 0, 0], [0, 0, 2*X[2]+X[0], 0, 0, 0], [0, 0, 0, 0.5*t, 0, 0], [0, 0, 0, 0, t, 0], [0, 0, 0, 0, 0, 2*t] ]"
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -111,6 +116,10 @@ TEST_F(FieldEvalFETest, input_msh) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
           is_boundary: true
+#        bc_tensor_4d_field: !FieldFE
+#          mesh_data_file: fields/simplest_cube_data.msh
+#          field_name: tensor_4d_voigt
+#          is_boundary: true
         bc_enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
@@ -121,6 +130,8 @@ TEST_F(FieldEvalFETest, input_msh) {
           value: "[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]"
         bc_tensor_ref: !FieldFormula
           value: "[ [X[0]+X[1]+X[2], 0, 0], [0, 2*(X[0]+X[1]+X[2])+0.5*t, 0], [0, 0, 3*(X[0]+X[1]+X[2])+t] ]"
+#        bc_tensor_4d_ref: !FieldFormula
+#          value: "[ [X[0]+X[1]+X[2], 0, 0, 0, 0, 0], [0, 2*(X[0]+X[1]+X[2]), 0, 0, 0, 0], [0, 0, 3*(X[0]+X[1]+X[2]), 0, 0, 0], [0, 0, 0, 0.5*t, 0, 0], [0, 0, 0, 0, t, 0], [0, 0, 0, 0, 0, 2*t] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
