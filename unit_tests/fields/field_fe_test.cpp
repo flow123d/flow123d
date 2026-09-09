@@ -156,11 +156,11 @@ TEST_F(FieldEvalFETest, input_msh) {
         FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
         FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
         FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
-//        SingleValRef<unsigned int> ref_bc_enum(j+1);
+        SingleValRef<unsigned int> ref_bc_enum(j+1);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
-//        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
         eq_data_->next_time();
     }
 }
@@ -419,13 +419,13 @@ TEST_F(FieldEvalFETest, interpolation_1d_2d) { // TODO fix bdr
           mesh_data_file: fields/interpolation_rectangle.msh
           field_name: scalar
           default_value: 0.0
-          #interpolation: P0_intersection
+          interpolation: P0_intersection
           is_boundary: true
         bc_vector_field: !FieldFE
           mesh_data_file: fields/interpolation_rectangle.msh
           field_name: vector_fixed
           default_value: 0.0
-          #interpolation: P0_intersection
+          interpolation: P0_intersection
           is_boundary: true
     )YAML";
 
