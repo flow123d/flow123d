@@ -700,10 +700,13 @@ public:
 
     /// Run assembly algorithms with different type of assembly and type of field
     void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
 
 	/// Perform profiler output.
