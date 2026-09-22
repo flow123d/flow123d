@@ -203,7 +203,8 @@ enum FEType {
   FEVectorContravariant = 2,
   FEVectorPiola = 3,
   FETensor = 4,
-  FEMixedSystem = 5
+  FETensor4D = 5,
+  FEMixedSystem = 6
 };
 
 

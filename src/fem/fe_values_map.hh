@@ -217,6 +217,46 @@ public:
 
 
 /**
+ * @brief Helper class allows update values and gradients of FEValues of FETensor4D type
+ */
+template<unsigned int spacedim = 3>
+class MapTensor4D {
+public:
+    /// Empty method.
+    inline void fill_values_vec(FMT_UNUSED FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
+            FMT_UNUSED const typename FEValues<spacedim>::FEInternalData &fe_data) {}
+
+    /// Update shape_values of given FEValues object.
+    inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
+            const typename FEValues<spacedim>::FEInternalData &fe_data) {
+        ASSERT(fe_values.fe_type_ == FETensor4D);
+
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::vec fv_vec = fe_data.ref_shape_values[i][j];
+                for (unsigned int c=0; c<4*spacedim*spacedim; c++)
+                    fe_values.shape_values[i][j*4*spacedim*spacedim+c] = fv_vec[c];
+            }
+    }
+
+    /// Update shape_gradients of given FEValues object.
+    inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
+            const typename FEValues<spacedim>::FEInternalData &fe_data) {
+        ASSERT(fe_values.fe_type_ == FETensor4D);
+
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::mat grads = trans(elm_values.inverse_jacobian(i)) * fe_data.ref_shape_grads[i][j];
+                for (unsigned int c=0; c<4*spacedim*spacedim; c++)
+                    fe_values.shape_gradients[i][j*4*spacedim*spacedim+c] = grads.col(c);
+            }
+    }
+};
+
+
+/**
  * @brief Helper class allows update values and gradients of FEValues of FEMixedSystem type
  */
 template<unsigned int spacedim = 3>

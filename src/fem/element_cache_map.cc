@@ -18,7 +18,6 @@
 
 #include <limits>
 #include "fem/element_cache_map.hh"
-#include "fields/field_values.hh"
 #include "fem/eval_points.hh"
 #include "fem/integral_acc.hh"
 #include "fem/dh_cell_accessor.hh"

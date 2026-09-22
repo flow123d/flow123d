@@ -88,6 +88,9 @@ TEST_F(FieldEvalFETest, input_msh) {
         tensor_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
+        tensor_4d_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: tensor_4d_voigt
         enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
@@ -97,6 +100,8 @@ TEST_F(FieldEvalFETest, input_msh) {
           value: "[X[0]+2*X[1], X[1]+2*X[2]+0.5*t, X[2]+2*X[0]+t]"
         tensor_ref: !FieldFormula
           value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2]+0.5*t, 0], [0, 0, 2*X[2]+X[0]+t] ]"
+        tensor_4d_ref: !FieldFormula
+          value: "[ [2*X[0]+X[1], 0, 0, 0, 0, 0], [0, 2*X[1]+X[2], 0, 0, 0, 0], [0, 0, 2*X[2]+X[0], 0, 0, 0], [0, 0, 0, 0.5*t, 0, 0], [0, 0, 0, 0, t, 0], [0, 0, 0, 0, 0, 2*t] ]"
       - region: [".top side", ".bottom side"]
         time: 0.0
         bc_scalar_field: !FieldFE
@@ -111,6 +116,10 @@ TEST_F(FieldEvalFETest, input_msh) {
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: tensor_fixed
           is_boundary: true
+        bc_tensor_4d_field: !FieldFE
+          mesh_data_file: fields/simplest_cube_data.msh
+          field_name: tensor_4d_voigt
+          is_boundary: true
         bc_enum_field: !FieldFE
           mesh_data_file: fields/simplest_cube_data.msh
           field_name: enum
@@ -121,6 +130,8 @@ TEST_F(FieldEvalFETest, input_msh) {
           value: "[3*X[0], 3*X[1]+0.5*t, 3*X[2]+t]"
         bc_tensor_ref: !FieldFormula
           value: "[ [X[0]+X[1]+X[2], 0, 0], [0, 2*(X[0]+X[1]+X[2])+0.5*t, 0], [0, 0, 3*(X[0]+X[1]+X[2])+t] ]"
+        bc_tensor_4d_ref: !FieldFormula
+          value: "[ [X[0]+X[1]+X[2], 0, 0, 0, 0, 0], [0, 2*(X[0]+X[1]+X[2]), 0, 0, 0, 0], [0, 0, 3*(X[0]+X[1]+X[2]), 0, 0, 0], [0, 0, 0, 0.5*t, 0, 0], [0, 0, 0, 0, t, 0], [0, 0, 0, 0, 0, 2*t] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -133,20 +144,24 @@ TEST_F(FieldEvalFETest, input_msh) {
     	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
     	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
     	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+    	FieldRef<Tensor4DField> ref_tensor_4d(eq_data_->tensor_4d_ref);
     	SingleValRef<unsigned int> ref_enum(j);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
+        EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_4d_field, ref_tensor_4d) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->enum_field, ref_enum) );
 
         // BOUNDARY fields
         FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
         FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
         FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
+    	FieldRef<Tensor4DField> ref_bc_tensor_4d(eq_data_->bc_tensor_4d_ref);
         SingleValRef<unsigned int> ref_bc_enum(j+1);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_field, ref_bc_tensor, 3, 0) );
+        EXPECT_TRUE( eval_boundary_field(eq_data_->bc_tensor_4d_field, ref_bc_tensor_4d, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_enum_field, ref_bc_enum, 3, 0) );
         eq_data_->tg_.next_time();
     }
@@ -167,12 +182,17 @@ TEST_F(FieldEvalFETest, input_vtk) {
         tensor_field: !FieldFE
           mesh_data_file: fields/vtk_ascii_data.vtu
           field_name: tensor_field
+        tensor_4d_field: !FieldFE
+          mesh_data_file: fields/vtk_ascii_data.vtu
+          field_name: tensor_4d_voigt
         scalar_ref: !FieldFormula
           value: X[0]+2*X[1]
         vector_ref: !FieldFormula
           value: "[X[0]+2*X[1], X[1]+2*X[2], X[2]+2*X[0]]"
         tensor_ref: !FieldFormula
           value: "[ [2*X[0]+X[1], 0, 0], [0, 2*X[1]+X[2], 0], [0, 0, 2*X[2]+X[0]] ]"
+        tensor_4d_ref: !FieldFormula
+          value: "[ [2*X[0]+X[1], 0, 0, 0, 0, 0], [0, 2*X[1]+X[2], 0, 0, 0, 0], [0, 0, 2*X[2]+X[0], 0, 0, 0], [0, 0, 0, 0.5*t, 0, 0], [0, 0, 0, 0, t, 0], [0, 0, 0, 0, 0, 2*t] ]"
     )YAML";
 
     this->create_mesh("mesh/simplest_cube.msh");
@@ -182,9 +202,11 @@ TEST_F(FieldEvalFETest, input_vtk) {
 	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
 	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
 	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
+	FieldRef<Tensor4DField> ref_tensor_4d(eq_data_->tensor_4d_ref);
     EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
+    EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_4d_field, ref_tensor_4d) );
 }
 
 
