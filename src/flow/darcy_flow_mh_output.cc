@@ -124,9 +124,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
-  is_output_specific_fields(false),
-  l2_difference_assembly_(nullptr),
-  output_internal_assembly_(nullptr)
+  is_output_specific_fields(false)
 {
     output_stream = OutputTime::create_output_stream("flow",
                                                      main_mh_in_rec.val<Input::Record>("output_stream"),
@@ -164,8 +162,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyLMH *flow, Input::Record main_mh_in_re
                     try {
                         raw_output_file_path.open_stream(raw_eq_data_->raw_output_file);
                     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
-
-                    output_internal_assembly_ = new GenericAssembly< OutputInternalFlowAssemblyDim >(raw_eq_data_.get());
                 }
             }
         }
@@ -235,7 +231,6 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 
     if (compute_errors_) {
         set_specific_output_python_fields();
-        l2_difference_assembly_ = new GenericAssembly< L2DifferenceAssemblyDim >(diff_eq_data_.get(), diff_eq_data_->flow_data_->dh_.get());
     }
 }
 
@@ -302,11 +297,7 @@ DARCY_SET_REF_SOLUTION(FieldValue<3>::Scalar);
 DARCY_SET_REF_SOLUTION(FieldValue<3>::VectorFixed);
 
 
-DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{
-    if (l2_difference_assembly_ != nullptr) delete l2_difference_assembly_;
-    if (output_internal_assembly_ != nullptr) delete output_internal_assembly_;
-}
+DarcyFlowMHOutput::~DarcyFlowMHOutput() {}
 
 
 
@@ -325,8 +316,10 @@ void DarcyFlowMHOutput::output()
         START_TIMER("post-process output fields");
 
         {
-            if (raw_eq_data_->raw_output_file.is_open())
-                output_internal_assembly_->assemble(raw_eq_data_->flow_data_->dh_);
+            if (raw_eq_data_->raw_output_file.is_open()) {
+                GenericAssembly< OutputInternalFlowAssemblyDim > output_internal_assembly(raw_eq_data_.get());
+                output_internal_assembly.assemble(raw_eq_data_->flow_data_->dh_);
+            }
         }
     }
 
@@ -340,7 +333,8 @@ void DarcyFlowMHOutput::output()
     {
         START_TIMER("compute specific output fields");
         //compute_l2_difference();
-        l2_difference_assembly_->assemble(diff_eq_data_->flow_data_->dh_);
+        GenericAssembly< L2DifferenceAssemblyDim > l2_difference_assembly(diff_eq_data_.get(), diff_eq_data_->flow_data_->dh_.get());
+        l2_difference_assembly.assemble(diff_eq_data_->flow_data_->dh_);
     }
     
     if(is_output_specific_fields)

@@ -42,6 +42,8 @@ define_mpi_test(field_fe 1)
 define_mpi_test(multi_field 1)
 define_mpi_test(field_time_function 1)
 
+define_mpi_test(field_fe_patch_op 1)
+
 define_mpi_test(generic_field 1)
 
 #define_mpi_test(field_speed 1 30)

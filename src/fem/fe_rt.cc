@@ -18,7 +18,6 @@
 
 #include "mesh/accessors.hh"
 #include "fem/fe_rt.hh"
-#include "fem/fe_values.hh"
 #include "mesh/ref_element.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "system/fmt/posix.h"           // for FMT_UNUSED

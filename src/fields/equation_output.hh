@@ -162,12 +162,6 @@ private:
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     std::shared_ptr<DOFHandlerMultiDim> dh_node_;
 
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< AssemblyOutputElemDataDim > * output_elem_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeDataDim > * output_node_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeDataDim > * output_corner_data_assembly_;
-    GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly_;
-
 };
 
 

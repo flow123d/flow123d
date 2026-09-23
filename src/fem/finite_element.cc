@@ -20,7 +20,6 @@
 #include "quadrature/quadrature.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_system.hh"
 
 
@@ -113,8 +112,8 @@ double FiniteElement<dim>::shape_value(const unsigned int i,
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
-    ASSERT( comp < n_components() );
-	ASSERT( i < dofs_.size()).error("Index of basis function is out of range.");
+    ASSERT_LT( comp, n_components() );
+	ASSERT_LT( i, dofs_.size()).error("Index of basis function is out of range.");
     
     double value = 0;
     for (unsigned int j=0; j<function_space_->dim(); j++)
