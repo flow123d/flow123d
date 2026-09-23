@@ -118,8 +118,8 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             *eq_fieldset_+=scalar_field
                     ->name(field_name)
                     .description("")
-                    .units( units )
-					.flags(FieldFlag::equation_result);
+                    .units( units );
+					//.flags(FieldFlag::equation_result);
             scalar_field->set_mesh(*mesh_);
             scalar_field->set( field_rec, time_->t());
             scalar_field->set_default_fieldset(*eq_fieldset_);
@@ -131,8 +131,8 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             *eq_fieldset_+=vector_field
                     ->name(field_name)
                     .description("")
-                    .units( units )
-					.flags(FieldFlag::equation_result);
+                    .units( units );
+					//.flags(FieldFlag::equation_result);
             vector_field->set_mesh(*mesh_);
             vector_field->set( field_rec, time_->t());
             vector_field->set_default_fieldset(*eq_fieldset_);
@@ -144,8 +144,8 @@ void EquationBase::init_user_fields(Input::Array user_fields, FieldSet &output_f
             *eq_fieldset_+=tensor_field
                     ->name(field_name)
                     .description("")
-                    .units( units )
-					.flags(FieldFlag::equation_result);
+                    .units( units );
+					//.flags(FieldFlag::equation_result);
             tensor_field->set_mesh(*mesh_);
             tensor_field->set( field_rec, time_->t());
             tensor_field->set_default_fieldset(*eq_fieldset_);
