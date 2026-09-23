@@ -20,11 +20,11 @@
 
 #include "fem/mapping_p1.hh"
 #include "quadrature/quadrature.hh"
-#include "fem/element_values.hh"
+#include "fem/old_fe_values/element_values.hh"
 #include "fem/finite_element.hh"
-#include "fem/fe_values.hh"
+#include "fem/old_fe_values/fe_values.hh"
 #include "fem/fe_system.hh"
-#include "fem/fe_values_map.hh"
+#include "fem/old_fe_values/fe_values_map.hh"
 
 
 

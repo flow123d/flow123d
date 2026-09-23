@@ -293,21 +293,9 @@ public:
 			ElementCacheMap &cache_map, unsigned int region_patch_idx) override;
 
     /**
-     * Temporary - old version of update_cache
-     */
-    void cache_update_old(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
-
-    /**
-     * Replace previous method - in progress
-     */
-    void cache_update_new(FieldValueCache<typename Value::element_type> &data_cache,
-			ElementCacheMap &cache_map, unsigned int region_patch_idx); //override;
-
-    /**
      * Overload @p FieldAlgorithmBase::cache_reinit
      *
-     * Reinit fe_values_ data member.
+     * Create instances of FieldFeOp.
      */
     void cache_reinit(PatchInternals &patch_internals) override;
 
@@ -420,25 +408,9 @@ private:
 	/// Calculate data of equivalent_mesh interpolation or native data on input over all elements of target mesh.
 	void calculate_element_values();
 
-	/// Initialize FEValues object of given dimension.
-	template <unsigned int dim>
-	Quadrature *init_quad(std::shared_ptr<EvalPoints> eval_points);
-
 	/// Create PatcFe operation of given dimension and ReturnType.
 	template <unsigned int dim, class Domain>
 	void /*FeQ<ReturnType>*/ create_dim_patch_op(PatchInternals &patch_internals, std::vector< FeQ<ReturnType> > &op_acc_dim);
-
-    inline Armor::ArmaMat<typename Value::element_type, Value::NRows_, Value::NCols_> handle_fe_shape(unsigned int dim,
-            unsigned int i_dof, unsigned int i_qp)
-    {
-        Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
-        for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c); // TODO use PatchFeValues
-        if (Value::NRows_ == Value::NCols_)
-            return v;
-        else
-            return v.t();
-    }
 
     template<unsigned int dim>
     void fill_fe_system_data(unsigned int block_index) {
@@ -521,10 +493,6 @@ private:
 
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
-
-    /// List of FEValues objects of dimensions 0,1,2,3 used for value calculation
-    /// TODO use PatchFeValues
-    std::vector<FEValues<spacedim>> fe_values_;
 
     /// Maps element indices from computational mesh to the  source (data).
     std::shared_ptr<EquivalentMeshMap> source_target_mesh_elm_map_;
