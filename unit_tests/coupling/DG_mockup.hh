@@ -25,6 +25,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "la/linsys.hh"
@@ -467,19 +468,24 @@ public:
 
         MixedPtr<FE_P_disc> fe_base(0);
         MixedPtr<FiniteElement> fe_tens = mixed_fe_system(fe_base, FEType::FETensor, 9);
+        MixedPtr<FiniteElement> fe_rt = MixedPtr<FE_RT0_disc>();
         std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_base);
         std::shared_ptr<DiscreteSpace> ds_tens = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_tens);
+        std::shared_ptr<DiscreteSpace> ds_rt = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_rt);
         std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
         std::shared_ptr<DOFHandlerMultiDim> dh_tens = std::make_shared<DOFHandlerMultiDim>(mesh);
+        std::shared_ptr<DOFHandlerMultiDim> dh_rt = std::make_shared<DOFHandlerMultiDim>(mesh);
         dh->distribute_dofs(ds);
         dh_tens->distribute_dofs(ds_tens);
+        dh_rt->distribute_dofs(ds_rt);
 
         {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-            VectorMPI data_vec = create_data_vec(dh, seed++);
-            field_algo->set_fe_data(dh, data_vec);
-            v_norm.set(field_algo, 0.0);
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed>>();
+            VectorMPI data_vec = create_data_vec(dh_rt, seed++);
+            field_algo->set_fe_data(dh_rt, data_vec);
+            flow_flux.set(field_algo, 0.0);
         }
+        v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
         {
             auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
             VectorMPI data_vec = create_data_vec(dh, seed++);
