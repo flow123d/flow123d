@@ -178,6 +178,7 @@ function update_image() {
     
     if [[ $autopull == "1" ]]; then
       docker pull $pull_image:$image_tag
+    fi
 }
 
 
