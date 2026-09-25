@@ -289,6 +289,44 @@ public:
         }
     }
 
+    VectorMPI create_data_vec(shared_ptr<DOFHandlerMultiDim> dh, uint seed) {
+        VectorMPI data_vec = dh->create_vector();
+    	for (uint i=0; i<data_vec.size(); ++i) {
+    		data_vec.set( i, 0.05 * ((i+seed)%19 + 1) );
+    	}
+    	return data_vec;
+    }
+
+    /// Initialize selected fields as FieldFE
+    void init_fields_fe(Mesh &mesh)
+    {
+    	uint seed = 0;
+
+        MixedPtr<FE_P_disc> fe_p(0);
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_p);
+        std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+        dh->distribute_dofs(ds);
+
+        {
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+            VectorMPI data_vec = create_data_vec(dh, seed++);
+            field_algo->set_fe_data(dh, data_vec);
+            lame_mu.set(field_algo, 0.0);
+        }
+        {
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+            VectorMPI data_vec = create_data_vec(dh, seed++);
+            field_algo->set_fe_data(dh, data_vec);
+            lame_lambda.set(field_algo, 0.0);
+        }
+        {
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+            VectorMPI data_vec = create_data_vec(dh, seed++);
+            field_algo->set_fe_data(dh, data_vec);
+            dirichlet_penalty.set(field_algo, 0.0);
+        }
+    }
+
     arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
     {
         return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
@@ -405,10 +443,13 @@ public:
 
     /// Run assembly algorithms with different type of assembly and type of field
     void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
 
     /// Perform profiler output.

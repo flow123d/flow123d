@@ -25,6 +25,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "la/linsys.hh"
@@ -451,6 +452,98 @@ public:
         }
     }
 
+    VectorMPI create_data_vec(shared_ptr<DOFHandlerMultiDim> dh, uint seed) {
+        VectorMPI data_vec = dh->create_vector();
+    	for (uint i=0; i<data_vec.size(); ++i) {
+    		data_vec.set( i, 0.05 * ((i+seed)%19 + 1) );
+    	}
+    	return data_vec;
+    }
+
+    /// Initialize selected fields as FieldConstants
+    void init_fields_fe(Mesh &mesh)
+    {
+    	setup_mf_components();
+    	uint seed = 0;
+
+        MixedPtr<FE_P_disc> fe_base(0);
+        MixedPtr<FiniteElement> fe_tens = mixed_fe_system(fe_base, FEType::FETensor, 9);
+        MixedPtr<FiniteElement> fe_rt = MixedPtr<FE_RT0_disc>();
+        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_base);
+        std::shared_ptr<DiscreteSpace> ds_tens = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_tens);
+        std::shared_ptr<DiscreteSpace> ds_rt = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_rt);
+        std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+        std::shared_ptr<DOFHandlerMultiDim> dh_tens = std::make_shared<DOFHandlerMultiDim>(mesh);
+        std::shared_ptr<DOFHandlerMultiDim> dh_rt = std::make_shared<DOFHandlerMultiDim>(mesh);
+        dh->distribute_dofs(ds);
+        dh_tens->distribute_dofs(ds_tens);
+        dh_rt->distribute_dofs(ds_rt);
+
+        {
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed>>();
+            VectorMPI data_vec = create_data_vec(dh_rt, seed++);
+            field_algo->set_fe_data(dh_rt, data_vec);
+            flow_flux.set(field_algo, 0.0);
+        }
+        v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
+        {
+            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+            VectorMPI data_vec = create_data_vec(dh, seed++);
+            field_algo->set_fe_data(dh, data_vec);
+            mass_matrix_coef.set(field_algo, 0.0);
+        }
+        {
+            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+            for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++) {
+                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+                VectorMPI data_vec = create_data_vec(dh, seed++);
+                field_algo->set_fe_data(dh, data_vec);
+                field_vec.push_back(field_algo);
+            }
+            retardation_coef.set(field_vec, 0.0);
+        }
+        {
+            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+            for (unsigned int sbi=0; sbi<sources_density.size(); sbi++) {
+                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+                VectorMPI data_vec = create_data_vec(dh, seed++);
+                field_algo->set_fe_data(dh, data_vec);
+                field_vec.push_back(field_algo);
+            }
+            sources_density_out.set(field_vec, 0.0);
+        }
+        {
+            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+            for (unsigned int sbi=0; sbi<sources_sigma.size(); sbi++) {
+                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+                VectorMPI data_vec = create_data_vec(dh, seed++);
+                field_algo->set_fe_data(dh, data_vec);
+                field_vec.push_back(field_algo);
+            }
+            sources_sigma_out.set(field_vec, 0.0);
+        }
+        {
+            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
+            for (unsigned int sbi=0; sbi<sources_conc.size(); sbi++) {
+                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
+                VectorMPI data_vec = create_data_vec(dh, seed++);
+                field_algo->set_fe_data(dh, data_vec);
+                field_vec.push_back(field_algo);
+            }
+            sources_conc_out.set(field_vec, 0.0);
+        }
+        {
+            std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> field_vec;
+            for (unsigned int sbi=0; sbi<diff_m.size(); sbi++) {
+                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::TensorFixed>>();
+                VectorMPI data_vec = create_data_vec(dh_tens, seed++);
+                field_algo->set_fe_data(dh_tens, data_vec);
+                field_vec.push_back(field_algo);
+            }
+            diffusion_coef.set(field_vec, 0.0);
+        }
+    }
+
     // from TransportEqFields
     Field<3, FieldValue<3>::Scalar> porosity;             ///< Mobile porosity - usually saturated water content in the case of unsaturated flow model
     Field<3, FieldValue<3>::Scalar> water_content;        ///v Water content - result of unsaturated water flow model or porosity
@@ -613,10 +706,13 @@ public:
 
     /// Run assembly algorithms with different type of assembly and type of field
     void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
+    void run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file);
     void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
 
 	/// Perform profiler output.
