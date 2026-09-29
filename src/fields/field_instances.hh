@@ -27,6 +27,7 @@
 #define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
 template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
 template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
+template class field<dim_from, FieldValue<dim_to>::Tensor4DVoigt >;                     \
 
 // Instantiation of fields with domain in the ambient space of dimension @p dim_from
 #define INSTANCE_TO_ALL(field, dim_from) \

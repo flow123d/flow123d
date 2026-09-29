@@ -83,6 +83,9 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
     case FEType::FETensor:
       tensors.push_back(FEValuesViews::Tensor<spacedim>(fv, 0));
       break;
+    case FEType::FETensor4D:
+      //ASSERT_PERMANENT(false).error("Tensor4D is not allowed as view and component of FeSystem now!");
+      break;
     case FEType::FEMixedSystem:
       const FESystem<DIM> *fe_sys = dynamic_cast<const FESystem<DIM>*>(&fe);
       ASSERT(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
@@ -104,6 +107,9 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
               vectors.push_back(FEValuesViews::Vector<spacedim>(fv,comp_offset));
               break;
           case FEType::FETensor:
+        	  ASSERT_PERMANENT(false).error("Tensor4D is not allowed as component of FeSystem now!");
+              break;
+          case FEType::FETensor4D:
               tensors.push_back(FEValuesViews::Tensor<spacedim>(fv,comp_offset));
               break;
           default:
@@ -188,6 +194,8 @@ void FEValues<spacedim>::allocate(
         ASSERT(_fe.n_components() == spacedim).error("FEVector must have spacedim components.");
     } else if (_fe.type_ == FETensor) {
         ASSERT(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
+    } else if (_fe.type_ == FETensor4D) {
+        ASSERT(_fe.n_components() == 4*spacedim*spacedim).error("FETensor4D must have 4*spacedim*spacedim components.");
     }
 
     fe_sys_dofs_.clear();
@@ -509,6 +517,9 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
         case FETensor:
             this->fill_data_specialized<MapTensor<spacedim>>(elm_values, fe_data);
             break;
+        case FETensor4D:
+            this->fill_data_specialized<MapTensor4D<spacedim>>(elm_values, fe_data);
+            break;
         case FEMixedSystem:
             this->fill_data_specialized<MapSystem<spacedim>>(elm_values, fe_data);
             break;
@@ -592,6 +603,7 @@ template void FEValues<3>::fill_data_specialized<MapPiola<3>>(const ElementValue
 template void FEValues<3>::fill_data_specialized<MapContravariant<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
 template void FEValues<3>::fill_data_specialized<MapVector<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
 template void FEValues<3>::fill_data_specialized<MapTensor<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
+template void FEValues<3>::fill_data_specialized<MapTensor4D<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
 template void FEValues<3>::fill_data_specialized<MapSystem<3>>(const ElementValues<3> &, const typename FEValues<3>::FEInternalData &);
 
 
