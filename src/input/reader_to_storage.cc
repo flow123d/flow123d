@@ -23,6 +23,7 @@
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
+#include "input/path_python.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_internal.hh"
@@ -83,6 +84,13 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_t
 }
 
 
+ReaderToStorage::ReaderToStorage(const py::dict &input, Type::TypeBase &root_type)
+: ReaderToStorage()
+{
+    root_type.finish();
+    read_python(input, root_type);
+}
+
 
 ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase &root_type, FileFormat format)
 : ReaderToStorage()
@@ -137,6 +145,27 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 	ASSERT_PTR(storage_).error();
 }
 
+
+void ReaderToStorage::read_python(const py::dict &input, const Type::TypeBase &root_type) {
+    ASSERT(storage_ == nullptr).error();
+
+    std::unique_ptr<PathBase> root_path(
+        new PathPython(input)
+    );
+
+    root_type_ = &root_type;
+
+    try {
+        ReaderInternal ri;
+        storage_ = ri.read_storage(*root_path, root_type_);
+    }
+    catch (ReaderInternalBase::ExcInputError &e) {
+        e << ReaderInternalBase::EI_Format("Python");
+        throw;
+    }
+
+    ASSERT_PTR(storage_).error();
+}
 
 
 
