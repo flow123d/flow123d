@@ -24,6 +24,7 @@
 
 #include "system/file_path.hh"
 #include <sys/types.h>                 // for int64_t
+#include <pybind11/pybind11.h>
 
 #include <memory>                      // for shared_ptr
 #include <string>                      // for string
@@ -44,6 +45,8 @@ namespace Input { namespace Type { class TypeBase; } }
 namespace Input { namespace Type { class Default; } }
 namespace Input { namespace Type { class TypeBase; } }
 
+
+namespace py = pybind11;
 
 
 namespace Input {
@@ -99,9 +102,16 @@ public:
     /**
      * @brief Read a storage from input stream.
      *
-     * Parameter @p root_type provides input type tree declaration. See @p read_from_stream for details.
+     * Parameter @p root_type provides input type tree declaration. See @p read_stream for details.
      */
     ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_type);
+
+    /**
+     * @brief Read a storage from Python dictionary.
+     *
+     * Parameter @p root_type provides input type tree declaration. See @p read_python for details.
+     */
+    ReaderToStorage(const py::dict &input, Type::TypeBase &root_type);
 
     /// Read a storage from string (e.g. complex default value).
     ReaderToStorage( const string &default_str, Type::TypeBase &root_type, FileFormat format);
@@ -129,6 +139,14 @@ public:
      * store the data into private storage tree using \p StorageBase classes.
      */
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
+
+    /**
+     * @brief This method actually reads the given dictionary \p input
+     *
+     * Checks the data just read against the declaration tree given by \p root_type, and
+     * store the data into private storage tree using \p StorageBase classes.
+     */
+    void read_python(const py::dict &input, const Type::TypeBase &root_type);
 
 protected:
 
