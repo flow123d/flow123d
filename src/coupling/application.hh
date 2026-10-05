@@ -115,15 +115,26 @@ public:
      */
     Input::Record read_input();
 
-
+    /**
+     * Read input from Python dictionary.
+     *
+     * Returns accessor to the root Record.
+     */
+    Input::Record read_input(const py::dict &input);
 
     void init(int argc, char ** argv);
+    void init_python();
+
     /**
      * Run application.
      *
-     * Read input and solve problem.
+     * Read input and call overloaded run(Input::Record)
      */
     void run();
+
+    /// Solve problem.
+    void run(Input::Record i_rec);
+
 
 
     /**
@@ -192,6 +203,8 @@ protected:
 	 */
 	int permon_finalize();
 
+    /// Common part of init() and init_python()
+    void init_common(int argc, char ** argv);
 
     /**
      * Log file name argument - passed to system_init; "" means default, "\n" means no logging

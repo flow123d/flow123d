@@ -15,6 +15,10 @@
  * @brief   
  */
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>    // everything needed for embedding
+#include <pybind11/stl.h>      // type conversion
+
 #include "application.hh"
 
 #include "system/sys_profiler.hh"
@@ -45,6 +49,24 @@
 #include "system/logger.hh"                            // for Logger, operat...
 #include "system/system.hh"                            // for SystemInfo
 
+
+
+
+PYBIND11_MODULE(flow123d_main_api, m) {
+    m.doc() = "Python interface to Flow123d";
+
+    m.def(
+        "run",
+        [](const py::dict &input) {
+            Application app;
+            app.init_python();
+
+            Input::Record record = app.read_input(input);
+            app.run(record);
+        },
+        py::arg("input")
+    );
+}
 
 
 
@@ -171,7 +193,9 @@ void Application::petsc_initialize(int argc, char ** argv) {
 
 
     PetscInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
-    if (! signal_handler_off_) {
+	petsc_initialized = true;
+
+	if (! signal_handler_off_) {
         // PETSc do not catch SIGINT, but someone on the way does, we try to fix it.
         signal(SIGINT, system_signal_handler);
         PetscPushSignalHandler(petsc_signal_handler, nullptr);
@@ -208,6 +232,8 @@ int Application::petcs_finalize() {
 void Application::permon_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PERMON
     PermonInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
+
+    permon_initialized = true;
 #endif
 }
 
@@ -316,6 +342,14 @@ Input::Record Application::read_input() {
     Input::ReaderToStorage json_reader(fpath, get_input_type() );
     root_record = json_reader.get_root_interface<Input::Record>();
 
+    return root_record;
+}
+
+
+
+Input::Record Application::read_input(const py::dict &input) {
+    Input::ReaderToStorage reader( input, get_input_type() );
+    root_record = reader.get_root_interface<Input::Record>();
     return root_record;
 }
 
@@ -497,9 +531,19 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
-
 	this->parse_cmd_line(argc, argv);
 
+	this->init_common(argc, argv);
+}
+
+void Application::init_python() {
+    char arg0[] = "flow123d";
+    char *argv[] = {arg0, nullptr};
+
+    this->init_common(1, argv);
+}
+
+void Application::init_common(int argc, char ** argv) {
 	string build = string(__DATE__) + ", " + string(__TIME__)
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
@@ -513,13 +557,10 @@ void Application::init(int argc, char ** argv) {
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
 	this->petsc_initialize(argc, argv);
-	petsc_initialized = true;
 
 	this->permon_initialize(argc, argv);
-	permon_initialized = true;
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
 
 }
 
@@ -534,6 +575,10 @@ void Application::run() {
     Input::Record i_rec = read_input();
     END_TIMER("Read Input");
 
+    run(i_rec);
+}
+
+void Application::run(Input::Record i_rec) {
     {
         using namespace Input;
         // check input file version against the version of executable
