@@ -1,5 +1,7 @@
 /*
  * fe_values_test.cpp
+ * 
+ * Test only FESystem within 3D assembly.
  *
  *  Created on: Sep 9, 2012
  *      Author: jb
@@ -135,6 +137,7 @@ public:
     {
         used_element_idx_ = {0};
 
+		// Definition of ref values - see details in documentation of data members.
         expected_vector_shape_ = {
             {
                 {0.585410196624968, 0, 0}, {0.138196601125011, 0, 0}, {0.138196601125011, 0, 0}, {0.138196601125011, 0, 0},
@@ -250,10 +253,11 @@ public:
     std::vector<unsigned int> used_element_idx_;                              ///< List of mesh idx of elements used in tests
 
     // Reference values
-    std::vector< std::vector<arma::vec3> > expected_vector_shape_;
-    std::vector<arma::mat33> expected_tensor_mats_;
+    std::vector< std::vector<arma::vec3> > expected_vector_shape_;  ///< Two dimensional array of expected vector shape values, usage example: expected_vector_shape_[i_pt][i_dof]
+    std::vector<arma::mat33> expected_tensor_mats_;                 ///< Define non-zero tensor values (position in matrix) of expected tensor shape values, see usage example bellow.
+    /// Define non-zero scalar coeficient (one value in each value in matrix) of expected tensor shape values, usage example: expected_tensor_coefs_[i_pt][i_dof%4] * expected_tensor_mats_[i_dof/4]
     std::vector< std::vector<double> > expected_tensor_coefs_;
-    std::vector< std::vector< arma::vec3 > > expected_rt_shape_;
+    std::vector< std::vector< arma::vec3 > > expected_rt_shape_;    ///< Two dimensional array of expected RT0 shape values, usage example: expected_rt_shape_[i_pt][i_dof]
 };
 
 
