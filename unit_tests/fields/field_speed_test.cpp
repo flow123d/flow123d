@@ -521,7 +521,7 @@ TYPED_TEST(FieldSpeed, field_fe) {
 
 TEST(FieldValue_, speed_test_interface) {
 
-   typedef FieldValue_<1,1, double> T;
+   typedef FieldValue_<internal::Scalar<double>> T;
    double r_val = 0;
 
     
