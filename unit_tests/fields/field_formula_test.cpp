@@ -143,7 +143,7 @@ public:
         Field<3, FieldValue<3>::VectorFixed > vector_field;            ///< Tests formula vector
         Field<3, FieldValue<3>::VectorFixed > density_unit_conversion; ///< Tests unit conversion
         Field<3, FieldValue<3>::TensorFixed > tensor_field;            ///< Tests formula tensor
-        Field<3, FieldValue<3>::Tensor4DVoigt > tensor_4d_field;       ///< Tests formula tensor 4D
+        Field<3, FieldValue<3>::TensorVoigt > tensor_4d_field;       ///< Tests formula tensor 4D
         Field<3, FieldValue<3>::Scalar > const_scalar;                 ///< Tests field dependency
         Field<3, FieldValue<0>::Integer > integer_scalar;
         std::shared_ptr<BulkIntegral> mass_eval;
@@ -177,7 +177,7 @@ public:
                         .declare_key("scalar_with_depth", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("scalar_with_mesh_step", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("tensor_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorFixed >::get_input_type_instance(), "" )
-                        .declare_key("tensor_4d_field", FieldAlgorithmBase< 3, FieldValue<3>::Tensor4DVoigt >::get_input_type_instance(), "" )
+                        .declare_key("tensor_4d_field", FieldAlgorithmBase< 3, FieldValue<3>::TensorVoigt >::get_input_type_instance(), "" )
                         .declare_key("const_scalar", FieldAlgorithmBase< 3, FieldValue<3>::Scalar >::get_input_type_instance(), "" )
                         .declare_key("integer_scalar", FieldAlgorithmBase< 3, FieldValue<0>::Integer >::get_input_type_instance(), "" )
                         .close()

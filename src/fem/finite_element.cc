@@ -152,7 +152,7 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
         case FEScalar:   
         case FEVector:
         case FETensor:
-        case FETensor4D:
+        case FETensorVoigt:
             if (flags & update_gradients)
                 f |= update_inverse_jacobians;
             break;
@@ -190,7 +190,7 @@ unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
         case FETensor:
             return spacedim*spacedim;
             break;
-        case FETensor4D:
+        case FETensorVoigt:
             return 4*spacedim*spacedim;
             break;
         case FEMixedSystem:

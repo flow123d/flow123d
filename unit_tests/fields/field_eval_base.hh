@@ -68,12 +68,12 @@ public:
     typedef Field<3, FieldValue<3>::Enum > EnumField;
     typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
     typedef Field<3, FieldValue<3>::TensorFixed > TensorField;
-    typedef Field<3, FieldValue<3>::Tensor4DVoigt > Tensor4DField;
+    typedef Field<3, FieldValue<3>::TensorVoigt > Tensor4DField;
     typedef BCField<3, FieldValue<3>::Scalar > BcScalarField;
     typedef BCField<3, FieldValue<3>::Enum > BcEnumField;
     typedef BCField<3, FieldValue<3>::VectorFixed > BcVectorField;
     typedef BCField<3, FieldValue<3>::TensorFixed > BcTensorField;
-    typedef BCField<3, FieldValue<3>::Tensor4DVoigt > BcTensor4DField;
+    typedef BCField<3, FieldValue<3>::TensorVoigt > BcTensor4DField;
 
     class EqData : public FieldSet {
     public:

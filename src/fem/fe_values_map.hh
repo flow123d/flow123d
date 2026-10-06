@@ -217,7 +217,7 @@ public:
 
 
 /**
- * @brief Helper class allows update values and gradients of FEValues of FETensor4D type
+ * @brief Helper class allows update values and gradients of FEValues of FETensorVoigt type
  */
 template<unsigned int spacedim = 3>
 class MapTensor4D {
@@ -229,7 +229,7 @@ public:
     /// Update shape_values of given FEValues object.
     inline void update_values(FEValues<spacedim> &fe_values, FMT_UNUSED const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT(fe_values.fe_type_ == FETensor4D);
+        ASSERT(fe_values.fe_type_ == FETensorVoigt);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)
@@ -243,7 +243,7 @@ public:
     /// Update shape_gradients of given FEValues object.
     inline void update_gradients(FEValues<spacedim> &fe_values, const ElementValues<spacedim> &elm_values,
             const typename FEValues<spacedim>::FEInternalData &fe_data) {
-        ASSERT(fe_values.fe_type_ == FETensor4D);
+        ASSERT(fe_values.fe_type_ == FETensorVoigt);
 
         for (unsigned int i = 0; i < fe_data.n_points; i++)
             for (unsigned int j = 0; j < fe_data.n_dofs; j++)

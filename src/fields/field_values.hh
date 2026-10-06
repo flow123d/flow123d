@@ -913,13 +913,6 @@ private:
 
 template <int spacedim>
 struct FieldValue {
-    // typedefs for possible field values
-//    typedef FieldValue_<1,1,int>            Integer;
-//    typedef FieldValue_<1,1, FieldEnum>     Enum;
-//    typedef FieldValue_<1,1,double>         Scalar;
-//    typedef FieldValue_<spacedim,1,double>  VectorFixed;
-//    typedef FieldValue_<spacedim,spacedim,double> TensorFixed;
-
 private:
     typedef typename internal::Scalar<int>                   _in_scalar_int;
     typedef typename internal::Scalar<FieldEnum>             _in_scalar_enum;
@@ -928,12 +921,17 @@ private:
     typedef typename internal::Tensor<spacedim, double>      _in_tensor;
     typedef typename internal::Tensor4D<spacedim, double>    _in_tensor_4d;
 public:
+    // typedefs for possible field values
     typedef FieldValue_<_in_scalar_int>                      Integer;
     typedef FieldValue_<_in_scalar_enum>                     Enum;
     typedef FieldValue_<_in_scalar_double>                   Scalar;
     typedef FieldValue_<_in_vector>                          VectorFixed;
     typedef FieldValue_<_in_tensor>                          TensorFixed;
-    typedef FieldValue_<_in_tensor_4d>                       Tensor4DVoigt;
+    /**
+     * It is a general 2D tensor of symmetric 2D tensors represented as vectors using Voigt notation.
+     * E.g. for spacedim=3, it is tensor 6 * 6 representing a 4D logical tensor.
+     */
+    typedef FieldValue_<_in_tensor_4d>                       TensorVoigt;
 };
 
 

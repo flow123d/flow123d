@@ -363,7 +363,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 		}
 		case 36: { // tensor 4D
 		    MixedPtr<FE_P_disc>   fe_base(0) ;
-            fe = mixed_fe_system(fe_base, FEType::FETensor4D, 36);
+            fe = mixed_fe_system(fe_base, FEType::FETensorVoigt, 36);
 			break;
 		}
 		default:

@@ -83,7 +83,7 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
     case FEType::FETensor:
       tensors.push_back(FEValuesViews::Tensor<spacedim>(fv, 0));
       break;
-    case FEType::FETensor4D:
+    case FEType::FETensorVoigt:
       //ASSERT_PERMANENT(false).error("Tensor4D is not allowed as view and component of FeSystem now!");
       break;
     case FEType::FEMixedSystem:
@@ -109,7 +109,7 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
           case FEType::FETensor:
         	  ASSERT_PERMANENT(false).error("Tensor4D is not allowed as component of FeSystem now!");
               break;
-          case FEType::FETensor4D:
+          case FEType::FETensorVoigt:
               tensors.push_back(FEValuesViews::Tensor<spacedim>(fv,comp_offset));
               break;
           default:
@@ -194,8 +194,8 @@ void FEValues<spacedim>::allocate(
         ASSERT(_fe.n_components() == spacedim).error("FEVector must have spacedim components.");
     } else if (_fe.type_ == FETensor) {
         ASSERT(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
-    } else if (_fe.type_ == FETensor4D) {
-        ASSERT(_fe.n_components() == 4*spacedim*spacedim).error("FETensor4D must have 4*spacedim*spacedim components.");
+    } else if (_fe.type_ == FETensorVoigt) {
+        ASSERT(_fe.n_components() == 4*spacedim*spacedim).error("FETensorVoigt must have 4*spacedim*spacedim components.");
     }
 
     fe_sys_dofs_.clear();
@@ -517,7 +517,7 @@ void FEValues<spacedim>::fill_data(const ElementValues<spacedim> &elm_values, co
         case FETensor:
             this->fill_data_specialized<MapTensor<spacedim>>(elm_values, fe_data);
             break;
-        case FETensor4D:
+        case FETensorVoigt:
             this->fill_data_specialized<MapTensor4D<spacedim>>(elm_values, fe_data);
             break;
         case FEMixedSystem:

@@ -114,10 +114,10 @@ FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 template<unsigned int dim>
 FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n)
 {
-    ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FETensor4D || t == FEType::FEMixedSystem)
-               .error("This constructor can be used only for FEVector, FETensor, FETensor4D or FEMixedSystem.");
+    ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FETensorVoigt || t == FEType::FEMixedSystem)
+               .error("This constructor can be used only for FEVector, FETensor, FETensorVoigt or FEMixedSystem.");
     ASSERT(fe->n_components() == 1 || t == FEType::FEMixedSystem)
-               .error("FEVector, FETensor and FETensor4D can only be created from scalar FE.");
+               .error("FEVector, FETensor and FETensorVoigt can only be created from scalar FE.");
     
     FiniteElement<dim>::init(false, t);
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
@@ -159,7 +159,7 @@ void FESystem<dim>::initialize()
       case FEType::FETensor:
         tensor_components_.push_back(comp_offset);
         break;
-      case FEType::FETensor4D:
+      case FEType::FETensorVoigt:
         ASSERT_PERMANENT(false).error("Tensor4D is not allowed as component of FeSystem now!");
         break;
       default:
