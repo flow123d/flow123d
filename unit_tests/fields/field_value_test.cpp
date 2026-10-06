@@ -81,7 +81,7 @@ TEST(FieldValue_, construction_from_raw) {
 
     // tensor 4D
     {
-        typedef FieldValue_<internal::Tensor4D<3, double>> T; T::return_type x_val;
+        typedef FieldValue_<internal::Tensor<6, double>> T; T::return_type x_val;
         x_val.zeros();
         const T::return_type & val = T::from_raw(x_val, raw_data);
         arma::umat match = (T::return_type("1 7 4 1 7 4; 2 8 5 2 8 5; 3 9 6 3 9 6; 4 1 7 4 1 7; 5 2 8 5 2 8; 6 3 9 6 3 9") == T::return_type(val));
@@ -146,7 +146,7 @@ TEST(FieldValue_, init_from_input) {
 		.close();
 
     typedef typename internal::Tensor<3, double> Tensor33;
-    typedef typename internal::Tensor4D<3, double> TensorVoigt;
+    typedef typename internal::TensorVoigt<3, double> Tensor_Voigt;
     Input::Type::Record rec_type = Input::Type::Record("FieldValueTest","")
     	.declare_key("double_scalar",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
@@ -161,7 +161,7 @@ TEST(FieldValue_, init_from_input) {
     	.declare_key("double_fix_tensor_diag",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
     	.declare_key("double_fix_tensor_cdiag",get_instance< FieldValue_<Tensor33> >().first, Input::Type::Default::obligatory(),"" )
 
-    	.declare_key("double_fix_tensor_4d_full",get_instance< FieldValue_<TensorVoigt> >().first, Input::Type::Default::obligatory(),"" )
+    	.declare_key("double_fix_tensor_4d_full",get_instance< FieldValue_<Tensor_Voigt> >().first, Input::Type::Default::obligatory(),"" )
 
     	.close();
 
@@ -227,7 +227,7 @@ TEST(FieldValue_, init_from_input) {
         EXPECT_TRUE( match.min());
     }
     {
-        typedef FieldValue_<TensorVoigt> T; T::return_type x_val; T val(x_val);
+        typedef FieldValue_<Tensor_Voigt> T; T::return_type x_val; T val(x_val);
         val.init_from_input(in_rec.val<Input::Array>("double_fix_tensor_4d_full"));
         arma::umat match = (T::return_type("1.1 1.2 1.3 1.4 1.5 1.6; 2.1 2.2 2.3 2.4 2.5 2.6; 3.1 3.2 3.3 3.4 3.5 3.6; 4.1 4.2 4.3 4.4 4.5 4.6; 5.1 5.2 5.3 5.4 5.5 5.6; 6.1 6.2 6.3 6.4 6.5 6.6") == T::return_type(val));
         EXPECT_TRUE( match.min());

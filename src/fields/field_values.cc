@@ -37,9 +37,7 @@ template class FieldValue_<internal::Vector<3, double>>;
 
 template class FieldValue_<internal::Tensor<2, double>>;
 template class FieldValue_<internal::Tensor<3, double>>;
-
-template class FieldValue_<internal::Tensor4D<2, double>>;
-template class FieldValue_<internal::Tensor4D<3, double>>;
+template class FieldValue_<internal::Tensor<6, double>>;
 
 //template class FieldValue_<1,1,FieldEnum>;
 //template class FieldValue_<1,1,int>;

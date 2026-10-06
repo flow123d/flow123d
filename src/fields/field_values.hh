@@ -234,7 +234,6 @@ public:
     typedef typename internal::AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
-    const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
 
@@ -299,7 +298,6 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = spacedim;
     const static int NCols_ = 1;
-    const static int rank_ = 1;
 
     static std::string type_name() { return fmt::format("R[{:d}]", spacedim); }
 
@@ -366,18 +364,17 @@ public:
 };
 
 
-template <int spacedim, class ET>
+template <int tensor_size, class ET>
 class Tensor {
 public:
     typedef ET element_type;
-    typedef typename arma::Mat<ET>::template fixed<spacedim, spacedim> return_type;
+    typedef typename arma::Mat<ET>::template fixed<tensor_size, tensor_size> return_type;
     typedef typename internal::InputType<ET>::type element_input_type;
     typedef Input::Array AccessType;
-    const static int NRows_ = spacedim;
-    const static int NCols_ = spacedim;
-    const static int rank_ = 2;
+    const static int NRows_ = tensor_size;
+    const static int NCols_ = tensor_size;
 
-    static std::string type_name() { return fmt::format("R[{:d},{:d}]", spacedim, spacedim); }
+    static std::string type_name() { return fmt::format("R[{:d},{:d}]", tensor_size, tensor_size); }
 
     inline static const return_type &set_raw_val(return_type &val, ET *raw_data) {
         val = return_type(raw_data); return val;
@@ -388,7 +385,7 @@ public:
 
     /// Casts value stored in Armor::Array to return type.
     inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
-        return arr.template mat<spacedim, spacedim>(idx);
+        return arr.template mat<tensor_size, tensor_size>(idx);
     }
 
     inline static void init_value_from_input(return_type &value, AccessType rec) {
@@ -401,13 +398,13 @@ public:
             if (rec.size() == 1)  {// scalar times identity
                 value.zeros();
                 ET scalar=*(it->begin<ET>());
-                for(unsigned int i=0; i<spacedim; i++) value.at(i,i)=scalar;
-            } else if (rec.size() == spacedim) { // diagonal vector
+                for(unsigned int i=0; i<tensor_size; i++) value.at(i,i)=scalar;
+            } else if (rec.size() == tensor_size) { // diagonal vector
                 value.zeros();
-                for(unsigned int i=0; i<spacedim; i++, ++it) value.at(i,i)=*(it->begin<ET>());
-            } else if (rec.size() == (spacedim+1)*spacedim/2) { // symmetric part
-                for( unsigned int row=0; row<spacedim; row++)
-                    for( unsigned int col=0; col<spacedim; col++)
+                for(unsigned int i=0; i<tensor_size; i++, ++it) value.at(i,i)=*(it->begin<ET>());
+            } else if (rec.size() == (tensor_size+1)*tensor_size/2) { // symmetric part
+                for( unsigned int row=0; row<tensor_size; row++)
+                    for( unsigned int col=0; col<tensor_size; col++)
                         if (row <= col) {
                             value.at(row,col) = *(it->begin<ET>());
                             ++it;
@@ -417,7 +414,7 @@ public:
                         << EI_InputMsg(
                                 fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}, "
                                         "should be 1, {:d}, or {:d}.",
-                                        spacedim, spacedim, rec.size(), spacedim, (spacedim+1)*spacedim/2))
+                                        tensor_size, tensor_size, rec.size(), tensor_size, (tensor_size+1)*tensor_size/2))
                         << rec.ei_address()
 
                      );
@@ -425,21 +422,21 @@ public:
 
         } else {
             // accept only full tensor
-            if (rec.size() == spacedim && it->size() == spacedim) {
+            if (rec.size() == tensor_size && it->size() == tensor_size) {
 
-                for (unsigned int row = 0; row < spacedim; row++, ++it) {
-                    if (it->size() != spacedim)
+                for (unsigned int row = 0; row < tensor_size; row++, ++it) {
+                    if (it->size() != tensor_size)
                         THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
                                              << rec.ei_address());
                     Input::Iterator<ET> col_it = it->begin<ET>();
-                    for (unsigned int col = 0; col < spacedim; col++, ++col_it)
+                    for (unsigned int col = 0; col < tensor_size; col++, ++col_it)
                         value.at(row, col) = *col_it;
                 }
             } else {
                 THROW( ExcFV_Input()
                         << EI_InputMsg(
                                 fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
-                                        spacedim, spacedim, rec.size(), it->size()))
+                                		tensor_size, tensor_size, rec.size(), it->size()))
                         << rec.ei_address()
                      );
             }
@@ -467,119 +464,15 @@ public:
     }
     // Multiplied value_ by double coefficient
     inline static void scale(return_type &value, double scale_coef) {
-        for( unsigned int row=0; row<spacedim; row++)
-            for( unsigned int col=0; col<spacedim; col++)
+        for( unsigned int row=0; row<tensor_size; row++)
+            for( unsigned int col=0; col<tensor_size; col++)
                 value.at(row,col) = scale_coef * value.at(row,col);
     }
 
 };
 
 
-template <int spacedim, class ET>
-class Tensor4D {
-public:
-    typedef ET element_type;
-    typedef typename arma::Mat<ET>::template fixed<2*spacedim, 2*spacedim> return_type;
-    typedef typename internal::InputType<ET>::type element_input_type;
-    typedef Input::Array AccessType;
-    const static int NRows_ = 2*spacedim;
-    const static int NCols_ = 2*spacedim;
-    const static int rank_ = 3;
-
-    static std::string type_name() { return fmt::format("R[{:d},{:d}]", 2*spacedim, 2*spacedim); }
-
-    inline static const return_type &set_raw_val(return_type &val, ET *raw_data) {
-        val = return_type(raw_data); return val;
-    }
-    inline static const ET * mem_ptr(const return_type &value) {
-    	return value.memptr();
-    }
-
-    /// Casts value stored in Armor::Array to return type.
-    inline static return_type get_from_array(const Armor::Array<element_type> &arr, uint idx) {
-        return arr.template mat<2*spacedim, 2*spacedim>(idx);
-    }
-
-    inline static void init_value_from_input(return_type &value, AccessType rec) {
-        Input::Iterator<Input::Array> it = rec.begin<Input::Array>();
-        if (it->size() == 1) {
-            // square tensor 4D
-            // input = 6  expands  to [ [ 6 ] ]; init to  6 * (identity matrix)
-            // input = [1, 2, 3, 4, 5, 6] expands to [[1], [2], [3], [4], [5], [6]]; init to diag. matrix
-            // input = [1, 2, 3, .. , (N+1)*N/2], ....     ; init to symmetric matrix [ [1, 2, 3, 4, 5, 6], [2, 7, 8, 9, 10, 11], [ 3, 8, 12, 13, 14, 15], ... ]
-            if (rec.size() == 1)  {// scalar times identity
-                value.zeros();
-                ET scalar=*(it->begin<ET>());
-                for(unsigned int i=0; i<2*spacedim; i++) value.at(i,i)=scalar;
-            } else if (rec.size() == 2*spacedim) { // diagonal vector - not supported yet
-                value.zeros();
-                for(unsigned int i=0; i<2*spacedim; i++, ++it) value.at(i,i)=*(it->begin<ET>());
-            } else if (rec.size() == (2*spacedim+1)*spacedim) { // symmetric part - not supported yet
-                for( unsigned int row=0; row<2*spacedim; row++)
-                    for( unsigned int col=0; col<2*spacedim; col++)
-                        if (row <= col) {
-                            value.at(row,col) = *(it->begin<ET>());
-                            ++it;
-                        } else value.at(row,col) = value.at(col,row);
-            } else {
-                THROW( ExcFV_Input()
-                        << EI_InputMsg(
-                                fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}, "
-                                        "should be 1, {:d}, or {:d}.",
-                                        2*spacedim, 2*spacedim, rec.size(), 2*spacedim, (2*spacedim+1)*spacedim))
-                        << rec.ei_address()
-
-                     );
-            }
-        } else {
-            // accept only full tensor
-            if (rec.size() == 2*spacedim && it->size() == 2*spacedim) {
-
-                for (unsigned int row = 0; row < 2*spacedim; row++, ++it) {
-                    if (it->size() != 2*spacedim)
-                        THROW( ExcFV_Input() << EI_InputMsg("Wrong number of columns.")
-                                             << rec.ei_address());
-                    Input::Iterator<ET> col_it = it->begin<ET>();
-                    for (unsigned int col = 0; col < 2*spacedim; col++, ++col_it)
-                        value.at(row, col) = *col_it;
-                }
-            } else {
-                THROW( ExcFV_Input()
-                        << EI_InputMsg(
-                                fmt::format("Initializing symmetric matrix {:d}x{:d} by vector of wrong size {:d}x{:d}.",
-                                        2*spacedim, 2*spacedim, rec.size(), it->size()))
-                        << rec.ei_address()
-                    );
-            }
-        }
-    }
-
-    inline static ET &value_at(return_type &value, unsigned int i, unsigned int j)
-        { return value.at(i,j); }
-    inline static ET value_at(const return_type &value, unsigned int i, unsigned int j)
-        { return value.at(i,j); }
-    // Set value to matrix of zeros.
-    inline static void zeros(return_type &value) {
-        value.zeros();
-    }
-    // Set value to identity matrix.
-    inline static void eye(return_type &value) {
-        value.eye();
-    }
-    // Set value to matrix of ones.
-    inline static void ones(return_type &value) {
-        value.ones();
-    }
-    inline static bool equal_to(const return_type &value, const return_type &other) {
-        return arma::max(arma::max(arma::abs(value - other))) < 4*std::numeric_limits<ET>::epsilon();
-    }
-    // Multiplied value_ by double coefficient
-    inline static void scale(return_type &value, double scale_coef) {
-        for( unsigned int row=0; row<2*spacedim; row++)
-            for( unsigned int col=0; col<2*spacedim; col++)
-                value.at(row,col) = scale_coef * value.at(row,col);
-    }
-};
+template<int spacedim, class ET> using TensorVoigt = Tensor<spacedim * (spacedim+1) / 2, ET>;
 
 
 } // namespace internal
@@ -603,7 +496,6 @@ public:
     typedef typename Shape::element_input_type ElementInputType;
     const static int NRows_ = Shape::NRows_;
     const static int NCols_ = Shape::NCols_;
-    const static int rank_ = Shape::rank_;
 
     static std::string type_name() { return Shape::type_name(); }
     static constexpr bool is_scalable() {
@@ -919,7 +811,7 @@ private:
     typedef typename internal::Scalar<double>                _in_scalar_double;
     typedef typename internal::Vector<spacedim, double>      _in_vector;
     typedef typename internal::Tensor<spacedim, double>      _in_tensor;
-    typedef typename internal::Tensor4D<spacedim, double>    _in_tensor_4d;
+    typedef typename internal::TensorVoigt<spacedim, double> _in_tensor_voigt;
 public:
     // typedefs for possible field values
     typedef FieldValue_<_in_scalar_int>                      Integer;
@@ -931,7 +823,7 @@ public:
      * It is a general 2D tensor of symmetric 2D tensors represented as vectors using Voigt notation.
      * E.g. for spacedim=3, it is tensor 6 * 6 representing a 4D logical tensor.
      */
-    typedef FieldValue_<_in_tensor_4d>                       TensorVoigt;
+    typedef FieldValue_<_in_tensor_voigt>                    TensorVoigt;
 };
 
 
