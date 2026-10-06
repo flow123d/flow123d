@@ -68,10 +68,12 @@ public:
     typedef Field<3, FieldValue<3>::Enum > EnumField;
     typedef Field<3, FieldValue<3>::VectorFixed > VectorField;
     typedef Field<3, FieldValue<3>::TensorFixed > TensorField;
+    typedef Field<3, FieldValue<3>::TensorVoigt > TensorVoigtField;
     typedef BCField<3, FieldValue<3>::Scalar > BcScalarField;
     typedef BCField<3, FieldValue<3>::Enum > BcEnumField;
     typedef BCField<3, FieldValue<3>::VectorFixed > BcVectorField;
     typedef BCField<3, FieldValue<3>::TensorFixed > BcTensorField;
+    typedef BCField<3, FieldValue<3>::TensorVoigt > BcTensorVoigtField;
 
 
     /// Represent assembly class similar to assembly objects in equations
@@ -171,6 +173,12 @@ public:
 						.input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+            *this += tensor_4d_field
+                        .name("tensor_4d_field")
+                        .description("Tensor 4D field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
             *this += enum_field
                         .name("enum_field")
                         .description("Enum field.")
@@ -192,6 +200,12 @@ public:
             *this += bc_tensor_field
                         .name("bc_tensor_field")
                         .description("Boundary tensor field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += bc_tensor_4d_field
+                        .name("bc_tensor_4d_field")
+                        .description("Boundary tensor 4D field.")
 						.input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
@@ -219,6 +233,12 @@ public:
 						.input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
+            *this += tensor_4d_ref
+                        .name("tensor_4d_ref")
+                        .description("Reference tensor 4D field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
             *this += bc_scalar_ref
                         .name("bc_scalar_ref")
                         .description("Reference boundary scalar field.")
@@ -233,6 +253,12 @@ public:
             *this += bc_tensor_ref
                         .name("bc_tensor_ref")
                         .description("Reference boundary tensor field.")
+						.input_default("0.0")
+                        .units( UnitSI::dimensionless() )
+                        .flags_add(in_main_matrix);
+            *this += bc_tensor_4d_ref
+                        .name("bc_tensor_4d_ref")
+                        .description("Reference boundary tensor 4D field.")
 						.input_default("0.0")
                         .units( UnitSI::dimensionless() )
                         .flags_add(in_main_matrix);
@@ -348,17 +374,21 @@ public:
         ScalarField scalar_field;
         VectorField vector_field;
         TensorField tensor_field;
+        TensorVoigtField tensor_4d_field;
         EnumField enum_field;
         BcScalarField bc_scalar_field;
         BcVectorField bc_vector_field;
         BcTensorField bc_tensor_field;
+        BcTensorVoigtField bc_tensor_4d_field;
         BcEnumField bc_enum_field;
         ScalarField scalar_ref;
         VectorField vector_ref;
         TensorField tensor_ref;
+        TensorVoigtField tensor_4d_ref;
         BcScalarField bc_scalar_ref;
         BcVectorField bc_vector_ref;
         BcTensorField bc_tensor_ref;
+        BcTensorVoigtField bc_tensor_4d_ref;
 
         std::array< std::shared_ptr<BulkIntegral>, 3> mass_integral;
         std::array< std::shared_ptr<BoundaryIntegral>, 3> bdr_integral;

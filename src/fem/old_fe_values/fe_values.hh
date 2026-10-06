@@ -42,6 +42,7 @@ template<unsigned int dim> class MapPiola;
 template<unsigned int dim> class MapContravariant;
 template<unsigned int dim> class MapVector;
 template<unsigned int dim> class MapTensor;
+template<unsigned int dim> class MapTensor4D;
 template<unsigned int dim> class MapSystem;
 
 
@@ -428,6 +429,7 @@ protected:
     friend class MapContravariant<spacedim>;
     friend class MapVector<spacedim>;
     friend class MapTensor<spacedim>;
+    friend class MapTensor4D<spacedim>;
     friend class MapSystem<spacedim>;
 };
 

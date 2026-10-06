@@ -123,6 +123,15 @@ struct InputOpType<3,3>
     using type = Op::TensorShape<dim, Domain, spacedim>;
 };
 
+template<>
+struct InputOpType<6,6>
+{
+    // TODO: Implement operation TensorVoigtShape and fix declaration of type
+    // Actual code can't be used, it causes runtime errors.
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type = Op::TensorShape<dim, Domain, spacedim>;
+};
+
 } // end of namespace internal
 
 

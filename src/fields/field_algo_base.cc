@@ -36,6 +36,3 @@ INSTANCE_ALL(FieldPython)
 
 //template class FieldAddPotential<3, FieldValue<0>::Scalar >;
 //template class FieldAddPotential<2, FieldValue<0>::Scalar >;
-
-// temporary solution for computing more fields at once in python
-template class FieldPython<3, FieldValue<0>::Vector >;

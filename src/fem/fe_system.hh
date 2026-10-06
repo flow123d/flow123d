@@ -109,14 +109,16 @@ public:
     FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t);
     
     /**
-     * @brief Constructor for FEVector, FETensor and FEMixedSystem.
+     * @brief Constructor for FEVector, FETensor, FETensorVoigt and FEMixedSystem.
      * If @p t == FEVector then @p n must be the space dimension into which
      * the reference cell will be mapped and that @p fe is scalar.
      * If @p t == FETensor then @p n must be square of the space dimension into which
      * the reference cell will be mapped and that @p fe is scalar.
+     * If @p t == FETensorVoigt then @p n must be square of the space 2*dimension into which
+     * the reference cell will be mapped and that @p fe is scalar.
      * If @p t == FEMixedSystem, then @p n is the number of components.
-     * @param fe Base finite element class (must be scalar if @p t is FEVector or FETensor).
-     * @param t  Type of FESystem (must be either FEVector, FETensor or FEMixedSystem).
+     * @param fe Base finite element class (must be scalar if @p t is FEVector, FETensor or FETensorVoigt).
+     * @param t  Type of FESystem (must be either FEVector, FETensor, FETensorVoigt or FEMixedSystem).
      * @param n  Multiplicity (number of components).
      */
     FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n);

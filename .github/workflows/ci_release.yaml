@@ -142,14 +142,27 @@ jobs:
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_linux_install.tar.gz 
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.exe 
                 ${{ steps.vars.outputs.pubdir }}/flow123d_${{ steps.vars.outputs.reltag }}_windows_install.json 
-      
+        - name: Set target server fingerprint.
+          run: |
+            mkdir -p ~/.ssh
+            cat << 'EOF' >> ~/.ssh/known_hosts
+            |1|MJkF9Pwe5lGEathanKfpMv4H0oc=|nlEaZ3fvpCN5IC8YJ9SSrhlO9TA= ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC8padPlL7yyzyedNnYEzSX13QDfmH2Ot2ONLu2i23GxullgC2j3IfEfLPLLTVhErMdpXAdPQMObZr1dXtatPSqo2Wx1S70r8VhU+sVMZERfGipZm6aXA3TD9Q2Ojy9iYjDXmif0hXWxBr9IgZhEkW58u7pUWs9kOSDp/iDTgXVriGmBebBAnQ/W13h8zLgx99AdaVt63Cqm6qjiJWrVjTANUHMF93f7/KKngENDaIgYX07sICgYmg/NuHFgibnRkmxQ6wygCrB0BJh36J9Sg9Bp2pxw8Sq7irmRxOWmPpSVLi5koptgJp4OaAu0hfjiy3n3WUDGUnSZjx6vwDPfsq7
+            |1|BrFJYjbZZQp+ATdLgTtyit2m40E=|IuUKFhvJUSucGR+fejlXgXx2wYM= ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBNEbCHgjMSeJnCpioBgYL2BEFQ3EfJNX1GzDujJGHOoHqtt7K1b2BGnEcTEjPlAACB8bQ9uTvVSPz+SWN8Vvw+Q=
+            |1|ErMYdNCCxG+G0hyfyOnMryfld7g=|hJl+TAn6VKwtudvTQTukBG4ywaE= ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINa+WDygszwAxF2u3iT98HnMsvqVvQ8+81xIj46TIdQC
+            EOF
+        
+        - name: Set private SSH key
+          uses: webfactory/ssh-agent@v0.9.0
+          with:
+            ssh-private-key: ${{ secrets.PUBLISH_PRIVATE_KEY }}      
+            
         - name: SCP upload to Share
           run: |
             release_tag="${{ steps.vars.outputs.reltag }}"
             publish_dir="${{ steps.vars.outputs.pubdir }}"
             config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} ${{ secrets.PUBLISH_PASS }}
-
+            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} 
+            
     # Run unit tests with release build, similar to the debug build
     unit_tests:
         needs: [build]
