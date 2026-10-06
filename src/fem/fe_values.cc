@@ -84,7 +84,7 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
       tensors.push_back(FEValuesViews::Tensor<spacedim>(fv, 0));
       break;
     case FEType::FETensorVoigt:
-      //ASSERT_PERMANENT(false).error("Tensor4D is not allowed as view and component of FeSystem now!");
+      //ASSERT_PERMANENT(false).error("TensorVoigt is not allowed as view and component of FeSystem now!");
       break;
     case FEType::FEMixedSystem:
       const FESystem<DIM> *fe_sys = dynamic_cast<const FESystem<DIM>*>(&fe);
@@ -107,7 +107,7 @@ void FEValues<spacedim>::ViewsCache::initialize(const FEValues<spacedim> &fv, co
               vectors.push_back(FEValuesViews::Vector<spacedim>(fv,comp_offset));
               break;
           case FEType::FETensor:
-        	  ASSERT_PERMANENT(false).error("Tensor4D is not allowed as component of FeSystem now!");
+        	  ASSERT_PERMANENT(false).error("TensorVoigt is not allowed as component of FeSystem now!");
               break;
           case FEType::FETensorVoigt:
               tensors.push_back(FEValuesViews::Tensor<spacedim>(fv,comp_offset));

@@ -160,7 +160,7 @@ void FESystem<dim>::initialize()
         tensor_components_.push_back(comp_offset);
         break;
       case FEType::FETensorVoigt:
-        ASSERT_PERMANENT(false).error("Tensor4D is not allowed as component of FeSystem now!");
+        ASSERT_PERMANENT(false).error("TensorVoigt is not allowed as component of FeSystem now!");
         break;
       default:
         ASSERT_PERMANENT(false).error("Not implemented.");

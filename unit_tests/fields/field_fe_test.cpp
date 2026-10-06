@@ -144,7 +144,7 @@ TEST_F(FieldEvalFETest, input_msh) {
     	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
     	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
     	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-    	FieldRef<Tensor4DField> ref_tensor_4d(eq_data_->tensor_4d_ref);
+    	FieldRef<TensorVoigtField> ref_tensor_4d(eq_data_->tensor_4d_ref);
     	SingleValRef<unsigned int> ref_enum(j);
         EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
         EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
@@ -156,7 +156,7 @@ TEST_F(FieldEvalFETest, input_msh) {
         FieldRef<ScalarField> ref_bc_scalar(eq_data_->bc_scalar_ref);
         FieldRef<VectorField> ref_bc_vector(eq_data_->bc_vector_ref);
         FieldRef<TensorField> ref_bc_tensor(eq_data_->bc_tensor_ref);
-    	FieldRef<Tensor4DField> ref_bc_tensor_4d(eq_data_->bc_tensor_4d_ref);
+    	FieldRef<TensorVoigtField> ref_bc_tensor_4d(eq_data_->bc_tensor_4d_ref);
         SingleValRef<unsigned int> ref_bc_enum(j+1);
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_scalar_field, ref_bc_scalar, 3, 0) );
         EXPECT_TRUE( eval_boundary_field(eq_data_->bc_vector_field, ref_bc_vector, 3, 0) );
@@ -202,7 +202,7 @@ TEST_F(FieldEvalFETest, input_vtk) {
 	FieldRef<ScalarField> ref_scalar(eq_data_->scalar_ref);
 	FieldRef<VectorField> ref_vector(eq_data_->vector_ref);
 	FieldRef<TensorField> ref_tensor(eq_data_->tensor_ref);
-	FieldRef<Tensor4DField> ref_tensor_4d(eq_data_->tensor_4d_ref);
+	FieldRef<TensorVoigtField> ref_tensor_4d(eq_data_->tensor_4d_ref);
     EXPECT_TRUE( eval_bulk_field(eq_data_->scalar_field, ref_scalar) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->vector_field, ref_vector) );
     EXPECT_TRUE( eval_bulk_field(eq_data_->tensor_field, ref_tensor) );
