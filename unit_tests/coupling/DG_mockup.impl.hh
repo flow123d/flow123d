@@ -19,6 +19,19 @@ void DGMockupTest::run_fullassembly_const(const string &eq_data_input, const std
     END_TIMER("FullAssembly_const");
 }
 
+void DGMockupTest::run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file) {
+    // FullAssembly + field_fe
+    START_TIMER("FullAssembly_fe");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim> test_full_asm_fe(true);
+    test_full_asm_fe.create_and_set_mesh(mesh_file);
+    test_full_asm_fe.initialize( eq_data_input, {"A", "B"} );
+    test_full_asm_fe.eq_fields_->init_fields_fe( test_full_asm_fe.mesh() );
+    test_full_asm_fe.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("FullAssembly_fe");
+}
+
 void DGMockupTest::run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file) {
     // FullAssembly + field_model
     START_TIMER("FullAssembly_model");
@@ -45,6 +58,19 @@ void DGMockupTest::run_computelocal_const(const string &eq_data_input, const std
     END_TIMER("ComputeLocal_const");
 }
 
+void DGMockupTest::run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file) {
+    // ComputeLocal + field_fe
+    START_TIMER("ComputeLocal_fe");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim> test_comp_local_fe(false);
+    test_comp_local_fe.create_and_set_mesh(mesh_file);
+    test_comp_local_fe.initialize( eq_data_input, {"A", "B"} );
+    test_comp_local_fe.eq_fields_->init_fields_fe( test_comp_local_fe.mesh() );
+    test_comp_local_fe.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("ComputeLocal_fe");
+}
+
 void DGMockupTest::run_computelocal_model(const string &eq_data_input, const std::string &mesh_file) {
     // ComputeLocal + field_model
     START_TIMER("ComputeLocal_model");
@@ -69,6 +95,19 @@ void DGMockupTest::run_evalfields_const(const string &eq_data_input, const std::
     test_eval_fields_const.run_simulation();
     END_TIMER("full_mesh");
     END_TIMER("EvalFields_const");
+}
+
+void DGMockupTest::run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file) {
+    // EvalFields + field_fe
+    START_TIMER("EvalFields_fe");
+    START_TIMER("full_mesh"); // necessary for correct process of profiler output
+    DGMockup<MassEvalFieldsDim, StiffnessEvalFieldsDim, SourcesEvalFieldsDim> test_eval_fields_fe(false);
+    test_eval_fields_fe.create_and_set_mesh(mesh_file);
+    test_eval_fields_fe.initialize( eq_data_input, {"A", "B"} );
+    test_eval_fields_fe.eq_fields_->init_fields_fe( test_eval_fields_fe.mesh() );
+    test_eval_fields_fe.run_simulation();
+    END_TIMER("full_mesh");
+    END_TIMER("EvalFields_fe");
 }
 
 void DGMockupTest::run_evalfields_model(const string &eq_data_input, const std::string &mesh_file) {
