@@ -17,6 +17,7 @@
 
 #include "input/path_python.hh"
 #include "input/reader_internal_base.hh"
+#include "input/reader_to_storage.hh"
 #include "system/system.hh"
 
 
@@ -98,7 +99,37 @@ void PathPython::up() {
 }
 
 unsigned int PathPython::get_node_type_index() const {
-    return static_cast<unsigned int>(node_type());
+    const py::object &node = head();
+
+    if (node.is_none()) {
+        return ValueTypes::null_type;
+    }
+
+    if (py::isinstance<py::dict>(node)) {
+        return ValueTypes::obj_type;
+    }
+
+    if (py::isinstance<py::list>(node)) {
+        return ValueTypes::array_type;
+    }
+
+    if (py::isinstance<py::str>(node)) {
+        return ValueTypes::str_type;
+    }
+
+    if (py::isinstance<py::bool_>(node)) {
+        return ValueTypes::bool_type;
+    }
+
+    if (py::isinstance<py::int_>(node)) {
+        return ValueTypes::int_type;
+    }
+
+    if (py::isinstance<py::float_>(node)) {
+        return ValueTypes::real_type;
+    }
+
+    return ValueTypes::scalar_type;
 }
 
 bool PathPython::is_record_type() const {
@@ -232,42 +263,6 @@ PathBase * PathPython::find_ref_node() {
 PathPython *PathPython::clone() const {
     return new PathPython(*this);
 }
-
-PathPython::PythonNodeType PathPython::node_type() const
-{
-    const py::object &node = head();
-
-    if (node.is_none()) {
-        return PythonNodeType::none;
-    }
-
-    if (py::isinstance<py::dict>(node)) {
-        return PythonNodeType::dict;
-    }
-
-    if (py::isinstance<py::list>(node)) {
-        return PythonNodeType::list;
-    }
-
-    if (py::isinstance<py::str>(node)) {
-        return PythonNodeType::string;
-    }
-
-    if (py::isinstance<py::bool_>(node)) {
-        return PythonNodeType::boolean;
-    }
-
-    if (py::isinstance<py::int_>(node)) {
-        return PythonNodeType::integer;
-    }
-
-    if (py::isinstance<py::float_>(node)) {
-        return PythonNodeType::real;
-    }
-
-    return PythonNodeType::other;
-}
-
 
 std::ostream& operator<<(std::ostream& stream, const PathPython& path) {
     path.output(stream);

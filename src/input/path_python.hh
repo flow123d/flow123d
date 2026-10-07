@@ -49,18 +49,6 @@ namespace Input {
 class PathPython : public PathBase {
 public:
 
-    enum class PythonNodeType {
-        dict = 0,
-        list,
-        string,
-        boolean,
-        integer,
-        real,
-        none,
-        other,
-        undefined
-    };
-
     explicit PathPython(const py::dict &root);
 
     ~PathPython() override;
@@ -95,8 +83,6 @@ public:
 protected:
 
     PathPython();
-
-    PythonNodeType node_type() const;
 
     inline const py::object &head() const
     {
