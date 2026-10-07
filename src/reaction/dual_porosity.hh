@@ -161,10 +161,6 @@ protected:
   std::shared_ptr<ReactionTerm> reaction_mobile;       ///< Reaction running in mobile zone
   std::shared_ptr<ReactionTerm> reaction_immobile;     ///< Reaction running in immobile zone
   
-  /// general assembly objects, hold assembly objects of appropriate dimension
-  GenericAssembly< InitConditionAssemblyDpDim > * init_condition_assembly_;
-  GenericAssembly< ReactionAssemblyDpDim > * reaction_assembly_;
-
 private:
   /// Registrar of class to factory
   static const int registrar;

@@ -47,6 +47,15 @@ namespace internal_integrals {
 }
 
 
+/// Distinguishes quadrature points of DimEvalPoints by type
+enum points_domain
+{
+	bulk_points =0,
+	side_points =1,
+	repeated_side_points =2
+};
+
+
 /**
  * @brief Class holds local coordinations of evaluating points (bulk and sides)
  * specified by element dimension.
@@ -125,6 +134,22 @@ public:
     /// Return maximal size of quadrature of given dimension of side integral (Edge, Coupling /higher-dim/, Boundary)
     uint get_max_side_quad_size(unsigned int dim) const;
 
+    /// [Remove after cache merge] Return vector of bulk quadratures of given dimension from bulk integrals (Bulk, Coupling /lower-dim/)
+    std::vector<Quadrature *> get_bulk_quad_vector(unsigned int dim) const;
+
+    /// [Remove after cache merge] Return vector of side quadratures of given dimension from side integrals (Edge, Coupling /higher-dim/, Boundary)
+    std::vector<Quadrature *> get_side_quad_vector(unsigned int dim) const;
+
+    /// [Remove after cache merge] Return domain of quadrature point - temporary method.
+    inline points_domain point_domain(unsigned int dim, unsigned int local_point_idx) const {
+    	return dim_eval_points_[dim].point_domain(local_point_idx);
+    }
+
+    /// [Remove after cache merge] Return index of quadrature of quadrature point - temporary method.
+    inline unsigned int point_quad(unsigned int dim, unsigned int local_point_idx) const {
+    	return dim_eval_points_[dim].point_quad(local_point_idx);
+    }
+
 private:
     /// Subobject holds evaluation points data of one dimension (0,1,2,3)
     class DimEvalPoints {
@@ -173,17 +198,41 @@ private:
         void add_local_points(const Armor::Array<double> & quad_points);
 
         /// Adds new subset and its end size to subset_starts_ array.
-        uint add_subset();
+        uint add_subset(points_domain point_domain, Quadrature *quad, unsigned int repeated_points=0);
 
         inline void clear() {
             local_points_.resize(0);
             n_subsets_ = 0;
         }
+
+        /// [Remove after cache merge] Return domain of quadrature point - temporary method
+        inline points_domain point_domain(unsigned int local_point_idx) const {
+            ASSERT_LT(local_point_idx, points_domains_.size());
+        	return points_domains_[local_point_idx];
+        }
+
+        /// [Remove after cache merge] Return index of quadrature of quadrature point - temporary method.
+        inline unsigned int point_quad(unsigned int local_point_idx) const {
+            ASSERT_LT(local_point_idx, points_quads_.size());
+        	return points_quads_[local_point_idx];
+        }
+
     private:
         Armor::Array<double> local_points_;                           ///< Local coords of points vector
         std::array<int, EvalPoints::max_subsets+1> subset_starts_;    ///< Indices of subsets data in local_points_ vector, used size is n_subsets_ + 1
         unsigned int n_subsets_;                                      ///< Number of subset
         unsigned int dim_;                                            ///< Dimension of local points
+
+        /*
+         * [Remove after cache merge]
+         *
+         * Following data members are temporary and they are used in evaluation of FieldFeOps.
+         * Data members will be removed after merge of Field and ParchFeValues caches.
+         */
+        std::vector<points_domain> points_domains_;                   ///< Flags hold if quadrature points are bulk or side
+        std::vector<unsigned int> points_quads_;                      ///< Index of bulk / side quadrature (integral) corresponding to quadrature points
+        std::vector<Quadrature *> bulk_quads_;                        ///< Set of bulk quadratures
+        std::vector<Quadrature *> side_quads_;                        ///< Set of side quadratures
 
         friend class EvalPoints;
     };

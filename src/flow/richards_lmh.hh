@@ -127,19 +127,19 @@ protected:
 //    void initial_condition_postprocess() override;
     void assembly_linear_system() override;
 
-    /// Create and initialize assembly objects
-    void initialize_asm() override;
+    /// Call assemble of read_init_cond_assembly and mh_matrix_assembly
+    void mh_matrix_asm() override;
 
-    /// Call assemble of read_init_cond_assembly_ and init_cond_postprocess_assembly_
+    /// Call assemble of read_init_cond_assembly and reconstruct_schur_assembly
+    void reconstruct_schur_asm() override;
+
+    /// Call assemble of read_init_cond_assembly and init_cond_postprocess_assembly
     void read_init_cond_asm() override;
 
 private:
 
     std::shared_ptr<EqFields> eq_fields_;
     std::shared_ptr<EqData> eq_data_;
-
-    /// general assembly object, hold assembly objects of appropriate dimension
-    GenericAssembly< InitCondPostprocessAssemblyDim > * init_cond_postprocess_assembly_;
 
     static std::string equation_name()
     { return "Flow_Richards_LMH";}

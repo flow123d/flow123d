@@ -144,9 +144,7 @@ SorptionBase::EqData::EqData()
 
 
 SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
-    : ReactionTerm(init_mesh, in_rec),
-      init_condition_assembly_(nullptr),
-      reaction_assembly_(nullptr)
+    : ReactionTerm(init_mesh, in_rec)
 {
     eq_data_ = std::make_shared<EqData>();
 	this->eq_data_base_ = std::static_pointer_cast<ReactionTerm::EqData>(eq_data_);
@@ -157,10 +155,7 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)
 
 
 SorptionBase::~SorptionBase(void)
-{
-    if (init_condition_assembly_!=nullptr) delete init_condition_assembly_;
-    if (reaction_assembly_!=nullptr) delete reaction_assembly_;
-}
+{}
 
 void SorptionBase::make_reactions()
 {
@@ -229,9 +224,6 @@ void SorptionBase::initialize()
       .set_time_governor(*time_);
     reaction_solid->initialize();
   }
-
-  init_condition_assembly_ = new GenericAssembly< InitConditionAssemblySorpDim >(eq_data_.get());
-  reaction_assembly_ = new GenericAssembly< ReactionAssemblySorpDim >(eq_data_.get());
 }
 
 
@@ -377,7 +369,8 @@ void SorptionBase::zero_time_step()
   if ( FieldCommon::print_message_table(ss, "sorption") ) {
       WarningOut() << ss.str();
   }
-  init_condition_assembly_->assemble(eq_data_->dof_handler_);
+  GenericAssembly< InitConditionAssemblySorpDim > init_condition_assembly(eq_data_.get());
+  init_condition_assembly.assemble(eq_data_->dof_handler_);
   
   update_max_conc();
   make_tables();
@@ -403,8 +396,9 @@ void SorptionBase::update_solution(void)
   clear_max_conc();
 
   START_TIMER("Sorption");
+  GenericAssembly< ReactionAssemblySorpDim > reaction_assembly(eq_data_.get());
   try{
-      reaction_assembly_->assemble(eq_data_->dof_handler_);
+      reaction_assembly.assemble(eq_data_->dof_handler_);
   }
   catch(ExceptionBase const &e)
   {

@@ -147,6 +147,27 @@ void VectorMPI::set_subvec(const LocDofVec& loc_indices, const arma::vec& values
     }
 }
 
+
+/// General helper function for combining hashes
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v) {
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+
+std::size_t VectorMPI::hash() const {
+    std::size_t h = 0;
+
+    hash_combine(h, std::hash<uint>{}( this->size() ) );
+
+    for ( uint i=0; i<this->size(); ++i ) {
+        hash_combine(h, std::hash<double>{}( this->get(i) ) );
+    }
+
+    return h;
+}
+
 /// Destructor.
 VectorMPI::~VectorMPI()
 {
