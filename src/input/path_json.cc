@@ -59,15 +59,15 @@ PathJSON::PathJSON()
     /* from json_spirit_value.hh:
      * enum Value_type{ obj_type, array_type, str_type, bool_type, int_type, real_type, null_type };
      */
-    json_type_names.push_back("JSON object");
-    json_type_names.push_back("JSON array");
-    json_type_names.push_back("JSON string");
-    json_type_names.push_back("JSON bool");
-    json_type_names.push_back("JSON int");
-    json_type_names.push_back("JSON real");
-    json_type_names.push_back("JSON null");
-    json_type_names.push_back(""); //scalar type
-    json_type_names.push_back(""); //undefined type
+    reader_type_names.push_back("JSON object");
+    reader_type_names.push_back("JSON array");
+    reader_type_names.push_back("JSON string");
+    reader_type_names.push_back("JSON bool");
+    reader_type_names.push_back("JSON int");
+    reader_type_names.push_back("JSON real");
+    reader_type_names.push_back("JSON null");
+    reader_type_names.push_back(""); //scalar type
+    reader_type_names.push_back(""); //undefined type
 }
 
 

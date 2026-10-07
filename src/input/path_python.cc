@@ -35,15 +35,15 @@ PathPython::PathPython(const py::dict &root)
 PathPython::PathPython()
 : PathBase()
 {
-    json_type_names.push_back("Python dict");
-    json_type_names.push_back("Python list");
-    json_type_names.push_back("Python string");
-    json_type_names.push_back("Python bool");
-    json_type_names.push_back("Python int");
-    json_type_names.push_back("Python real");
-    json_type_names.push_back("Python None");
-    json_type_names.push_back("other Python type");
-    json_type_names.push_back("undefined type");
+    reader_type_names.push_back("Python dict");
+    reader_type_names.push_back("Python list");
+    reader_type_names.push_back("Python string");
+    reader_type_names.push_back("Python bool");
+    reader_type_names.push_back("Python int");
+    reader_type_names.push_back("Python real");
+    reader_type_names.push_back("Python None");
+    reader_type_names.push_back(""); // scalar type
+    reader_type_names.push_back("undefined type");
 }
 
 PathPython::~PathPython() = default;
@@ -129,7 +129,7 @@ unsigned int PathPython::get_node_type_index() const {
         return ValueTypes::real_type;
     }
 
-    return ValueTypes::scalar_type;
+    return ValueTypes::undef_type;
 }
 
 bool PathPython::is_record_type() const {
