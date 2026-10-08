@@ -32,15 +32,15 @@ PathYAML::PathYAML(istream &in)
 {
     nodes_.push_back( YAML::Load( in ) );
 
-    json_type_names.push_back("YAML map");
-    json_type_names.push_back("YAML sequence");
-    json_type_names.push_back("YAML string");
-    json_type_names.push_back("YAML bool");
-    json_type_names.push_back("YAML int");
-    json_type_names.push_back("YAML real");
-    json_type_names.push_back("YAML null");
-    json_type_names.push_back("other scalar type");
-    json_type_names.push_back("undefined type");
+    reader_type_names.push_back("YAML map");
+    reader_type_names.push_back("YAML sequence");
+    reader_type_names.push_back("YAML string");
+    reader_type_names.push_back("YAML bool");
+    reader_type_names.push_back("YAML int");
+    reader_type_names.push_back("YAML real");
+    reader_type_names.push_back("YAML null");
+    reader_type_names.push_back("other scalar type");
+    reader_type_names.push_back("undefined type");
 }
 
 PathYAML::~PathYAML()

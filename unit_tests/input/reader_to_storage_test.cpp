@@ -15,13 +15,16 @@
 #include <fstream>
 
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 #include "input/reader_to_storage.hh"
 #include "input/reader_internal_base.hh"
 #include "input/accessors.hh"
 
 using namespace std;
-
 using namespace Input;
+
+namespace py = pybind11;
 
 
 class InputReaderToStorageTest : public testing::Test, public Input::ReaderToStorage {
@@ -1140,4 +1143,70 @@ TEST_F(InputReaderToStorageTest, Abstract_auto_conversion) {
 
 }
 
+
+py::dict create_input_dict() {
+    py::dict input_dict;
+
+    input_dict["int_key"] = 1;
+    input_dict["double_key"] = 2.5;
+    input_dict["str_key"] = "Description.";
+
+    py::list arr_key;
+    arr_key.append(123);
+    arr_key.append(234);
+    arr_key.append(345);
+    input_dict["array_key"] = arr_key;
+
+    py::dict sub_rec;
+    sub_rec["bool_key"] = Py_True;
+    sub_rec["int_key"] = 5;
+    input_dict["rec_key"] = sub_rec;
+
+    return input_dict;
+}
+
+// Register Python module
+PYBIND11_MODULE(input_module, m) {
+    m.def("create_dict", &create_input_dict, "Creates and fills Python dict");
+}
+
+TEST_F(InputReaderToStorageTest, load_from_python) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    static Type::Record sub_rec = Type::Record( "SubRecord", "")
+    	.declare_key("bool_key", Type::Bool(), Type::Default("false"), "")
+    	.declare_key("int_key", Type::Integer(), Type::Default("1"), "")
+    	.close();
+
+    static Type::Record rec_type = Type::Record( "SomeRec","desc.")
+    	.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "")
+    	.declare_key("double_key", Type::Double(), Type::Default("1.23"),"")
+    	.declare_key("str_key", Type::String(), Type::Default("\"ahoj\""),"")
+    	.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "")
+	    .declare_key("rec_key", sub_rec, Type::Default::obligatory(), "")
+		.close();
+
+    rec_type.finish();
+    sub_rec.finish();
+
+    py::scoped_interpreter guard{};
+
+    py::dict input_dict = create_input_dict();
+    //std::cout << py::str(input_dict).cast<std::string>() << std::endl;
+
+    {
+        read_python(input_dict, rec_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(6, storage_->get_array_size());
+        EXPECT_EQ(1, storage_->get_item(1)->get_int() );
+        EXPECT_EQ(2.5, storage_->get_item(2)->get_double() );
+        EXPECT_EQ("Description.", storage_->get_item(3)->get_string() );
+        EXPECT_EQ(3, storage_->get_item(4)->get_array_size());
+        EXPECT_EQ(123, storage_->get_item(4)->get_item(0)->get_int());
+        EXPECT_EQ(3, storage_->get_item(5)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(5)->get_item(1)->get_bool());
+        EXPECT_EQ(5, storage_->get_item(5)->get_item(2)->get_int());
+    }
+
+}
 

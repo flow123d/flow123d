@@ -102,7 +102,7 @@ public:
     /// Get short string description of node type, method is used for printout of messages
     std::string get_node_type(unsigned int type_idx) const;
 
-    /// Get index of head type, value corresponds with order in @p json_type_names vector
+    /// Get index of head type, value corresponds with order in @p reader_type_names vector
     virtual unsigned int get_node_type_index() const =0;
 
     /// Get set of keys of head type record, if head type is not record return false
@@ -172,7 +172,7 @@ protected:
      * Initialized in constructor.
      *
      */
-    std::vector<std::string> json_type_names;
+    std::vector<std::string> reader_type_names;
 
     friend class ReaderInternalCsvInclude;
 };
