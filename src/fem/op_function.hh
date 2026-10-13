@@ -620,7 +620,7 @@ public:
     void eval() override {}
 };
 
-/// Fixed operation of vector shape reference values
+/// Fixed operation of tensor shape reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefTensor : public PatchOp<spacedim> {
 public:
@@ -667,6 +667,60 @@ public:
                     for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
                         for (uint i_p=0; i_p<n_points; ++i_p)
                             ref_tensor_value(s*spacedim+i_row, spacedim*i_dof+i_col)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+spacedim*i_row);
+        }
+    }
+
+    void eval() override {}
+};
+
+/// Fixed operation of shape of tensor in Voigt notation reference values
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class RefTensorVoigt : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    RefTensorVoigt(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {spacedim*(spacedim+1)/2, spacedim*(spacedim+1)/2}, fe->n_dofs())
+    {
+        this->domain_ = Domain::domain();
+        uint n_points = quad.size();
+        uint tensor_size = spacedim*(spacedim+1)/2;
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint i_col=0; i_col<tensor_size; ++i_col) {
+            for (uint i_row=0; i_row<tensor_size; ++i_row)
+                for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                    for (uint i_p=0; i_p<n_points; ++i_p)
+                        ref_tensor_value(i_row,tensor_size*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+tensor_size*i_row);
+        }
+    }
+
+    void eval() override {}
+};
+
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class RefTensorVoigt<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    RefTensorVoigt(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {(dim+1)*spacedim*(spacedim+1)/2, spacedim*(spacedim+1)/2}, fe->n_dofs())
+    {
+        this->domain_ = Op::SideDomain::domain();
+        uint n_points = quad.size();
+        uint tensor_size = spacedim*(spacedim+1)/2;
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad.make_from_side<dim>(s);
+            for (uint i_col=0; i_col<tensor_size; ++i_col)
+                for (uint i_row=0; i_row<tensor_size; ++i_row)
+                    for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                        for (uint i_p=0; i_p<n_points; ++i_p)
+                            ref_tensor_value(s*tensor_size+i_row, tensor_size*i_dof+i_col)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+tensor_size*i_row);
         }
     }
 
@@ -1085,7 +1139,7 @@ private:
     PatchOp<spacedim> *in_op_;
 };
 
-/// Evaluates vector values (FEType == FEVector)
+/// Evaluates tensor values (FEType == FETensor)
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class TensorShape : public PatchOp<spacedim> {
 public:
@@ -1095,7 +1149,7 @@ public:
 	TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Domain, spacedim>::result_shape, fe->n_dofs())
     {
-        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of tensor_shape must be FETensor!\n");
         this->domain_ = Domain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Domain, spacedim>, dim >(quad, fe) );
 	}
@@ -1136,7 +1190,7 @@ public:
 	TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
     : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs())
     {
-        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of tensor_shape must be FETensor!\n");
         this->domain_ = Op::SideDomain::domain();
         this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
     }
@@ -1151,6 +1205,77 @@ public:
     	    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
     	    FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, spacedim, spacedim, ref_vec, res_submat);
     	}
+    }
+};
+
+/// Evaluates voigt tensor values (FEType == FETensorVoigt)
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class TensorVoigtShape : public PatchOp<spacedim> {
+public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim*(spacedim+1)/2, spacedim*(spacedim+1)/2};
+
+    /// Constructor
+    TensorVoigtShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, TensorVoigtShape<dim, Domain, spacedim>::result_shape, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensorVoigt).error("Type of FiniteElement of tensor_voigt_shape must be FETensorVoigt!\n");
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensorVoigt<dim, Domain, spacedim>, dim >(quad, fe) );
+	}
+
+    void eval() override {
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_elem = this->ppv().n_mesh_items();
+        uint tensor_size = spacedim*(spacedim+1)/2;
+
+        ArenaVec<double> elem_vec(n_elem, this->patch_arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> elem_ovec(elem_vec);
+
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(tensor_size, tensor_size);
+        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+            for (uint c=0; c<tensor_size*tensor_size; ++c) {
+                ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(i_dof * tensor_size*tensor_size + c));
+            }
+
+            Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
+            for (uint c=0; c<tensor_size*tensor_size; ++c)
+                result_vec(i_dof * tensor_size*tensor_size + c) = result_ovec(c).get_vec();
+        }
+    }
+};
+
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class TensorVoigtShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim*(spacedim+1)/2, spacedim*(spacedim+1)/2};
+
+    /// Constructor
+    TensorVoigtShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, TensorVoigtShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensorVoigt).error("Type of FiniteElement of tensor_voigt_shape must be FETensorVoigt!\n");
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensorVoigt<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
+    }
+
+    void eval() override {
+        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size(); // number of points on patch
+        this->allocate_result(n_patch_points, this->patch_arena());
+
+        auto ref_vec = this->input_ops(0)->result_matrix();
+        uint tensor_size = spacedim*(spacedim+1)/2;
+
+        for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
+            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
+            FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, tensor_size, tensor_size, ref_vec, res_submat);
+        }
     }
 };
 
