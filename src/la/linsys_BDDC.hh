@@ -84,6 +84,12 @@ public:
 
     void rhs_set_values( int nrow, int *rows, double *vals ) override;
 
+    void mat_set_values_local( int, int *, int, int *, double *) override
+    { ASSERT(false).error("Not implemented!"); }
+
+    void rhs_set_values_local( int, int *, double *) override
+    { ASSERT(false).error("Not implemented!"); }
+
     void diagonal_weights_set_value( int global_index, double value );
 
     PetscErrorCode mat_zero_entries() override;

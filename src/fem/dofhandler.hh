@@ -219,6 +219,9 @@ public:
     /// Output structure of dof handler.
     void print() const;
 
+    /// Output map dof->(node,component).
+    void view_dof_to_node_map(string text = "");
+
     /**
      * Implements @p DOFHandlerBase::hash.
      */

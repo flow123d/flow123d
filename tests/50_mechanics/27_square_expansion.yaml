@@ -69,10 +69,9 @@ problem: !Coupling_Sequential
             - stress
             - displacement_divergence
             - region_id
-        solver: !Petsc
+        solver:
           a_tol: 0
           r_tol: 1e-12
-          options: -ksp_type cg -pc_type hypre -pc_hypre_type boomeramg
         input_fields:
           - region: BULK
             young_modulus: 60e9

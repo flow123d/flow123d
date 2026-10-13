@@ -59,7 +59,7 @@ problem: !Coupling_Sequential
           fields:
             - displacement
             - stress
-        solver: !Petsc
+        solver:
           a_tol: 1e-10
           r_tol: 1e-14
         input_fields:

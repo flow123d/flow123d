@@ -205,7 +205,7 @@ void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,
     new_4_id = new LongIdx [ n_ids + 1 ];
 
     // create whole new->old mapping on each proc
-    AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
+    AOCreateBasicIS(new_numbering, PETSC_NULLPTR, &new_old_ao); // app ordering= new; petsc ordering = old
     ISDestroy(&new_numbering);
     for (unsigned int i = 0; i < size; i++)
         old_4_new[i] = i;

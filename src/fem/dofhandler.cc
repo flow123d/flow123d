@@ -753,6 +753,58 @@ void DOFHandlerMultiDim::print() const {
 }
 
 
+void view_vec(Vec &vec, string filename, string vecname="") {
+    FilePath filepath(filename,FilePath::FileType::output_file);
+    PetscViewer myViewer;
+
+    PetscViewerASCIIOpen(PETSC_COMM_WORLD,((string)filepath).c_str(),&myViewer);
+    PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+    if (vecname != "")
+        PetscObjectSetName((PetscObject)vec, vecname.c_str());
+    VecView( vec, myViewer );
+    PetscViewerDestroy(&myViewer);
+}
+
+void DOFHandlerMultiDim::view_dof_to_node_map(string text) {
+
+    VectorMPI cells = create_vector();
+    VectorMPI nodes = create_vector();
+    VectorMPI components = create_vector();
+    VectorMPI coords_x = create_vector();
+    VectorMPI coords_y = create_vector();
+    VectorMPI coords_z = create_vector();
+    static LocDofVec dofs;
+    for (auto cell : own_range()) {
+        dofs = cell.get_loc_dof_indices();
+        auto ndofs = dofs.size();
+        for (unsigned int idof=0; idof<ndofs; idof++)
+        {
+            if (cell.cell_dof(idof).dim == 0) {
+                auto dof = cell.cell_dof(idof);
+                auto node_id = cell.elm().node(dof.n_face_idx).index();
+                arma::uvec idx = arma::find(dof.coefs == 1.0, 1);
+                auto comp = idx(0);
+                auto coords = *cell.elm().node(dof.n_face_idx);
+                cells.set(dofs[idof], cell.elm().input_id());
+                nodes.set(dofs[idof], node_id);
+                components.set(dofs[idof], comp);
+                coords_x.set(dofs[idof], coords[0]);
+                coords_y.set(dofs[idof], coords[1]);
+                coords_z.set(dofs[idof], coords[2]);
+            }
+        }
+    }
+
+    view_vec( cells.petsc_vec(), text + "_dofhandler_cells.m", "cells" );
+    view_vec( nodes.petsc_vec(), text + "_dofhandler_nodes.m", "nodes" );
+    view_vec( components.petsc_vec(), text + "_dofhandler_components.m", "components" );
+    view_vec( coords_x.petsc_vec(), text + "_dofhandler_coords_x.m", "coords_x" );
+    view_vec( coords_y.petsc_vec(), text + "_dofhandler_coords_y.m", "coords_y" );
+    view_vec( coords_z.petsc_vec(), text + "_dofhandler_coords_z.m", "coords_z" );
+
+}
+
+
 
 
 
