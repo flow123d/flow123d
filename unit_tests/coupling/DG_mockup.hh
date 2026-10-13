@@ -342,6 +342,10 @@ public:
         this->set_default_fieldset();
     }
 
+    void set_mesh_ptr(Mesh *mesh_ptr) {
+        mesh_ptr_ = mesh_ptr;
+    }
+
     /// Setup components of MultiFields defined as FieldModels, internal method
     void setup_mf_components()
     {
@@ -356,193 +360,12 @@ public:
 
     }
 
-    /// Initialize selected fields as FieldModels
-    void init_field_models()
-    {
-    	setup_mf_components();
+    /// Initialize selected fields as Field type (FT)
+    template<class FT>
+    void init_fields();
 
-        v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
-        mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix(), cross_section, water_content), 0.0);
-        retardation_coef.set(
-            Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient),
-    		0.0
-        );
-        sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
-        sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
-        sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
-        std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-        for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
-            ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
-        advection_coef.set(ad_coef_ptr_vec, 0.0);
-        diffusion_coef.set(
-            Model<3, FieldValue<3>::TensorFixed>::create_multi(
-                fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
-            ),
-            0.0
-        );
-    }
-
-    /// Initialize selected fields as FieldConstants
-    void init_field_constants(double vnorm, double mass_matrix, double ret_coef, double sources_dens, double sourc_sigma,
-            double sourc_conc, arma::vec3 advec_coef, arma::mat33 diff_coef)
-    {
-    	setup_mf_components();
-
-        {
-    	    FieldValue<3>::Scalar f_value(vnorm);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            v_norm.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(mass_matrix);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            mass_matrix_coef.set(field_algo, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(ret_coef);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            retardation_coef.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sources_dens);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_density.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_density_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sourc_sigma);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_sigma.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_sigma_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sourc_conc);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_conc.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_conc_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::TensorFixed f_value(diff_coef);
-            std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<diff_m.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::TensorFixed>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            diffusion_coef.set(field_vec, 0.0);
-        }
-    }
-
-    VectorMPI create_data_vec(shared_ptr<DOFHandlerMultiDim> dh, uint seed) {
-        VectorMPI data_vec = dh->create_vector();
-    	for (uint i=0; i<data_vec.size(); ++i) {
-    		data_vec.set( i, 0.05 * ((i+seed)%19 + 1) );
-    	}
-    	return data_vec;
-    }
-
-    /// Initialize selected fields as FieldConstants
-    void init_fields_fe(Mesh &mesh)
-    {
-    	setup_mf_components();
-    	uint seed = 0;
-
-        MixedPtr<FE_P_disc> fe_base(0);
-        MixedPtr<FiniteElement> fe_tens = mixed_fe_system(fe_base, FEType::FETensor, 9);
-        MixedPtr<FiniteElement> fe_rt = MixedPtr<FE_RT0_disc>();
-        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_base);
-        std::shared_ptr<DiscreteSpace> ds_tens = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_tens);
-        std::shared_ptr<DiscreteSpace> ds_rt = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_rt);
-        std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
-        std::shared_ptr<DOFHandlerMultiDim> dh_tens = std::make_shared<DOFHandlerMultiDim>(mesh);
-        std::shared_ptr<DOFHandlerMultiDim> dh_rt = std::make_shared<DOFHandlerMultiDim>(mesh);
-        dh->distribute_dofs(ds);
-        dh_tens->distribute_dofs(ds_tens);
-        dh_rt->distribute_dofs(ds_rt);
-
-        {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::VectorFixed>>();
-            VectorMPI data_vec = create_data_vec(dh_rt, seed++);
-            field_algo->set_fe_data(dh_rt, data_vec);
-            flow_flux.set(field_algo, 0.0);
-        }
-        v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
-        {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-            VectorMPI data_vec = create_data_vec(dh, seed++);
-            field_algo->set_fe_data(dh, data_vec);
-            mass_matrix_coef.set(field_algo, 0.0);
-        }
-        {
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-                VectorMPI data_vec = create_data_vec(dh, seed++);
-                field_algo->set_fe_data(dh, data_vec);
-                field_vec.push_back(field_algo);
-            }
-            retardation_coef.set(field_vec, 0.0);
-        }
-        {
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_density.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-                VectorMPI data_vec = create_data_vec(dh, seed++);
-                field_algo->set_fe_data(dh, data_vec);
-                field_vec.push_back(field_algo);
-            }
-            sources_density_out.set(field_vec, 0.0);
-        }
-        {
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_sigma.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-                VectorMPI data_vec = create_data_vec(dh, seed++);
-                field_algo->set_fe_data(dh, data_vec);
-                field_vec.push_back(field_algo);
-            }
-            sources_sigma_out.set(field_vec, 0.0);
-        }
-        {
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_conc.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-                VectorMPI data_vec = create_data_vec(dh, seed++);
-                field_algo->set_fe_data(dh, data_vec);
-                field_vec.push_back(field_algo);
-            }
-            sources_conc_out.set(field_vec, 0.0);
-        }
-        {
-            std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<diff_m.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::TensorFixed>>();
-                VectorMPI data_vec = create_data_vec(dh_tens, seed++);
-                field_algo->set_fe_data(dh_tens, data_vec);
-                field_vec.push_back(field_algo);
-            }
-            diffusion_coef.set(field_vec, 0.0);
-        }
-    }
+    /// Pointer to mesh
+    Mesh *mesh_ptr_;
 
     // from TransportEqFields
     Field<3, FieldValue<3>::Scalar> porosity;             ///< Mobile porosity - usually saturated water content in the case of unsaturated flow model
@@ -679,16 +502,16 @@ public:
 } // end of namespace equation_data
 
 
+template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqData>;
+
 /// Test class
 class DGMockupTest : public testing::Test {
 public:
-    template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqData>;
-    template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqData>;
-    template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
-    template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqData>;
-
 	DGMockupTest()
     {
 		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
@@ -705,15 +528,8 @@ public:
     ~DGMockupTest() {}
 
     /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
+    template <template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
 
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {
@@ -823,6 +639,7 @@ public:
 
         // Set up physical parameters.
         eq_fields_->set_mesh(*mesh_);
+        eq_fields_->set_mesh_ptr(mesh_);
         eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
         eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
 
