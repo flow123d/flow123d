@@ -79,10 +79,15 @@ TEST_F(DGMockupTest, simple_asm) {
 
             for (uint k=0; k<n_repeats; ++k) {
                 // measure needs call of assembly algorithm in separate methods
-                this->run_fullassembly_model(eq_data_input, mesh_file);
-                this->run_computelocal_model(eq_data_input, mesh_file);
-                this->run_evalfields_const(eq_data_input, mesh_file);
-                this->run_evalfields_model(eq_data_input, mesh_file);
+                //this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldConst>(eq_data_input, mesh_file, TAG_FULLASSEMBLY_CONST, true);
+                this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldModel>(eq_data_input, mesh_file, TAG_FULLASSEMBLY_MODEL, true);
+                //this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldFE>(eq_data_input, mesh_file, TAG_FULLASSEMBLY_FE, true);
+                //this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldConst>(eq_data_input, mesh_file, TAG_COMPUTELOCAL_CONST);
+                this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldModel>(eq_data_input, mesh_file, TAG_COMPUTELOCAL_MODEL);
+                //this->run_mockup<MassAssemblyDim, StiffnessAssemblyDim, SourcesAssemblyDim, InitFieldFE>(eq_data_input, mesh_file, TAG_COMPUTELOCAL_FE);
+                this->run_mockup<MassEvalFieldsDim, StiffnessEvalFieldsDim, SourcesEvalFieldsDim, InitFieldConst>(eq_data_input, mesh_file, TAG_EVALFIELDS_CONST);
+                this->run_mockup<MassEvalFieldsDim, StiffnessEvalFieldsDim, SourcesEvalFieldsDim, InitFieldModel>(eq_data_input, mesh_file, TAG_EVALFIELDS_MODEL);
+                //this->run_mockup<MassEvalFieldsDim, StiffnessEvalFieldsDim, SourcesEvalFieldsDim, InitFieldFE>(eq_data_input, mesh_file, TAG_EVALFIELDS_FE);
             }
             Profiler::instance()->stop_timer( *cp_vec_in[i*meshes_sizes.size()+j] );
 
