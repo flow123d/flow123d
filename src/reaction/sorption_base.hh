@@ -263,10 +263,6 @@ protected:
    */
   std::shared_ptr<ReactionTerm> reaction_liquid;
   std::shared_ptr<ReactionTerm> reaction_solid;
-  
-  /// general assembly objects, hold assembly objects of appropriate dimension
-  GenericAssembly< InitConditionAssemblySorpDim > * init_condition_assembly_;
-  GenericAssembly< ReactionAssemblySorpDim > * reaction_assembly_;
 
 
 };

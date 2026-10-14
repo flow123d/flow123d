@@ -49,7 +49,6 @@ namespace Input {
 	}
 }
 
-template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
 template<unsigned int dim, class TEqData> class L2DifferenceAssembly;
 template<unsigned int dim, class TEqData> class OutputInternalFlowAssembly;
@@ -193,10 +192,6 @@ protected:
     std::shared_ptr<RawOutputEqData> raw_eq_data_;
     
     //MixedPtr<FE_P_disc> fe_p0;
-
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< L2DifferenceAssemblyDim > * l2_difference_assembly_;
-    GenericAssembly< OutputInternalFlowAssemblyDim > * output_internal_assembly_;
 
 };
 

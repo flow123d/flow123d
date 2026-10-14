@@ -261,6 +261,11 @@ private:
 
 	void assemble_constraint_matrix();
 
+	/// Following methods create teporary assembly variables and call its assemble method.
+	void stiffness_asm();
+	void rhs_asm();
+	void output_fields_asm();
+
 
 	/// @name Physical parameters
 	// @{
@@ -295,13 +300,6 @@ private:
 
 
     static constexpr const char *  name_ = "Mechanics_LinearElasticity";
-
-
-    /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
-    GenericAssembly< RhsAssemblyDim > * rhs_assembly_;
-    GenericAssembly< ConstraintAssemblyDim > * constraint_assembly_;
-    GenericAssembly< OutpuFieldsAssemblyDim > * output_fields_assembly_;
 
 };
 

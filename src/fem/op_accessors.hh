@@ -125,7 +125,8 @@ class FeQJoin {
 public:
     /// Default constructor
     FeQJoin()
-    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr)
+    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr),
+      n_dofs_high_(25), n_dofs_low_(25)
     {}
 
     /**

@@ -18,8 +18,6 @@
 #include "system/sys_profiler.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
-#include "fem/fe_system.hh"
-#include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
