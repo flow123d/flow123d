@@ -1281,36 +1281,34 @@ public:
             arma::mat::fixed<6,6> tensor_shape_dof1 = tensor_shape_voigt_.shape(1)(p);
             arma::mat::fixed<6,6> tensor_shape_dof6 = tensor_shape_voigt_.shape(6)(p);
 
-            //EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_bulk_jxw_tensor_[i_test_elem] );
-            std::cout << " - " << jxw << " - " << this->generic_inst_->ref_bulk_jxw_tensor_[i_test_elem] << std::endl;
-            std::cout << " - " << tensor_shape_dof1 << std::endl;
-//            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_bulk_tensor_shape_dof1_[i_test_elem] );
-//            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_bulk_tensor_shape_dof6_[i_test_elem] );
+            EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_bulk_jxw_tensor_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_bulk_tensor_shape_dof1_[i_test_elem] );
+            EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_bulk_tensor_shape_dof6_[i_test_elem] );
         }
 
-//        void test_side_values() {
-//            uint n_patch_edges = this->integrals_.n_patch_edges();
-//            if (n_patch_edges == 0) return;
-//
-//            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
-//            for (unsigned int i=0; i<n_patch_edges; ++i) {
-//                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
-//
-//                uint k=0;
-//                for (DHCellSide cell_side : range) {
-//                    auto p = *( this->edge_integral_->points(cell_side).begin() );
-//
-//                    double jxw = this->jxw_side_(p);
-//                    arma::mat33 tensor_shape_dof1 = tensor_shape_side_.shape(1)(p);
-//                    arma::mat33 tensor_shape_dof6 = tensor_shape_side_.shape(6)(p);
-//
-//                    EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_side_jxw_tensor_[k] );
-//                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_side_tensor_shape_dof1_[k] );
-//                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_side_tensor_shape_dof6_[k] );
-//                    ++k;
-//                }
-//            }
-//        }
+        void test_side_values() {
+            uint n_patch_edges = this->integrals_.n_patch_edges();
+            if (n_patch_edges == 0) return;
+
+            RevertableList<EdgeIntegralData> &patch_edge_list = this->integrals_.edge_.begin()->second->patch_data(); // list of edges is same for all items of integrals_.edge_
+            for (unsigned int i=0; i<n_patch_edges; ++i) {
+                RangeConvert<DHEdgeSide, DHCellSide> range = patch_edge_list[i].edge_side_range;
+
+                uint k=0;
+                for (DHCellSide cell_side : range) {
+                    auto p = *( this->edge_integral_->points(cell_side).begin() );
+
+                    double jxw = this->jxw_side_(p);
+                    arma::mat::fixed<6,6> tensor_shape_dof1 = tensor_shape_voigt_side_.shape(1)(p);
+                    arma::mat::fixed<6,6> tensor_shape_dof6 = tensor_shape_voigt_side_.shape(6)(p);
+
+                    EXPECT_TEST_NEAR( jxw, this->generic_inst_->ref_side_jxw_tensor_[k] );
+                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof1, this->generic_inst_->ref_side_tensor_shape_dof1_[k] );
+                    EXPECT_TEST_ARMA_NEAR( tensor_shape_dof6, this->generic_inst_->ref_side_tensor_shape_dof6_[k] );
+                    ++k;
+                }
+            }
+        }
 
     	/** Declaration of data members **/
         PatchFETestTensorVoigt *generic_inst_;                                    ///< pointer to generic object
@@ -1323,32 +1321,32 @@ public:
     : PatchFETestBase(dh),
       multidim_asm_(this, quad_order, 0)
     {
-	    patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
+        patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
 
-	    ref_bulk_jxw_tensor_ = { 3.46410, 2.82843, 2.82843, 1.33333, 1.33333 };
-	    ref_side_jxw_tensor_ = { 2.82843, 2.82843 };
-//	    ref_bulk_tensor_shape_dof1_ = {
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
-//        };
-//	    ref_bulk_tensor_shape_dof6_ = {
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
-//        };
-//	    ref_side_tensor_shape_dof1_ = {
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
-//        };
-//	    ref_side_tensor_shape_dof6_ = {
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
-//            { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }
-//        };
+        ref_bulk_jxw_tensor_ = { 3.46410, 2.82843, 2.82843, 1.33333, 1.33333 };
+        ref_side_jxw_tensor_ = { 2.82843, 2.82843 };
+        ref_bulk_tensor_shape_dof1_ = {
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
+        ref_bulk_tensor_shape_dof6_ = {
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
+        ref_side_tensor_shape_dof1_ = {
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
+        ref_side_tensor_shape_dof6_ = {
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+            { 0.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
+        };
     }
 
     ~PatchFETestTensorVoigt() {}
@@ -1425,9 +1423,9 @@ public:
             ++i_test_elem;
         }
 
-//        multidim_asm_[1_d]->test_side_values();
-//        multidim_asm_[2_d]->test_side_values();
-//        multidim_asm_[3_d]->test_side_values();
+        multidim_asm_[1_d]->test_side_values();
+        multidim_asm_[2_d]->test_side_values();
+        multidim_asm_[3_d]->test_side_values();
     }
 
     void reset() override {
@@ -1442,10 +1440,10 @@ public:
 
     std::vector<double> ref_bulk_jxw_tensor_;
     std::vector<double> ref_side_jxw_tensor_;
-//    std::vector<arma::mat33> ref_bulk_tensor_shape_dof1_;
-//    std::vector<arma::mat33> ref_bulk_tensor_shape_dof6_;
-//    std::vector<arma::mat33> ref_side_tensor_shape_dof1_;
-//    std::vector<arma::mat33> ref_side_tensor_shape_dof6_;
+    std::vector<arma::mat::fixed<6,6>> ref_bulk_tensor_shape_dof1_;
+    std::vector<arma::mat::fixed<6,6>> ref_bulk_tensor_shape_dof6_;
+    std::vector<arma::mat::fixed<6,6>> ref_side_tensor_shape_dof1_;
+    std::vector<arma::mat::fixed<6,6>> ref_side_tensor_shape_dof6_;
 };
 
 
@@ -1521,8 +1519,11 @@ void compare_evaluation_func_tensor_voigt(Mesh* mesh, unsigned int quad_order, b
     PatchFETestTensorVoigt patch_fe(quad_order, dh);
     patch_fe.initialize();
     patch_fe.test_evaluation(print_fa_data);
-    patch_fe.reset();
-    patch_fe.test_evaluation();
+    //patch_fe.reset();
+    //patch_fe.test_evaluation();
+    PatchFETestTensorVoigt patch_fe2(quad_order, dh);
+    patch_fe2.initialize();
+    patch_fe2.test_evaluation();
 }
 
 
