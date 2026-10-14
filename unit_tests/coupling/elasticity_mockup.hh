@@ -257,80 +257,21 @@ public:
         this->set_default_fieldset();
     }
 
-    /// Initialize selected fields as FieldModels
-    void init_field_models()
-    {
-        lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), young_modulus, poisson_ratio), 0.0);
-        lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), young_modulus, poisson_ratio), 0.0);
-        dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), lame_mu, lame_lambda), 0.0);
+    void set_mesh_ptr(Mesh *mesh_ptr) {
+        mesh_ptr_ = mesh_ptr;
     }
 
-    /// Initialize selected fields as FieldConstants
-    void init_field_constants(double val_lame_mu, double val_lame_lambda, double val_dirichl_penalty)
-    {
-
-        {
-    	    FieldValue<3>::Scalar f_value(val_lame_mu);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            lame_mu.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(val_lame_lambda);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            lame_lambda.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(val_dirichl_penalty);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            dirichlet_penalty.set(field_algo, 0.0);
-        }
-    }
-
-    VectorMPI create_data_vec(shared_ptr<DOFHandlerMultiDim> dh, uint seed) {
-        VectorMPI data_vec = dh->create_vector();
-    	for (uint i=0; i<data_vec.size(); ++i) {
-    		data_vec.set( i, 0.05 * ((i+seed)%19 + 1) );
-    	}
-    	return data_vec;
-    }
-
-    /// Initialize selected fields as FieldFE
-    void init_fields_fe(Mesh &mesh)
-    {
-    	uint seed = 0;
-
-        MixedPtr<FE_P_disc> fe_p(0);
-        std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(&mesh, fe_p);
-        std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(mesh);
-        dh->distribute_dofs(ds);
-
-        {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-            VectorMPI data_vec = create_data_vec(dh, seed++);
-            field_algo->set_fe_data(dh, data_vec);
-            lame_mu.set(field_algo, 0.0);
-        }
-        {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-            VectorMPI data_vec = create_data_vec(dh, seed++);
-            field_algo->set_fe_data(dh, data_vec);
-            lame_lambda.set(field_algo, 0.0);
-        }
-        {
-            auto field_algo=std::make_shared<FieldFE<3, FieldValue<3>::Scalar>>();
-            VectorMPI data_vec = create_data_vec(dh, seed++);
-            field_algo->set_fe_data(dh, data_vec);
-            dirichlet_penalty.set(field_algo, 0.0);
-        }
-    }
+    /// Initialize selected fields as Field type (FT)
+    template<class FT>
+    void init_fields();
 
     arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
     {
         return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
     }
+
+    /// Pointer to mesh
+    Mesh *mesh_ptr_;
 
     // Definition of Fields
     BCField<3, FieldValue<3>::Enum > bc_type;
@@ -418,14 +359,14 @@ public:
 } // end of namespace equation_data
 
 
+template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqData>;
+template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqData>;
+
 /// Test class
 class ElasticityMockupTest : public testing::Test {
 public:
-    template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqData>;
-    template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqData>;
-    template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
-    template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqData>;
-
 	ElasticityMockupTest()
     {
 		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
@@ -442,15 +383,9 @@ public:
     ~ElasticityMockupTest() {}
 
     /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_fe(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
+    template <template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
+
 
     /// Perform profiler output.
     void profiler_output(std::string file_name) {
@@ -513,6 +448,7 @@ public:
 
         // Set up physical parameters.
         eq_fields_->set_mesh(*mesh_);
+        eq_fields_->set_mesh_ptr(mesh_);
         eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
         eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
 
