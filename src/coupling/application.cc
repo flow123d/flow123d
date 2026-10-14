@@ -15,6 +15,10 @@
  * @brief   
  */
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>    // everything needed for embedding
+#include <pybind11/stl.h>      // type conversion
+
 #include "application.hh"
 
 #include "system/sys_profiler.hh"
@@ -48,6 +52,24 @@
 
 
 
+PYBIND11_MODULE(flow123d_main_api, m) {
+    m.doc() = "Python interface to Flow123d";
+
+    m.def(
+        "run",
+        [](const py::dict &input) {
+            Application app;
+            app.init_python();
+
+            Input::Record record = app.read_input(input);
+            app.run(record);
+        },
+        py::arg("input")
+    );
+}
+
+
+
 /// Function that catches all program signals.
 /// Note: context variable required by PETSc function PetscPushSignalHandler
 PetscErrorCode petsc_signal_handler(int signal, FMT_UNUSED void *context)
@@ -73,16 +95,24 @@ void system_signal_handler(int signal) {
 }
 
 
-Application::Application()
+RunEnv::RunEnv()
 : log_filename_(""),
+  petsc_redirect_file_(""),
   signal_handler_off_(false),
-  problem_(nullptr),
+  use_profiler_(true),
+  memory_monitoring_(false),
+  profiler_path_(""),
+  input_dir_(""),
+  output_dir_(""),
+  input_filename_("")
+{}
+
+
+Application::Application()
+: problem_(nullptr),
   main_input_filename_(""),
   //passed_argc_(0),
   //passed_argv_(0),
-  use_profiler(true),
-  memory_monitoring(false),
-  profiler_path(""),
   yaml_balance_output_(false)
 
 {
@@ -162,16 +192,18 @@ PetscErrorCode Application::petscvfprintf(FILE *fd, const char format[], va_list
 
 void Application::petsc_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PETSC
-    if (petsc_redirect_file_ != "") {
-        petsc_output_ = fopen(petsc_redirect_file_.c_str(), "w");
+    if (run_environment_.petsc_redirect_file_ != "") {
+        petsc_output_ = fopen(run_environment_.petsc_redirect_file_.c_str(), "w");
         if (! petsc_output_)
-            THROW(FilePath::ExcFileOpen() << FilePath::EI_Path(petsc_redirect_file_));
+            THROW(FilePath::ExcFileOpen() << FilePath::EI_Path(run_environment_.petsc_redirect_file_));
         PetscVFPrintf = this->petscvfprintf;
     }
 
 
     PetscInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
-    if (! signal_handler_off_) {
+	petsc_initialized = true;
+
+	if (! run_environment_.signal_handler_off_) {
         // PETSc do not catch SIGINT, but someone on the way does, we try to fix it.
         signal(SIGINT, system_signal_handler);
         PetscPushSignalHandler(petsc_signal_handler, nullptr);
@@ -208,6 +240,8 @@ int Application::petcs_finalize() {
 void Application::permon_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PERMON
     PermonInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
+
+    permon_initialized = true;
 #endif
 }
 
@@ -306,7 +340,7 @@ void Application::display_version() {
 Input::Record Application::read_input() {
    if (main_input_filename_ == "") {
         cout << "Usage error: The main input file has to be specified through -s parameter.\n\n";
-        cout << program_arguments_desc_ << "\n";
+        cout << run_environment_.program_arguments_desc_ << "\n";
         exit( exit_failure );
     }
 
@@ -316,6 +350,14 @@ Input::Record Application::read_input() {
     Input::ReaderToStorage json_reader(fpath, get_input_type() );
     root_record = json_reader.get_root_interface<Input::Record>();
 
+    return root_record;
+}
+
+
+
+Input::Record Application::read_input(const py::dict &input) {
+    Input::ReaderToStorage reader( input, get_input_type() );
+    root_record = reader.get_root_interface<Input::Record>();
     return root_record;
 }
 
@@ -380,15 +422,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) {
-        use_profiler=false;
+        run_environment_.use_profiler_=false;
     }
 
     if (vm.count("profiler_path")) {
-        profiler_path = vm["profiler_path"].as<string>();
+        run_environment_.profiler_path_ = vm["profiler_path"].as<string>();
     }
 
     if (vm.count("memory_monitoring")) {
-        memory_monitoring=true;
+        run_environment_.memory_monitoring_=true;
     }
 
     // if there is "help" option
@@ -426,68 +468,55 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 
     if (vm.count("petsc_redirect")) {
-        this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
+        run_environment_.petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
     }
 
     if (vm.count("no_signal_handler")) {
-        this->signal_handler_off_ = true;
+        run_environment_.signal_handler_off_ = true;
     }
-
-    // if there is "solve" option
-    string input_filename = "";
 
     // check for positional main input file
     if (to_pass_further.size()) {
         string file_candidate = to_pass_further[0];
         if (file_candidate[0] != '-') {
             // pop the first option
-            input_filename = file_candidate;
+            run_environment_.input_filename_ = file_candidate;
             to_pass_further.erase(to_pass_further.begin());
         }
     }
 
 
     if (vm.count("solve")) {
-        input_filename = vm["solve"].as<string>();
+        run_environment_.input_filename_ = vm["solve"].as<string>();
     }
 
 
-    if (input_filename == "")
+    if (run_environment_.input_filename_ == "")
         THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
     // preserves output of balance in YAML format
     if (vm.count("yaml_balance")) Balance::set_yaml_output();
 
-    string input_dir;
-    string output_dir;
     if (vm.count("input_dir")) {
-        input_dir = vm["input_dir"].as<string>();
+        run_environment_.input_dir_ = vm["input_dir"].as<string>();
     }
     if (vm.count("output_dir")) {
-            output_dir = vm["output_dir"].as<string>();
-    }
-
-
-
-    // assumes working directory "."
-    try {
-        main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
-    } catch (FilePath::ExcMkdirFail &e) {
-        use_profiler = false; // avoid profiler output
-        throw e;
+        run_environment_.output_dir_ = vm["output_dir"].as<string>();
     }
 
     if (vm.count("log")) {
-        this->log_filename_ = vm["log"].as<string>();
+        run_environment_.log_filename_ = vm["log"].as<string>();
     }
 
     if (vm.count("no_log")) {
-        this->log_filename_="//";     // override; do not open log files
+        run_environment_.log_filename_="//";     // override; do not open log files
     }
 
-    ostringstream tmp_stream(program_arguments_desc_);
+
+    ostringstream tmp_stream(run_environment_.program_arguments_desc_);
     tmp_stream << desc;
     // TODO: catch specific exceptions and output usage messages
+
 }
 
 /**
@@ -497,8 +526,26 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
 void Application::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
-
 	this->parse_cmd_line(argc, argv);
+
+    this->init_common(argc, argv);
+}
+
+void Application::init_python() {
+    char arg0[] = "flow123d";
+    char *argv[] = {arg0, nullptr};
+
+    this->init_common(1, argv);
+}
+
+void Application::init_common(int argc, char ** argv) {
+    // assumes working directory "."
+    try {
+        main_input_filename_ = FilePath::set_dirs_from_input(run_environment_.input_filename_, run_environment_.input_dir_, run_environment_.output_dir_ );
+    } catch (FilePath::ExcMkdirFail &e) {
+        run_environment_.use_profiler_ = false; // avoid profiler output
+        throw e;
+    }
 
 	string build = string(__DATE__) + ", " + string(__TIME__)
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
@@ -507,19 +554,16 @@ void Application::init(int argc, char ** argv) {
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 
-    if (use_profiler & memory_monitoring)
-        Profiler::set_memory_monitoring(memory_monitoring);
+    if (run_environment_.use_profiler_ & run_environment_.memory_monitoring_)
+        Profiler::set_memory_monitoring(run_environment_.memory_monitoring_);
 
     armadillo_setup(); // set catching armadillo exceptions and reporting stacktrace
 
 	this->petsc_initialize(argc, argv);
-	petsc_initialized = true;
 
 	this->permon_initialize(argc, argv);
-	permon_initialized = true;
 
-    this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
+    this->system_init(PETSC_COMM_WORLD, run_environment_.log_filename_); // Petsc, open log, read ini file
 
 }
 
@@ -534,6 +578,10 @@ void Application::run() {
     Input::Record i_rec = read_input();
     END_TIMER("Read Input");
 
+    run(i_rec);
+}
+
+void Application::run(Input::Record i_rec) {
     {
         using namespace Input;
         // check input file version against the version of executable
@@ -618,14 +666,14 @@ void _transform_profiler_data (const string &json_filepath, const string &output
 Application::~Application() {
 	if (problem_) delete problem_;
 
-    if (use_profiler) {
+    if (run_environment_.use_profiler_) {
     	// TODO: make a static output method that does nothing if the instance does not exist yet.
     	string profiler_json;
         if (petsc_initialized) {
             // log profiler data to this stream
-            profiler_json = Profiler::instance()->output(PETSC_COMM_WORLD, profiler_path);
+            profiler_json = Profiler::instance()->output(PETSC_COMM_WORLD, run_environment_.profiler_path_);
         } else {
-        	profiler_json = Profiler::instance()->output(profiler_path);
+        	profiler_json = Profiler::instance()->output(run_environment_.profiler_path_);
         }
 
         // call python script which transforms json file at given location
