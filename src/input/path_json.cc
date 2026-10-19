@@ -66,8 +66,6 @@ PathJSON::PathJSON()
     reader_type_names.push_back("JSON int");
     reader_type_names.push_back("JSON real");
     reader_type_names.push_back("JSON null");
-    reader_type_names.push_back(""); //scalar type
-    reader_type_names.push_back(""); //undefined type
 }
 
 
@@ -244,8 +242,8 @@ std::string PathJSON::get_string_value() const {
 
 
 
-unsigned int PathJSON::get_node_type_index() const {
-	return head()->type();
+std::string PathJSON::get_node_type() const {
+	return reader_type_names[ head()->type() ];
 }
 
 

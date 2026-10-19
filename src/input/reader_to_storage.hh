@@ -67,17 +67,6 @@ typedef enum  {
 
 
 /**
- * @brief Enum of possible input types.
- *
- * Values in @p reader_type_names must be stored in same order.
- */
-typedef enum {
-	obj_type, array_type, str_type, bool_type, int_type, real_type, null_type, scalar_type, undef_type
-} ValueTypes;
-
-
-
-/**
  *  @brief Reader for (slightly) modified input files.
  *
  *  This class implements a reader of modified input file format (JSON or YAML). The modifications include

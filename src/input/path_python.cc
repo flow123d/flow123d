@@ -34,17 +34,7 @@ PathPython::PathPython(const py::dict &root)
 
 PathPython::PathPython()
 : PathBase()
-{
-    reader_type_names.push_back("Python dict");
-    reader_type_names.push_back("Python list");
-    reader_type_names.push_back("Python string");
-    reader_type_names.push_back("Python bool");
-    reader_type_names.push_back("Python int");
-    reader_type_names.push_back("Python real");
-    reader_type_names.push_back("Python None");
-    reader_type_names.push_back(""); // scalar type
-    reader_type_names.push_back("undefined type");
-}
+{}
 
 PathPython::~PathPython() = default;
 
@@ -98,38 +88,38 @@ void PathPython::up() {
     }
 }
 
-unsigned int PathPython::get_node_type_index() const {
+std::string PathPython::get_node_type() const {
     const py::object &node = head();
 
     if (node.is_none()) {
-        return ValueTypes::null_type;
+        return "Python None";
     }
 
     if (py::isinstance<py::dict>(node)) {
-        return ValueTypes::obj_type;
+        return "Python dict";
     }
 
     if (py::isinstance<py::list>(node)) {
-        return ValueTypes::array_type;
+        return "Python list";
     }
 
     if (py::isinstance<py::str>(node)) {
-        return ValueTypes::str_type;
+        return "Python string";
     }
 
     if (py::isinstance<py::bool_>(node)) {
-        return ValueTypes::bool_type;
+        return "Python bool";
     }
 
     if (py::isinstance<py::int_>(node)) {
-        return ValueTypes::int_type;
+        return "Python int";
     }
 
     if (py::isinstance<py::float_>(node)) {
-        return ValueTypes::real_type;
+        return "Python real";
     }
 
-    return ValueTypes::undef_type;
+    return "undefined type";
 }
 
 bool PathPython::is_record_type() const {

@@ -100,10 +100,7 @@ public:
     virtual std::string get_string_value() const =0;
 
     /// Get short string description of node type, method is used for printout of messages
-    std::string get_node_type(unsigned int type_idx) const;
-
-    /// Get index of head type, value corresponds with order in @p reader_type_names vector
-    virtual unsigned int get_node_type_index() const =0;
+    virtual std::string get_node_type() const =0;
 
     /// Get set of keys of head type record, if head type is not record return false
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
@@ -164,15 +161,6 @@ protected:
      * For the later type of level, we save -1 for index and the key into the secodn part of the pair.
      */
     std::vector< std::pair<int, std::string> > path_;
-
-    /**
-     * @brief Names of all possible node types in parsed input tree.
-     *
-     * Names are provided by JSON Spirit or YAML-cpp library.
-     * Initialized in constructor.
-     *
-     */
-    std::vector<std::string> reader_type_names;
 
     friend class ReaderInternalCsvInclude;
 };

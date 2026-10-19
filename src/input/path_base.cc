@@ -61,10 +61,4 @@ void PathBase::go_to_root() {
 
 
 
-std::string PathBase::get_node_type(unsigned int type_idx) const {
-	return reader_type_names[ type_idx ];
-}
-
-
-
 } // namespace Input

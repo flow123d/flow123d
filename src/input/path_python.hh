@@ -67,7 +67,7 @@ public:
     std::int64_t get_int_value() const override;
     double get_double_value() const override;
     std::string get_string_value() const override;
-    unsigned int get_node_type_index() const override;
+    std::string get_node_type() const override;
     bool get_record_key_set(std::set<std::string> &) const override;
     bool is_effectively_null() const override;
     int get_array_size() const override;

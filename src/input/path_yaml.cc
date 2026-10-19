@@ -31,16 +31,6 @@ PathYAML::PathYAML(istream &in)
 : PathBase()
 {
     nodes_.push_back( YAML::Load( in ) );
-
-    reader_type_names.push_back("YAML map");
-    reader_type_names.push_back("YAML sequence");
-    reader_type_names.push_back("YAML string");
-    reader_type_names.push_back("YAML bool");
-    reader_type_names.push_back("YAML int");
-    reader_type_names.push_back("YAML real");
-    reader_type_names.push_back("YAML null");
-    reader_type_names.push_back("other scalar type");
-    reader_type_names.push_back("undefined type");
 }
 
 PathYAML::~PathYAML()
@@ -146,13 +136,13 @@ std::string PathYAML::get_string_value() const {
 }
 
 
-unsigned int PathYAML::get_node_type_index() const {
+std::string PathYAML::get_node_type() const {
 	switch (head().Type()) {
-	  case YAML::NodeType::Null: return ValueTypes::null_type;
-	  case YAML::NodeType::Scalar: return ValueTypes::scalar_type;
-	  case YAML::NodeType::Sequence: return ValueTypes::array_type;
-	  case YAML::NodeType::Map: return ValueTypes::obj_type;
-	  default: return ValueTypes::undef_type;
+	  case YAML::NodeType::Null: return "YAML null";
+	  case YAML::NodeType::Scalar: return "other scalar type";
+	  case YAML::NodeType::Sequence: return "YAML sequence";
+	  case YAML::NodeType::Map: return "YAML map";
+	  default: return "undefined type";
 	}
 }
 
