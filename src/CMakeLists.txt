@@ -143,6 +143,7 @@ add_library(input_lib
     input/path_base.cc
     input/path_json.cc
     input/path_yaml.cc
+    input/path_python.cc
     input/type_output.cc
     
     input/accessors.cc

@@ -155,7 +155,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	            } else {
 	                // key not on input
 	                if (it->default_.is_obligatory() ) {
-	                	this->generate_input_error(p, record, "Missing obligatory key '"+ it->key_ +"'.", false);
+	                	this->generate_input_error(p, record, "Missing obligatory key '"+ it->key_ +"'.");
 	                } else if (it->default_.has_value_at_declaration() ) {
 	                   storage_array->new_item(it->key_index,
 	                           make_storage_from_default( it->default_.value(), it->type_ ) );
@@ -203,9 +203,9 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tupl
                 // key not on input
                 if (it->default_.is_obligatory() ) {
                 	stringstream ss;
-                	ss << "Too small size of '" << p.get_node_type(ValueTypes::array_type) << "' defining Tuple with "
+                	ss << "Too small size of the Flow123d input type Array defining Tuple with "
                 			<< tuple->obligatory_keys_count() << " obligatory keys.";
-                	this->generate_input_error(p, tuple, ss.str(), false);
+                	this->generate_input_error(p, tuple, ss.str());
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
                            make_storage_from_default( it->default_.value(), it->type_ ) );
@@ -233,7 +233,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abst
 	string record_tag = p.get_record_tag();
 	if (record_tag == "") {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-			this->generate_input_error(p, abstr_rec, "Can not determine type of the Abstract.", true);
+			this->generate_input_error(p, abstr_rec, "Can not determine type of the Flow123d input type Abstract.");
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
 		}
@@ -242,7 +242,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abst
 		try {
 			return make_include_storage(p, &( abstr_rec->get_descendant(record_name) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.");
 		}
 	} else if ((record_tag == "include") || (record_tag == "include_csv")) { // simple '!include' tag is forbidden
 		THROW( ExcForbiddenTag() << EI_Tag(record_tag)
@@ -251,7 +251,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abst
 		try {
 			return make_sub_storage(p, &( abstr_rec->get_descendant(record_tag) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.");
 		}
 	}
 	return NULL;
@@ -285,7 +285,7 @@ StorageBase * ReaderInternalBase::record_automatic_conversion(PathBase &p, const
 	    }
 
 	} else {
-		this->generate_input_error(p, record, "The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ", true);
+		this->generate_input_error(p, record, "Can not convert '" + p.get_node_type() + "' to the Flow123d input type Record.");
 	}
 
 	return NULL;
@@ -296,7 +296,7 @@ StorageBase * ReaderInternalBase::abstract_automatic_conversion(PathBase &p, con
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
     if (! default_child)
-    	this->generate_input_error(p, abstr_rec, "Auto conversion of Abstract not allowed.\n", false);
+    	this->generate_input_error(p, abstr_rec, "Auto conversion of Abstract not allowed.\n");
     return make_sub_storage(p, default_child );
 }
 
@@ -318,7 +318,7 @@ StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Ar
     } else {
     	stringstream ss;
     	ss << "Do not fit the size " << arr_size << " of the Array.";
-    	this->generate_input_error(p, array, ss.str(), false);
+    	this->generate_input_error(p, array, ss.str());
     }
 
 	return NULL; // suppress warning for non-void function
@@ -352,7 +352,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
         	included_path = get_included_file(p);
             p.up();
         } else {
-        	this->generate_input_error(p, type, "Missing key 'file' defines including input file.", false);
+        	this->generate_input_error(p, type, "Missing key 'file' defines including input file.");
         }
     } else {
     	// include is set only with name of file (similarly as auto conversion)
@@ -372,7 +372,7 @@ bool ReaderInternalBase::read_bool_value(PathBase &p, const Type::TypeBase *type
 		value = p.get_bool_value();
 	}
 	catch (ExcInputError & e) {
-		complete_input_error(e, p, ValueTypes::bool_type);
+		complete_input_error(e, p, "Boolean");
 		e << EI_InputType(type->desc());
 		throw;
 	}
@@ -387,7 +387,7 @@ std::int64_t ReaderInternalBase::read_int_value(PathBase &p, const Type::TypeBas
 		value = p.get_int_value();
 	}
 	catch (ExcInputError & e) {
-		complete_input_error(e, p, ValueTypes::int_type);
+		complete_input_error(e, p, "Integer");
 		e << EI_InputType(type->desc());
 		throw;
 	}
@@ -402,7 +402,7 @@ double ReaderInternalBase::read_double_value(PathBase &p, const Type::TypeBase *
 		value = p.get_double_value();
 	}
 	catch (ExcInputError & e) {
-		complete_input_error(e, p, ValueTypes::real_type);
+		complete_input_error(e, p, "Double");
 		e << EI_InputType(type->desc());
 		throw;
 	}
@@ -416,7 +416,7 @@ std::string ReaderInternalBase::read_string_value(PathBase &p, const Type::TypeB
 	try {
 		value = p.get_string_value();
 	} catch (ExcInputError & e) {
-		complete_input_error(e, p, ValueTypes::str_type);
+		complete_input_error(e, p, "String");
 		e << EI_InputType(type->desc());
 		throw;
 	}
@@ -430,27 +430,22 @@ std::string ReaderInternalBase::get_included_file(PathBase &p)
 		return p.get_string_value();
 	}
 	catch (ExcInputError & e) {
-		complete_input_error(e, p, ValueTypes::str_type);
+		complete_input_error(e, p, "String");
 		e << EI_InputType("path to included file");
 		throw;
 	}
 }
 
-void ReaderInternalBase::generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec, bool add_type)
+void ReaderInternalBase::generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec)
 {
-	if (add_type)
-		THROW( ExcInputError() << EI_Specification(spec) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
-            << EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
-	else
-		THROW( ExcInputError() << EI_Specification(spec) << EI_JSON_Type( "" )
-            << EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
+    THROW( ExcInputError() << EI_Specification(spec)
+        << EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
 }
 
-void ReaderInternalBase::complete_input_error(ExcInputError & e, PathBase &p, ValueTypes value_type)
+void ReaderInternalBase::complete_input_error(ExcInputError & e, PathBase &p, std::string value_type)
 {
-	e << EI_Specification("The value should be '" + p.get_node_type(value_type) + "', but we found: ");
+    e << EI_Specification("Can not convert '" + p.get_node_type() + "' to the Flow123d input type " + value_type + ".");
     e << EI_ErrorAddress(p.as_string());
-    e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 }
 
 
