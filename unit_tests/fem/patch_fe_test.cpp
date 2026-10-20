@@ -1521,9 +1521,6 @@ void compare_evaluation_func_tensor_voigt(Mesh* mesh, unsigned int quad_order, b
     patch_fe.test_evaluation(print_fa_data);
     //patch_fe.reset();
     //patch_fe.test_evaluation();
-    PatchFETestTensorVoigt patch_fe2(quad_order, dh);
-    patch_fe2.initialize();
-    patch_fe2.test_evaluation();
 }
 
 
