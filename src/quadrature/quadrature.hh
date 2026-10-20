@@ -124,6 +124,12 @@ public:
     template<unsigned int bulk_dim>
     Quadrature make_from_side(unsigned int sid) const;
     
+    /// Getter of quad_order_
+    inline unsigned int quad_order() const {
+        ASSERT(quad_order_ != (uint)-1).error("Value of quad_order is set and can be used only in QGauss quadrature!");
+        return quad_order_;
+    }
+
 
 protected:
     
@@ -143,6 +149,13 @@ protected:
      * To be filled by the constructors of the derived classes.
      */
     std::vector<double> weights;
+
+    /**
+     * Holds order of quadrature.
+     *
+     * Value is set in QGauss descendant, in other case is used default value '-1'
+     */
+    unsigned int quad_order_;
 
 };
 
