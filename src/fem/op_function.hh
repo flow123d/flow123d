@@ -673,6 +673,75 @@ public:
     void eval() override {}
 };
 
+/**
+ * Fixed operation of tensor shape reference values
+ *
+ * Optimization of previous class, only non zero data is stored.
+ */
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class RefTensorCompressed : public PatchOp<spacedim> {
+public:
+    /// Constructor
+	RefTensorCompressed(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    {
+        this->domain_ = Domain::domain();
+        uint n_points = quad.size();
+        uint n_comp = spacedim;
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint i_col=0; i_col<n_comp; ++i_col) {
+            for (uint i_row=0; i_row<n_comp; ++i_row)
+                for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                    for (uint i_p=0; i_p<n_points; ++i_p) {
+                        double shape_val = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+n_comp*i_row);
+                        if ( std::fabs(shape_val) > 1e-13 ) {
+                            ASSERT_EQ( i_col+n_comp*i_row, i_dof/n_points )(i_row)(i_col)(i_dof)(n_points).error("Wrong nonzero component value of shape function!");
+                            ref_tensor_value(i_dof)(i_p) = shape_val;
+                        }
+                    }
+        }
+    }
+
+    void eval() override {}
+};
+
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class RefTensorCompressed<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    /// Constructor
+    RefTensorCompressed(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {dim+1}, fe->n_dofs())
+    {
+        this->domain_ = Op::SideDomain::domain();
+        uint n_points = quad.size();
+        QGauss bulk_quad(dim, quad.quad_order());
+        uint n_bulk_points = bulk_quad.size();
+
+        this->allocate_result(n_points, pfev.asm_arena());
+        auto ref_tensor_value = this->result_matrix();
+
+        for (uint s=0; s<dim+1; ++s) {
+            Quadrature side_q = quad.make_from_side<dim>(s);
+            for (uint i_col=0; i_col<spacedim; ++i_col)
+                for (uint i_row=0; i_row<spacedim; ++i_row)
+                    for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
+                        for (uint i_p=0; i_p<n_points; ++i_p) {
+                            double shape_val = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+spacedim*i_row);
+                            if ( std::fabs(shape_val) > 1e-13 ) {
+                                ASSERT_EQ( i_col+spacedim*i_row, i_dof/n_bulk_points )(dim)(i_row)(i_col)(i_dof)(n_points).error("Wrong nonzero component value of shape function!");
+                                ref_tensor_value(s, i_dof)(i_p) = shape_val;
+                            }
+                        }
+        }
+    }
+
+    void eval() override {}
+};
+
 /// Fixed operation of shape of tensor in Voigt notation reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefTensorVoigt : public PatchOp<spacedim> {
