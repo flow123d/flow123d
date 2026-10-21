@@ -676,7 +676,7 @@ public:
 /**
  * Fixed operation of tensor shape reference values
  *
- * Optimization of previous class, only non zero data is stored.
+ * Optimization of previous class, only non zero data are stored.
  */
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class RefTensorCompressed : public PatchOp<spacedim> {
@@ -1274,6 +1274,76 @@ public:
     	    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
     	    FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, spacedim, spacedim, ref_vec, res_submat);
     	}
+    }
+};
+
+/**
+ * Evaluates tensor values (FEType == FETensor)
+ *
+ * Optimization of previous class, only non zero data are stored.
+ */
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+class TensorShapeCompressed : public PatchOp<spacedim> {
+public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+
+    /// Constructor
+    TensorShapeCompressed(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of tensor_shape must be FETensor!\n");
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensorCompressed<dim, Domain, spacedim>, dim >(quad, fe) );
+	}
+
+    void eval() override {
+        auto ref_shape_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        uint n_dofs = this->n_dofs();
+        uint n_elem = this->ppv().n_mesh_items();
+
+        ArenaVec<double> elem_vec(n_elem, this->patch_arena());
+        for (uint i=0; i<n_elem; ++i) {
+            elem_vec(i) = 1.0;
+        }
+        ArenaOVec<double> elem_ovec(elem_vec);
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> ref_shape_ovec(n_dofs);
+        for (uint i=0; i<n_dofs; ++i) {
+            ref_shape_ovec(i) = ArenaOVec<double>( ref_shape_vec(i) );
+        }
+
+        Eigen::Vector<ArenaOVec<double>, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
+        for (uint i=0; i<n_dofs; ++i) {
+            result_vec(i) = result_ovec(i).get_vec();
+        }
+    }
+};
+
+/// Template specialization of previous: Domain=SideDomain
+template<unsigned int dim, unsigned int spacedim>
+class TensorShapeCompressed<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+public:
+    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+
+    /// Constructor
+	TensorShapeCompressed(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, {1}, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of tensor_shape must be FETensor!\n");
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back( pfev.template get< Op::RefTensorCompressed<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
+    }
+
+    void eval() override {
+        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size(); // number of points on patch
+        this->allocate_result(n_patch_points, this->patch_arena());
+
+        auto ref_vec = this->input_ops(0)->result_matrix();
+        auto result_vec = this->result_matrix();
+
+        FuncHelper<spacedim>::copy_ref_side_on_quads_data(*this, 0, ref_vec, result_vec);
     }
 };
 
