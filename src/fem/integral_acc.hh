@@ -397,6 +397,17 @@ public:
     }
 
     /**
+     * @brief Return the value of the @p function_no-th tensor in voigt notation shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<TensorVoigt> tensor_voigt_shape(uint component_idx = 0)
+    {
+        return factory_.template make_qarray<TensorVoigt, Op::TensorVoigtShape<qdim, Op::BulkDomain, 3>>(component_idx);
+    }
+
+    /**
      * @brief Return the value of the @p function_no-th gradient shape function at
      * the @p p bulk quadrature point.
      *
@@ -618,6 +629,17 @@ public:
     inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
     {
         return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::SideDomain, 3>>(component_idx);
+    }
+
+    /**
+     * @brief Return the value of the @p function_no-th tensor shape function at
+     * the @p p bulk quadrature point.
+     *
+     * @param component_idx Number of the shape function.
+     */
+    inline FeQArray<TensorVoigt> tensor_voigt_shape(uint component_idx = 0)
+    {
+        return factory_.template make_qarray<TensorVoigt, Op::TensorVoigtShape<qdim, Op::SideDomain, 3>>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
