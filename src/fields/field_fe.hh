@@ -54,8 +54,8 @@
 class FieldFeOpData {
 public:
     /// Constructor
-    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end)
-    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end) {}
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end, bool compressed_op_data)
+    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end), compressed_op_data_(compressed_op_data) {}
 
     inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
     	return dh_;
@@ -77,13 +77,18 @@ public:
     	return range_end_;
     }
 
+    inline bool compressed_op_data() const {
+        return compressed_op_data_;
+    }
+
     bool operator==(const FieldFeOpData &other)
     {
         return (dh_->hash() == other.dh_->hash()) &&
                 (data_vec_.size() == other.data_vec_.size()) &&
 	            (boundary_domain_ == other.boundary_domain_) &&
 	            (range_begin_ == other.range_begin_) &&
-	            (range_end_ == other.range_end_);
+	            (range_end_ == other.range_end_) &&
+                (compressed_op_data_ = other.compressed_op_data_);
     }
 
 private:
@@ -92,6 +97,7 @@ private:
     uint boundary_domain_;
     unsigned int range_begin_;
     unsigned int range_end_;
+    bool compressed_op_data_;
 };
 
 
@@ -107,6 +113,9 @@ struct InputOpType<1,1>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim>
     using type = Op::ScalarShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = Op::ScalarShape<dim, Domain, spacedim>;
 };
 
 template<>
@@ -114,6 +123,9 @@ struct InputOpType<3,1>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim>
     using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = Op::DispatchVectorShape<dim, Domain, spacedim>;
 };
 
 template<>
@@ -121,6 +133,9 @@ struct InputOpType<3,3>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim>
     using type = Op::TensorShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = Op::TensorShapeCompressed<dim, Domain, spacedim>;
 };
 
 template<>
@@ -128,6 +143,9 @@ struct InputOpType<6,6>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim>
     using type = Op::TensorVoigtShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = Op::TensorVoigtShapeCompressed<dim, Domain, spacedim>;
 };
 
 } // end of namespace internal
@@ -143,7 +161,7 @@ public:
 	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
 	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain()),
-	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end())
+	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end()), compressed_op_data_(field_fe_op_data.compressed_op_data())
 	    {
 	        this->domain_ = Domain::domain();
 	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
@@ -183,9 +201,16 @@ public:
             }
         }
 
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
-            result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
+        if (compressed_op_data_) {
+            uint n_bulk_points = Domain::n_bulk_points(this->quad_);
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+                result_vec(i_dof/n_bulk_points) = result_vec(i_dof/n_bulk_points) + data_vec_pts(i_dof) * this->input_ops(0)->result_sub_matrix(i_dof)(0);
+            }
+        } else {
+            for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
+                Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
+                result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
+            }
         }
     }
 
@@ -196,6 +221,7 @@ protected:
     uint boundary_domain_;
     unsigned int range_begin_;
     unsigned int range_end_;
+    bool compressed_op_data_;
 };
 
 } // end of namespace Op
@@ -518,6 +544,9 @@ private:
     std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_bulk_;
     std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_side_;
 
+    /// Flag of compressed FieldFEOp (set to true if FE_P finite element is used)
+    bool compressed_op_data_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
@@ -536,6 +565,7 @@ struct hash< FieldFeOpData > {
         hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_begin() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_end() ) );
+        hash_combine(h, std::hash<bool>{}( op_data.compressed_op_data() ) );
 
         return h;
     }

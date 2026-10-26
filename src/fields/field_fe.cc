@@ -135,7 +135,8 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr), field_name_(""), discretization_(OutputTime::DiscreteSpace::UNDEFINED),
   boundary_domain_(false),
-  op_acc_dim_bulk_(4), op_acc_dim_side_(4)
+  op_acc_dim_bulk_(4), op_acc_dim_side_(4),
+  compressed_op_data_(false)
 {
 	this->is_constant_in_space_ = false;
 }
@@ -288,18 +289,28 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
 
     std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
 
-    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[Domain::op_dim(dim)].range_begin_, fe_item_[Domain::op_dim(dim)].range_end_);
+    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[Domain::op_dim(dim)].range_begin_, fe_item_[Domain::op_dim(dim)].range_end_, compressed_op_data_);
     std::shared_ptr<FiniteElement<Domain::op_dim(dim)>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<Domain::op_dim(dim)>{}], 0);
 
     for (auto *quad : quad_vec) {
-        op_acc_dim.emplace_back(
-            FeQ<ReturnType>(
-                patch_internals.fe_values_.template get<
-                    Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
-                    Domain::op_dim(dim)
-                >(*quad, fe_component, field_fe_op_data)
-            )
-        );
+        if (compressed_op_data_)
+            op_acc_dim.emplace_back(
+                FeQ<ReturnType>(
+                    patch_internals.fe_values_.template get<
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type_compressed<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+                        Domain::op_dim(dim)
+                    >(*quad, fe_component, field_fe_op_data)
+                )
+            );
+        else
+            op_acc_dim.emplace_back(
+                FeQ<ReturnType>(
+                    patch_internals.fe_values_.template get<
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+                        Domain::op_dim(dim)
+                    >(*quad, fe_component, field_fe_op_data)
+                )
+            );
     }
 }
 
@@ -382,11 +393,13 @@ void FieldFE<spacedim, Value>::make_dof_handler(const MeshBase *mesh) {
 		case 9: { // tensor
 		    MixedPtr<FE_P_disc>   fe_base(0) ;
             fe = mixed_fe_system(fe_base, FEType::FETensor, 9);
+            compressed_op_data_ = true;
 			break;
 		}
 		case 36: { // tensor voigt
 		    MixedPtr<FE_P_disc>   fe_base(0) ;
             fe = mixed_fe_system(fe_base, FEType::FETensorVoigt, 36);
+            compressed_op_data_ = true;
 			break;
 		}
 		default:
