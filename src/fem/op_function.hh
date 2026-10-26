@@ -55,6 +55,11 @@ public:
     static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
         return eval_points->get_bulk_quad_vector(dim);
     }
+
+    /// Return number of quadrature points
+    static inline uint n_bulk_points(Quadrature &quad) {
+        return quad.size();
+    }
 };
 
 /// Class used as template type for type resolution Bulk / Side
@@ -86,6 +91,12 @@ public:
     /// Temporary method that allows implementation PatchFeValues operations in FieldFE
     static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
         return eval_points->get_side_quad_vector(dim);
+    }
+
+    /// Return number of quadrature points of bulk quadrature appropriate to \p quad.
+    static inline uint n_bulk_points(Quadrature &quad) {
+        QGauss bulk_quad(quad.dim()+1, quad.quad_order());
+        return bulk_quad.size();
     }
 };
 
@@ -718,8 +729,7 @@ public:
     {
         this->domain_ = Op::SideDomain::domain();
         uint n_points = quad.size();
-        QGauss bulk_quad(dim, quad.quad_order());
-        uint n_bulk_points = bulk_quad.size();
+        uint n_bulk_points = Op::SideDomain::n_bulk_points(quad);
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_tensor_value = this->result_matrix();
@@ -843,7 +853,7 @@ public:
         uint n_points = quad.size();
         uint tensor_size = spacedim*(spacedim+1)/2;
         QGauss bulk_quad(dim, quad.quad_order());
-        uint n_bulk_points = bulk_quad.size();
+        uint n_bulk_points = Op::SideDomain::n_bulk_points(quad);
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_tensor_value = this->result_matrix();
@@ -1513,7 +1523,6 @@ public:
 
         uint n_dofs = this->n_dofs();
         uint n_elem = this->ppv().n_mesh_items();
-        uint tensor_size = spacedim*(spacedim+1)/2;
 
         ArenaVec<double> elem_vec(n_elem, this->patch_arena());
         for (uint i=0; i<n_elem; ++i) {
