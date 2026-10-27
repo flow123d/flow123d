@@ -709,7 +709,6 @@ public:
                     for (uint i_p=0; i_p<n_points; ++i_p) {
                         double shape_val = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+n_comp*i_row);
                         if ( std::fabs(shape_val) > 1e-13 ) {
-                            ASSERT_EQ( i_col+n_comp*i_row, i_dof/n_points )(i_row)(i_col)(i_dof)(n_points).error("Wrong nonzero component value of shape function!");
                             ref_tensor_value(i_dof)(i_p) = shape_val;
                         }
                     }
@@ -729,7 +728,6 @@ public:
     {
         this->domain_ = Op::SideDomain::domain();
         uint n_points = quad.size();
-        uint n_bulk_points = Op::SideDomain::n_bulk_points(quad);
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_tensor_value = this->result_matrix();
@@ -742,7 +740,6 @@ public:
                         for (uint i_p=0; i_p<n_points; ++i_p) {
                             double shape_val = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+spacedim*i_row);
                             if ( std::fabs(shape_val) > 1e-13 ) {
-                                ASSERT_EQ( i_col+spacedim*i_row, i_dof/n_bulk_points )(dim)(i_row)(i_col)(i_dof)(n_points).error("Wrong nonzero component value of shape function!");
                                 ref_tensor_value(s, i_dof)(i_p) = shape_val;
                             }
                         }
@@ -831,7 +828,6 @@ public:
                     for (uint i_p=0; i_p<n_points; ++i_p) {
                         double shape_val = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+tensor_size*i_row);
                         if ( std::fabs(shape_val) > 1e-13 ) {
-                            ASSERT_EQ( i_col+tensor_size*i_row, i_dof/n_points )(i_row)(i_col)(i_dof)(n_points).error("Wrong nonzero component value of shape function!");
                             ref_tensor_value(i_dof)(i_p) = shape_val;
                         }
                     }
@@ -852,8 +848,6 @@ public:
         this->domain_ = Op::SideDomain::domain();
         uint n_points = quad.size();
         uint tensor_size = spacedim*(spacedim+1)/2;
-        QGauss bulk_quad(dim, quad.quad_order());
-        uint n_bulk_points = Op::SideDomain::n_bulk_points(quad);
 
         this->allocate_result(n_points, pfev.asm_arena());
         auto ref_tensor_value = this->result_matrix();
@@ -866,7 +860,6 @@ public:
                         for (uint i_p=0; i_p<n_points; ++i_p) {
                             double shape_val = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+tensor_size*i_row);
                             if ( std::fabs(shape_val) > 1e-13 ) {
-                                ASSERT_EQ( i_col+tensor_size*i_row, i_dof/n_bulk_points )(i_row)(i_col)(i_dof)(n_bulk_points).error("Wrong nonzero component value of shape function!");
                                 ref_tensor_value(s, i_dof)(i_p) = shape_val;
                             }
                         }

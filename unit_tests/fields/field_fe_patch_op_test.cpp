@@ -333,7 +333,7 @@ public:
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%3) );
             std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
-            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs(), false);
 
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
@@ -518,7 +518,7 @@ public:
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%4) );
             std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
-            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs(), false);
 
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
@@ -686,7 +686,7 @@ public:
             for (uint i=0; i<data_vec.size(); ++i)
                 data_vec.set(i, (1.1 + i%5) );
             std::shared_ptr<FiniteElement<op_dim>> fe_component = this->generic_->patch_internals_.fe_values_.fe_comp(this->generic_->patch_internals_.fe_[Dim<op_dim>{}], 0);
-            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs());
+            FieldFeOpData field_fe_op_data(dh, data_vec, is_bdr, 0, fe_component->n_dofs(), false);
 
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
