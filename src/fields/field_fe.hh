@@ -23,7 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
-#include "fields/shape_fn_matrix.hh"
+#include "fem/shape_fn_matrix.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -106,41 +106,41 @@ struct InputOpType;
 template<>
 struct InputOpType<1,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
     using type = Op::ScalarShape<dim, Domain, spacedim>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = Op::ScalarShape<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
     using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = Op::DispatchVectorShape<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,3>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type = Op::TensorShape<dim, Domain, spacedim>;
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    using type = Op::TensorShape<dim, Domain, spacedim, ShapeMatrix>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = Op::TensorShapeCompressed<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<6,6>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type = Op::TensorVoigtShape<dim, Domain, spacedim>;
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    using type = Op::TensorVoigtShape<dim, Domain, spacedim, ShapeMatrix>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = Op::TensorVoigtShapeCompressed<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 } // end of namespace internal
