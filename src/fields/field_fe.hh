@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
+#include "fields/shape_fn_matrix.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -54,8 +55,8 @@
 class FieldFeOpData {
 public:
     /// Constructor
-    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end, bool compressed_op_data)
-    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end), compressed_op_data_(compressed_op_data) {}
+    FieldFeOpData(std::shared_ptr<DOFHandlerMultiDim> dh, VectorMPI data_vec, uint boundary_domain, uint range_begin, uint range_end)
+    : dh_(dh), data_vec_(data_vec), boundary_domain_(boundary_domain), range_begin_(range_begin), range_end_(range_end) {}
 
     inline std::shared_ptr<DOFHandlerMultiDim> dh() const {
     	return dh_;
@@ -77,18 +78,13 @@ public:
     	return range_end_;
     }
 
-    inline bool compressed_op_data() const {
-        return compressed_op_data_;
-    }
-
     bool operator==(const FieldFeOpData &other)
     {
         return (dh_->hash() == other.dh_->hash()) &&
                 (data_vec_.size() == other.data_vec_.size()) &&
 	            (boundary_domain_ == other.boundary_domain_) &&
 	            (range_begin_ == other.range_begin_) &&
-	            (range_end_ == other.range_end_) &&
-                (compressed_op_data_ = other.compressed_op_data_);
+	            (range_end_ == other.range_end_);
     }
 
 private:
@@ -97,7 +93,6 @@ private:
     uint boundary_domain_;
     unsigned int range_begin_;
     unsigned int range_end_;
-    bool compressed_op_data_;
 };
 
 
@@ -154,14 +149,14 @@ struct InputOpType<6,6>
 namespace Op {
 
 /// Evaluates FieldFE on quadrature points defined in patch
-template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
 class FieldFeOp : public PatchOp<spacedim> {
 public:
     /// Constructor
 	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
 	  dh_(field_fe_op_data.dh()), data_vec_(field_fe_op_data.data_vec()), boundary_domain_(field_fe_op_data.boundary_domain()),
-	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end()), compressed_op_data_(field_fe_op_data.compressed_op_data())
+	  range_begin_(field_fe_op_data.range_begin()), range_end_(field_fe_op_data.range_end())
 	    {
 	        this->domain_ = Domain::domain();
 	        this->input_ops_.push_back( pfev.template get< OpBaseShape, dim >(quad, fe) );
@@ -201,17 +196,7 @@ public:
             }
         }
 
-        if (compressed_op_data_) {
-            uint n_bulk_points = Domain::n_bulk_points(this->quad_);
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-                result_vec(i_dof/n_bulk_points) = result_vec(i_dof/n_bulk_points) + data_vec_pts(i_dof) * this->input_ops(0)->result_sub_matrix(i_dof)(0);
-            }
-        } else {
-            for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-                Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
-                result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
-            }
-        }
+        ShapeMatrix::template eval<Domain>(result_vec, *this->input_ops(0), data_vec_pts, this->quad_);
     }
 
 protected:
@@ -221,7 +206,6 @@ protected:
     uint boundary_domain_;
     unsigned int range_begin_;
     unsigned int range_end_;
-    bool compressed_op_data_;
 };
 
 } // end of namespace Op
@@ -565,7 +549,6 @@ struct hash< FieldFeOpData > {
         hash_combine(h, std::hash<uint>{}( op_data.boundary_domain() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_begin() ) );
         hash_combine(h, std::hash<uint>{}( op_data.range_end() ) );
-        hash_combine(h, std::hash<bool>{}( op_data.compressed_op_data() ) );
 
         return h;
     }

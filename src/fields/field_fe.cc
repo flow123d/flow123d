@@ -289,7 +289,7 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
 
     std::vector<Quadrature *> quad_vec = Domain::get_quad_vec(patch_internals.eval_points_, Domain::op_dim(dim));
 
-    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[Domain::op_dim(dim)].range_begin_, fe_item_[Domain::op_dim(dim)].range_end_, compressed_op_data_);
+    FieldFeOpData field_fe_op_data(dh_, data_vec_, boundary_domain_, fe_item_[Domain::op_dim(dim)].range_begin_, fe_item_[Domain::op_dim(dim)].range_end_);
     std::shared_ptr<FiniteElement<Domain::op_dim(dim)>> fe_component = patch_internals.fe_values_.fe_comp(this->fe_[Dim<Domain::op_dim(dim)>{}], 0);
 
     for (auto *quad : quad_vec) {
@@ -297,7 +297,7 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
             op_acc_dim.emplace_back(
                 FeQ<ReturnType>(
                     patch_internals.fe_values_.template get<
-                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type_compressed<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type_compressed<Domain::op_dim(dim), Domain, spacedim>, spacedim, ShapeFnCompressed>,
                         Domain::op_dim(dim)
                     >(*quad, fe_component, field_fe_op_data)
                 )
@@ -306,7 +306,7 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
             op_acc_dim.emplace_back(
                 FeQ<ReturnType>(
                     patch_internals.fe_values_.template get<
-                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim>,
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim>, spacedim, ShapeFnMatrix>,
                         Domain::op_dim(dim)
                     >(*quad, fe_component, field_fe_op_data)
                 )
