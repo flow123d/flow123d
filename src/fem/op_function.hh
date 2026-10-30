@@ -20,6 +20,7 @@
 #define OP_FUNCTION_HH_
 
 #include "fem/patch_op.hh"
+#include "fem/shape_fn_matrix.hh"
 #include "fem/patch_fe_values.hh"
 
 
@@ -55,6 +56,11 @@ public:
     static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
         return eval_points->get_bulk_quad_vector(dim);
     }
+
+    /// Return number of quadrature points
+    static inline uint n_bulk_points(Quadrature &quad) {
+        return quad.size();
+    }
 };
 
 /// Class used as template type for type resolution Bulk / Side
@@ -86,6 +92,12 @@ public:
     /// Temporary method that allows implementation PatchFeValues operations in FieldFE
     static inline std::vector<Quadrature *> get_quad_vec(std::shared_ptr<EvalPoints> eval_points, unsigned int dim) {
         return eval_points->get_side_quad_vector(dim);
+    }
+
+    /// Return number of quadrature points of bulk quadrature appropriate to \p quad.
+    static inline uint n_bulk_points(Quadrature &quad) {
+        QGauss bulk_quad(quad.dim()+1, quad.quad_order());
+        return bulk_quad.size();
     }
 };
 
@@ -620,58 +632,117 @@ public:
     void eval() override {}
 };
 
-/// Fixed operation of vector shape reference values
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+/// Reference values with storage selected by ShapeMatrix.
+template<unsigned int dim, class Domain, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
 class RefTensor : public PatchOp<spacedim> {
 public:
-    /// Constructor
-	RefTensor(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {spacedim, spacedim}, fe->n_dofs())
+    static constexpr unsigned int tensor_size = spacedim;
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
+
+    RefTensor(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
     {
         this->domain_ = Domain::domain();
-        uint n_points = quad.size();
-        uint n_comp = spacedim;
-
-        this->allocate_result(n_points, pfev.asm_arena());
-        auto ref_tensor_value = this->result_matrix();
-
-        for (uint i_col=0; i_col<n_comp; ++i_col) {
-            for (uint i_row=0; i_row<n_comp; ++i_row)
-                for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
-                    for (uint i_p=0; i_p<n_points; ++i_p)
-                        ref_tensor_value(i_row,n_comp*i_dof+i_col)(i_p) = fe->shape_value(i_dof, quad.point<dim>(i_p), i_col+n_comp*i_row);
-        }
+        this->allocate_result(quad.size(), pfev.asm_arena());
+        auto result = this->result_matrix();
+        ShapeMatrix::initialize_reference(result);
+        for (uint col=0; col<tensor_size; ++col)
+            for (uint row=0; row<tensor_size; ++row)
+                for (uint dof=0; dof<this->n_dofs(); ++dof)
+                    for (uint point=0; point<quad.size(); ++point)
+                        ShapeMatrix::template store_reference<tensor_size>(result, 0, row, col, dof, point,
+                            fe->shape_value(dof, quad.point<dim>(point), col+tensor_size*row));
     }
 
     void eval() override {}
 };
 
-/// Template specialization of previous: Domain=SideDomain
-template<unsigned int dim, unsigned int spacedim>
-class RefTensor<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+/// Reference values on every side of the reference element.
+template<unsigned int dim, unsigned int spacedim, class ShapeMatrix>
+class RefTensor<dim, Op::SideDomain, spacedim, ShapeMatrix> : public PatchOp<spacedim> {
 public:
-    /// Constructor
+    static constexpr unsigned int tensor_size = spacedim;
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size, dim+1>;
+
     RefTensor(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, {(dim+1)*spacedim, spacedim}, fe->n_dofs())
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
     {
         this->domain_ = Op::SideDomain::domain();
-        uint n_points = quad.size();
-
-        this->allocate_result(n_points, pfev.asm_arena());
-        auto ref_tensor_value = this->result_matrix();
-
-        for (uint s=0; s<dim+1; ++s) {
-            Quadrature side_q = quad.make_from_side<dim>(s);
-            for (uint i_col=0; i_col<spacedim; ++i_col)
-                for (uint i_row=0; i_row<spacedim; ++i_row)
-                    for (uint i_dof=0; i_dof<this->n_dofs_; ++i_dof)
-                        for (uint i_p=0; i_p<n_points; ++i_p)
-                            ref_tensor_value(s*spacedim+i_row, spacedim*i_dof+i_col)(i_p) = fe->shape_value(i_dof, side_q.point<dim>(i_p), i_col+spacedim*i_row);
+        this->allocate_result(quad.size(), pfev.asm_arena());
+        auto result = this->result_matrix();
+        ShapeMatrix::initialize_reference(result);
+        for (uint side=0; side<dim+1; ++side) {
+            Quadrature side_quad = quad.make_from_side<dim>(side);
+            for (uint col=0; col<tensor_size; ++col)
+                for (uint row=0; row<tensor_size; ++row)
+                    for (uint dof=0; dof<this->n_dofs(); ++dof)
+                        for (uint point=0; point<quad.size(); ++point)
+                            ShapeMatrix::template store_reference<tensor_size>(result, side, row, col, dof, point,
+                                fe->shape_value(dof, side_quad.point<dim>(point), col+tensor_size*row));
         }
     }
 
     void eval() override {}
 };
+
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+using RefTensorCompressed = RefTensor<dim, Domain, spacedim, ShapeFnCompressed>;
+
+/// Reference values with storage selected by ShapeMatrix.
+template<unsigned int dim, class Domain, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
+class RefTensorVoigt : public PatchOp<spacedim> {
+public:
+    static constexpr unsigned int tensor_size = spacedim*(spacedim+1)/2;
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
+
+    RefTensorVoigt(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
+    {
+        this->domain_ = Domain::domain();
+        this->allocate_result(quad.size(), pfev.asm_arena());
+        auto result = this->result_matrix();
+        ShapeMatrix::initialize_reference(result);
+        for (uint col=0; col<tensor_size; ++col)
+            for (uint row=0; row<tensor_size; ++row)
+                for (uint dof=0; dof<this->n_dofs(); ++dof)
+                    for (uint point=0; point<quad.size(); ++point)
+                        ShapeMatrix::template store_reference<tensor_size>(result, 0, row, col, dof, point,
+                            fe->shape_value(dof, quad.point<dim>(point), col+tensor_size*row));
+    }
+
+    void eval() override {}
+};
+
+/// Reference values on every side of the reference element.
+template<unsigned int dim, unsigned int spacedim, class ShapeMatrix>
+class RefTensorVoigt<dim, Op::SideDomain, spacedim, ShapeMatrix> : public PatchOp<spacedim> {
+public:
+    static constexpr unsigned int tensor_size = spacedim*(spacedim+1)/2;
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size, dim+1>;
+
+    RefTensorVoigt(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
+    {
+        this->domain_ = Op::SideDomain::domain();
+        this->allocate_result(quad.size(), pfev.asm_arena());
+        auto result = this->result_matrix();
+        ShapeMatrix::initialize_reference(result);
+        for (uint side=0; side<dim+1; ++side) {
+            Quadrature side_quad = quad.make_from_side<dim>(side);
+            for (uint col=0; col<tensor_size; ++col)
+                for (uint row=0; row<tensor_size; ++row)
+                    for (uint dof=0; dof<this->n_dofs(); ++dof)
+                        for (uint point=0; point<quad.size(); ++point)
+                            ShapeMatrix::template store_reference<tensor_size>(result, side, row, col, dof, point,
+                                fe->shape_value(dof, side_quad.point<dim>(point), col+tensor_size*row));
+        }
+    }
+
+    void eval() override {}
+};
+
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+using RefTensorVoigtCompressed = RefTensorVoigt<dim, Domain, spacedim, ShapeFnCompressed>;
 
 /// Fixed operation of gradient scalar reference values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
@@ -1085,74 +1156,99 @@ private:
     PatchOp<spacedim> *in_op_;
 };
 
-/// Evaluates vector values (FEType == FEVector)
-template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+/// Tensor shape values; logical result shape is independent of storage.
+template<unsigned int dim, class Domain, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
 class TensorShape : public PatchOp<spacedim> {
 public:
-    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+    static constexpr unsigned int tensor_size = spacedim;
+    static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
 
-    /// Constructor
-	TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Domain, spacedim>::result_shape, fe->n_dofs())
+    TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
     {
-        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Unexpected finite element type for TensorShape!\n");
         this->domain_ = Domain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Domain, spacedim>, dim >(quad, fe) );
-	}
+        this->input_ops_.push_back(pfev.template get<Op::RefTensor<dim, Domain, spacedim, ShapeMatrix>, dim>(quad, fe));
+    }
 
     void eval() override {
-        auto ref_shape_vec = this->input_ops(0)->result_matrix();
-        auto result_vec = this->result_matrix();
-
-        uint n_dofs = this->n_dofs();
-        uint n_elem = this->ppv().n_mesh_items();
-
-        ArenaVec<double> elem_vec(n_elem, this->patch_arena());
-        for (uint i=0; i<n_elem; ++i) {
-            elem_vec(i) = 1.0;
-        }
-        ArenaOVec<double> elem_ovec(elem_vec);
-
-        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_shape_ovec(spacedim, spacedim);
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            for (uint c=0; c<spacedim*spacedim; ++c) {
-                ref_shape_ovec(c) = ArenaOVec(ref_shape_vec(i_dof * spacedim*spacedim + c));
-            }
-
-            Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> result_ovec = elem_ovec * ref_shape_ovec;
-            for (uint c=0; c<spacedim*spacedim; ++c)
-                result_vec(i_dof * spacedim*spacedim + c) = result_ovec(c).get_vec();
-        }
+        ShapeMatrix::template expand_bulk<tensor_size>(*this);
     }
 };
 
-/// Template specialization of previous: Domain=SideDomain
-template<unsigned int dim, unsigned int spacedim>
-class TensorShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
+/// Side-domain mapping depends on the selected storage representation.
+template<unsigned int dim, unsigned int spacedim, class ShapeMatrix>
+class TensorShape<dim, Op::SideDomain, spacedim, ShapeMatrix> : public PatchOp<spacedim> {
 public:
-    static constexpr std::initializer_list<uint> result_shape = {spacedim, spacedim};
+    static constexpr unsigned int tensor_size = spacedim;
+    static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
 
-    /// Constructor
-	TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
-    : PatchOp<spacedim>(dim, pfev, quad, TensorShape<dim, Op::SideDomain, spacedim>::result_shape, fe->n_dofs())
+    TensorShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
     {
-        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Type of FiniteElement of scalar_shape must be FETensor!\n");
+        ASSERT_EQ(fe->fe_type(), FEType::FETensor).error("Unexpected finite element type for TensorShape!\n");
         this->domain_ = Op::SideDomain::domain();
-        this->input_ops_.push_back( pfev.template get< Op::RefTensor<dim, Op::SideDomain, spacedim>, dim >(quad, fe) );
+        this->input_ops_.push_back(pfev.template get<Op::RefTensor<dim, Op::SideDomain, spacedim, ShapeMatrix>, dim>(quad, fe));
     }
 
     void eval() override {
-        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size(); // number of points on patch
+        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size();
         this->allocate_result(n_patch_points, this->patch_arena());
-
-        auto ref_vec = this->input_ops(0)->result_matrix();
-
-    	for (uint i_dof=0; i_dof<this->n_dofs(); ++i_dof) {
-    	    Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > res_submat = this->result_sub_matrix(i_dof);
-    	    FuncHelper<spacedim>::copy_ref_side_on_sides_tensor_data(*this, i_dof, spacedim, spacedim, ref_vec, res_submat);
-    	}
+        ShapeMatrix::template expand_side<spacedim, tensor_size>(*this);
     }
 };
+
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+using TensorShapeCompressed = TensorShape<dim, Domain, spacedim, ShapeFnCompressed>;
+
+/// Tensor shape values; logical result shape is independent of storage.
+template<unsigned int dim, class Domain, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
+class TensorVoigtShape : public PatchOp<spacedim> {
+public:
+    static constexpr unsigned int tensor_size = spacedim*(spacedim+1)/2;
+    static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
+
+    TensorVoigtShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensorVoigt).error("Unexpected finite element type for TensorVoigtShape!\n");
+        this->domain_ = Domain::domain();
+        this->input_ops_.push_back(pfev.template get<Op::RefTensorVoigt<dim, Domain, spacedim, ShapeMatrix>, dim>(quad, fe));
+    }
+
+    void eval() override {
+        ShapeMatrix::template expand_bulk<tensor_size>(*this);
+    }
+};
+
+/// Side-domain mapping depends on the selected storage representation.
+template<unsigned int dim, unsigned int spacedim, class ShapeMatrix>
+class TensorVoigtShape<dim, Op::SideDomain, spacedim, ShapeMatrix> : public PatchOp<spacedim> {
+public:
+    static constexpr unsigned int tensor_size = spacedim*(spacedim+1)/2;
+    static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
+    using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
+
+    TensorVoigtShape(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe)
+    : PatchOp<spacedim>(dim, pfev, quad, Storage::value, fe->n_dofs())
+    {
+        ASSERT_EQ(fe->fe_type(), FEType::FETensorVoigt).error("Unexpected finite element type for TensorVoigtShape!\n");
+        this->domain_ = Op::SideDomain::domain();
+        this->input_ops_.push_back(pfev.template get<Op::RefTensorVoigt<dim, Op::SideDomain, spacedim, ShapeMatrix>, dim>(quad, fe));
+    }
+
+    void eval() override {
+        uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size();
+        this->allocate_result(n_patch_points, this->patch_arena());
+        ShapeMatrix::template expand_side<spacedim, tensor_size>(*this);
+    }
+};
+
+template<unsigned int dim, class Domain, unsigned int spacedim = 3>
+using TensorVoigtShapeCompressed = TensorVoigtShape<dim, Domain, spacedim, ShapeFnCompressed>;
 
 /// Evaluates gradient scalar values
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>

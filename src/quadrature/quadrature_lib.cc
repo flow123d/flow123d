@@ -79,6 +79,7 @@ void QGauss::init(uint order) {
 QGauss::QGauss(unsigned int dim, unsigned int order)
 : Quadrature(dim)
 {
+    this->quad_order_ = order;
 
     switch (dim)
     {

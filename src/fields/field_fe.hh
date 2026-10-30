@@ -23,6 +23,7 @@
 #include "system/index_types.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field.hh"
+#include "fem/shape_fn_matrix.hh"
 #include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
@@ -105,31 +106,41 @@ struct InputOpType;
 template<>
 struct InputOpType<1,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
     using type = Op::ScalarShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
     using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
+
+    template<unsigned int dim, class Domain, unsigned int spacedim>
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,3>
 {
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    using type = Op::TensorShape<dim, Domain, spacedim, ShapeMatrix>;
+
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type = Op::TensorShape<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<6,6>
 {
-    // TODO: Implement operation TensorVoigtShape and fix declaration of type
-    // Actual code can't be used, it causes runtime errors.
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    using type = Op::TensorVoigtShape<dim, Domain, spacedim, ShapeMatrix>;
+
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type = Op::TensorShape<dim, Domain, spacedim>;
+    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
 };
 
 } // end of namespace internal
@@ -138,7 +149,7 @@ struct InputOpType<6,6>
 namespace Op {
 
 /// Evaluates FieldFE on quadrature points defined in patch
-template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3>
+template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
 class FieldFeOp : public PatchOp<spacedim> {
 public:
     /// Constructor
@@ -185,10 +196,7 @@ public:
             }
         }
 
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            Eigen::Map< Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> > input_submat = this->input_ops(0)->result_sub_matrix(i_dof);
-            result_vec = result_vec + data_vec_pts(i_dof) * input_submat;
-        }
+        ShapeMatrix::template eval<Domain>(result_vec, *this->input_ops(0), data_vec_pts, this->quad_);
     }
 
 protected:
@@ -519,6 +527,9 @@ private:
     // Data members of 'new' version of cache_update
     std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_bulk_;
     std::vector< std::vector< FeQ<ReturnType> > > op_acc_dim_side_;
+
+    /// Flag of compressed FieldFEOp (set to true if FE_P finite element is used)
+    bool compressed_op_data_;
 
     /// Registrar of class to factory
     static const int registrar;
