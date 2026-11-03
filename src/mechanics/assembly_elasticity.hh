@@ -18,6 +18,8 @@
 #ifndef ASSEMBLY_ELASTICITY_HH_
 #define ASSEMBLY_ELASTICITY_HH_
 
+#include <algorithm>
+
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
 #include "mechanics/elasticity.hh"
@@ -26,6 +28,8 @@
 #include "quadrature/quadrature_lib.hh"
 #include "coupling/balance.hh"
 #include "fem/element_cache_map.hh"
+#include "mesh/neighbours.h"
+#include "mesh/node_accessor.hh"
 
 
 /**
@@ -783,6 +787,96 @@ private:
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 
+};
+
+
+/**
+ * Assemble the element-average bulk-to-bulk tangential displacement jump.
+ * Two-sided fractures have dim(fracture) rows in a fixed orthonormal tangent frame;
+ * see EqData::tangential_jump_matrix for the frame and sign conventions. Each
+ * fracture owner integrates both bulk traces, including ghost bulk elements.
+ * Insertions use original global displacement columns and global fracture rows.
+ */
+template <unsigned int dim, class TEqData>
+class TangentialJumpAssemblyElasticity : public AssemblyBasePatch<dim>
+{
+public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
+
+    /// Timer label for tangential jump assembly.
+    static constexpr const char *name() { return "Elasticity_Tangential_Jump_Assembly"; }
+
+    /// Borrow equation data and register bulk trace shape functions on fracture quadrature.
+    TangentialJumpAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals),
+      eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+      coupling_integral_(this->create_coupling_integral(this->quad_)) {
+        // GenericAssembly requires a nonempty field dependency list, even for geometry-only integrals.
+        this->used_fields_ += (*eq_fields_)["X"];
+        if constexpr (dim < 3) {
+            JxW_join_ = coupling_integral_->JxW();
+            deform_join_ = coupling_integral_->vector_shape();
+        }
+    }
+
+    /// Allocate a row-major block for all tangents and one bulk neighbour's DOFs.
+    void initialize() {
+        n_dofs_ = this->n_dofs_high();
+        dof_indices_.resize(n_dofs_);
+        local_matrix_.resize(dim * n_dofs_);
+    }
+
+    /// Add one signed bulk trace to its owned two-sided fracture's jump rows.
+    inline void dimjoin_intergral(DHCellAccessor cell_lower_dim, DHCellSide neighb_side) {
+        if (dim == 3 || !cell_lower_dim.is_own()) return;
+        auto row_it = eq_data_->tangential_jump_idx.find(cell_lower_dim.elm_idx());
+        if (row_it == eq_data_->tangential_jump_idx.end()) return;
+
+        auto fracture = cell_lower_dim.elm();
+        arma::vec3 tangents[2];
+        tangents[0] = *fracture.node(1) - *fracture.node(0);
+        tangents[0] /= arma::norm(tangents[0], 2);
+        if (dim == 2) {
+            tangents[1] = *fracture.node(2) - *fracture.node(0);
+            tangents[1] -= arma::dot(tangents[1], tangents[0]) * tangents[0];
+            tangents[1] /= arma::norm(tangents[1], 2);
+        }
+
+        // TODO: generalize to more than two bulk neighbours, e.g. for a T-junction in 2D or a Y-junction in 3D.
+        auto first_neighbour = fracture->neigh_vb[0]->side()->element();
+        auto second_neighbour = fracture->neigh_vb[1]->side()->element();
+        unsigned int plus_id = std::min(first_neighbour.input_id(), second_neighbour.input_id());
+        double sign = (neighb_side.element().input_id() == plus_id) ? 1.0 : -1.0;
+
+        neighb_side.cell().get_dof_indices(dof_indices_);
+        std::fill(local_matrix_.begin(), local_matrix_.end(), 0.0);
+        for (auto p : coupling_integral_->points(neighb_side)) {
+            double weight = sign * JxW_join_(p) / fracture.measure();
+            for (unsigned int k = 0; k < dim; ++k)
+                for (unsigned int i = 0; i < n_dofs_; ++i)
+                    local_matrix_[k*n_dofs_ + i] +=
+                        weight * arma::dot(tangents[k], deform_join_.shape(i)(p));
+        }
+
+        PetscInt rows[2] = {row_it->second, row_it->second + 1};
+        chkerr(MatSetValues(eq_data_->tangential_jump_matrix, dim, rows, n_dofs_,
+                           dof_indices_.data(), local_matrix_.data(), ADD_VALUES));
+    }
+
+private:
+    EqFields *eq_fields_;                         ///< Borrowed fields used by GenericAssembly's cache setup.
+    EqData *eq_data_;                             ///< Borrowed equation data owning the matrix and DOF handler.
+    FieldSet used_fields_;                        ///< Coordinate dependency only; no material fields are evaluated.
+    unsigned int n_dofs_;                         ///< Number of vector displacement DOFs on one bulk neighbour.
+    std::vector<LongIdx> dof_indices_;             ///< Original global bulk displacement columns.
+    std::vector<PetscScalar> local_matrix_;        ///< Row-major tangent-by-bulk-DOF insertion block.
+    std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_; ///< Fracture quadrature and bulk trace access.
+    FeQ<Scalar> JxW_join_;                         ///< Physical fracture quadrature weights.
+    FeQArray<Vector> deform_join_;                ///< Bulk vector shape functions restricted to the fracture.
+
+    template <template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
 };
 
 

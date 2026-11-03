@@ -38,6 +38,7 @@ class Elasticity;
 template<unsigned int dim, class EqData> class StiffnessAssemblyElasticity;
 template<unsigned int dim, class EqData> class RhsAssemblyElasticity;
 template<unsigned int dim, class EqData> class ConstraintAssemblyElasticity;
+template<unsigned int dim, class EqData> class TangentialJumpAssemblyElasticity;
 template<unsigned int dim, class EqData> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -115,16 +116,27 @@ public:
    	    typedef Elasticity::EqFields EqFields;
 
 		EqData(shared_ptr<EqFields> eq_fields)
-        : eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr) {}
+        : eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
+          tangential_jump_matrix(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
             if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
             if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
+            if (tangential_jump_matrix!=nullptr) MatDestroy(&tangential_jump_matrix);
 		}
 
 		/// Create DOF handler objects
         void create_dh(Mesh * mesh);
+
+        /**
+         * Allocate the tangential jump operator for two-sided line and triangle fractures.
+         * Rows are owned by the fracture owner, with dim(fracture) consecutive rows per
+         * fracture. Columns use the original global displacement DOF numbering.
+         * One-sided elements and junctions with more than two neighbours have no rows.
+         * Collective on PETSC_COMM_WORLD; call once after create_dh().
+         */
+        void allocate_tangential_jump_matrix();
 
         /// Returns quad_order
         inline unsigned int quad_order() const {
@@ -148,6 +160,20 @@ public:
 
         // map local element -> constraint index
         std::map<LongIdx,LongIdx> constraint_idx;
+
+        /**
+         * Owned MPIAIJ operator mapping displacement to average tangential jumps.
+         * For tangents t_k, (T*u)_k = average(t_k dot (u_plus-u_minus)), without
+         * cross-section or interface-measure weights. The smaller input element ID
+         * selects the plus bulk neighbour. Tangents follow the fracture vertex order:
+         * t_0 points from vertex 0 to 1; on triangles t_1 is the normalized component
+         * of vertex 0 to 2 orthogonal to t_0. Fracture displacement DOFs are not used.
+         * Owned and destroyed by EqData; null when contact is disabled.
+         */
+        Mat tangential_jump_matrix;
+
+        /// Owned fracture element index to first global row of tangential_jump_matrix.
+        std::map<LongIdx, LongIdx> tangential_jump_idx;
 
     	// @}
 
@@ -187,6 +213,7 @@ public:
     template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using ConstraintAssemblyDim = ConstraintAssemblyElasticity<dim, EqData>;
+    template<unsigned int dim> using TangentialJumpAssemblyDim = TangentialJumpAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using OutpuFieldsAssemblyDim = OutpuFieldsAssemblyElasticity<dim, OutputEqData>;
 
 
@@ -261,6 +288,9 @@ private:
 
 	void assemble_constraint_matrix();
 
+    /// Assemble and finalize the geometry-only tangential jump matrix on the fixed mesh.
+    void assemble_tangential_jump_matrix();
+
 
 	/// @name Physical parameters
 	// @{
@@ -301,6 +331,8 @@ private:
     GenericAssembly< StiffnessAssemblyDim > * stiffness_assembly_;
     GenericAssembly< RhsAssemblyDim > * rhs_assembly_;
     GenericAssembly< ConstraintAssemblyDim > * constraint_assembly_;
+    /// Assembly of bulk-to-bulk tangential jumps on two-sided fractures.
+    GenericAssembly< TangentialJumpAssemblyDim > * tangential_jump_assembly_;
     GenericAssembly< OutpuFieldsAssemblyDim > * output_fields_assembly_;
 
 };
