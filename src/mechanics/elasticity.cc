@@ -294,6 +294,35 @@ void Elasticity::EqData::create_dh(Mesh * mesh)
 	dh_->distribute_dofs(ds);
 }
 
+void Elasticity::EqData::allocate_tangential_jump_matrix()
+{
+    ASSERT_PERMANENT(tangential_jump_matrix == nullptr).error("Tangential jump matrix is already allocated.");
+    PetscInt n_local_rows = 0;
+    for (auto cell : dh_->own_range())
+        if (cell.dim() > 0 && cell.dim() < 3 && cell.elm()->n_neighs_vb() == 2)
+            n_local_rows += cell.dim();
+
+    PetscInt max_nnz = 2 * dh_->max_elem_dofs();
+    PetscInt n_local_cols = dh_->lsize();
+    PetscInt n_global_cols = dh_->n_global_dofs();
+    chkerr(MatCreateAIJ(PETSC_COMM_WORLD, n_local_rows, n_local_cols, PETSC_DECIDE,
+                       n_global_cols, std::min(max_nnz, n_local_cols), nullptr,
+                       std::min(max_nnz, n_global_cols - n_local_cols), nullptr,
+                       &tangential_jump_matrix));
+
+    PetscInt first_row, end_row;
+    chkerr(MatGetOwnershipRange(tangential_jump_matrix, &first_row, &end_row));
+    tangential_jump_idx.clear();
+    for (auto cell : dh_->own_range()) {
+        if (cell.dim() > 0 && cell.dim() < 3 && cell.elm()->n_neighs_vb() == 2) {
+            tangential_jump_idx[cell.elm_idx()] = first_row;
+            first_row += cell.dim();
+        }
+    }
+    ASSERT_EQ(first_row, end_row);
+}
+
+
 void Elasticity::OutputEqData::create_dh(Mesh * mesh)
 {
 	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
@@ -317,6 +346,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
+          tangential_jump_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -443,6 +473,8 @@ void Elasticity::initialize()
         ((LinSys_PERMON*)ls)->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+        eq_data_->allocate_tangential_jump_matrix();
+        tangential_jump_assembly_ = new GenericAssembly< TangentialJumpAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
@@ -469,6 +501,7 @@ Elasticity::~Elasticity()
     if (stiffness_assembly_!=nullptr) delete stiffness_assembly_;
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
+    if (tangential_jump_assembly_ != nullptr) delete tangential_jump_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -562,8 +595,10 @@ void Elasticity::preallocate()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
 
-    if (has_contact_)
+    if (has_contact_) {
         assemble_constraint_matrix();
+        assemble_tangential_jump_matrix();
+    }
 }
 
 
@@ -656,6 +691,15 @@ void Elasticity::assemble_constraint_matrix()
     MatAssemblyEnd(eq_data_->constraint_matrix, MAT_FINAL_ASSEMBLY);
     VecAssemblyBegin(eq_data_->constraint_vec);
     VecAssemblyEnd(eq_data_->constraint_vec);
+}
+
+
+void Elasticity::assemble_tangential_jump_matrix()
+{
+    chkerr(MatZeroEntries(eq_data_->tangential_jump_matrix));
+    tangential_jump_assembly_->assemble(eq_data_->dh_);
+    chkerr(MatAssemblyBegin(eq_data_->tangential_jump_matrix, MAT_FINAL_ASSEMBLY));
+    chkerr(MatAssemblyEnd(eq_data_->tangential_jump_matrix, MAT_FINAL_ASSEMBLY));
 }
 
 

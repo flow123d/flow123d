@@ -1,0 +1,23 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+2
+2 11 "fracture"
+3 12 "bulk"
+$EndPhysicalNames
+$Nodes
+5
+1 0 0 0
+2 2 1 2
+3 0 2 1
+4 -3 -2 4
+5 3 2 -4
+$EndNodes
+$Elements
+4
+10 2 2 11 11 1 2 3
+11 2 2 11 11 1 2 4
+30 4 2 12 12 1 2 3 5
+20 4 2 12 12 1 2 3 4
+$EndElements
