@@ -1,6 +1,6 @@
 /*!
  *
-ď»ż * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ÄŹÂ»ĹĽ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -28,16 +28,64 @@ template<unsigned int spacedim> class FuncHelper;
 }
 
 
-/// Common types for accumulating finite element shape function values.
+/**
+ * @brief Common types for accumulating finite element shape function values.
+ */
+template <typename Derived>
 class ShapeFnMatrixBase {
 protected:
     using Matrix = Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>;
     using MatrixMap = Eigen::Map<Matrix>;
     using DofValues = Eigen::Vector<ArenaVec<double>, Eigen::Dynamic>;
+
+public:
+    /**
+     * @brief Initialize result matrix to zero values.
+     */
+    static void initialize_reference(MatrixMap result) {
+        Derived::initialize_reference(result);
+    }
+
+    /**
+     * @brief Store value of shape function to result matrix.
+     *
+     * Position in result matrix is given by index of side, row, column, DOF and quadrature point.
+     */
+    template<unsigned int N>
+    static void store_reference(MatrixMap result, unsigned int side, unsigned int row,
+                                unsigned int col, unsigned int dof, unsigned int point, double value)
+    {
+        Derived::template store_reference<N>(result, side, row, col, dof, point, value);
+    }
+
+    /**
+     * @brief Expand reference values of shape function on bulk domain ​​for all quadrature points on patch
+     */
+    template<unsigned int N, class ShapeOp>
+    static void expand_bulk(ShapeOp &op) {
+        Derived::template expand_bulk<N, ShapeOp>(op);
+    }
+
+    /**
+     * @brief Expand reference values of shape function on side domain ​​for all quadrature points on
+     */
+    template<unsigned int spacedim, unsigned int N, class ShapeOp>
+    static void expand_side(ShapeOp &op) {
+        Derived::template expand_side<spacedim, N, ShapeOp>(op);
+    }
+
+    /**
+     * @brief Accumulate result over all shape functions (DOFs).
+     */
+    template<class Domain, class ShapeOp, class Quad>
+    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &quad)
+    {
+        Derived::template integrate_dofs<Domain, ShapeOp, quad>(result, shape_op, data, quad);
+    }
 };
 
 /// Accumulate all components of each shape function matrix.
-class ShapeFnMatrix : public ShapeFnMatrixBase {
+class ShapeFnMatrix : public ShapeFnMatrixBase<ShapeFnMatrix> {
 public:
     /// Storage dimensions, including reference values for all sides if requested.
     template<unsigned int N, unsigned int NSides = 1>
@@ -84,7 +132,7 @@ public:
     }
 
     template<class Domain, class ShapeOp, class Quad>
-    static void eval(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &)
+    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &)
     {
         for (unsigned int i_dof=0; i_dof<shape_op.n_dofs(); ++i_dof) {
             MatrixMap input_submat = shape_op.result_sub_matrix(i_dof);
@@ -94,7 +142,7 @@ public:
 };
 
 /// Accumulate scalar shape values into their respective result components.
-class ShapeFnCompressed : public ShapeFnMatrixBase {
+class ShapeFnCompressed : public ShapeFnMatrixBase<ShapeFnCompressed> {
 public:
     /// One scalar per DOF, with one row per reference side.
     template<unsigned int N, unsigned int NSides = 1>
@@ -143,7 +191,7 @@ public:
     }
 
     template<class Domain, class ShapeOp, class Quad>
-    static void eval(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &quad)
+    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &quad)
     {
         unsigned int n_bulk_points = Domain::n_bulk_points(quad);
         for (unsigned int i_dof=0; i_dof<shape_op.n_dofs(); ++i_dof) {

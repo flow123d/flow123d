@@ -196,7 +196,7 @@ public:
             }
         }
 
-        ShapeMatrix::template eval<Domain>(result_vec, *this->input_ops(0), data_vec_pts, this->quad_);
+        ShapeMatrix::template integrate_dofs<Domain>(result_vec, *this->input_ops(0), data_vec_pts, this->quad_);
     }
 
 protected:
