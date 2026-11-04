@@ -106,41 +106,41 @@ struct InputOpType;
 template<>
 struct InputOpType<1,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
     using type = Op::ScalarShape<dim, Domain, spacedim>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
+    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,1>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
     using type = Op::DispatchVectorShape<dim, Domain, spacedim>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
+    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<3,3>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
     using type = Op::TensorShape<dim, Domain, spacedim, ShapeMatrix>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
+    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
 };
 
 template<>
 struct InputOpType<6,6>
 {
-    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = ShapeFnMatrix>
+    template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
     using type = Op::TensorVoigtShape<dim, Domain, spacedim, ShapeMatrix>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, ShapeFnCompressed>;
+    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
 };
 
 } // end of namespace internal

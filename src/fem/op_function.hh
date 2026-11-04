@@ -243,107 +243,6 @@ public:
 
 
 /**
- * Holds common functionality of patch operations.
- */
-template<unsigned int spacedim = 3>
-class FuncHelper {
-public:
-    /**
-     * Copy reduced data from 'source' to 'target' ArenaVec. Mapping of reduced data is given by 'ppv' data.
-     */
-    static void fill_reduce_element_data_vec(PatchPointValues<spacedim> &ppv, ArenaVec<double> &source, ArenaVec<double> &target) {
-        for (uint i_el=0; i_el<ppv.n_mesh_items(); ++i_el) {
-            target( i_el ) = source( ppv.int_table_(patch_elem_on_domain)(i_el) );
-        }
-    }
-
-    /**
-     * Copy ref_side_on_quads data from 'source' to 'target' ArenaVec. Mapping of copied data is given by 'ppv' data.
-     */
-    static void copy_ref_side_on_quads_data(PatchOp<spacedim> &op, unsigned int i_comp,
-            Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-	        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &target) {
-        PatchPointValues<spacedim> &ppv = op.ppv();
-        uint n_dofs = op.n_dofs();
-        uint n_sides = ppv.n_mesh_items();               // number of sides on patch
-        uint n_patch_points = n_sides * op.quad_size();  // number of points on patch
-        uint n_comp = op.shape()[0];                     // number of components of result
-
-        for (uint i_dof=0; i_dof<n_dofs; ++i_dof) {
-            for (uint i_pt=0; i_pt<n_patch_points; ++i_pt)
-                target(i_comp,i_dof)(i_pt) = source(ppv.int_table_(ref_side_on_quads)(i_pt),n_comp*i_dof+i_comp)(i_pt / n_sides);
-        }
-    }
-
-    /**
-     * Copy ref_side_on_sides vector data from 'source' to 'target' ArenaVec. Mapping of copied data is given by 'ppv' data.
-     */
-    static void copy_ref_side_on_sides_vector_data(PatchOp<spacedim> &op, unsigned int dim,
-            Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-	        Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic> &target)
-    {
-        PatchPointValues<spacedim> &ppv = op.ppv();
-        uint n_sides = ppv.n_mesh_items();
-        for (uint i_dof=0; i_dof<op.n_dofs(); ++i_dof) {
-            for (uint i_pt=0; i_pt<op.quad_size(); ++i_pt) {
-                uint i_begin = i_pt * n_sides;
-                for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
-                    for (uint i_c=0; i_c<dim; ++i_c) {
-                        target(i_c, i_dof)(i_begin + i_sd) = source(ppv.int_table_(ref_side_on_sides)(i_sd), i_dof*dim+i_c)(i_pt);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Copy ref_side_on_sides tensor data from 'source' to 'target' ArenaVec. Mapping of copied data is given by 'ppv' data.
-     */
-    static void copy_ref_side_on_sides_tensor_data(PatchOp<spacedim> &op, unsigned int i_dof, unsigned int shape_m, unsigned int shape_n,
-            Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-			Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &target)
-    {
-        PatchPointValues<spacedim> &ppv = op.ppv();
-        uint n_sides = ppv.n_mesh_items();
-        uint n_points = source(0).data_size(); // number of ref points
-
-        for (uint i_pt=0; i_pt<n_points; ++i_pt) {
-            uint i_begin = i_pt * n_sides;
-            for (uint i_sd=0; i_sd<n_sides; ++i_sd) {
-                for (uint i_dim=0; i_dim<shape_m; ++i_dim) {
-                    for (uint i_c=0; i_c<shape_n; ++i_c) {
-                        target(i_dim, i_c)(i_begin + i_sd) = source(ppv.int_table_(ref_side_on_sides)(i_sd)*shape_m+i_dim, shape_n*i_dof+i_c)(i_pt);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Copy patch_elem_on_domain data from 'source' to 'target' ArenaVec. Mapping of copied data is given by 'ppv' data.
-     */
-    static void copy_patch_elem_on_domain_data(PatchOp<spacedim> &op, unsigned int dim,
-            Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &source,
-	        Eigen::Map<Eigen::Matrix<ArenaVec<double>, Eigen::Dynamic, Eigen::Dynamic>> &target) {
-        PatchPointValues<spacedim> &ppv = op.ppv();
-        uint n_elems = ppv.n_mesh_items();          // number of elements on patch
-        uint n_elem_points = op.quad_size();        // number of points on element
-
-        for (uint i_c=0; i_c<spacedim*dim; ++i_c) {
-            target(i_c) = ArenaVec<double>( n_elems*n_elem_points, op.patch_arena() );
-            for (uint i_el=0; i_el<n_elems; ++i_el)
-                for (uint i_pt=0; i_pt<n_elem_points; ++i_pt) {
-                    target(i_c)( i_pt*n_elems + i_el ) = source(i_c)( ppv.int_table_(patch_elem_on_domain)(i_el) );
-                }
-        }
-    }
-private:
-    /// Forbidden constructor
-    FuncHelper() {}
-};
-
-
-/**
  * Reference data of PtCoords operation
  *
  * See note for PtCoords operation bellow.
@@ -1173,7 +1072,7 @@ public:
     }
 
     void eval() override {
-        ShapeMatrix::expand_bulk(*this, tensor_size);
+        ShapeMatrix::expand_bulk(*this);
     }
 };
 
@@ -1196,7 +1095,7 @@ public:
     void eval() override {
         uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size();
         this->allocate_result(n_patch_points, this->patch_arena());
-        ShapeMatrix::template expand_side<spacedim, tensor_size>(*this);
+        ShapeMatrix::expand_side(*this);
     }
 };
 
@@ -1220,7 +1119,7 @@ public:
     }
 
     void eval() override {
-        ShapeMatrix::expand_bulk(*this, tensor_size);
+        ShapeMatrix::expand_bulk(*this);
     }
 };
 
@@ -1243,7 +1142,7 @@ public:
     void eval() override {
         uint n_patch_points = this->ppv().n_mesh_items() * this->quad_size();
         this->allocate_result(n_patch_points, this->patch_arena());
-        ShapeMatrix::template expand_side<spacedim, tensor_size>(*this);
+        ShapeMatrix::expand_side(*this);
     }
 };
 
