@@ -51,7 +51,27 @@ public:
      */
     LinSys_PERMON( LinSys_PERMON &other );
 
+    /// Set A*x <= b using borrowed objects in original global primal indexing; caller keeps them alive.
     void set_inequality(Mat matrix_ineq, Vec ineq);
+
+    /**
+     * Add the support function max_{lower <= q <= upper} q^T*(B*x-offset)
+     * to the original primal energy 0.5*x^T*K*x-f^T*x, with optional A*x <= b.
+     * The combined dual is solved for lambda >= 0 and lower <= q <= upper;
+     * K must be positive definite. B uses original global primal columns, and
+     * offset/lower/upper use its distributed row layout. Bounds may be asymmetric
+     * or fixed; use PETSC_NINFINITY/PETSC_INFINITY for unbounded endpoints.
+     * Retains PETSc references; callers may update values between solves.
+     */
+    void set_dual_box(Mat B, Vec offset, Vec lower, Vec upper);
+
+    /** Borrow lambda in A row numbering, valid until the next solve or constraint setter.
+     * Null before a combined solve or when A has no rows. */
+    Vec dual_ineq_multipliers() const { return ineq_multipliers_; }
+
+    /** Borrow q in B row numbering, valid until the next solve or set_dual_box().
+     * K*x + A^T*lambda + B^T*q = f after a combined solve. */
+    Vec dual_box_multipliers() const { return dual_box_multipliers_; }
 
     LinSys_PETSC::SolveInfo solve() override;
 
@@ -66,11 +86,27 @@ public:
 
     double get_solution_precision() override;
 
+    /**
+     * Compute and return residual:
+     * - For the combined dual solve return the original primal problem's algebraic
+     *   KKT norm: equilibrium, inequality complementarity, and box projection
+     *   residual, with unit projection steps.
+     * - The inequality-only path retains its K*x-f residual.
+     */
     double compute_residual() override;
 
     ~LinSys_PERMON( );
 
 private:
+    /**
+     * Solve dual quadratic problem of the form
+         min 0.5*z^T*D*K^{-1}*D^T*z - (D*K^{-1}*f_shifted-c)^T*z,
+     * with D=[A; B_active], c=[b; offset_active] in MatNest distributed row order.
+     * Fixed box multipliers are eliminated in f_shifted=f-B_fixed^T*q_fixed.
+     * Recover x in original global primal numbering and both full multiplier blocks.
+     */
+    LinSys::SolveInfo solve_dual_qp();
+
     /// Registrar of class to factory
     static const int registrar;
 
@@ -93,8 +129,14 @@ private:
 
 protected:
 
-    Mat     matrix_ineq_;        //!< PETSc matrix of inequality constraint.
-    Vec     ineq_;               //!< PETSc vector of inequality constraint.
+    Mat matrix_ineq_;                     ///< Borrowed A in original global primal column indexing.
+    Vec ineq_;                            ///< Borrowed b in the distributed A row layout.
+    Mat matrix_dual_box_ = nullptr;       ///< Retained B in original global primal column indexing.
+    Vec dual_box_offset_ = nullptr;       ///< Retained offset in the distributed B row layout.
+    Vec dual_box_lower_ = nullptr;        ///< Retained lower multiplier bounds in the B row layout.
+    Vec dual_box_upper_ = nullptr;        ///< Retained upper multiplier bounds in the B row layout.
+    Vec ineq_multipliers_ = nullptr;      ///< Owned lambda in the A row layout, replaced on solve/set.
+    Vec dual_box_multipliers_ = nullptr;  ///< Owned q in the B row layout, replaced on solve/set.
 
     QP                 system;
     QPS                solver;

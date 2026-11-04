@@ -28,6 +28,10 @@ set(libs la_lib flow123d_system)
 add_test_directory("${libs}")
 
 define_mpi_test(linsys 1)
+if(PERMON_FOUND)
+    define_mpi_test(tresca 1)
+    define_mpi_test(tresca 2)
+endif()
 define_test(local_system)
 define_mpi_test(set_values_benchmark 1)
 

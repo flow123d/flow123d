@@ -19,6 +19,7 @@
 #define ASSEMBLY_ELASTICITY_HH_
 
 #include <algorithm>
+#include <cmath>
 
 #include "coupling/generic_assembly.hh"
 #include "coupling/assembly_base.hh"
@@ -874,6 +875,79 @@ private:
     std::shared_ptr<CouplingIntegralAcc<dim>> coupling_integral_; ///< Fracture quadrature and bulk trace access.
     FeQ<Scalar> JxW_join_;                         ///< Physical fracture quadrature weights.
     FeQArray<Vector> deform_join_;                ///< Bulk vector shape functions restricted to the fracture.
+
+    template <template<IntDim...> class DimAssembly>
+    friend class GenericAssembly;
+};
+
+
+/**
+ * Integrate prescribed shear strength into force bounds for the average-jump T.
+ * Line measure is used, assuming unit out-of-plane thickness in this initial 2D model.
+ * Only two-sided fractures represented in T contribute. Exact scalar 2D Tresca
+ * is supported; positive strength on triangular surfaces is rejected collectively.
+ */
+template <unsigned int dim, class TEqData>
+class TrescaThresholdAssemblyElasticity : public AssemblyBasePatch<dim>
+{
+public:
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
+
+    /// Timer label for shear-strength integration.
+    static constexpr const char *name() { return "Elasticity_Tresca_Threshold_Assembly"; }
+
+    /// Borrow fields/data and register the fracture quadrature and prescribed threshold.
+    TrescaThresholdAssemblyElasticity(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(eq_data->quad_order(), patch_internals),
+      eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+      bulk_integral_(this->create_bulk_integral(this->quad_)), JxW_(bulk_integral_->JxW()) {
+        used_fields_ += eq_fields_->friction_threshold;
+    }
+
+    /// No local FE insertion buffers are needed for scalar integrated bounds.
+    void initialize() {}
+
+    /// Begin one collective bound assembly; GenericAssembly calls this on dimension one.
+    void begin() override {
+        chkerr(VecSet(eq_data_->tresca_force_bound, 0.0));
+        eq_data_->tresca_threshold_error = 0;
+    }
+
+    /// Integrate a_i = integral(fracture_i, tau_T), without changing T or its row scaling.
+    inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) override {
+        auto row_it = eq_data_->tangential_jump_idx.find(cell.elm_idx());
+        if (row_it == eq_data_->tangential_jump_idx.end()) return;
+        double bound = 0.0;
+        for (auto p : bulk_integral_->points(element_patch_idx)) {
+            double threshold = eq_fields_->friction_threshold(p);
+            if (!std::isfinite(threshold) || threshold < 0.0) {
+                eq_data_->tresca_threshold_error |= 1;
+                continue;
+            }
+            if (dim == 2 && threshold > 0.0) eq_data_->tresca_threshold_error |= 2;
+            bound += threshold * JxW_(p);
+        }
+        for (unsigned int k = 0; k < dim; ++k)
+            chkerr(VecSetValue(eq_data_->tresca_force_bound, row_it->second + k, bound, INSERT_VALUES));
+    }
+
+    /// Finish the distributed vector and report invalid input consistently on every rank.
+    void end() override {
+        chkerr(VecAssemblyBegin(eq_data_->tresca_force_bound));
+        chkerr(VecAssemblyEnd(eq_data_->tresca_force_bound));
+        int error;
+        MPI_Allreduce(&eq_data_->tresca_threshold_error, &error, 1, MPI_INT, MPI_BOR, PETSC_COMM_WORLD);
+        ASSERT_PERMANENT((error & 1) == 0).error("friction_threshold must be finite and nonnegative.");
+        ASSERT_PERMANENT((error & 2) == 0).error("Tresca friction on triangular fracture surfaces is not yet supported.");
+    }
+
+private:
+    EqFields *eq_fields_;                         ///< Borrowed equation fields, also used by GenericAssembly.
+    EqData *eq_data_;                             ///< Borrowed data owning the force-bound vector.
+    FieldSet used_fields_;                        ///< Prescribed shear-strength dependency.
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_; ///< Fracture quadrature.
+    FeQ<Scalar> JxW_;                              ///< Physical fracture integration weights.
 
     template <template<IntDim...> class DimAssembly>
     friend class GenericAssembly;

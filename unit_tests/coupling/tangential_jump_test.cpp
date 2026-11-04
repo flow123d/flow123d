@@ -4,6 +4,8 @@
 #include <mesh_constructor.hh>
 
 #include "mechanics/assembly_elasticity.hh"
+#include "fields/field_constant.hh"
+#include "tools/time_governor.hh"
 
 /// Exercise the assembled trace operator on exact affine bulk displacement fields.
 class TangentialJumpTest : public testing::Test {
@@ -17,6 +19,35 @@ protected:
     /// Release profiling after all local mesh and assembly objects have been destroyed.
     void TearDown() override {
         Profiler::uninitialize();
+    }
+
+    /// Verify force units/measure scaling and collective rejection of unsupported 3D friction.
+    void check_threshold(const std::string &mesh_file, bool unsupported_surface) {
+        std::unique_ptr<Mesh> mesh(mesh_full_constructor(
+            "{mesh_file=\"coupling/" + mesh_file + "\", optimize_mesh=false}"));
+        auto fields = std::make_shared<Elasticity::EqFields>();
+        fields->set_mesh(*mesh);
+        auto strength = std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
+        strength->set_value(2.0);
+        fields->friction_threshold.set(strength, 0.0);
+        TimeGovernor time(0.0, 1.0);
+        fields->friction_threshold.set_time(time.step(), LimitSide::right);
+        Elasticity::EqData data(fields);
+        data.create_dh(mesh.get());
+        data.allocate_tangential_jump_matrix();
+        chkerr(MatCreateVecs(data.tangential_jump_matrix, nullptr, &data.tresca_force_bound));
+        GenericAssembly<Elasticity::TrescaThresholdAssemblyDim> assembly(&data, data.dh_.get());
+        if (unsupported_surface) {
+            EXPECT_THROW(assembly.assemble(data.dh_), std::exception);
+        } else {
+            assembly.assemble(data.dh_);
+            for (const auto &entry : data.tangential_jump_idx) {
+                PetscInt row = entry.second;
+                PetscScalar value;
+                chkerr(VecGetValues(data.tresca_force_bound, 1, &row, &value));
+                EXPECT_NEAR(6.0, value, 1e-12); // Tilted line length is 3; traction threshold is 2.
+            }
+        }
     }
 
     /// Check geometry, signs, averaging, fracture-DOF exclusion, and distributed ownership.
@@ -118,4 +149,12 @@ TEST_F(TangentialJumpTest, tilted_triangle) {
 
 TEST_F(TangentialJumpTest, one_sided_fracture_has_no_jump_rows) {
     check_jump("tangential_jump_one_sided.msh", 1, false);
+}
+
+TEST_F(TangentialJumpTest, integrated_tresca_threshold) {
+    check_threshold("tangential_jump_2d.msh", false);
+}
+
+TEST_F(TangentialJumpTest, rejects_isotropic_tresca_on_triangle) {
+    check_threshold("tangential_jump_3d.msh", true);
 }

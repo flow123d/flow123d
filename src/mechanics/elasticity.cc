@@ -67,6 +67,10 @@ const Record & Elasticity::get_input_type() {
                 IT::Default("{ \"fields\": [ \"displacement\" ] }"),
                 "Setting of the field output.")
            .declare_key("contact", Bool(), IT::Default("false"), "Indicates the use of contact conditions on fractures.")
+           .declare_key("tresca_friction", Bool(), IT::Default("false"),
+                    "Enable incremental Tresca friction on two-sided line fractures. Requires contact=true. "
+                    "The prescribed friction_threshold is independent of normal traction, including on open fractures. "
+                    "Positive thresholds on triangular fracture surfaces are not yet supported.")
 		   .close();
 }
 
@@ -223,6 +227,12 @@ Elasticity::EqFields::EqFields()
       .units( UnitSI().m() )
       .flags(input_copy & in_rhs);
 
+    *this += friction_threshold.name("friction_threshold")
+      .description("Prescribed nonnegative Tresca shear traction threshold on two-sided line fractures. "
+                   "Used only with tresca_friction=true; zero gives frictionless tangential motion.")
+      .units(UnitSI().Pa())
+      .input_default("0.0");
+
     *this+=output_field
             .name("displacement")
             .description("Displacement vector field output.")
@@ -347,6 +357,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
           tangential_jump_assembly_(nullptr),
+          tresca_threshold_assembly_(nullptr),
 		  output_fields_assembly_(nullptr)
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
@@ -450,6 +461,8 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     LinSys *ls;
     has_contact_ = input_rec.val<bool>("contact");
+    has_tresca_ = input_rec.val<bool>("tresca_friction");
+    ASSERT_PERMANENT(!has_tresca_ || has_contact_).error("Tresca friction requires contact=true.");
     if (has_contact_) {
 #ifndef FLOW123D_HAVE_PERMON
         ASSERT(false).error("Flow123d was not built with PERMON library, therefore contact conditions are unsupported.");
@@ -475,6 +488,16 @@ void Elasticity::initialize()
         constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
         eq_data_->allocate_tangential_jump_matrix();
         tangential_jump_assembly_ = new GenericAssembly< TangentialJumpAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+        if (has_tresca_) {
+            chkerr(MatCreateVecs(eq_data_->tangential_jump_matrix, nullptr, &eq_data_->tresca_force_bound));
+            chkerr(VecDuplicate(eq_data_->tresca_force_bound, &eq_data_->tresca_force_lower_bound));
+            chkerr(VecDuplicate(eq_data_->tresca_force_bound, &eq_data_->tresca_reference_jump));
+            chkerr(VecSet(eq_data_->tresca_reference_jump, 0.0));
+            friction_reference_time_ = time_->t();
+            static_cast<LinSys_PERMON *>(ls)->set_dual_box(eq_data_->tangential_jump_matrix,
+                    eq_data_->tresca_reference_jump, eq_data_->tresca_force_lower_bound, eq_data_->tresca_force_bound);
+            tresca_threshold_assembly_ = new GenericAssembly<TrescaThresholdAssemblyDim>(eq_data_.get(), eq_data_->dh_.get());
+        }
     } else {
         ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
         ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
@@ -502,6 +525,7 @@ Elasticity::~Elasticity()
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (tangential_jump_assembly_ != nullptr) delete tangential_jump_assembly_;
+    if (tresca_threshold_assembly_ != nullptr) delete tresca_threshold_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
 
     eq_data_.reset();
@@ -579,7 +603,10 @@ void Elasticity::zero_time_step()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
     eq_data_->ls->finish_assembly();
+    if (has_tresca_) prepare_tresca();
     LinSys::SolveInfo si = eq_data_->ls->solve();
+    if (has_tresca_)
+        ASSERT_PERMANENT_GT(si.converged_reason, 0).error("Tresca solve did not converge; load step is not accepted.");
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     output_data();
@@ -642,7 +669,10 @@ void Elasticity::solve_linear_system()
     }
 
     START_TIMER("solve");
+    if (has_tresca_) prepare_tresca();
     LinSys::SolveInfo si = eq_data_->ls->solve();
+    if (has_tresca_)
+        ASSERT_PERMANENT_GT(si.converged_reason, 0).error("Tresca solve did not converge; load step is not accepted.");
     MessageOut().fmt("[mech solver] lin. it: {}, reason: {}, residual: {}\n",
         		si.n_iterations, si.converged_reason, eq_data_->ls->compute_residual());
     END_TIMER("solve");
@@ -700,6 +730,22 @@ void Elasticity::assemble_tangential_jump_matrix()
     tangential_jump_assembly_->assemble(eq_data_->dh_);
     chkerr(MatAssemblyBegin(eq_data_->tangential_jump_matrix, MAT_FINAL_ASSEMBLY));
     chkerr(MatAssemblyEnd(eq_data_->tangential_jump_matrix, MAT_FINAL_ASSEMBLY));
+}
+
+
+void Elasticity::prepare_tresca()
+{
+    // HM shares the time governor and may call solve_linear_system repeatedly.
+    // Capture the last converged displacement only when physical time advances.
+    if (time_->t() != friction_reference_time_) {
+        chkerr(MatMult(eq_data_->tangential_jump_matrix, eq_data_->ls->get_solution(),
+                       eq_data_->tresca_reference_jump));
+        friction_reference_time_ = time_->t();
+    }
+    assemble_constraint_matrix();
+    tresca_threshold_assembly_->assemble(eq_data_->dh_);
+    chkerr(VecCopy(eq_data_->tresca_force_bound, eq_data_->tresca_force_lower_bound));
+    chkerr(VecScale(eq_data_->tresca_force_lower_bound, -1.0));
 }
 
 

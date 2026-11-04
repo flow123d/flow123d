@@ -39,6 +39,7 @@ template<unsigned int dim, class EqData> class StiffnessAssemblyElasticity;
 template<unsigned int dim, class EqData> class RhsAssemblyElasticity;
 template<unsigned int dim, class EqData> class ConstraintAssemblyElasticity;
 template<unsigned int dim, class EqData> class TangentialJumpAssemblyElasticity;
+template<unsigned int dim, class EqData> class TrescaThresholdAssemblyElasticity;
 template<unsigned int dim, class EqData> class OutpuFieldsAssemblyElasticity;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -78,6 +79,8 @@ public:
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > cross_section_min;
+        /// Prescribed Tresca shear traction threshold; nonnegative, in Pa.
+        Field<3, FieldValue<3>::Scalar> friction_threshold;
         Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
         Field<3, FieldValue<3>::Scalar > ref_potential_load; ///< Potential of reference external load on boundary. TODO: Switch to BCField when possible.
         Field<3, FieldValue<3>::Scalar> region_id;
@@ -117,13 +120,17 @@ public:
 
 		EqData(shared_ptr<EqFields> eq_fields)
         : eq_fields_(eq_fields), ls(nullptr), constraint_matrix(nullptr), constraint_vec(nullptr),
-          tangential_jump_matrix(nullptr) {}
+          tangential_jump_matrix(nullptr), tresca_force_bound(nullptr), tresca_force_lower_bound(nullptr),
+          tresca_reference_jump(nullptr) {}
 
 		~EqData() {
 		    if (ls!=nullptr) delete ls;
             if (constraint_matrix!=nullptr) MatDestroy(&constraint_matrix);
             if (constraint_vec!=nullptr) VecDestroy(&constraint_vec);
             if (tangential_jump_matrix!=nullptr) MatDestroy(&tangential_jump_matrix);
+            if (tresca_force_bound!=nullptr) VecDestroy(&tresca_force_bound);
+            if (tresca_force_lower_bound!=nullptr) VecDestroy(&tresca_force_lower_bound);
+            if (tresca_reference_jump!=nullptr) VecDestroy(&tresca_reference_jump);
 		}
 
 		/// Create DOF handler objects
@@ -175,6 +182,15 @@ public:
         /// Owned fracture element index to first global row of tangential_jump_matrix.
         std::map<LongIdx, LongIdx> tangential_jump_idx;
 
+        /// Owned integrated force thresholds, in the T row layout; null unless Tresca is enabled.
+        Vec tresca_force_bound;
+        /// Owned negative force thresholds, in the T row layout, passed as dual lower bounds.
+        Vec tresca_force_lower_bound;
+        /// Owned T*u_previous in original T row numbering, frozen during all solves at one time.
+        Vec tresca_reference_jump;
+        /// Local threshold-validation flags, reduced collectively after assembly.
+        int tresca_threshold_error = 0;
+
     	// @}
 
     	/// Shared Balance object
@@ -214,6 +230,7 @@ public:
     template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using ConstraintAssemblyDim = ConstraintAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using TangentialJumpAssemblyDim = TangentialJumpAssemblyElasticity<dim, EqData>;
+    template<unsigned int dim> using TrescaThresholdAssemblyDim = TrescaThresholdAssemblyElasticity<dim, EqData>;
     template<unsigned int dim> using OutpuFieldsAssemblyDim = OutpuFieldsAssemblyElasticity<dim, OutputEqData>;
 
 
@@ -291,6 +308,9 @@ private:
     /// Assemble and finalize the geometry-only tangential jump matrix on the fixed mesh.
     void assemble_tangential_jump_matrix();
 
+    /// Freeze previous-step slip on a time change, refresh normal bounds and integrate Tresca strength.
+    void prepare_tresca();
+
 
 	/// @name Physical parameters
 	// @{
@@ -306,6 +326,10 @@ private:
 
     /// Indicator of contact conditions on fractures.
     bool has_contact_;
+    /// Whether incremental 2D Tresca friction is enabled.
+    bool has_tresca_ = false;
+    /// Time of the current fixed reference jump; shared HM time governors may advance externally.
+    double friction_reference_time_ = 0.0;
 
     
 	// @}
@@ -333,6 +357,8 @@ private:
     GenericAssembly< ConstraintAssemblyDim > * constraint_assembly_;
     /// Assembly of bulk-to-bulk tangential jumps on two-sided fractures.
     GenericAssembly< TangentialJumpAssemblyDim > * tangential_jump_assembly_;
+    /// Integration of the prescribed shear strength on fracture elements.
+    GenericAssembly< TrescaThresholdAssemblyDim > * tresca_threshold_assembly_;
     GenericAssembly< OutpuFieldsAssemblyDim > * output_fields_assembly_;
 
 };
