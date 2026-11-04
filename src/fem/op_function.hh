@@ -1173,7 +1173,7 @@ public:
     }
 
     void eval() override {
-        ShapeMatrix::template expand_bulk<tensor_size>(*this);
+        ShapeMatrix::expand_bulk(*this, tensor_size);
     }
 };
 
@@ -1220,7 +1220,7 @@ public:
     }
 
     void eval() override {
-        ShapeMatrix::template expand_bulk<tensor_size>(*this);
+        ShapeMatrix::expand_bulk(*this, tensor_size);
     }
 };
 

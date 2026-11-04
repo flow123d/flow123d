@@ -20,6 +20,9 @@
 
 #include <Eigen/Dense>
 #include "fem/arena_vec.hh"
+#include "fem/patch_point_values.hh"
+#include "fem/patch_op.hh"
+#include "quadrature/quadrature.hh"
 #include <cmath>
 #include <initializer_list>
 
@@ -61,26 +64,25 @@ public:
     /**
      * @brief Expand reference values of shape function on bulk domain ​​for all quadrature points on patch
      */
-    template<unsigned int N, class ShapeOp>
-    static void expand_bulk(ShapeOp &op) {
-        Derived::template expand_bulk<N, ShapeOp>(op);
+    static void expand_bulk(PatchOp<3> &op, unsigned int mat_size) {
+        Derived::expand_bulk(op, mat_size);
     }
 
     /**
      * @brief Expand reference values of shape function on side domain ​​for all quadrature points on
      */
-    template<unsigned int spacedim, unsigned int N, class ShapeOp>
-    static void expand_side(ShapeOp &op) {
-        Derived::template expand_side<spacedim, N, ShapeOp>(op);
+    template<unsigned int spacedim, unsigned int N>
+    static void expand_side(PatchOp<3> &op) {
+        Derived::template expand_side<spacedim, N>(op);
     }
 
     /**
      * @brief Accumulate result over all shape functions (DOFs).
      */
-    template<class Domain, class ShapeOp, class Quad>
-    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &quad)
+    template<class Domain>
+    static void integrate_dofs(MatrixMap result, PatchOp<3> &shape_op, const DofValues &data, Quadrature &quad)
     {
-        Derived::template integrate_dofs<Domain, ShapeOp, quad>(result, shape_op, data, quad);
+        Derived::template integrate_dofs<Domain>(result, shape_op, data, quad);
     }
 };
 
@@ -102,8 +104,7 @@ public:
         result(side*N+row, N*dof+col)(point) = value;
     }
 
-    template<unsigned int N, class ShapeOp>
-    static void expand_bulk(ShapeOp &op)
+    static void expand_bulk(PatchOp<3> &op, unsigned int mat_size)
     {
         auto source = op.input_ops(0)->result_matrix();
         auto result = op.result_matrix();
@@ -111,18 +112,18 @@ public:
         for (unsigned int i=0; i<elements.data_size(); ++i) elements(i) = 1.0;
         ArenaOVec<double> element_values(elements);
 
-        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_values(N, N);
+        Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> ref_values(mat_size, mat_size);
         for (unsigned int dof=0; dof<op.n_dofs(); ++dof) {
-            for (unsigned int c=0; c<N*N; ++c)
-                ref_values(c) = ArenaOVec<double>(source(dof*N*N+c));
+            for (unsigned int c=0; c<mat_size*mat_size; ++c)
+                ref_values(c) = ArenaOVec<double>(source(dof*mat_size*mat_size+c));
             Eigen::Matrix<ArenaOVec<double>, Eigen::Dynamic, Eigen::Dynamic> values = element_values * ref_values;
-            for (unsigned int c=0; c<N*N; ++c)
-                result(dof*N*N+c) = values(c).get_vec();
+            for (unsigned int c=0; c<mat_size*mat_size; ++c)
+                result(dof*mat_size*mat_size+c) = values(c).get_vec();
         }
     }
 
-    template<unsigned int spacedim, unsigned int N, class ShapeOp>
-    static void expand_side(ShapeOp &op)
+    template<unsigned int spacedim, unsigned int N>
+    static void expand_side(PatchOp<3> &op)
     {
         auto source = op.input_ops(0)->result_matrix();
         for (unsigned int dof=0; dof<op.n_dofs(); ++dof) {
@@ -131,8 +132,8 @@ public:
         }
     }
 
-    template<class Domain, class ShapeOp, class Quad>
-    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &)
+    template<class Domain>
+    static void integrate_dofs(MatrixMap result, PatchOp<3> &shape_op, const DofValues &data, Quadrature &)
     {
         for (unsigned int i_dof=0; i_dof<shape_op.n_dofs(); ++i_dof) {
             MatrixMap input_submat = shape_op.result_sub_matrix(i_dof);
@@ -165,8 +166,7 @@ public:
         if (std::fabs(value) > 1e-13) result(side, dof)(point) = value;
     }
 
-    template<unsigned int N, class ShapeOp>
-    static void expand_bulk(ShapeOp &op)
+    static void expand_bulk(PatchOp<3> &op, unsigned int)
     {
         auto source = op.input_ops(0)->result_matrix();
         auto result = op.result_matrix();
@@ -182,16 +182,16 @@ public:
             result(dof) = values(dof).get_vec();
     }
 
-    template<unsigned int spacedim, unsigned int N, class ShapeOp>
-    static void expand_side(ShapeOp &op)
+    template<unsigned int spacedim, unsigned int N>
+    static void expand_side(PatchOp<3> &op)
     {
         auto source = op.input_ops(0)->result_matrix();
         auto result = op.result_matrix();
         Op::FuncHelper<spacedim>::copy_ref_side_on_quads_data(op, 0, source, result);
     }
 
-    template<class Domain, class ShapeOp, class Quad>
-    static void integrate_dofs(MatrixMap result, ShapeOp &shape_op, const DofValues &data, Quad &quad)
+    template<class Domain>
+    static void integrate_dofs(MatrixMap result, PatchOp<3> &shape_op, const DofValues &data, Quadrature &quad)
     {
         unsigned int n_bulk_points = Domain::n_bulk_points(quad);
         for (unsigned int i_dof=0; i_dof<shape_op.n_dofs(); ++i_dof) {
