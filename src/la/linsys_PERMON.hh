@@ -46,10 +46,9 @@ public:
 
     LinSys_PERMON(const  Distribution * rows_ds, const std::string &params = "");
 
-    /**
-     * Copy constructor.
-     */
-    LinSys_PERMON( LinSys_PERMON &other );
+    /// Solver state and owned PETSc multipliers must not be shallow-copied.
+    LinSys_PERMON(const LinSys_PERMON &) = delete;
+    LinSys_PERMON &operator=(const LinSys_PERMON &) = delete;
 
     /// Set A*x <= b using borrowed objects in original global primal indexing; caller keeps them alive.
     void set_inequality(Mat matrix_ineq, Vec ineq);
