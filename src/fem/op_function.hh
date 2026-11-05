@@ -687,6 +687,8 @@ public:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class ScalarShape : public PatchOp<spacedim> {
 public:
+    static constexpr unsigned int space_dim = spacedim;
+    using ShapeMatrixType = ShapeFnMatrix;
     static constexpr std::initializer_list<uint> result_shape = {1};
 
     /// Constructor
@@ -727,6 +729,8 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class ScalarShape<dim, Op::SideDomain, spacedim> : public PatchOp<spacedim> {
 public:
+    static constexpr unsigned int space_dim = spacedim;
+    using ShapeMatrixType = ShapeFnMatrix;
     static constexpr std::initializer_list<uint> result_shape = {1};
 
     /// Constructor
@@ -957,6 +961,8 @@ private:
 template<unsigned int dim, class Domain, unsigned int spacedim = 3>
 class DispatchVectorShape : public PatchOp<spacedim> {
 public:
+    static constexpr unsigned int space_dim = spacedim;
+    using ShapeMatrixType = ShapeFnMatrix;
     static constexpr std::initializer_list<uint> result_shape = {spacedim};
 
     /// Constructor
@@ -999,6 +1005,8 @@ private:
 template<unsigned int dim, class Domain, class ShapeMatrix, unsigned int spacedim = 3, unsigned int tensor_size = 3>
 class TensorShape : public PatchOp<spacedim> {
 public:
+    static constexpr unsigned int space_dim = spacedim;
+    using ShapeMatrixType = ShapeMatrix;
     static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
     using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
 
@@ -1019,6 +1027,8 @@ public:
 template<unsigned int dim, class ShapeMatrix, unsigned int spacedim, unsigned int tensor_size>
 class TensorShape<dim, Op::SideDomain, ShapeMatrix, spacedim, tensor_size> : public PatchOp<spacedim> {
 public:
+    static constexpr unsigned int space_dim = spacedim;
+    using ShapeMatrixType = ShapeMatrix;
     static constexpr std::initializer_list<uint> result_shape = {tensor_size, tensor_size};
     using Storage = typename ShapeMatrix::template StorageShape<tensor_size>;
 

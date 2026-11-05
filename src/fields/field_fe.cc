@@ -297,7 +297,7 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
             op_acc_dim.emplace_back(
                 FeQ<ReturnType>(
                     patch_internals.fe_values_.template get<
-                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim, Op::ShapeFnCompressed>, spacedim, Op::ShapeFnCompressed>,
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim, Op::ShapeFnCompressed>>,
                         Domain::op_dim(dim)
                     >(*quad, fe_component, field_fe_op_data)
                 )
@@ -306,7 +306,7 @@ void FieldFE<spacedim, Value>::create_dim_patch_op(PatchInternals &patch_interna
             op_acc_dim.emplace_back(
                 FeQ<ReturnType>(
                     patch_internals.fe_values_.template get<
-                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim, Op::ShapeFnMatrix>, spacedim, Op::ShapeFnMatrix>,
+                        Op::FieldFeOp<Domain::op_dim(dim), Domain, typename ShapeSelector::type<Domain::op_dim(dim), Domain, spacedim, Op::ShapeFnMatrix>>,
                         Domain::op_dim(dim)
                     >(*quad, fe_component, field_fe_op_data)
                 )

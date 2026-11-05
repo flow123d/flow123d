@@ -149,9 +149,11 @@ struct InputOpType<6,6>
 namespace Op {
 
 /// Evaluates FieldFE on quadrature points defined in patch
-template<unsigned int dim, class Domain, class OpBaseShape, unsigned int spacedim = 3, class ShapeMatrix = ShapeFnMatrix>
-class FieldFeOp : public PatchOp<spacedim> {
+template<unsigned int dim, class Domain, class OpBaseShape>
+class FieldFeOp : public PatchOp<OpBaseShape::space_dim> {
 public:
+    static constexpr unsigned int spacedim = OpBaseShape::space_dim;
+    using ShapeMatrix = typename OpBaseShape::ShapeMatrixType;
     /// Constructor
 	FieldFeOp(PatchFEValues<spacedim> &pfev, Quadrature &quad, std::shared_ptr<FiniteElement<dim>> fe, FieldFeOpData field_fe_op_data)
     : PatchOp<spacedim>(dim, pfev, quad, OpBaseShape::result_shape),
