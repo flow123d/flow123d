@@ -117,11 +117,11 @@ inline Tensor PatchOp<3>::point_value<Tensor>(uint point_idx, uint i_dof) const 
 
 template<>
 template<>
-inline arma::mat::fixed<6,6> PatchOp<3>::point_value<arma::mat::fixed<6,6>>(uint point_idx, uint i_dof) const {
-	arma::mat::fixed<6,6> val;
+inline TensorVoigt PatchOp<3>::point_value<TensorVoigt>(uint point_idx, uint i_dof) const {
+    TensorVoigt val;
     PatchPointValues<3> &ppv = patch_fe_->patch_point_vals_[domain_][dim_];
     uint op_matrix_idx = ppv.points_map_[point_idx];
-    for (uint i=36; i<9; ++i)
+    for (uint i=0; i<36; ++i)
         val(i) = result_(i+36*i_dof)(op_matrix_idx);
     return val;
 }

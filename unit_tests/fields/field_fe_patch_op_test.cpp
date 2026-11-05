@@ -337,7 +337,7 @@ public:
 
             return FeQ<Scalar>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>>,
 				    op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
@@ -522,7 +522,7 @@ public:
 
             return FeQ<Vector>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>>,
                     op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
@@ -690,7 +690,7 @@ public:
 
             return FeQ<Tensor>(
                 this->generic_->patch_internals_.fe_values_.template get<
-                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>, 3>,
+                    Op::FieldFeOp<op_dim, Domain, typename ShapeSelector::type<op_dim, Domain, 3>>,
                     op_dim
                 >(*quad, fe_component, field_fe_op_data)
             );
