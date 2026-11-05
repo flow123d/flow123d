@@ -127,20 +127,20 @@ template<>
 struct InputOpType<3,3>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
-    using type = Op::TensorShape<dim, Domain, spacedim, ShapeMatrix>;
+    using type = Op::TensorShape<dim, Domain, ShapeMatrix, spacedim>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
+    using type_compressed = Op::TensorShape<dim, Domain, Op::ShapeFnCompressed, spacedim>;
 };
 
 template<>
 struct InputOpType<6,6>
 {
     template<unsigned int dim, class Domain, unsigned int spacedim, class ShapeMatrix = Op::ShapeFnMatrix>
-    using type = Op::TensorVoigtShape<dim, Domain, spacedim, ShapeMatrix>;
+    using type = Op::TensorShape<dim, Domain, ShapeMatrix, spacedim, spacedim*(spacedim+1)/2>;
 
     template<unsigned int dim, class Domain, unsigned int spacedim>
-    using type_compressed = type<dim, Domain, spacedim, Op::ShapeFnCompressed>;
+    using type_compressed = Op::TensorShape<dim, Domain, Op::ShapeFnCompressed, spacedim>;
 };
 
 } // end of namespace internal

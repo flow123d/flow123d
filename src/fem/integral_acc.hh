@@ -393,7 +393,7 @@ public:
      */
     inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::BulkDomain, 3>>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::BulkDomain, Op::ShapeFnMatrix, 3, 3>>(component_idx);
     }
 
     /**
@@ -404,7 +404,7 @@ public:
      */
     inline FeQArray<TensorVoigt> tensor_voigt_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<TensorVoigt, Op::TensorVoigtShape<qdim, Op::BulkDomain, 3>>(component_idx);
+        return factory_.template make_qarray<TensorVoigt, Op::TensorShape<qdim, Op::BulkDomain, Op::ShapeFnMatrix, 3, 6>>(component_idx);
     }
 
     /**
@@ -628,7 +628,7 @@ public:
      */
     inline FeQArray<Tensor> tensor_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::SideDomain, 3>>(component_idx);
+        return factory_.template make_qarray<Tensor, Op::TensorShape<qdim, Op::SideDomain, Op::ShapeFnMatrix, 3, 3>>(component_idx);
     }
 
     /**
@@ -639,7 +639,7 @@ public:
      */
     inline FeQArray<TensorVoigt> tensor_voigt_shape(uint component_idx = 0)
     {
-        return factory_.template make_qarray<TensorVoigt, Op::TensorVoigtShape<qdim, Op::SideDomain, 3>>(component_idx);
+        return factory_.template make_qarray<TensorVoigt, Op::TensorShape<qdim, Op::SideDomain, Op::ShapeFnMatrix, 3, 6>>(component_idx);
     }
 
     /// Same as BulkValues::grad_scalar_shape but register at side quadrature points.
