@@ -64,8 +64,9 @@ public:
      */
     void set_dual_box(Mat B, Vec offset, Vec lower, Vec upper);
 
-    /** Borrow lambda in A row numbering, valid until the next solve or constraint setter.
-     * Null before a combined solve or when A has no rows. */
+    /** Borrow lambda in original global A row numbering after a contact-only or
+     * combined solve. Valid until the next solve or constraint setter; null
+     * before solving or when A has no rows. LinSys_PERMON owns the vector. */
     Vec dual_ineq_multipliers() const { return ineq_multipliers_; }
 
     /** Borrow q in B row numbering, valid until the next solve or set_dual_box().

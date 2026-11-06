@@ -36,9 +36,44 @@
 #include "fields/generic_field.hh"
 #include "fields/field_model.hh"
 #include "input/factory.hh"
+#include <algorithm>
 
+namespace {
 
+#ifdef FLOW123D_HAVE_PERMON
+/**
+ * Import requested original global constraint rows into an owned local copy.
+ * All source-vector ranks participate, including ranks requesting no rows.
+ * Keep the source borrowed; destroy the sequential buffer and scatter locally.
+ */
+std::vector<PetscScalar> import_constraint_rows(Vec source, const std::vector<PetscInt> &rows)
+{
+    if (!source) return {};
+    struct Import {
+        Vec local = nullptr;
+        IS indices = nullptr;
+        VecScatter scatter = nullptr;
+        ~Import() {
+            VecScatterDestroy(&scatter);
+            ISDestroy(&indices);
+            VecDestroy(&local);
+        }
+    } work;
+    chkerr(VecCreateSeq(PETSC_COMM_SELF, rows.size(), &work.local));
+    chkerr(ISCreateGeneral(PETSC_COMM_SELF, rows.size(), rows.data(), PETSC_COPY_VALUES, &work.indices));
+    chkerr(VecScatterCreate(source, work.indices, work.local, nullptr, &work.scatter));
+    chkerr(VecScatterBegin(work.scatter, source, work.local, INSERT_VALUES, SCATTER_FORWARD));
+    chkerr(VecScatterEnd(work.scatter, source, work.local, INSERT_VALUES, SCATTER_FORWARD));
+    const PetscScalar *values;
+    chkerr(VecGetArrayRead(work.local, &values));
+    std::vector<PetscScalar> result(rows.size());
+    if (!result.empty()) std::copy_n(values, result.size(), result.begin());
+    chkerr(VecRestoreArrayRead(work.local, &values));
+    return result;
+}
+#endif
 
+} // namespace
 
 using namespace Input::Type;
 
@@ -269,6 +304,21 @@ Elasticity::EqFields::EqFields()
             .units( UnitSI().dimensionless() )
             .flags(equation_result);
 
+    *this += output_contact_normal_stress
+            .name("contact_normal_stress")
+            .description("Element-average normal contact stress; compression is negative. "
+                         "Zero on cells without contact constraints.")
+            .units(UnitSI().Pa())
+            .flags(equation_result);
+
+    *this += output_contact_tangential_stress
+            .name("contact_tangential_stress")
+            .description("Element-average Cartesian Tresca reaction on the bulk neighbour with the lowest input ID. "
+                         "Its magnitude is independent of side selection; its sign follows that neighbour. "
+                         "Zero on cells without Tresca friction.")
+            .units(UnitSI().Pa())
+            .flags(equation_result);
+
     *this += lame_mu.name("lame_mu")
             .description("Field lame_mu.")
             .input_default("0.0")
@@ -333,6 +383,23 @@ void Elasticity::EqData::allocate_tangential_jump_matrix()
 }
 
 
+arma::mat Elasticity::EqData::tangential_frame(DHCellAccessor cell)
+{
+    ASSERT_PERMANENT(cell.dim() == 1 || cell.dim() == 2)
+        .error("Tangential frames require a line or triangular fracture.");
+    auto fracture = cell.elm();
+    arma::mat frame(3, cell.dim());
+    frame.col(0) = *fracture.node(1) - *fracture.node(0);
+    frame.col(0) /= arma::norm(frame.col(0), 2);
+    if (cell.dim() == 2) {
+        frame.col(1) = *fracture.node(2) - *fracture.node(0);
+        frame.col(1) -= arma::dot(frame.col(1), frame.col(0)) * frame.col(0);
+        frame.col(1) /= arma::norm(frame.col(1), 2);
+    }
+    return frame;
+}
+
+
 void Elasticity::OutputEqData::create_dh(Mesh * mesh)
 {
 	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
@@ -347,6 +414,11 @@ void Elasticity::OutputEqData::create_dh(Mesh * mesh)
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);
+
+    MixedPtr<FiniteElement> fe_v = mixed_fe_system(MixedPtr<FE_P_disc>(quad_order()), FEVector, 3);
+    dh_vector_ = make_shared<DOFHandlerMultiDim>(*mesh);
+    std::shared_ptr<DiscreteSpace> ds_vector = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe_v);
+    dh_vector_->distribute_dofs(ds_vector);
 }
 
 
@@ -436,6 +508,16 @@ void Elasticity::initialize()
     // setup output divergence
     eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
+
+    // Allocate independent P0 storage for multiplier-derived fracture stresses.
+    eq_fields_->output_contact_normal_stress_ptr =
+        create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
+    eq_fields_->output_contact_normal_stress.set(eq_fields_->output_contact_normal_stress_ptr, 0.);
+    eq_fields_->output_contact_normal_stress.output_type(OutputTime::ELEM_DATA);
+    eq_fields_->output_contact_tangential_stress_ptr =
+        create_field_fe<3, FieldValue<3>::VectorFixed>(output_eq_data_->dh_vector_);
+    eq_fields_->output_contact_tangential_stress.set(eq_fields_->output_contact_tangential_stress_ptr, 0.);
+    eq_fields_->output_contact_tangential_stress.output_type(OutputTime::ELEM_DATA);
 
     // read optional user fields
     Input::Array user_fields_arr;
@@ -549,6 +631,7 @@ void Elasticity::update_output_fields()
 
     // compute new output fields depending on solution (stress, divergence etc.)
     output_fields_assembly_->assemble(eq_data_->dh_);
+    update_contact_stress_fields();
 
     // finish assembly of vectors
     eq_fields_->output_stress_ptr->vec().assembly_begin();
@@ -561,6 +644,10 @@ void Elasticity::update_output_fields()
     eq_fields_->output_cross_section_ptr->vec().assembly_end();
     eq_fields_->output_div_ptr->vec().assembly_begin();
     eq_fields_->output_div_ptr->vec().assembly_end();
+    eq_fields_->output_contact_normal_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_contact_normal_stress_ptr->vec().assembly_end();
+    eq_fields_->output_contact_tangential_stress_ptr->vec().assembly_begin();
+    eq_fields_->output_contact_tangential_stress_ptr->vec().assembly_end();
 
     // update ghost values of computed fields
     eq_fields_->output_stress_ptr->vec().local_to_ghost_begin();
@@ -568,11 +655,83 @@ void Elasticity::update_output_fields()
     eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_div_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_contact_normal_stress_ptr->vec().local_to_ghost_begin();
+    eq_fields_->output_contact_tangential_stress_ptr->vec().local_to_ghost_begin();
     eq_fields_->output_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_von_mises_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_mean_stress_ptr->vec().local_to_ghost_end();
     eq_fields_->output_cross_section_ptr->vec().local_to_ghost_end();
     eq_fields_->output_div_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_contact_normal_stress_ptr->vec().local_to_ghost_end();
+    eq_fields_->output_contact_tangential_stress_ptr->vec().local_to_ghost_end();
+}
+
+
+void Elasticity::update_contact_stress_fields()
+{
+    // Clear every cell so disabled friction and newly inactive reactions cannot leave stale values.
+    auto &normal_output = eq_fields_->output_contact_normal_stress_ptr->vec();
+    auto &tangential_output = eq_fields_->output_contact_tangential_stress_ptr->vec();
+    normal_output.zero_entries();
+    tangential_output.zero_entries();
+    if (!has_contact_) return;
+
+#ifdef FLOW123D_HAVE_PERMON
+    // Borrow the original-row solver results and retain zero output during HM initialization,
+    // which requests fields before the first mechanics solve.
+    auto *solver = static_cast<LinSys_PERMON *>(eq_data_->ls);
+    Vec normal = solver->dual_ineq_multipliers();
+    Vec tangential = has_tresca_ ? solver->dual_box_multipliers() : nullptr;
+    if (!normal && !tangential) return;
+    PetscInt n_normal, n_tangential = 0;
+    chkerr(MatGetSize(eq_data_->constraint_matrix, &n_normal, nullptr));
+    if (has_tresca_) chkerr(MatGetSize(eq_data_->tangential_jump_matrix, &n_tangential, nullptr));
+    ASSERT_PERMANENT(n_normal == 0 || normal != nullptr)
+        .error("Normal contact stress requires solved inequality multipliers.");
+    ASSERT_PERMANENT(n_tangential == 0 || tangential != nullptr)
+        .error("Tangential contact stress requires solved Tresca multipliers.");
+
+    // Request rows for owned fracture cells, independently of the multiplier vectors' ownership.
+    std::vector<PetscInt> normal_rows, tangential_rows;
+    for (auto cell : eq_data_->dh_->own_range()) {
+        auto normal_row = eq_data_->constraint_idx.find(cell.elm_idx());
+        if (normal_row != eq_data_->constraint_idx.end()) normal_rows.push_back(normal_row->second);
+        auto tangential_row = eq_data_->tangential_jump_idx.find(cell.elm_idx());
+        if (has_tresca_ && tangential_row != eq_data_->tangential_jump_idx.end())
+            for (unsigned int k = 0; k < cell.dim(); ++k)
+                tangential_rows.push_back(tangential_row->second + k);
+    }
+    auto normal_values = import_constraint_rows(normal, normal_rows);
+    auto tangential_values = import_constraint_rows(tangential, tangential_rows);
+
+    // Consume imported rows in the same owned-cell order and normalize average-jump reactions.
+    std::size_t normal_pos = 0, tangential_pos = 0;
+    for (auto cell : eq_data_->dh_->own_range()) {
+        auto normal_row = eq_data_->constraint_idx.find(cell.elm_idx());
+        auto tangential_row = eq_data_->tangential_jump_idx.find(cell.elm_idx());
+        const bool has_normal = normal_row != eq_data_->constraint_idx.end();
+        const bool has_tangential = has_tresca_ && tangential_row != eq_data_->tangential_jump_idx.end();
+        if (!has_normal && !has_tangential) continue;
+        double measure = cell.elm().measure();
+        ASSERT_PERMANENT_GT(measure, 0.0).error("Contact stress requires positive fracture measure.");
+        if (has_normal) {
+            auto output_cell = cell.cell_with_other_dh(output_eq_data_->dh_scalar_.get());
+            normal_output.set(output_cell.get_loc_dof_indices()[0], -normal_values[normal_pos++] / measure);
+        }
+        if (has_tangential) {
+            // Reconstruct the Cartesian reaction on the lowest-ID neighbour, without an aperture factor.
+            arma::mat frame = EqData::tangential_frame(cell);
+            arma::vec3 traction;
+            traction.zeros();
+            for (unsigned int k = 0; k < cell.dim(); ++k)
+                traction -= frame.col(k) * tangential_values[tangential_pos++] / measure;
+            auto output_cell = cell.cell_with_other_dh(output_eq_data_->dh_vector_.get());
+            auto dofs = output_cell.get_loc_dof_indices();
+            for (unsigned int i = 0; i < dofs.size(); ++i)
+                tangential_output.set(dofs[i], arma::dot(output_cell.cell_dof(i).coefs, traction));
+        }
+    }
+#endif
 }
 
 

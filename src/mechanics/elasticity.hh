@@ -92,6 +92,10 @@ public:
         Field<3, FieldValue<3>::Scalar> output_mean_stress;
         Field<3, FieldValue<3>::Scalar> output_cross_section;
         Field<3, FieldValue<3>::Scalar> output_divergence;
+        /// Element-average normal constraint stress in Pa; compression is negative.
+        Field<3, FieldValue<3>::Scalar> output_contact_normal_stress;
+        /// Cartesian friction reaction in Pa on the lowest-input-ID bulk neighbour.
+        Field<3, FieldValue<3>::VectorFixed> output_contact_tangential_stress;
         
 		/// @name Instances of FieldModel used in assembly methods
 		// @{
@@ -108,6 +112,10 @@ public:
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_mean_stress_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_cross_section_ptr;
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_div_ptr;
+        /// Scalar P0 storage, including zeros on cells without contact constraints.
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> output_contact_normal_stress_ptr;
+        /// Vector P0 storage, including zeros on cells without active friction rows.
+        std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> output_contact_tangential_stress_ptr;
 
         EquationOutput output_fields;
 
@@ -144,6 +152,14 @@ public:
          * Collective on PETSC_COMM_WORLD; call once after create_dh().
          */
         void allocate_tangential_jump_matrix();
+
+        /**
+         * Return the orthonormal fracture tangent frame as a 3-by-dimension matrix.
+         * For line/triangle cells, column zero follows vertices 0 to 1; column
+         * one is the normalized part of vertices 0 to 2 orthogonal to column zero.
+         * Use this same frame for jump assembly and Cartesian reaction output.
+         */
+        static arma::mat tangential_frame(DHCellAccessor cell);
 
         /// Returns quad_order
         inline unsigned int quad_order() const {
@@ -223,6 +239,8 @@ public:
         /// Objects for distribution of dofs.
         std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
         std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
+        /// Three-component discontinuous P0 space for Cartesian fracture tractions.
+        std::shared_ptr<DOFHandlerMultiDim> dh_vector_;
 
 	};
 
@@ -310,6 +328,15 @@ private:
 
     /// Freeze previous-step slip on a time change, refresh normal bounds and integrate Tresca strength.
     void prepare_tresca();
+
+    /**
+     * Fill owned P0 cells from original global constraint-row multipliers.
+     * Import remote rows collectively, report compression-negative normal stress
+     * and tangential reaction on the lowest-ID bulk neighbour, and zero other cells.
+     * Borrow solver vectors only during the update; leave assembly and ghost
+     * synchronization of the output vectors to update_output_fields().
+     */
+    void update_contact_stress_fields();
 
 
 	/// @name Physical parameters

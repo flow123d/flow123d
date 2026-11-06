@@ -835,14 +835,7 @@ public:
         if (row_it == eq_data_->tangential_jump_idx.end()) return;
 
         auto fracture = cell_lower_dim.elm();
-        arma::vec3 tangents[2];
-        tangents[0] = *fracture.node(1) - *fracture.node(0);
-        tangents[0] /= arma::norm(tangents[0], 2);
-        if (dim == 2) {
-            tangents[1] = *fracture.node(2) - *fracture.node(0);
-            tangents[1] -= arma::dot(tangents[1], tangents[0]) * tangents[0];
-            tangents[1] /= arma::norm(tangents[1], 2);
-        }
+        arma::mat tangents = EqData::tangential_frame(cell_lower_dim);
 
         // TODO: generalize to more than two bulk neighbours, e.g. for a T-junction in 2D or a Y-junction in 3D.
         auto first_neighbour = fracture->neigh_vb[0]->side()->element();
@@ -857,7 +850,7 @@ public:
             for (unsigned int k = 0; k < dim; ++k)
                 for (unsigned int i = 0; i < n_dofs_; ++i)
                     local_matrix_[k*n_dofs_ + i] +=
-                        weight * arma::dot(tangents[k], deform_join_.shape(i)(p));
+                        weight * arma::dot(tangents.col(k), deform_join_.shape(i)(p));
         }
 
         PetscInt rows[2] = {row_it->second, row_it->second + 1};

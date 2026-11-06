@@ -17,7 +17,7 @@ protected:
     void TearDown() override { Profiler::uninitialize(); }
 
     /// Check exact solutions of a coupled 2x2 primal energy under prescribed loading histories.
-    void check_loading(bool open_contact, bool general_bounds = false) {
+    void check_loading(bool open_contact, bool general_bounds = false, bool reverse_jump = false) {
         Distribution distribution(2, PETSC_COMM_WORLD);
         double solution[2] = {0.0, 0.0};
         LinSys_PERMON ls(&distribution);
@@ -38,7 +38,8 @@ protected:
         chkerr(MatCreateAIJ(PETSC_COMM_WORLD, 1, 2, PETSC_DECIDE, PETSC_DECIDE, 1, nullptr, 0, nullptr, &N));
         chkerr(MatCreateAIJ(PETSC_COMM_WORLD, 1, 2, PETSC_DECIDE, PETSC_DECIDE, 1, nullptr, 0, nullptr, &T));
         chkerr(MatSetValue(N, rank, dofs[0], 1.0, INSERT_VALUES));
-        chkerr(MatSetValue(T, rank, dofs[1], 1.0, INSERT_VALUES));
+        const double jump_sign = reverse_jump ? -1.0 : 1.0;
+        chkerr(MatSetValue(T, rank, dofs[1], jump_sign, INSERT_VALUES));
         chkerr(MatAssemblyBegin(N, MAT_FINAL_ASSEMBLY)); chkerr(MatAssemblyEnd(N, MAT_FINAL_ASSEMBLY));
         chkerr(MatAssemblyBegin(T, MAT_FINAL_ASSEMBLY)); chkerr(MatAssemblyEnd(T, MAT_FINAL_ASSEMBLY));
         chkerr(MatCreateVecs(N, nullptr, &gap));
@@ -89,7 +90,7 @@ protected:
             chkerr(VecAssemblyBegin(bound)); chkerr(VecAssemblyEnd(bound));
             chkerr(VecSetValue(lower, rank, load[2], INSERT_VALUES));
             chkerr(VecAssemblyBegin(lower)); chkerr(VecAssemblyEnd(lower));
-            chkerr(VecSet(reference, load[4]));
+            chkerr(VecSet(reference, jump_sign * load[4]));
             auto result = ls.solve();
             EXPECT_GT(result.converged_reason, 0);
             EXPECT_NEAR(open_contact ? -1.0 : 0.0, solution[0], 1e-9);
@@ -97,7 +98,7 @@ protected:
             PetscScalar q, normal;
             chkerr(VecGetValues(ls.dual_box_multipliers(), 1, &rank, &q));
             chkerr(VecGetValues(ls.dual_ineq_multipliers(), 1, &rank, &normal));
-            EXPECT_NEAR(load[6], q, 1e-9);
+            EXPECT_NEAR(jump_sign * load[6], q, 1e-9);
             EXPECT_NEAR(open_contact ? 0.0 : load[0] - 0.4*load[5], normal, 1e-9);
             EXPECT_LT(ls.compute_residual(), 1e-9);
         }
@@ -111,6 +112,109 @@ protected:
 TEST_F(TrescaSolverTest, stick_slide_unload_reverse) { check_loading(false); }
 TEST_F(TrescaSolverTest, prescribed_tresca_strength_on_open_contact) { check_loading(true); }
 TEST_F(TrescaSolverTest, asymmetric_dual_box_and_fixed_multipliers) { check_loading(false, true); }
+TEST_F(TrescaSolverTest, reversing_jump_preserves_displacement_and_physical_reactions) {
+    check_loading(false, false, true);
+    check_loading(true, false, true);
+}
+
+TEST_F(TrescaSolverTest, contact_only_retains_original_inequality_multipliers)
+{
+    Distribution distribution(1, PETSC_COMM_WORLD);
+    double solution = 0.0;
+    LinSys_PERMON ls(&distribution);
+    ls.set_solution(&solution);
+    ls.set_tolerances(1e-12, 1e-12, 1e6, 1000);
+    int dof = distribution.begin();
+    double stiffness = 2.0;
+    ls.start_allocation();
+    ls.mat_set_values(1, &dof, 1, &dof, &stiffness);
+    ls.start_add_assembly();
+    ls.mat_set_values(1, &dof, 1, &dof, &stiffness);
+    ls.finish_assembly();
+
+    Mat normal;
+    Vec gap;
+    chkerr(MatCreateAIJ(PETSC_COMM_WORLD, 1, 1, PETSC_DECIDE, PETSC_DECIDE,
+                       1, nullptr, 0, nullptr, &normal));
+    chkerr(MatSetValue(normal, dof, dof, 1.0, INSERT_VALUES));
+    chkerr(MatAssemblyBegin(normal, MAT_FINAL_ASSEMBLY));
+    chkerr(MatAssemblyEnd(normal, MAT_FINAL_ASSEMBLY));
+    chkerr(MatCreateVecs(normal, nullptr, &gap));
+    chkerr(VecSet(gap, 0.0));
+    ls.set_inequality(normal, gap);
+
+    for (double load : {2.0, -2.0, 2.0}) {
+        ls.start_add_assembly();
+        ls.rhs_zero_entries();
+        ls.rhs_set_values(1, &dof, &load);
+        ls.finish_assembly();
+        EXPECT_GT(ls.solve().converged_reason, 0);
+        ASSERT_NE(nullptr, ls.dual_ineq_multipliers());
+        PetscInt row = dof;
+        PetscScalar multiplier;
+        chkerr(VecGetValues(ls.dual_ineq_multipliers(), 1, &row, &multiplier));
+        EXPECT_NEAR(load > 0.0 ? 2.0 : 0.0, multiplier, 1e-9);
+        EXPECT_NEAR(load > 0.0 ? 0.0 : -1.0, solution, 1e-9);
+    }
+
+    ls.set_inequality(nullptr, nullptr);
+    EXPECT_GT(ls.solve().converged_reason, 0);
+    EXPECT_EQ(nullptr, ls.dual_ineq_multipliers());
+    EXPECT_EQ(nullptr, ls.dual_box_multipliers());
+    EXPECT_NEAR(1.0, solution, 1e-9);
+    chkerr(VecDestroy(&gap));
+    chkerr(MatDestroy(&normal));
+}
+
+TEST_F(TrescaSolverTest, original_dual_solution_survives_objective_scaling)
+{
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    Mat normal, stiffness;
+    Vec rhs, gap, displacement;
+    chkerr(MatCreateAIJ(PETSC_COMM_WORLD, 1, 1, PETSC_DECIDE, PETSC_DECIDE,
+                       1, nullptr, 0, nullptr, &normal));
+    chkerr(MatSetValue(normal, rank, rank, 1.0, INSERT_VALUES));
+    chkerr(MatAssemblyBegin(normal, MAT_FINAL_ASSEMBLY));
+    chkerr(MatAssemblyEnd(normal, MAT_FINAL_ASSEMBLY));
+    chkerr(MatDuplicate(normal, MAT_COPY_VALUES, &stiffness));
+    chkerr(MatScale(stiffness, 2.0));
+    chkerr(MatCreateVecs(normal, &displacement, &gap));
+    chkerr(VecDuplicate(displacement, &rhs));
+    chkerr(VecSet(displacement, 0.0));
+    chkerr(VecSet(gap, 0.0));
+    chkerr(VecSet(rhs, 2.0));
+    QP primal, unscaled_dual;
+    QPS solver;
+    chkerr(QPCreate(PETSC_COMM_WORLD, &primal));
+    chkerr(QPSetOperator(primal, stiffness));
+    chkerr(QPSetRhs(primal, rhs));
+    chkerr(QPSetInitialVector(primal, displacement));
+    chkerr(QPSetIneq(primal, normal, gap));
+    chkerr(QPTDualize(primal, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    chkerr(QPGetChild(primal, &unscaled_dual));
+    chkerr(QPTScaleObjectiveByScalar(unscaled_dual, 2.0, 3.0));
+    chkerr(QPSCreate(PETSC_COMM_WORLD, &solver));
+    chkerr(QPSSetQP(solver, primal));
+    chkerr(QPSSetTolerances(solver, 1e-12, 1e-12, 1e6, 1000));
+    chkerr(QPSSetFromOptions(solver));
+    chkerr(QPSSolve(solver));
+    Vec multiplier;
+    chkerr(QPGetSolutionVector(unscaled_dual, &multiplier));
+    PetscInt row = rank;
+    PetscScalar value;
+    chkerr(VecGetValues(multiplier, 1, &row, &value));
+    EXPECT_NEAR(2.0, value, 1e-9);
+    chkerr(VecGetValues(displacement, 1, &row, &value));
+    EXPECT_NEAR(0.0, value, 1e-9);
+    chkerr(QPSDestroy(&solver));
+    chkerr(QPDestroy(&primal));
+    chkerr(VecDestroy(&rhs));
+    chkerr(VecDestroy(&gap));
+    chkerr(VecDestroy(&displacement));
+    chkerr(MatDestroy(&normal));
+    chkerr(MatDestroy(&stiffness));
+}
 
 int main(int argc, char **argv)
 {

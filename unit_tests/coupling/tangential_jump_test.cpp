@@ -51,7 +51,8 @@ protected:
     }
 
     /// Check geometry, signs, averaging, fracture-DOF exclusion, and distributed ownership.
-    void check_jump(const std::string &mesh_file, unsigned int fracture_dim, bool two_sided = true) {
+    void check_jump(const std::string &mesh_file, unsigned int fracture_dim,
+                    bool two_sided = true, unsigned int reference_plus_id = 20) {
         std::unique_ptr<Mesh> mesh(mesh_full_constructor(
             "{mesh_file=\"coupling/" + mesh_file + "\", optimize_mesh=false}"));
         auto fields = std::make_shared<Elasticity::EqFields>();
@@ -109,7 +110,7 @@ protected:
                     const auto &dof = cell.cell_dof(i);
                     arma::vec3 value;
                     if (cell.dim() == fracture_dim + 1) {
-                        bool plus_side = cell.elm().input_id() == 20;
+                        bool plus_side = cell.elm().input_id() == reference_plus_id;
                         value = plus_side ? plus : minus;
                         if (motion == 3)
                             value += (plus_side ? 1.0 : -0.5) * gradient * (*cell.elm().node(dof.n_face_idx));
@@ -130,7 +131,8 @@ protected:
                     PetscInt row = entry.second + k;
                     PetscScalar value;
                     chkerr(VecGetValues(jump, 1, &row, &value));
-                    EXPECT_NEAR(arma::dot(tangents[k], expected), value, 1e-12);
+                    double side_sign = reference_plus_id == 20 ? 1.0 : -1.0;
+                    EXPECT_NEAR(side_sign * arma::dot(tangents[k], expected), value, 1e-12);
                 }
             }
         }
@@ -143,8 +145,36 @@ TEST_F(TangentialJumpTest, tilted_line) {
     check_jump("tangential_jump_2d.msh", 1);
 }
 
+TEST_F(TangentialJumpTest, shared_frame_matches_fracture_vertex_order)
+{
+    std::unique_ptr<Mesh> mesh(mesh_full_constructor(
+        "{mesh_file=\"coupling/tangential_jump_2d.msh\", optimize_mesh=false}"));
+    auto fields = std::make_shared<Elasticity::EqFields>();
+    fields->set_mesh(*mesh);
+    Elasticity::EqData data(fields);
+    data.create_dh(mesh.get());
+    for (auto cell : data.dh_->own_range()) {
+        if (cell.elm().input_id() != 10) continue;
+        arma::mat frame = Elasticity::EqData::tangential_frame(cell);
+        ASSERT_EQ(3, frame.n_rows);
+        ASSERT_EQ(1, frame.n_cols);
+        arma::vec3 expected("2 1 2");
+        expected /= 3.0;
+        EXPECT_LT(arma::norm(frame.col(0) - expected, 2), 1e-12);
+        EXPECT_NEAR(1.0, arma::norm(frame.col(0), 2), 1e-12);
+    }
+}
+
 TEST_F(TangentialJumpTest, tilted_triangle) {
     check_jump("tangential_jump_3d.msh", 2);
+}
+
+TEST_F(TangentialJumpTest, relabelling_master_reverses_jump_for_the_same_physical_displacement) {
+    check_jump("tangential_jump_2d_relabelled.msh", 1, true, 30);
+}
+
+TEST_F(TangentialJumpTest, reversing_fracture_vertices_reverses_tangent_coordinates) {
+    check_jump("tangential_jump_2d_reversed.msh", 1);
 }
 
 TEST_F(TangentialJumpTest, one_sided_fracture_has_no_jump_rows) {

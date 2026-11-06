@@ -10,6 +10,64 @@
 #include "permonsys.h"
 #include "system/sys_profiler.hh"
 
+namespace {
+
+/// Gather a small test vector so expected field values are independent of PETSc row ownership.
+std::vector<PetscScalar> all_values(Vec source)
+{
+    Vec local;
+    VecScatter scatter;
+    chkerr(VecScatterCreateToAll(source, &scatter, &local));
+    chkerr(VecScatterBegin(scatter, source, local, INSERT_VALUES, SCATTER_FORWARD));
+    chkerr(VecScatterEnd(scatter, source, local, INSERT_VALUES, SCATTER_FORWARD));
+    PetscInt size;
+    chkerr(VecGetSize(local, &size));
+    const PetscScalar *data;
+    chkerr(VecGetArrayRead(local, &data));
+    std::vector<PetscScalar> result(size);
+    if (size) std::copy_n(data, size, result.begin());
+    chkerr(VecRestoreArrayRead(local, &data));
+    chkerr(VecScatterDestroy(&scatter));
+    chkerr(VecDestroy(&local));
+    return result;
+}
+
+/// Compare real mechanics output with retained physical multipliers after every coupling solve.
+void expect_reaction_output(Elasticity &mechanics)
+{
+    mechanics.update_output_fields();
+    auto &data = mechanics.eq_data();
+    auto *solver = static_cast<LinSys_PERMON *>(data.ls);
+    auto normal = all_values(solver->dual_ineq_multipliers());
+    auto tangential = all_values(solver->dual_box_multipliers());
+    auto normal_field = mechanics.eq_fields().output_contact_normal_stress_ptr;
+    auto tangent_field = mechanics.eq_fields().output_contact_tangential_stress_ptr;
+    for (auto cell : data.dh_->own_range()) {
+        double expected_normal = 0.0;
+        auto normal_row = data.constraint_idx.find(cell.elm_idx());
+        if (normal_row != data.constraint_idx.end())
+            expected_normal = -normal[normal_row->second] / cell.elm().measure();
+        auto scalar_cell = cell.cell_with_other_dh(normal_field->get_dofhandler().get());
+        EXPECT_NEAR(expected_normal, normal_field->vec().get(scalar_cell.get_loc_dof_indices()[0]), 1e-10);
+        arma::vec3 expected_tangent;
+        expected_tangent.zeros();
+        auto tangent_row = data.tangential_jump_idx.find(cell.elm_idx());
+        if (tangent_row != data.tangential_jump_idx.end()) {
+            arma::vec3 direction = *cell.elm().node(1) - *cell.elm().node(0);
+            direction /= arma::norm(direction, 2);
+            expected_tangent = -direction * tangential[tangent_row->second] / cell.elm().measure();
+            EXPECT_LE(arma::norm(expected_tangent, 2), 0.001 + 1e-8);
+        }
+        auto vector_cell = cell.cell_with_other_dh(tangent_field->get_dofhandler().get());
+        auto dofs = vector_cell.get_loc_dof_indices();
+        for (unsigned int i = 0; i < dofs.size(); ++i)
+            EXPECT_NEAR(arma::dot(vector_cell.cell_dof(i).coefs, expected_tangent),
+                        tangent_field->vec().get(dofs[i]), 1e-10);
+    }
+}
+
+} // namespace
+
 TEST(TrescaMechanics, reference_is_frozen_during_coupling_iterations)
 {
     Profiler::instance();
@@ -29,7 +87,7 @@ output_stream:
   format: !vtk
     variant: ascii
 output:
-  fields: [displacement]
+  fields: [displacement, contact_normal_stress, contact_tangential_stress]
 input_fields:
   - region: bulk
     young_modulus: 1
@@ -75,6 +133,7 @@ input_fields:
         mechanics.zero_time_step();
         auto &data = mechanics.eq_data();
         auto *solver = static_cast<LinSys_PERMON *>(data.ls);
+        expect_reaction_output(mechanics);
         Vec previous, difference;
         chkerr(VecDuplicate(data.tresca_reference_jump, &previous));
         chkerr(VecDuplicate(previous, &difference));
@@ -85,6 +144,7 @@ input_fields:
 
         // A second solve at t=0 must not turn the current iterate into slip history.
         mechanics.solve_linear_system();
+        expect_reaction_output(mechanics);
         PetscReal reference_norm;
         chkerr(VecNorm(data.tresca_reference_jump, NORM_2, &reference_norm));
         EXPECT_EQ(0.0, reference_norm);
@@ -94,6 +154,7 @@ input_fields:
             time.next_time(); // The shared governor advances without Elasticity::next_time().
             for (unsigned int iteration = 0; iteration < 2; ++iteration) {
                 mechanics.solve_linear_system();
+                expect_reaction_output(mechanics);
                 chkerr(VecWAXPY(difference, -1.0, previous, data.tresca_reference_jump));
                 chkerr(VecNorm(difference, NORM_2, &reference_norm));
                 EXPECT_LT(reference_norm, 1e-12);

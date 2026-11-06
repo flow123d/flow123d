@@ -367,6 +367,9 @@ LinSys::SolveInfo LinSys_PERMON::solve_dual_qp()
 
 LinSys::SolveInfo LinSys_PERMON::solve()
 {
+    // Discard multipliers from the previous solve, including now-empty constraints.
+    chkerr(VecDestroy(&ineq_multipliers_));
+    chkerr(VecDestroy(&dual_box_multipliers_));
     const char *petsc_dflt_opt;
     
     // -mat_no_inode ... inodes are usefull only for
@@ -415,13 +418,15 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSetOperator(system, matrix_));
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
-    if (ineq_) {
-      //chkerr(MatScale(matrix_ineq_,-1.));
-      //chkerr(VecScale(ineq_,-1.));
-      // Bx<=c
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    QP unscaled_dual = nullptr;
+    PetscInt n_ineq = 0;
+    if (matrix_ineq_ && ineq_) chkerr(MatGetSize(matrix_ineq_, &n_ineq, nullptr));
+    if (n_ineq > 0) {
+        // Keep the direct dual of the original primal A*x <= b. Its solution
+        // uses original A rows after post-solve, even with transformed children.
+        chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
+        chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+        chkerr(QPGetChild(system, &unscaled_dual));
     }
     // Set runtime options, e.g -qp_chain_view_kkt
     chkerr(QPSetFromOptions(system));
@@ -429,6 +434,19 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     
     LinSys::SolveInfo info = solve_permon_qp(system, &solver, comm_, r_tol_, a_tol_, d_tol_,
                                               max_it_, nullptr, nullptr);
+    if (unscaled_dual) {
+        // Copy the borrowed physical multipliers before destroying the QP chain.
+        Vec multipliers;
+        chkerr(QPGetSolutionVector(unscaled_dual, &multipliers));
+        PetscInt global_size, local_size, expected_local_size;
+        chkerr(VecGetSize(multipliers, &global_size));
+        chkerr(VecGetLocalSize(multipliers, &local_size));
+        chkerr(VecGetLocalSize(ineq_, &expected_local_size));
+        ASSERT_PERMANENT_EQ(global_size, n_ineq).error("Contact multipliers must use original inequality rows.");
+        ASSERT_PERMANENT_EQ(local_size, expected_local_size).error("Contact multiplier ownership must match A rows.");
+        chkerr(VecDuplicate(ineq_, &ineq_multipliers_));
+        chkerr(VecCopy(multipliers, ineq_multipliers_));
+    }
     // substitute by PETSc call for residual
     //VecNorm(rhs_, NORM_2, &residual_norm_);
     
