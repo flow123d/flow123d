@@ -75,6 +75,12 @@ The mechanics equation provides several fields for output:
 \begin{itemize}
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::displacement}{displacement}: The computed displacement vector field $\uu$;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::stress}{stress}: The mechanical stress tensor $\tn\sigma(\uu)$;
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::contact-normal-stress}{contact\_normal\_stress}: The element-average normal constraint stress.
+    This field is zero on elements without contact constraints.
+    \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::contact-tangential-stress}{contact\_tangential\_stress}:
+    The element-average Cartesian friction reaction.
+    The vector acts on the bulk neighbour with the lower input element ID; the other neighbour experiences the opposite reaction. Its magnitude is independent of the choice of side, but its components may change sign along a fracture if the selected neighbour switches physical sides.
+    The field is zero without friction or on elements without tangential jump rows.
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::mean-stress}{mean\_stress}: The mean of the principal stresses, i.e. $\sigma_m:=\frac13\tn I:\tn\sigma(\uu)$;
     \item \hyperA{Mechanics-LinearElasticity-FE-OutputFields::von-mises-stress}{von\_mises\_stress}: $\sigma_{VM}:=\sqrt{\frac32\tn\sigma_d:\tn\sigma_d}$, where $\tn\sigma_d:=\tn\sigma(\uu)-\sigma_m\tn I$ is the deviatoric stress.
     Equivalently, von Mises stress can be expressed as

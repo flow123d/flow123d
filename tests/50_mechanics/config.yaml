@@ -24,6 +24,7 @@ test_cases:
   - 28_square_frac_x_contact.yaml
   - 30_3d_block_load.yaml
   - 31_3d_block_initial_stress.yaml
+  - 32_square_tresca.yaml
 - files:
   - 04_terzaghi_3d.yaml
   - 05_mandel_3d.yaml

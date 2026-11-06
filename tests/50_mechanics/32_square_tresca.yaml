@@ -1,0 +1,71 @@
+# Analytical closed-contact Tresca patch test; see 36_square_tresca_analytical.md.
+# Use analytical displacement traces and increased penalties; allow a small penalty error.
+flow123d_version: 4.0.0a01
+problem: !Coupling_Sequential
+  description: Analytical square with a horizontal closed fracture and Tresca friction.
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_middle.msh
+  flow_equation: !Coupling_Iterative
+    input_fields:
+      - region: BULK
+        biot_alpha: 0
+        gravity: 0
+    time:
+      end_time: 2
+      min_dt: 1
+      max_dt: 1
+    flow_equation: !Flow_Darcy_LMH
+      input_fields:
+        - region: BULK
+          conductivity: 1
+        - region: fracture
+          cross_section: 0.1
+        - region: .BOUNDARY
+          bc_type: dirichlet
+          bc_pressure: 0
+      output:
+        fields: []
+    mechanics_equation:
+      contact: true
+      tresca_friction: true
+      solver: !Petsc
+        r_tol: 1e-11
+        a_tol: 1e-50
+      output_stream:
+        file: mechanics.pvd
+        precision: 15
+        format: !vtk
+          variant: ascii
+      output:
+        times:
+          - step: 1
+        fields: [displacement, stress, region_id, cross_section_updated,
+                 contact_normal_stress, contact_tangential_stress]
+      input_fields:
+        - region: bulk
+          young_modulus: 1
+          poisson_ratio: 0
+          dirichlet_penalty: 1e6
+        - region: fracture
+          young_modulus: 0.02
+          poisson_ratio: 0
+          dirichlet_penalty: 2e4
+          cross_section_min: 0.1
+          friction_threshold: 0.05
+        - region: .BOUNDARY
+          bc_type: displacement
+        # t=0: stick.
+        - region: .BOUNDARY
+          time: 0
+          bc_displacement: !FieldFormula
+            value: "[0.02*X[1], -0.2*X[1], 0]"
+        # t=1: positive sliding.
+        - region: .BOUNDARY
+          time: 1
+          bc_displacement: !FieldFormula
+            value: "[(7/60)*X[1] + (1/24 if X[1]>0 else -1/24 if X[1]<0 else 0), -0.2*X[1], 0]"
+        # t=2: reverse sliding.
+        - region: .BOUNDARY
+          time: 2
+          bc_displacement: !FieldFormula
+            value: "[(-7/60)*X[1] + (-1/24 if X[1]>0 else 1/24 if X[1]<0 else 0), -0.2*X[1], 0]"
