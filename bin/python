@@ -1,0 +1,7 @@
+#!/bin/bash
+# Run Python against the active CMake build tree and development sources.
+set -e
+
+flow_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PYTHONPATH="${flow_root}/build_tree/src:${flow_root}/src${PYTHONPATH:+:${PYTHONPATH}}"
+exec python3 "$@"

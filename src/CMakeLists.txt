@@ -120,7 +120,7 @@ target_link_libraries(flow123d_system PUBLIC
 set_target_properties(flow123d_system 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
+               INSTALL_RPATH "$ORIGIN"
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )    
 add_dependencies(flow123d_system update_source_tree)
@@ -306,6 +306,10 @@ target_link_libraries(flow123d_python_api
     flow123d_system
     armadillo
 )
+set_target_properties(flow123d_python_api PROPERTIES
+    BUILD_RPATH "$ORIGIN;$ORIGIN/../lib"
+    INSTALL_RPATH "$ORIGIN/.."
+)
 
 
 # coupling_lib  
@@ -398,7 +402,7 @@ target_link_libraries(flow123d_core
 set_target_properties(flow123d_core 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
+               INSTALL_RPATH "$ORIGIN;$ORIGIN/python"
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )
 add_dependencies(flow123d_core rev_num_always)    
@@ -410,7 +414,7 @@ target_link_libraries(flow123d_main_api PRIVATE
     ${PETSC_ADDITIONAL_LIBS}
 )
 set_target_properties(flow123d_main_api PROPERTIES
-    BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+    BUILD_RPATH "$ORIGIN;$ORIGIN/../lib"
     INSTALL_RPATH "$ORIGIN/.."
 )
 
