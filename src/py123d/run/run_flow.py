@@ -21,7 +21,7 @@ input_data = {
                     "a_tol": 1.0e-10
                 }
             },
-            "input_fields": {
+            "input_fields": [
                 { 
                     "region": "plane",
                     "anisotropy": 1,
@@ -35,12 +35,12 @@ input_data = {
                      "bc_type": "dirichlet",
                      "bc_pressure": 0
                  }
-            },
+            ],
             "output": {
-                "fields": {
+                "fields": [
                     "pressure_p0",
                     "velocity_p0"
-                }
+                ]
             },
             "output_stream": {
                 "file": "./flow.pvd",
@@ -53,4 +53,4 @@ input_data = {
     }
 }
 
-flow123d.run(input_data)
+flow123d_main_api.run(input_data)

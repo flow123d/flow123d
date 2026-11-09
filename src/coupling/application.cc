@@ -52,24 +52,6 @@
 
 
 
-PYBIND11_MODULE(flow123d_main_api, m) {
-    m.doc() = "Python interface to Flow123d";
-
-    m.def(
-        "run",
-        [](const py::dict &input) {
-            Application app;
-            app.init_python();
-
-            Input::Record record = app.read_input(input);
-            app.run(record);
-        },
-        py::arg("input")
-    );
-}
-
-
-
 /// Function that catches all program signals.
 /// Note: context variable required by PETSc function PetscPushSignalHandler
 PetscErrorCode petsc_signal_handler(int signal, FMT_UNUSED void *context)

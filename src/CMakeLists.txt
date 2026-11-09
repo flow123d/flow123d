@@ -403,5 +403,16 @@ set_target_properties(flow123d_core
 )
 add_dependencies(flow123d_core rev_num_always)    
 
+# Python entry point shares the application implementation with the executable.
+pybind11_add_module(flow123d_main_api coupling/python_wrapper.cpp)
+target_link_libraries(flow123d_main_api PRIVATE
+    flow123d_core
+    ${PETSC_ADDITIONAL_LIBS}
+)
+set_target_properties(flow123d_main_api PROPERTIES
+    BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
+    INSTALL_RPATH "$ORIGIN/.."
+)
+
 #add_dependencies(flow123d_core tbb)
 
