@@ -25,6 +25,7 @@
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
+using TensorVoigt = arma::mat::fixed<6,6>;
 
 
 
