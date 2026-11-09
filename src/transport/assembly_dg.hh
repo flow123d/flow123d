@@ -57,7 +57,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        ndofs_ = this->n_dofs();
+        ndofs_ = conc_shape_.n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_retardation_balance_vector_.resize(ndofs_);
@@ -269,8 +269,8 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        ndofs_ = this->n_dofs();
-        unsigned int ndofs_high = this->n_dofs_high();
+        ndofs_ = conc_shape_.n_dofs();
+        unsigned int ndofs_high = conc_join_shape_.n_dofs_high();
         qsize_lower_dim_ = this->quad_low_->size();
         dof_indices_.resize(ndofs_high);
         side_dof_indices_vb_.resize(2*ndofs_high);
@@ -714,7 +714,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        ndofs_ = this->n_dofs();
+        ndofs_ = conc_shape_.n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_source_balance_vector_.resize(ndofs_);
@@ -835,7 +835,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        ndofs_ = this->n_dofs();
+        ndofs_ = conc_shape_.n_dofs();
         dof_indices_.resize(ndofs_);
         local_rhs_.resize(ndofs_);
         local_flux_balance_vector_.resize(ndofs_);
@@ -1032,7 +1032,7 @@ public:
 
     /// Initialize auxiliary vectors and other data members
     void initialize() {
-        ndofs_ = this->n_dofs();
+        ndofs_ = init_shape_.n_dofs();
         dof_indices_.resize(ndofs_);
         local_matrix_.resize(4*ndofs_*ndofs_);
         local_rhs_.resize(ndofs_);

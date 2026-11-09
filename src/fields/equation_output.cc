@@ -80,17 +80,11 @@ IT::Record &EquationOutput::get_input_type() {
 
 
 EquationOutput::EquationOutput()
-: FieldSet(), output_elem_data_assembly_(nullptr), output_node_data_assembly_(nullptr), output_corner_data_assembly_(nullptr),
-  observe_output_assembly_(nullptr) {
+: FieldSet() {
     this->add_coords_field();
 }
 
-EquationOutput::~EquationOutput() {
-    if (output_elem_data_assembly_ != nullptr) delete output_elem_data_assembly_;
-    if (output_node_data_assembly_ != nullptr) delete output_node_data_assembly_;
-    if (output_corner_data_assembly_ != nullptr) delete output_corner_data_assembly_;
-    if (observe_output_assembly_ != nullptr) delete observe_output_assembly_;
-}
+EquationOutput::~EquationOutput() {}
 
 
 
@@ -158,13 +152,7 @@ void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, 
 	    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe_p_disc);
 	    dh_node_->distribute_dofs(ds);
     }
-
-    output_elem_data_assembly_ = new GenericAssembly< AssemblyOutputElemDataDim >(this);
-    output_node_data_assembly_ = new GenericAssembly< AssemblyOutputNodeDataDim >(this);
-    output_corner_data_assembly_ = new GenericAssembly< AssemblyOutputNodeDataDim >(this);
-    observe_output_assembly_ = new GenericAssemblyObserve< AssemblyObserveOutput >(this, this->observe_fields_, stream_->observe( mesh_ ));
 }
-
 
 
 void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & tg)
@@ -282,11 +270,12 @@ void EquationOutput::output(TimeStep step)
             }
         }
         if (used_fields.size()>0) {
-            auto mixed_assmbly = output_node_data_assembly_->multidim_assembly();
+            GenericAssembly< AssemblyOutputNodeDataDim > output_node_data_assembly(this);
+            auto mixed_assmbly = output_node_data_assembly.multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
-            output_node_data_assembly_->assemble(this->dh_node_);
+            output_node_data_assembly.assemble(this->dh_node_);
         }
     }
 
@@ -300,11 +289,12 @@ void EquationOutput::output(TimeStep step)
             }
         }
         if (used_fields.size()>0) {
-            auto mixed_assmbly = output_corner_data_assembly_->multidim_assembly();
+            GenericAssembly< AssemblyOutputNodeDataDim > output_corner_data_assembly(this);
+            auto mixed_assmbly = output_corner_data_assembly.multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
-            output_corner_data_assembly_->assemble(this->dh_node_);
+            output_corner_data_assembly.assemble(this->dh_node_);
         }
     }
 
@@ -318,11 +308,12 @@ void EquationOutput::output(TimeStep step)
             }
         }
         if (used_fields.size()>0) {
-            auto mixed_assmbly = output_elem_data_assembly_->multidim_assembly();
+            GenericAssembly< AssemblyOutputElemDataDim > output_elem_data_assembly(this);
+            auto mixed_assmbly = output_elem_data_assembly.multidim_assembly();
             mixed_assmbly[1_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[2_d]->set_output_data(used_fields, stream_);
             mixed_assmbly[3_d]->set_output_data(used_fields, stream_);
-            output_elem_data_assembly_->assemble(this->dh_);
+            output_elem_data_assembly.assemble(this->dh_);
         }
     }
 
@@ -347,7 +338,8 @@ void EquationOutput::output(TimeStep step)
                 }
             }
         }
-        observe_output_assembly_->assemble(this->dh_);
+        GenericAssemblyObserve< AssemblyObserveOutput > observe_output_assembly(this, this->observe_fields_, stream_->observe( mesh_ ));
+        observe_output_assembly.assemble(this->dh_);
     }
 }
 

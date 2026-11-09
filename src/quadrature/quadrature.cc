@@ -29,10 +29,17 @@ Quadrature& Quadrature::operator=(const Quadrature &q)
 }
     
 
+bool Quadrature::operator==(const Quadrature &q)
+{
+    return (this->dim() == q.dim()) && (this->size() == q.size());
+}
+
+
 Quadrature::Quadrature(unsigned int dimension, unsigned int n_q)
 : dim_(dimension),
   quadrature_points(dimension, 1,  n_q),
-  weights(n_q, 0)
+  weights(n_q, 0),
+  quad_order_(-1)
 {}
 
 

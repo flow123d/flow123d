@@ -94,9 +94,54 @@ TEST(MultiField, transposition) {
 class MultiFieldTest : public testing::Test {
 public:
 
+    /// Represent assembly class similar to assembly objects in equations
+    template <unsigned int dim>
+    class AsmBase {
+    public:
+        /**
+         * Constructor
+         */
+        AsmBase(uint quad_order)
+        : q_bulk_( new QGauss(dim, 2*quad_order) )
+        {}
+
+    	/// Destructor
+        virtual ~AsmBase() {
+            delete q_bulk_;
+        }
+
+
+        std::shared_ptr<BulkIntegralAcc<dim>> create_bulk_integral(PatchInternals &patch_internals) {
+            ASSERT_PERMANENT_EQ(q_bulk_->dim(), dim);
+            std::tuple<uint, uint> tpl = IntegralTplHash::integral_tuple(dim, q_bulk_->size());
+            auto result = integrals_.bulk_.insert({
+                    tpl,
+                    std::make_shared<BulkIntegralAcc<dim>>(patch_internals, q_bulk_)
+                });
+            return result.first->second;
+        }
+
+
+        /** Declaration of data members **/
+        DimIntegrals<dim> integrals_;                                     ///< Set of used integrals.
+        Quadrature *q_bulk_;
+    };
+
+    /// Represent similar object to GenericAssembly in equations
+    class GenericAsm {
+    public:
+        GenericAsm()
+        : multidim_asm_(0) {}
+
+        MixedPtr<AsmBase, 1> multidim_asm_;
+        PatchInternals patch_internals_;
+    };
+
     class EqData : public FieldSet {
     public:
-		EqData() {
+		EqData()
+		: tg_(0.25, 0.75), use_pfev_(false) {
+		    generic_asm_ = new GenericAsm();
             *this+=scalar_field
             		.name("scalar_field")
         			.description("Scalar field.")
@@ -111,29 +156,82 @@ public:
 					.input_default("0.0")
         			.flags_add( in_main_matrix );
 
+            reinit_asm_data();
+        }
+
+        /// Create new integral objects and initialize patch_internals_. Use at the begin of time step.
+        void reinit_asm_data() {
             // Asumme following types:
-            Quadrature *q_bulk_1d = new QGauss(1, 0);
-            Quadrature *q_bulk_2d = new QGauss(2, 0);
-            Quadrature *q_bulk_3d = new QGauss(3, 0);
-            bulk_int[0] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk_1d, 1);
-            bulk_int[1] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk_2d, 2);
-            bulk_int[2] = std::make_shared<BulkIntegral>(patch_internals_.eval_points_, q_bulk_3d, 3);
-            patch_internals_.element_cache_map_.init(patch_internals_.eval_points_);
+            bulk_int[0] = multidim_asm()[1_d]->create_bulk_integral(patch_internals());
+            bulk_int[1] = multidim_asm()[2_d]->create_bulk_integral(patch_internals());
+            bulk_int[2] = multidim_asm()[3_d]->create_bulk_integral(patch_internals());
+            patch_internals().element_cache_map_.init(patch_internals().eval_points_);
         }
 
         void register_eval_points() {
             unsigned int reg_idx = computed_dh_cell_.elm().region_idx().idx();
-            for (auto p : bulk_int[computed_dh_cell_.dim()-1]->points(patch_internals_.element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals_.element_cache_map_) ) {
-                patch_internals_.element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
+            for (auto p : bulk_int[computed_dh_cell_.dim()-1]->points(patch_internals().element_cache_map_.position_in_cache(computed_dh_cell_.elm_idx()), &patch_internals().element_cache_map_) ) {
+                patch_internals().element_cache_map_.add_eval_point(reg_idx, computed_dh_cell_.elm_idx(), p.eval_point_idx(), computed_dh_cell_.local_idx());
             }
-            patch_internals_.element_cache_map_.make_paermanent_eval_points();
+            if (use_pfev_) {
+            	bulk_int[computed_dh_cell_.dim()-1]->patch_data().emplace_back(computed_dh_cell_);
+                ++( patch_internals().fe_values_.ppv(bulk_domain, computed_dh_cell_.dim()) ).n_mesh_items_;
+            }
         }
 
         void update_cache() {
+            patch_internals().element_cache_map_.clear_element_eval_points_map();
+            if (this->use_pfev_)
+                reset_patch();
+            patch_internals().element_cache_map_.start_elements_update();
             this->register_eval_points();
-            patch_internals_.element_cache_map_.create_patch();
-            this->cache_update(patch_internals_.element_cache_map_);
-            patch_internals_.element_cache_map_.finish_elements_update();
+            multidim_asm()[1_d]->integrals_.make_permanent();
+            multidim_asm()[2_d]->integrals_.make_permanent();
+            multidim_asm()[3_d]->integrals_.make_permanent();
+            patch_internals().element_cache_map_.make_paermanent_eval_points();
+            if (use_pfev_)
+                patch_internals().fe_values_.make_permanent_ppv_data();
+            patch_internals().element_cache_map_.create_patch();
+
+            if (use_pfev_) {
+                patch_internals().fe_values_.prepare_new_patch(patch_internals().eval_points_);
+                patch_internals().fe_values_.add_patch_points<3>(multidim_asm()[3_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.add_patch_points<2>(multidim_asm()[2_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.add_patch_points<1>(multidim_asm()[1_d]->integrals_, &patch_internals().element_cache_map_);
+                patch_internals().fe_values_.reinit_patch();
+            }
+
+            this->cache_update(patch_internals().element_cache_map_);
+            patch_internals().element_cache_map_.finish_elements_update();
+        }
+
+        void reset_patch() {
+            patch_internals().fe_values_.reset();
+            multidim_asm()[1_d]->integrals_.reset();
+            multidim_asm()[2_d]->integrals_.reset();
+            multidim_asm()[3_d]->integrals_.reset();
+        }
+
+        void reallocate_cache() {
+            this->set_time(tg_.step(), LimitSide::right);
+            this->cache_reallocate(patch_internals(), *this);
+            if (use_pfev_)
+                patch_internals().fe_values_.init_finalize();
+        }
+
+        void next_time() {
+            delete generic_asm_;
+            tg_.next_time();
+            generic_asm_ = new GenericAsm();
+            reinit_asm_data();
+        }
+
+        inline MixedPtr<AsmBase, 1> &multidim_asm() {
+            return generic_asm_->multidim_asm_;
+        }
+
+        PatchInternals &patch_internals() {
+            return generic_asm_->patch_internals_;
         }
 
 
@@ -143,10 +241,12 @@ public:
         std::array<std::shared_ptr<BulkIntegral>, 3> bulk_int;  // dim 1,2,3
         std::shared_ptr<DOFHandlerMultiDim> dh_;
         DHCellAccessor computed_dh_cell_;
-        PatchInternals patch_internals_;
+        GenericAsm *generic_asm_;
+        TimeGovernor tg_;
+        bool use_pfev_;    ///< Temporary flag marks child tests that needs to work with PatchFeValues object
     };
 
-    MultiFieldTest() : tg(0.25, 0.75) {
+    MultiFieldTest() {
     	Profiler::instance();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
@@ -178,7 +278,7 @@ public:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         eq_data_->set_mesh(*mesh_);
-        eq_data_->set_input_list( inputs[input_last], tg );
+        eq_data_->set_input_list( inputs[input_last], eq_data_->tg_ );
     }
 
     void set_dh_cell(unsigned int elm_idx, unsigned int reg_idx) {
@@ -193,7 +293,6 @@ public:
     std::shared_ptr<EqData> eq_data_;
     std::vector<std::string> component_names;
     Mesh * mesh_;
-    TimeGovernor tg;
 };
 
 MultiField<3, FieldValue<3>::Scalar> MultiFieldTest::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
@@ -229,17 +328,16 @@ TEST_F(MultiFieldTest, const_full_test) {
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         EXPECT_EQ(3, eq_data_->scalar_field.size());
         for (uint i_comp=0; i_comp<3; ++i_comp) {
             EXPECT_EQ(i_comp+1, eq_data_->scalar_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -257,17 +355,16 @@ TEST_F(MultiFieldTest, const_base_test) {
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         EXPECT_EQ(3, eq_data_->scalar_field.size());
         for (uint i_comp=0; i_comp<3; ++i_comp) {
             EXPECT_EQ(1, eq_data_->scalar_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -284,17 +381,16 @@ TEST_F(MultiFieldTest, const_autoconv_test) {
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         EXPECT_EQ(3, eq_data_->scalar_field.size());
         for (uint i_comp=0; i_comp<3; ++i_comp) {
             EXPECT_EQ(1, eq_data_->scalar_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -315,19 +411,18 @@ TEST_F(MultiFieldTest, formula_full_test) {
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         arma::vec3 elm_cntr = this->eq_data_->computed_dh_cell_.elm().centre(); // {-0.5, 0.5, 0.0}
 
         // test of FieldFormula - full input
-        EXPECT_EQ(tg.t(), eq_data_->scalar_field[0](p));
+        EXPECT_EQ(eq_data_->tg_.t(), eq_data_->scalar_field[0](p));
         EXPECT_EQ(elm_cntr(0), eq_data_->scalar_field[1](p));
-        EXPECT_EQ(elm_cntr(1)-tg.t(), eq_data_->scalar_field[2](p));
+        EXPECT_EQ(elm_cntr(1)-eq_data_->tg_.t(), eq_data_->scalar_field[2](p));
 
-        tg.next_time();
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -345,10 +440,9 @@ TEST_F(MultiFieldTest, formula_base_test) {
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         arma::vec3 elm_cntr = this->eq_data_->computed_dh_cell_.elm().centre(); // {-0.5, 0.5, 0.0}
 
@@ -356,7 +450,7 @@ TEST_F(MultiFieldTest, formula_base_test) {
             EXPECT_EQ(elm_cntr(0), eq_data_->scalar_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->tg_.next_time();
     }
 }
 
@@ -373,20 +467,20 @@ TEST_F(MultiFieldTest, field_fe_test) {
     )YAML";
     std::vector< arma::vec3 > fe_expected = {{0.5, 0.5, -1.0}, {0.5, 1.0, 0.0}};
 
+    eq_data_->use_pfev_ = true;
     this->read_input(eq_data_input);
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         for (uint i_comp=0; i_comp<3; ++i_comp) {
             EXPECT_ARMA_EQ(fe_expected[i_time], eq_data_->vector_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->next_time();
     }
 }
 
@@ -404,20 +498,20 @@ TEST_F(MultiFieldTest, interpolated_p0_test) {
     )YAML";
     std::vector< double > p0_expected = {0.147606084199045, 1.147606084199045};
 
+    eq_data_->use_pfev_ = true;
     this->read_input(eq_data_input);
     this->set_dh_cell(4, 39);
 
     for (uint i_time=0; i_time<2; i_time++) { // test in 2 time steps: 0.25, 1.0
-        eq_data_->set_time(tg.step(), LimitSide::right);
-        eq_data_->cache_reallocate( eq_data_->patch_internals_, *(eq_data_.get()) );
+        eq_data_->reallocate_cache();
         eq_data_->update_cache();
-        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals_.element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals_.element_cache_map_).begin() );
+        auto p = *( eq_data_->bulk_int[0]->points(eq_data_->patch_internals().element_cache_map_.position_in_cache(eq_data_->computed_dh_cell_.elm_idx()), &eq_data_->patch_internals().element_cache_map_).begin() );
 
         for (uint i_comp=0; i_comp<3; ++i_comp) {
             EXPECT_DOUBLE_EQ(p0_expected[i_time], eq_data_->scalar_field[i_comp](p));
         }
 
-        tg.next_time();
+        eq_data_->next_time();
     }
 }
 

@@ -25,6 +25,7 @@
 using Scalar = double;
 using Vector = arma::vec3;
 using Tensor = arma::mat33;
+using TensorVoigt = arma::mat::fixed<6,6>;
 
 
 
@@ -125,7 +126,8 @@ class FeQJoin {
 public:
     /// Default constructor
     FeQJoin()
-    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr)
+    : patch_op_bulk_(nullptr), patch_op_side_(nullptr), patch_op_zero_bulk_(nullptr), patch_op_zero_side_(nullptr),
+      n_dofs_high_(25), n_dofs_low_(25)
     {}
 
     /**

@@ -113,6 +113,8 @@ public:
 
     Quadrature &operator=(const Quadrature &q);
     
+    bool operator==(const Quadrature &q);
+
     /**
      * Create bulk quadrature from side quadrature.
      * 
@@ -122,6 +124,12 @@ public:
     template<unsigned int bulk_dim>
     Quadrature make_from_side(unsigned int sid) const;
     
+    /// Getter of quad_order_
+    inline unsigned int quad_order() const {
+        ASSERT(quad_order_ != (uint)-1).error("Value of quad_order is set and can be used only in QGauss quadrature!");
+        return quad_order_;
+    }
+
 
 protected:
     
@@ -142,8 +150,32 @@ protected:
      */
     std::vector<double> weights;
 
+    /**
+     * Holds order of quadrature.
+     *
+     * Value is set in QGauss descendant, in other case is used default value '-1'
+     */
+    unsigned int quad_order_;
+
 };
 
+
+
+namespace std {
+
+/// Template specialization of std::hash for Quadrature
+template<>
+struct hash<Quadrature> {
+    std::size_t operator()(const Quadrature &q) const noexcept {
+        std::size_t h1 = std::hash<uint>{}(q.dim());
+        std::size_t h2 = std::hash<uint>{}(q.size());
+
+        // hash combine
+        return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
+} // namespace std
 
 
 
