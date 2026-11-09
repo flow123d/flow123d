@@ -1,7 +1,7 @@
 #!/bin/python3
 # author: David Flanderka
 
-import flow123d
+import flow123d_main_api
 
 input_data = {
     "flow123d_version": "4.0.0a01",
@@ -11,7 +11,7 @@ input_data = {
         "description": "Test8 - Steady flow with sources",
         "mesh": {
             "mesh_file": "../00_mesh/square_1x1_shift.msh"
-        }.
+        },
         "flow_equation": { 
             "TYPE": "Flow_Darcy_LMH",
             "nonlinear_solver": {
@@ -24,7 +24,7 @@ input_data = {
             "input_fields": {
                 { 
                     "region": "plane",
-                    "anisotropy": 1
+                    "anisotropy": 1,
                     "water_source_density": { 
                         "TYPE": "FieldFormula",
                         "value": "2*(1-X[0]**2)+2*(1-X[1]**2)"
