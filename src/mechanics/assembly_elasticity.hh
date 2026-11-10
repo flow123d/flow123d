@@ -183,11 +183,12 @@ public:
         side_dof_indices_[1] = cell_higher_dim.get_loc_dof_indices();
 		fe_values_side_.reinit(neighb_side.side());
 
-        // mark dofs that do not contribute to dimjoin coupling
-        vector<LongIdx> lower_nodes;
-        for (unsigned int i=0; i<dim; i++)
-            lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
-        vector<double> ignore_dofs(n_dofs_, false);
+        // TODO: Remove this unused code.
+        // // mark dofs that do not contribute to dimjoin coupling
+        // vector<LongIdx> lower_nodes;
+        // for (unsigned int i=0; i<dim; i++)
+        //     lower_nodes.push_back(cell_lower_dim.elm().node(i).idx());
+        // vector<double> ignore_dofs(n_dofs_, false);
 
         for (unsigned int n=0; n<2; ++n)
             for (unsigned int m=0; m<2; ++m)
@@ -205,7 +206,8 @@ public:
             {
                 for (unsigned int i=0; i<n_dofs_ngh_[n]; i++)
                 {
-                    if (n == 1 && ignore_dofs[i]) continue;
+                    // TODO: Remove this unused code.
+                    // if (n == 1 && ignore_dofs[i]) continue;
                     arma::vec3 vi = (n==0) ? arma::zeros(3) : vec_view_side_->value(i,k);
                     arma::vec3 vf = (n==1) ? arma::zeros(3) : vec_view_sub_->value(i,k);
                     arma::mat33 gvft = (n==0) ? mat_t(vec_view_sub_->grad(i,k),nv) : arma::zeros(3,3);
@@ -213,12 +215,14 @@ public:
                         arma::mat33 gvi = (n==0) ? arma::zeros(3,3) : vec_view_side_->grad(i,k);
                         vi = vi - eq_fields_->cross_section(p_low)/2 * (gvi*nv);
                     }
-                    double divvft = (n==0) ? arma::trace(gvft) : 0;
+                    // TODO: Add the following line together with the commented out block of code below, implementing local_matrix_ngh assembly.
+                    // double divvft = (n==0) ? arma::trace(gvft) : 0;
 
                     for (int m=0; m<2; m++)
                     {
                         for (unsigned int j=0; j<n_dofs_ngh_[m]; j++) {
-                            if (m == 1 && ignore_dofs[j]) continue;
+                            // TODO: Remove this unused code.
+                            // if (m == 1 && ignore_dofs[j]) continue;
                             arma::vec3 ui = (m==0) ? arma::zeros(3) : vec_view_side_->value(j,k);
                             arma::vec3 uf = (m==1) ? arma::zeros(3) : vec_view_sub_->value(j,k);
                             arma::mat33 guft = (m==0) ? mat_t(vec_view_sub_->grad(j,k),nv) : arma::zeros(3,3);
@@ -230,13 +234,22 @@ public:
 
                             local_matrix_ngh_[n][m][i*n_dofs_ngh_[m] + j] +=
                                     eq_fields_->fracture_sigma(p_low)*(
-                                        2/eq_fields_->cross_section(p_low)*(
-                                            eq_fields_->lame_mu(p_low)*arma::dot(vf-vi,uf-ui)
-                                          +(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*arma::dot(uf-ui,nv)*arma::dot(vf-vi,nv)
-                                        )
-                                        + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
-                                        + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
-                                    )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
+                                     arma::dot(vf-vi,
+                                      2/eq_fields_->cross_section(p_low)*(eq_fields_->lame_mu(p_low)*(uf-ui)+(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*(arma::dot(uf-ui,nv)*nv))
+                                      + eq_fields_->lame_mu(p_low)*arma::trans(guft)*nv
+                                      + eq_fields_->lame_lambda(p_low)*divuft*nv
+                                     )
+                                     - arma::dot(gvft, eq_fields_->lame_mu(p_low)*arma::kron(nv,ui.t()) + eq_fields_->lame_lambda(p_low)*arma::dot(ui,nv)*arma::eye(3,3))
+                                    )*fe_values_sub_.JxW(k);
+                                    // TODO: Replace the above 7 lines starting "arma::dot(vf-vi," with the following code.
+                                    // It is mathematically equivalent, but the below code is more readable.
+                                    //     2/eq_fields_->cross_section(p_low)*(
+                                    //         eq_fields_->lame_mu(p_low)*arma::dot(vf-vi,uf-ui)
+                                    //       +(eq_fields_->lame_mu(p_low)+eq_fields_->lame_lambda(p_low))*arma::dot(uf-ui,nv)*arma::dot(vf-vi,nv)
+                                    //     )
+                                    //     + eq_fields_->lame_mu(p_low)*( arma::dot(vf-vi,guft.t()*nv) + arma::dot(uf-ui,gvft.t()*nv) )
+                                    //     + eq_fields_->lame_lambda(p_low)*( divuft*arma::dot(vf-vi,nv) + divvft*arma::dot(uf-ui,nv) )
+                                    // )*fe_values_sub_.JxW(k) * 2/cell_lower_dim.elm()->n_neighs_vb();
                         }
                     }
 
