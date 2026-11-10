@@ -18,19 +18,117 @@
 
 // derived from base linsys
 #include "la/linsys_PERMON.hh"
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 #include "petscvec.h"
 #include "petscksp.h"
 #include "petscmat.h"
+#include "permonvec.h"
 #include "system/sys_profiler.hh"
 #include "system/system.hh"
+#include "fem/dofhandler.hh"
 
 
-//#include <boost/bind.hpp>
+
+
+
+
 
 namespace it = Input::Type;
 
+namespace {
+
+// Auxiliary function for converting matrix from undecomposed to AIJ indexing.
+PetscErrorCode convert_mat_is_to_aij(Mat matrix_is, Mat *matrix_aij)
+{
+    PetscFunctionBegin;
+    PetscCheck(matrix_is, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null inequality matrix.");
+    PetscCheck(matrix_aij, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null output inequality matrix pointer.");
+    PetscCall(MatConvert(matrix_is, MATAIJ, MAT_INITIAL_MATRIX, matrix_aij));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+// Auxiliary function for converting IS from undecomposed to decomposed indexing.
+// input:
+//   matrix_is: Matrix to be converted.
+//   isnz: Index set of nonzero rows/columns in Hessian.
+//   A_decomposed: Hessian from which the column distribution is taken.
+// output:
+//   matrix_decomp: Resulting matrix in decomposed indexing.
+PetscErrorCode convert_mat_is_to_feti_decomposed(Mat matrix_is,
+                                                  IS isnz,
+                                                  Mat A_decomposed,
+                                                  Mat *matrix_decomp)
+{
+    Mat Bloc = NULL, Bloc_reduced = NULL;
+    IS ris_all = NULL;
+    ISLocalToGlobalMapping row_l2g = NULL, col_l2g_dec = NULL;
+    const PetscInt *row_gidx = NULL, *col_gidx_dec = NULL;
+    PetscInt nrows_local, ncols_local_dec;
+    PetscInt M_rows, N_cols_dec;
+
+    PetscFunctionBegin;
+    PetscCheck(matrix_is, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null inequality matrix.");
+    PetscCheck(isnz, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null reduced-column index set.");
+    PetscCheck(A_decomposed, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null decomposed operator.");
+    PetscCheck(matrix_decomp, PETSC_COMM_SELF, PETSC_ERR_ARG_NULL, "Null output inequality matrix pointer.");
+
+    PetscCall(MatISGetLocalMat(matrix_is, &Bloc));
+    PetscCall(MatGetLocalSize(Bloc, &nrows_local, NULL));
+    PetscCall(ISCreateStride(PETSC_COMM_SELF, nrows_local, 0, 1, &ris_all));
+    PetscCall(MatCreateSubMatrix(Bloc, ris_all, isnz, MAT_INITIAL_MATRIX, &Bloc_reduced));
+
+    PetscCall(MatGetLocalSize(Bloc_reduced, &nrows_local, &ncols_local_dec));
+    PetscCall(MatGetSize(matrix_is, &M_rows, NULL));
+    PetscCall(MatGetSize(A_decomposed, NULL, &N_cols_dec));
+
+    PetscCall(MatGetLocalToGlobalMapping(matrix_is, &row_l2g, NULL));
+    PetscCall(ISLocalToGlobalMappingGetIndices(row_l2g, &row_gidx));
+    PetscCall(MatGetLocalToGlobalMapping(A_decomposed, &col_l2g_dec, NULL));
+    PetscCall(ISLocalToGlobalMappingGetIndices(col_l2g_dec, &col_gidx_dec));
+
+    PetscCall(MatCreateAIJ(PetscObjectComm((PetscObject)matrix_is),
+                           nrows_local, ncols_local_dec,
+                           M_rows,     N_cols_dec,
+                           32, NULL, 32, NULL,
+                           matrix_decomp));
+
+    for (PetscInt i = 0; i < nrows_local; ++i) {
+        PetscInt ncols;
+        const PetscInt *cols_loc;
+        const PetscScalar *vals;
+        PetscInt row_global = row_gidx[i];
+
+        PetscCall(MatGetRow(Bloc_reduced, i, &ncols, &cols_loc, &vals));
+        if (ncols > 0) {
+            std::vector<PetscInt> cols_global(ncols);
+            for (PetscInt j = 0; j < ncols; ++j) {
+                PetscInt loc_col = cols_loc[j];
+                PetscCheck(loc_col >= 0 && loc_col < ncols_local_dec,
+                           PetscObjectComm((PetscObject)matrix_is), PETSC_ERR_ARG_OUTOFRANGE,
+                           "Reduced local inequality column index out of range.");
+                cols_global[j] = col_gidx_dec[loc_col];
+            }
+            PetscCall(MatSetValues(*matrix_decomp, 1, &row_global, ncols, cols_global.data(), vals, ADD_VALUES));
+        }
+        PetscCall(MatRestoreRow(Bloc_reduced, i, &ncols, &cols_loc, &vals));
+    }
+
+    PetscCall(MatAssemblyBegin(*matrix_decomp, MAT_FINAL_ASSEMBLY));
+    PetscCall(MatAssemblyEnd(*matrix_decomp, MAT_FINAL_ASSEMBLY));
+    PetscCall(ISLocalToGlobalMappingRestoreIndices(col_l2g_dec, &col_gidx_dec));
+    PetscCall(ISLocalToGlobalMappingRestoreIndices(row_l2g, &row_gidx));
+    PetscCall(ISDestroy(&ris_all));
+    PetscCall(MatDestroy(&Bloc_reduced));
+    PetscCall(MatISRestoreLocalMat(matrix_is, &Bloc));
+    PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+} // namespace
+
 const it::Record & LinSys_PERMON::get_input_type() {
-	return it::Record("Petsc", "PETSc solver settings.\n It provides interface to various PETSc solvers. The convergence criteria is:\n"
+	return it::Record("Permon", "PERMON solver settings.\n It provides interface to various PERMON solvers. The convergence criteria is:\n"
 	        "```\n"
 	        "norm( res_i )  < max( norm( res_0 ) * r_tol, a_tol )\n"
 	        "```\n"
@@ -46,9 +144,13 @@ const it::Record & LinSys_PERMON::get_input_type() {
 		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
                         "If not, we use the value 1.0e-11."),
 		            "Absolute residual tolerance.")
+        .declare_key("d_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 10000."),
+		            "Tolerance for divergence.")
         .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
                         "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
+    .declare_key("warm_start", it::Bool(), it::Default("true"), "Warm start QPS solver with the privous solution.")
 		.declare_key("options", it::String(), it::Default("\"\""),  "This options is passed to PETSC to create a particular KSP (Krylov space method).\n"
                                                                     "If the string is left empty (by default), the internal default options is used.")
 		.close();
@@ -58,19 +160,53 @@ const it::Record & LinSys_PERMON::get_input_type() {
 const int LinSys_PERMON::registrar = LinSys_PERMON::get_input_type().size();
 
 
-LinSys_PERMON::LinSys_PERMON( const Distribution * rows_ds, const std::string &params)
-        : LinSys_PETSC( rows_ds, params )
+LinSys_PERMON::LinSys_PERMON(const DOFHandlerMultiDim &dh, const std::string &params)
+        : LinSys( dh.distr().get() ),
+          params_(params),
+          init_guess_nonzero(false),
+          matrix_(NULL),
+          matrix_eq_(NULL),
+          eq_(NULL),
+          use_feti_(false)
 {
+    PetscErrorCode ierr;
+
+    // create PETSC vector for rhs
+    ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &rhs_ ); CHKERRV( ierr );
+    ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
+    VecDuplicate(rhs_, &residual_);
+
+    // create l2g map
+    ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, dh.get_local_to_global_map().size(), dh.get_local_to_global_map().data(), PETSC_USE_POINTER, &l2g_); CHKERRV(ierr);
+
+    solution_precision_ = std::numeric_limits<double>::infinity();
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+
     matrix_ineq_ = NULL;
     ineq_ = NULL;
+    warm_solution_ = NULL;
+    maxeig_ = PETSC_DECIDE;
 }
 
 LinSys_PERMON::LinSys_PERMON( LinSys_PERMON &other )
-	: LinSys_PETSC(other)
+	: LinSys(other), params_(other.params_), l2g_(other.l2g_), solution_precision_(other.solution_precision_)
 {
+    MatCopy(other.matrix_, matrix_, DIFFERENT_NONZERO_PATTERN);
+	VecCopy(other.rhs_, rhs_);
+	VecCopy(other.on_vec_, on_vec_);
+	VecCopy(other.off_vec_, off_vec_);
+
 	MatCopy(other.matrix_ineq_, matrix_ineq_, DIFFERENT_NONZERO_PATTERN);
 	VecCopy(other.ineq_, ineq_);
+    MatCopy(other.matrix_eq_, matrix_eq_, DIFFERENT_NONZERO_PATTERN);
+    VecCopy(other.eq_, eq_);
+	VecCopy(other.warm_solution_, warm_solution_);
+    warm_start_ = other.warm_start_;
+    maxeig_ = other.maxeig_;
+    use_feti_ = other.use_feti_;
 }
+
 
 void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
 {
@@ -79,9 +215,209 @@ void LinSys_PERMON::set_inequality(Mat matrix_ineq, Vec ineq)
   ineq_ = ineq;
 }
 
+
+void LinSys_PERMON::set_equality(Mat matrix_eq, Vec eq)
+{
+    matrix_eq_ = matrix_eq;
+    eq_ = eq;
+}
+
+
+void LinSys_PERMON::set_tolerances(double  r_tol, double a_tol, double d_tol, unsigned int max_it)
+{
+    if (! in_rec_.is_empty()) {
+        // input record is set
+        r_tol_ = in_rec_.val<double>("r_tol", r_tol);
+        a_tol_ = in_rec_.val<double>("a_tol", a_tol);
+        d_tol_ = in_rec_.val<double>("d_tol", d_tol);
+        max_it_ = in_rec_.val<unsigned int>("max_it", max_it);
+    } else {
+        r_tol_ = r_tol;
+        a_tol_ = a_tol;
+        d_tol_ = d_tol;
+        max_it_ = max_it;
+
+    }
+}
+
+
+void LinSys_PERMON::start_allocation( )
+{
+    PetscErrorCode ierr;
+
+    ierr = VecCreateMPI( comm_, rows_ds_->lsize(), PETSC_DECIDE, &(on_vec_) ); CHKERRV( ierr ); 
+    ierr = VecSetLocalToGlobalMapping( on_vec_, l2g_ ); CHKERRV( ierr );
+    ierr = VecDuplicate( on_vec_, &(off_vec_) ); CHKERRV( ierr ); 
+    status_ = ALLOCATE;
+}
+
+void LinSys_PERMON::start_add_assembly()
+{
+    switch ( status_ ) {
+        case ALLOCATE:
+            this->preallocate_matrix( );
+            break;
+        case INSERT:
+            this->finish_assembly( MAT_FLUSH_ASSEMBLY );
+            break;
+        case ADD:
+        case DONE:
+            break;
+        default:
+        	ASSERT_PERMANENT(false).error("Can not set values. Matrix is not preallocated.\n");
+    }
+    status_ = ADD;
+}
+
+void LinSys_PERMON::start_insert_assembly()
+{
+    switch ( status_ ) {
+        case ALLOCATE:
+            this->preallocate_matrix();
+            break;
+        case ADD:
+            this->finish_assembly( MAT_FLUSH_ASSEMBLY );
+            break;
+        case INSERT:
+        case DONE:
+            break;
+        default:
+        	ASSERT_PERMANENT(false).error("Can not set values. Matrix is not preallocated.\n");
+    }
+    status_ = INSERT;
+}
+
+
+void LinSys_PERMON::mat_set_values_local( int nrow, int *rows, int ncol, int *cols, double *vals )
+{
+    // here vals would need to be converted from double to PetscScalar if it was ever something else than double :-)
+    switch (status_) {
+        case INSERT:
+        case ADD:
+            chkerr(MatSetValuesLocal(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
+            break;
+        case ALLOCATE:
+            this->preallocate_values_local(nrow,rows,ncol,cols); 
+            break;
+        default: DebugOut() << "LS SetValues with non allowed insert mode.\n";
+    }
+
+    matrix_changed_ = true;
+}
+
+
+void LinSys_PERMON::rhs_set_values( int nrow, int *rows, double *vals )
+{
+    PetscErrorCode ierr;
+
+    switch (status_) {
+        case INSERT:
+        case ADD:
+            ierr = VecSetValues(rhs_,nrow,rows,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            break;
+        case ALLOCATE: 
+            break;
+        default: ASSERT_PERMANENT(false).error("LinSys's status disallow set values.\n");
+    }
+
+    rhs_changed_ = true;
+}
+
+
+void LinSys_PERMON::preallocate_values_local(int nrow,int *rows,int ncol,int *)
+{
+    for (int i=0; i<nrow; i++)
+        VecSetValueLocal(on_vec_,rows[i],(double)ncol,ADD_VALUES);
+}
+
+
+void LinSys_PERMON::finish_assembly( )
+{
+    MatAssemblyType assemblyType = MAT_FINAL_ASSEMBLY;
+    this->finish_assembly( assemblyType );
+}
+
+
+void LinSys_PERMON::finish_assembly( MatAssemblyType assembly_type )
+{
+    PetscErrorCode ierr;
+
+    if (status_ == ALLOCATE) {
+    	WarningOut() << "Finalizing linear system without setting values.\n";
+        this->preallocate_matrix();
+    }
+    ierr = MatAssemblyBegin(matrix_, assembly_type); CHKERRV( ierr ); 
+    ierr = VecAssemblyBegin(rhs_); CHKERRV( ierr ); 
+    ierr = MatAssemblyEnd(matrix_, assembly_type); CHKERRV( ierr ); 
+    ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
+
+    if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    matrix_changed_ = true;
+    rhs_changed_ = true;
+}
+
+
+void LinSys_PERMON::preallocate_matrix()
+{
+	ASSERT_EQ(status_, ALLOCATE).error("Linear system has to be in ALLOCATE status.");
+
+    PetscErrorCode ierr;
+    PetscInt *on_nz, *off_nz;
+    PetscScalar *on_array, *off_array;
+
+    // assembly and get values from counting vectors, destroy them
+    VecAssemblyBegin(on_vec_);
+    VecAssemblyBegin(off_vec_);
+
+    unsigned int lsize;
+    ISLocalToGlobalMappingGetSize(l2g_, (int*)(&lsize));
+
+    on_nz  = new PetscInt[ lsize ];
+    off_nz = new PetscInt[ lsize ];
+
+    VecAssemblyEnd(on_vec_);
+    VecAssemblyEnd(off_vec_);
+
+    VecGetArray( on_vec_,  &on_array );
+    VecGetArray( off_vec_, &off_array );
+
+    for ( unsigned int i=0; i<lsize; i++ ) {
+        on_nz[i]  = std::min( lsize, static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - lsize, static_cast<uint>( off_array[i]+0.1 ) );
+    }
+
+    VecRestoreArray(on_vec_,&on_array);
+    VecRestoreArray(off_vec_,&off_array);
+    VecDestroy(&on_vec_);
+    VecDestroy(&off_vec_);
+
+    // create PETSC matrix with preallocation
+    if (matrix_ != NULL)
+    {
+    	chkerr(MatDestroy(&matrix_));
+    }
+    ierr = MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                                  l2g_, l2g_, &matrix_); CHKERRV( ierr );
+    ierr = MatISSetPreallocation(matrix_, 0, on_nz, 0, off_nz);
+
+    if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+
+    // This option is used in order to assembly larger local matrices with own non-zero structure.
+    // Zero entries are ignored so we must prevent adding exact zeroes.
+    // Add LocalSystem::almost_zero for entries that should not be eliminated.
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
+
+
+
+    delete[] on_nz;
+    delete[] off_nz;
+}
+
+
 LinSys::SolveInfo LinSys_PERMON::solve()
 {
-
     const char *petsc_dflt_opt;
     int nits;
     
@@ -120,22 +456,131 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
-    
+
+    if (use_feti_ && (rows_ds_->np() == 1)) {
+        WarningOut() << "FETI can be only used on multiple processes - switching to standard QP solver.";
+        use_feti_ = false;
+    }
+
+    QP system_dual = NULL;
+
     chkerr(QPCreate(comm_, &system));
-    chkerr(QPSetOperator(system, matrix_));
+    chkerr(QPSetOptionsPrefix(system,"permon_")); // avoid clash on PC objects from hydro PETSc solver
+
     chkerr(QPSetRhs(system, rhs_));
     chkerr(QPSetInitialVector(system, solution_));
-    if (ineq_) {
-      //chkerr(MatScale(matrix_ineq_,-1.));
-      //chkerr(VecScale(ineq_,-1.));
-      // Bx<=c
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPSetIneq(system, matrix_ineq_, ineq_));
-      chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    if (eq_) {
+        chkerr(QPSetEq(system, matrix_eq_, eq_));
     }
+
+    if (use_feti_) {
+
+        // create new matrix without zero rows
+        Mat Afixed;
+        Mat Aloc, Aloc_feti;
+        IS isnz, isnz_tmp;
+        ISLocalToGlobalMapping l2g, mapping;
+        const PetscInt *l2g_arr, *nz_arr;
+        PetscInt *l2g_feti_arr;
+        PetscInt nmap, nrows, k;
+        
+        chkerr(MatISGetLocalMat(matrix_, &Aloc));
+        chkerr(MatFindNonzeroRows(Aloc, &isnz_tmp));
+        if (isnz_tmp != NULL) {
+            const PetscInt *nz_idx;
+            ISGetLocalSize(isnz_tmp, &nrows);
+            ISGetIndices(isnz_tmp, &nz_idx);
+            ISCreateGeneral(PETSC_COMM_WORLD, nrows, nz_idx, PETSC_COPY_VALUES, &isnz);
+            ISRestoreIndices(isnz_tmp, &nz_idx);
+        } else {
+            MatGetLocalSize(Aloc, &nrows, NULL);
+            PetscInt *nz_idx;
+            PetscMalloc1(nrows, &nz_idx);
+            for (int i=0; i<nrows; i++)
+                nz_idx[i] = i;
+            ISCreateGeneral(PETSC_COMM_WORLD, nrows, nz_idx, PETSC_OWN_POINTER, &isnz);
+        }
+        ISDestroy(&isnz_tmp);
+        chkerr(MatCreateSubMatrix(Aloc, isnz, isnz, MAT_INITIAL_MATRIX, &Aloc_feti));
+        chkerr(MatISRestoreLocalMat(matrix_, &Aloc));
+        chkerr(ISGetIndices(isnz, &nz_arr));
+        chkerr(ISGetLocalSize(isnz, &nrows));
+        chkerr(MatISGetLocalToGlobalMapping(matrix_, &l2g, NULL));
+        chkerr(ISLocalToGlobalMappingGetIndices(l2g, &l2g_arr));
+        chkerr(ISLocalToGlobalMappingGetSize(l2g, &nmap));
+        chkerr(PetscMalloc1(nrows, &l2g_feti_arr));
+        for (k=0; k<nrows; k++) {
+            ASSERT_LT(static_cast<unsigned int>(nz_arr[k]), static_cast<unsigned int>(nmap))
+                .error("Reduced FETI local row index out of bounds of local-to-global mapping.\n");
+            l2g_feti_arr[k] = l2g_arr[nz_arr[k]];
+        }
+        chkerr(ISRestoreIndices(isnz, &nz_arr));
+        chkerr(ISLocalToGlobalMappingCreate(comm_, 1, nrows, l2g_feti_arr, PETSC_OWN_POINTER, &mapping));
+        chkerr(ISLocalToGlobalMappingRestoreIndices(l2g, &l2g_arr));
+        
+        chkerr(MatCreateIS(PETSC_COMM_WORLD, 1, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+                            mapping, mapping, &Afixed));
+        chkerr(MatISSetLocalMat(Afixed, Aloc_feti));
+        chkerr(MatAssemblyBegin(Afixed, MAT_FINAL_ASSEMBLY));
+        chkerr(MatAssemblyEnd(Afixed, MAT_FINAL_ASSEMBLY));
+        chkerr(MatDestroy(&Aloc_feti));
+
+        // set QP matrix
+        chkerr(QPSetOperator(system, Afixed));
+        chkerr(MatDestroy(&Afixed));
+
+        chkerr(QPTMatISToBlockDiag(system));
+        chkerr(QPGetChild(system, &system)); // now system is decomposed
+
+        {
+            Mat Adecomposed;
+            QPGetOperator(system, &Adecomposed);
+            if (matrix_ineq_) {
+                Mat matrix_ineq_decomposed = NULL;
+                chkerr(convert_mat_is_to_feti_decomposed(matrix_ineq_, isnz, Adecomposed, &matrix_ineq_decomposed));
+                chkerr(QPSetIneq(system, matrix_ineq_decomposed, ineq_));
+                chkerr(MatDestroy(&matrix_ineq_decomposed));
+                chkerr(PetscOptionsInsertString(NULL, "-qpt_dualize_B_nest_extension"));
+            }
+            if (matrix_eq_) {
+                Mat matrix_eq_decomposed = NULL;
+                chkerr(convert_mat_is_to_feti_decomposed(matrix_eq_, isnz, Adecomposed, &matrix_eq_decomposed));
+                chkerr(QPSetEq(system, matrix_eq_decomposed, eq_));
+                chkerr(MatDestroy(&matrix_eq_decomposed));
+                chkerr(PetscOptionsInsertString(NULL, "-qpt_dualize_B_nest_extension"));
+            }
+        }
+        chkerr(ISLocalToGlobalMappingDestroy(&mapping));
+        chkerr(ISDestroy(&isnz));
+        chkerr(QPFetiSetUp(system));
+        chkerr(PetscOptionsInsertString(NULL, "-feti"));
+
+        // Set/Unset additional transformations, e.g -project 0 for projector avoiding FETI
+        chkerr(QPTFromOptions(system));
+        system_dual = system;
+        chkerr(QPGetParent(system, &system));
+    } else {
+        // convert to MATAIJ
+        Mat matrix_aij;
+        chkerr(MatConvert(matrix_, MATAIJ, MAT_INITIAL_MATRIX, &matrix_aij));
+        if (!eq_)
+            chkerr(MatSetOption(matrix_aij,MAT_SPD,PETSC_TRUE)); // avoid null space computation
+        // chkerr(MatSetOption(matrix_aij,MAT_SPD_ETERNAL,PETSC_TRUE)); // possible with PETSc >= 3.18.0
+        chkerr(QPSetOperator(system, matrix_aij));
+        chkerr(MatDestroy(&matrix_aij));
+        if (ineq_) {
+            Mat matrix_ineq_aij = NULL;
+            chkerr(convert_mat_is_to_aij(matrix_ineq_, &matrix_ineq_aij));
+            chkerr(QPSetIneq(system, matrix_ineq_aij, ineq_));
+            chkerr(MatDestroy(&matrix_ineq_aij));
+        }
+
+        if (ineq_ || eq_) // dualization without FETI
+            chkerr(QPTDualize(system, MAT_INV_MONOLITHIC, MAT_REG_NONE));
+    }
+    
     // Set runtime options, e.g -qp_chain_view_kkt
     chkerr(QPSetFromOptions(system));
-      
     
     chkerr(QPSCreate(comm_, &solver));
     chkerr(QPSSetQP(solver, system));
@@ -144,7 +589,18 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, d_tol_, PETSC_DEFAULT));
     chkerr(QPSSetTolerances(solver, r_tol_, a_tol_, d_tol_,  max_it_));
     chkerr(QPSSetFromOptions(solver));
+    chkerr(QPSSetUp(solver)); // solvers may do additional QP tranformations
 
+    // warm start the solver
+    if (warm_solution_ != NULL) {
+      QP qp_last;
+      Vec sol;
+      chkerr(QPChainGetLast(system,&qp_last));
+      chkerr(QPGetSolutionVector(qp_last,&sol));
+      chkerr(VecCopy(warm_solution_,sol));
+    }
+
+    KSPConvergedReason reason;
     {
 		START_TIMER("PERMON linear solver");
 		START_TIMER("PERMON linear iteration");
@@ -159,16 +615,60 @@ LinSys::SolveInfo LinSys_PERMON::solve()
     LogOut().fmt("convergence reason {}, number of iterations is {}\n", reason, nits);
 
     // get residual norm
-    //KSPGetResidualNorm(system, &solution_precision_);
+    if (use_feti_ && system_dual) {
+        // compute the Lagrangian residual |A*x - b + B'*lambda|
+        Vec lagrangian_solution = NULL;
+        Vec lagrangian_residual = NULL;
+        char *lagrangian_residual_name = NULL;
+        PetscBool invalid_residual = PETSC_FALSE;
+
+        solution_precision_ = -1.0;
+        chkerr(QPComputeMissingEqMultiplier(system_dual));
+        chkerr(QPComputeMissingBoxMultipliers(system_dual));
+        chkerr(QPGetSolutionVector(system_dual, &lagrangian_solution));
+        chkerr(VecDuplicate(lagrangian_solution, &lagrangian_residual));
+        chkerr(QPComputeLagrangianGradient(system_dual, lagrangian_solution,
+                                           lagrangian_residual, &lagrangian_residual_name));
+        chkerr(VecIsInvalidated(lagrangian_residual, &invalid_residual));
+        if (!invalid_residual) {
+            chkerr(VecNorm(lagrangian_residual, NORM_2, &solution_precision_));
+        }
+        chkerr(PetscFree(lagrangian_residual_name));
+        chkerr(VecDestroy(&lagrangian_residual));
+    } else {
+        MatMult(matrix_, solution_, residual_);
+        VecAXPY(residual_,-1.0, rhs_);
+        VecNorm(residual_, NORM_2, &solution_precision_);
+    }
 
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
+
+    // set inner solver solution for warm start
+    if (warm_start_) {
+      QP qp_last;
+      Vec sol;
+      PetscBool same;
+      chkerr(QPChainGetLast(system,&qp_last));
+      chkerr(QPGetSolutionVector(qp_last,&sol));
+      chkerr(VecDestroy(&warm_solution_));
+      chkerr(VecDuplicate(sol,&warm_solution_));
+      chkerr(VecCopy(sol,warm_solution_));
+      chkerr(PetscObjectTypeCompare((PetscObject)solver,QPSMPGP,&same));
+      if (same) {
+        char stri[128];
+        chkerr(QPSMPGPGetOperatorMaxEigenvalue(solver,&maxeig_));
+        chkerr(PetscSNPrintf(stri, sizeof(stri), "-qps_mpgp_maxeig %.17g",maxeig_));
+        // NOTE: this could be done through API, but needs to have correct
+        // order for QPSSetUp/ warm start set up, that depends on the solver type
+        chkerr(PetscOptionsInsertString(NULL,stri));
+      } // TODO: inherit maxeig for SMALXE
+    }
 
     chkerr(QPSDestroy(&solver));
     chkerr(QPDestroy(&system));
 
     return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
-
 }
 
 void LinSys_PERMON::view(string text )
@@ -178,6 +678,8 @@ void LinSys_PERMON::view(string text )
     FilePath solFileName(text + "_flow123d_sol.m",FilePath::FileType::output_file);
     FilePath mat_ineqFileName(text + "_flow123d_matrix_ineq.m",FilePath::FileType::output_file);
     FilePath ineqFileName(text + "_flow123d_ineq.m",FilePath::FileType::output_file);
+    FilePath mat_eqFileName(text + "_flow123d_matrix_eq.m",FilePath::FileType::output_file);
+    FilePath eqFileName(text + "_flow123d_eq.m",FilePath::FileType::output_file);
 
     PetscViewer myViewer;
 
@@ -207,6 +709,7 @@ void LinSys_PERMON::view(string text )
     }
     else
         WarningOut() << "PetscViewer: the solution of LinSys is not set.\n";
+
     if ( matrix_ineq_ != NULL ) {
         PetscViewerASCIIOpen(comm_,((string)mat_ineqFileName).c_str(),&myViewer);
         PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
@@ -223,15 +726,44 @@ void LinSys_PERMON::view(string text )
     }
     else
         WarningOut() << "PetscViewer: the inequality vector of LinSys is not set.\n";
+
+    if ( matrix_eq_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)mat_eqFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        MatView( matrix_eq_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the equality matrix of LinSys is not set.\n";
+    if ( eq_ != NULL ) {
+        PetscViewerASCIIOpen(comm_,((string)eqFileName).c_str(),&myViewer);
+        PetscViewerSetFormat(myViewer,PETSC_VIEWER_ASCII_MATLAB);
+        VecView( eq_, myViewer );
+        PetscViewerDestroy(&myViewer);
+    }
+    else
+        WarningOut() << "PetscViewer: the equality vector of LinSys is not set.\n";
 }
 
 LinSys_PERMON::~LinSys_PERMON( )
 {
-    // TODO cleanup ineq objects
+    if (warm_solution_ != NULL) chkerr(VecDestroy(&warm_solution_));
 }
 
+void LinSys_PERMON::set_from_input(const Input::Record in_rec)
+{
+    LinSys::set_from_input( in_rec );
 
+	// PETSC specific parameters
+    // If parameters are specified in input file, they are used,
+    // otherwise keep settings provided in constructor of LinSys_PETSC.
+    std::string user_params = in_rec.val<string>("options");
+	if (user_params != "") params_ = user_params;
 
+    // PERMON specific parameters
+    warm_start_ = false;//in_rec.val<bool>("warm_start");
+    warm_start_ = true;//in_rec.val<bool>("warm_start");
+}
 
 double LinSys_PERMON::get_solution_precision()
 {
@@ -241,10 +773,5 @@ double LinSys_PERMON::get_solution_precision()
 
 double LinSys_PERMON::compute_residual()
 {
-    // TODO return ||A*x - b + B'*lambda||?
-    MatMult(matrix_, solution_, residual_);
-    VecAXPY(residual_,-1.0, rhs_);
-    double residual_norm;
-    VecNorm(residual_, NORM_2, &residual_norm);
-    return residual_norm;
+    return solution_precision_;
 }

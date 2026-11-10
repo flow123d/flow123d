@@ -55,6 +55,10 @@ public:
 
 	}
 
+        void mat_set_values_local(int nrow,int *rows,int ncol,int *cols,double *vals) {}
+
+        void rhs_set_values_local(int nrow,int *rows,double *vals) {}
+
 	void finish_assembly() {}
 
 	void apply_constrains(double) {}

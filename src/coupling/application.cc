@@ -170,7 +170,7 @@ void Application::petsc_initialize(int argc, char ** argv) {
     }
 
 
-    PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PetscInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
     if (! signal_handler_off_) {
         // PETSc do not catch SIGINT, but someone on the way does, we try to fix it.
         signal(SIGINT, system_signal_handler);
@@ -207,7 +207,7 @@ int Application::petcs_finalize() {
 
 void Application::permon_initialize(int argc, char ** argv) {
 #ifdef FLOW123D_HAVE_PERMON
-    PermonInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
+    PermonInitialize(&argc,&argv,PETSC_NULLPTR,PETSC_NULLPTR);
 #endif
 }
 

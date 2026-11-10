@@ -113,6 +113,10 @@ public:
 
     void preallocate_values(int nrow,int *rows,int ncol,int *cols);
 
+    void mat_set_values_local( int, int*, int, int*, double* ) override { ASSERT(false); }
+
+    void rhs_set_values_local( int, int*, double* ) override { ASSERT(false); }
+
     void preallocate_matrix();
 
     void finish_assembly() override;
@@ -154,7 +158,7 @@ private:
     T *  makePetscPointer_( std::vector<T> & array )
     {
         if ( array.size() ) return &(array[0]);
-        return PETSC_NULL;
+        return PETSC_NULLPTR;
     }
 
     // PetscScalar to double casting functor
@@ -171,7 +175,7 @@ protected:
     std::string params_;		 //!< command-line-like options for the PETSc solver
 
     bool    init_guess_nonzero;  //!< flag for starting from nonzero guess
-
+    
     Mat     matrix_;             //!< Petsc matrix of the problem.
     Vec     rhs_;                //!< PETSc vector constructed with vx array.
     Vec     residual_;
