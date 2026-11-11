@@ -46,6 +46,9 @@
 #include "input/reader_internal_base.hh"
 
 
+#pragma once
+#define FLOW123D_EXPORT __attribute__((visibility("default")))
+
 //#ifdef FLOW123D_HAVE_PETSC
 //#include "petsc.h"
 //#endif
@@ -166,7 +169,7 @@ public:
      *
      * Returns accessor to the root Record.
      */
-    Input::Record read_input(const py::dict &input);
+    FLOW123D_EXPORT Input::Record read_input(const py::dict &input);
 
     void init(int argc, char ** argv);
     void init_python();
@@ -278,7 +281,6 @@ protected:
     Input::Record root_record;
 
 };
-
 
 
 
