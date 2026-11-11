@@ -84,8 +84,8 @@ RunEnv::RunEnv()
   use_profiler_(true),
   memory_monitoring_(false),
   profiler_path_(""),
-  input_dir_(""),
-  output_dir_(""),
+  input_dir_("."),
+  output_dir_("./result"),
   input_filename_("")
 {}
 
@@ -510,17 +510,6 @@ void Application::init(int argc, char ** argv) {
     // parse our own command line arguments, leave others for PETSc
 	this->parse_cmd_line(argc, argv);
 
-    this->init_common(argc, argv);
-}
-
-void Application::init_python() {
-    char arg0[] = "flow123d";
-    char *argv[] = {arg0, nullptr};
-
-    this->init_common(1, argv);
-}
-
-void Application::init_common(int argc, char ** argv) {
     // assumes working directory "."
     try {
         main_input_filename_ = FilePath::set_dirs_from_input(run_environment_.input_filename_, run_environment_.input_dir_, run_environment_.output_dir_ );
@@ -529,6 +518,19 @@ void Application::init_common(int argc, char ** argv) {
         throw e;
     }
 
+    this->init_common(argc, argv);
+}
+
+void Application::init_python() {
+    char arg0[] = "flow123d";
+    char *argv[] = {arg0, nullptr};
+
+    FilePath::set_dirs(".", run_environment_.input_dir_, run_environment_.output_dir_);
+
+    this->init_common(1, argv);
+}
+
+void Application::init_common(int argc, char ** argv) {
 	string build = string(__DATE__) + ", " + string(__TIME__)
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 

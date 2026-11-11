@@ -10,7 +10,7 @@ input_data = {
         "TYPE": "Coupling_Sequential",
         "description": "Test8 - Steady flow with sources",
         "mesh": {
-            "mesh_file": "../00_mesh/square_1x1_shift.msh"
+            "mesh_file": "./tests/00_mesh/square_1x1_shift.msh"
         },
         "flow_equation": { 
             "TYPE": "Flow_Darcy_LMH",
