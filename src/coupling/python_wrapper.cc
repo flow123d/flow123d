@@ -1,5 +1,5 @@
 /**
- * @file python_wrapper.cpp
+ * @file python_wrapper.cc
  * @brief Python entry point for running Flow123d.
  */
 
@@ -7,7 +7,7 @@
 
 #include "coupling/application.hh"
 
-PYBIND11_MODULE(flow123d_main_api, m) {
+PYBIND11_MODULE(flow123d_python_api, m) {
     m.doc() = "Python interface to Flow123d";
 
     m.def(

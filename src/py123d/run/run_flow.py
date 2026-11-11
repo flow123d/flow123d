@@ -1,7 +1,7 @@
 #!/bin/python3
 # author: David Flanderka
 
-import flow123d_main_api
+import flow123d_python_api
 
 input_data = {
     "flow123d_version": "4.0.0a01",
@@ -53,4 +53,4 @@ input_data = {
     }
 }
 
-flow123d_main_api.run(input_data)
+flow123d_python_api.run(input_data)
