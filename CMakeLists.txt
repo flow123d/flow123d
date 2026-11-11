@@ -946,7 +946,7 @@ install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 install(TARGETS flow123d_system flow123d_core 
   LIBRARY DESTINATION lib/
 )
-install(TARGETS flow123d_python_api flow123d_main_api
+install(TARGETS field_proxy_api flow123d_main_api
   LIBRARY DESTINATION lib/python
 )
 install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)

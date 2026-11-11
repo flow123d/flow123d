@@ -298,15 +298,15 @@ target_link_libraries(io_lib
 
 
 # Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
-pybind11_add_module("flow123d_python_api" SHARED "fields/python_field_proxy.cc")
+pybind11_add_module("field_proxy_api" SHARED "fields/python_field_proxy.cc")
 
 # use the same keywordâ€�style that pybind11_tools used:
-target_link_libraries(flow123d_python_api
+target_link_libraries(field_proxy_api
   PRIVATE
     flow123d_system
     armadillo
 )
-set_target_properties(flow123d_python_api PROPERTIES
+set_target_properties(field_proxy_api PROPERTIES
     BUILD_RPATH "$ORIGIN;$ORIGIN/../lib"
     INSTALL_RPATH "$ORIGIN/.."
 )
@@ -340,7 +340,7 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     input_lib mesh_lib tools_lib fem_lib io_lib
-    flow123d_python_api
+    field_proxy_api
     bparser  
     armadillo
     ${Boost_LIBRARIES}
