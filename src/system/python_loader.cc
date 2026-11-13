@@ -191,15 +191,15 @@ PythonRunning::PythonRunning()
     PythonLoader::add_sys_path(py123d_path);
     PythonLoader::add_sys_path(fieldproxypy_path);
 
-//#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
-//    // update module path, append flow123d Python modules path to sys.path
-//    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
-//    std::string extra_path;
-//    while ( std::getline(extra_paths, extra_path, ':') )
-//    {
-//       PythonLoader::add_sys_path(extra_path);
-//    }
-//#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
+#ifdef FLOW123D_PYTHON_EXTRA_MODULES_PATH
+    // update module path, append flow123d Python modules path to sys.path
+    std::stringstream extra_paths(FLOW123D_PYTHON_EXTRA_MODULES_PATH);
+    std::string extra_path;
+    while ( std::getline(extra_paths, extra_path, ':') )
+    {
+       PythonLoader::add_sys_path(extra_path);
+    }
+#endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 }
 
 

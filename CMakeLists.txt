@@ -602,8 +602,8 @@ message(STATUS "=======================================================")
 message(STATUS "====== PYTHON =========================================")
 message(STATUS "=======================================================")
 
-# # ... whole py123d package is installed to standard location in the release image
-# flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python)    # first is py123d path relative to flow123d, second relative to flow123d_core lib.
+# ... whole py123d package is installed to standard location in the release image
+flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python)    # first is py123d path relative to flow123d, second relative to flow123d_core lib.
 
 # use relative path
 set(PYTHON_RUNTEST ../src/py123d/bin/runtest.py)
