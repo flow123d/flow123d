@@ -89,6 +89,36 @@ RunEnv::RunEnv()
   input_filename_("")
 {}
 
+void RunEnv::set_from_python(const py::dict &env_args) {
+    if (env_args.contains("log_filename")) {
+        log_filename_ = this->parse_dict_value<std::string>(env_args, "log_filename");
+    }
+    if (env_args.contains("petsc_redirect_file")) {
+        petsc_redirect_file_ = this->parse_dict_value<std::string>(env_args, "petsc_redirect_file");
+    }
+    if (env_args.contains("signal_handler_off")) {
+        signal_handler_off_ = this->parse_dict_value<bool>(env_args, "signal_handler_off");
+    }
+    if (env_args.contains("use_profiler")) {
+        use_profiler_= this->parse_dict_value<bool>(env_args, "use_profiler");
+    }
+    if (env_args.contains("memory_monitoring")) {
+        memory_monitoring_ = this->parse_dict_value<bool>(env_args, "memory_monitoring");
+    }
+    if (env_args.contains("profiler_path")) {
+        profiler_path_ = this->parse_dict_value<std::string>(env_args, "profiler_path");
+    }
+    if (env_args.contains("input_dir")) {
+        input_dir_ = this->parse_dict_value<std::string>(env_args, "input_dir");
+    }
+    if (env_args.contains("output_dir")) {
+        output_dir_ = this->parse_dict_value<std::string>(env_args, "output_dir");
+    }
+    if (env_args.contains("input_filename")) {
+        input_filename_= this->parse_dict_value<std::string>(env_args, "input_filename");
+    }
+}
+
 
 Application::Application()
 : problem_(nullptr),
@@ -521,9 +551,11 @@ void Application::init(int argc, char ** argv) {
     this->init_common(argc, argv);
 }
 
-void Application::init_python() {
+void Application::init_python(const py::dict &env_args) {
     char arg0[] = "flow123d";
     char *argv[] = {arg0, nullptr};
+
+    run_environment_.set_from_python(env_args);
 
     FilePath::set_dirs(".", run_environment_.input_dir_, run_environment_.output_dir_);
 

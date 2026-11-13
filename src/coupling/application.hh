@@ -58,7 +58,34 @@ using namespace std;
 // Exception that prints the signal number and name.
 TYPEDEF_ERR_INFO( EI_Signal, int);
 TYPEDEF_ERR_INFO( EI_SignalName, string);
+TYPEDEF_ERR_INFO( EI_EnvArg, string);
 DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_SignalName::val << ") received! ]" );
+DECLARE_EXCEPTION( ExcInvalidEnvArgType, << "Invalid type of environment argument " << EI_EnvArg::qval << "! ]" );
+
+
+/// Dispatch equivalent types between C++ and pybind11
+template <typename T>
+struct PythonType;
+
+template <>
+struct PythonType<bool> {
+    using type = pybind11::bool_;
+};
+
+template <>
+struct PythonType<int> {
+    using type = pybind11::int_;
+};
+
+template <>
+struct PythonType<double> {
+    using type = pybind11::float_;
+};
+
+template <>
+struct PythonType<std::string> {
+    using type = pybind11::str;
+};
 
 
 /**
@@ -67,9 +94,26 @@ DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_Sig
  * Holds data processed from command-line arguments.
  */
 class RunEnv {
+private:
+	/// Parse and check correct type of dict[key] value
+	template <typename T>
+	T parse_dict_value(const pybind11::dict &dict, const std::string &key)
+	{
+	    pybind11::handle value = dict[key.c_str()];
+
+	    if (!pybind11::isinstance<typename PythonType<T>::type>(value)) {
+	        THROW( ExcInvalidEnvArgType() << EI_EnvArg(key) );
+	    }
+
+	    return pybind11::cast<T>(value);
+	}
+
 public:
     /// Constructor
     RunEnv();
+
+    /// Set data from pybind11 dictionary
+    void set_from_python(const py::dict &env_args);
 
     /**
      * Log file name argument - passed to system_init; "" means default, "\n" means no logging
@@ -172,7 +216,8 @@ public:
     FLOW123D_EXPORT Input::Record read_input(const py::dict &input);
 
     void init(int argc, char ** argv);
-    void init_python();
+
+    FLOW123D_EXPORT void init_python(const py::dict &env_args);
 
     /**
      * Run application.

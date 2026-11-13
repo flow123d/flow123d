@@ -53,4 +53,16 @@ input_data = {
     }
 }
 
-flow123d_python_api.run(input_data)
+run_environment = {
+    "log_filename": "",
+    "petsc_redirect_file": "",
+    "signal_handler_off": False,
+    "use_profiler": True,
+    "memory_monitoring": False,
+    "profiler_path": "",
+    "input_dir": ".",
+    "output_dir": "../test-result",
+    "input_filename": ""
+}
+
+flow123d_python_api.run(input_data, run_environment)
