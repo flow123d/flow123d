@@ -180,9 +180,12 @@ std::vector<std::string> PythonLoader::get_python_path()
 namespace internal {
 
 PythonRunning::PythonRunning()
+: owns_interpreter_(!Py_IsInitialized())
 {
     // initialize the Python interpreter.
-    py::initialize_interpreter();
+    if (owns_interpreter_) {
+        py::initialize_interpreter();
+    }
     std::string py123d_path = std::string(FLOW123D_SOURCE_DIR) + "/src";
     std::string fieldproxypy_path = std::string(FLOW123D_SOURCE_DIR) + "/build_tree/src";
     PythonLoader::add_sys_path(py123d_path);
@@ -203,7 +206,9 @@ PythonRunning::PythonRunning()
 
 
 PythonRunning::~PythonRunning() {
-    py::finalize_interpreter();
+    if (owns_interpreter_) {
+        py::finalize_interpreter();
+    }
 }
 
 } // close namespace internal

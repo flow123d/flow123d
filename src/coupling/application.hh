@@ -46,6 +46,9 @@
 #include "input/reader_internal_base.hh"
 
 
+#pragma once
+#define FLOW123D_EXPORT __attribute__((visibility("default")))
+
 //#ifdef FLOW123D_HAVE_PETSC
 //#include "petsc.h"
 //#endif
@@ -55,8 +58,98 @@ using namespace std;
 // Exception that prints the signal number and name.
 TYPEDEF_ERR_INFO( EI_Signal, int);
 TYPEDEF_ERR_INFO( EI_SignalName, string);
+TYPEDEF_ERR_INFO( EI_EnvArg, string);
 DECLARE_EXCEPTION( ExcSignal, << "[ Signal " << EI_Signal::val << " (" << EI_SignalName::val << ") received! ]" );
+DECLARE_EXCEPTION( ExcInvalidEnvArgType, << "Invalid type of environment argument " << EI_EnvArg::qval << "! ]" );
 
+
+/// Dispatch equivalent types between C++ and pybind11
+template <typename T>
+struct PythonType;
+
+template <>
+struct PythonType<bool> {
+    using type = pybind11::bool_;
+};
+
+template <>
+struct PythonType<int> {
+    using type = pybind11::int_;
+};
+
+template <>
+struct PythonType<double> {
+    using type = pybind11::float_;
+};
+
+template <>
+struct PythonType<std::string> {
+    using type = pybind11::str;
+};
+
+
+/**
+ * Data class.
+ *
+ * Holds data processed from command-line arguments.
+ */
+class RunEnv {
+private:
+	/// Parse and check correct type of dict[key] value
+	template <typename T>
+	T parse_dict_value(const pybind11::dict &dict, const std::string &key)
+	{
+	    pybind11::handle value = dict[key.c_str()];
+
+	    if (!pybind11::isinstance<typename PythonType<T>::type>(value)) {
+	        THROW( ExcInvalidEnvArgType() << EI_EnvArg(key) );
+	    }
+
+	    return pybind11::cast<T>(value);
+	}
+
+public:
+    /// Constructor
+    RunEnv();
+
+    /// Set data from pybind11 dictionary
+    void set_from_python(const py::dict &env_args);
+
+    /**
+     * Log file name argument - passed to system_init; "" means default, "\n" means no logging
+     * TODO: move whole system_init into Application, use singleton for some runtime global options
+     * for the Flow123d library.
+     */
+    string log_filename_;
+
+    ///  Optional file name for output of PETSc parameters.
+    ///  Has to be set in @p parse_cmd_line()
+    string petsc_redirect_file_;
+
+    /// Turn off signal handling useful to debug with valgrind.
+    bool signal_handler_off_; // to RunEnv
+
+    /// If true, we do output of profiling information.
+    bool use_profiler_;
+
+    /// If true, memory monitoring is switched on
+    bool memory_monitoring_;
+
+    /// Description of possible command line arguments.
+    string program_arguments_desc_;
+
+    /// location of the profiler report file
+    string profiler_path_; // to RunEnv
+
+    /// Input (working) directory
+    string input_dir_;
+
+    /// Output directory
+    string output_dir_;
+
+    // if there is "solve" option
+    string input_filename_;
+};
 
 
 
@@ -115,15 +208,27 @@ public:
      */
     Input::Record read_input();
 
-
+    /**
+     * Read input from Python dictionary.
+     *
+     * Returns accessor to the root Record.
+     */
+    FLOW123D_EXPORT Input::Record read_input(const py::dict &input);
 
     void init(int argc, char ** argv);
+
+    FLOW123D_EXPORT void init_python(const py::dict &env_args);
+
     /**
      * Run application.
      *
-     * Read input and solve problem.
+     * Read input and call overloaded run(Input::Record)
      */
     void run();
+
+    /// Solve problem.
+    void run(Input::Record i_rec);
+
 
 
     /**
@@ -192,23 +297,14 @@ protected:
 	 */
 	int permon_finalize();
 
+    /// Common part of init() and init_python()
+    void init_common(int argc, char ** argv);
 
-    /**
-     * Log file name argument - passed to system_init; "" means default, "\n" means no logging
-     * TODO: move whole system_init into Application, use singleton for some runtime global options
-     * for the Flow123d library.
-     */
-    string log_filename_;
-
-    ///  Optional file name for output of PETSc parameters.
-    ///  Has to be set in @p parse_cmd_line()
-    string petsc_redirect_file_="";
+    /// Data given by parsing of command line arguments.
+    RunEnv run_environment_;
 
     /// File handler for redirecting PETSc output
     static FILE *petsc_output_;
-
-    /// Turn off signal handling useful to debug with valgrind.
-    bool signal_handler_off_;
 
 
     /// Get version of program and other base data from rev_num.h and store them to map
@@ -223,26 +319,13 @@ protected:
     //int passed_argc_;
     //char ** passed_argv_;
 
-    /// Description of possible command line arguments.
-    string program_arguments_desc_;
-
-    /// If true, we do output of profiling information.
-    bool use_profiler;
-
-    /// If true, memory monitoring is switched on
-    bool memory_monitoring;
-
-    /// location of the profiler report file
-    string profiler_path;
-
-    /// If true, preserves output of balance in YAML format.
+    /// If true, preserves output of balance in YAML format. Not used now.
     bool yaml_balance_output_;
 
     /// root input record
     Input::Record root_record;
 
 };
-
 
 
 

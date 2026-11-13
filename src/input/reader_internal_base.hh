@@ -48,7 +48,6 @@ public:
 	TYPEDEF_ERR_INFO(EI_File, const string);
 	TYPEDEF_ERR_INFO(EI_Specification, const string);
 	TYPEDEF_ERR_INFO(EI_Format, const string);
-	TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
 	TYPEDEF_ERR_INFO(EI_ErrorAddress, string);
     TYPEDEF_ERR_INFO(EI_TransposeIndex, unsigned int);
     TYPEDEF_ERR_INFO(EI_TransposeAddress, string);
@@ -64,7 +63,7 @@ public:
 	/// General exception during conversion from JSON/YAML tree to storage.
 	DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
 	                                        << EI_Specification::val << "\n"
-	                                        << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
+	                                        << "Found value: " << EI_Format::val << "\n"
 	                                        << "Expected type:\n" << EI_InputType::val );
 
 	DECLARE_INPUT_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
@@ -133,10 +132,10 @@ protected:
     std::string get_included_file(PathBase &p);
 
     /// Generate @p ExcInputError
-    void generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec, bool add_type);
+    void generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec);
 
     /// Complete specification, error address and JSON type error tags to @p ExcInputError
-    void complete_input_error(ExcInputError & e, PathBase &p, ValueTypes value_type);
+    void complete_input_error(ExcInputError & e, PathBase &p, std::string value_type);
 
 };
 
