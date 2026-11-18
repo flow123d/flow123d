@@ -1,8 +1,14 @@
 #!/bin/python3
 # author: David Flanderka
+#
+# Example of Flow123d Python API using.
 
-import flow123d_python_api
 
+from dataclasses import dataclass
+from py123d.main import Flow123dConfigBase
+
+
+# Define Flow123d input source tree
 input_data = {
     "flow123d_version": "4.0.0a01",
 
@@ -53,16 +59,16 @@ input_data = {
     }
 }
 
-run_environment = {
-    "log_filename": "",
-    "petsc_redirect_file": "",
-    "signal_handler_off": False,
-    "use_profiler": True,
-    "memory_monitoring": False,
-    "profiler_path": "",
-    "input_dir": ".",
-    "output_dir": "../test-result",
-    "input_filename": ""
-}
 
-flow123d_python_api.run(input_data, run_environment)
+@dataclass
+class MyFlowConfig(Flow123dConfigBase):
+    """
+    Flow123dConfigBase descendant, allows rewrite of environment arguments.
+    Only 'output_dir' is changed, other arguments use parent values.
+    """
+    output_dir: str = "../test-result"
+
+
+# Execute Flow123d simulation
+config = MyFlowConfig()
+config.run(input_data)
