@@ -4,8 +4,12 @@
 # Example of Flow123d Python API using.
 
 
-from dataclasses import dataclass
+from pathlib import Path
+from dataclasses import dataclass, field
 from py123d.main import Flow123dConfigBase
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 # Define Flow123d input source tree
@@ -16,7 +20,8 @@ input_data = {
         "TYPE": "Coupling_Sequential",
         "description": "Test8 - Steady flow with sources",
         "mesh": {
-            "mesh_file": "./tests/00_mesh/square_1x1_shift.msh"
+            "mesh_file": "./tests/00_mesh/square_1x1_shift.msh"                             # relative path to input_dir
+            # "mesh_file": str(SCRIPT_DIR / "../../../tests/00_mesh/square_1x1_shift.msh")  # variant declaration of previous
         },
         "flow_equation": { 
             "TYPE": "Flow_Darcy_LMH",
@@ -61,14 +66,18 @@ input_data = {
 
 
 @dataclass
-class MyFlowConfig(Flow123dConfigBase):
+class ExampleConfig(Flow123dConfigBase):
     """
     Flow123dConfigBase descendant, allows rewrite of environment arguments.
-    Only 'output_dir' is changed, other arguments use parent values.
+    Only 'input_dir', 'output_dir' are changed, other arguments use parent values.
     """
-    output_dir: str = "../test-result"
-
+    input_dir: str = field(
+        default_factory=lambda: str(SCRIPT_DIR / "../../..")
+    )
+    output_dir: str = field(
+        default_factory=lambda: str(SCRIPT_DIR / "../../../test-result")
+    )
 
 # Execute Flow123d simulation
-config = MyFlowConfig()
+config = ExampleConfig()
 config.run(input_data)
