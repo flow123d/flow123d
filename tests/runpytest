@@ -1,0 +1,4 @@
+#!/bin/bash
+# Run a Python API test using the active Flow123d build.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "${SCRIPT_DIR}/../bin/python" "$@"
