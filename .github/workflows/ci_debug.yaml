@@ -112,7 +112,7 @@ jobs:
     python_api_tests:
         needs: [build]
         runs-on: ubuntu-latest
-        name: Integration Test 60_python_api
+        name: Integration Test ${{matrix.test_dir}}
         continue-on-error: True
         outputs:
             status: ${{job.status}}
