@@ -114,12 +114,19 @@ jobs:
         runs-on: ubuntu-latest
         name: Integration Test 60_python_api
         continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        strategy:
+          matrix:
+            test_dir:
+            - 60_python_api
+
         steps:
         - uses: actions/checkout@v5
         - uses: actions/download-artifact@v4
           with:
             name: build_dir
-        - run: config/build/run_with_build_dir.sh dbg_gnu bash tests/runpytest tests/60_python_api/01_flow_simple.py
+        - run: config/build/run_with_build_dir.sh dbg_gnu bash tests/runpytest tests/${{matrix.test_dir}} 
 
     unit_tests:
         needs: [build]
