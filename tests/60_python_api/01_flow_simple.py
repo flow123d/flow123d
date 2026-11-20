@@ -1,7 +1,5 @@
 #!/bin/python3
 # author: David Flanderka
-#
-# Example of Flow123d Python API using.
 
 
 from pathlib import Path
@@ -68,7 +66,6 @@ input_data = {
 class TestConfig(Flow123dConfigBase):
     """
     Flow123dConfigBase descendant, allows rewrite of environment arguments.
-    Only 'output_dir' is changed, other arguments use parent values.
     """
     input_dir: str = field(
         default_factory=lambda: str(SCRIPT_DIR)
