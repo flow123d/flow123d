@@ -61,7 +61,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Selectio
 		int value = selection->name_to_int( item_name );
 		return new StorageInt( value );
 	} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-		this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
+		this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.");
 	}
 
     return NULL;
@@ -80,7 +80,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Integer 
 	{
 		return new StorageInt( value );
 	} else {
-		this->generate_input_error(p, int_type, "Value out of bounds.", false);
+		this->generate_input_error(p, int_type, "Value out of bounds.");
 	}
 	return NULL;
 }
@@ -92,7 +92,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Double *
     if (double_type->match(value)) {
         return new StorageDouble( value );
     } else {
-    	this->generate_input_error(p, double_type, "Value out of bounds.", false);
+    	this->generate_input_error(p, double_type, "Value out of bounds.");
     }
 
     return NULL;
@@ -106,7 +106,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::String *
 		return new StorageString( value );
 	else
 		THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
-						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
+						<< EI_ErrorAddress(p.as_string()) << EI_InputType(string_type->desc()) );
 
 	return NULL;
 }

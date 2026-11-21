@@ -40,7 +40,7 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 		first_item_storage = make_storage(p, &sub_type);
 	} catch (ExcInputError &e) {
 		if ( !array->match_size(1) ) {
-			e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+			e << EI_Specification("The value should be the Flow123d input type Array.");
 		}
 		e << EI_TransposeIndex(transpose_index_);
 		e << EI_TransposeAddress(p.as_string());
@@ -62,7 +62,7 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 			if ( !array->match_size( sizes ) ) {
 				stringstream ss;
 				ss << "Result of transpose auto-conversion do not fit the size " << sizes << " of the Array.";
-				this->generate_input_error(p, array, ss.str(), false);
+				this->generate_input_error(p, array, ss.str());
 			}
 
 			// create storage of array
@@ -84,7 +84,7 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 
 			return storage_array;
 		} else {
-			this->generate_input_error(p, array, "Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'", false);
+			this->generate_input_error(p, array, "Unequal sizes of sub-arrays during transpose auto-conversion of the Flow123d input type Array.");
 		}
 	}
 
@@ -116,7 +116,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 			int value = selection->name_to_int( item_name );
 			return new StorageInt( value );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
+			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.");
 		}
 	}
 
@@ -145,7 +145,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 	{
 		return new StorageInt( value );
 	} else {
-		this->generate_input_error(p, int_type, "Value out of bounds.", false);
+		this->generate_input_error(p, int_type, "Value out of bounds.");
 	}
 	return NULL;
 }
@@ -161,7 +161,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 	    if (double_type->match(value)) {
 	        return new StorageDouble( value );
 	    } else {
-	    	this->generate_input_error(p, double_type, "Value out of bounds.", false);
+	    	this->generate_input_error(p, double_type, "Value out of bounds.");
 	    }
 	}
 
@@ -183,7 +183,7 @@ StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, cons
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
-		this->generate_input_error(p, type, "Empty array during transpose auto-conversion.", false);
+		this->generate_input_error(p, type, "Empty array during transpose auto-conversion.");
 	} else {
 		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
 		p.down(transpose_index_);
@@ -203,7 +203,7 @@ StorageBase * ReaderInternalTranspose::make_autoconversion_array_storage(PathBas
 
 		return storage_array;
 	} else {
-		this->generate_input_error(p, array, "During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ", true);
+		this->generate_input_error(p, array, "During transpose auto-conversion, the conversion to the single element array not allowed. Can not convert '" + p.get_node_type() + "' to the required Flow123d input type Array.");
 	}
 
 	return NULL;

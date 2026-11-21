@@ -89,7 +89,7 @@ public:
     std::int64_t get_int_value() const override;                      ///< Implements @p PathBase::get_int_value
     double get_double_value() const override;                         ///< Implements @p PathBase::get_double_value
     std::string get_string_value() const override;                    ///< Implements @p PathBase::get_string_value
-    unsigned int get_node_type_index() const override;                ///< Implements @p PathBase::get_node_type_index
+    std::string get_node_type() const override       ;                ///< Implements @p PathBase::get_node_type
     bool get_record_key_set(std::set<std::string> &) const override;  ///< Implements @p PathBase::get_record_key_set
     bool is_effectively_null() const override;                        ///< Implements @p PathBase::is_effectively_null
     int get_array_size() const override;                              ///< Implements @p PathBase::get_array_size
@@ -136,6 +136,15 @@ protected:
 
     // Pointers to all nodes from the root up to the current path.
     std::vector<const Node *> nodes_;
+
+    /**
+     * @brief Names of all possible node types in parsed input tree.
+     *
+     * Names are provided by JSON Spirit.
+     * Initialized in constructor.
+     *
+     */
+    std::vector<std::string> reader_type_names;
 
 };
 

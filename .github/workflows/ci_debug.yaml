@@ -109,6 +109,25 @@ jobs:
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
 
+    python_api_tests:
+        needs: [build]
+        runs-on: ubuntu-latest
+        name: Integration Test ${{matrix.test_dir}}
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        strategy:
+          matrix:
+            test_dir:
+            - 60_python_api
+
+        steps:
+        - uses: actions/checkout@v5
+        - uses: actions/download-artifact@v4
+          with:
+            name: build_dir
+        - run: config/build/run_with_build_dir.sh dbg_gnu bash tests/runpytest tests/${{matrix.test_dir}} 
+
     unit_tests:
         needs: [build]
         runs-on: ubuntu-latest
@@ -197,7 +216,7 @@ jobs:
         name: Workflow conclusion from all job results 
         
         #needs: [integration_tests, unit_tests, build_doc]        
-        needs: [build_doc, unit-test-report, integration_tests]
+        needs: [build_doc, unit-test-report, integration_tests, python_api_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:

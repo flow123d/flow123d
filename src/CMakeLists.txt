@@ -120,7 +120,7 @@ target_link_libraries(flow123d_system PUBLIC
 set_target_properties(flow123d_system 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
+               INSTALL_RPATH "$ORIGIN"
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )    
 add_dependencies(flow123d_system update_source_tree)
@@ -143,6 +143,7 @@ add_library(input_lib
     input/path_base.cc
     input/path_json.cc
     input/path_yaml.cc
+    input/path_python.cc
     input/type_output.cc
     
     input/accessors.cc
@@ -297,13 +298,17 @@ target_link_libraries(io_lib
 
 
 # Have to add as SHARED as the target is used both as the Python module as the C++ SO library linked by Flow123d.
-pybind11_add_module("flow123d_python_api" SHARED "fields/python_field_proxy.cc")
+pybind11_add_module("field_proxy_api" SHARED "fields/python_field_proxy.cc")
 
 # use the same keywordâ€�style that pybind11_tools used:
-target_link_libraries(flow123d_python_api
+target_link_libraries(field_proxy_api
   PRIVATE
     flow123d_system
     armadillo
+)
+set_target_properties(field_proxy_api PROPERTIES
+    BUILD_RPATH "$ORIGIN;$ORIGIN/../lib"
+    INSTALL_RPATH "$ORIGIN/.."
 )
 
 
@@ -335,7 +340,7 @@ add_library(coupling_lib
 )
 target_link_libraries(coupling_lib
     input_lib mesh_lib tools_lib fem_lib io_lib
-    flow123d_python_api
+    field_proxy_api
     bparser  
     armadillo
     ${Boost_LIBRARIES}
@@ -397,10 +402,21 @@ target_link_libraries(flow123d_core
 set_target_properties(flow123d_core 
     PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib
                BUILD_RPATH "$ORIGIN/../lib;$ORIGIN/../src"
-               INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../src" 
+               INSTALL_RPATH "$ORIGIN;$ORIGIN/python"
 #    LINK_FLAGS "-Wl,--whole-archive ${YamlCpp_LIBRARY} -Wl,--no-whole-archive"
 )
 add_dependencies(flow123d_core rev_num_always)    
+
+# Python entry point shares the application implementation with the executable.
+pybind11_add_module(flow123d_python_api coupling/python_wrapper.cc)
+target_link_libraries(flow123d_python_api PRIVATE
+    flow123d_core
+    ${PETSC_ADDITIONAL_LIBS}
+)
+set_target_properties(flow123d_python_api PROPERTIES
+    BUILD_RPATH "$ORIGIN;$ORIGIN/../lib"
+    INSTALL_RPATH "$ORIGIN/.."
+)
 
 #add_dependencies(flow123d_core tbb)
 

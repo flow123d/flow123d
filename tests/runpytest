@@ -1,0 +1,43 @@
+#!/bin/bash
+# Run a Python API test using the active Flow123d build.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -d "${1:-}" ]; then
+    test_dir="$1"
+    shift
+    script_list="$(mktemp)" || exit 1
+    trap 'rm -f "$script_list"' EXIT
+    "${SCRIPT_DIR}/../bin/python" - "$test_dir" > "$script_list" <<'PY'
+import os
+import sys
+import yaml
+
+test_dir = sys.argv[1]
+try:
+    with open(os.path.join(test_dir, 'py_config.yaml'), encoding='utf-8') as config:
+        data = yaml.safe_load(config)
+except FileNotFoundError:
+    sys.exit('User error: Configuration file py_config.yaml not found!')
+
+if (not isinstance(data, dict) or not isinstance(data.get('test_cases'), list)
+        or not data['test_cases']
+        or any(not isinstance(case, dict) or 'files' not in case for case in data['test_cases'])):
+    sys.exit("User error: Missing obligatory key 'test_cases/files' in py_config.yaml!")
+
+for case in data['test_cases']:
+    for script in case['files']:
+        sys.stdout.buffer.write(os.fsencode(os.path.join(test_dir, script)) + b'\0')
+PY
+    if [ "$?" -ne 0 ]; then
+        exit 1
+    fi
+    status=0
+    while IFS= read -r -d '' script; do
+        echo "---------------------------------------------------------------------"
+        echo -e "--- Starting test $script"
+        "${SCRIPT_DIR}/../bin/python" "$script" "$@" || status=1
+        echo "---------------------------------------------------------------------"
+        echo
+    done < "$script_list"
+    exit "$status"
+fi
+exec "${SCRIPT_DIR}/../bin/python" "$@"
