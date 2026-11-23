@@ -56,6 +56,8 @@ class PythonRunning {
 public:
     PythonRunning();
     ~PythonRunning();
+private:
+    bool owns_interpreter_;
 };
 } // close namespace internal
 

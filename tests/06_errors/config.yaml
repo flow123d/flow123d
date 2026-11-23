@@ -26,7 +26,7 @@ test_cases:
   check_rules:
     - regex:
         files: [job_output.log]
-        substr: "The value should be 'YAML real', but we found"
+        substr: "Can not convert 'other scalar type' to the Flow123d input type Double"
 
 - files: 04_input_invalid_array_size.yaml
   death_test: true
@@ -61,7 +61,7 @@ test_cases:
   check_rules:
     - regex:
         files: [job_output.log]
-        substr: "Can not determine type of the Abstract."
+        substr: "Can not determine type of the Flow123d input type Abstract."
 
 - files: 09_input_unknown_region_set.yaml
   death_test: true

@@ -15,13 +15,16 @@
 #include <fstream>
 
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 #include "input/reader_to_storage.hh"
 #include "input/reader_internal_base.hh"
 #include "input/accessors.hh"
 
 using namespace std;
-
 using namespace Input;
+
+namespace py = pybind11;
 
 
 class InputReaderToStorageTest : public testing::Test, public Input::ReaderToStorage {
@@ -62,7 +65,7 @@ TEST_F(InputReaderToStorageTest, Integer) {
     }
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON int', but we found.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type Integer");
     }
 }
 
@@ -99,7 +102,7 @@ TEST_F(InputReaderToStorageTest, Double) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type Double");
     }
 }
 
@@ -125,7 +128,7 @@ TEST_F(InputReaderToStorageTest, Selection) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type String");
     }
 }
 
@@ -142,7 +145,7 @@ TEST_F(InputReaderToStorageTest, String) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type String");
     }
 }
 
@@ -159,7 +162,7 @@ TEST_F(InputReaderToStorageTest, Bool) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON bool', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type Boolean");
     }
 }
 
@@ -207,12 +210,12 @@ TEST_F(InputReaderToStorageTest, Array) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON array', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "The value should be the Flow123d input type Array");
     }
 
     {
         stringstream ss("[ 3.2, {} ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON object' to the Flow123d input type Double");
     }
 
     {
@@ -231,13 +234,13 @@ TEST_F(InputReaderToStorageTest, Array) {
         EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
 
         stringstream ss1("{ key=3.2}");
-        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ReaderInternalBase::ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ReaderInternalBase::ExcInputError , "Can not convert 'JSON object' to the Flow123d input type Double");
     }
 
     // test auto conversion failed
     {
         stringstream ss("3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ReaderInternalBase::ExcInputError , "conversion to the single element array not allowed. Require type: 'JSON array'.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ReaderInternalBase::ExcInputError , "Can not convert 'JSON real' to the required Flow123d input type Array");
     }
 }
 
@@ -283,7 +286,7 @@ TEST_F(InputReaderToStorageTest, Record) {
 
     {
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ReaderInternalBase::ExcInputError, "Can not convert 'JSON array' to the Flow123d input type Record");
     }
 
     {
@@ -310,7 +313,7 @@ TEST_F(InputReaderToStorageTest, Record) {
         EXPECT_EQ(123, storage_->get_item(2)->get_int() );
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcAutomaticConversionError , "The value should be 'JSON int', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcAutomaticConversionError , "Can not convert 'JSON real' to the Flow123d input type Integer");
     }
 
     {
@@ -319,7 +322,7 @@ TEST_F(InputReaderToStorageTest, Record) {
         sub_rec.finish();
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcInputError , "Can not convert 'JSON real' to the Flow123d input type Record");
     }
 
     // Test automatic conversion from record
@@ -473,13 +476,13 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Can not convert 'JSON string' to the Flow123d input type Double");
 
     }
 
     {   // Missing TYPE
         stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "an not determine type of the Flow123d input type Abstract");
 
     }
 
@@ -491,7 +494,7 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "an not determine type of the Flow123d input type Abstract");
 
     }
 
@@ -638,12 +641,12 @@ TEST_F(InputReaderToStorageTest, AdHocAbstract) {
 
     {   // Missing TYPE
         stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Flow123d input type Abstract");
     }
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "Can not convert 'JSON string' to the Flow123d input type Double");
     }
 }
 
@@ -1008,7 +1011,7 @@ TEST_F(InputReaderToStorageTest, storage_transpose) {
 
     {   // Incorrect type - transposition of Record is not allowed
         stringstream ss("{ set={ one=[1,2], two=[2,3], three=[{key_a=\"A\", key_b=false}, {key_a=\"B\", key_b=false}], four=1.5, five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "Can not convert 'JSON array' to the Flow123d input type Record");
     }
 
     {   // Incorrect type - array is greater than size limit
@@ -1111,7 +1114,7 @@ TEST_F(InputReaderToStorageTest, Abstract_auto_conversion) {
     { // YAML format, DescendantC with autoconversion
         stringstream ss("pressure: !DescendantC 0.5");
         EXPECT_THROW_WHAT( {read_stream(ss, root_rec, FileFormat::format_YAML);}, ReaderInternalBase::ExcInputError,
-        		"The value should be 'YAML map', but we found");
+        		"Can not convert 'other scalar type' to the Flow123d input type Record");
     }
 
     { // YAML format, full output
@@ -1140,4 +1143,70 @@ TEST_F(InputReaderToStorageTest, Abstract_auto_conversion) {
 
 }
 
+
+py::dict create_input_dict() {
+    py::dict input_dict;
+
+    input_dict["int_key"] = 1;
+    input_dict["double_key"] = 2.5;
+    input_dict["str_key"] = "Description.";
+
+    py::list arr_key;
+    arr_key.append(123);
+    arr_key.append(234);
+    arr_key.append(345);
+    input_dict["array_key"] = arr_key;
+
+    py::dict sub_rec;
+    sub_rec["bool_key"] = Py_True;
+    sub_rec["int_key"] = 5;
+    input_dict["rec_key"] = sub_rec;
+
+    return input_dict;
+}
+
+// Register Python module
+PYBIND11_MODULE(input_module, m) {
+    m.def("create_dict", &create_input_dict, "Creates and fills Python dict");
+}
+
+TEST_F(InputReaderToStorageTest, load_from_python) {
+    ::testing::FLAGS_gtest_death_test_style = "threadsafe";
+    static Type::Record sub_rec = Type::Record( "SubRecord", "")
+    	.declare_key("bool_key", Type::Bool(), Type::Default("false"), "")
+    	.declare_key("int_key", Type::Integer(), Type::Default("1"), "")
+    	.close();
+
+    static Type::Record rec_type = Type::Record( "SomeRec","desc.")
+    	.declare_key("int_key", Type::Integer(0,5), Type::Default("4"), "")
+    	.declare_key("double_key", Type::Double(), Type::Default("1.23"),"")
+    	.declare_key("str_key", Type::String(), Type::Default("\"ahoj\""),"")
+    	.declare_key("array_key", Type::Array( Type::Integer() ), Type::Default("123"), "")
+	    .declare_key("rec_key", sub_rec, Type::Default::obligatory(), "")
+		.close();
+
+    rec_type.finish();
+    sub_rec.finish();
+
+    py::scoped_interpreter guard{};
+
+    py::dict input_dict = create_input_dict();
+    //std::cout << py::str(input_dict).cast<std::string>() << std::endl;
+
+    {
+        read_python(input_dict, rec_type);
+
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(6, storage_->get_array_size());
+        EXPECT_EQ(1, storage_->get_item(1)->get_int() );
+        EXPECT_EQ(2.5, storage_->get_item(2)->get_double() );
+        EXPECT_EQ("Description.", storage_->get_item(3)->get_string() );
+        EXPECT_EQ(3, storage_->get_item(4)->get_array_size());
+        EXPECT_EQ(123, storage_->get_item(4)->get_item(0)->get_int());
+        EXPECT_EQ(3, storage_->get_item(5)->get_array_size());
+        EXPECT_TRUE(storage_->get_item(5)->get_item(1)->get_bool());
+        EXPECT_EQ(5, storage_->get_item(5)->get_item(2)->get_int());
+    }
+
+}
 

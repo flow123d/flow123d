@@ -44,7 +44,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
        		included_file = get_included_file(p);
             p.up();
         } else {
-        	this->generate_input_error(p, array, "Missing key 'file' defines including input file.", false);
+        	this->generate_input_error(p, array, "Missing key 'file' defines including input file.");
         }
 
         // number of head lines to skip
@@ -54,7 +54,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         		n_head_lines = p.get_int_value();
         	}
 			catch (ExcInputError & e) {
-				complete_input_error(e, p, ValueTypes::int_type);
+				complete_input_error(e, p, "Integer");
 				e << EI_InputType("number of lines to skip");
 				throw;
 			}
@@ -68,7 +68,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         		separator << p.get_string_value() << " \t";
         	}
 			catch (ExcInputError & e) {
-				complete_input_error(e, p, ValueTypes::str_type);
+				complete_input_error(e, p, "String");
 				e << EI_InputType("invalid separator of included CSV file");
 				throw;
 			}
@@ -86,8 +86,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         if ((abstract_type != NULL) && (record_name.size() <= 12)) {
         	// missing record name for Abstract
         	this->generate_input_error(p, array,
-        		"Missing record descendant in definition of tag in CSV include of Abstract type. Tag must be in format '!include_csv:Descendant_Name'!",
-				false);
+        		"Missing record descendant in definition of tag in CSV include of Abstract type. Tag must be in format '!include_csv:Descendant_Name'!");
         }
         const Type::TypeBase &sub_type = ( abstract_type != NULL ) ?  // sub-type of array
         		(abstract_type->get_descendant(record_name.substr(12))) : (array->get_sub_type());
@@ -104,7 +103,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 			}
             p.up();
         } else {
-        	this->generate_input_error(p, array, "Missing key 'format' defines mapping column of CSV file to input subtree.", false);
+        	this->generate_input_error(p, array, "Missing key 'format' defines mapping column of CSV file to input subtree.");
         }
 
         // get value of maximal column index in map
@@ -203,7 +202,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         		}
         	}
     		if ( max_column_index > (i_col-1) ) {
-    			this->generate_input_error(p, array, "Count of columns in CSV file is less than expected index, defined on input.", false);
+    			this->generate_input_error(p, array, "Count of columns in CSV file is less than expected index, defined on input.");
     		}
 			ASSERT_PTR(item_storage);
             storage_array->new_item(arr_item, item_storage->deep_copy() );
@@ -218,7 +217,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         return storage_array;
 
 	} else {
-		this->generate_input_error(p, array, "Invalid definition of CSV include.", false);
+		this->generate_input_error(p, array, "Invalid definition of CSV include.");
 	}
 	return NULL;
 }
@@ -229,7 +228,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	if ( (arr_size = p.get_array_size()) != -1 ) {
 		return this->make_array_storage(p, array, arr_size);
 	} else {
-		this->generate_input_error(p, array, "Invalid type in CSV-included part of IST. Expected is Array!\n", false);
+		this->generate_input_error(p, array, "Invalid type in CSV-included part of IST. Expected is Array!\n");
 	}
 
 	return NULL;
@@ -256,7 +255,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 			int value = selection->name_to_int( item_name );
 			return new StorageInt( value );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
+			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.");
 		}
 	}
 	return NULL;

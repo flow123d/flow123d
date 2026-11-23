@@ -603,7 +603,7 @@ message(STATUS "====== PYTHON =========================================")
 message(STATUS "=======================================================")
 
 # ... whole py123d package is installed to standard location in the release image
-flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python)    # first is py123d path relative to flow123d, second relative to flow123d_core lib.
+flow_define(PYTHON_EXTRA_MODULES_PATH ../lib/python/:python:${CMAKE_SOURCE_DIR}/build_tree/src:${CMAKE_SOURCE_DIR}/src)    # first is py123d path relative to flow123d, second relative to flow123d_core lib.
 
 # use relative path
 set(PYTHON_RUNTEST ../src/py123d/bin/runtest.py)
@@ -886,7 +886,7 @@ if( PETSC_FOUND )
         ${PYTHON_LIBRARIES}
         ${Boost_LIBRARIES}
   )     # set libraries linked to main binary (order matter)
-  add_dependencies("flow123d" update_source_tree rev_num_always)      # make mpiexec_link when flow123d executable is built
+  add_dependencies("flow123d" update_source_tree rev_num_always flow123d_python_api)      # make mpiexec_link when flow123d executable is built
   # explicitly say that source file depends on rev_num_always in order to have actual revision number
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_REV_NUM}) 
   set_source_files_properties(src/main.cc OBJECT_DEPENDS ${CONFIG_FILE_HEADER}) 
@@ -946,7 +946,7 @@ install(PROGRAMS  build_tree/bin/mpiexec    DESTINATION bin/)
 install(TARGETS flow123d_system flow123d_core 
   LIBRARY DESTINATION lib/
 )
-install(TARGETS flow123d_python_api
+install(TARGETS field_proxy_api flow123d_python_api
   LIBRARY DESTINATION lib/python
 )
 install(FILES build_tree/third_party/bparser/libbparser.so  DESTINATION lib/)

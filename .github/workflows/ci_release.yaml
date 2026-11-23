@@ -14,6 +14,7 @@ on:
         #- DF_profiler_memory_monitor
         #- SM_CI_GNU_Integration_tests
         - JS_constraints
+        - DF_python_interface
 
     # !! workflow_dispatch configuration must be in the default branch, i.e. 'master'
     # can also start manually on any branch
@@ -392,11 +393,30 @@ jobs:
             echo "Job result: ${{job.result}}"
             echo "Job status: ${{job.status}}"
 
+    python_api_tests:
+        needs: [packages]
+        runs-on: ubuntu-latest
+        name: Integration Test ${{matrix.test_dir}}
+        continue-on-error: True
+        outputs:
+            status: ${{job.status}}
+        strategy:
+          matrix:
+            test_dir:
+            - 60_python_api
+
+        steps:
+        - uses: actions/checkout@v5
+        - uses: actions/download-artifact@v4
+          with:
+            name: build_dir
+        - run: config/build/run_with_build_dir.sh rel_gnu bash tests/runpytest tests/${{matrix.test_dir}}
+
     conclusion:
         if: ${{always()}}
         runs-on: ubuntu-latest
         name: Workflow conclusion from all job results   
-        needs: [packages, unit_tests, integration_tests]
+        needs: [packages, unit_tests, integration_tests, python_api_tests]
         
         # continue-on-error jobs always reports sucess to the workflow
         steps:

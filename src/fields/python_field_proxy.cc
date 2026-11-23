@@ -21,8 +21,8 @@
 #include <pybind11/stl.h>      // type conversion
 #include "fields/python_field_proxy.hh"
 
-PYBIND11_MODULE(flow123d_python_api, m) {
-    m.doc() = "pybind11 Flow123D plugin"; // optional module docstring
+PYBIND11_MODULE(field_proxy_api, m) {
+    m.doc() = "pybind11 FieldPython plugin"; // optional module docstring
 
     py::class_<FieldCacheProxy>(m, "FieldCacheProxy", py::buffer_protocol())
         //.def_property("field_name", &FieldCacheProxy::get_field_name, &FieldCacheProxy::set_field_name)
