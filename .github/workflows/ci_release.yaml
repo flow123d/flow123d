@@ -394,7 +394,7 @@ jobs:
             echo "Job status: ${{job.status}}"
 
     python_api_tests:
-        needs: [build]
+        needs: [packages]
         runs-on: ubuntu-latest
         name: Integration Test ${{matrix.test_dir}}
         continue-on-error: True
