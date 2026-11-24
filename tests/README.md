@@ -45,6 +45,16 @@ Both section have almost identical syntax only difference is that section `test_
 
 ## Syntax of `common_config`
 
+Python API tests can be run with `tests/runpytest <directory>`. Their
+`py_config.yaml` uses `common_config`, `test_cases`, and `check_rules` in the
+same way as the YAML test configuration. For `example.py`, the launcher clears
+`test_results/example.1`, runs the script, and compares its output in that
+directory with `ref_out/example`. The script is responsible for writing to the
+output directory. Comparison diagnostics are saved in `ndiff.log`, and a failed
+script or comparison makes the launcher exit with a nonzero status. Passing a
+script directly to `runpytest` continues to run it without this directory-mode
+comparison.
+
 ```yaml
 common_config:
   proc: [1, 4]          # int[]     - list of number of MPI processes

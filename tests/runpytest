@@ -31,13 +31,35 @@ PY
         exit 1
     fi
     status=0
+    passed=0
+    failed=0
+    results=()
+    started=$SECONDS
     while IFS= read -r -d '' script; do
+        case_started=$SECONDS
         echo "---------------------------------------------------------------------"
         echo -e "--- Starting test $script"
-        "${SCRIPT_DIR}/../bin/python" "$script" "$@" || status=1
+        if "${SCRIPT_DIR}/../bin/python" -m py123d.bin.compare_python_test "$test_dir" "$script" --prepare &&
+           "${SCRIPT_DIR}/../bin/python" "$script" "$@" &&
+           "${SCRIPT_DIR}/../bin/python" -m py123d.bin.compare_python_test "$test_dir" "$script"; then
+            results+=("$(printf '[ PASSED ]  | %-45s [%5.2f sec]' "$script" "$((SECONDS - case_started))")")
+            ((passed+=1))
+        else
+            status=1
+            results+=("$(printf '[ FAILED ]  | %-45s [%5.2f sec]' "$script" "$((SECONDS - case_started))")")
+            ((failed+=1))
+        fi
         echo "---------------------------------------------------------------------"
         echo
     done < "$script_list"
+    echo "---------------------------------------------------------------------"
+    echo "SUMMARY"
+    echo "---------------------------------------------------------------------"
+    printf '%s\n' "${results[@]}"
+    echo "---------------------------------------------------------------------"
+    if [ "$status" -eq 0 ]; then overall='[ PASSED ]'; else overall='[ FAILED ]'; fi
+    printf '%-11s | passed=%d, failed=%d, skipped=0 in [%5.2f sec]\n' \
+        "$overall" "$passed" "$failed" "$((SECONDS - started))"
     exit "$status"
 fi
 exec "${SCRIPT_DIR}/../bin/python" "$@"
