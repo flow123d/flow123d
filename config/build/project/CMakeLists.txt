@@ -1,8 +1,8 @@
+# minimum version
+cmake_minimum_required(VERSION 3.5)
+
 # project name
 project(Flow123d C)
-
-# minimum version
-cmake_minimum_required(VERSION 2.8.8)
 
 
 # configurable via makefile
