@@ -34,6 +34,7 @@
 #include "system/sys_profiler.hh"
 #include "mechanics/elasticity.hh"
 #include "elasticity_mockup_assembly.hh"
+#include "bench_fieldalgo_init.hh"
 
 class GenericAssemblyBase;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
@@ -383,8 +384,8 @@ public:
     ~ElasticityMockupTest() {}
 
     /// Run assembly algorithms with different type of assembly and type of field
-    template <template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
-    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
+    template <AsmTags T, template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, bool use_linsys = false);
 
 
     /// Perform profiler output.

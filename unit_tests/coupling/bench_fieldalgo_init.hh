@@ -42,15 +42,26 @@ private:
 /**
  * Definitions of TAG names
  */
-static const std::string TAG_FULLASSEMBLY_CONST = "FullAssembly_const";
-static const std::string TAG_FULLASSEMBLY_MODEL = "FullAssembly_model";
-static const std::string TAG_FULLASSEMBLY_FE    = "FullAssembly_fe";
-static const std::string TAG_COMPUTELOCAL_CONST = "ComputeLocal_const";
-static const std::string TAG_COMPUTELOCAL_MODEL = "ComputeLocal_model";
-static const std::string TAG_COMPUTELOCAL_FE    = "ComputeLocal_fe";
-static const std::string TAG_EVALFIELDS_CONST   = "EvalFields_const";
-static const std::string TAG_EVALFIELDS_MODEL   = "EvalFields_model";
-static const std::string TAG_EVALFIELDS_FE      = "EvalFields_fe";
+enum AsmTags
+{
+    fullassembly_const,
+    fullassembly_model,
+    fullassembly_fe,
+    computelocal_const,
+    computelocal_model,
+    computelocal_fe,
+    evalfields_const,
+    evalfields_model,
+    evalfields_fe
+};
+static constexpr const char * tag_name(AsmTags tag) {
+    constexpr std::array<const char *, 9> tag_names = {
+            "FullAssembly_const", "FullAssembly_model", "FullAssembly_fe",
+            "ComputeLocal_const", "ComputeLocal_model", "ComputeLocal_fe",
+            "EvalFields_const", "EvalFields_model", "EvalFields_fe"
+    };
+    return tag_names[tag];
+}
 
 
 #endif /* BENCH_FIELDALGO_INIT_HH_ */

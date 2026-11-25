@@ -3,7 +3,6 @@
 
 #include "elasticity_mockup.hh"
 #include "linsys_null.hh"
-#include "bench_fieldalgo_init.hh"
 #include "mechanics/assembly_elasticity.hh"
 
 
@@ -81,9 +80,9 @@ void EqFields::init_fields<InitFieldFE>()
 } // end of namespace equation_data
 
 
-template <template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
-void ElasticityMockupTest::run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys) {
-    START_TIMER(tag_name);
+template <AsmTags T, template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
+void ElasticityMockupTest::run_mockup(const string &eq_data_input, const std::string &mesh_file, bool use_linsys) {
+    START_TIMER(tag_name(T));
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
     ElasticityMockup<StiffnessAsm, RhsAsm> test_mockup(use_linsys);
     test_mockup.create_and_set_mesh(mesh_file);
@@ -91,7 +90,7 @@ void ElasticityMockupTest::run_mockup(const string &eq_data_input, const std::st
     test_mockup.eq_fields_->template init_fields<FT>();
     test_mockup.run_simulation();
     END_TIMER("full_mesh");
-    END_TIMER(tag_name);
+    END_TIMER(tag_name(T));
 }
 
 

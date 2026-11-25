@@ -3,7 +3,6 @@
 
 #include "DG_mockup.hh"
 #include "linsys_null.hh"
-#include "bench_fieldalgo_init.hh"
 #include "transport/assembly_dg.hh"
 
 
@@ -204,9 +203,9 @@ void EqFields::init_fields<InitFieldFE>()
 } // end of namespace equation_data
 
 
-template <template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
-void DGMockupTest::run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys) {
-    START_TIMER(tag_name);
+template <AsmTags T, template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
+void DGMockupTest::run_mockup(const string &eq_data_input, const std::string &mesh_file, bool use_linsys) {
+    START_TIMER(tag_name(T));
     START_TIMER("full_mesh"); // necessary for correct process of profiler output
     DGMockup<MassAsm, StiffnessAsm, SourcesAsm> test_mockup(use_linsys);
     test_mockup.create_and_set_mesh(mesh_file);
@@ -214,7 +213,7 @@ void DGMockupTest::run_mockup(const string &eq_data_input, const std::string &me
     test_mockup.eq_fields_->template init_fields<FT>();
     test_mockup.run_simulation();
     END_TIMER("full_mesh");
-    END_TIMER(tag_name);
+    END_TIMER(tag_name(T));
 }
 
 

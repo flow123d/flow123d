@@ -37,6 +37,7 @@
 #include "transport/assembly_dg.hh"
 #include "DG_mockup_assembly.hh"
 #include "balance_null.hh"
+#include "bench_fieldalgo_init.hh"
 
 class GenericAssemblyBase;
 template<unsigned int dim> class Mass_FullAssembly;
@@ -528,8 +529,8 @@ public:
     ~DGMockupTest() {}
 
     /// Run assembly algorithms with different type of assembly and type of field
-    template <template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
-    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
+    template <AsmTags T, template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, bool use_linsys = false);
 
 	/// Perform profiler output.
     void profiler_output(std::string file_name) {
