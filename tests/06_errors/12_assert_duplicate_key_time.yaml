@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
           variant: ascii
     mechanics_equation:
         input_fields:
-        solver: !Petsc
+        solver: !Permon
           a_tol: 0
           r_tol: 1e-9
         output_stream:
