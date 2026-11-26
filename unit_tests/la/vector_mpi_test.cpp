@@ -26,6 +26,8 @@ TEST(VecMPI, vec_data) {
 	EXPECT_DOUBLE_EQ(2.5, vals[0]);
 	EXPECT_DOUBLE_EQ(0.0, vals[1]);
 
+	v.assembly_begin();
+	v.assembly_end();
 	v.zero_entries();
 	EXPECT_DOUBLE_EQ(0.0, v.get(0));
 }
