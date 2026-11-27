@@ -157,12 +157,12 @@ jobs:
           with:
             ssh-private-key: ${{ secrets.PUBLISH_PRIVATE_KEY }}      
             
-        - name: SCP upload to Share
-          run: |
-            release_tag="${{ steps.vars.outputs.reltag }}"
-            publish_dir="${{ steps.vars.outputs.pubdir }}"
-            config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
-            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} 
+#        - name: SCP upload to Share
+#          run: |
+#            release_tag="${{ steps.vars.outputs.reltag }}"
+#            publish_dir="${{ steps.vars.outputs.pubdir }}"
+#            config/build/ssh_upload.sh ${publish_dir} ci-packages/${release_tag} \
+#            ${{ secrets.PUBLISH_USER }}@${{ secrets.PUBLISH_HOST }} 
             
     # Run unit tests with release build, similar to the debug build
     unit_tests:
