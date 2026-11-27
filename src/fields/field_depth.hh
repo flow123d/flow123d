@@ -19,12 +19,14 @@
 #define FIELD_DEPTH_HH_
 
 #include "fields/field_common.hh"                      // for FieldCommon::T...
-#include "fields/field_value_cache.hh"                 // for FieldValueCache
-#include "fields/eval_points.hh"                       // for EvalPoints
+#include "fem/element_cache_map.hh"                    // for FieldValueCache
+#include "fem/eval_points.hh"                          // for EvalPoints
 #include "fields/field_coords.hh"
 #include "fields/surface_depth.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/ref_element.hh"
+
+struct PatchInternals;
 
 namespace IT=Input::Type;
 
@@ -94,7 +96,7 @@ public:
     {}
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(FMT_UNUSED const ElementCacheMap &cache_map, FMT_UNUSED unsigned int region_idx) const override
+    void cache_reallocate(FMT_UNUSED PatchInternals &patch_internals, FMT_UNUSED unsigned int region_idx) const override
     {}
 
     /// Implements FieldCommon::cache_update

@@ -207,6 +207,16 @@ DarcyLMH::EqFields::EqFields()
             .input_default("0.0")
             .units( UnitSI().s(-1) );
 
+    *this += water_source_sigma.name("water_source_sigma")
+            .description("Water source transition coefficient.")
+            .input_default("0.0")
+            .units( UnitSI().m(-1).s(-1) );
+
+    *this += water_source_ref_pressure.name("water_source_ref_pressure")
+            .description("Water source reference pressure.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
+
     *this += bc_type.name("bc_type")
             .description("Boundary condition type.")
             .input_selection( get_bc_type_selection() )
@@ -348,8 +358,8 @@ const it::Selection & DarcyLMH::EqFields::get_bc_type_selection() {
 
 
 
-DarcyLMH::EqData::EqData()
-{
+DarcyLMH::EqData::EqData(shared_ptr<EqFields> eq_fields)
+: eq_fields_(eq_fields) {
     mortar_method_=NoMortar;
 }
 
@@ -416,7 +426,7 @@ DarcyLMH::DarcyLMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
     }
 
     eq_fields_ = make_shared<EqFields>();
-    eq_data_ = make_shared<EqData>();
+    eq_data_ = make_shared<EqData>(eq_fields_);
     this->eq_fieldset_ = eq_fields_;
     
     eq_fields_->set_mesh(*mesh_);
@@ -1574,9 +1584,9 @@ std::vector<int> DarcyLMH::get_component_indices_vec(unsigned int component) con
 
 
 void DarcyLMH::initialize_asm() {
-    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
-    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMH >(eq_fields_.get(), eq_data_.get());
-    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyLMH >(eq_fields_.get(), eq_data_.get());
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());
+    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyLMHDim >(eq_data_.get(), eq_data_->dh_.get());
 }
 
 

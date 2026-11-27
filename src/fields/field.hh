@@ -32,7 +32,7 @@
 #include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
 #include "fields/field_common.hh"                      // for FieldCommon::T...
 #include "fields/field_values.hh"                      // for FieldValue<>::...
-#include "fields/field_value_cache.hh"                 // for FieldValueCache
+#include "fem/element_cache_map.hh"                 // for FieldValueCache
 #include "input/accessors.hh"                          // for ExcTypeMismatch
 #include "input/accessors_impl.hh"                     // for Record::opt_val
 #include "input/factory_impl.hh"                       // for Factory::create
@@ -56,6 +56,7 @@ class BulkPoint;
 class SidePoint;
 class FieldSet;
 class ElementDataCacheBase;
+struct PatchInternals;
 template <int spacedim> class ElementAccessor;
 template <int spacedim, class Value> class FieldFE;
 namespace detail
@@ -320,7 +321,7 @@ public:
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
     /// Implements FieldCommon::cache_allocate
-    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
+    void cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;

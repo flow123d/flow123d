@@ -37,6 +37,7 @@
 #include "fem/dh_cell_accessor.hh"
 #include "fem/mapping_p1.hh"
 #include "input/factory.hh"
+#include "fem/patch_internals.hh"
 
 #include <memory>
 
@@ -142,7 +143,8 @@ public:
      *
      * Reinit fe_values_ data member.
      */
-    void cache_reinit(const ElementCacheMap &cache_map) override;
+    void cache_reinit(PatchInternals &patch_internals) override;
+
 
 	/**
 	 * Initialization from the input interface.
@@ -261,7 +263,7 @@ private:
     {
         Armor::ArmaMat<typename Value::element_type, Value::NCols_, Value::NRows_> v;
         for (unsigned int c=0; c<Value::NRows_*Value::NCols_; ++c)
-            v(c/spacedim,c%spacedim) = fe_values_[dim].shape_value_component(i_dof, i_qp, c);
+            v(c/Value::NRows_,c%Value::NRows_) = fe_values_[dim].shape_value_component(i_dof, i_qp, c);
         if (Value::NRows_ == Value::NCols_)
             return v;
         else

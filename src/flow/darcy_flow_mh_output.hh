@@ -51,8 +51,8 @@ namespace Input {
 
 template<unsigned int spacedim> class FEValues;
 template <int spacedim, class Value> class FieldFE;
-template<unsigned int dim> class L2DifferenceAssembly;
-template<unsigned int dim> class OutputInternalFlowAssembly;
+template<unsigned int dim, class TEqData> class L2DifferenceAssembly;
+template<unsigned int dim, class TEqData> class OutputInternalFlowAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 /**
@@ -96,7 +96,12 @@ public:
     /// Output specific field stuff
     class DiffEqData {
     public:
-        DiffEqData() {}
+        typedef typename DarcyLMH::EqFields EqFields;
+
+        DiffEqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
@@ -115,7 +120,12 @@ public:
 
     class RawOutputEqData {
     public:
-    	RawOutputEqData() {}
+        typedef typename DarcyLMH::EqFields EqFields;
+
+        RawOutputEqData(shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
         ofstream raw_output_file;                        ///< Raw data output file.
         std::vector< std::string > raw_output_strings_;  ///< Output lines of cells.
@@ -123,6 +133,9 @@ public:
 
         std::shared_ptr<DarcyLMH::EqData> flow_data_;
     };
+
+    template<unsigned int dim> using L2DifferenceAssemblyDim = L2DifferenceAssembly<dim, DiffEqData>;
+    template<unsigned int dim> using OutputInternalFlowAssemblyDim = OutputInternalFlowAssembly<dim, RawOutputEqData>;
 
     DarcyFlowMHOutput(DarcyLMH *flow, Input::Record in_rec) ;
     virtual ~DarcyFlowMHOutput();
@@ -182,8 +195,8 @@ protected:
     //MixedPtr<FE_P_disc> fe_p0;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< L2DifferenceAssembly > * l2_difference_assembly_;
-    GenericAssembly< OutputInternalFlowAssembly > * output_internal_assembly_;
+    GenericAssembly< L2DifferenceAssemblyDim > * l2_difference_assembly_;
+    GenericAssembly< OutputInternalFlowAssemblyDim > * output_internal_assembly_;
 
 };
 

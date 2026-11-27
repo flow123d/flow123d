@@ -73,7 +73,9 @@ namespace Input {
 		class Selection;
 	}
 }
-template<unsigned int dim> class ReadInitCondAssemblyLMH;
+template<unsigned int dim, class TEqData> class ReadInitCondAssemblyLMH;
+template<unsigned int dim, class TEqData> class MHMatrixAssemblyLMH;
+template<unsigned int dim, class TEqData> class ReconstructSchurAssemblyLMH;
 class GenericAssemblyBase;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
@@ -175,6 +177,8 @@ public:
         Field<3, FieldValue<3>::Scalar > conductivity;
         Field<3, FieldValue<3>::Scalar > cross_section;
         Field<3, FieldValue<3>::Scalar > water_source_density;
+        Field<3, FieldValue<3>::Scalar > water_source_sigma;
+        Field<3, FieldValue<3>::Scalar > water_source_ref_pressure;
         Field<3, FieldValue<3>::Scalar > sigma;
 
         BCField<3, FieldValue<3>::Enum > bc_type; // Discrete need Selection for initialization
@@ -207,11 +211,15 @@ public:
 
     class EqData {
     public:
-        
-        EqData();
+   	    typedef DarcyLMH::EqFields EqFields;
+
+        EqData(shared_ptr<EqFields> eq_fields);
         
         void init();     ///< Initialize vectors, ...
         void reset();    ///< Reset data members
+
+		/// Shared pointer of EqFields
+		std::shared_ptr<EqFields> eq_fields_;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -280,6 +288,10 @@ public:
         std::vector<bool> bc_fluxes_reconstruted;   ///< Flag indicating whether the fluxes for seepage BC has been reconstructed already.
         std::array<unsigned int, 3> schur_offset_;  ///< Index offset in the local system for the Schur complement (of dim = 1,2,3).
     };
+
+    template<unsigned int dim> using ReadInitCondAssemblyLMHDim = ReadInitCondAssemblyLMH<dim, EqData>;
+    template<unsigned int dim> using MHMatrixAssemblyLMHDim = MHMatrixAssemblyLMH<dim, EqData>;
+    template<unsigned int dim> using ReconstructSchurAssemblyLMHDim = ReconstructSchurAssemblyLMH<dim, EqData>;
 
     /// Selection for enum MortarMethod.
     static const Input::Type::Selection & get_mh_mortar_selection();
@@ -427,7 +439,7 @@ protected:
     //friend class P1_CouplingAssembler;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< ReadInitCondAssemblyLMH > * read_init_cond_assembly_;
+    GenericAssembly< ReadInitCondAssemblyLMHDim > * read_init_cond_assembly_;
     GenericAssemblyBase * mh_matrix_assembly_;
     GenericAssemblyBase * reconstruct_schur_assembly_;
 private:

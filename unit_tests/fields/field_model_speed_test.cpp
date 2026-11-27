@@ -12,9 +12,9 @@
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "tools/unit_si.hh"
@@ -205,7 +205,7 @@ public:
 };
 
 template <unsigned int dim>
-class AssemblyDimTest : public AssemblyBase<dim> {
+class AssemblyDimTest : public AssemblyBasePatch<dim> {
 public:
     typedef typename FieldModelSpeedTest::EqData EqFields;
     typedef typename FieldModelSpeedTest::EqData EqData;
@@ -214,7 +214,7 @@ public:
 
     /// Constructor.
     AssemblyDimTest(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
+    : AssemblyBasePatch<dim>(eq_data->order), eq_fields_(eq_fields), eq_data_(eq_data) {
         this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::edge | ActiveIntegrals::coupling);
         this->used_fields_.set_mesh( *eq_fields_->mesh() );
         this->used_fields_ += *eq_fields_;

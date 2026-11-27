@@ -13,9 +13,9 @@
 #include <mesh_constructor.hh>
 #include "arma_expect.hh"
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
@@ -25,7 +25,7 @@
 #include "system/sys_profiler.hh"
 
 
-typedef FieldValue_<1,1,double> ScalarValue;
+typedef FieldValue_<internal::Scalar<double>> ScalarValue;
 
 class FieldValueCacheTest : public testing::Test, public ElementCacheMap {
 
@@ -41,8 +41,8 @@ public:
         eval_points = std::make_shared<EvalPoints>();
         Quadrature *q_bulk = new QGauss(3, 2);
         Quadrature *q_side = new QGauss(2, 2);
-        bulk_eval = eval_points->add_bulk<3>(*q_bulk );
-        edge_eval = eval_points->add_edge<3>(*q_side );
+        bulk_eval = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
+        edge_eval = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
         this->init(eval_points);
     }
 

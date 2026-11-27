@@ -79,8 +79,11 @@ public:
     Vec &petsc_vec()
     {   return data_petsc_;}
 
-    void zero_entries()
-    {   chkerr(VecZeroEntries( data_petsc_ ));}
+    void zero_entries() {
+        ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+        std::fill(data_ptr_->begin(), data_ptr_->end(), 0.0);
+        chkerr(VecZeroEntries( data_petsc_ ));
+    }
 
     //VectorData &data()
     //{

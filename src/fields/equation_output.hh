@@ -32,8 +32,8 @@ namespace Input {
                 class Selection;
 	}
 }
-template<unsigned int dim> class AssemblyOutputElemData;
-template<unsigned int dim> class AssemblyOutputNodeData;
+template<unsigned int dim, class EqData> class AssemblyOutputElemData;
+template<unsigned int dim, class EqData> class AssemblyOutputNodeData;
 template<unsigned int dim> class AssemblyObserveOutput;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 template< template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
@@ -45,6 +45,8 @@ template< template<IntDim...> class DimAssembly> class GenericAssemblyObserve;
  */
 class EquationOutput : public FieldSet {
 public:
+	template<unsigned int dim> using AssemblyOutputElemDataDim = AssemblyOutputElemData<dim, EquationOutput>;
+	template<unsigned int dim> using AssemblyOutputNodeDataDim = AssemblyOutputNodeData<dim, EquationOutput>;
 
     DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
                                          << "' is not scalar in spacedim 3.");
@@ -161,9 +163,9 @@ private:
     std::shared_ptr<DOFHandlerMultiDim> dh_node_;
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< AssemblyOutputElemData > * output_elem_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeData > * output_node_data_assembly_;
-    GenericAssembly< AssemblyOutputNodeData > * output_corner_data_assembly_;
+    GenericAssembly< AssemblyOutputElemDataDim > * output_elem_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeDataDim > * output_node_data_assembly_;
+    GenericAssembly< AssemblyOutputNodeDataDim > * output_corner_data_assembly_;
     GenericAssemblyObserve< AssemblyObserveOutput > * observe_output_assembly_;
 
 };

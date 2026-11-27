@@ -55,6 +55,7 @@ class OutputTime;
 class EvalPoints;
 class ElementCacheMap;
 class FieldSet;
+struct PatchInternals;
 
 
 namespace IT=Input::Type;
@@ -89,7 +90,6 @@ public:
     typedef FieldAlgorithmBase<spacedim, Value> SubFieldBaseType;
     typedef Field<spacedim, Value> SubFieldType;
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
-    typedef FieldValue_<0,1,typename Value::element_type> MultiFieldValue;
 
     TYPEDEF_ERR_INFO( EI_MultiFieldName, const string );
     TYPEDEF_ERR_INFO( EI_Size, unsigned int );
@@ -242,7 +242,7 @@ public:
     void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /// Implements FieldCommon::cache_reallocate
-    void cache_reallocate(const ElementCacheMap &cache_map, unsigned int region_idx) const override;
+    void cache_reallocate(PatchInternals &patch_internals, unsigned int region_idx) const override;
 
     /// Implements FieldCommon::cache_update
     void cache_update(ElementCacheMap &cache_map, unsigned int region_patch_idx) const override;

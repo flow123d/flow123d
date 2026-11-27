@@ -6,9 +6,9 @@
 #include "arma_expect.hh"
 #include <rev_num.h>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
@@ -25,6 +25,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "la/linsys.hh"
@@ -33,6 +34,9 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "transport/assembly_dg.hh"
+#include "DG_mockup_assembly.hh"
+#include "balance_null.hh"
 
 class GenericAssemblyBase;
 template<unsigned int dim> class Mass_FullAssembly;
@@ -139,39 +143,6 @@ struct fn_conc_diff_coef {
 
         return K;
     }
-};
-
-
-class DGMockupTest : public testing::Test {
-public:
-	DGMockupTest()
-    {
-		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
-		string build = string(__DATE__) + ", " + string(__TIME__)
-	            + " flags: (unknown compiler flags)";
-
-        FilePath::set_io_dirs(".",root_dir,"",".");
-        Profiler::instance();
-        Profiler::instance()->set_program_info("Flow123d",
-                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false);
-    }
-
-    ~DGMockupTest() {}
-
-    /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
-
-	/// Perform profiler output.
-    void profiler_output(std::string file_name) {
-		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
-		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
-	}
 };
 
 
@@ -371,6 +342,10 @@ public:
         this->set_default_fieldset();
     }
 
+    void set_mesh_ptr(Mesh *mesh_ptr) {
+        mesh_ptr_ = mesh_ptr;
+    }
+
     /// Setup components of MultiFields defined as FieldModels, internal method
     void setup_mf_components()
     {
@@ -385,101 +360,12 @@ public:
 
     }
 
-    /// Initialize selected fields as FieldModels
-    void init_field_models()
-    {
-    	setup_mf_components();
+    /// Initialize selected fields as Field type (FT)
+    template<class FT>
+    void init_fields();
 
-        v_norm.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_v_norm(), flow_flux), 0.0);
-        mass_matrix_coef.set(Model<3, FieldValue<3>::Scalar>::create(fn_conc_mass_matrix(), cross_section, water_content), 0.0);
-        retardation_coef.set(
-            Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_retardation(), cross_section, porosity, rock_density, sorption_coefficient),
-    		0.0
-        );
-        sources_density_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_dens(), cross_section, sources_density), 0.0);
-        sources_sigma_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_sigma(), cross_section, sources_sigma), 0.0);
-        sources_conc_out.set(Model<3, FieldValue<3>::Scalar>::create_multi(fn_conc_sources_conc(), sources_conc), 0.0);
-        std::vector<typename Field<3, FieldValue<3>::VectorFixed>::FieldBasePtr> ad_coef_ptr_vec;
-        for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++)
-            ad_coef_ptr_vec.push_back( Model<3, FieldValue<3>::VectorFixed>::create(fn_conc_ad_coef(), flow_flux) );
-        advection_coef.set(ad_coef_ptr_vec, 0.0);
-        diffusion_coef.set(
-            Model<3, FieldValue<3>::TensorFixed>::create_multi(
-                fn_conc_diff_coef(), diff_m, flow_flux, v_norm, disp_l, disp_t, water_content, porosity, cross_section
-            ),
-            0.0
-        );
-    }
-
-    /// Initialize selected fields as FieldConstants
-    void init_field_constants(double vnorm, double mass_matrix, double ret_coef, double sources_dens, double sourc_sigma,
-            double sourc_conc, arma::vec3 advec_coef, arma::mat33 diff_coef)
-    {
-    	setup_mf_components();
-
-        {
-    	    FieldValue<3>::Scalar f_value(vnorm);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            v_norm.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(mass_matrix);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            mass_matrix_coef.set(field_algo, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(ret_coef);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sorption_coefficient.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            retardation_coef.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sources_dens);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_density.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_density_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sourc_sigma);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_sigma.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_sigma_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::Scalar f_value(sourc_conc);
-            std::vector<typename Field<3, FieldValue<3>::Scalar>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<sources_conc.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            sources_conc_out.set(field_vec, 0.0);
-        }
-        {
-            FieldValue<3>::TensorFixed f_value(diff_coef);
-            std::vector<typename Field<3, FieldValue<3>::TensorFixed>::FieldBasePtr> field_vec;
-            for (unsigned int sbi=0; sbi<diff_m.size(); sbi++) {
-                auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::TensorFixed>>();
-                field_algo->set_value(f_value);
-                field_vec.push_back(field_algo);
-            }
-            diffusion_coef.set(field_vec, 0.0);
-        }
-    }
+    /// Pointer to mesh
+    Mesh *mesh_ptr_;
 
     // from TransportEqFields
     Field<3, FieldValue<3>::Scalar> porosity;             ///< Mobile porosity - usually saturated water content in the case of unsaturated flow model
@@ -523,10 +409,16 @@ public:
 
 class EqData {
 public:
-    typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
+    typedef equation_data::EqFields EqFields;
+	typedef std::vector<std::shared_ptr<FieldFE< 3, FieldValue<3>::Scalar>>> FieldFEScalarVec;
 
-    EqData() {}
+    EqData(std::shared_ptr<EqFields> eq_fields) : eq_fields_(eq_fields) {}
 
+	inline unsigned int quad_order() const {
+	    return dg_order;
+	}
+
+	std::shared_ptr<EqFields> eq_fields_;
 
     int dg_variant;                           ///< DG variant ((non-)symmetric/incomplete
     unsigned int dg_order;                    ///< Polynomial order of finite elements.
@@ -545,6 +437,9 @@ public:
     FieldFEScalarVec conc_fe;
     std::shared_ptr<DOFHandlerMultiDim> dh_p0;
 
+	vector<unsigned int> subst_idx_;   ///< List of indices used to call balance methods for a set of quantities.
+	std::shared_ptr<BalanceNull> balance_;
+
     inline unsigned int n_substances() const {
         return substances_.size();
     }
@@ -552,6 +447,10 @@ public:
     inline const std::vector<std::string> &subst_names() const {
         return substances_;
     }
+
+    /// Returns reference to the vector of substance indices.
+    const vector<unsigned int> &subst_idx()
+	{ return subst_idx_; }
 
     double elem_anisotropy(ElementAccessor<3> e) const
     {
@@ -602,8 +501,46 @@ public:
 
 } // end of namespace equation_data
 
+
+template<unsigned int dim> using MassAssemblyDim = MassAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using SourcesAssemblyDim = SourcesAssemblyDG<dim, equation_data::EqData>;
+template<unsigned int dim> using MassEvalFieldsDim = MassEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using SourcesEvalFieldsDim = SourcesEvalFields<dim, equation_data::EqData>;
+
+/// Test class
+class DGMockupTest : public testing::Test {
+public:
+	DGMockupTest()
+    {
+		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+		string build = string(__DATE__) + ", " + string(__TIME__)
+	            + " flags: (unknown compiler flags)";
+
+        FilePath::set_io_dirs(".",root_dir,"",".");
+        Profiler::instance();
+        Profiler::instance()->set_program_info("Flow123d",
+                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
+        Profiler::set_memory_monitoring(false);
+    }
+
+    ~DGMockupTest() {}
+
+    /// Run assembly algorithms with different type of assembly and type of field
+    template <template<IntDim...> class MassAsm, template<IntDim...> class StiffnessAsm, template<IntDim...> class SourcesAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
+
+	/// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+};
+
+
 /*******************************************************************************
- * Test class
+ * Equivalent to TransportDG class
  */
 template<template<IntDim...> class Mass, template<IntDim...> class Stiffness, template<IntDim...> class Sources>
 class DGMockup : public EquationBase {
@@ -640,10 +577,11 @@ public:
 		symmetric = 1        // Symmetric weighted interior penalty DG
 	};
 
-	DGMockup()
+    DGMockup(bool use_linsys)
+    : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
 
         // DG data parameters
@@ -701,6 +639,7 @@ public:
 
         // Set up physical parameters.
         eq_fields_->set_mesh(*mesh_);
+        eq_fields_->set_mesh_ptr(mesh_);
         eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
         eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
 
@@ -740,6 +679,7 @@ public:
     GenericAssemblyBase * mass_assembly_;
     GenericAssemblyBase * stiffness_assembly_;
     GenericAssemblyBase * sources_assembly_;
+    bool use_linsys_;
 };
 
 

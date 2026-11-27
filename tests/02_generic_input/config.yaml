@@ -24,6 +24,7 @@ test_cases:
   - 41_user_fields_darcy_dg.yaml
   - 42_user_fields_richards_fv.yaml
   - 43_user_fields_coupling.yaml
+  - 44_user_fields_dg_field_fe.yaml
   proc: [1]
   
   

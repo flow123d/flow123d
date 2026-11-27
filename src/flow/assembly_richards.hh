@@ -22,22 +22,22 @@
 #include "coupling/assembly_base.hh"
 #include "flow/assembly_lmh.hh"
 #include "flow/soil_models.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 
 
-template <unsigned int dim>
-class InitCondPostprocessAssembly : public AssemblyBase<dim>
+template <unsigned int dim, class TEqData>
+class InitCondPostprocessAssembly : public AssemblyBasePatch<dim>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "InitCondPostprocessAssembly"; }
+    static constexpr const char * name() { return "Richards_InitCondPostprocess_Assembly"; }
 
     /// Constructor.
-    InitCondPostprocessAssembly(EqFields *eq_fields, EqData *eq_data)
-    : AssemblyBase<dim>(0), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = ActiveIntegrals::bulk;
+    InitCondPostprocessAssembly(EqData *eq_data, PatchInternals *patch_internals)
+    : AssemblyBasePatch<dim>(0, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data),
+      bulk_integral_( this->create_bulk_integral(this->quad_))  {
         this->used_fields_ += this->eq_fields_->storativity;
         this->used_fields_ += this->eq_fields_->extra_storativity;
         this->used_fields_ += this->eq_fields_->genuchten_n_exponent;
@@ -52,10 +52,7 @@ public:
     ~InitCondPostprocessAssembly() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
-        //this->balance_ = eq_data_->balance_;
-        this->element_cache_map_ = element_cache_map;
-    }
+    void initialize() {}
 
     inline void cell_integral(DHCellAccessor cell, unsigned int element_patch_idx) {
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
@@ -64,7 +61,7 @@ public:
         cr_disc_dofs_ = cell.cell_with_other_dh(this->eq_data_->dh_cr_disc_.get()).get_loc_dof_indices();
         const DHCellAccessor dh_cell = cell.cell_with_other_dh(this->eq_data_->dh_.get());
 
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( bulk_integral_->points(element_patch_idx).begin() );
         bool genuchten_on = reset_soil_model(cell, p);
         storativity_ = this->eq_fields_->storativity(p)
                          + this->eq_fields_->extra_storativity(p);
@@ -136,28 +133,32 @@ private:
     double storativity_;
     double capacity, water_content, phead;
 
+    /// Bulk integral of assembly class
+    std::shared_ptr<BulkIntegralAcc<dim>> bulk_integral_;
+
     template < template<IntDim...> class DimAssembly>
     friend class GenericAssembly;
 };
 
 
-template <unsigned int dim>
-class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim>
+template <unsigned int dim, class TEqData>
+class MHMatrixAssemblyRichards : public MHMatrixAssemblyLMH<dim, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "MHMatrixAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_MHMatrix_Assembly"; }
 
-    MHMatrixAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyLMH<dim>(eq_fields, eq_data), eq_fields_(eq_fields), eq_data_(eq_data) {
-        this->active_integrals_ = (ActiveIntegrals::bulk | ActiveIntegrals::coupling | ActiveIntegrals::boundary);
+    MHMatrixAssemblyRichards(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyLMH<dim, TEqData>(eq_data, patch_internals), eq_fields_(eq_data->eq_fields_.get()), eq_data_(eq_data) {
         this->used_fields_ += eq_fields_->cross_section;
         this->used_fields_ += eq_fields_->conductivity;
         this->used_fields_ += eq_fields_->anisotropy;
         this->used_fields_ += eq_fields_->sigma;
         this->used_fields_ += eq_fields_->water_source_density;
+        this->used_fields_ += eq_fields_->water_source_sigma;
+        this->used_fields_ += eq_fields_->water_source_ref_pressure;
         this->used_fields_ += eq_fields_->extra_source;
         this->used_fields_ += eq_fields_->storativity;
         this->used_fields_ += eq_fields_->extra_storativity;
@@ -177,9 +178,9 @@ public:
     ~MHMatrixAssemblyRichards() {}
 
     /// Initialize auxiliary vectors and other data members
-    void initialize(ElementCacheMap *element_cache_map) {
+    void initialize() {
         //this->balance_ = eq_data_->balance_;
-    	MHMatrixAssemblyLMH<dim>::initialize(element_cache_map);
+    	MHMatrixAssemblyLMH<dim, TEqData>::initialize();
     }
 
 
@@ -189,10 +190,10 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
-        this->asm_sides(cell, p, this->compute_conductivity(cell, p));
+        this->asm_sides(p, this->compute_conductivity(cell, p), element_patch_idx);
         this->asm_element();
         this->asm_source_term_richards(cell, p);
     }
@@ -204,7 +205,7 @@ public:
         ASSERT_EQ(cell_side.dim(), dim).error("Dimension of element mismatch!");
         if (!cell_side.cell().is_own()) return;
 
-        auto p_side = *( this->boundary_points(cell_side).begin() );
+        auto p_side = *( this->bdr_integral_->points(cell_side).begin() );
         auto p_bdr = p_side.point_bdr(cell_side.cond().element_accessor() );
         ElementAccessor<3> b_ele = cell_side.side().cond().element_accessor(); // ??
 
@@ -241,7 +242,9 @@ protected:
 
         // set lumped source
         diagonal_coef_ = ele.measure() * eq_fields_->cross_section(p) / ele->n_sides();
-        source_diagonal_ = diagonal_coef_ * ( eq_fields_->water_source_density(p) + eq_fields_->extra_source(p));
+        source_diagonal_ = diagonal_coef_ * ( eq_fields_->water_source_density(p) +
+                                              eq_fields_->water_source_sigma(p)*eq_fields_->water_source_ref_pressure(p) +
+                                              eq_fields_->extra_source(p));
 
         VectorMPI water_content_vec = eq_fields_->water_content_ptr->vec();
 
@@ -279,7 +282,7 @@ protected:
                              << "\n");
                 */
                 eq_data_->loc_system_[cell.local_idx()].add_value(eq_data_->loc_edge_dofs[dim-1][i], eq_data_->loc_edge_dofs[dim-1][i],
-                                            -mass_diagonal_/eq_data_->time_step_,
+                                            -diagonal_coef_*eq_fields_->water_source_sigma(p)-mass_diagonal_/eq_data_->time_step_,
                                             -source_diagonal_ - mass_rhs_);
             }
 
@@ -287,7 +290,7 @@ protected:
                                                {0.0}, diagonal_coef_*water_content_vec.get(local_side));
             eq_data_->balance_->add_source_values(eq_data_->water_balance_idx, ele.region().bulk_idx(),
                                                 {this->eq_data_->loc_system_[cell.local_idx()].row_dofs[eq_data_->loc_edge_dofs[dim-1][i]]},
-                                                {0},{source_diagonal_});
+                                                {-diagonal_coef_*eq_fields_->water_source_sigma(p)},{source_diagonal_});
         }
     }
 
@@ -397,17 +400,17 @@ protected:
 };
 
 
-template <unsigned int dim>
-class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim>
+template <unsigned int dim, class TEqData>
+class ReconstructSchurAssemblyRichards : public MHMatrixAssemblyRichards<dim, TEqData>
 {
 public:
-    typedef typename RichardsLMH::EqFields EqFields;
-    typedef typename RichardsLMH::EqData EqData;
+    typedef typename TEqData::EqFields EqFields;
+    typedef TEqData EqData;
 
-    static constexpr const char * name() { return "ReconstructSchurAssemblyRichards"; }
+    static constexpr const char * name() { return "Richards_ReconstructSchur_Assembly"; }
 
-    ReconstructSchurAssemblyRichards(EqFields *eq_fields, EqData *eq_data)
-    : MHMatrixAssemblyRichards<dim>(eq_fields, eq_data) {
+    ReconstructSchurAssemblyRichards(EqData *eq_data, PatchInternals *patch_internals)
+    : MHMatrixAssemblyRichards<dim, TEqData>(eq_data, patch_internals) {
     }
 
     /// Integral over element.
@@ -416,7 +419,7 @@ public:
         ASSERT_EQ(cell.dim(), dim).error("Dimension of element mismatch!");
 
         // evaluation point
-        auto p = *( this->bulk_points(element_patch_idx).begin() );
+        auto p = *( this->bulk_integral_->points(element_patch_idx).begin() );
         this->bulk_local_idx_ = cell.local_idx();
 
         { // postprocess the velocity

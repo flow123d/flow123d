@@ -26,7 +26,7 @@ arma::uvec mat_shape(const Mat &x) {
 
 
 template<class ArmaMat1, class ArmaMat2>
-bool _expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, std::ostream &fail_message)
+bool _expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, double abs_error, std::ostream &fail_message)
 {
     bool no_failure=true;
     auto ref_shape = mat_shape(ref_arma_mat);
@@ -38,11 +38,11 @@ bool _expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, s
     } else {
         double magnitude = std::max( arma::norm(ref_arma_mat, 1), arma::norm(arma_mat, 1) );
         // abs criterium
-        if (magnitude < 8*std::numeric_limits<double>::epsilon()) return true;
+        if (magnitude < abs_error) return true;
 
         double error = arma::norm(ref_arma_mat - arma_mat, 1)/magnitude;
         // rel criterium
-        if (error > 8*std::numeric_limits<double>::epsilon()) {
+        if (error > abs_error) {
             unsigned int w = 11* arma_mat.n_cols;
             fail_message << std::setw(w) << "Expected" << std::setw(w) << "Result"
                     << " rel. error: " << error << std::endl;
@@ -60,10 +60,10 @@ bool _expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, s
 
 
 template<class ArmaMat1, class ArmaMat2>
-bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
+bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, double abs_error = 8*std::numeric_limits<double>::epsilon())
 {
     std::ostringstream fail_message;
-    bool no_failure = _expect_arma_eqal(ref_arma_mat, arma_mat, fail_message);
+    bool no_failure = _expect_arma_eqal(ref_arma_mat, arma_mat, abs_error, fail_message);
 
     if (! no_failure) {
         GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
@@ -76,6 +76,12 @@ bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
 
 #define ASSERT_ARMA_EQ( A, B) \
     ASSERT_TRUE(expect_arma_eqal(A, B));
+
+#define EXPECT_ARMA_NEAR( A, B, abs_error ) \
+    EXPECT_TRUE(expect_arma_eqal(A, B, abs_error));
+
+#define ASSERT_ARMA_NEAR( A, B, abs_error) \
+    ASSERT_TRUE(expect_arma_eqal(A, B, abs_error));
 
 
 #endif /* UNIT_TESTS_ARMA_EXPECT_HH_ */

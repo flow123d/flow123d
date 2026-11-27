@@ -6,9 +6,9 @@
 #include "arma_expect.hh"
 #include <rev_num.h>
 
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/field_fe.hh"
@@ -32,14 +32,10 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "mechanics/elasticity.hh"
+#include "elasticity_mockup_assembly.hh"
 
 class GenericAssemblyBase;
-template<unsigned int dim> class Stiffness_FullAssembly;
-template<unsigned int dim> class Stiffness_ComputeLocal;
-template<unsigned int dim> class Stiffness_EvalFields;
-template<unsigned int dim> class Rhs_FullAssembly;
-template<unsigned int dim> class Rhs_ComputeLocal;
-template<unsigned int dim> class Rhs_EvalFields;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -72,39 +68,6 @@ struct fn_dirichlet_penalty {
 };
 
 
-
-/// Test class
-class ElasticityMockupTest : public testing::Test {
-public:
-	ElasticityMockupTest()
-    {
-		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
-		string build = string(__DATE__) + ", " + string(__TIME__)
-	            + " flags: (unknown compiler flags)";
-
-        FilePath::set_io_dirs(".",root_dir,"",".");
-        Profiler::instance();
-        Profiler::instance()->set_program_info("Flow123d",
-                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
-        Profiler::set_memory_monitoring(false);
-    }
-
-    ~ElasticityMockupTest() {}
-
-    /// Run assembly algorithms with different type of assembly and type of field
-    void run_fullassembly_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_fullassembly_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_computelocal_model(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_const(const string &eq_data_input, const std::string &mesh_file);
-    void run_evalfields_model(const string &eq_data_input, const std::string &mesh_file);
-
-    /// Perform profiler output.
-    void profiler_output(std::string file_name) {
-		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
-		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
-	}
-};
 
 namespace equation_data {
 
@@ -294,37 +257,21 @@ public:
         this->set_default_fieldset();
     }
 
-    /// Initialize selected fields as FieldModels
-    void init_field_models()
-    {
-        lame_mu.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_mu(), young_modulus, poisson_ratio), 0.0);
-        lame_lambda.set(Model<3, FieldValue<3>::Scalar>::create(fn_lame_lambda(), young_modulus, poisson_ratio), 0.0);
-        dirichlet_penalty.set(Model<3, FieldValue<3>::Scalar>::create(fn_dirichlet_penalty(), lame_mu, lame_lambda), 0.0);
+    void set_mesh_ptr(Mesh *mesh_ptr) {
+        mesh_ptr_ = mesh_ptr;
     }
 
-    /// Initialize selected fields as FieldConstants
-    void init_field_constants(double val_lame_mu, double val_lame_lambda, double val_dirichl_penalty)
-    {
+    /// Initialize selected fields as Field type (FT)
+    template<class FT>
+    void init_fields();
 
-        {
-    	    FieldValue<3>::Scalar f_value(val_lame_mu);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            lame_mu.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(val_lame_lambda);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            lame_lambda.set(field_algo, 0.0);
-        }
-        {
-    	    FieldValue<3>::Scalar f_value(val_dirichl_penalty);
-            auto field_algo=std::make_shared<FieldConstant<3, FieldValue<3>::Scalar>>();
-            field_algo->set_value(f_value);
-            dirichlet_penalty.set(field_algo, 0.0);
-        }
+    arma::mat33 stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+    {
+        return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
     }
+
+    /// Pointer to mesh
+    Mesh *mesh_ptr_;
 
     // Definition of Fields
     BCField<3, FieldValue<3>::Enum > bc_type;
@@ -374,11 +321,18 @@ public:
 
 class EqData {
 public:
-    EqData()
-    : ls(nullptr) {}
+    typedef equation_data::EqFields EqFields;
+
+    EqData(std::shared_ptr<EqFields> eq_fields)
+    : eq_fields_(eq_fields), ls(nullptr) {}
 
     ~EqData() {
         if (ls!=nullptr) delete ls;
+    }
+
+    /// Returns quad_order
+    inline unsigned int quad_order() const {
+        return 1;
     }
 
     /// Create DOF handler objects
@@ -392,6 +346,8 @@ public:
         dh_->distribute_dofs(ds);
     }
 
+    std::shared_ptr<EqFields> eq_fields_;
+
     /// Object for distribution of dofs.
     std::shared_ptr<DOFHandlerMultiDim> dh_;
 
@@ -401,6 +357,42 @@ public:
 };
 
 } // end of namespace equation_data
+
+
+template<unsigned int dim> using StiffnessAssemblyDim = StiffnessAssemblyElasticity<dim, equation_data::EqData>;
+template<unsigned int dim> using RhsAssemblyDim = RhsAssemblyElasticity<dim, equation_data::EqData>;
+template<unsigned int dim> using StiffnessEvalFieldsDim = StiffnessEvalFields<dim, equation_data::EqData>;
+template<unsigned int dim> using RhsEvalFieldsDim = RhsEvalFields<dim, equation_data::EqData>;
+
+/// Test class
+class ElasticityMockupTest : public testing::Test {
+public:
+	ElasticityMockupTest()
+    {
+		string root_dir=string(UNIT_TESTS_BIN_DIR) + "/coupling";
+		string build = string(__DATE__) + ", " + string(__TIME__)
+	            + " flags: (unknown compiler flags)";
+
+        FilePath::set_io_dirs(".",root_dir,"",".");
+        Profiler::instance();
+        Profiler::instance()->set_program_info("Flow123d",
+                string(FLOW123D_VERSION_NAME_), string(FLOW123D_GIT_BRANCH_), string(FLOW123D_GIT_REVISION_), build);
+        Profiler::set_memory_monitoring(false);
+    }
+
+    ~ElasticityMockupTest() {}
+
+    /// Run assembly algorithms with different type of assembly and type of field
+    template <template<IntDim...> class StiffnessAsm, template<IntDim...> class RhsAsm, class FT>
+    void run_mockup(const string &eq_data_input, const std::string &mesh_file, const std::string tag_name, bool use_linsys = false);
+
+
+    /// Perform profiler output.
+    void profiler_output(std::string file_name) {
+		FilePath fp(file_name + "_profiler.json", FilePath::output_file);
+		Profiler::instance()->output(MPI_COMM_WORLD, fp.filename());
+	}
+};
 
 
 /*******************************************************************************
@@ -429,10 +421,11 @@ public:
 
 
     /// Constructor
-    ElasticityMockup()
+    ElasticityMockup(bool use_linsys)
+    : use_linsys_(use_linsys)
     {
-        eq_data_ = make_shared<equation_data::EqData>();
         eq_fields_ = make_shared<equation_data::EqFields>();
+        eq_data_ = make_shared<equation_data::EqData>(eq_fields_);
         this->eq_fieldset_ = eq_fields_;
     }
 
@@ -455,6 +448,7 @@ public:
 
         // Set up physical parameters.
         eq_fields_->set_mesh(*mesh_);
+        eq_fields_->set_mesh_ptr(mesh_);
         eq_fields_->region_id = GenericField<3>::region_id(*this->mesh_);
         eq_fields_->subdomain = GenericField<3>::subdomain(*this->mesh_);
 
@@ -486,6 +480,7 @@ public:
 
     GenericAssemblyBase * stiffness_assembly_;
     GenericAssemblyBase * rhs_assembly_;
+    bool use_linsys_;
 };
 
 

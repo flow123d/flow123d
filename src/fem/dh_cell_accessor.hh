@@ -68,7 +68,7 @@ public:
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.
-    inline const ElementAccessor<3> elm() const {
+    inline ElementAccessor<3> elm() const {
     	return dof_handler_->mesh()->element_accessor( elm_idx() );
     }
 

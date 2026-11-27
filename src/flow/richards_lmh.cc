@@ -76,8 +76,8 @@ RichardsLMH::EqFields::EqFields()
 }
 
 
-RichardsLMH::EqData::EqData()
-: DarcyLMH::EqData::EqData() {}
+RichardsLMH::EqData::EqData(shared_ptr<EqFields> eq_fields)
+: DarcyLMH::EqData::EqData(eq_fields), eq_fields_(eq_fields) {}
 
 
 const Input::Type::Record & RichardsLMH::get_input_type() {
@@ -130,7 +130,7 @@ RichardsLMH::RichardsLMH(Mesh &mesh_in, const  Input::Record in_rec, TimeGoverno
     init_cond_postprocess_assembly_(nullptr)
 {
     eq_fields_ = make_shared<EqFields>();
-    eq_data_ = make_shared<EqData>();
+    eq_data_ = make_shared<EqData>(eq_fields_);
     DarcyLMH::eq_data_ = eq_data_;
     DarcyLMH::eq_fields_ = eq_fields_;
     this->eq_fieldset_ = eq_fields_;
@@ -239,10 +239,10 @@ void RichardsLMH::assembly_linear_system()
 
 
 void RichardsLMH::initialize_asm() {
-    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMH >(eq_fields_.get(), eq_data_.get());
-    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssembly >(this->eq_fields_.get(), this->eq_data_.get());
-    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
-    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichards >(this->eq_fields_.get(), this->eq_data_.get());
+    this->read_init_cond_assembly_ = new GenericAssembly< ReadInitCondAssemblyLMHDim >(eq_data_.get());
+    this->init_cond_postprocess_assembly_ = new GenericAssembly< InitCondPostprocessAssemblyDim >(this->eq_data_.get(), eq_data_->dh_.get());
+    this->mh_matrix_assembly_ = new GenericAssembly< MHMatrixAssemblyRichardsDim >(this->eq_data_.get(), eq_data_->dh_.get());
+    this->reconstruct_schur_assembly_ = new GenericAssembly< ReconstructSchurAssemblyRichardsDim >(this->eq_data_.get(), eq_data_->dh_.get());
 }
 
 

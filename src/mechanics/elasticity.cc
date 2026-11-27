@@ -23,7 +23,6 @@
 
 #include "io/output_time.hh"
 #include "quadrature/quadrature_lib.hh"
-#include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_system.hh"
@@ -115,6 +114,10 @@ struct fn_dirichlet_penalty {
 };
 
 
+arma::mat33 Elasticity::EqFields::stress_tensor(BulkPoint &p, const arma::mat33 &strain_tensor)
+{
+    return 2*lame_mu(p)*strain_tensor + lame_lambda(p)*arma::trace(strain_tensor)*arma::eye(3,3);
+}
 
 
 
@@ -293,25 +296,29 @@ Elasticity::EqData::~EqData()
     if (dirichlet_vec!=nullptr) VecDestroy(&dirichlet_vec);
 }
 
-void Elasticity::EqData::create_dh(Mesh * mesh, unsigned int fe_order)
+void Elasticity::EqData::create_dh(Mesh * mesh)
 {
-	ASSERT_EQ(fe_order, 1)(fe_order).error("Unsupported polynomial order for finite elements in Elasticity");
-    MixedPtr<FE_P> fe_p(1);
+	ASSERT_EQ(quad_order(), 1).error("Unsupported polynomial order for finite elements in Elasticity");
+    MixedPtr<FE_P> fe_p( quad_order() );
     MixedPtr<FiniteElement> fe = mixed_fe_system(fe_p, FEVector, 3);
 
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, fe);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh);
 
 	dh_->distribute_dofs(ds);
+}
 
+void Elasticity::OutputEqData::create_dh(Mesh * mesh)
+{
+	ASSERT_EQ(quad_order(), 0).error("Unsupported polynomial order for output in Elasticity");
 
-    MixedPtr<FE_P_disc> fe_p_disc(0);
+	MixedPtr<FE_P_disc> fe_p_disc( quad_order() );
     dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> ds_scalar = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_p_disc);
 	dh_scalar_->distribute_dofs(ds_scalar);
 
 
-    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>(0), FEType::FETensor, 9);
+    MixedPtr<FiniteElement> fe_t = mixed_fe_system(MixedPtr<FE_P_disc>( quad_order() ), FEType::FETensor, 9);
     dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh);
 	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh, fe_t);
 	dh_tensor_->distribute_dofs(dst);
@@ -324,15 +331,16 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 		  stiffness_assembly_(nullptr),
 		  rhs_assembly_(nullptr),
           constraint_assembly_(nullptr),
-		  output_fields_assembly_(nullptr),
-          dirichlet_assembly_(nullptr)
+		  output_fields_assembly_(nullptr)/*,
+          dirichlet_assembly_(nullptr)*/
 {
 	// Can not use name() + "constructor" here, since START_TIMER only accepts const char *
 	// due to constexpr optimization.
 	START_TIMER("Mechanics constructor");
 
-    eq_data_ = std::make_shared<EqData>();
     eq_fields_ = std::make_shared<EqFields>();
+    eq_data_ = std::make_shared<EqData>(eq_fields_);
+    output_eq_data_ = std::make_shared<OutputEqData>(eq_fields_);
     this->eq_fieldset_ = eq_fields_;
     
     auto time_rec = in_rec.val<Input::Record>("time");
@@ -355,7 +363,8 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
     eq_data_->balance_ = this->balance();
     
     // create finite element structures and distribute DOFs
-    eq_data_->create_dh(mesh_, 1);
+    eq_data_->create_dh(mesh_);
+    output_eq_data_->create_dh(mesh_);
     DebugOut().fmt("Mechanics: solution size {}\n", eq_data_->dh_->n_global_dofs());
     END_TIMER("Mechanics constructor");
 }
@@ -383,23 +392,23 @@ void Elasticity::initialize()
     eq_fields_->output_field.set(eq_fields_->output_field_ptr, 0.);
     
     // setup output stress
-    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(eq_data_->dh_tensor_);
+    eq_fields_->output_stress_ptr = create_field_fe<3, FieldValue<3>::TensorFixed>(output_eq_data_->dh_tensor_);
     eq_fields_->output_stress.set(eq_fields_->output_stress_ptr, 0.);
     
     // setup output von Mises stress
-    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_von_mises_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_von_mises_stress.set(eq_fields_->output_von_mises_stress_ptr, 0.);
 
     // setup output mean stress
-    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_mean_stress_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_mean_stress.set(eq_fields_->output_mean_stress_ptr, 0.);
     
     // setup output cross-section
-    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_cross_section_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_cross_section.set(eq_fields_->output_cross_section_ptr, 0.);
     
     // setup output divergence
-    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(eq_data_->dh_scalar_);
+    eq_fields_->output_div_ptr = create_field_fe<3, FieldValue<3>::Scalar>(output_eq_data_->dh_scalar_);
     eq_fields_->output_divergence.set(eq_fields_->output_div_ptr, 0.);
 
     // read optional user fields
@@ -468,7 +477,10 @@ void Elasticity::initialize()
         ISLocalToGlobalMappingDestroy(&col_l2g);
         ls->set_inequality(eq_data_->constraint_matrix,eq_data_->constraint_vec);
 
-        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+        constraint_assembly_ = new GenericAssembly< ConstraintAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+//    } else {
+//        ls = new LinSys_PETSC(eq_data_->dh_->distr().get(), petsc_default_opts);
+//        ((LinSys_PETSC*)ls)->set_initial_guess_nonzero();
     }
     ls->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(eq_fields_->output_field_ptr->vec().petsc_vec());
@@ -476,15 +488,15 @@ void Elasticity::initialize()
     ls->use_feti(use_feti);
     eq_data_->ls = ls;
 
-    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    rhs_assembly_ = new GenericAssembly< RhsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
-    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyElasticity >(eq_fields_.get(), eq_data_.get());
+    stiffness_assembly_ = new GenericAssembly< StiffnessAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    rhs_assembly_ = new GenericAssembly< RhsAssemblyDim >(eq_data_.get(), eq_data_->dh_.get());
+    output_fields_assembly_ = new GenericAssembly< OutpuFieldsAssemblyDim >(output_eq_data_.get(), eq_data_->dh_.get());
 
     eq_data_->dirichlet_by_eq = input_rec.val<bool>("dirichlet_by_eq");
-    if (eq_data_->dirichlet_by_eq) {
-        // allocate matrix and vector for dirichlet constraints
-        dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
-    }
+//    if (eq_data_->dirichlet_by_eq) {
+//        // allocate matrix and vector for dirichlet constraints
+//        dirichlet_assembly_ = new GenericAssembly<DirichletAssemblyElasticity>(eq_fields_.get(), eq_data_.get());
+//    }
 
     eq_data_->fix_nullspace = input_rec.val<bool>("fix_nullspace");
     view_matrices = input_rec.val<bool>("view_matrices");
@@ -504,7 +516,7 @@ Elasticity::~Elasticity()
     if (rhs_assembly_!=nullptr) delete rhs_assembly_;
     if (constraint_assembly_ != nullptr) delete constraint_assembly_;
     if (output_fields_assembly_!=nullptr) delete output_fields_assembly_;
-    if (dirichlet_assembly_!=nullptr) delete dirichlet_assembly_;
+//    if (dirichlet_assembly_!=nullptr) delete dirichlet_assembly_;
 
     eq_data_.reset();
     eq_fields_.reset();
@@ -597,54 +609,54 @@ void Elasticity::preallocate()
     stiffness_assembly_->assemble(eq_data_->dh_);
     rhs_assembly_->assemble(eq_data_->dh_);
 
-    if (eq_data_->dirichlet_by_eq) {
-        eq_data_->dirichlet_row_starts.clear();
-        eq_data_->dirichlet_row_starts.push_back(0);
-        dirichlet_assembly_->assemble(eq_data_->dh_);
-
-        // preallocate dirichlet constraint matrix and vector
-        unsigned int n_rows = eq_data_->dirichlet_values.size();
-        PetscErrorCode ierr;
-        ISLocalToGlobalMapping l2g_rows, l2g_cols;
-        Distribution dir_row_ds(n_rows, PETSC_COMM_WORLD);
-        vector<LongIdx> rows_l2g_indices;
-        for (unsigned int i=dir_row_ds.begin(); i<dir_row_ds.end(); i++)
-            rows_l2g_indices.push_back(i);
-        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, n_rows,
-            rows_l2g_indices.data(), PETSC_COPY_VALUES, &l2g_rows); CHKERRV(ierr);
-        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->get_local_to_global_map().size(),
-            eq_data_->dh_->get_local_to_global_map().data(), PETSC_COPY_VALUES, &l2g_cols); CHKERRV(ierr);
-        ierr = MatCreateIS(PETSC_COMM_WORLD, 1, n_rows, eq_data_->dh_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
-                                  l2g_rows, l2g_cols, &eq_data_->dirichlet_matrix); CHKERRV( ierr );
-        ISLocalToGlobalMappingDestroy(&l2g_rows);
-        ISLocalToGlobalMappingDestroy(&l2g_cols);
-
-        PetscInt *on_nz, *off_nz;
-        on_nz  = new PetscInt[ n_rows ];
-        off_nz = new PetscInt[ n_rows ];
-        for (unsigned int i=0; i<n_rows; i++) {
-            on_nz[i] = eq_data_->dirichlet_row_starts[i+1] - eq_data_->dirichlet_row_starts[i];
-            off_nz[i] = 0;
-        }
-        ierr = MatISSetPreallocation(eq_data_->dirichlet_matrix, 0, on_nz, 0, off_nz);
-        delete[] on_nz;
-        delete[] off_nz;
-        VecCreateMPI(PETSC_COMM_WORLD, n_rows, PETSC_DECIDE, &eq_data_->dirichlet_vec);
-
-        // assemble dirichlet matrix and vector
-        MatZeroEntries(eq_data_->dirichlet_matrix);
-        VecZeroEntries(eq_data_->dirichlet_vec);
-        for (unsigned int i=0; i<n_rows; i++) {
-            for (unsigned int j=eq_data_->dirichlet_row_starts[i]; j<eq_data_->dirichlet_row_starts[i+1]; j++)
-                MatSetValueLocal(eq_data_->dirichlet_matrix, i, eq_data_->dirichlet_dofs[j], eq_data_->dirichlet_coefs[j], INSERT_VALUES);
-            VecSetValueLocal(eq_data_->dirichlet_vec, i, eq_data_->dirichlet_values[i], INSERT_VALUES);
-        }
-        MatAssemblyBegin(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
-        VecAssemblyBegin(eq_data_->dirichlet_vec);
-        VecAssemblyEnd(eq_data_->dirichlet_vec);
-        eq_data_->ls->set_equality(eq_data_->dirichlet_matrix, eq_data_->dirichlet_vec);
-    }
+//    if (eq_data_->dirichlet_by_eq) {
+//        eq_data_->dirichlet_row_starts.clear();
+//        eq_data_->dirichlet_row_starts.push_back(0);
+//        dirichlet_assembly_->assemble(eq_data_->dh_);
+//
+//        // preallocate dirichlet constraint matrix and vector
+//        unsigned int n_rows = eq_data_->dirichlet_values.size();
+//        PetscErrorCode ierr;
+//        ISLocalToGlobalMapping l2g_rows, l2g_cols;
+//        Distribution dir_row_ds(n_rows, PETSC_COMM_WORLD);
+//        vector<LongIdx> rows_l2g_indices;
+//        for (unsigned int i=dir_row_ds.begin(); i<dir_row_ds.end(); i++)
+//            rows_l2g_indices.push_back(i);
+//        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, n_rows,
+//            rows_l2g_indices.data(), PETSC_COPY_VALUES, &l2g_rows); CHKERRV(ierr);
+//        ierr = ISLocalToGlobalMappingCreate(PETSC_COMM_WORLD, 1, eq_data_->dh_->get_local_to_global_map().size(),
+//            eq_data_->dh_->get_local_to_global_map().data(), PETSC_COPY_VALUES, &l2g_cols); CHKERRV(ierr);
+//        ierr = MatCreateIS(PETSC_COMM_WORLD, 1, n_rows, eq_data_->dh_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
+//                                  l2g_rows, l2g_cols, &eq_data_->dirichlet_matrix); CHKERRV( ierr );
+//        ISLocalToGlobalMappingDestroy(&l2g_rows);
+//        ISLocalToGlobalMappingDestroy(&l2g_cols);
+//
+//        PetscInt *on_nz, *off_nz;
+//        on_nz  = new PetscInt[ n_rows ];
+//        off_nz = new PetscInt[ n_rows ];
+//        for (unsigned int i=0; i<n_rows; i++) {
+//            on_nz[i] = eq_data_->dirichlet_row_starts[i+1] - eq_data_->dirichlet_row_starts[i];
+//            off_nz[i] = 0;
+//        }
+//        ierr = MatISSetPreallocation(eq_data_->dirichlet_matrix, 0, on_nz, 0, off_nz);
+//        delete[] on_nz;
+//        delete[] off_nz;
+//        VecCreateMPI(PETSC_COMM_WORLD, n_rows, PETSC_DECIDE, &eq_data_->dirichlet_vec);
+//
+//        // assemble dirichlet matrix and vector
+//        MatZeroEntries(eq_data_->dirichlet_matrix);
+//        VecZeroEntries(eq_data_->dirichlet_vec);
+//        for (unsigned int i=0; i<n_rows; i++) {
+//            for (unsigned int j=eq_data_->dirichlet_row_starts[i]; j<eq_data_->dirichlet_row_starts[i+1]; j++)
+//                MatSetValueLocal(eq_data_->dirichlet_matrix, i, eq_data_->dirichlet_dofs[j], eq_data_->dirichlet_coefs[j], INSERT_VALUES);
+//            VecSetValueLocal(eq_data_->dirichlet_vec, i, eq_data_->dirichlet_values[i], INSERT_VALUES);
+//        }
+//        MatAssemblyBegin(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
+//        MatAssemblyEnd(eq_data_->dirichlet_matrix, MAT_FINAL_ASSEMBLY);
+//        VecAssemblyBegin(eq_data_->dirichlet_vec);
+//        VecAssemblyEnd(eq_data_->dirichlet_vec);
+//        eq_data_->ls->set_equality(eq_data_->dirichlet_matrix, eq_data_->dirichlet_vec);
+//    }
 
     if (has_contact_)
         assemble_constraint_matrix();

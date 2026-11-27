@@ -25,9 +25,9 @@
 #include "input/reader_to_storage.hh"
 #include "fields/field_constant.hh"
 #include "fields/field_set.hh"
-#include "fields/eval_points.hh"
-#include "fields/eval_subset.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/eval_points.hh"
+#include "fem/integral_acc.hh"
+#include "fem/element_cache_map.hh"
 #include "quadrature/quadrature.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/dofhandler.hh"
@@ -139,8 +139,8 @@ public:
         eval_points_ = std::make_shared<EvalPoints>();
         Quadrature *q_bulk = new QGauss(3, 0);
         Quadrature *q_bdr = new QGauss(2, 0);
-        bulk_eval = eval_points_->add_bulk<3>(*q_bulk );
-        bdr_eval = eval_points_->add_boundary<3>(*q_bdr );
+        bulk_eval = std::make_shared<BulkIntegral>(eval_points_, q_bulk, 3);
+        bdr_eval = std::make_shared<BoundaryIntegral>(eval_points_, q_bdr, 3);
         this->init(eval_points_);
     }
 
@@ -948,8 +948,8 @@ TEST(Field, field_values) {
     std::shared_ptr<EvalPoints> eval_points = std::make_shared<EvalPoints>();
     Quadrature *q_bulk = new QGauss(3, 2);
     Quadrature *q_side = new QGauss(2, 2);
-    std::shared_ptr<BulkIntegral> mass_eval = eval_points->add_bulk<3>(*q_bulk );
-    std::shared_ptr<EdgeIntegral> side_eval = eval_points->add_edge<3>(*q_side );
+    std::shared_ptr<BulkIntegral> mass_eval = std::make_shared<BulkIntegral>(eval_points, q_bulk, 3);
+    std::shared_ptr<EdgeIntegral> side_eval = std::make_shared<EdgeIntegral>(eval_points, q_side, 3);
     ElementCacheMapTest elm_cache_map;
     elm_cache_map.init(eval_points);
 

@@ -27,7 +27,6 @@
 #include <memory>                                     // for shared_ptr
 #include <vector>                                     // for vector
 #include <petscmat.h>
-#include "fem/fe_values.hh"                           // for FEValues
 #include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
@@ -56,10 +55,10 @@ namespace Input {
 		class Selection;
 	}
 }
-template<unsigned int dim> class MassAssemblyConvection;
-template<unsigned int dim> class InitCondAssemblyConvection;
-template<unsigned int dim> class ConcSourcesBdrAssemblyConvection;
-template<unsigned int dim> class MatrixMpiAssemblyConvection;
+template<unsigned int dim, class EqData> class MassAssemblyConvection;
+template<unsigned int dim, class EqData> class InitCondAssemblyConvection;
+template<unsigned int dim, class EqData> class ConcSourcesBdrAssemblyConvection;
+template<unsigned int dim, class EqData> class MatrixMpiAssemblyConvection;
 template< template<IntDim...> class DimAssembly> class GenericAssembly;
 
 
@@ -92,8 +91,8 @@ public:
         virtual ~EqFields() {};
 
         /// Calculate flux on given side point.
-        inline double side_flux(SidePoint &side_p, FEValues<3> &fe_side_values) {
-            return arma::dot(this->flow_flux(side_p), fe_side_values.normal_vector(0)) * fe_side_values.JxW(0);
+        inline double side_flux(SidePoint &side_p, arma::vec3 normal_vec, double JxW) {
+            return arma::dot(this->flow_flux(side_p), normal_vec) * JxW;
         }
 
 		/**
@@ -118,8 +117,10 @@ public:
 
     class EqData {
     public:
+   	    typedef ConvectionTransport::EqFields EqFields;
 
-        EqData() : is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
+        EqData(std::shared_ptr<EqFields> eq_fields)
+   	    : eq_fields_(eq_fields), is_mass_diag_changed(false), cfl_source_(PETSC_COMM_WORLD), cfl_flow_(PETSC_COMM_WORLD) {}
         virtual ~EqData() {};
 
         /// Returns number of transported substances.
@@ -135,6 +136,9 @@ public:
 		    this->cfl_flow_.resize(lsize);
 		    this->cfl_source_.resize(lsize);
 		}
+
+        /// Shared pointer of EqFields
+        std::shared_ptr<EqFields> eq_fields_;
 
         /**
          * Temporary solution how to pass velocity field form the flow model.
@@ -180,6 +184,11 @@ public:
 		unsigned int max_edg_sides;
 
     };
+
+    template<unsigned int dim> using MassAssemblyConvectionDim = MassAssemblyConvection<dim, EqData>;
+    template<unsigned int dim> using InitCondAssemblyConvectionDim = InitCondAssemblyConvection<dim, EqData>;
+    template<unsigned int dim> using ConcSourcesBdrAssemblyConvectionDim = ConcSourcesBdrAssemblyConvection<dim, EqData>;
+    template<unsigned int dim> using MatrixMpiAssemblyConvectionDim = MatrixMpiAssemblyConvection<dim, EqData>;
 
 
     typedef ConcentrationTransportBase FactoryBaseType;
@@ -319,10 +328,10 @@ private:
 
 
     /// general assembly objects, hold assembly objects of appropriate dimension
-    GenericAssembly< MassAssemblyConvection > * mass_assembly_;
-    GenericAssembly< InitCondAssemblyConvection > * init_cond_assembly_;
-    GenericAssembly< ConcSourcesBdrAssemblyConvection > * conc_sources_bdr_assembly_;
-    GenericAssembly< MatrixMpiAssemblyConvection > * matrix_mpi_assembly_;
+    GenericAssembly< MassAssemblyConvectionDim > * mass_assembly_;
+    GenericAssembly< InitCondAssemblyConvectionDim > * init_cond_assembly_;
+    GenericAssembly< ConcSourcesBdrAssemblyConvectionDim > * conc_sources_bdr_assembly_;
+    GenericAssembly< MatrixMpiAssemblyConvectionDim > * matrix_mpi_assembly_;
 
     friend class TransportOperatorSplitting;
 };

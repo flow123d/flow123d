@@ -30,7 +30,7 @@
 #include "fields/field_common.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "fields/field_value_cache.hh"
+#include "fem/element_cache_map.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
 #include "system/fmt/posix.h"                          // for FMT_UNUSED
@@ -235,7 +235,7 @@ namespace detail
   	// set field on all regions
     result.set_mesh( *mesh );
   	result.set(f_product, time);
-    result.cache_reallocate(elm_cache_map);
+    result.cache_reallocate(patch_internals);
     result.set_time(tg.step(), LimitSide::right);
 
   	// cache_update
